@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a1020">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>PR Control Tower · Holistic House</title>
+  <style>
+    :root{color-scheme:dark;--bg:#09101c;--card:#111d2e;--panel:#101b2b;--border:#24354d;--fg:#edf4ff;--mute:#92a5bc;--blue:#65baff;--teal:#64e5d0;--amber:#f8c478;--red:#f08c93;--good:#72dfb3;--radius:20px}
+    *{box-sizing:border-box}body{margin:0;min-width:320px;color:var(--fg);background:radial-gradient(ellipse at 78% -10%,#17344c 0,transparent 43%),radial-gradient(ellipse at -8% 55%,#122540 0,transparent 38%),var(--bg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+    a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button,select{font:inherit}button{cursor:pointer}.shell{max-width:1360px;margin:0 auto;padding:30px 24px 64px}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:25px}.eyebrow{color:var(--teal);font-size:11px;font-weight:800;letter-spacing:2.4px;text-transform:uppercase}.top h1{font-size:clamp(30px,5vw,49px);letter-spacing:-1.9px;font-weight:750;margin:6px 0 5px;line-height:1.15}.subtitle{font-size:14px;color:var(--mute);margin:0}.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+    .btn,.selector{border:1px solid #30455e;border-radius:12px;background:#17273b;color:#e5effd;padding:10px 13px;min-height:41px;transition:background .2s}.btn:hover{background:#21364f}.btn.primary{background:#c7e8ff;color:#102035;border-color:#c7e8ff;font-weight:750}.btn:disabled{opacity:.55;cursor:wait}.live-dot{display:inline-block;background:#79e2b4;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 4px #79e2b424;margin:0 8px 1px 0}.live-dot.offline{background:var(--amber);box-shadow:0 0 0 4px #f8c47824}
+    .meta{display:flex;gap:13px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:12px;margin-bottom:20px}.meta .dot{width:3px;height:3px;background:#526b87;border-radius:50%}.panel{background:linear-gradient(160deg,#15243a,#111d2e 64%);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 30px #03091534}
+    .decision{padding:27px 30px;display:grid;grid-template-columns:1fr minmax(215px,340px);gap:24px;align-items:center;position:relative;overflow:hidden}.decision:before{content:"";position:absolute;width:290px;height:290px;border-radius:50%;background:#f5c57113;filter:blur(45px);right:-140px;top:-130px;pointer-events:none}.decision .kicker{font-size:12px;letter-spacing:1px;font-weight:750;color:var(--mute);text-transform:uppercase}.decision h2{font-size:clamp(23px,3vw,32px);letter-spacing:-.6px;line-height:1.15;margin:8px 0}.decision p{color:#b6c7da;margin:7px 0 0;font-size:14px;max-width:780px}.verdict{align-self:stretch;border:1px solid #3c4d63;border-radius:16px;padding:19px;display:flex;flex-direction:column;justify-content:center;gap:9px;background:#1c2b3c}.verdict.good{border-color:#33765f;background:#163e39}.verdict.warn{border-color:#80633e;background:#3b3027}.verdict.busy{border-color:#884e5c;background:#432833}.verdict.unknown{border-color:#42556d;background:#1a293d}.verdict .tag{font-size:12px;font-weight:800;letter-spacing:.4px}.verdict .why{font-size:13px;color:#d2e0ec}.verdict .icon{font-size:22px}
+    .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:27px 0 12px}.section-head h2{font-size:17px;letter-spacing:-.1px;margin:0}.section-head .hint{font-size:12px;color:var(--mute)}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{background:linear-gradient(155deg,#182940,#112033);border:1px solid var(--border);border-radius:18px;padding:19px;min-height:147px;overflow:hidden}.metric .name{font-size:12px;color:#a8bbd1;font-weight:650}.metric .val{font-weight:760;font-size:clamp(26px,3vw,39px);line-height:1.1;letter-spacing:-1.5px;margin:14px 0 8px;white-space:nowrap;font-variant-numeric:tabular-nums}.metric .detail{font-size:12px;color:var(--mute);line-height:1.4}.metric.turq .val{color:var(--teal)}.metric.sky .val{color:var(--blue)}.metric.amber .val{color:var(--amber)}.metric.rose .val{color:var(--red)}
+    .content-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:14px}.chart-panel{padding:24px;min-width:0}.chart-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.chip{background:#1c3145;color:#aecbde;border:1px solid #2b465e;border-radius:20px;padding:4px 10px;font-size:11px}.chart-legend{display:flex;gap:18px;color:#9db0c7;font-size:12px}.chart-legend span{display:inline-flex;align-items:center;gap:7px}.key{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--blue)}.key.merge{background:var(--teal)}.chart{height:228px;margin-top:16px;border-bottom:1px solid #38506b;position:relative;display:grid;align-items:end;grid-auto-columns:minmax(8px,1fr);grid-auto-flow:column;gap:5px;padding:17px 2px 16px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),#28364a calc(25% - 1px),#28364a 25%)}.chart .bar-pair{height:100%;display:flex;align-items:end;justify-content:center;gap:2px;position:relative}.chart .bar{width:42%;max-width:18px;border-radius:4px 4px 0 0;min-height:0;background:linear-gradient(180deg,#7bd4ff,#3998d3)}.chart .bar.merged{background:linear-gradient(180deg,#81f7df,#3cae98)}.chart .axis-label{position:absolute;bottom:-26px;color:#889db4;font-size:10px;left:50%;transform:translateX(-50%);white-space:nowrap}.no-chart{height:228px;display:flex;justify-content:center;align-items:center;color:var(--mute);font-size:13px;text-align:center;border:1px dashed #344862;border-radius:14px;margin-top:15px;padding:24px}
+    .status-panel{padding:23px}.progress-line{margin-top:20px}.progress-header{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#c5d3e2}.progress-header b{font-size:18px;color:#edf4ff;font-variant-numeric:tabular-nums}.track{height:9px;border-radius:20px;background:#2a394e;overflow:hidden;margin-top:8px}.fill{height:100%;border-radius:20px;transition:width .35s}.fill.r{background:linear-gradient(90deg,#f3a4ad,#e5768a)}.fill.b{background:linear-gradient(90deg,#68b4f3,#528bcf)}.fill.g{background:linear-gradient(90deg,#70e8cb,#39c9ad)}.note{font-size:12px;color:var(--mute);margin:17px 0 0;line-height:1.6}.small-link{display:inline-block;margin-top:12px;font-size:12px}
+    .history{overflow:hidden}.history-head{padding:21px 22px 12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.history h2{font-size:17px;margin:0}.scroll-table{overflow-x:auto}.history table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px;text-align:right}.history th{background:#18273a;padding:13px 16px;color:#92a7be;font-size:11px;font-weight:750;border-top:1px solid #293a50}.history th:first-child,.history td:first-child{text-align:left;padding-left:22px}.history td{padding:13px 16px;border-top:1px solid #25374c;color:#e6f0fd;font-variant-numeric:tabular-nums}.history tr:hover td{background:#162840}.history .hour{color:#b3c9da}.history .good-text{color:var(--teal)}.history .warn-text{color:var(--amber)}.history .muted{color:#687e94}.source{font-size:10px;color:#7f9cb3}.empty{padding:35px 22px;color:var(--mute);text-align:center}
+    .foot{border-top:1px solid #27394c;margin-top:24px;padding-top:20px;color:#869ab0;font-size:12px;line-height:1.7}.foot strong{color:#bacadd}.foot a{font-size:12px}.message{font-size:13px;color:var(--amber);margin:12px 0 0;min-height:0}.settings{display:flex;align-items:center;gap:9px;color:#97aac0;font-size:12px;flex-wrap:wrap}.settings select{min-height:35px;font-size:12px;padding:5px 8px}.spinner{width:13px;height:13px;display:inline-block;border:2px solid #6c879d;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:970px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{grid-template-columns:1fr}.top{flex-wrap:wrap}.decision{grid-template-columns:1fr}.verdict{min-height:95px}}
+    @media(max-width:560px){.shell{padding:20px 13px 42px}.top h1{font-size:35px}.toolbar{width:100%;justify-content:flex-start}.decision{padding:19px;gap:15px}.decision h2{font-size:24px}.metric{padding:16px 13px;min-height:139px}.metric .val{font-size:32px}.metrics{gap:9px}.chart-panel,.status-panel{padding:17px}.chart{gap:2px}.section-head{align-items:flex-start;flex-direction:column;gap:3px}.history th,.history td{padding:11px 10px}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div><div class="eyebrow">HOLISTIC HOUSE / GITHUB OPERATIONS</div><h1>PR Control Tower</h1><p class="subtitle">Поток задач · готовность к merge · загрузка CI · история по часам</p></div>
+    <div class="toolbar"><a class="btn" href="https://github.com/andylitvinov-design/books/pulls?q=is%3Aopen" target="_blank" rel="noopener noreferrer">Все PR ↗</a><button class="btn primary" id="refresh" type="button">↻ Обновить</button></div>
+  </header>
+  <div class="meta" aria-live="polite"><span><span class="live-dot offline" id="online-dot"></span><span id="freshness">Загрузка данных…</span></span><span class="dot"></span><span>Время: Торонто (EDT/EST)</span><span class="dot"></span><span id="limits">Часовые снимки: GitHub + локальная история</span></div>
+  <section class="panel decision" aria-labelledby="decision-title">
+    <div><div class="kicker">Решение о запуске новых задач</div><h2 id="decision-title">Определяю загрузку…</h2><p id="decision-copy">Сравниваю активные CI, очередь проверок и достоверность текущих показателей.</p></div>
+    <div id="verdict" class="verdict unknown"><div class="icon" id="verdict-icon">◷</div><div class="tag" id="verdict-tag">ОЖИДАНИЕ ДАННЫХ</div><div class="why" id="verdict-why">Нет актуального замера</div></div>
+  </section>
+  <div class="section-head"><h2>Очередь и работа прямо сейчас</h2><span class="hint">Открытые PR ≠ подтверждённые ready-to-merge</span></div>
+  <section class="metrics" aria-label="Очередь pull requests">
+    <div class="metric"><div class="name">Всего открытых PR</div><div class="val" id="m-open">—</div><div class="detail">По всему репозиторию</div></div>
+    <div class="metric sky"><div class="name">В очереди на production</div><div class="val" id="m-prod">—</div><div class="detail">base: codex/public-book-library</div></div>
+    <div class="metric amber"><div class="name">PR в активной обработке</div><div class="val" id="m-processing">—</div><div class="detail" id="d-processing">По подтверждённым CI / рабочим lease; минимум</div></div>
+    <div class="metric turq"><div class="name">Подтверждено готовых к merge</div><div class="val" id="m-ready">—</div><div class="detail" id="d-ready">Только проверенная выборка CI Triage</div></div>
+  </section>
+  <div class="section-head"><h2>Движение за последние 60 минут</h2><span class="hint" id="window-stamp">GitHub API</span></div>
+  <section class="metrics" aria-label="Новые pull requests и проверки">
+    <div class="metric sky"><div class="name">Создано новых PR</div><div class="val" id="m-created">—</div><div class="detail">Число новых заявок, не commits</div></div>
+    <div class="metric turq"><div class="name">Смержено PR</div><div class="val" id="m-merged">—</div><div class="detail">Только фактический merged_at</div></div>
+    <div class="metric rose"><div class="name">Сейчас выполняется CI</div><div class="val" id="m-running">—</div><div class="detail">GitHub Actions workflow runs</div></div>
+    <div class="metric amber"><div class="name">CI ожидает запуска</div><div class="val" id="m-queued">—</div><div class="detail">Queued workflow runs, не jobs</div></div>
+  </section>
+  <div class="section-head"><h2>Динамика нагрузки</h2><span class="hint">Последние 24 часовых снимка</span></div>
+  <div class="content-grid">
+    <section class="panel chart-panel" aria-labelledby="trend-title"><div class="chart-tools"><h2 id="trend-title" style="margin:0;font-size:16px">Создано и смержено по часам</h2><div class="chart-legend"><span><i class="key"></i>Новые PR</span><span><i class="key merge"></i>Merge</span></div></div><div id="chart-area"><div class="no-chart">История появится после первого сохранённого часового замера.</div></div><p class="note" id="chart-note">Автоматические снимки пополняются существующим CI Triage каждый час в :20 по Торонто.</p></section>
+    <section class="panel status-panel" aria-labelledby="load-title"><div class="chart-tools"><h2 id="load-title" style="margin:0;font-size:16px">Загрузка потока</h2><span class="chip" id="load-chip">Ожидание</span></div>
+      <div class="progress-line"><div class="progress-header"><span>Выполняется CI</span><b id="b-running">—</b></div><div class="track"><div class="fill b" id="bar-running" style="width:0"></div></div></div>
+      <div class="progress-line"><div class="progress-header"><span>CI в ожидании</span><b id="b-queued">—</b></div><div class="track"><div class="fill r" id="bar-queued" style="width:0"></div></div></div>
+      <div class="progress-line"><div class="progress-header"><span>Draft в production-очереди</span><b id="b-draft">—</b></div><div class="track"><div class="fill g" id="bar-draft" style="width:0"></div></div></div>
+      <p class="note">Индикатор — рекомендация для планирования push, а не запрет новых PR. GitHub не сообщает через эти счётчики реальное число свободных раннеров.</p>
+      <div class="settings"><label for="sensitivity">Чувствительность:</label><select id="sensitivity" class="selector"><option value="low">Осторожная</option><option value="normal" selected>Обычная</option><option value="high">Максимальная загрузка</option></select></div>
+      <a class="small-link" href="https://github.com/andylitvinov-design/books/actions" target="_blank" rel="noopener noreferrer">Открыть запуски GitHub Actions ↗</a>
+    </section>
+  </div>
+  <div class="section-head"><h2>История по часам</h2><span class="hint">До 7 дней · данные сохраняются без запуска нового CI</span></div>
+  <section class="panel history" aria-labelledby="history-title"><div class="history-head"><h2 id="history-title">Журнал замеров</h2><div class="toolbar"><select class="selector" id="history-period" aria-label="Период истории"><option value="24">24 часа</option><option value="72">3 дня</option><option value="168">7 дней</option></select><button class="btn" id="download-csv" type="button">↓ CSV</button><button class="btn" id="save-local" type="button">Сохранить локально</button></div></div>
+    <div class="scroll-table"><table><thead><tr><th>Час (Торонто)</th><th>Новые</th><th>Merge</th><th>Открыто</th><th>В работе*</th><th>CI идёт</th><th>CI ждёт</th><th>Источник</th></tr></thead><tbody id="history-body"><tr><td colspan="8" class="empty">Часовые данные загружаются…</td></tr></tbody></table></div>
+  </section>
+  <p id="error-message" class="message" role="status" aria-live="polite"></p>
+  <footer class="foot"><strong>Как читаются показатели.</strong> Открытые и созданные PR считаются по GitHub Search; merge — по GitHub merged-фильтру. «CI выполняется / ждёт» — число workflow runs, а не individual jobs или занятых раннеров. «PR в активной обработке» — наблюдаемый минимум из отдельных PR, связанных с выполняемыми runs, и действующих work leases из ограниченной выборки CI Triage. «Готовы к merge» — только подтверждённые exact-head кандидаты в <a href="https://github.com/andylitvinov-design/books/issues/1419#issuecomment-6532482940" target="_blank" rel="noopener noreferrer">канонической очереди</a>, а не проверка всех PR. «Merged» не означает «LIVE»: развёртывание на Vercel отслеживается отдельно. При отсутствии данных числа не подменяются нулями. Содержимое страницы только читает публичный GitHub API, не хранит токены, не создаёт PR, не запускает CI и не изменяет репозиторий.</footer>
+</main>
+<script>
+'use strict';
+(() => {
+  // HH_PR_HOURLY_METRICS_V1. The public repo provides data; no GitHub token is stored in this page.
+  const REPO = 'andylitvinov-design/books';
+  const BASE = 'codex/public-book-library';
+  const API = 'https://api.github.com';
+  const QUEUE_COMMENT = 6532482940;
+  const TIMEZONE = 'America/Toronto';
+  const STORAGE = 'hh-pr-control-tower-v1-' + REPO;
+  const PULSE_MS = 5 * 60 * 1000;
+  const FULL_MS = 30 * 60 * 1000;
+  const fmtTime = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+  const fmtHour = new Intl.DateTimeFormat('ru-RU', {timeZone:TIMEZONE,day:'2-digit',month:'2-digit',hour:'2-digit',hour12:false});
+  const $ = (id) => document.getElementById(id);
+  const nowISO = () => new Date().toISOString();
+  const hourUTC = (date) => new Date(Math.floor(date.getTime()/3600000)*3600000).toISOString();
+  const number = (x) => Number.isFinite(x) && x >= 0 ? x : null;
+  const human = (x) => x == null ? '—' : new Intl.NumberFormat('ru-RU').format(x);
+  const asDate = (value) => {const d = new Date(value);return Number.isFinite(d.getTime()) ? d : null};
+  const minutesSince = (value) => {const d=asDate(value); return d ? Math.max(0,Date.now()-d.getTime())/60000 : Infinity};
+  const state = {counts:{},run:{},queue:null,remote:[],local:[],fullAt:null,pulseAt:null,errors:[],loading:false};
+  let lastRequestedFull = 0;
+  let lastRequestedPulse = 0;
+  const cap = (count,max) => Math.max(0,Math.min(100,Math.round(count/max*100)));
+  const escape = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function readStorage() {try {const raw=JSON.parse(localStorage.getItem(STORAGE)||'[]'); return Array.isArray(raw) ? raw.filter(isSnapshot).slice(-168) : []} catch{return []}}
+  function writeStorage() {try {localStorage.setItem(STORAGE,JSON.stringify(state.local.slice(-168)))}catch{}}
+  function isSnapshot(s) {return s && typeof s==='object' && asDate(s.hour_utc) && asDate(s.captured_at) && (number(s.open_total)!==null || number(s.running_runs)!==null)}
+  state.local=readStorage();
+  function values(s){return {created:number(s.created_60m),merged:number(s.merged_60m),open:number(s.open_total),running:number(s.running_runs),queued:number(s.queued_runs),processing:number(s.active_prs_in_ci)}}
+  async function github(path) {
+    const response=await fetch(API+path,{headers:{'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});
+    if (!response.ok){const reset=response.headers.get('x-ratelimit-reset');let extra='';if(response.status===403 && reset){const at=new Date(Number(reset)*1000);if(Number.isFinite(at.getTime())) extra='; лимит API до '+fmtTime.format(at)}throw Error('GitHub API '+response.status+extra)}
+    return response.json();
+  }
+  const search=async(q) => {const data=await github('/search/issues?q='+encodeURIComponent('repo:'+REPO+' is:pr '+q)+'&per_page=1');if(data.incomplete_results)throw Error('Неполный результат GitHub Search');const n=number(data.total_count);if(n==null)throw Error('Нет total_count для '+q);return n};
+  function parseQueue(body){for(const match of String(body||'').matchAll(/```json\s*([\s\S]*?)```/g)){try{const json=JSON.parse(match[1]);if(json.schema==='HH_READY_MERGE_QUEUE_V2')return json}catch{}}return null}
+  async function getQueue(){const doc=await github('/repos/'+REPO+'/issues/comments/'+QUEUE_COMMENT);const queue=parseQueue(doc.body);if(!queue)throw Error('Канонический JSON очереди не найден');return queue}
+  function pullNumbers(rows){const set=new Set();for(const run of rows||[]){for(const pr of run.pull_requests||[]){if(Number.isInteger(pr.number) && (!pr.base || !pr.base.ref || pr.base.ref===BASE))set.add(pr.number)}}return [...set]}
+  async function pulse(){const [running,queued]=await Promise.allSettled([
+    github('/repos/'+REPO+'/actions/runs?status=in_progress&per_page=100'),
+    github('/repos/'+REPO+'/actions/runs?status=queued&per_page=1')]);
+    const issues=[];
+    if(running.status==='fulfilled'){const d=running.value;state.run.running=number(d.total_count);state.run.ciPrNumbers=pullNumbers(d.workflow_runs);state.run.ciCoverage=(d.workflow_runs||[]).length>=state.run.running;}
+    else{state.run.running=null;state.run.ciPrNumbers=[];issues.push(String(running.reason?.message||running.reason))}
+    if(queued.status==='fulfilled')state.run.queued=number(queued.value.total_count);
+    else{state.run.queued=null;issues.push(String(queued.reason?.message||queued.reason))}
+    state.pulseAt=nowISO();state.errors=issues;lastRequestedPulse=Date.now();render();
+  }
+  async function full(){if(state.loading)return;state.loading=true;$('refresh').disabled=true;$('refresh').textContent='Обновляю…';
+    const from=new Date(Date.now()-3600000).toISOString().replace(/\.\d{3}Z$/,'Z');
+    const tasks={
+      open:search('is:open'),prod:search('is:open base:'+BASE),draft:search('is:open draft:true base:'+BASE),
+      created:search('created:>='+from),merged:search('merged:>='+from),
+      queue:getQueue()
+    };
+    const keys=Object.keys(tasks),results=await Promise.allSettled(Object.values(tasks));const errs=[];
+    results.forEach((result,i)=>{const key=keys[i];if(result.status==='fulfilled'){if(key==='queue'){state.queue=result.value;const telemetry=state.queue.hourly_metrics_v1;state.remote=telemetry?.schema==='HH_PR_HOURLY_METRICS_V1' && Array.isArray(telemetry.snapshots)?telemetry.snapshots.filter(isSnapshot).slice(-168):[]} else state.counts[key]=result.value;}else{if(key==='queue'){state.queue=null;state.remote=[]}else state.counts[key]=null;errs.push(key+': '+String(result.reason?.message||result.reason))}});
+    state.fullAt=nowISO();state.errors=errs;lastRequestedFull=Date.now();await pulse();state.errors=[...errs,...state.errors];state.loading=false;$('refresh').disabled=false;$('refresh').textContent='↻ Обновить';saveLocal(false);render();
+  }
+  function recentWorkPrs() {
+    const s=state.remote.at(-1);if(!s || minutesSince(s.captured_at)>75)return [];
+    return Array.isArray(s.work_pr_numbers) ? s.work_pr_numbers.filter(Number.isInteger) : [];
+  }
+  function workInProgress(){const ci=state.run.ciPrNumbers||[];const work=recentWorkPrs();return [...new Set([...ci,...work])].length}
+  function snapshot(){return {hour_utc:hourUTC(new Date()),captured_at:nowISO(),created_60m:state.counts.created??null,merged_60m:state.counts.merged??null,open_total:state.counts.open??null,open_prod:state.counts.prod??null,draft_prod:state.counts.draft??null,running_runs:state.run.running??null,queued_runs:state.run.queued??null,active_prs_in_ci:(state.run.ciPrNumbers||[]).length,work_pr_numbers:recentWorkPrs(),ready_verified:state.queue?.verified_ready?.length??null,source:'local_browser',sampled_work_prs:true}}
+  function saveLocal(force){if(!state.fullAt || !state.pulseAt)return;const snap=snapshot();if(!isSnapshot(snap))return;
+    const i=state.local.findIndex(x=>x.hour_utc===snap.hour_utc);if(i<0)state.local.push(snap);else if(force || minutesSince(state.local[i].captured_at)>15)state.local[i]=snap;
+    state.local.sort((a,b)=>a.hour_utc.localeCompare(b.hour_utc));state.local=state.local.slice(-168);writeStorage();if(force){$('error-message').textContent='Снимок сохранён на этом устройстве. Для общей истории используется CI Triage.';renderHistory()}
+  }
+  function history(){const map=new Map();for(const s of state.local)map.set(s.hour_utc,s);for(const s of state.remote)map.set(s.hour_utc,s);return [...map.values()].filter(isSnapshot).sort((a,b)=>b.hour_utc.localeCompare(a.hour_utc)).slice(0,168)}
+  function decision(){const run=state.run.running,queued=state.run.queued;const fresh=minutesSince(state.pulseAt)<=12;
+    if(!fresh||run==null||queued==null)return {tone:'unknown',icon:'◷',tag:'НЕДОСТАТОЧНО ДАННЫХ',title:'Нужен свежий замер CI',why:'Нельзя определять свободную ёмкость по устаревшим или неполным данным.',copy:'Обновите данные. При сетевой ошибке сохраняется история, но рекомендация о запуске новых PR отключена.'};
+    const thresholds={low:[3,1,8,3],normal:[6,2,12,6],high:[12,4,22,10]};
+    const [greenRun,greenQueue,redRun,redQueue]=thresholds[$('sensitivity').value]||thresholds.normal;
+    if(queued>redQueue||run>redRun)return {tone:'busy',icon:'●',tag:'ОЧЕРЕДЬ ПЕРЕГРУЖЕНА',title:'Лучше готовить изменения без push',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'Новые независимые PR разрешены, но массовые push сейчас усилят очередь. Выгоднее завершать готовые локальные изменения и отдавать один пакет на проверку.'};
+    if(queued>greenQueue||run>greenRun)return {tone:'warn',icon:'◑',tag:'УМЕРЕННАЯ НАГРУЗКА',title:'Запускайте новые PR по одному',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'Можно запускать небольшие независимые PR, проверяя динамику очереди. Не отменяйте текущие проверки и не делайте повторные промежуточные push.'};
+    return {tone:'good',icon:'✓',tag:'ЕСТЬ ОКНО ДЛЯ НОВЫХ PR',title:'Можно запускать следующую задачу',why:queued+' ожидающих · '+run+' выполняющихся workflows',copy:'По наблюдаемой очереди CI нагрузка невысока. Это оценка, а не подтверждение свободных раннеров; независимые PR по-прежнему проходят обычные проверки.'};
+  }
+  function setText(id,text){$(id).textContent=text}
+  function render(){
+    const fresh=minutesSince(state.pulseAt)<=12,fullFresh=minutesSince(state.fullAt)<=80;
+    const d=decision();setText('decision-title',d.title);setText('decision-copy',d.copy);setText('verdict-icon',d.icon);setText('verdict-tag',d.tag);setText('verdict-why',d.why);$('verdict').className='verdict '+d.tone;setText('load-chip',d.tag);
+    setText('m-open',human(fullFresh?state.counts.open:null));setText('m-prod',human(fullFresh?state.counts.prod:null));
+    setText('m-created',human(fullFresh?state.counts.created:null));setText('m-merged',human(fullFresh?state.counts.merged:null));
+    setText('m-running',human(fresh?state.run.running:null));setText('m-queued',human(fresh?state.run.queued:null));
+    const ci=(state.run.ciPrNumbers||[]).length,hasWork=recentWorkPrs().length>0;
+    setText('m-processing',fresh?('≥'+human(workInProgress())):'—');
+    setText('d-processing',fresh?'Активные PR, различимые в CI'+(hasWork?' и подтверждённых work leases':'')+'; минимум':'Нет свежих данных о PR в работе');
+    const queueAge=minutesSince(state.queue?.updated_at);const ready=Array.isArray(state.queue?.verified_ready)?state.queue.verified_ready.length:null;
+    setText('m-ready',queueAge<=90?human(ready):'—');setText('d-ready',queueAge<=90?'Из ограниченной выборки Triage · '+fmtTime.format(asDate(state.queue.updated_at)):'Очередь Triage отсутствует или устарела');
+    setText('b-running',human(fresh?state.run.running:null));setText('b-queued',human(fresh?state.run.queued:null));setText('b-draft',human(fullFresh?state.counts.draft:null));
+    $('bar-running').style.width=fresh&&state.run.running!=null?cap(state.run.running,25)+'%':'0%';$('bar-queued').style.width=fresh&&state.run.queued!=null?cap(state.run.queued,25)+'%':'0%';$('bar-draft').style.width=fullFresh&&state.counts.draft!=null&&state.counts.prod>0?cap(state.counts.draft,state.counts.prod)+'%':'0%';
+    const date=state.pulseAt&&asDate(state.pulseAt);setText('freshness',fresh?'CI обновлено '+fmtTime.format(date):'CI требует обновления');$('online-dot').className='live-dot '+(fresh?'':'offline');
+    setText('window-stamp',state.fullAt?'Часовое окно · обновлено '+fmtTime.format(asDate(state.fullAt)):'GitHub API');
+    setText('limits',state.remote.length?'Сохранено '+state.remote.length+' серверных часовых снимков':'Пока локальные снимки; серверная история начнётся после Triage');
+    const status=state.errors.length?'Частичная загрузка: '+state.errors.join(' · '):'';setText('error-message',status);
+    renderHistory();renderChart();
+  }
+  function renderHistory(){const limit=Number($('history-period').value)||24;const rows=history().slice(0,limit);const tbody=$('history-body');
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Истории пока нет. Первый локальный снимок сохраняется после полной загрузки; общая история — после часового Triage.</td></tr>';return;}
+    tbody.innerHTML=rows.map(s=>{const v=values(s);const t=fmtHour.format(asDate(s.hour_utc));const server=s.source!=='local_browser';const work=Array.isArray(s.work_pr_numbers)?s.work_pr_numbers.length:0;const processing=v.processing==null?'—':'≥'+human(Math.max(v.processing,work));return '<tr><td class="hour">'+escape(t)+'</td><td>'+human(v.created)+'</td><td class="good-text">'+human(v.merged)+'</td><td>'+human(v.open)+'</td><td>'+processing+'</td><td>'+human(v.running)+'</td><td class="warn-text">'+human(v.queued)+'</td><td class="source">'+(server?'GitHub Triage':'Этот браузер')+'</td></tr>'}).join('');
+  }
+  function renderChart(){const records=history().slice(0,24).reverse(),root=$('chart-area');const avail=records.filter(s=>number(s.created_60m)!==null&&number(s.merged_60m)!==null);
+    if(!avail.length){root.innerHTML='<div class="no-chart">Пока нет часовых измерений. После первого замера здесь появятся реальные столбцы, без вымышленных значений.</div>';return;}
+    const max=Math.max(1,...avail.flatMap(s=>[s.created_60m,s.merged_60m]));
+    root.innerHTML='<div class="chart" role="img" aria-label="Часовые столбцы новых и смерженных PR">'+records.map((s,i)=>{const c=number(s.created_60m),m=number(s.merged_60m);const label=fmtHour.format(asDate(s.hour_utc));const title=escape(label+': новых '+(c??'нет данных')+', merge '+(m??'нет данных'));
+      return '<div class="bar-pair" title="'+title+'"><span class="bar" style="height:'+(c==null?0:Math.max(c>0?2:0,c/max*100))+'%"></span><span class="bar merged" style="height:'+(m==null?0:Math.max(m>0?2:0,m/max*100))+'%"></span>'+(i===0||i===records.length-1||i%6===0?'<span class="axis-label">'+escape(fmtHour.format(asDate(s.hour_utc)).split(', ').pop())+'</span>':'')+'</div>';}).join('')+'</div>';
+    setText('chart-note',records.length+' часовых интервалов. Данные — скользящие 60 минут к моменту каждого снимка; локальные замеры могут немного отличаться от записи Triage.');
+  }
+  function exportCSV(){const rows=history().slice(0,Number($('history-period').value)||24);if(!rows.length){setText('error-message','История пока пуста — экспортировать нечего.');return;}
+    const fields=['hour_utc','captured_at','created_60m','merged_60m','open_total','open_prod','draft_prod','active_prs_in_ci','running_runs','queued_runs','ready_verified','source'];
+    const csv='\ufeff'+[fields.join(';'),...rows.map(s=>fields.map(f=>{const val=s[f]==null?'':String(s[f]);return '"'+val.replace(/"/g,'""')+'"'}).join(';'))].join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),href=URL.createObjectURL(blob),link=document.createElement('a');link.href=href;link.download='holistic-house-pr-hourly-'+new Date().toISOString().slice(0,10)+'.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(href),1000);
+  }
+  $('refresh').addEventListener('click',()=>{if(Date.now()-lastRequestedFull<60000){setText('error-message','Полная загрузка доступна не чаще раза в минуту, чтобы не расходовать лимит GitHub API.');return;}void full()});
+  $('save-local').addEventListener('click',()=>saveLocal(true));$('download-csv').addEventListener('click',exportCSV);
+  $('history-period').addEventListener('change',()=>{renderHistory();renderChart()});
+  $('sensitivity').addEventListener('change',render);
+  const tick=()=>{if(document.hidden)return;const now=Date.now();if(now-lastRequestedFull>=FULL_MS)void full();else if(now-lastRequestedPulse>=PULSE_MS)void pulse().then(()=>saveLocal(false)).catch(e=>{state.errors=[String(e.message||e)];render()})};
+  window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);
+  setInterval(tick,60000);render();void full();
+})();
+</script>
+</body>
+</html>
