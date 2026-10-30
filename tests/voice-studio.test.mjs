@@ -5,6 +5,8 @@ import {
   VOICE_STUDIO_VOICES,VOICE_STUDIO_MODEL,VOICE_STUDIO_MAX_CHARS,VOICE_STUDIO_SAMPLE,
   voiceStudioReady,voiceStudioKey,findStudioVoice,validateStudioRequest,buildStudioPayload,studioExcerpt,
 } from '../lib/mandala/voice-studio.mjs';
+import * as studio from '../lib/mandala/voice-studio.mjs';
+import * as mixer from '../lib/mandala/wav-pcm-mixer.mjs';
 
 const get=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('six stable gender/pitch voices, RU and EN names, distinct Google voice IDs',()=>{
@@ -56,12 +58,37 @@ test('invalid languages, unknown voices, additional fields and missing consent f
 test('request speaks verbatim transcript via 3.8 Flash-Lite prebuilt voice and WAV',()=>{
   const input=validateStudioRequest({mode:'custom',voiceId:'maya',language:'ru',text:'Тихий свет и покой.',consent:true});
   const payload=buildStudioPayload(input);
-  assert.deepEqual(payload.generationConfig.responseModalities,['AUDIO']);
-  assert.equal(payload.generationConfig.responseFormat.audio.mimeType,'AUDIO_WAV');
-  assert.equal(payload.generationConfig.speechConfig.voiceConfig.voice,'Sulafat');
-  assert.equal(payload.contents[0].parts[0].text,input.text);
-  assert.ok(payload.contents[0].parts[0].speech_metadata.style.includes('русском'));
+  assert.equal(payload.model,VOICE_STUDIO_MODEL);
+  assert.deepEqual(payload.response_format,{type:'audio'});
+  assert.deepEqual(payload.generation_config.speech_config,[{voice:'Sulafat'}]);
+  assert.equal(payload.input[0].type,'user_input');
+  assert.equal(payload.input[0].content[0].text,input.text);
+  assert.ok(payload.input[0].content[0].annotations[0].style.includes('русском'));
   assert.equal(JSON.stringify(payload).includes('HH_COUNCIL_GEMINI_API_KEY'),false);
+});
+test('Interactions REST extracts only the last model-output audio block',()=>{
+  assert.equal(typeof studio.extractStudioAudio,'function');
+  assert.equal(studio.extractStudioAudio({steps:[
+    {type:'user_input',content:[{type:'audio',data:'not-output'}]},
+    {type:'model_output',content:[{type:'audio',data:'first'},{type:'text',text:'ignored'}]},
+    {type:'model_output',content:[{type:'audio',data:'last'}]},
+  ]}),'last');
+  for(const value of [null,{}, {steps:[{type:'model_output',content:[{type:'text',data:'not-audio'}]}]}])
+    assert.equal(studio.extractStudioAudio(value),null);
+});
+test('provider WAV must be a complete supported PCM stream before delivery',()=>{
+  assert.equal(typeof mixer.readPcmWav,'function');
+  const wav=new ArrayBuffer(48),v=new DataView(wav);
+  const text=(offset,s)=>[...s].forEach((c,i)=>v.setUint8(offset+i,c.charCodeAt(0)));
+  text(0,'RIFF');v.setUint32(4,40,true);text(8,'WAVE');text(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,24000,true);v.setUint32(28,48000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  text(36,'data');v.setUint32(40,4,true);
+  assert.equal(mixer.readPcmWav(wav).frames,2);
+  v.setUint32(40,12,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/TRUNCATED_WAV/);
+  v.setUint32(40,4,true);v.setUint16(20,3,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/UNSUPPORTED_WAV_PCM/);
 });
 test('existing personal script is reduced to speech only, without metadata or pause instructions',()=>{
   const source=[

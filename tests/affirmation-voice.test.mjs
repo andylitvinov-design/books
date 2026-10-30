@@ -21,8 +21,8 @@ test("guest mode refuses missing consent and only permits prebuilt voices and RU
   const valid=validateStudioRequest(data);
   const payload=buildStudioPayload(valid);
   assert.equal(valid.mode,"affirmations");
-  assert.equal(payload.contents[0].parts[0].text,data.text);
-  assert.equal(payload.generationConfig.speechConfig.voiceConfig.voice,"Sulafat");
+  assert.equal(payload.input[0].content[0].text,data.text);
+  assert.deepEqual(payload.generation_config.speech_config,[{voice:"Sulafat"}]);
   assert.throws(()=>validateStudioRequest({...data,consent:false}));
   assert.throws(()=>validateStudioRequest({...data,voiceId:"made-up"}));
   assert.throws(()=>validateStudioRequest({...data,language:"xx"}));
