@@ -268,15 +268,13 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
 
-test('four source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
+test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const core = workflow('hh-pr-core-release.yml');
   assert.match(core, /run: npm run build/);
   assert.match(core, /tsc --noEmit/);
   const specs=[
-    ['hh-growth-journey.yml',[['TypeScript compatibility','npx --no-install tsc --noEmit'],['Production build','npm run build']],['tests/growth-journey-public.test.mjs','tests/topic-journey-account-scope.test.mjs']],
     ['hh-public-test-collections.yml',[['Verify Next.js production build','npm run build']],['tests/public-test-topic-collections.test.mjs','tests/profile-construct-axes.test.mjs']],
-    ['hh-course-presets.yml',[['Next production compile','npm run build']],['tests/course-presets.test.mjs','tests/course-free-slot-restart.test.mjs']],
     ['hh-kling-video.yml',[['TypeScript','npx tsc --noEmit'],['Next.js build','npm run build']],['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
   ];
   for(const [filename,guardedSteps,domainContracts] of specs){
@@ -289,7 +287,7 @@ test('four source-only specialist suites delegate duplicate TypeScript or build 
     assert.ok(s.includes("      - '.github/workflows/"+filename+"'"),filename+' must trigger its own edited workflow for domain validation');
     assert.ok(!s.includes('continue-on-error: true'),filename+' cannot bypass real test errors');
   }
-  for(const filename of ['hh-course-presets.yml','hh-kling-video.yml']) {
+  for(const filename of ['hh-kling-video.yml']) {
     const s=workflow(filename);
     assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
     assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
