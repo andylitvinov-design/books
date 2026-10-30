@@ -1,12 +1,12 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
-import {Download,Film,LockKeyhole,RefreshCw} from "lucide-react";
+import {Copy,Download,Film,LockKeyhole,RefreshCw,Sparkles} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-code-redeem.module.css";
 
 type Tier="smart"|"pro";
-type Props={locale:PublicLocale;tier:Tier;onAvailability:(ready:boolean)=>void};
+type Props={locale:PublicLocale;tier:Tier;onAvailability:(ready:boolean)=>void;suggestedPrompt:string};
 type Job={jobId:string;status:string;ready?:boolean;error?:string};
 const copy={
   ru:{title:"Ваш код генерации",description:"Код выдается после подтверждения оплаты или как подарок Smart. Он действует для одного заказа.",
@@ -22,6 +22,8 @@ const copy={
     unknown:"Результат отправки неопределён. Обратитесь к мастеру: повторный запуск может привести к двойному списанию.",
     status:"Статус",done:"AI-фрагмент готов. Скачайте его для финального монтажа.",
     pending:"Генерация выполняется. Проверьте статус позднее.",
+    compile:"Составить из фильтров",copyPrompt:"Копировать промпт",promptCopied:"Промпт скопирован.",
+    consentStorage:"Разрешаю сохранить готовый ролик в приватном кабинете.",archive:"Сохранить в Мой дом",archived:"Видео сохранено в приватном кабинете.",myVideos:"Мои AI-видео",
     not30:"На первом этапе код создаёт короткий AI-фрагмент (Smart — 8 с; Pro — 15 с). Полный 30-секундный фильм собирается отдельно.",
   },
   en:{title:"Your video code",description:"Code issued after payment verification or as a one-time Smart gift.",
@@ -37,6 +39,8 @@ const copy={
     unknown:"Submission is uncertain. Contact the owner: restarting could duplicate a charge.",
     status:"Status",done:"AI shot is ready. Download it for the final edit.",
     pending:"Still generating. Check again later.",
+    compile:"Build from filters",copyPrompt:"Copy prompt",promptCopied:"Prompt copied.",
+    consentStorage:"I agree to save this video privately in My House.",archive:"Save privately",archived:"Video saved in My House.",myVideos:"My AI videos",
     not30:"Initially each code produces one AI shot (Smart 8s; Pro 15s). The full 30s movie is assembled separately.",
   },
   es:{title:"Tu código de vídeo",description:"Código emitido tras confirmar el pago o como regalo Smart único.",
@@ -52,20 +56,26 @@ const copy={
     unknown:"Envío incierto. Contacta con el propietario: repetirlo podría duplicar el coste.",
     status:"Estado",done:"La escena IA está lista. Descárgala para el montaje final.",
     pending:"Aún generando. Consulta más tarde.",
+    compile:"Preparar desde filtros",copyPrompt:"Copiar prompt",promptCopied:"Prompt copiado.",
+    consentStorage:"Autorizo guardar este vídeo en mi cuenta privada.",archive:"Guardar en Mi Casa",archived:"Vídeo guardado de forma privada.",myVideos:"Mis vídeos IA",
     not30:"Por ahora cada código crea una escena IA (Smart 8 s; Pro 15 s). El vídeo completo de 30 s se monta aparte.",
   },
 } as const;
-export function MandalaVideoCodeRedeemer({locale,tier,onAvailability}:Props){
+export function MandalaVideoCodeRedeemer({locale,tier,onAvailability,suggestedPrompt}:Props){
   const t=copy[locale];
   const [ready,setReady]=useState(false);
   const [checking,setChecking]=useState(false);
   const [accountId,setAccountId]=useState("");
   const [code,setCode]=useState("");
-  const [visualPrompt,setVisualPrompt]=useState("");
+  const [visualPrompt,setVisualPrompt]=useState(suggestedPrompt);
+  const [promptEdited,setPromptEdited]=useState(false);
+  const [archiveAvailable,setArchiveAvailable]=useState(false);
+  const [storageConsent,setStorageConsent]=useState(false);
   const [consent,setConsent]=useState(false);
   const [aspectRatio,setAspectRatio]=useState<"9:16"|"16:9"|"1:1">("9:16");
   const [job,setJob]=useState<Job|null>(null);
   const [message,setMessage]=useState("");
+  useEffect(()=>{if(!promptEdited)setVisualPrompt(suggestedPrompt);},[promptEdited,suggestedPrompt]);
   useEffect(()=>{
     let alive=true;
     void fetch("/api/holistic-support/video/availability",{cache:"no-store"})
@@ -74,6 +84,7 @@ export function MandalaVideoCodeRedeemer({locale,tier,onAvailability}:Props){
         if(!alive)return;
         const enabled=data?.enabled===true;
         setReady(enabled);onAvailability(enabled);
+        setArchiveAvailable(data?.archiveEnabled===true);
         if(!enabled)return;
         const identity=await fetch("/api/app/videos/generate/identity",
           {cache:"no-store",credentials:"same-origin"});
@@ -84,6 +95,24 @@ export function MandalaVideoCodeRedeemer({locale,tier,onAvailability}:Props){
       }).catch(()=>{if(alive){setReady(false);onAvailability(false);}});
     return()=>{alive=false;onAvailability(false)};
   },[onAvailability]);
+  async function copyPrompt(){
+    try{await navigator.clipboard.writeText(visualPrompt);setMessage(t.promptCopied)}
+    catch{setMessage(t.invalid)}
+  }
+  async function archive(){
+    if(!job||job.status!=="completed"||checking||!storageConsent||!archiveAvailable)return;
+    setChecking(true);
+    try{
+      const response=await fetch("/api/app/videos/generate/archive",{
+        method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","x-hh-account-id":accountId},
+        body:JSON.stringify({jobId:job.jobId,consentStore:true}),
+      });
+      if(!response.ok)throw Error("archive");
+      setMessage(t.archived);
+      setStorageConsent(false);
+    }catch{setMessage(t.invalid)}finally{setChecking(false)}
+  }
   async function submit(){
     if(checking||!ready||!accountId||!code||!consent||visualPrompt.trim().length<18)return;
     setChecking(true);setMessage("");
@@ -137,13 +166,23 @@ export function MandalaVideoCodeRedeemer({locale,tier,onAvailability}:Props){
       {ready?t.ready:t.unavailable}
     </p>
     {ready&&!accountId?<p>{t.login} <Link href={"/"+locale+"/app"}>{t.loginLink}</Link></p>:null}
-    <fieldset disabled={!ready||!accountId||checking} className={css.controls}>
+    <fieldset disabled={checking} className={css.controls}>
       <label>{t.code}<input type="text" data-video-redeem-code value={code}
         autoComplete="off" placeholder={t.placeholder} maxLength={54}
         onChange={e=>setCode(e.currentTarget.value)} /></label>
+      <div className={css.promptActions}>
+        <button type="button" data-video-ai-compile
+          onClick={()=>{setVisualPrompt(suggestedPrompt);setPromptEdited(false);}}>
+          <Sparkles size={16} aria-hidden="true"/>{t.compile}
+        </button>
+        <button type="button" data-video-ai-copy
+          onClick={()=>void copyPrompt()} disabled={!visualPrompt.trim()}>
+          <Copy size={16} aria-hidden="true"/>{t.copyPrompt}
+        </button>
+      </div>
       <label>{t.prompt}<textarea data-video-ai-visual-prompt value={visualPrompt}
         rows={3} maxLength={800} placeholder={t.promptPlaceholder}
-        onChange={e=>setVisualPrompt(e.currentTarget.value)}/></label>
+        onChange={e=>{setVisualPrompt(e.currentTarget.value);setPromptEdited(true);}}/></label>
       <label>{locale==="ru"?"Формат":locale==="es"?"Formato":"Format"}
         <select value={aspectRatio} data-video-ai-aspect onChange={e=>
           setAspectRatio(e.currentTarget.value as "9:16"|"16:9"|"1:1")}>
@@ -168,6 +207,20 @@ export function MandalaVideoCodeRedeemer({locale,tier,onAvailability}:Props){
           data-video-ai-download><Download size={16} aria-hidden="true"/>{t.download}</button>:
         <button type="button" onClick={()=>void refresh()} disabled={checking||job.status==="unknown"}
           data-video-ai-refresh><RefreshCw size={16} aria-hidden="true"/>{t.check}</button>}
+      {job.status==="completed"?<>
+        <video controls playsInline preload="none"
+          src={"/api/app/videos/generate/content?id="+encodeURIComponent(job.jobId)}
+          aria-label={t.done} className={css.video}/>
+        {archiveAvailable?<label className={css.consent}>
+          <input type="checkbox" checked={storageConsent}
+            onChange={event=>setStorageConsent(event.currentTarget.checked)}/>
+          {t.consentStorage}
+        </label>:null}
+        {archiveAvailable?<button type="button" data-video-ai-archive
+          disabled={!storageConsent||checking} onClick={()=>void archive()}>
+          <Download size={16} aria-hidden="true"/>{t.archive}</button>:null}
+      </>:null}
+      <Link href={"/"+locale+"/app/videos"}>{t.myVideos}</Link>
     </div>:null}
     {message?<p role="status" className={css.message}>{message}</p>:null}
   </section>;
