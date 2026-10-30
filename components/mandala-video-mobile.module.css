@@ -1451,96 +1451,115 @@
 }
 
 
-/* 30 October owner screenshot: three real product formats, each with a true 16:9
-   visual sample, compact quality choices and an honest draft quote.
-   No CSS hides the original recorder, consent or extended editor. */
-.quickFormatGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  align-items:stretch;gap:8px;min-width:0}
-.quickFormatCard{display:flex;flex-direction:column;gap:6px;min-width:0;
-  padding:7px 7px 8px;border:1px solid #e5ebe4;border-radius:14px;
-  background:linear-gradient(165deg,#fffefb,#f8f9f4);overflow:hidden}
-.quickFormatCard[data-selected="true"]{border:2px solid #0ba37c;padding:6px 6px 7px;
-  background:linear-gradient(150deg,#e9f8ed,#fffefa);
-  box-shadow:0 1px 5px #08654e19}
-.quickFormatDemo{position:relative;display:block;flex:none;width:100%;min-width:0;
-  min-height:0;aspect-ratio:16/9;overflow:hidden;border-radius:9px;
-  background:#174c42}
+/* 30 October owner-approved compact format accordion. One real widescreen
+   video at left; only one card opens at once. Warm gold highlights the active
+   product without implying that paid production / credit spend is enabled. */
+.quickFormatGrid{display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+  align-items:start;gap:9px;min-width:0}
+.quickFormatDemo{position:relative;display:block;align-self:start;width:100%;
+  min-width:0;aspect-ratio:16/9;overflow:hidden;border-radius:13px;
+  background:linear-gradient(140deg,#18483c,#75a396)}
 .quickFormatDemo :is(video,img){position:absolute;inset:0;display:block;
   width:100%;height:100%;object-fit:cover;object-position:center}
 .quickFormatDemo .quickPreviewPlay{position:absolute;left:50%;top:50%;
-  width:37px;height:37px;min-width:37px;min-height:37px;
-  transform:translate(-50%,-50%);padding:5px;border:2px solid #fff;
-  border-radius:50%;background:#123c37b8;color:#fff;box-shadow:0 2px 7px #091e1c50}
-.quickFormatDemo .quickPreviewPlay svg{width:18px;height:18px}
-.quickFormatDemo .quickPreviewMeta{min-height:0;right:4px;bottom:4px;
-  padding:2px 5px;border:0;border-radius:6px;font-size:10px;background:#122e2bc9}
-.quickFormatTitle{display:flex;gap:6px;align-items:center;width:100%;
-  min-width:0;min-height:44px;padding:2px 1px;border:0;
-  background:transparent;color:#1a443a;text-align:left}
-.quickFormatTitle svg{flex:0 0 auto;width:18px;height:18px;color:#067c61}
-.quickFormatTitle>span{display:flex;flex-direction:column;gap:2px;min-width:0}
-.quickFormatTitle strong{font:800 clamp(11px,1.4vw,14px)/1.16 Arial,Helvetica,sans-serif;
+  display:grid;place-items:center;width:48px;height:48px;min-width:44px;min-height:44px;
+  transform:translate(-50%,-50%);padding:6px;border:2px solid #fff;
+  border-radius:50%;background:#123c37b8;color:#fff;box-shadow:0 3px 9px #091e1c50}
+.quickFormatDemo .quickPreviewPlay svg{width:22px;height:22px}
+.quickFormatDemo .quickPreviewMeta{position:absolute;right:5px;bottom:5px;
+  min-height:0;padding:2px 6px;border:0;border-radius:8px;
+  font-size:10px;background:#122e2bc9;color:#fff}
+.quickFormatStack{display:flex;flex-direction:column;gap:6px;min-width:0}
+.quickFormatCard{display:block;min-width:0;padding:0;border:1px solid #e4e7df;
+  border-radius:13px;background:linear-gradient(140deg,#fffefa,#f8faf6);
+  box-shadow:0 2px 5px #173d2910;overflow:visible}
+.quickFormatCard[data-selected="true"]{border-color:#e9b653;
+  background:linear-gradient(130deg,#fffff9,#fffbef);
+  box-shadow:0 0 0 1px #f7d98b,0 0 15px #dba74153,0 3px 8px #674b241a}
+.quickFormatTitle{display:flex;align-items:center;gap:7px;width:100%;min-width:0;
+  min-height:43px;padding:6px 8px;border:0;border-radius:12px;
+  background:transparent;text-align:left;color:#173f35;cursor:pointer}
+.quickFormatTitle>svg:first-child{flex:none;width:18px;height:18px;color:#068968}
+.quickFormatTitleLabel{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.quickFormatTitleLabel strong{font:800 clamp(11px,1.45vw,14px)/1.16 Arial,Helvetica,sans-serif;
   overflow-wrap:anywhere}
-.quickFormatTitle small{font:550 clamp(10px,1.2vw,12px)/1.18 Arial,Helvetica,sans-serif;
-  color:#6b8177}
-.quickFormatTitle[aria-pressed="true"] strong{color:#075e49}
+.quickFormatTitleLabel small{font:550 clamp(10px,1.25vw,12px)/1.15 Arial,Helvetica,sans-serif;
+  color:#718276}
+.quickFormatFrom{flex:none;color:#79877d;font:700 clamp(9px,1.15vw,11px)/1.2 Arial,Helvetica,sans-serif;
+  white-space:nowrap}
+.quickFormatChevron{flex:none;width:15px;height:15px;color:#82988a;transition:transform .15s ease}
+.quickFormatCard[data-selected="true"] .quickFormatChevron{transform:rotate(180deg);color:#ae812c}
+.quickFormatTitle[aria-expanded="true"] .quickFormatTitleLabel strong{color:#174e3e}
+.quickFormatTitle:focus-visible,.quickFormatQuality button:focus-visible,
+.quickFormatDemo button:focus-visible{outline:3px solid #b88525;outline-offset:2px}
+.quickFormatDetails{display:flex;flex-direction:column;gap:7px;min-width:0;
+  padding:0 9px 9px}
+.quickFormatDetails[hidden]{display:none}
+.quickFormatBenefits{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;
+  list-style:none;min-height:0}
+.quickFormatBenefits li{position:relative;margin:0;padding-left:13px;
+  color:#617569;font:500 clamp(10px,1.15vw,11.5px)/1.24 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatBenefits li::before{position:absolute;left:0;top:0;
+  content:"✓";font-weight:900;color:#078d69}
+.quickFormatControls{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:6px;min-width:0}
 .quickFormatQuality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
   gap:3px;min-width:0}
-.quickFormatQuality button{display:grid;place-items:center;min-width:0;min-height:40px;
-  padding:4px 1px;border:1px solid #e1e9e2;border-radius:8px;
-  background:#f1f4ef;color:#435c53;
-  font:700 clamp(9px,1.1vw,11.5px)/1.13 Arial,Helvetica,sans-serif;
-  overflow-wrap:anywhere}
-.quickFormatQuality button[aria-pressed="true"]{border-color:#0c9d76;
-  color:#fff;background:#099873}
-.quickFormatQuality button:disabled{opacity:.47;cursor:not-allowed}
-.quickFormatBenefits{display:flex;flex-direction:column;justify-content:flex-start;gap:3px;
-  min-height:36px;margin:1px 0 0;padding:0;list-style:none}
-.quickFormatBenefits li{position:relative;margin:0;padding-left:12px;
-  font:500 clamp(10px,1.2vw,12px)/1.22 Arial,Helvetica,sans-serif;
-  color:#6a7972;overflow-wrap:anywhere}
-.quickFormatBenefits li::before{position:absolute;left:0;top:0;
-  content:"✓";color:#09946f;font-weight:800}
-.quickFormatPrice{display:flex;align-items:baseline;justify-content:space-between;
-  gap:3px;min-width:0;margin-top:auto;padding-top:6px;
-  border-top:1px solid #e8ece6}
-.quickFormatPrice strong{min-width:0;color:#0e684f;
-  font:850 clamp(14px,1.9vw,21px)/1.1 Arial,Helvetica,sans-serif;
-  letter-spacing:-.03em;overflow-wrap:anywhere}
-.quickFormatPrice small{flex:none;color:#799083;
-  font:700 10px/1.2 Arial,Helvetica,sans-serif}
+.quickFormatQuality button{display:grid;place-items:center;min-width:0;min-height:42px;
+  padding:3px 2px;border:1px solid #e2e9df;border-radius:8px;background:#f2f3ed;
+  color:#4d655b;font:700 clamp(9.5px,1.1vw,11px)/1.08 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;cursor:pointer}
+.quickFormatQuality button[aria-pressed="true"]{border-color:#079e77;
+  background:linear-gradient(120deg,#099673,#078967);color:#fff}
+.quickFormatQuality button:disabled{opacity:.48;cursor:not-allowed}
+.quickFormatPrice{display:flex;align-items:flex-start;justify-content:center;
+  flex-direction:column;min-width:48px;gap:2px;padding-left:7px;
+  border-left:1px solid #e7eadd}
+.quickFormatPrice strong{color:#087658;font:850 clamp(15px,1.9vw,20px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing:-.035em;white-space:nowrap}
+.quickFormatPrice small{color:#75877e;font:700 clamp(9px,1.1vw,11px)/1.15 Arial,Helvetica,sans-serif}
 .quickBuilder [data-video-quick-tier]{padding-top:12px;padding-bottom:11px;gap:9px}
 .quickBuilder [data-video-quick-tier] .quickTierNote{padding:0 2px;
   font-size:11.5px;line-height:1.3;color:#647a70}
 @media(max-width:759px){
-  .quickFormatGrid{gap:6px}
-  .quickFormatCard{padding:6px;gap:5px}
-  .quickFormatCard[data-selected="true"]{padding:5px}
-  .quickFormatBenefits{min-height:34px}
-}
-@media(max-width:369px){
-  /* 44–50px-wide tier touch targets are more important than squeezing three
-     illegible cards into a 320/354px viewport. The third card stays swipeable. */
-  .quickFormatGrid{grid-template-columns:none;grid-auto-flow:column;
-    grid-auto-columns:164px;gap:8px;overflow-x:auto;padding:2px 2px 8px;
-    scroll-snap-type:x proximity;overscroll-behavior-x:contain}
-  .quickFormatCard{scroll-snap-align:start}
-  .quickFormatQuality button{min-height:44px;font-size:10.5px}
-}
-@media(min-width:370px) and (max-width:480px){
-  .quickFormatGrid{gap:5px}
-  .quickFormatCard{gap:5px;padding:5px}
-  .quickFormatCard[data-selected="true"]{padding:4px}
-  .quickFormatTitle{gap:3px;min-height:48px}
-  .quickFormatTitle svg{width:15px;height:15px}
-  .quickFormatTitle strong{font-size:11px}
-  .quickFormatTitle small{font-size:10px}
+  .quickFormatGrid{grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:7px}
+  .quickFormatCard{border-radius:11px}
+  .quickFormatTitle{gap:5px;min-height:43px;padding:5px 6px}
+  .quickFormatTitle>svg:first-child{width:16px;height:16px}
+  .quickFormatChevron{width:13px;height:13px}
+  .quickFormatDetails{padding:0 6px 7px;gap:5px}
+  .quickFormatBenefits{gap:2px}
+  .quickFormatBenefits li{padding-left:11px;font-size:10px;line-height:1.18}
+  .quickFormatControls{gap:4px}
   .quickFormatQuality{gap:2px}
-  .quickFormatQuality button{font-size:9.2px;padding:2px 0;min-height:40px}
-  .quickFormatBenefits li{font-size:10px}
+  .quickFormatQuality button{min-height:40px;font-size:9.5px}
+  .quickFormatPrice{padding-left:5px;min-width:45px}
   .quickFormatPrice strong{font-size:16px}
 }
-
+@media(max-width:430px){
+  .quickBuilder [data-video-quick-tier]{padding-left:9px;padding-right:9px}
+  .quickFormatGrid{grid-template-columns:minmax(0,36fr) minmax(0,64fr);gap:6px}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitleLabel small{font-size:10px}
+  .quickFormatFrom{font-size:9px}
+  .quickFormatQuality button{min-height:40px;font-size:9px}
+  .quickFormatPrice strong{font-size:15px}
+  .quickFormatPrice small{font-size:9px}
+}
+@media(max-width:355px){
+  .quickFormatGrid{grid-template-columns:minmax(0,32fr) minmax(0,68fr);gap:5px}
+  .quickFormatTitle{gap:4px;padding:4px}
+  .quickFormatTitle>svg:first-child{width:14px;height:14px}
+  .quickFormatDetails{padding:0 4px 5px}
+  .quickFormatBenefits li{font-size:9.7px}
+  .quickFormatPrice{min-width:43px;padding-left:4px}
+  .quickFormatPrice strong{font-size:14px}
+  .quickFormatQuality button{min-height:40px;padding:2px 0;font-size:8.8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickFormatChevron{transition:none}
+}
 
 /* Approved visual's compact sticky price-and-create rail. No credits are
    claimed or charged; actual cost comes only from the draft local selection. */
