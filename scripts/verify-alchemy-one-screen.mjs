@@ -145,7 +145,7 @@ try {
       assert.equal(sampleResponse?.status(),200,key+": sample report");
       assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
     } catch (error) {
-      failures.push(key+": "+String(error));
+      failures.push(key+": "+String(error)+"; pending="+JSON.stringify([...pending.values()]));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
     } finally { await page.close(); }
   }
