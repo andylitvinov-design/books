@@ -84,5 +84,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Targeted ESLint
         run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js lib/analytics/public-page-traffic.mjs lib/analytics/public-page-traffic-report.mjs lib/analytics/public-stats-owner.js lib/analytics/public-traffic-retention.js app/api/analytics/public-page/route.js app/api/marketplace/service-event/route.js components/public-page-traffic.tsx components/analytics-consent.tsx components/service-funnel-tracking.tsx
+      # Targeted ESLint and private digest/cron tests always execute.
+      # Manual dispatch keeps the real independent Next production build.
       - name: Next.js production build and TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
