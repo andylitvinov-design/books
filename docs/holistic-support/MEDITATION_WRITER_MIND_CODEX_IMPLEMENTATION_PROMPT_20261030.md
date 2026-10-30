@@ -6,6 +6,8 @@
 **Состояние:** документ для запуска работы; ни сам документ, ни существование PR не означает наличие функции на production.
 
 **Авторитетное ТЗ:** [MEDITATION_WRITER_MIND_CONCEPT_TZ_PLAN_20261030.md](./MEDITATION_WRITER_MIND_CONCEPT_TZ_PLAN_20261030.md).
+**Обязательное дополнение v1.1:** [MEDITATION_WRITER_DUAL_INTELLIGENCE_ARCHITECTURE_V1_1_20261030.md](./MEDITATION_WRITER_DUAL_INTELLIGENCE_ARCHITECTURE_V1_1_20261030.md). **СНАЧАЛА прочитать оба ТЗ.** Новый контракт разграничивает Psychological/Narrative Director (что и зачем), Literary Director/Writer (как выразить) и независимый Quality/Safety Editor. Это две интеллектуальные роли, НЕ требование оплачивать две отдельные LLM.
+
 **Исходный Google Doc:** https://docs.google.com/document/d/1CXiVz95K3tLz5J7yAwhOSIUk1VJSSl-Dr5Foj_83VPE/edit
 **Production target:** codex/public-book-library. **GitHub default codex/bootstrap-books — ДРУГАЯ ветка, не назначение выпуска.**
 **Потребительская страница:** https://holistichouse.vercel.app/ru/holistic-support/mandala (проверять live отдельно, не предполагать, что текущие PR развернуты).
@@ -355,3 +357,28 @@ git diff --check
 - Какие обязательные шаги остались, без обещания фоновой работы и без подмены «планом» фактической реализации.
 
 **Первоочередной результат текущего запроса Codex:** PR-A + PR-B: безопасный и литературно качественный работающий текстовый Writer, раздельный от психологических решений и TTS, с сохранением строгих прав/рисков и без нового платного API. После их независимой приёмки переходить к PR-C/D/E/F. Не пытаться выпустить все шесть этапов одной гигантской непроверенной веткой.
+
+
+## 15. Обязательное обновление реализации по архитектуре v1.1
+
+**Прочитать и исполнять** [двухконтурное ТЗ v1.1](./MEDITATION_WRITER_DUAL_INTELLIGENCE_ARCHITECTURE_V1_1_20261030.md). В случае различий оно уточняет литературные prompt contracts, разделение ролей и quality rubric; ограничения безопасности базового ТЗ не смягчаются.
+
+**PR-A — разделить два immutable контрактных объекта:**
+- Input Intent + server-verified Psychologist Mind decisions → PsychologicalCreativeBrief с ровно семью beats, защищёнными approvedMotifId, clientPhrase как необязательная установка, forbiddenElements и targetArc.
+- LiteraryStyleProfile от отдельного версии-реестра: gentle_simple, grounded_practical, poetic_contained, contemplative. **Это не смешанный «один суперпромпт».**
+- 10–12 описанных художественных приёмов как метаданные; зафиксированные allowlists, regression и RU/EN/ES tests.
+- Независимый policy preflight/postflight и реестр состояний. Никаких новых диагнозов, клинических KIP мотивов, дублирующей памяти/профиля.
+
+**PR-B — реальный художественный pipeline:**
+1. Принять **утверждённый brief A + выбранный Style DNA B**; provider видит их как ограниченные данные, а не raw account.
+2. Собрать narrative continuity anchor и bounded генерацию семи beat chunks; не увеличивать без разбора глобальный chat token limit.
+3. Разрешить LLM менять только литературный текст/ограниченные pause metadata; нельзя менять goal/motif/safety/owner/assets.
+4. Построить отдельный Literary Editor: semantic fidelity, narrative coherence, literary expression, spoken naturalness, emotional agency, pacing — критерии 1–5 с явными flags; hard safety gate выполняется отдельно от редакторской LLM.
+5. Разрешить максимум одну safe style-only repair; вернуть truthful generationMode и статус.
+6. Подготовить 12–20 *оригинальных* начальных эталонов, в следующем этапе расширить до 30–50 (без копирования защищённых чужих медитаций).
+7. **Обязательный A/B тест:** один и тот же разрешённый brief, четыре разных styleId, четыре различимые по языку и ритму версии; no change to motifId/goal/avoidElements. Идиоматичный RU/EN/ES.
+8. Сохранить обычный composer как fallback, проверять безопасность и права до и после LLM.
+
+**PR-C–F:** редактор двух независимых вкладок «Смысл»/«Стиль» без тяжёлого опросника → Voice Director и TTS → единые кредиты/курс/кабинет → расширение библиотек и слепое сравнение качества. Реальное аудио только из worker с measured timings и signed assets. Не утверждать, что текстовые pauseAfterMs — фактическое аудио.
+
+**Добавить в итоговый отчёт Codex:** доказательство разделения A и B, контрактные тесты, четыре стилевых результата для одного одобренного brief, scores Editor, клинические отказные кейсы, стоимость/доступность собственного LLM, exact PR/HEAD/CI и отдельную отметку о фактическом TTS/live. Реальный P0 код и тесты важнее новых презентационных документов.
