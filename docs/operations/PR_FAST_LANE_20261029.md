@@ -272,3 +272,18 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
+
+## CI optimisation V3 — 30 October 2026, measured and staged
+
+Canonical coordination record: [issue #1419](https://github.com/andylitvinov-design/books/issues/1419#issuecomment-6522460615). The eight three-hour GitHub REST windows for 2026-10-29 12:00–2026-10-30 12:00 UTC contain **8,932 pull_request workflow runs** (including failures, cancellations and skipped jobs). This is **not** the number of merged PRs, full successful jobs or billable minutes. Keep the existing single merger lane and immutable-BASE exact-HEAD fail-closed aggregator.
+
+| Priority / stage | Measured input and executable change | Forecast runner-min/day, conditional |
+| --- | --- | ---: |
+| P0 A · [PR #2647](https://github.com/andylitvinov-design/books/pull/2647) | Mandala 14.90→12.38m and Support Mock 9.30→6.53m for one successful same-head job; run all 10/18 real cases, bounded two-page batches | 53–159 (10–30 full completions per suite × 2.52/2.77m) |
+| P0 B · isolate QA-only paths | Explicitly exclude ONLY dedicated mock acceptance script + mock parity test from unrelated Public Services, and parity test from Ideas; retain positive routing for product/service/checkout changes and full dedicated Support Mock browser matrix | 75–300 (5–15 unnecessary broad runs × 15–20m) |
+| P1 C · Draft heavy gates | Mandala + Support Mock expensive jobs skip Draft; ready_for_review, later commits and post-merge push where present run complete suites; cancel only obsolete same-PR commits | 40–250 (10–50 Draft starts × 4–5m) |
+| P1 D · source-only specialists | Reuse core TS and Next production compilation for strictly non-browser production Ready checks; still run focused tests and ESLint; push/manual unchanged | 30–120 (10–30 checks × 3–4m) |
+| P1 E · browser install cache | Benchmark pinned Playwright binary cache; implement only with stable OS/version integrity and verified cache-hit speed vs fresh install | 15–100 (20–50 runs × 0.75–2m) |
+| P2 F · avoid unnecessary SHAs | Batch related changes, no empty commits/duplicate actors, use the three existing Repair/Merge/Triage schedules | 30–400 (10–25 avoided HEAD updates × 3–16 runner-min) |
+
+Ranges are **scenario projections**, not observed daily savings, and overlap; do not sum them as if independent. Per-PR wall-clock waiting is not the sum of concurrent job durations. Primary acceptance: same-HEAD safety/specialist evidence, no false-green/skipped release, build/runtime parity, 7-day measured runner-min/day and actual green-to-merge latency. Never bypass independent public-service functional failures by claiming a source-only QA change proves that functionality.

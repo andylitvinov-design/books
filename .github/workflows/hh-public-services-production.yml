@@ -69,6 +69,11 @@ on:
       - '!components/mandala-cinematic-director.tsx'
       - '!components/mandala-cinematic-director.module.css'
       - '!scripts/verify-holistic-mandala-browser.mjs'
+      # Pure isolated Support mock QA harness and parity source oracle. Their
+      # dedicated Chromium/WebKit acceptance is hh-support-mobile-mock-browser.
+      # Runtime services, APIs, commerce and other shared tests remain covered.
+      - '!scripts/verify-holistic-support-mock-fidelity.mjs'
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
       # Only the public /install PWA and signed-native-release registry use
       # these two tests; holistic-house-mobile-install.yml runs both exact files,
       # full production build and 320-430px Chromium/WebKit acceptance.

@@ -420,3 +420,46 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(about,/npx tsc --noEmit/);
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
+
+test('mock parity and fixture QA never launch unrelated Public Services or Ideas while real services still gate', () => {
+  const paths = filename => {
+    const source = workflow(filename);
+    const pr = source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0] ?? '';
+    return [...pr.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
+  };
+  const covers = (patterns, file) => {
+    let matched = false;
+    for (const pattern of patterns) {
+      const excluded = pattern.startsWith('!');
+      if (requireGlob(file, excluded ? pattern.slice(1) : pattern)) matched = !excluded;
+    }
+    return matched;
+  };
+  const shared = paths('hh-public-services-production.yml');
+  const ideas = paths('hh-ideas-coaching-public.yml');
+  const mock = paths('hh-support-mobile-mock-browser.yml');
+  for (const isolated of [
+    'scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+  ]) {
+    assert.equal(covers(shared, isolated), false, isolated + ' must not cause unrelated Public Services E2E');
+    assert.equal(covers(mock, isolated), true, isolated + ' MUST trigger all real Support Mock mobile QA');
+  }
+  assert.equal(covers(ideas, 'tests/holistic-support-mobile-mock-parity.test.mjs'), false,
+    'source-only Support Mock contract must not cause unrelated Ideas build');
+  for (const service of [
+    'components/holistic-support-mobile.tsx',
+    'scripts/verify-holistic-master-browser.mjs',
+    'scripts/verify-holistic-support-recommendations-mobile.mjs',
+    'tests/holistic-support-meditations.test.mjs',
+    'app/en/holistic-support/page.tsx',
+    'app/en/services/alchemy-of-soul/page.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'package-lock.json',
+  ]) assert.equal(covers(shared, service), true, service + ' still REQUIRES Public Services');
+  for (const key of [
+    'components/ideas-discovery.tsx',
+    'tests/holistic-support-first-screen.test.mjs',
+    'app/[locale]/holistic-support/page.tsx',
+  ]) assert.equal(covers(ideas, key), true, key + ' still REQUIRES Ideas QA');
+});
