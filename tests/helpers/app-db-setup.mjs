@@ -20,6 +20,13 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019174312_hh_practitioner_request_read_state_20261019.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261020123209_hh_practitioner_request_followup_tasks_20261020.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',import.meta.url),'utf8'))
+ // These tables are read by the real account browser journey. Apply the
+ // existing RLS migrations in the isolated database; never invent report data.
+ for (const migration of [
+  '20261017013000_hh_assessment_interpretation_registry.sql',
+  '20261017181000_hh_academy_energywork_progress.sql',
+  '20261025173000_hh_practitioner_express_reports.sql',
+ ]) await db.query(await readFile(new URL('../../supabase/migrations/'+migration,import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019180000_hh_client_message_push_optin.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261025181000_hh_practitioner_public_aliases.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261016231500_hh_practitioner_articles_and_discovery.sql',import.meta.url),'utf8'))
