@@ -105,25 +105,6 @@
 .panel .save svg,.panel .next svg { flex: none; }
 .savedNote { margin: 1px 0 0; color: #658072;
   font-size: 11px; line-height: 1.2; text-align: center; }
-/* Opt-out format preferences apply to the results, not a booking/consent action.
-   The whole section stays in document flow beneath Save / Next. */
-.formatFieldset { display: block; width: 100%; min-width: 0; min-inline-size: 0;
-  margin: 4px 0 0; padding: 11px 12px 12px; border: 1px solid #d8e4d7;
-  border-radius: 14px; background: #fffef9; }
-.formatFieldset legend { max-width: 100%; padding: 0 5px; color: #1e4435;
-  font-size: 15px; line-height: 1.23; font-weight: 850; }
-.formatHelp { margin: 0 0 10px; color: #697b6e; font-size: 12px; line-height: 1.3; }
-.formatGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 7px; min-width: 0; }
-.formatChoice { display: flex; align-items: center; gap: 8px; min-width: 0;
-  min-height: 45px; padding: 7px 9px; border: 1px solid #e1e2d9;
-  border-radius: 10px; color: #2d4639; background: #fffaf2;
-  font-size: 13px; line-height: 1.18; cursor: pointer; }
-.formatChoice[data-checked="true"] { border-color: #b2dac6;
-  background: #eef9f1; }
-.formatChoice input { flex: none; width: 17px; height: 17px; margin: 0;
-  accent-color: #088d68; }
-.formatChoice span { min-width: 0; overflow-wrap: anywhere; }
 .panel .apply { display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%; min-width: 0; min-height: 58px; padding: 9px 13px;
   border: 1px solid #40c09d; border-radius: 13px;
@@ -137,6 +118,25 @@
   width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px;
   border: 1px solid #b9d6c5; border-radius: 12px;
   background: #f5faf4; color: #355147; font-size: 14px; line-height: 1.2; font-weight: 700; }
+/* The free client account action is the last item, below reset. */
+.cabinetCard { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center;
+  gap: 9px 11px; min-width: 0; margin-top: 14px; padding: 17px;
+  border: 1px solid #bbd9c8; border-radius: 17px;
+  background: linear-gradient(140deg,#f3faf3,#fffcf4); box-shadow: 0 6px 21px #1c674315; }
+.cabinetIcon { display: grid; place-items: center; width: 45px; height: 45px;
+  border-radius: 13px; color: #078466; background: #deefe3; }
+.cabinetCopy { min-width: 0; }
+.cabinetCopy h3 { margin: 0 0 4px; color: #1c4435; font-size: clamp(17px,2vw,21px); line-height: 1.2; }
+.cabinetCopy p { margin: 0; color: #526d5c; font-size: 13px; line-height: 1.4; }
+.panel .cabinetButton { grid-column: 1/-1; display: flex; align-items: center; justify-content: center;
+  gap: 8px; min-width: 0; width: 100%; min-height: 54px; padding: 11px;
+  border: 1px solid #078563; border-radius: 13px;
+  background: linear-gradient(115deg,#087e62,#0bad80); color: #fff;
+  font-size: clamp(14px,3.7vw,17px); font-weight: 790; line-height: 1.18; text-align: center; }
+.cabinetButton:disabled { opacity: .65; cursor: progress; }
+.cabinetButton svg { flex: none; }
+.cabinetCard small { grid-column: 1/-1; color: #557265; font-size: 11px; line-height: 1.35; }
+.cabinetError { grid-column: 1/-1; color: #973c2e; margin: 0; font-size: 12px; }
 .panel :is(button,input,select):focus-visible { outline: 3px solid #eeae36; outline-offset: 2px; }
 @media (max-width: 640px) {
   .panel { gap: 10px; padding: 10px 7px; border-radius: 18px; }
@@ -180,13 +180,6 @@
   .actions { position: static; display: flex; flex-direction: column; gap: 6px;
     margin-top: 3px; padding: 11px 0 8px; }
   .categoryActions { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
-  .formatFieldset { margin-top: 2px; padding: 8px 7px 9px; border-radius: 12px; }
-  .formatFieldset legend { font-size: clamp(14px,3.6vw,16px); }
-  .formatHelp { margin-bottom: 9px; font-size: clamp(11.5px,3vw,12.5px); line-height: 1.3; }
-  .formatGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
-  .formatChoice { min-height: 47px; padding: 7px 7px; gap: 6px;
-    border-radius: 10px; font-size: clamp(12px,3.15vw,14px); line-height: 1.22; }
-  .formatChoice input { width: 18px; height: 18px; }
   .panel .save,.panel .next { min-height: 48px; padding: 7px 7px;
     font-size: clamp(12px,3.2vw,14px); line-height: 1.2; gap: 5px; }
   .panel .save svg,.panel .next svg { width: 16px; height: 16px; }
@@ -197,6 +190,10 @@
   .apply svg { width: 20px; height: 20px; }
   .apply span { min-width: 0; }
   .apply small { font-size: clamp(11px,2.85vw,12px); line-height: 1.23; }
+  .cabinetCard { margin-top: 12px; padding: 13px 11px; gap: 8px; }
+  .cabinetCopy h3 { font-size: 16px; }
+  .cabinetCopy p { font-size: 12px; }
+  .panel .cabinetButton { min-height: 52px; }
   .panel .reset { align-self: center; width: min(100%,240px); min-height: 44px;
     padding: 7px 12px; border-color: #d5e2d6; background: transparent;
     font-size: 13.5px; line-height: 1.2; font-weight: 650; }
