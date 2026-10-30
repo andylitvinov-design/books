@@ -1,1 +1,686 @@
-[]
+[
+  {
+    "id": "lake-mist-dawn",
+    "theme": "health",
+    "label": {
+      "ru": "Туманное озеро",
+      "en": "Misty lake",
+      "es": "Lago brumoso"
+    },
+    "symbol": "≋",
+    "tags": [
+      "mist",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 371269,
+    "sha256": "023d0668361abf015f0892d7e8c27fe595a9a789996c4021cea559061ea9da52",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/lake-mist-dawn.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/lake-mist-dawn.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:05.345Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Foggy Water Lake",
+        "sourcePage": "https://dareful.com/foggy-water-lake/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "b6f36977c5d7e2ab19fbac715f85739a8227d064995b0486beeb1d82426f2e65",
+        "bytes": 72046,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn Fall Lake",
+        "sourcePage": "https://dareful.com/autumn-fall-lake/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "c779eb9b9dcada3fb54b5ecb90d7121bf8f7e7bf944152fef83f4c195695607a",
+        "bytes": 88171,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "flower-softening",
+    "theme": "health",
+    "label": {
+      "ru": "Раскрытие цветка",
+      "en": "Flower unfolding",
+      "es": "Flor que se abre"
+    },
+    "symbol": "✧",
+    "tags": [
+      "flowers",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 588568,
+    "sha256": "31d032f8e7fb9cbe0f136c0996921506d204135df1ef15ad9cec77ba270f700e",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/flower-softening.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/flower-softening.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:09.379Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Flower Bloom Nature",
+        "sourcePage": "https://dareful.com/flower-bloom-nature/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "5f20e547d3ed20829c46b1ee8167380ab94f614653f01a550797b537ead23ec6",
+        "bytes": 63533,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "White Wild Flowers",
+        "sourcePage": "https://dareful.com/white-wild-flowers/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "0ebd911164d96aff96dd276b608c0119da6dadbb49c2c7e5d4aa1a5baf7fbc7c",
+        "bytes": 116648,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "petal-hope",
+    "theme": "life",
+    "label": {
+      "ru": "Нежное цветение",
+      "en": "Gentle blossoms",
+      "es": "Flores delicadas"
+    },
+    "symbol": "✦",
+    "tags": [
+      "growth",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 512746,
+    "sha256": "41d881eeba70134f3df24e0cab60644c74305960d1fda100cf285e601855629d",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/petal-hope.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/petal-hope.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:13.168Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Wild Pink Flower",
+        "sourcePage": "https://dareful.com/wild-pink-flower/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "ff6d19fcc7a11c9c52ad73e2f85d923a08e606979cd06cd927471fa916b66a30",
+        "bytes": 70025,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Pink Wild Flower",
+        "sourcePage": "https://dareful.com/pink-wild-flower/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "868258b751e41b7b9026c4b8899b8af96e9e410a1a493ab9cd316a9b5681793f",
+        "bytes": 60516,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "ocean-release",
+    "theme": "health",
+    "label": {
+      "ru": "Отпустить с волной",
+      "en": "Release with the waves",
+      "es": "Soltar con las olas"
+    },
+    "symbol": "≋",
+    "tags": [
+      "ocean",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1436214,
+    "sha256": "bfbd2c16e6473a215ed34e5594829e0989b992c52dd89b539f8f380f788f8764",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/ocean-release.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/ocean-release.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:18.271Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Sand Beach Waves",
+        "sourcePage": "https://dareful.com/sand-beach-waves/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "7ed8955756e43900925c3f8404c5d332f73500b685672add7e253c36cee02a1d",
+        "bytes": 341663,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Ocean Sea Waves",
+        "sourcePage": "https://dareful.com/ocean-sea-waves/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "fbfc5a32f2e4569b8ca5b0f33c82a53a6d3113b60c4926e25515e4794b6c6c74",
+        "bytes": 451914,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "shore-breath",
+    "theme": "energy",
+    "label": {
+      "ru": "Дыхание побережья",
+      "en": "Coastal breathing",
+      "es": "Respirar junto al mar"
+    },
+    "symbol": "△",
+    "tags": [
+      "breath",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1053315,
+    "sha256": "3a77a631212ad17674e43c8013cbb1090c9723dd513bf1c24e0be9c29f5b6b9e",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/shore-breath.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/shore-breath.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:22.505Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Rocky Jetty Coast",
+        "sourcePage": "https://dareful.com/rocky-jetty-coast/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "02865bafcc10852ab49e215ecff1998991645c0648768008b194fd23b9fef816",
+        "bytes": 184662,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Island Ocean Coast",
+        "sourcePage": "https://dareful.com/island-ocean-coast/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "325bba470af1fee57a16fb9d8f360ebbefac2d6a827a93429944ef75b949b287",
+        "bytes": 361441,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "river-grounding",
+    "theme": "health",
+    "label": {
+      "ru": "Опора на берегу",
+      "en": "Riverside grounding",
+      "es": "Arraigo junto al río"
+    },
+    "symbol": "♧",
+    "tags": [
+      "grounding",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1041025,
+    "sha256": "306f1ab08cfeb320087a798d8ca699aa01ba31c698256ee13ed3582643b2f4df",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/river-grounding.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/river-grounding.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:27.022Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "River Forest Landscape",
+        "sourcePage": "https://dareful.com/river-forest-landscape-2/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "225dbdc321504dab78ae995d10caa563b14c0aaefc446d0c67d2dcf8e831213c",
+        "bytes": 166770,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Forest Fall Autumn",
+        "sourcePage": "https://dareful.com/forest-fall-autumn/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "52406d7351a3089bf65d2e2d96ceb73ad23a0817761617c4d9bfde792dfb7ea4",
+        "bytes": 217896,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "forest-renewal",
+    "theme": "life",
+    "label": {
+      "ru": "Возрождение леса",
+      "en": "Forest renewal",
+      "es": "Renacer del bosque"
+    },
+    "symbol": "♧",
+    "tags": [
+      "growth",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 871102,
+    "sha256": "aeafe40d3988b2d7a58467efa4a30dd2e2b5f5dac0f264d31015737c2b81ba1b",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/forest-renewal.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/forest-renewal.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:31.303Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Forest Fall Autumn",
+        "sourcePage": "https://dareful.com/forest-fall-autumn/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "52406d7351a3089bf65d2e2d96ceb73ad23a0817761617c4d9bfde792dfb7ea4",
+        "bytes": 217896,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Wild Pink Flower",
+        "sourcePage": "https://dareful.com/wild-pink-flower/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "ff6d19fcc7a11c9c52ad73e2f85d923a08e606979cd06cd927471fa916b66a30",
+        "bytes": 70025,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "soft-horizon",
+    "theme": "goals",
+    "label": {
+      "ru": "Открытый горизонт",
+      "en": "Open horizon",
+      "es": "Horizonte abierto"
+    },
+    "symbol": "△",
+    "tags": [
+      "goals",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1308162,
+    "sha256": "0145277b69075fb4aff47c8c487e2b5eaee88912e78728a348c09bb61b95a78e",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/soft-horizon.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/soft-horizon.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:36.489Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Island Ocean Coast",
+        "sourcePage": "https://dareful.com/island-ocean-coast/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "325bba470af1fee57a16fb9d8f360ebbefac2d6a827a93429944ef75b949b287",
+        "bytes": 361441,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Sand Beach Waves",
+        "sourcePage": "https://dareful.com/sand-beach-waves/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "7ed8955756e43900925c3f8404c5d332f73500b685672add7e253c36cee02a1d",
+        "bytes": 341663,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "heart-flow",
+    "theme": "relationships",
+    "label": {
+      "ru": "Мягкость и движение",
+      "en": "Heart in flow",
+      "es": "Corazón en movimiento"
+    },
+    "symbol": "♡",
+    "tags": [
+      "calm",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 1039410,
+    "sha256": "4f4c98646fa2c852789cbba4482f9e9b431d0fe028ffeeb7274a892664af1fb0",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/heart-flow.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/heart-flow.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:40.888Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Ocean Sea Waves",
+        "sourcePage": "https://dareful.com/ocean-sea-waves/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "fbfc5a32f2e4569b8ca5b0f33c82a53a6d3113b60c4926e25515e4794b6c6c74",
+        "bytes": 451914,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Flower Bloom Nature",
+        "sourcePage": "https://dareful.com/flower-bloom-nature/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "5f20e547d3ed20829c46b1ee8167380ab94f614653f01a550797b537ead23ec6",
+        "bytes": 63533,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "clear-morning",
+    "theme": "energy",
+    "label": {
+      "ru": "Ясность утра",
+      "en": "A clearer morning",
+      "es": "Una mañana clara"
+    },
+    "symbol": "☀",
+    "tags": [
+      "clarity",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 566992,
+    "sha256": "a0d6f5fa1c3b11b6a7bab7a7540a2a2f323b17a603dcbffe2e1ad513591f0922",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/clear-morning.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/clear-morning.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:44.429Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Foggy Water Lake",
+        "sourcePage": "https://dareful.com/foggy-water-lake/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "b6f36977c5d7e2ab19fbac715f85739a8227d064995b0486beeb1d82426f2e65",
+        "bytes": 72046,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "River Forest Landscape",
+        "sourcePage": "https://dareful.com/river-forest-landscape-2/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "225dbdc321504dab78ae995d10caa563b14c0aaefc446d0c67d2dcf8e831213c",
+        "bytes": 166770,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "still-water",
+    "theme": "life",
+    "label": {
+      "ru": "Спокойная вода",
+      "en": "Still water",
+      "es": "Agua serena"
+    },
+    "symbol": "≋",
+    "tags": [
+      "nature",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 590229,
+    "sha256": "bbd937d3ddb88ecb0403d2cca06c7e117e80f2beac365fa2563382b680b9c345",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/still-water.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/still-water.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:47.886Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Rocky Jetty Coast",
+        "sourcePage": "https://dareful.com/rocky-jetty-coast/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "02865bafcc10852ab49e215ecff1998991645c0648768008b194fd23b9fef816",
+        "bytes": 184662,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Autumn Fall Lake",
+        "sourcePage": "https://dareful.com/autumn-fall-lake/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "c779eb9b9dcada3fb54b5ecb90d7121bf8f7e7bf944152fef83f4c195695607a",
+        "bytes": 88171,
+        "attributionRequired": true
+      }
+    ]
+  },
+  {
+    "id": "garden-acceptance",
+    "theme": "relationships",
+    "label": {
+      "ru": "Сад принятия",
+      "en": "Garden of acceptance",
+      "es": "Jardín de aceptación"
+    },
+    "symbol": "♡",
+    "tags": [
+      "flowers",
+      "nature"
+    ],
+    "status": "approved",
+    "sourceKind": "licensed_two_shot_composite",
+    "durationSeconds": 5,
+    "width": 1080,
+    "height": 1920,
+    "fps": 24,
+    "codec": "h264",
+    "bytes": 550113,
+    "sha256": "aa9570089f731a869ec5c1f02c6c3421db095a83315580794dc5f57f668075ba",
+    "rawRedistributionAllowed": false,
+    "modelTrainingAllowed": false,
+    "video": "/videos/holistic-house/film-collection-v3/garden-acceptance.mp4",
+    "poster": "/videos/holistic-house/film-collection-v3/garden-acceptance.jpg",
+    "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)",
+    "createdAt": "2026-10-30T22:01:51.835Z",
+    "sources": [
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "White Wild Flowers",
+        "sourcePage": "https://dareful.com/white-wild-flowers/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "0ebd911164d96aff96dd276b608c0119da6dadbb49c2c7e5d4aa1a5baf7fbc7c",
+        "bytes": 116648,
+        "attributionRequired": true
+      },
+      {
+        "provider": "dareful",
+        "creator": "Joel Holland",
+        "clipTitle": "Pink Wild Flower",
+        "sourcePage": "https://dareful.com/pink-wild-flower/",
+        "licenseId": "cc_by_4_0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "licenseCheckedAt": "2026-10-30",
+        "licenseEvidence": "Individual Dareful video page explicitly states CC Attribution 4.0 and MP4, reviewed 2026-10-30",
+        "sha256": "868258b751e41b7b9026c4b8899b8af96e9e410a1a493ab9cd316a9b5681793f",
+        "bytes": 60516,
+        "attributionRequired": true
+      }
+    ]
+  }
+]
