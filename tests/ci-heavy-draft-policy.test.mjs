@@ -22,7 +22,17 @@ for (const name of workflows) {
     const jobBlock = source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobBlock, 'jobs block missing');
     const jobNames = [...jobBlock.matchAll(/^  ([a-z][a-z0-9-]+):\s*$/gm)].map(match => match[1]);
-    assert.equal(jobNames.length, 1, 'unexpected job count; update all jobs when expanding workflow');
+    const expanded = name === 'site-video-browser.yml';
+    assert.equal(jobNames.length, expanded ? 2 : 1, 'unexpected job count; update all jobs when expanding workflow');
+    if (expanded) {
+      assert.deepEqual(jobNames, ['browser','admin-verified-owner-browser']);
+      assert.match(jobBlock, /^  admin-verified-owner-browser:\n    name: [^\n]+\n    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false/m,
+        'The isolated owner DB/browser job must never run on production PUSH or Draft PRs');
+      assert.match(jobBlock, /postgres:17-alpine/);
+      assert.match(jobBlock, /redis:7-alpine/);
+      assert.match(jobBlock, /\/api\/app\/practitioner\/open|verify-site-video-admin-browser\.mjs/,
+        'Protected browser job must run the verified owner, not a fabricated v1 cookie');
+    }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
     assert.match(source, /^  cancel-in-progress: true/m);

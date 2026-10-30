@@ -268,3 +268,16 @@ test('approved removed YAML still requires unchanged successful successor covera
     expected:expectedWorkflows({base:withUnexpected,current,changed:[old,unexpected]})}),/UNAPPROVED_WORKFLOW_DELETION/);
 });
 
+test('wave 3 reviewed About video successor preserves all original PR paths and contracts',()=>{
+  const required = [
+    {into:'site-video-browser.yml', patterns:["'components/psychic-alchemy-intro-video*'","'app/**/about/page.tsx'","'tests/psychic-alchemy-intro-video.test.mjs'","'lib/site-videos/**'","'components/site-video-*'","'components/page-video.tsx'","'app/admin/videos/**'","'app/site-video*.css'","'tests/site-video*.mjs'","'middleware.ts'","'.github/workflows/holistic-about-video-check.yml'"], contracts:['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs','tests/site-video-defaults.test.mjs','components/site-video-manager.tsx','npx tsc --noEmit','node scripts/verify-site-video-browser.mjs']},
+  ];
+  for (const entry of required) {
+    const s=readFileSync('.github/workflows/'+entry.into,'utf8');
+    const trigger=parsePrTrigger(s,entry.into);
+    assert.ok(trigger,'Missing PR trigger '+entry.into);
+    for(const pattern of entry.patterns) assert.ok(s.includes('      - '+pattern),entry.into+' missing original path '+pattern);
+    for(const contract of entry.contracts) assert.ok(s.includes(contract),entry.into+' missing original contract '+contract);
+    assert.ok(!s.includes('continue-on-error: true'),entry.into+' must fail closed');
+  }
+});
