@@ -106,7 +106,9 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           "approved sixth topic labels show a separate Meaning choice");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         assert.equal(await quick.locator("[data-video-quick-aspect]").count(),3);
-        assert.equal(await quick.locator("[data-video-quick-duration]").count(),4);
+        assert.equal(await quick.locator("[data-video-quick-duration]").count(),5);
+        assert.equal(await quick.locator('[data-video-quick-duration="15"]').count(),1,
+          "the short 15-second option remains available in the shared quick controls");
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
