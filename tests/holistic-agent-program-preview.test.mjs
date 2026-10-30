@@ -29,7 +29,7 @@ test("the self-guided authoring gate refuses unreviewed trauma processing and ur
  const emergency=consultPsychologistMind({task:"video_course",locale:"ru",
    safety:{status:"urgent"},intent:{focus:"stress"}});
  assert.notEqual(emergency.status,"draft_ready");
- assert.equal(emergency.published,undefined);
+ assert.equal(emergency.published,false);
 });
 test("new protected endpoint requires authenticated owner, same origin, explicit readiness and excludes free-text",()=>{
  const src=file("app/api/holistic-agent/program/route.js");
@@ -47,5 +47,5 @@ test("new protected endpoint requires authenticated owner, same origin, explicit
  assert.match(src,/requiresPractitionerOrEditorialReview:true/);
  assert.match(ui,/data-hh-eight-session-preview/);
  assert.match(ui,/safetyAcknowledged:previewReady/);
- assert.match(ui,/previewReady\]=useState\(false\)/);
+ assert.match(ui,/\[previewReady,setPreviewReady\]=useState\(false\)/);
 });
