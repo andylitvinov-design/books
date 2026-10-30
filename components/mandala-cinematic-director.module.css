@@ -131,3 +131,14 @@
 .reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
  color:#536c5c}
 .reference li span+span{color:#788c7c;margin-top:3px}
+
+/* One exact provider prompt preview. Safe visual tokens only; never a paid auto-submit. */
+.aiPrompt{margin:12px 0;border:1px solid #d4c6aa;background:#fffaf0;border-radius:13px;
+  padding:12px;min-width:0}
+.aiPrompt>strong{font-weight:850;font-size:13px;color:#765125}
+.aiPrompt>p{font-size:11px;line-height:1.5;color:#6b695d;margin:9px 0}
+.aiPrompt fieldset{padding:7px 0;border:0}
+.aiPrompt legend{font-size:11px;font-weight:800;color:#765125;padding:0 0 6px}
+.aiPromptText{max-height:170px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;
+  padding:10px;border:1px solid #e6d8bc;border-radius:10px;background:#fffdf8;
+  font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:#355541!important}
