@@ -44,10 +44,12 @@ const bufferFromStream = async stream => {
 
 let passes = 0;
 // WebKit runs first so iPhone-specific release blockers fail fast.
+// Two isolated contexts overlap I/O, audio and rendering without dropping any case.
 for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]) {
   const browser = await browserType.launch({ headless: true });
   try {
-    for (const { locale, width } of viewports) {
+    for (let from = 0; from < viewports.length; from += 2) {
+      const results = await Promise.allSettled(viewports.slice(from, from + 2).map(async ({ locale, width }) => {
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -1061,6 +1063,10 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
       } finally {
         await context.close();
       }
+      }));
+      // An error must not close the browser while a sibling is still running.
+      const rejected = results.find(result => result.status === "rejected");
+      if (rejected) throw rejected.reason;
     }
   } finally {
     await browser.close();
