@@ -7,6 +7,7 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -1533,6 +1534,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
   const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
     FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
+  const freeFilmClipLabel=(id:string)=>{
+    const origin=FREE_FILM_CLIP_THEMES[id];
+    return origin==="money"
+      ?moneyTemplateLabels[id as MoneySceneId]?.[locale]||
+        moneyScenes.find(scene=>scene.id===id)?.label[locale]||id
+      :origin?otherVideoScenes[origin].find(scene=>scene.id===id)?.label[locale]||id:id;
+  };
   // These are the SAME original, source-backed scenes as the full gallery.
   // The compact Hypno video-design rail is a shortcut, not a second editor.
   const hypnoScenes = theme === "money"
@@ -2114,6 +2122,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
+  const applyAutoFilm=(presetId:string,seconds:10|20|30|60)=>{
+    if(recording||preparing)return;
+    const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
+    if(!preset){setNotice(ui.videoUnavailable);return;}
+    try{
+      const plan=compileFreeFilmPreset(preset,locale,seconds,"landscape");
+      setActiveFreeFilmPreset(preset.id);
+      setTheme(preset.theme);setVideoCategory(preset.theme);
+      if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
+      setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
+      setAspect("landscape");setDuration(seconds);setCinematicPlan(plan);
+      setPreviewPlaying(false);setSuggestion("");
+      setNotice(locale==="ru"?"Бесплатный монтаж из четырёх MP4 выбран. Дождитесь загрузки кадров и нажмите «Создать видео».":locale==="es"?
+        "Montaje gratuito de cuatro MP4 seleccionado. Espera la carga y pulsa Crear vídeo.":
+        "Four-MP4 free film selected. Once the clips load, choose Create video.");
+      document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }catch{
+      setNotice(ui.videoUnavailable);
+    }
+  };
   const selectCategory=(next:VideoCategory)=>{
     setCinematicPlan(null);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
@@ -2311,6 +2340,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           })}
         </div>
 
+        <MandalaAutoVideoDirector
+          locale={locale} goal={wish} theme={theme} presets={FREE_FILM_PRESETS}
+          disabled={recording||preparing}
+          activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
+          clipLabel={freeFilmClipLabel}
+          onGoalChange={next=>{setWish(graphemeTrim(next));setSuggestion("");setCinematicPlan(null);}}
+          onApply={applyAutoFilm}/>
+
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -2493,13 +2530,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
           </div>
-          <label className={videoStyles.quickWish}>
-            <span className={videoStyles.srOnly}>{quick.wish}</span>
-            <Target size={18} aria-hidden="true"/>
-            <input data-video-quick-wish type="text" maxLength={160} value={wish}
-              disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
-          </label>
+          <p className={videoStyles.quickHint} data-video-goal-summary>
+            {wish.trim()?wish:(locale==="ru"?"Цель можно задать в Auto Video Director выше.":
+              locale==="es"?"Puedes indicar tu objetivo en Auto Video Director.":
+              "Enter your goal in Auto Video Director above.")}
+          </p>
           <div className={videoStyles.quickPersonalActions}>
             <button type="button" data-video-personal-affirmations disabled={recording||preparing}
               aria-pressed={affirmations.enabled}
