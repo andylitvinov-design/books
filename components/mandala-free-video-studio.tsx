@@ -1894,7 +1894,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       {selected?<small>{practiceCopy.durations[format]}</small>:null}
                     </span>
                     {!selected?<span className={videoStyles.quickFormatFrom}>
-                      {practiceCopy.from} {lowestPrice===0?"$0":"$"+lowestPrice.toFixed(2)}
+                      {practiceCopy.from} {lowestPrice===null?practiceCopy.noQuote:lowestPrice===0?"$0":"$"+lowestPrice.toFixed(2)}
                     </span>:null}
                     <ChevronDown className={videoStyles.quickFormatChevron} size={16} aria-hidden="true"/>
                   </button>
