@@ -1,0 +1,53 @@
+/* Original free procedural artwork · cream/emerald Holistic House visual language. */
+.root{display:grid;gap:12px;min-width:0;padding:16px;border:1px solid #c7e6d3;border-radius:22px;
+  background:linear-gradient(155deg,#fbfff8,#eff9f1 55%,#fffaf0);box-shadow:0 6px 19px #2459410c;color:#173e32}
+.heading{display:flex;gap:11px;align-items:flex-start;min-width:0}
+.emblem{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:14px;
+  background:linear-gradient(145deg,#cfeede,#edf9e5);color:#057c5e}
+.heading>div:last-child{min-width:0}
+.tag{display:inline-block;margin:0 0 4px;color:#087b5d;font:850 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.085em}
+.heading h3{font:850 clamp(18px,2.5vw,23px)/1.17 Arial,Helvetica,sans-serif;color:#143f33;letter-spacing:-.018em}
+.heading p{margin:6px 0 0;color:#567769;font-size:12.5px;line-height:1.45}
+.prompt{display:grid;gap:7px;font-size:13px;font-weight:800;color:#275a44}
+.prompt textarea{box-sizing:border-box;display:block;width:100%;min-width:0;min-height:95px;resize:vertical;
+  border:1px solid #bfd9cb;border-radius:13px;padding:11px 12px;background:#fffefa;
+  color:#21453a;font:500 14px/1.55 Arial,Helvetica,sans-serif}
+.prompt textarea:focus-visible,.family button:focus-visible,.controls button:focus-visible,
+.filters select:focus-visible{outline:3px solid #93dabb;outline-offset:2px}
+.family{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}
+.family button{display:flex;align-items:center;justify-content:center;min-height:46px;min-width:0;
+  padding:8px 6px;border:1px solid #d7e5dc;border-radius:13px;background:#fffefa;
+  color:#24634b;font:750 12px/1.27 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}
+.family button[aria-pressed="true"]{border-color:#079a71;background:#e0f6ea;color:#09694f;
+  box-shadow:inset 0 0 0 1px #0b936b}
+.options{min-width:0;border:1px solid #e2e8dd;border-radius:12px;background:#fcfdf9}
+.options summary{display:flex;align-items:center;gap:7px;min-height:44px;padding:9px 12px;
+  color:#28614a;font-size:12.5px;font-weight:800;cursor:pointer}
+.options summary svg{transition:transform .2s}
+.options[open] summary svg{transform:rotate(180deg)}
+.filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 11px 12px}
+.filters label{display:grid;gap:5px;min-width:0;color:#5f806b;font-size:11px;font-weight:750}
+.filters select{width:100%;min-width:0;min-height:43px;border:1px solid #cfdfd3;border-radius:10px;
+  background:white;color:#1d5c43;padding:7px;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.preview{display:grid;justify-items:center;gap:9px;min-width:0;padding:12px;border-radius:17px;
+  background:linear-gradient(145deg,#0a2a2c,#19473a)}
+.preview canvas{display:block;max-width:100%;width:auto;height:auto;max-height:380px;border-radius:12px;
+  background:#12302f;box-shadow:0 7px 20px #061b244d}
+.controls{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px;width:100%}
+.controls button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
+  padding:8px 13px;border:1px solid #679d8a;border-radius:12px;background:#dff3e8;color:#12573f;
+  font:800 12px/1.15 Arial,Helvetica,sans-serif;cursor:pointer}
+.controls button:first-child{background:#0d9671;color:#fff;border-color:#0d9671}
+.controls small{color:#e0ebe4;font-size:11px}
+.local{display:flex;align-items:center;gap:7px;margin:0;color:#087654;font-size:11.5px;font-weight:750}
+.local svg{flex:none}
+.limit{margin:0;color:#648074;font-size:11px;line-height:1.45}
+.fallback{margin:0;padding:10px;border:1px solid #ead6af;border-radius:10px;
+  background:#fffbf0;color:#785b2b;font-size:12px;line-height:1.45}
+.root button:disabled{opacity:.55;cursor:not-allowed}
+@media(min-width:700px){.family{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .preview canvas{max-height:390px}}
+@media(max-width:360px){.root{padding:12px}.heading{gap:8px}.emblem{width:35px;height:35px}
+  .filters{grid-template-columns:minmax(0,1fr)}
+  .controls button{flex:1 1 110px;padding:8px}}
+@media(prefers-reduced-motion:reduce){.options summary svg{transition:none}}
