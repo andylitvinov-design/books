@@ -1064,13 +1064,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               </div>}
           </>}
           {moment==='recap'&&<div className={styles.recapSummary} data-opora-lesson-recap="true">
-            <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
+            <div className={styles.summaryItem} data-opora-summary-item><span aria-hidden="true">🌿</span>
               <div><strong>{showNewPlan?dailyPlan?.result:c.notice}</strong>
                 <small>{reportedAttempt?t.attempted:t.readOnly}</small></div></div>
           </div>}
           {moment==='recapPractice'&&<>
             <div className={styles.recapSummary} data-opora-practice-overview={cycle.day}>
-              <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
+              <div className={styles.summaryItem} data-opora-summary-item><span aria-hidden="true">☀️</span>
                 <div><strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn}</strong>
                   <small>{practiceGuide}</small></div></div>
             </div>
@@ -1082,7 +1082,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='recapNext'&&<div className={styles.recapSummary}
             data-opora-daily-homework={cycle.day}>
-            <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
+            <div className={styles.summaryItem} data-opora-summary-item><span aria-hidden="true">✨</span>
               <div>
                 <strong>{answers.transfer==='planned'&&plan
                   ?plan:(dailyPlan?.transfer||depth?.everyday||j.noPlan)}</strong>
