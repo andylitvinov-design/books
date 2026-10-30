@@ -128,4 +128,5 @@ export { MEDITATION_STORY_ARCS, MEDITATION_STORY_ARC_BY_ID,
 export type { PsychologistLocale, PsychologistFocus, PsychologyInput,
   PsychologyProgram, PsychologyDialogueInput, PsychologyDialogueTurn,
   PsychologistStatus, PsychologyVideoCourseDraft, PsychologyVideoLesson,
-  PsychologyMeditationDraft, PsychologyMeditationSegment } from "./psychologist-mind.mjs";
+  PsychologyMeditationDraft, PsychologyMeditationSegment,
+  PsychologyMeditationSeries, PsychologyStoryCatalog } from "./psychologist-mind.mjs";
