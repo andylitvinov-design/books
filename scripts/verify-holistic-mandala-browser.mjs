@@ -106,9 +106,25 @@ const runEngine = async ([engine, browserType]) => {
 
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
-        assert.equal(await quick.locator("[data-video-quick-section]").count(),3);
+        assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
+          "the cover/photo panel is now part of the shared scene library");
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
-        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),4);
+        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3,
+          "advanced editor retains hypno, audio and detailed format controls");
+        const stage=quick.locator("[data-video-live-stage]");
+        const screen=stage.locator("[data-video-mandala-hero]");
+        assert.equal(await screen.locator("canvas").count(),1,
+          "the original Canvas renderer is the only full-size editable screen");
+        assert.deepEqual(await quick.locator(
+          '[data-video-live-stage], [data-video-scene-library], [data-video-quick-tier], [data-video-quick-section="4"]'
+        ).evaluateAll(elements=>elements.map(el=>el.hasAttribute("data-video-live-stage")?"preview":
+          el.hasAttribute("data-video-scene-library")?"library":
+          el.hasAttribute("data-video-quick-tier")?"format":"style")),
+          ["preview","library","format","style"],
+          "main preview and combined templates must precede format/quality and style");
+        const playerRect=await screen.boundingBox();
+        assert.ok(playerRect&&playerRect.width>playerRect.height,
+          engine+" "+locale+" "+width+"px central player must be widescreen");
         assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
@@ -117,6 +133,13 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-practice-accordion]").count(),1);
         assert.equal(await quick.locator("[data-video-quality-option]").count(),9,
           "each expandable format retains its Basic / Smart / Pro choices");
+        assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
+          "the source MP4 sample is a small secondary player beneath the main screen");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
+          "the same unified library includes the 24 existing 4-MP4 film presets");
+        const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
+        assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
+          "source-video example must fit beneath the large preview");
         assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-expanded"),"true");
         assert.equal(await quick.locator('[data-video-practice-details="video"]').isVisible(),true);
         assert.equal(await quick.locator('[data-video-practice-details="meditation"]').isVisible(),false);
@@ -164,6 +187,12 @@ const runEngine = async ([engine, browserType]) => {
         await tapPlay.click();
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"false");
         assert.equal(await quick.locator("[data-video-quick-scene]").count(),6);
+        const coverOptions=quick.locator("[data-video-cover-options]");
+        assert.equal(await coverOptions.getAttribute("open"),null,
+          "photo and cover choices are collapsed by default to keep the library compact");
+        await coverOptions.locator("summary").click();
+        assert.equal(await coverOptions.evaluate(el=>el.open),true,
+          "photo cover and user-owned image choices must open on user request");
         await quick.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
