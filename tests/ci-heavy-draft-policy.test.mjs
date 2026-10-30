@@ -320,3 +320,114 @@ test('Ideas & Coaching Ready validates original browsers without Draft churn or 
   assert.match(core,/run: npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
+
+test('Mandala Draft gating preserves complete Ready video and audio acceptance', () => {
+  const source = read('holistic-support-mandala.yml');
+  const core = read('hh-pr-core-release.yml');
+  const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const gate = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(source.includes('  pull_request:\n' + types + '\n'), 'Draft to Ready event is mandatory');
+  assert.ok(source.includes("branches: ['codex/public-book-library']"));
+  assert.ok(source.includes('  focused-unit-types-build:\n' + gate + '\n'), 'heavy job only on Ready');
+  assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
+  assert.ok(source.includes('tests/mandala-export.test.mjs'));
+  assert.ok(source.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(source.includes('ffprobe -version'));
+  assert.ok(source.includes('ffmpeg -version'));
+  assert.ok(source.includes('cancel-in-progress: true'));
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /npm run build/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('Support Mobile Draft skips costly mock browser; Ready and production push retain full checks', () => {
+  const source=read('hh-support-mobile-mock-browser.yml');
+  const types="    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]";
+  const gate="    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.match(source, /^  push:/m, 'production visual acceptance must remain');
+  assert.ok(source.includes("branches: ['codex/public-book-library']"));
+  assert.ok(source.includes('  pull_request:\n'+types+'\n'));
+  assert.ok(source.includes('  mobile-visual-parity:\n'+gate+'\n'));
+  assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
+  assert.ok(source.includes("group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"),'never cancel production push');
+  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'));
+  assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
+  assert.ok(source.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(source.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(source.includes("      - '.github/workflows/hh-support-mobile-mock-browser.yml'"));
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+
+test('wave 5: Support Mock delegates only duplicate production PR TypeScript to unconditional Core', () => {
+  const core=read('hh-pr-core-release.yml');
+  const mock=read('hh-support-mobile-mock-browser.yml');
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/^  release-ready:/m);
+  assert.match(mock,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(mock,/^  push:/m);
+  assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.ok(mock.includes('- name: Full TypeScript on non-production PR or production push\n        if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"+'\n        run: npx --no-install tsc --noEmit --pretty false'));
+  assert.match(mock,/node-version: '22'\s*\n          cache: npm/);
+  assert.match(mock,/node --test tests\/greek-video-series\.test\.mjs/);
+  assert.match(mock,/npx eslint/);
+  assert.match(mock,/playwright install --with-deps chromium webkit/);
+  assert.ok(mock.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(mock.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
+  assert.doesNotMatch(mock,/continue-on-error:\s*true/);
+});
+
+test('wave 5: Support Mock readiness loop is bounded, strict and ShellCheck-clean',()=>{
+  const mock=read('hh-support-mobile-mock-browser.yml');
+  assert.match(mock,/for \(\(attempt=1; attempt<=120; attempt\+\+\)\); do/);
+  assert.match(mock,/if \(\( attempt == 120 \)\); then/);
+  assert.match(mock,/tail -80 \/tmp\/hh-support-mock-next\.log/);
+  assert.match(mock,/exit 1/);
+  assert.doesNotMatch(mock,/for i in \$\(seq 1 120\)/);
+});
+
+const heavyDraftStage = [
+  ['ia-v2.yml', ['verify']],
+  ['hh-live-seo-audit.yml', ['audit', 'public-tests-mobile']],
+  ['hh-public-performance-audit.yml', ['measure-public']],
+];
+
+for (const [name, jobs] of heavyDraftStage) {
+  test(name + ': skip Draft-only runner work but restore exact Ready checks', () => {
+    const source = read(name);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'));
+    assert.match(source, /^concurrency:/m);
+    assert.match(source, /cancel-in-progress:/);
+    const block = source.split(/^jobs:\s*$/m)[1];
+    assert.ok(block);
+    const suffix = '$' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+    for (const job of jobs) {
+      assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
+    }
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  });
+}
+
+test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
+  const ia = read('ia-v2.yml');
+  // YAML-only edits belong to the exact-head Core/actionlint gates, not IA's product suite.
+  assert.doesNotMatch(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  assert.match(read('hh-actionlint.yml'), /^      - '\.github\/workflows\/\*\*'$/m);
+  assert.match(read('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(ia, /verify:ia-v2/);
+  assert.match(ia, /redis:7-alpine/);
+  assert.match(ia, /^  workflow_dispatch:/m);
+  const seo = read('hh-live-seo-audit.yml');
+  const sourceBlock = seo.split('  source-build:')[1]?.split('  audit:')[0];
+  assert.ok(sourceBlock);
+  assert.ok(sourceBlock.includes("    if: $" + "{{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"));
+  assert.match(sourceBlock, /npm run build/);
+  assert.match(seo, /^  push:/m);
+  assert.match(seo, /^  workflow_dispatch:/m);
+  assert.match(seo, /verify-live-sitemap\.mjs/);
+  const performance = read('hh-public-performance-audit.yml');
+  assert.match(performance, /^  push:/m);
+  assert.match(performance, /^  workflow_dispatch:/m);
+  assert.match(performance, /tests\/holistic-house-image-quota\.test\.mjs/);
+});

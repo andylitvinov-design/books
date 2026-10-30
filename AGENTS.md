@@ -20,3 +20,9 @@ Verified tool versions and project setup are declared in .codex/config.toml and 
 ## PR delivery fast lane (Work / Chat / DOT)
 
 For any PR repair, CI triage or merge into the canonical production branch, follow `docs/operations/PR_FAST_LANE_20261029.md`: deduplicate ownership by repo#PR, spend most effort on an actual fix/merge, inspect *exact-head* checks and failed job logs, keep security/privacy/RLS/payment gates, and report own merges separately from other agents' actions. The single core `release-ready` check is necessary but never replaces relevant specialist tests, approval or post-merge Vercel/live verification. GitHub default branch is **not** automatically production.
+
+## CI push batching for Codex / Work agents
+
+On each independently owned PR, prepare one coherent repair locally, run focused source/contract/lint tests **before** pushing, then make preferably one atomic, meaningful push per verified iteration. Avoid pushing every interim editor change, failed test experiment, partial rewrite or no-op commit: each push can trigger dozens of expensive GitHub workflows. Let current exact-head specialist jobs complete unless a verified new root cause, necessary correction or urgent security fix justifies a new commit. If the same source error recurs, read actual job logs first; do not rerun or change SHA merely to try again.
+
+Draft PRs may skip heavy browser matrices; transitioning to Ready must run **all applicable real** browser, privacy, RLS, auth, billing and release gates on the exact HEAD. This is batching per PR, **not** a cap/freeze on independent new PRs or a delay of P0 fixes. Never bypass required green checks, Vercel production SHA verification, review or owner leases.

@@ -121,7 +121,7 @@ jobs:
   crm:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -221,21 +221,10 @@ jobs:
       - name: Check notification worker syntax
         run: node --check public/course-notifications-sw.js
 
-  # Run Next production build independently of older application unit suites.
-  # This protects a CRM release even when unrelated app tests are red.
-  build:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install pinned packages
-        run: npm ci --no-audit --no-fund
-      - name: Production Next.js build
+      # Full production TS/build on a Ready PR is enforced once by mandatory Core.
+      # Standalone manual dispatch still performs its own production bundle.
+      - name: Independent Next build for manual CRM acceptance
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
