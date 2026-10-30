@@ -79,6 +79,7 @@ jobs:
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 120); do
+            echo "Support guide readiness attempt ${i}/120"
             if curl --silent --fail http://127.0.0.1:3119/ru/holistic-support/mobile >/dev/null; then ready=1; break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -100 /tmp/hh-support-guide-next.log; exit 1; fi
             sleep 2

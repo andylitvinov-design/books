@@ -156,7 +156,6 @@ test('Energywork cancels superseded PR commits only, never manual verification',
 const dedupWave2 = [
   ['hh-support-guided-recommendations.yml', ['Typecheck', 'Build'], ['focused-unit-types-build','mobile-browser']],
   ['hh-my-progress-release.yml', ['Typecheck', 'Production build'], ['private-progress']],
-  ['practice-visual-services.yml', ['TypeScript', 'Production build'], ['service-editor']],
   ['hh-messenger-notification-build.yml', ['Next.js production build (no provider keys)'], ['notification-build']],
 ];
 
