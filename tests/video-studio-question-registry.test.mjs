@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {QUESTION_REGISTRY, projectFieldsFromAnswers, questionsForDraft, questionsForGroup} from '../lib/mandala/video-studio-question-registry.mjs';
+import {QUESTION_REGISTRY, projectFieldsFromAnswers, questionsForDraft, questionsForGroup, subjectIsExplicitlyExcluded} from '../lib/mandala/video-studio-question-registry.mjs';
 
 test('registry preserves the approved 49 IDs with three localized options', () => {
   assert.equal(QUESTION_REGISTRY.length, 49);
@@ -42,6 +42,12 @@ test('an explicit subject exclusion reopens the subject clarification in every s
   for (const intentText of ['Without an eagle, no other character', 'Sin águila, sin otro personaje', 'Без орла, нет другого героя']) {
     assert.ok(questionsForDraft({intentText, answers}).some(question => question.id === 'PERSONAL_07'));
   }
+});
+
+test('an explicit exclusion overrides only the selected animal identity', () => {
+  assert.equal(subjectIsExplicitlyExcluded('Без орла, нет другого героя', 'eagle'), true);
+  assert.equal(subjectIsExplicitlyExcluded('Без орла, нет другого героя', 'wolf'), false);
+  assert.equal(subjectIsExplicitlyExcluded('Белый орёл летит над горами', 'eagle'), false);
 });
 
 test('personalization reveals form then animal identity before planning a vague story', () => {
