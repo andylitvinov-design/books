@@ -53,6 +53,16 @@ jobs:
             fi
             sleep 2
           done
+          # Precompile all three public locale pages *before* Chromium/WebKit.
+          # Next dev on-demand builds can otherwise interrupt the first ES
+          # navigation and give a false missing-order timeout.
+          for locale in en es; do
+            if ! curl --silent --show-error --fail --max-time 90 "http://127.0.0.1:3127/$locale/app/messages" >/dev/null; then
+              echo "Messages locale route unavailable: $locale" >&2
+              tail -80 /tmp/hh-messages-visual-next.log
+              exit 1
+            fi
+          done
           node scripts/verify-messages-wellness-browser.mjs
       - name: Preserve synthetic rendered screenshots only
         if: always()
