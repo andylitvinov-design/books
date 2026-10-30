@@ -68,7 +68,9 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
   assert.match(ui,/intentText=\{wish\}/);
-  assert.doesNotMatch(ui,/data-video-quick-wish/);
+  // #2691's approved short-form wish remains; it and Director use one wish state.
+  assert.match(ui,/data-video-quick-wish/);
+  assert.match(ui,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(director,/maxLength=\{2000\}/);
   assert.match(ui,/id="personal-video-result"/);
 });

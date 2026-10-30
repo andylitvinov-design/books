@@ -306,8 +306,10 @@ test("cinematic director preserves the agreed four-field profile flow without pr
 });
 test("same iPhone editor records actual four-shot canvas montage without sending private brief",()=>{
   assert.match(studio,/MandalaCinematicDirector/);
-  assert.match(studio,/onApplyStoryboard=\{applyCinematicStoryboard\}/);
-  assert.match(studio,/const applyCinematicStoryboard=\(plan:CinematicStoryboard\)=>\{/);
+  // #2691 preserves the approved inline adapter, while the Director receives
+  // exactly the same plan and uses the same local four/six-shot recorder.
+  assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
+  assert.match(studio,/setDuration\(plan.durationSeconds as \(typeof durations\)\[number\]\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
   assert.match(studio,/const activeFilm = cinematicPlan \? null/);
@@ -327,10 +329,11 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(css,/:focus-visible/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
-test("one director-owned idea field follows the preview and shares the existing wish state",()=>{
+test("approved #2691 quick and legacy wish controls share the Director's single React state",()=>{
   assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
   assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
-  assert.doesNotMatch(studio,/data-video-quick-wish/);
-  assert.doesNotMatch(studio,/id="personal-video-wish"/);
+  assert.match(studio,/data-video-quick-wish/);
+  assert.match(studio,/id="personal-video-wish"/);
+  assert.match(studio,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(directorUI,/onIntentTextChange/);
 });
