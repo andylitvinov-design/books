@@ -1889,7 +1889,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
           <div className={videoStyles.quickPanelBody} id="video-step-3-panel" hidden={expandedStep!==3}>
-          <label className={videoStyles.quickPhotoSwitch}><input type="checkbox" data-video-affirmations-feature checked={affirmations.enabled} disabled={recording||preparing} onChange={event=>setAffirmations(previous=>({...previous,enabled:event.currentTarget.checked}))}/><span>{quick.hypnoHelp}</span></label>
+          <label className={videoStyles.quickPhotoSwitch}><input type="checkbox" data-video-affirmations-feature checked={affirmations.enabled} disabled={recording||preparing} onChange={event=>{const enabled=event.currentTarget.checked;setAffirmations(previous=>({...previous,enabled}));}}/><span>{quick.hypnoHelp}</span></label>
           <div className={videoStyles.quickHypnoOptions}>
             <button type="button" data-video-quick-phrases="ready" aria-pressed={affirmations.enabled}
               disabled={recording||preparing}
