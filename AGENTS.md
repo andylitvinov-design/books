@@ -16,3 +16,7 @@ For each owner screenshot, URL or Figma-based page design request, **do not ask 
 4. The first deployed screen can NEVER be accepted based solely on text/CSS contracts, screenshots of a different view, HTTP 200, CI green, or successful OAuth initiation. State separate evidence for visual fidelity, real account E2E, and Vercel READY/SHA.
 
 Verified tool versions and project setup are declared in .codex/config.toml and .vscode/mcp.json, but **repository files do not install MCPs into ChatGPT nor grant browser/IDE permissions**. Only claim tool availability after successful tool calls. A failed or blocked MCP connection is not a reason to skip the independent GitHub browser workflow or to fabricate visual acceptance.
+
+## PR delivery fast lane (Work / Chat / DOT)
+
+For any PR repair, CI triage or merge into the canonical production branch, follow `docs/operations/PR_FAST_LANE_20261029.md`: deduplicate ownership by repo#PR, spend most effort on an actual fix/merge, inspect *exact-head* checks and failed job logs, keep security/privacy/RLS/payment gates, and report own merges separately from other agents' actions. The single core `release-ready` check is necessary but never replaces relevant specialist tests, approval or post-merge Vercel/live verification. GitHub default branch is **not** automatically production.
