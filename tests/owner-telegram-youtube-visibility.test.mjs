@@ -29,7 +29,7 @@ const item=(privacy='unlisted')=>({
 test('Telegram button payloads bind job UUID and require a second confirmation',()=>{
  const menu=ownerVideoVisibilityMenuButtons(UUID,'unlisted')
  const choice=menu.inline_keyboard[0][0]
- assert.match(choice.text,/Для всех/)
+ assert.match(choice.text,/Сделать доступным всем/)
  assert.equal(parse(choice.callback_data)?.action,'visibility_choice')
  assert.equal(parse(choice.callback_data)?.jobId,UUID)
  assert.equal(parse(choice.callback_data)?.target,'public')
