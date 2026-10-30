@@ -127,6 +127,25 @@ try {
     try {
       await context.addCookies(a.split('; ').map(item=>{const at=item.indexOf('=');return {name:item.slice(0,at),value:decodeURIComponent(item.slice(at+1)),url:origin}}))
       await context.route('https://www.youtube.com/**',route=>route.abort())
+      // Mobile scroll may still move beneath fixed navigation after Playwright
+      // reports the control visible. Require a stable real hit target and one
+      // ordinary click; never force or silently retry a missed interaction.
+      async function stableAdvance(page, button) {
+        await button.evaluate(node=>{
+          window.__hhAdvanceStable=null;window.__hhAdvanceReceived=false
+          node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
+          node.addEventListener('click',()=>{window.__hhAdvanceReceived=true},{capture:true,once:true})
+        })
+        await page.waitForFunction(node=>{
+          const rect=node.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2
+          const hit=document.elementFromPoint(x,y),last=window.__hhAdvanceStable
+          const same=last&&Math.abs(last.x-x)<0.5&&Math.abs(last.y-y)<0.5
+          window.__hhAdvanceStable={x,y,count:same?last.count+1:0}
+          return y>60&&y<innerHeight-60&&hit&&(hit===node||node.contains(hit))&&window.__hhAdvanceStable.count>=6
+        },await button.elementHandle())
+        await button.click()
+        assert.equal(await page.evaluate(()=>window.__hhAdvanceReceived),true,'format advance click must reach its button')
+      }
       for (const [locale,width,topic,next,continueCourse,no,skip,start,setup] of [
         ['en',390,'energy','Continue','Continue my active course','No','Skip','Start','Finish setting up'],
         ['ru',320,'energy','Продолжить','Продолжить мой активный курс','Нет','Пропустить','Начать','Завершить настройку'],
@@ -139,7 +158,7 @@ try {
         await courseCard.locator('select').selectOption(topic)
         await courseCard.getByRole('button',{name:next,exact:true}).click()
         await courseCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
-        await courseCard.getByRole('button',{name:next,exact:true}).click()
+        await stableAdvance(coursePage,courseCard.getByRole('button',{name:next,exact:true}))
         try { await courseCard.getByRole('button',{name:continueCourse,exact:true}).click() }
         catch(error) {
           console.log(JSON.stringify({phase:'course-choice',locale,path:new URL(coursePage.url()).pathname,
