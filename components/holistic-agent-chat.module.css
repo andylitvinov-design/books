@@ -17,3 +17,12 @@
 .actions button:disabled{opacity:.55;cursor:not-allowed}
 .muted{color:#6e6255;font-size:13px}
 @media(max-width:480px){.root{margin:14px 10px;padding:14px;border-radius:14px}.user,.assistant{max-width:98%}}
+
+/* One owner-consented profile focus and required media format, matching the
+   existing warm Holistic House visual language at iPhone widths. */
+.preferences{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.preferences .mode{min-width:0;margin:8px 0}
+.preferences select{max-width:100%}
+.preferences select:focus-visible,.consent input:focus-visible{outline:3px solid #8c6c43;outline-offset:2px}
+.consent input:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:520px){.preferences{grid-template-columns:1fr;gap:0}}
