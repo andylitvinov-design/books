@@ -19,7 +19,7 @@ test('rejects client assertions of identity, consent and safety at every boundar
 });
 test('rejects invalid types, unbounded input and unknown values', () => {
   for (const intent of [
-    { language: 'fr' }, { language: 'en', goalText: 'x'.repeat(501) },
+    { language: 'fr' }, { language: 'en', audioLanguage:'fr' }, { language: 'en', goalText: 'x'.repeat(501) },
     { language: 'en', formats: ['service', 'unknown'] },
     { language: 'en', selectedFacets: ['wrong'] },
     { language: 'en', selectedTopics: Array(41).fill('stress') },
@@ -42,4 +42,9 @@ test('session dismissals are bounded identifiers, not private history records', 
   assert.deepEqual(validateIntelligenceRequest({ ...valid(), session: { dismissedIds: ['youtube:HqfixazXqRY'] } }).session.dismissedIds, ['youtube:HqfixazXqRY']);
   for (const session of [{ accountId: 'other' }, { dismissedIds: ['bad/id'] }, { dismissedIds: Array(81).fill('x') }])
     assert.throws(() => validateIntelligenceRequest({ ...valid(), session }), /INVALID_INTELLIGENCE_REQUEST/);
+});
+test('saved coaching topic requires an explicit cabinet-only request', () => {
+  assert.equal(validateIntelligenceRequest({ ...valid(), profileFocus:'confirmed_coaching_topic' }).profileFocus, 'confirmed_coaching_topic');
+  assert.throws(()=>validateIntelligenceRequest({ ...valid(), surface:'meditation', profileFocus:'confirmed_coaching_topic' }),/INVALID_INTELLIGENCE_REQUEST/);
+  assert.throws(()=>validateIntelligenceRequest({ ...valid(), profileFocus:'all_private_data' }),/INVALID_INTELLIGENCE_REQUEST/);
 });

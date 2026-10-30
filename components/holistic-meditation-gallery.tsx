@@ -55,11 +55,13 @@ export function HolisticMeditationGallery({
   videos,
   catalogVideos = [],
   publishedSourceIds = [],
+  intelligenceTests = {},
 }: {
   locale: PublicLocale;
   videos: MeditationVideo[];
   catalogVideos?: MeditationCatalogRecord[];
   publishedSourceIds?: string[];
+  intelligenceTests?: Record<string, object[]>;
 }) {
   const [finderOpen, setFinderOpen] = useState(false);
   const [activeTopic, setActiveTopic] = useState<FilterTopic>("all");
@@ -83,7 +85,7 @@ export function HolisticMeditationGallery({
       </button>
       {finderOpen ? (
         <HolisticMeditationFinder locale={locale} videos={catalogVideos}
-          publishedSourceIds={publishedSourceIds} onBack={() => setFinderOpen(false)} />
+          publishedSourceIds={publishedSourceIds} intelligenceTests={intelligenceTests} onBack={() => setFinderOpen(false)} />
       ) : (
         <>
       <div className={styles.filters} role="group" aria-label={t.filter}>

@@ -1,0 +1,15 @@
+.root{display:grid;gap:.7rem;padding:1rem;border:1px solid #d9d1c7;border-radius:16px;background:#faf7f2;color:#253331;min-width:0}
+.root h3,.root p{margin:0}
+.root p,.root small{line-height:1.5}
+.root small{color:#4c5b57}
+.question,.result{display:grid;gap:.7rem;min-width:0}
+.question label,.result strong{font-weight:650}
+.root select,.root input,.root button,.actions a{font:inherit;min-height:44px;border:1px solid #a9b8ae;border-radius:10px;padding:.55rem .8rem;background:#fff;color:#203c35}
+.root select{max-width:100%;width:100%}
+.root button,.actions a{cursor:pointer}
+.root button:disabled{opacity:.5;cursor:not-allowed}
+.root button:focus-visible,.root select:focus-visible,.root input:focus-visible,.actions a:focus-visible{outline:3px solid #3f7767;outline-offset:2px}
+.actions,.feedback{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.actions a{display:inline-flex;align-items:center;text-decoration:none;background:#315e51;border-color:#315e51;color:#fff}
+.feedback span{flex-basis:100%}
+.result{border-top:1px solid #ded8cf;padding-top:.75rem;overflow-wrap:anywhere}

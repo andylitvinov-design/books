@@ -8,6 +8,7 @@ import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticMeditationGallery } from "@/components/holistic-meditation-gallery";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { loadMeditationDiscovery } from "@/lib/holistic-support/meditation-discovery-server";
+import { buildIntelligenceTestCatalog } from "@/lib/holistic-support/intelligence-test-catalog";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
 import { TaoistKoanBoard } from "@/components/taoist-koan-board";
@@ -243,7 +244,8 @@ export default async function HolisticSupportPage({ params }: Props) {
           <div className={styles.meditationContents}>
             {freeMeditationVideos(locale).length > 0 ? (
               <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)}
-                catalogVideos={meditationDiscovery.videos} publishedSourceIds={meditationDiscovery.publishedSourceIds} />
+                catalogVideos={meditationDiscovery.videos} publishedSourceIds={meditationDiscovery.publishedSourceIds}
+                intelligenceTests={buildIntelligenceTestCatalog(locale)} />
             ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
             <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
               {locale !== "ru" ? (

@@ -2399,7 +2399,7 @@ function PortfolioPage({ data, locale }) {
             </div>
             <div id="hh-portrait-panel-recommendations" role="tabpanel" className="hh-portrait-inline-panel"
               aria-labelledby="hh-portrait-tab-recommendations" hidden={portraitTab !== 'recommendations'}>
-              {portraitTab === 'recommendations' && <PortraitRecommendations results={data.results || []} locale={locale} />}
+              {portraitTab === 'recommendations' && <PortraitRecommendations results={data.results || []} locale={locale} accountId={data.account?.id} />}
             </div>
           </>} />
       </details>

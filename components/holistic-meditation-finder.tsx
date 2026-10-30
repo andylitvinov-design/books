@@ -16,6 +16,7 @@ import type {
 } from "@/lib/holistic-support/meditation-catalog-types";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-meditation-finder.module.css";
+import { HolisticIntelligenceCard } from "./holistic-intelligence-card";
 
 const GOALS = ["money", "energy", "relationships", "goals", "meaning"] as const;
 type Goal = (typeof GOALS)[number];
@@ -167,13 +168,14 @@ type Props = {
   locale: PublicLocale;
   videos: MeditationCatalogRecord[];
   publishedSourceIds: string[];
+  intelligenceTests?: Record<string, object[]>;
   onBack: () => void;
 };
 const facet = (type: string) => facetsData.facets.filter(item => item.facet_type === type);
 const titleOf = (item: { label_en: string; label_ru: string; label_es: string }, locale: PublicLocale) =>
   locale === "ru" ? item.label_ru : locale === "es" ? item.label_es : item.label_en;
 
-export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, onBack }: Props) {
+export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, intelligenceTests = {}, onBack }: Props) {
   const t = copy[locale];
   const stars = useCatalogRatings("video",videos.map(video=>video.youtube_id));
   const [minimumStars,setMinimumStars] = useState(0);
@@ -249,6 +251,8 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
         <h3>{t.title}</h3>
         <p>{t.intro}</p>
       </div>
+      <HolisticIntelligenceCard locale={locale} surface="meditation" videos={videos}
+        publishedSourceIds={publishedSourceIds} audioLanguage={language} intelligenceTests={intelligenceTests} />
       <form className={styles.form} onSubmit={apply} aria-label={t.title}>
         <div className={styles.goals} role="group" aria-label={t.title}>
           {GOALS.map(item => (

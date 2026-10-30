@@ -1,10 +1,10 @@
 name: Holistic House axis-to-offer matching
 on:
   push:
-    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029']
+    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029', 'codex/hh-intelligence-ranker-ci-20261029', 'codex/hh-intelligence-request-boundary-20261029', 'codex/hh-intelligence-meditation-bridge-20261029', 'codex/hh-intelligence-private-api-20261029', 'codex/hh-intelligence-client-card-20261029', 'codex/hh-intelligence-coaching-context-20261029', 'codex/hh-intelligence-session-checkins-20261029', 'codex/hh-intelligence-coaching-rls-20261029', 'codex/hh-intelligence-test-actions-20261029', 'codex/hh-intelligence-service-actions-20261029', 'codex/hh-intelligence-video-history-20261029']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/hh-intelligence-*']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
@@ -29,8 +29,28 @@ on:
       - 'lib/holistic-support/intelligence-risk.mjs'
       - 'tests/intelligence-risk.test.mjs'
       - 'lib/holistic-support/intelligence-plan.mjs'
+      - 'lib/holistic-support/intelligence-test-catalog.js'
+      - 'lib/assessments/support-guide-tests.js'
+      - 'lib/assessments/test-recommendations.js'
+      - 'data/core-service-offers.ts'
+      - 'app/*/holistic-support/page.tsx'
+      - 'components/holistic-meditation-gallery.tsx'
       - 'tests/intelligence-plan.test.mjs'
       - 'tests/app-auth-pkce.integration.mjs'
+      - 'tests/holistic-intelligence-card.test.mjs'
+      - 'tests/intelligence-coaching-rls.integration.mjs'
+      - 'supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql'
+      - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
+      - 'lib/app/video-progress.js'
+      - 'lib/app/personal-coaching.js'
+      - 'lib/app/database.js'
+      - 'lib/app/config.js'
+      - 'lib/app/crypto.js'
+      - 'tests/helpers/app-db-setup.mjs'
+      - 'components/holistic-intelligence-card.jsx'
+      - 'components/holistic-intelligence-card.module.css'
+      - 'scripts/verify-intelligence-browser.mjs'
+      - 'components/app/app-workspace.jsx'
       - 'lib/holistic-support/meditation-discovery-server.ts'
       - 'app/api/app/**/route.js'
       - 'lib/home-conversation.mjs'
@@ -81,11 +101,13 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
-        run: node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs
+        run: |
+          node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/holistic-intelligence-card.test.mjs
+          node --conditions=react-server --test tests/intelligence-plan.test.mjs
       - name: Portrait four-sector, missing-value, responsive and privacy contracts
         run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint
-        run: npx --no-install eslint lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
+        run: npx --no-install eslint lib/holistic-support/intelligence-test-catalog.js lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/holistic-intelligence-card.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-intelligence-card.jsx components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: Authenticated intelligence route and OAuth regression
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: TypeScript check
@@ -94,3 +116,62 @@ jobs:
       - name: Build site
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
+      # `next start` requires a local build even when core CI builds separately.
+      - name: Build application for Intelligence browser acceptance
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        run: npm run build
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix /tmp/hh-intelligence-browser --no-save --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-intelligence-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Public intelligence journey in Chromium and WebKit
+        env:
+          HH_INTELLIGENCE_BROWSER_TOOLS: /tmp/hh-intelligence-browser
+        run: |
+          npm run start -- --port 3187 > /tmp/hh-intelligence-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          HH_TEST_BROWSER=chromium node scripts/verify-intelligence-browser.mjs
+          HH_TEST_BROWSER=webkit node scripts/verify-intelligence-browser.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-browser-screenshots
+          path: /tmp/hh-intelligence-evidence
+          if-no-files-found: ignore
+  coaching-owner-rls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_APP_ENABLED: 'true'
+      HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_GUEST_ENABLED: 'true'
+      HH_APP_REPORTS_ENABLED: 'true'
+      HH_APP_SUPABASE_URL: http://127.0.0.1:54329
+      HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Verify two-owner coaching isolation
+        run: node --conditions=react-server --test --test-concurrency=1 tests/intelligence-coaching-rls.integration.mjs
