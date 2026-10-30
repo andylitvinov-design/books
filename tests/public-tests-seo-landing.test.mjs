@@ -56,7 +56,8 @@ test("SEO benefits and accessible FAQs are translated and non-diagnostic", () =>
     "Questions before you begin", "Вопросы перед началом", "Preguntas frecuentes",
     "without signing in", "без входа", "sin iniciar sesión",
   ]) assert.ok(landing.includes(snippet) || pageSource.includes(snippet), "Missing translation: " + snippet);
-  assert.match(landing, /<details key=\{question\}><summary>\{question\}<\/summary>/);
+  assert.match(landing, /data-public-tests-faq/);
+  assert.match(landing, /t\.faq\.map\(\(\[question, answer\]\) => <details key=\{question\}><summary>\{question\}<\/summary>/);
   assert.match(landing, /<Link className=\{styles\.primary\} href=\{testsHref\}/);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.doesNotMatch(pageSource + landing, /medical diagnosis guaranteed|certified diagnosis|cure your/i);
@@ -65,11 +66,76 @@ test("SEO benefits and accessible FAQs are translated and non-diagnostic", () =>
 test("public guide remains discoverable from three homepages without forcing a signup", () => {
   const sharedHome = read("components/holistic-house-home.tsx");
   const spanishHome = read("app/es/page.tsx");
-  const explore = read("components/home-explore-sections.tsx");
-  assert.match(sharedHome, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(spanishHome, /<HomeExploreSections locale="es" \/>/);
-  for (const text of ["How free self-checks work", "Как работают бесплатные тесты", "Cómo funcionan las pruebas"]) assert.ok(explore.includes(text));
-  assert.match(explore, /href=\{"\/" \+ locale \+ "\/tests"\}/);
-  assert.match(explore, /path: "\/client\/tests"/);
-  assert.match(explore, /href=\{"\/" \+ locale \+ "\/library"\}/);
+  // Current EN/RU/ES homepages render a compact carousel and a visible
+  // catalogue link rather than the retired multi-section homepage grid.
+  const carousel = read("components/home-section-carousel.tsx");
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(sharedHome, /<HomeSectionCarousel locale=\{locale\} \/>/);
+  assert.match(spanishHome, /<HomeSectionCarousel locale="es" \/>/);
+  assert.match(sharedHome, /<HomeMoreDisclosure locale=\{locale\} \/>/);
+  assert.match(spanishHome, /<HomeMoreDisclosure locale="es" \/>/);
+  for (const text of ["How free self-checks work", "Как работают бесплатные тесты", "Cómo funcionan las pruebas"])
+    assert.ok(more.includes(text), "Missing visible guide link in home locale: " + text);
+  assert.match(more, /href=\{"\/" \+ locale \+ "\/tests"\}/);
+  assert.match(more, /data-home-test-guide/);
+  // Current published carousel uses href, not the retired path field.
+  assert.match(carousel, /\{ key: "tests", href: "\/client\/tests"/);
+  assert.doesNotMatch(more, /onClick=\{.*signIn|auth\/start/);
+});
+
+
+test("PR SEO mobile browser executes all nine public EN/RU/ES viewports on isolated current code",()=>{
+ const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+ const browser=read("scripts/verify-public-tests-mobile.mjs");
+ assert.match(workflow,/^  public-tests-mobile:\n    runs-on: ubuntu-latest/m,
+   "The required browser specialist must execute, never skip, on a Ready PR");
+ assert.match(workflow,/if \[\[ "\$\{\{ github\.event_name \}\}" == "pull_request" \]\]/);
+ assert.match(workflow,/npx next dev --hostname 127\.0\.0\.1 --port 3182/);
+ assert.match(workflow,/HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(workflow,/if \(\( attempt == 90 \)\); then/);
+ assert.match(workflow,/trap 'kill "\$APP_PID" 2>\/dev\/null \|\| true' EXIT/);
+ assert.match(workflow,/else\n            node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(workflow,/if: github\.event_name == 'push'\n        run: sleep 160/);
+ assert.doesNotMatch(workflow,/public-tests-mobile:\n    if: github\.event_name != 'pull_request'/);
+ assert.match(browser,/const locales = \["en", "ru", "es"\]/);
+ assert.match(browser,/const widths = \[320, 390, 430\]/);
+ assert.match(browser,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+ assert.match(browser,/snapshot\.canonical === canonicalOrigin \+ path/);
+ assert.match(browser,/const expected = canonicalOrigin \+ "\/"/);
+ assert.match(browser,/Unexpected redirect URL/);
+ assert.match(browser,/snapshot\.primaryVisible && snapshot\.primaryHeight >= 44/);
+ assert.match(browser,/Horizontal overflow/);
+ assert.match(browser,/Public landing unexpectedly noindex/);
+ assert.match(browser,/no login|No login|No login,|No login,/i);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
+
+test("SEO mobile QA installs pinned isolated Chromium without mutating repository dependencies",()=>{
+ const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+ const script=read("scripts/verify-public-tests-mobile.mjs");
+ assert.match(workflow,/npm install --prefix \/tmp\/hh-seo-browser-tools --no-audit --no-fund playwright@1\.63\.0/);
+ assert.match(workflow,/\/tmp\/hh-seo-browser-tools\/node_modules\/\.bin\/playwright install --with-deps chromium/);
+ assert.match(workflow,/HH_SEO_PLAYWRIGHT_PACKAGE: \/tmp\/hh-seo-browser-tools\/node_modules\/playwright/);
+ assert.doesNotMatch(workflow,/npx --no-install playwright install/);
+ assert.match(script,/import \{ createRequire \} from "node:module"/);
+ assert.match(script,/require\(process\.env\.HH_SEO_PLAYWRIGHT_PACKAGE \|\| "playwright"\)/);
+ assert.match(workflow,/public-tests-mobile:\n    runs-on: ubuntu-latest/);
+ assert.match(workflow,/HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(script,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+ assert.match(script,/const widths = \[320, 390, 430\]/);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
+
+test("public tests mobile text and written review remain accessible", () => {
+  assert.ok(css.includes('.page[data-free-entry-landing="tests"] .hero .lead{font-size:16px'),
+    "The actual phone intro, not the decorative eyebrow, must be readable at >=15px");
+  assert.ok(landing.includes('href={"/" + locale + "/services/free-situation-review"}'),
+    "Offer the real local free written review without creating a lead on click");
+  for (const label of ["Free personal written review", "Бесплатный личный письменный разбор",
+    "Revisión personal gratuita por escrito"])
+    assert.ok(landing.includes(label), "Missing translated written review CTA: " + label);
+  assert.ok(css.includes(".testReviewLink{display:inline-flex;align-items:center;min-height:44px"),
+    "Optional mobile review control must have a 44px touch target");
 });
