@@ -49,7 +49,7 @@ export default async function SiteVideosPage() {
       />
       <SiteVideoManager initialRecords={records} initialLocale={initialLocale} storageReady={storageReady} entities={entities} />
       <MandalaVideoCodeAdmin locale={klingLocale}
-        enabled={process.env.HH_VIDEO_PAID_ENABLED==="true" && Boolean(process.env.HH_VIDEO_OPENROUTER_API_KEY) && Boolean(process.env.HH_VIDEO_CODE_HMAC_KEY)}/>
+        enabled={process.env.HH_VIDEO_PAID_ENABLED==="true" && Boolean(process.env.HH_VIDEO_HEYGEN_API_KEY) && Boolean(process.env.HH_VIDEO_CODE_HMAC_KEY)}/>
       <KlingSceneStudio
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
