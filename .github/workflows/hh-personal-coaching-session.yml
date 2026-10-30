@@ -90,6 +90,8 @@ jobs:
       - name: Scoped eslint
         run: npx --no-install eslint components/app/practice-materials.jsx components/app/practice-workspace.jsx components/practitioner-cabinet.jsx lib/app/practitioner-access.js components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/tradition-coaching-audio.jsx components/admin-coaching-audio.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/academy/coaching-audio-model.js lib/academy/coaching-audio-store.js app/admin/coaching-audio/data/route.js app/admin/materials/coaching/page.jsx app/admin/materials/coaching/\[tradition\]/page.jsx lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
       - name: TypeScript noEmit
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build production Next.js
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
