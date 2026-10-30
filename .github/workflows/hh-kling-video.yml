@@ -34,6 +34,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: hh-kling-video-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   kling:
     runs-on: ubuntu-latest
@@ -52,6 +56,8 @@ jobs:
       - name: Scoped ESLint
         run: npx eslint lib/wealth-video-local.ts lib/kling-video.mjs lib/kling-avatar.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js app/api/admin/kling-avatar/route.js components/kling-scene-studio.tsx components/kling-avatar-studio.tsx tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Next.js build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

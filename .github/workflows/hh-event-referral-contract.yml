@@ -15,6 +15,11 @@ on:
       - 'tests/paid-ad-referrals.test.mjs'
       - 'data/meta-ads-pilot-draft.json'
       - 'data/google-ads-pilot-draft.json'
+      - 'lib/crm/marketing.js'
+      - 'components/app/crm-marketing.jsx'
+      - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
+      - 'tests/crm-event-channel-attribution.test.mjs'
+      - '.github/workflows/hh-crm-event-channels.yml'
       - '.github/workflows/hh-event-referral-contract.yml'
   push:
     branches: [codex/public-book-library]
@@ -31,10 +36,19 @@ on:
       - 'tests/paid-ad-referrals.test.mjs'
       - 'data/meta-ads-pilot-draft.json'
       - 'data/google-ads-pilot-draft.json'
+      - 'lib/crm/marketing.js'
+      - 'components/app/crm-marketing.jsx'
+      - 'supabase/migrations/*hh_crm_event_channel_sources*.sql'
+      - 'tests/crm-event-channel-attribution.test.mjs'
+      - '.github/workflows/hh-crm-event-channels.yml'
       - '.github/workflows/hh-event-referral-contract.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: hh-event-referrals-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tracked-handoff-regression:
@@ -52,5 +66,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Event referral, messenger and privacy contracts
         run: node --test tests/organic-event-referrals.test.mjs tests/paid-ad-referrals.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/whatsapp-enquiries.test.mjs tests/free-review-conversion.test.mjs tests/acquisition-report.test.mjs tests/practitioner-service-analytics.test.mjs
+      - name: Event-source CRM and owner analytics regressions
+        run: node --test tests/crm-event-channel-attribution.test.mjs tests/crm-marketing.test.mjs tests/gbp-v3-toronto.test.mjs
       - name: Check TypeScript without publishing
         run: npx tsc --noEmit
