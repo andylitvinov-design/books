@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -280,4 +280,55 @@ test('wave 3 reviewed About video successor preserves all original PR paths and 
     for(const contract of entry.contracts) assert.ok(s.includes(contract),entry.into+' missing original contract '+contract);
     assert.ok(!s.includes('continue-on-error: true'),entry.into+' must fail closed');
   }
+});
+
+
+test('package and lockfile routing is exact-base scoped, with unknown changes full-scope', () => {
+  const before={name:'books',type:'module',dependencies:{next:'15.0.0'},scripts:{
+    'test:monetization':'node --test tests/paypal-personal-payments.test.mjs tests/billing-isolation.test.mjs',
+    build:'next build',
+  }};
+  const after=structuredClone(before);
+  after.scripts['test:monetization']=after.scripts['test:monetization'].replace(
+    'tests/paypal-personal-payments.test.mjs',
+    'tests/paypal-personal-payments.test.mjs tests/wallet-topups.test.mjs',
+  );
+  const original=JSON.stringify(before), proposed=JSON.stringify(after);
+  const changed=['package.json','tests/wallet-topups.test.mjs','lib/wallet/service.js'];
+  const impact=classifyPackageImpact({changed,basePackage:original,currentPackage:proposed});
+  assert.deepEqual(impact,{mode:'scoped',reason:'ADDITIVE_WALLET_MONETIZATION_TEST',
+    workflows:['.github/workflows/hh-billing-isolated.yml']});
+  const owner='.github/workflows/hh-billing-isolated.yml';
+  const ocean='.github/workflows/holistic-house-ocean-audio.yml';
+  const opora='.github/workflows/opora-module-ci.yml';
+  const app='.github/workflows/hh-app-r1.yml';
+  const workflow=paths=>"on:\\n  pull_request:\\n    paths:\\n"+paths.map(x=>"      - '"+x+"'\\n").join('');
+  const sources=new Map([
+    [owner,workflow(['package.json','lib/billing/**'])],
+    [ocean,workflow(['package.json','lib/audio/**'])],
+    [opora,workflow(['package.json','data/opora/**'])],
+    [app,workflow(['app/api/app/**','lib/app/**'])],
+  ]);
+  const base=new Map(sources), current=new Map(sources);
+  const selected=expectedWorkflows({base,current,changed,packageImpact:impact});
+  assert.deepEqual(selected,[owner], 'unrelated package-triggered suites are not REQUIRED by safe script-only update');
+  assert.deepEqual(expectedWorkflows({base,current,changed}),[ocean,opora,owner],
+    'until trusted classifier is deployed, the original full trigger scope remains intact');
+  const dependencies=structuredClone(after);
+  dependencies.dependencies.next='16.0.0';
+  const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
+  assert.equal(unsafe.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[ocean,opora,owner]);
+  const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
+  assert.equal(lockImpact.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
+    [ocean,opora,owner], 'unknown transitive lockfile changes fail closed');
+  const deleted=structuredClone(after);
+  deleted.scripts['test:monetization']='echo success';
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(deleted)}).mode,'full');
+  assert.equal(classifyPackageImpact({changed:[...changed,'package-lock.json'],
+    basePackage:original,currentPackage:proposed}).mode,'full');
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:'{broken'}).mode,'full');
+  assert.throws(()=>expectedWorkflows({base,current:new Map([...current].filter(([name])=>name!==owner)),
+    changed,packageImpact:impact}),/PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
 });
