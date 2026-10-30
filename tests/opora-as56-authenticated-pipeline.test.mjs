@@ -49,7 +49,10 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         // The invitation requires an affirmative answer before the first action.
         await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
         assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-practice-overview']===1))
-        await click(player,t.next) // Goal preview -> actual practice.
+        // The live AS-6.0 flow now places voluntary editorial channels between
+        // the goal preview and practice. Reaching the real practice control is
+        // required before reporting an attempt.
+        await advanceOporaTo(player,'practice',t.next)
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')
@@ -115,7 +118,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
         assert.equal(saved.signals.practiceEmotion?.customText,undefined)
         assert.ok(saved.signals.practiceEmotion?.customTextCiphertext?.length>30)
-        assert.equal(JSON.stringify(saved.signals).includes(answer),false)
+        // `welcomeFocus` is the approved public identifier `calm_regulation`;
+        // only the optional user-entered emotion must be absent from JSONB.
+        assert.equal(JSON.stringify(saved.signals.practiceEmotion).includes(answer),false)
         const readBack=await owner.read(locale)
         assert.equal(readBack.currentSession?.signals?.practiceEmotion?.customText,answer)
       }else if(day===11){
@@ -153,7 +158,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
     assert.deepEqual(saved.signals.opora54.answers, {
-        experienceEdition:'as-6.0-experiments-v1',lessonConfidence:'explored'})
+        experienceEdition:'as-6.0-experiments-v1',contentRevision:'variety-v1',lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
