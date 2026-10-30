@@ -74,16 +74,16 @@ test('synthetic browser fixture replays approved private Academy/Express migrati
       'No direct client grant for owner-only schemas: ' + path)
   }
   // Reiki v2 reuses the original owner-scoped Academy progress table.
-  assert.match(sqlByFile.get(files[0]), /alter table app_private\\.academy_course_progress force row level security/i)
+  assert.match(sqlByFile.get(files[0]), /alter table app_private\.academy_course_progress force row level security/i)
   assert.match(sqlByFile.get(files[0]), /create policy academy_course_progress_select/i)
-  assert.match(sqlByFile.get(files[1]), /alter table app_private\\.academy_course_progress/i)
-  assert.match(sqlByFile.get(files[1]), /grant update \\(course_version\\) on app_private\\.academy_course_progress to hh_app_backend/i)
+  assert.match(sqlByFile.get(files[1]), /alter table app_private\.academy_course_progress/i)
+  assert.match(sqlByFile.get(files[1]), /grant update \(course_version\) on app_private\.academy_course_progress to hh_app_backend/i)
   // The saved-account reply adds a practitioner policy to the previously
   // owner-protected link; it does not create a new unprotected table.
-  assert.match(sqlByFile.get(files[3]), /alter table app_private\\.free_express_account_links force row level security/i)
+  assert.match(sqlByFile.get(files[3]), /alter table app_private\.free_express_account_links force row level security/i)
   assert.match(sqlByFile.get(files[3]), /create policy free_express_account_links_owner_read/i)
   assert.match(sqlByFile.get(files[4]), /create policy free_express_account_links_practitioner_read/i)
-  assert.match(sqlByFile.get(files[4]), /trusted_auth_user_id=\\(select auth\\.uid\\(\\)\\)/i)
+  assert.match(sqlByFile.get(files[4]), /trusted_auth_user_id=\(select auth\.uid\(\)\)/i)
   assert.match(setup, /HH_APP_TEST_RUNTIME!=='isolated'/, 'must remain isolated only')
   assert.match(setup, /process.env.VERCEL/, 'must never initialize production')
   assert.match(setup, /Refusing to initialize nonempty test DB/, 'must not edit populated DB')
