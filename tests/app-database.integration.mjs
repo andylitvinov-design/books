@@ -1255,6 +1255,32 @@ function minimumMonitoringAnswers(definition) {
 test('every published monitoring test completes through the repository and returns a readable result', async () => {
   const items = MONITORING_CATALOG.filter((item) => item.startable)
   assert.ok(items.length >= 42, 'the published catalog should not shrink when adding instruments')
+  // Fail with the exact missing source version instead of a late generic 503.
+  // This is a read-only CI seed parity check, never a synthetic enrollment.
+  const expectedVersions = items.map((item) => {
+    const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
+    const def = getAssessmentDefinition(item.key, item.version, locale)
+    return { id: def.id, key: item.key, version: item.version, locale, hash: def.contentHash }
+  })
+  const admin = await adminClient()
+  let storedVersions
+  try {
+    storedVersions = (await admin.query(
+      'select id,content_hash from app.assessment_versions where id=any($1::uuid[])',
+      [expectedVersions.map((version) => version.id)],
+    )).rows
+  } finally {
+    await admin.end()
+  }
+  const actualHashes = new Map(storedVersions.map((row) => [row.id, row.content_hash]))
+  const missingVersions = expectedVersions.filter((v) => actualHashes.get(v.id) !== v.hash)
+  assert.equal(
+    missingVersions.length, 0,
+    'UNSEEDED_MONITORING_FIXTURE: ' + missingVersions
+      .map((v) => v.key + '@' + v.version + '/' + v.locale)
+      .join(', '),
+  )
+
   const created = []
 
   for (const item of items) {
@@ -2022,7 +2048,10 @@ test('private session share grants enforce per-consultation ownership under real
     await db.query('create schema if not exists storage')
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
     const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    // setup() already applied the approved SQL once; duplicate CREATE POLICY fails.
+    assert.match(sql,/create policy hh_delivery_server_only/)
+    const parents=await db.query("select to_regclass('app_private.client_delivery_sessions') as sessions,to_regclass('app_private.client_delivery_assets') as assets")
+    assert.ok(parents.rows[0].sessions&&parents.rows[0].assets)
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)
