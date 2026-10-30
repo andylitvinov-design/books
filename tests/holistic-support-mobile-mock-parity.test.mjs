@@ -102,3 +102,15 @@ test("approved screenshot uses scenic video first; every category has matching t
   assert.match(talisman, /data-support-talisman-rail/);
   assert.match(talismanCss, /\.rail\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 });
+
+test("mobile screenshot acceptance runs all 18 isolated cases with bounded concurrency", () => {
+  const script = read("scripts/verify-holistic-support-mock-fidelity.mjs");
+  assert.match(script, /supportCases = \["ru", "en", "es"\]\.flatMap/);
+  assert.match(script, /\[320, 390, 430\]\.map\(width/);
+  assert.match(script, /\[chromium, webkit\]/);
+  assert.match(script, /Promise\.allSettled\(supportCases\.slice\(from, from \+ 2\)/);
+  assert.match(script, /if \(rejected\) throw rejected\.reason/);
+  assert.match(script, /assert\.equal\(evidence\.length, 18/);
+  assert.match(script, /await page\.close\(\)/);
+  assert.match(script, /serviceWorkers: "block"/);
+});

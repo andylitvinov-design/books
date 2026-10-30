@@ -60,11 +60,19 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify public source hashes and static lookup paths
         run: node --test tests/public-card-artwork-cost-guard.test.mjs tests/public-card-artwork-reuse-secondary.test.mjs
+      # Every production-targeted PR already has an unconditional exact-head
+      # Core Next build/typecheck. The image gate must still generate and decode
+      # all 85 pinned WebP outputs independently before claiming success.
+      - name: Regenerate all content-pinned WebP on production PR
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        run: npm run build:static-artwork
       - name: Build real Next.js app with prebuilt static WebP
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
       - name: Prove generated WebP images are usable and bounded
         run: node --test tests/public-card-artwork-generated.test.mjs
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit

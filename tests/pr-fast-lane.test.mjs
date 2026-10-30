@@ -32,6 +32,41 @@ test('seven formerly unconditional PR workflows run only on relevant paths', () 
   }
 });
 
+test('OPORA My Courses test-only routing is exact; App R1 still verifies the full app suite', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const pathsOf = src => {
+    const block = src.match(/^  pull_request:\s*\n([\s\S]*?)(?=^permissions:|^concurrency:|^jobs:)/m);
+    assert.ok(block, 'production-targeted PR trigger required');
+    return [...block[1].matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
+  };
+  const oporaPaths = pathsOf(opora), appPaths = pathsOf(app);
+  const covers = (paths, filename) => paths.some(pattern => requireGlob(filename, pattern));
+  for (const filename of ['tests/my-course-moment-trends.test.mjs', 'tests/my-course-programs.test.mjs']) {
+    assert.ok(oporaPaths.includes(filename), 'OPORA must run its directly invoked test ' + filename);
+    assert.equal(covers(oporaPaths, filename), true);
+  }
+  assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
+  assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
+  assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
+  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
+  }
+  const moduleTests = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(moduleTests, 'OPORA unit suite must be retained');
+  const executed = [...moduleTests.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
+  assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
+  assert.ok(executed.length >= 47, 'retain all 47 proven OPORA cases as the suite grows');
+  for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
+    assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
+  }
+  assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.match(opora, /browser: \[chromium, webkit\]/);
+  assert.match(opora, /cancel-in-progress: true/);
+  assert.doesNotMatch(opora, /continue-on-error:\s*true/);
+});
+
 test('one unconditional fail-closed release-ready gate protects core code validation', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
@@ -354,4 +389,93 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
     const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
     assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
+});
+
+
+const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
+  for (const [file,prefix,job] of [
+    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ['library-public-feed.yml','hh-library-feed','isolated-build'],
+  ]) {
+    const src=workflow(file);
+    assert.match(src,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+    assert.match(src,new RegExp('^  '+job+':\\n    if:','m'));
+    assert.ok(src.includes("github.event_name != 'pull_request' || github.event.pull_request.draft == false"));
+    assert.equal((src.match(/^concurrency:/gm)||[]).length,1);
+    assert.ok(src.includes('group: '+prefix+'-'+prGroupSuffix));
+    assert.ok(src.includes('cancel-in-progress: '+prOnlyCancel));
+    assert.ok(src.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"));
+    assert.match(src,/node (?:--conditions=react-server )?--test/);
+    assert.match(src,/eslint/);
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+  const lib=workflow('library-public-feed.yml');
+  assert.match(lib,/^  workflow_dispatch:/m);
+  assert.match(lib,/run: npm run build/);
+  assert.match(lib,/playwright install --with-deps chromium webkit/);
+  assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
+  const about=workflow('holistic-about-video-check.yml');
+  assert.match(about,/npx tsc --noEmit/);
+  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+});
+
+test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
+  const prPaths = name => {
+    const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
+    return [...trigger.matchAll(/^      - '([^']+)'$/gm)].map(item=>item[1]);
+  };
+  const covers = (patterns, file) => {
+    let included = false;
+    for (const pattern of patterns) {
+      const negative = pattern.startsWith('!');
+      if (requireGlob(file, negative ? pattern.slice(1) : pattern)) included = !negative;
+    }
+    return included;
+  };
+  const publicServices = prPaths('hh-public-services-production.yml');
+  const ideas = prPaths('hh-ideas-coaching-public.yml');
+  const mock = prPaths('hh-support-mobile-mock-browser.yml');
+  for (const file of [
+    'scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+  ]) {
+    assert.equal(covers(mock,file),true,file+' must still run real Chromium/WebKit mock QA');
+    assert.equal(covers(publicServices,file),false,file+' must not trigger unrelated services acceptance');
+  }
+  assert.equal(covers(ideas,'tests/holistic-support-mobile-mock-parity.test.mjs'),false);
+  for (const file of [
+    'components/holistic-support-mobile.tsx',
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'scripts/verify-holistic-master-browser.mjs',
+    'app/ru/holistic-support/page.tsx',
+    'app/api/payments/some-service/route.ts',
+    'tests/temple-support-hub.test.mjs',
+  ]) assert.equal(covers(publicServices,file),true,file+' must still enforce full services acceptance');
+  for (const file of [
+    'components/ideas-discovery.tsx',
+    'tests/holistic-support-first-screen.test.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+  ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
+  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+});
+
+test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const reports = workflow('hh-reports-development-program.yml');
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.match(reports, /^  pull_request:/m);
+  assert.match(reports, /^  push:/m);
+  assert.ok(reports.includes('.github/workflows/hh-reports-development-program.yml'));
+  assert.ok(reports.includes('- name: Verify production Next.js build without preview deployment\n        '+gate+'\n        run: npm run build'));
+  assert.ok(reports.includes('tests/reports-development-program.test.mjs'));
+  assert.ok(reports.includes('tests/goal-profile-journey.test.mjs'));
+  assert.match(reports, /node --conditions=react-server --test/);
+  assert.match(reports, /npx --no-install eslint/);
+  assert.doesNotMatch(reports,/continue-on-error:\s*true/);
 });
