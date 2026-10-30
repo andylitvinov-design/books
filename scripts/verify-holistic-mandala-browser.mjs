@@ -351,18 +351,40 @@ const runEngine = async ([engine, browserType]) => {
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
-        const landmarks=await page.evaluate(()=>{
+        const hierarchy=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
-          return ["[data-video-daily-picks]",
-            "[data-video-support-layout]","[data-video-category-rail]",
-            "[data-video-preview-choices]","[data-video-mandala-hero]",
-            "[data-video-therapy-banner]","#video-templates",
-            "[data-video-audio-section]","[data-video-hypnosis-section]"]
-            .map(top);
+          return {
+            // Owner-approved flow: ONE real hero and its existing film library
+            // appear BEFORE the format cards, styles and secondary settings.
+            preview:[
+              '[data-video-quick-section="1"]',
+              "[data-video-mandala-hero]",
+              "[data-video-mini-source]",
+              "[data-video-scene-library]",
+              "[data-video-quick-tier]",
+              '[data-video-quick-section="4"]',
+              "[data-video-quick-personal]",
+              "[data-video-order-bar]"
+            ].map(top),
+            // Historical Support/diagnostic functionality is retained below,
+            // with its own real video interactions, audio and hypno editors.
+            support:[
+              "[data-video-daily-picks]",
+              "[data-video-support-layout]",
+              "[data-video-category-rail]",
+              "[data-video-preview-choices]",
+              "[data-video-therapy-banner]",
+              "[data-video-audio-section]",
+              "[data-video-hypnosis-section]"
+            ].map(top)
+          };
         });
-        assert.ok(landmarks.every(Number.isFinite),"all key video blocks must be rendered");
-        for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
-          engine+" "+locale+" "+width+"px hierarchy "+i+": "+landmarks);
+        for(const [group,landmarks] of Object.entries(hierarchy)){
+          assert.ok(landmarks.every(Number.isFinite),
+            engine+" "+locale+" "+width+"px "+group+" contains all real sections");
+          for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
+            engine+" "+locale+" "+width+"px "+group+" hierarchy "+i+": "+landmarks);
+        }
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
