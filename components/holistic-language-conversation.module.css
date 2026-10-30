@@ -39,3 +39,15 @@
 .generated button{flex:none;min-height:36px;border-radius:9px;padding:7px 10px;
   border:1px solid #a1c9d3;background:#fff;color:#245b69;font-weight:700;cursor:pointer}
 .generated button:focus-visible{outline:3px solid #078aa6;outline-offset:2px}
+
+/* Explicit, never automatic memory proposal from user-phrased request. */
+.memoryRequest{padding:12px;background:#f2fbf6;border:1px solid #b8ddc7;border-radius:13px;
+  display:grid;gap:9px;min-width:0}
+.memoryRequest p{margin:0;display:grid;gap:5px;font-size:13px;line-height:1.4;color:#285847;overflow-wrap:anywhere}
+.memoryRequest strong{font-weight:700;color:#174b3a}
+.memoryRequest div{display:flex;gap:8px;flex-wrap:wrap}
+.memoryRequest button{border:1px solid #a2caba;border-radius:9px;background:#fff;color:#195a43;
+  padding:8px 12px;min-height:40px;font-weight:700;cursor:pointer}
+.memoryRequest button:first-child{background:#096a4e;color:#fff;border-color:#096a4e}
+.memoryRequest button:disabled{opacity:.5;cursor:not-allowed}
+.memoryNotice{margin:0;font-size:13px;color:#315f50}

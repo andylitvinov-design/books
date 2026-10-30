@@ -8,10 +8,12 @@ export type LocalRequest = {
   minutes:number|null; brevity:"short"|"normal"|"detailed";
   address:"formal"|"informal"|"neutral";hasApprovedMatches:boolean;
 };
-export type LocalContext = {version:string;locale:"en"|"ru"|"es";request:LocalRequest;turns:LocalTurn[]};
+export type LocalMemory = {kind:"preferred_name"|"communication_style"|"response_length"|"avoid_format"|"personal_accent";value:string};
+export type LocalContext = {version:string;locale:"en"|"ru"|"es";request:LocalRequest;turns:LocalTurn[];memory:LocalMemory[]};
 export function prepareLocalConversation(args?:{
   history?:Array<{role:string;text:string}>;
   currentMessage?:string;
+  memory?:Array<{kind:string;value:string}>;
   decision?:{
     status?:string;
     state?:{locale?:string;topic?:string|null;format?:string|null;
