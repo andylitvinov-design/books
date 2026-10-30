@@ -436,3 +436,29 @@ test("iPhone release layout has slim diagnostic bar, Picks, visible Support head
   assert.match(browser,/activeTherapyBackground/);
 });
 
+
+test("golden collapsible offer accordion is a display-only choice with one real source",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const block=studio.slice(studio.indexOf("data-video-quick-tier"),studio.indexOf('data-video-quick-section="2"'));
+  assert.ok(block.length>1000,"format selection belongs above detailed imagery settings");
+  assert.match(studio,/video:\{light:0,smart:2,pro:9\.90\}/);
+  assert.match(studio,/meditation:\{light:2\.90,smart:4\.90,pro:null\}/);
+  assert.match(studio,/course:\{light:19\.90,smart:null,pro:39\}/);
+  assert.match(block,/data-video-practice-accordion/);
+  assert.match(block,/data-video-practice-pick=\{type\}/);
+  assert.match(block,/data-video-practice-details=\{type\}/);
+  assert.match(block,/hidden=\{!selected\}/);
+  assert.match(block,/data-video-quality-option=\{type\+"-"\+tier\}/);
+  assert.equal((studio.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
+    "video preview must reuse existing real media master");
+  assert.match(block,/src=\{activeFilm\.src\}/);
+  assert.match(studio,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\} onClick=\{createQuickVideo\}/);
+  assert.match(studio,/if\(!freeVideoSelected\)\{setNotice\(offer\.pending\);return;\}/);
+  assert.match(css,/\.quickOfferDemo\{[\s\S]*?aspect-ratio:16\/9/);
+  assert.match(css,/\.quickOfferDetails\[hidden\]\{display:none\}/);
+  assert.match(css,/\.quickOfferCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
+  for(const label of ["Видео + личная медитация","Video + personal meditation","Vídeo + meditación personal"])
+    assert.ok(studio.includes(label),"EN/RU/ES paid offer descriptive text");
+  assert.doesNotMatch(block,/(?:purchase|checkout|wallet|debit|spend)[A-Za-z]*\s*\(/i);
+});
