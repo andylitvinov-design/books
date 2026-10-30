@@ -5,6 +5,7 @@ import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { oporaAs60VariedDay, OPORA_VARIETY_REVISION } from '../lib/inner-growth/opora-as60-varied-content.js'
+import { OPORA_EXPERIENCE_SCENES } from '../lib/inner-growth/opora-as60-integrated-journey.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -124,6 +125,19 @@ try {
       await expect(page.locator('[data-opora-overview-purpose]')).toContainText(dayCopy.result)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
+      // Four voluntary AS-6.0 channels now precede the first practice.
+      // No channel selection may count as a saved/attempted exercise.
+      assert.deepEqual([...OPORA_EXPERIENCE_SCENES],
+        ['bodyExperience','emotionExperience','mentalExperience','imageryMeditation','ritualPractice'])
+      for(const [moment,channel] of [
+        ['bodyExperience','body'],['emotionExperience','emotion'],
+        ['mentalExperience','mental'],['imageryMeditation','imagery'],
+      ]){
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await expect(page.locator('[data-opora-experience-channel="'+channel+'"]')).toBeVisible()
+        await assertBounds(moment)
+      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -154,10 +168,16 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // Feel; navigation closes optional original guidance.
+      await click(t.next) // The optional ritual follows the practice.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
+      await click(t.next) // Feel follows the ritual; no hidden submission.
+      await expect(page.locator('[data-opora-current-screen="feel"]')).toBeVisible()
       await click(t.pause); await click(t.neutral)
-      await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
+      await click(t.previous) // Feel -> Ritual -> Practice; no guidance leak.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await click(t.previous)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await assertNeutral()
       await click(t.original)
       await click(t.pause); await click(t.back)
