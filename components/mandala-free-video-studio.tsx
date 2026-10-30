@@ -930,11 +930,21 @@ function ThemedFilmThumbnail({film,scene,photo,title,playing}: {
   useEffect(()=>{
     const video=ref.current;if(!video)return;
     if(!playing||!visible){video.pause();return;}
+    // WebKit may signal playing on a preload=none thumbnail while the
+    // decoded first frame remains stalled. Prime the selected local MP4
+    // as a native muted autoplay video, matching working money thumbnails.
     video.muted=true;
-    void video.play().catch(()=>{/* iOS may require another direct tap. */});
+    if(video.readyState<2)video.load();
+    void video.play().catch(()=>{/* onCanPlay retries the selected visible clip. */});
     return ()=>video.pause();
   },[playing,visible,film.src]);
-  return <video ref={ref} muted playsInline loop preload="none" src={film.src} poster={film.poster}
+  return <video ref={ref} muted playsInline loop
+    autoPlay={playing&&visible} preload={playing&&visible?"auto":"none"}
+    onCanPlay={event=>{
+      if(playing&&visible){event.currentTarget.muted=true;
+        void event.currentTarget.play().catch(()=>{/* iOS can require a second gesture. */});}
+    }}
+    src={film.src} poster={film.poster}
     aria-label={title} data-mandala-scene-preview={scene} data-real-mp4={film.src}
     data-photo-overlay-available={photo?"true":"false"}
     data-scene-playing={playing&&visible?"true":"false"}
