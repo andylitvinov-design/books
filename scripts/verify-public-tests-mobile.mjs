@@ -4,7 +4,12 @@
 import { chromium } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 
-const origin = (process.env.HH_SEO_AUDIT_ORIGIN || "https://holistichouse.vercel.app").replace(/\/$/, "");
+const canonicalOrigin = "https://holistichouse.vercel.app";
+const origin = (process.env.HH_SEO_AUDIT_ORIGIN || canonicalOrigin).replace(/\/$/, "");
+// PR runs may only target an isolated loopback server; release/dispatch checks the canonical public site.
+if (origin !== canonicalOrigin && !/^http:\/\/(?:127\.0\.0\.1|localhost):\d{2,5}$/.test(origin)) {
+  throw new Error("SEO browser QA accepts only canonical production or isolated loopback");
+}
 const locales = ["en", "ru", "es"];
 const widths = [320, 390, 430];
 const height = 844;
@@ -72,12 +77,12 @@ try {
         check(snapshot.title.length >= 20, "Short/empty title");
         check(snapshot.description.length >= 80 && snapshot.description.length <= 170,
           "Description missing or too long: " + snapshot.description.length);
-        check(snapshot.canonical === origin + path, "Canonical not self-referencing");
+        check(snapshot.canonical === canonicalOrigin + path, "Canonical not self-referencing");
         check(!/\bnoindex\b/i.test(snapshot.robots) &&
           !/\bnoindex\b/i.test(response?.headers()["x-robots-tag"] || ""),
           "Public landing unexpectedly noindex");
         for (const language of [...locales, "x-default"]) {
-          const expected = origin + "/" + (language === "x-default" ? "en" : language) + "/tests";
+          const expected = canonicalOrigin + "/" + (language === "x-default" ? "en" : language) + "/tests";
           check(snapshot.alternates[language] === expected,
             "Wrong " + language + " alternate: " + (snapshot.alternates[language] || "missing"));
         }

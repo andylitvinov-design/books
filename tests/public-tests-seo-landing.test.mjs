@@ -82,3 +82,30 @@ test("public guide remains discoverable from three homepages without forcing a s
   assert.match(carousel, /\{ key: "tests", href: "\/client\/tests"/);
   assert.doesNotMatch(more, /onClick=\{.*signIn|auth\/start/);
 });
+
+
+test("PR SEO mobile browser executes all nine public EN/RU/ES viewports on isolated current code",()=>{
+ const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+ const browser=read("scripts/verify-public-tests-mobile.mjs");
+ assert.match(workflow,/^  public-tests-mobile:\n    runs-on: ubuntu-latest/m,
+   "The required browser specialist must execute, never skip, on a Ready PR");
+ assert.match(workflow,/if \[\[ "\$\{\{ github\.event_name \}\}" == "pull_request" \]\]/);
+ assert.match(workflow,/npx next dev --hostname 127\.0\.0\.1 --port 3182/);
+ assert.match(workflow,/HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(workflow,/if \(\( attempt == 90 \)\); then/);
+ assert.match(workflow,/trap 'kill "\$APP_PID" 2>\/dev\/null \|\| true' EXIT/);
+ assert.match(workflow,/else\n            node scripts\/verify-public-tests-mobile\.mjs/);
+ assert.match(workflow,/if: github\.event_name == 'push'\n        run: sleep 160/);
+ assert.doesNotMatch(workflow,/public-tests-mobile:\n    if: github\.event_name != 'pull_request'/);
+ assert.match(browser,/const locales = \["en", "ru", "es"\]/);
+ assert.match(browser,/const widths = \[320, 390, 430\]/);
+ assert.match(browser,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+ assert.match(browser,/snapshot\.canonical === canonicalOrigin \+ path/);
+ assert.match(browser,/const expected = canonicalOrigin \+ "\/"/);
+ assert.match(browser,/Unexpected redirect URL/);
+ assert.match(browser,/snapshot\.primaryVisible && snapshot\.primaryHeight >= 44/);
+ assert.match(browser,/Horizontal overflow/);
+ assert.match(browser,/Public landing unexpectedly noindex/);
+ assert.match(browser,/no login|No login|No login,|No login,/i);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
