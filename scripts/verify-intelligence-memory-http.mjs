@@ -8,6 +8,9 @@ import {getAppConfig} from '../lib/app/config.js'
 import {createRequestAuth} from '../lib/app/session.js'
 import {createAppRepository} from '../lib/app/repository.js'
 import {closeDatabase} from '../lib/app/database.js'
+import {readDevelopmentGoals,saveDevelopmentGoals} from '../lib/app/development-goals.js'
+import {DEFAULT_DEVELOPMENT_TARGETS} from '../lib/profile/development-program.js'
+import {getAssessmentDefinition} from '../lib/assessments/definitions.js'
 import {A,B,SB,actor,rawAs} from '../tests/helpers/app-db-setup.mjs'
 
 const origin='http://127.0.0.1:3187', config=getAppConfig(), db=new URL(config.databaseUrl)
@@ -23,6 +26,14 @@ await repo.ensureAccount(bActor)
 await repo.onboarding(bActor,{adult:true,necessary:true,marketing:false,displayName:'Synthetic',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
 // The database regression created an owner-A course and left it paused.
 await rawAs(actor(),'hh_app_backend',db=>db.query("update app_private.growth_courses set status='active' where account_id=$1",[A]))
+// Each run uses the real, owner-scoped assessment and goal APIs with only
+// synthetic data. A new operation makes repeated WebKit runs independent.
+const ownActor=actor(), savedGoals=await readDevelopmentGoals(config,ownActor)
+await saveDevelopmentGoals(config,ownActor,{version:1,targets:{...DEFAULT_DEVELOPMENT_TARGETS,body:95,work:95,growth:95},details:{},revision:savedGoals.revision})
+const weekly=getAssessmentDefinition('hh-weekly-pulse','v1','en')
+const weeklyRun=await repo.startRun(ownActor,{definitionKey:weekly.key,definitionVersion:weekly.version,instrumentLocale:weekly.instrumentLocale,operationId:randomUUID()})
+const weeklySaved=await repo.saveRun(ownActor,weeklyRun.id,{answers:Object.fromEntries(weekly.questions.map(q=>[q.id,q.max??weekly.answerScale.max])),context:{},progress:weekly.questions.length,expectedRevision:weeklyRun.revision,operationId:randomUUID()})
+await repo.submitRun(ownActor,weeklyRun.id,{expectedRevision:weeklySaved.revision})
 const challenges=new Map()
 const user=kind=>({id:ids[kind][0],aud:'authenticated',email:'synthetic@example.invalid',user_metadata:{}})
 const token=kind=>{const [sub,session_id]=ids[kind];return 'synthetic.'+Buffer.from(JSON.stringify({sub,session_id,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.signature'}
@@ -93,6 +104,11 @@ try {
   assert.equal(ownCourse.primary?.href,'/en/app/course?view=courses')
   assert.equal(otherCourse.status,'no_match')
   assert.doesNotMatch(JSON.stringify(ownCourse),/accountId|courseId|concerns|results/)
+  const developmentBody={...continueBody,intent:{language:'en',selectedTopics:['goals'],formats:['course']},courseSelection:'development_plan'}
+  const ownDevelopment=await plan(a,developmentBody), otherDevelopment=await plan(b,developmentBody)
+  assert.equal(ownDevelopment.primary?.href,'/en/app/course?program=stress')
+  assert.equal(otherDevelopment.status,'no_match')
+  assert.doesNotMatch(JSON.stringify(ownDevelopment),/accountId|resultId|dimensions|targets|priorityPercent/)
   const unfiltered=await plan(a,planBody)
   assert.equal(offered(unfiltered).includes(input.itemId),true)
   const filtered=await plan(a,{...planBody,feedbackHistory:'avoid_not_useful'})
@@ -155,6 +171,42 @@ try {
         await courses.locator('[data-my-courses-dashboard]').waitFor({state:'hidden',timeout:30000})
         await courses.locator('[data-my-course]').waitFor({state:'visible'})
         await courses.close();await coursePage.close()
+      }
+      for (const [locale,width,next,choose,no,skip,start] of [
+        ['en',390,'Continue','Use my goals and test results','No','Skip','Start'],
+        ['ru',320,'Продолжить','Использовать мои цели и результаты тестов','Нет','Пропустить','Начать'],
+      ]) {
+        const goalPage=await context.newPage()
+        await goalPage.setViewportSize({width,height:844})
+        await goalPage.goto(`${origin}/${locale}/app/portfolio`,{waitUntil:'networkidle',timeout:60000})
+        await goalPage.locator('#hh-portrait-tab-recommendations').click()
+        const goalCard=goalPage.locator('[data-holistic-intelligence]')
+        await goalCard.locator('select').selectOption('goals')
+        await goalCard.getByRole('button',{name:next,exact:true}).click()
+        await goalCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
+        await goalCard.getByRole('button',{name:next,exact:true}).click()
+        await goalCard.getByRole('button',{name:choose,exact:true}).click()
+        await goalCard.getByRole('button',{name:no,exact:true}).click()
+        await goalCard.getByRole('button',{name:no,exact:true}).click()
+        const planRequest=goalPage.waitForRequest(request=>request.url().endsWith('/api/app/intelligence/plan')&&request.method()==='POST')
+        await goalCard.getByRole('button',{name:skip,exact:true}).click()
+        const sent=JSON.parse((await planRequest).postData())
+        assert.equal(sent.courseSelection,'development_plan')
+        assert.doesNotMatch(JSON.stringify(sent),/accountId|resultId|dimensions|targets|priorityPercent/)
+        const link=goalCard.getByRole('link',{name:start,exact:true})
+        await link.waitFor({state:'visible'})
+        assert.equal(await link.getAttribute('href'),`/${locale}/app/course?program=stress`)
+        assert.equal(await goalPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+        const count=async()=>Number((await rawAs(ownActor,'hh_app_backend',db=>db.query('select count(*)::int as count from app_private.growth_courses where account_id=$1',[A]))).rows[0].count)
+        const beforeCount=await count()
+        const opened=goalPage.waitForEvent('popup');await link.click();const course=await opened
+        await course.waitForURL(`**/${locale}/app/course?program=stress`)
+        await course.locator('[data-my-course]').waitFor({state:'visible',timeout:60000})
+        assert.equal(await count(),beforeCount,'opening a recommendation cannot enrol the client')
+        await course.close()
+        await goalCard.getByRole('button',{name:skip,exact:true}).click()
+        assert.equal((await call('export',a)).body.records.length,0)
+        await goalPage.close()
       }
       const page=await context.newPage()
       let saveRequests=0, saveFailure=null, pageErrors=0

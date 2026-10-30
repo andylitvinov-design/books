@@ -117,5 +117,5 @@ test('saved goals and verified scores are projected only for their owner',async(
   const other=await planIntelligenceRequest(request,{loadDevelopmentPlan:loadFor(b)})
   assert.equal(own.primary?.href,'/en/app/course?program=stress')
   assert.equal(other.status,'no_match')
-  assert.doesNotMatch(JSON.stringify(own),/resultId|accountId|dimensions|95/)
+  assert.doesNotMatch(JSON.stringify(own),/resultId|accountId|dimensions|targets|priorityPercent/)
 })

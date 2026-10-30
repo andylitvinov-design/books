@@ -18,7 +18,7 @@ const project=(results,snapshot=goals)=>projectDevelopmentCourse({results,accoun
 test('only owner-verified fresh source and saved goals can yield a published course',()=>{
   const output=project([sample()])
   assert.deepEqual(output,{courseId:'stress'})
-  assert.doesNotMatch(JSON.stringify(output),/synthetic|accountId|dimensions|score|95/)
+  assert.doesNotMatch(JSON.stringify(output),/synthetic|accountId|dimensions|score|targets/)
   assert.deepEqual(project([sample(other)]),{courseId:null})
   assert.deepEqual(project([sample()],{...goals,revision:0}),{courseId:null})
   assert.deepEqual(project([sample(owner,'2026-01-01T00:00:00Z')]),{courseId:null})
@@ -48,7 +48,7 @@ test('goal and result analysis occurs only on the explicit private choice after 
   assert.equal(result.status,'recommend')
   assert.equal(result.primary.href,'/en/app/course?program=stress')
   assert.equal(result.primary.requiresUserConfirmation,true)
-  assert.doesNotMatch(JSON.stringify(result),/accountId|dimensions|resultId|score|95/)
+  assert.doesNotMatch(JSON.stringify(result),/accountId|dimensions|resultId|score|targets/)
   assert.equal((await planIntelligenceRequest(chosen,{loadDevelopmentPlan:async()=>({courseId:null})})).status,'no_match')
   assert.equal((await planIntelligenceRequest(chosen,{loadDevelopmentPlan:async()=>({courseId:'unapproved'})})).status,'unavailable')
 })
