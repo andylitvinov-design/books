@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
-import {Check,Download,Film,LockKeyhole,RefreshCw} from "lucide-react";
+import {Download,Film,LockKeyhole,RefreshCw} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-code-redeem.module.css";
 
