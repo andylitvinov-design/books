@@ -156,7 +156,7 @@ try {
         await coursePage.locator('#hh-portrait-tab-recommendations').click()
         const courseCard=coursePage.locator('[data-holistic-intelligence]')
         await courseCard.locator('select').selectOption(topic)
-        await courseCard.getByRole('button',{name:next,exact:true}).click()
+        await stableAdvance(coursePage,courseCard.getByRole('button',{name:next,exact:true}))
         await courseCard.locator('#hh-intelligence-format-cabinet').selectOption('course')
         await stableAdvance(coursePage,courseCard.getByRole('button',{name:next,exact:true}))
         try { await courseCard.getByRole('button',{name:continueCourse,exact:true}).click() }
