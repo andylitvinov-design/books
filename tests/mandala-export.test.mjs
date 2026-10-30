@@ -70,12 +70,12 @@ test("Mandala browser acceptance preserves 10 independent encoded-video E2E scen
   assert.match(script, /spawnSync\("ffmpeg"/);
 });
 
-test('synthetic Mandala overview screenshots use bounded document clip without animation-stability hangs', () => {
+test('synthetic Mandala screenshots retain the full public page without animation-stability hangs', () => {
   const browser = read('scripts/verify-holistic-mandala-browser.mjs');
   assert.match(browser, /async function captureSyntheticOverview\(page, locator, path\)/);
   assert.match(browser, /getBoundingClientRect\(\)/);
-  assert.match(browser, /clip\.width>0 && clip\.height>0/);
-  assert.match(browser, /page\.screenshot\(\{path,clip,animations:"disabled",timeout:30000\}\)/);
+  assert.match(browser, /bounds\.width>0 && bounds\.height>0/);
+  assert.match(browser, /page\.screenshot\(\{path,fullPage:true,animations:"disabled",timeout:30000\}\)/);
   assert.match(browser, /captureSyntheticOverview\(page, compactHypno/);
   assert.match(browser, /captureSyntheticOverview\(page, page\.locator/);
   assert.match(browser, /Mandala browser E2E:/);

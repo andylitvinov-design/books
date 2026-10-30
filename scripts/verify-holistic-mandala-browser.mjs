@@ -36,17 +36,17 @@ function syntheticAudioWav(seconds=3) {
     Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
   return bytes;
 }
-// Capture the real guest element in document coordinates without waiting for
-// a continuously animated video/canvas to become Playwright-locator 'stable'.
-// This keeps the same element pixels and does not bypass DOM/media assertions.
+// Capture the entire synthetic guest page. Moving video/canvas content no
+// longer causes Playwright to wait for locator stability or offscreen clip.
+// Independent real media, accessibility and layout assertions remain mandatory.
 async function captureSyntheticOverview(page, locator, path) {
-  const clip = await locator.evaluate(element => {
-    const bounds = element.getBoundingClientRect();
-    return {x:bounds.left+window.scrollX,y:bounds.top+window.scrollY,
-      width:bounds.width,height:bounds.height};
+  const bounds = await locator.evaluate(element => {
+    element.scrollIntoView({block:"start",behavior:"instant"});
+    const rect=element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height};
   });
-  assert.ok(clip.width>0 && clip.height>0,'Synthetic Mandala overview must have visible bounds');
-  await page.screenshot({path,clip,animations:"disabled",timeout:30000});
+  assert.ok(bounds.width>0 && bounds.height>0,'Synthetic Mandala overview must have visible bounds');
+  await page.screenshot({path,fullPage:true,animations:"disabled",timeout:30000});
 }
 
 const bufferFromStream = async stream => {
