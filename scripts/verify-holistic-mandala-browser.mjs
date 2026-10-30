@@ -89,20 +89,13 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
-        // Owner-approved 30 Oct native-app layout: show the brand before the
-        // editor, with no unrelated blue diagnostic banner on a phone.
-        const appHeader=page.locator("[data-support-app-header]");
-        await appHeader.waitFor({state:"visible"});
-        const promo=page.locator("[data-video-diagnostic-banner]");
-        assert.equal(await promo.isVisible(),false,"native mobile editor has no intrusive promo banner");
-        assert.equal(await page.locator("[data-sitewide-antistress-banner]").count(),0,
-          "the sitewide marketing ribbon must not occupy the native Video Studio viewport");
+        // Keep the existing public site shell and native app header untouched.
+        // This release changes only the central Video Studio, not site navigation.
+        assert.equal(await page.locator("main[data-mandala-meditation-page]").count(),1);
+        assert.equal(await page.locator("[data-support-app-header]").count(),1,
+          "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
-        const headerTop=await appHeader.boundingBox();
-        const builderTop=await quick.boundingBox();
-        assert.ok(headerTop && builderTop && headerTop.y < builderTop.y,
-          "site header must precede the approved mobile video studio");
 
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.

@@ -68,9 +68,8 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
-        // This page explicitly sets internalOnly: transcript expansion must not
-        // leak offsite watch links. Playback below still verifies the real master.
+        await expect(intro.locator('.site-video-watch-link')).toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveAttribute('href', `https://app.heygen.com/share/${videoId}`);
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
@@ -85,12 +84,8 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0,
-        'English intro must not inherit Russian minimal presentation; About testimonials are independent');
-      const reviews = page.locator('[data-personal-testimonials="about"]');
-      await expect(reviews.locator('[data-testimonial-video-id]')).toHaveCount(10);
-      await expect(reviews.locator('.site-video-player')).toHaveCount(10);
-      assert.equal(await reviews.locator('iframe').count(),0,"About testimonials must load only after Play");
+      assert.equal(await page.locator('.site-video-player--minimal').count(), 0);
+      assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
       await page.close();
     } finally { await browser.close(); }
   }

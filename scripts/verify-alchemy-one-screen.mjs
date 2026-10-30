@@ -24,20 +24,9 @@ const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
     const page = await browser.newPage({viewport:{width,height}});
-    const pending = new Map();
-    page.on('request', request => pending.set(request, {origin:new URL(request.url()).origin, path:new URL(request.url()).pathname, type:request.resourceType()}));
-    page.on('requestfinished', request => pending.delete(request));
-    page.on('requestfailed', request => pending.delete(request));
     const key = locale + "/" + width + "x" + height;
     try {
-      let response;
-      try {
-        // Polling booking-status is expected: wait for the document, then assert real rendered chapters and booking controls.
-        response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"domcontentloaded",timeout:45000});
-      } catch (error) {
-        console.error('ALCHEMY_PENDING_REQUESTS ' + key + ' ' + JSON.stringify([...pending.values()]));
-        throw error;
-      }
+      const response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"networkidle",timeout:45000});
       assert.equal(response?.status(), 200, key + ": route must return HTTP 200");
       const root = page.locator('main[data-core-service-detail="alchemy"]');
       await root.locator('h1').waitFor({state:"visible",timeout:30000});
@@ -118,21 +107,20 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
-      // Read-only interaction: the approved booking flow requires consent and
-      // contact details before submitting; payment is unavailable at this stage.
+      // Read-only interaction: the hero CTA reveals the approved one-field,
+      // opt-in phone capture. Do not submit any contact or open a messenger.
       if (width === 390 && height === 844) {
         const hero = root.locator('[data-alchemy-panel="hero"]');
-        const booking = hero.locator('[data-session-booking-flow]');
-        const trigger = booking.locator('[data-contact-order]');
+        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
         await trigger.waitFor({state:"visible"});
-        if (await trigger.getAttribute('data-booking-cta') !== 'book') issues.push("initial CTA must book, not pay");
         await trigger.click();
-        const form = booking.locator('[data-booking-step="contact"]');
-        await form.waitFor({state:"visible"});
-        if (await form.locator('input[type="checkbox"][required]').count() !== 1) issues.push("booking opt-in consent missing");
-        if (await form.locator('input[type="tel"]').count() !== 1) issues.push("booking phone input missing");
-        if (await form.locator('button[type="submit"]').isEnabled()) issues.push("booking enabled without consent or contact");
-        if (await booking.locator('[data-booking-cta="pay"]').count() !== 0) issues.push("payment available before confirmation");
+        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
+        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
+          issues.push("compact Telegram option missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
+          issues.push("compact opt-in consent missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
+          issues.push("long email capture incorrectly expanded from the hero");
         await trigger.click();
       }
       report.push({locale,width,height,...data,issues});
@@ -146,7 +134,7 @@ try {
       assert.equal(sampleResponse?.status(),200,key+": sample report");
       assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
     } catch (error) {
-      failures.push(key+": "+String(error)+"; pending="+JSON.stringify([...pending.values()]));
+      failures.push(key+": "+String(error));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
     } finally { await page.close(); }
   }

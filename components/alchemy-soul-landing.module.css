@@ -631,10 +631,6 @@
 /* Spanish has longer request labels: preserve the photo and 44px tap targets
    on the shortest 320x568 iPhone viewport without clipping the form. */
 @media(max-width:350px) and (max-height:650px){
- /* Real 320×568 RU booking chapter measures 492px against the 488px
-    viewport cap. Preserve all content, photo and >=44px tap targets: recover
-    seven pixels of decorative outer padding instead of weakening QA. */
- .page[lang="ru"] .requestSection{padding-top:7px;padding-bottom:8px}
  .page[lang="es"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
  .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }

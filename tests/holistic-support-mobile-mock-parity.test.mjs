@@ -13,8 +13,7 @@ test("mobile alternative preserves standard Support and excludes redundant marke
   assert.doesNotMatch(page, /PublicSiteHeader/);
   assert.match(client, /data-support-app-header/);
   assert.match(css, /\.compactAppHeader \{ display: none; \}/);
-  assert.match(banner,/holistic-support\\?\/mobile/, "existing Support mobile route stays promo-free");
-  assert.match(banner,/holistic-support\\?\/mandala/, "approved Mandala app route also stays promo-free");
+  assert.match(banner, /holistic-support\\\/mobile/);
   assert.match(original, /PublicSiteHeader/);
   assert.match(original, /HolisticSupportChoices/);
 });

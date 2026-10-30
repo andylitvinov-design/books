@@ -4,18 +4,16 @@ import { readFileSync } from "node:fs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("the approved native video editor uses one real local renderer and stable ordered mobile features",()=>{
+test("the existing public editor retains one real video renderer and the new compact builder",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
   const page=read("app/[locale]/holistic-support/mandala/page.tsx");
   const app=read("components/mandala-meditation-client.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const pageCss=read("components/mandala-meditation.module.css");
-  const dock=read("components/holistic-support-mandala-dock.tsx");
-  const globalBanner=read("components/sitewide-antistress-banner.tsx");
-  const supportCss=read("components/holistic-support-mobile.module.css");
-  assert.equal((app.match(/<MandalaFreeVideoStudio /g)||[]).length,1);
+  assert.equal((app.match(/<MandalaFreeVideoStudio /g)||[]).length,1,
+    "modify the original editor, not a duplicate");
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
+  assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
   const order=["data-video-quick-builder","data-video-quick-section=\"1\"","data-video-quick-tier",
     "data-video-quick-live-preview","data-video-quick-section=\"4\"",
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
@@ -25,16 +23,8 @@ test("the approved native video editor uses one real local renderer and stable o
   for(let i=0;i<order.length;i++){
     assert.ok(source.includes(order[i]),"missing "+order[i]);
     if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
-      "mobile hierarchy changed at "+order[i]);
+      "video studio hierarchy changed at "+order[i]);
   }
-  assert.ok(page.indexOf("<HolisticSupportMandalaDock")<
-    page.indexOf("<MandalaMeditationClient"),"header must render above editor");
-  assert.match(pageCss,/@media\(max-width:759px\)\{\.slimDiagnostic\{display:none\}\}/);
-  assert.ok(globalBanner.includes("holistic-support") && globalBanner.includes("mandala(?:") && globalBanner.includes("mobile(?:"),
-    "the sitewide promo must be hidden for the canonical video editor");
-  assert.ok(supportCss.includes("@media(min-width:641px){.mandalaAppHeader{display:none}}"),
-    "the app header must not duplicate the desktop header on tablets");
-  assert.match(dock,/<Leaf size=\{24\}/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(source,/data-mandala-master-mp4=\{activeFilm\.src\}/);

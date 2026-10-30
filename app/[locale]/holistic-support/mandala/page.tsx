@@ -16,15 +16,15 @@ type Props = { params: Promise<{ locale: string }> };
 const meta = {
   en: {
     title: "Free Personal Video Editor",
-    description: "Create a personal support video with six themes, first-party film previews, optional photo and affirmations, audio and a real local free download.",
+    description: "Choose one of four themes, animated video templates, your own photo, format, music and caption. Create and download a real video locally for free.",
   },
   ru: {
     title: "Бесплатный редактор личного видео",
-    description: "Шесть направлений, настоящие видеофоны, выбор заставки, фото, аффирмации и музыка. Создайте и скачайте видеоролик бесплатно на своём устройстве.",
+    description: "Четыре темы, анимированные видеошаблоны, ваше фото, формат, звуковой фон и подпись. Создайте и скачайте настоящее видео бесплатно.",
   },
   es: {
     title: "Editor de vídeo personal gratis",
-    description: "Seis temas, vídeos reales, portadas, foto opcional, afirmaciones y sonido. Crea y guarda tu vídeo local gratis sin subir la foto.",
+    description: "Cuatro temas, plantillas animadas, tu foto, formatos, audio y subtítulos. Crea y guarda tu vídeo gratis y sin subir la foto.",
   },
 } as const;
 
@@ -59,7 +59,6 @@ export default async function MandalaMeditationPage({ params }: Props) {
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
-      <HolisticSupportMandalaDock locale={locale} />
       <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
         <Sparkles size={17} aria-hidden="true" />
         <strong>{promo.label}</strong>
@@ -68,6 +67,7 @@ export default async function MandalaMeditationPage({ params }: Props) {
         </Link>
       </aside>
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }
