@@ -248,7 +248,8 @@ async function runEngine(name, engine) {
             assert.equal(response?.status(),200,name+" "+item.path);
             const items = page.locator(item.selector);
             await items.first().waitFor({state:"visible",timeout:25000});
-            await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
+            // A visible chooser is the semantic readiness signal. A suppressed
+            // networkidle timeout previously cost 20s per public page for no test evidence.
             const count = await items.count();
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
             if (item.path.endsWith("/tantra-reiki/free-initiation")) {

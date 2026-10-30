@@ -1,6 +1,7 @@
 name: Holistic Support mandala release checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'app/[locale]/holistic-support/**'
@@ -50,7 +51,9 @@ concurrency:
   group: holistic-support-mandala-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
+  # No expensive E2E on non-mergeable Draft; all 10 cases run again when Ready.
   focused-unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:

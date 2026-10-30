@@ -175,8 +175,14 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     const dimension = result.dimensions.find(item => item.key === section.key)
     const model = interpretationBandModel(result, dimension, locale)
     const reading = gaugeModel(dimension, result, locale)?.rangeReading
+    // When an original response code is mapped, the visible non-clinical range
+    // label explicitly preserves ≈ option/вариант N. Compare that text exactly.
     assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => ({
-      range: band.displayRange, label: band.label, current: band.current,
+      range: band.displayRange,
+      label: band.originalAnswerCode !== null && band.originalAnswerCode !== undefined
+        ? (ru ? '≈ вариант ' : '≈ option ') + band.originalAnswerCode + ' · ' + band.label
+        : band.label,
+      current: band.current,
     })) : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows and current selection')
     if (reading) {
       assert.equal(normalized(actual.rangeHeading), normalized(reading.heading))

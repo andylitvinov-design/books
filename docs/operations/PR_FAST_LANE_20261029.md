@@ -272,3 +272,16 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
+
+
+## Ideas & Coaching Draft/Ready CI acceleration (30 October 2026)
+The existing `hh-ideas-coaching-public.yml` retains the actual Next.js
+production build, original EN/RU/ES Chromium/WebKit journey and all consent,
+source and lead tests. It skips costly Draft PR commits and re-runs on
+`ready_for_review` and subsequent Ready commits; manual dispatch is unchanged.
+Superseded PR runs are cancelled per PR number; manual runs cannot be cancelled
+by newer PR heads. Only the duplicate global TypeScript step is skipped for
+production-targeted PRs, where core `release-ready` already requires full
+`tsc --noEmit`. Draft-skipped never counts as merge success and the base-trusted
+specialist aggregate still requires every applicable executed job to succeed.
+No assertions, RLS, checkout, browser checks or paid APIs are disabled.
