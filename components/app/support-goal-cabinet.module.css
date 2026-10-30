@@ -1,0 +1,35 @@
+.root { margin: 11px 0 15px; padding: 15px; border: 1px solid #c9dccf;
+  border-radius: 17px; background: linear-gradient(140deg,#fcf9f0,#eef8ef);
+  color: #254b39; }
+.heading { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.icon { display: grid; flex: none; place-items: center; width: 42px; height: 42px;
+  border-radius: 12px; background: #d5ebde; color: #087f60; }
+.heading > div { min-width: 0; flex: 1; }
+.heading h2 { margin: 0; font-size: clamp(17px,3.6vw,21px); line-height: 1.2; }
+.heading p { margin: 3px 0 0; color: #65786b; font-size: 12px; line-height: 1.35; }
+.check { color: #048d65; flex: none; }
+.confirmed { margin: 9px 0 0; color: #0b785a; font-size: 12px; font-weight: 750; }
+.root details { margin-top: 11px; }
+.root summary { display: flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 750; min-height: 36px; }
+.root summary svg { margin-left: auto; }
+.root details[open] summary svg { transform: rotate(180deg); }
+.sectors { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 9px 0; }
+.sector { min-width: 0; padding: 11px; border-radius: 12px; border: 1px solid #dfebdc; background: #fffdf8; }
+.sector h3 { margin: 0; color: #235340; font-size: 15px; }
+.sector p { margin: 6px 0; font-size: 12px; }
+.sector dl { margin: 0; display: grid; gap: 5px; }
+.sector dl div { border-top: 1px solid #e6e9df; padding-top: 5px; overflow-wrap: anywhere; }
+.sector dt { font-size: 12px; font-weight: 750; }
+.sector dd { margin: 0; color: #5f7065; font-size: 12px; }
+.root details > a { color: #007d5c; font-size: 13px; font-weight: 750; }
+.notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0;
+  padding: 13px; border-radius: 13px; background: #eef8f0; color: #28543d; font-size: 13px; }
+.notice button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  margin-left: auto; padding: 7px 10px; border: 1px solid #a9d2b7; border-radius: 9px;
+  background: #fffdf8; color: #08765a; font: inherit; font-weight: 750; }
+.notice button:focus-visible,.root :is(a,summary):focus-visible { outline: 3px solid #eeae36; outline-offset: 2px; }
+@media (max-width: 420px) {
+  .root { padding: 12px; }
+  .sectors { grid-template-columns: minmax(0,1fr); }
+}
