@@ -290,6 +290,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
         assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
+        // Real users scroll the gallery into view; IntersectionObserver starts
+        // muted playback only when this MP4 itself is visible on the iPhone.
+        // A concurrent browser context may have scrolled the button into view
+        // while leaving the video thumbnail outside the visible viewport.
+        await energyClip.scrollIntoViewIfNeeded();
+        await energyClip.waitFor({state:"visible",timeout:12000});
         await page.waitForFunction(() => {
           const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
           return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
