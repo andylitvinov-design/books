@@ -82,5 +82,16 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.match(browser,/await cabinet\.click\(\)/);
   assert.match(browser,/a\[href\^="\/en\/app"\]/);
   assert.match(browser,/Cerrar Mi espacio/);
+  assert.match(browser,/const accountCabinet = page\.locator\('\.site-navigation \.site-cabinet-entry'\)/);
+  assert.match(browser,/expect\(accountCabinet\)\.toHaveAttribute\('aria-haspopup','dialog'\)/);
+  assert.match(browser,/expect\(accountCabinet\)\.toHaveAttribute\('aria-controls','home-personal-space-dialog'\)/);
+  assert.match(browser,/await click\(accountCabinet\)/);
+  assert.match(browser,/const accountDialog = page\.locator\('#home-personal-space-dialog'\)/);
+  assert.match(browser,/expect\(accountDialog\)\.toBeVisible\(\)/);
+  assert.match(browser,/const accountLink = accountDialog\.locator\('a\[data-space-link="profile"\]'\)/);
+  assert.match(browser,/expect\(accountLink\)\.toHaveAttribute\('href','\/en\/app\/portrait'\)/);
+  assert.match(browser,/await click\(accountLink\)/);
+  assert.match(browser,/expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\)/);
   assert.doesNotMatch(browser,/toHaveAttribute\('href','\/en\/app'\)/);
 });
+

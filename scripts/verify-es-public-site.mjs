@@ -297,12 +297,20 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // On public client pages the Cabinet is a direct link; on Home
-        // the separate My Space control opens a dialog instead.
-        const accountLink = page.locator('.site-navigation a.site-cabinet-entry[href="/en/app"]');
+        // The root provider exposes Cabinet as a dialog button on client pages too.
+        // Follow the real profile destination inside that dialog into the guest app.
+        const accountCabinet = page.locator('.site-navigation .site-cabinet-entry');
+        await expect(accountCabinet).toHaveCount(1);
+        await expect(accountCabinet).toBeVisible();
+        await expect(accountCabinet).toHaveAttribute('aria-haspopup','dialog');
+        await expect(accountCabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+        await click(accountCabinet);
+        const accountDialog = page.locator('#home-personal-space-dialog');
+        await expect(accountDialog).toBeVisible();
+        const accountLink = accountDialog.locator('a[data-space-link="profile"]');
         await expect(accountLink).toHaveCount(1);
         await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
+        await expect(accountLink).toHaveAttribute('href','/en/app/portrait');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
@@ -381,3 +389,4 @@ try {
 } finally {
   try {saveDiagnostics();} finally {if(proxy){proxy.closeAllConnections();proxy.close();} if(app)app.kill('SIGTERM');}
 }
+
