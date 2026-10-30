@@ -11,6 +11,10 @@ on:
       - "lib/benchmarking/**"
       - "scripts/benchmarking/**"
       - "tests/benchmark-reference-matrix.test.mjs"
+      - "components/free-entry-landing.tsx"
+      - "components/free-entry-landing.module.css"
+      - "tests/benchmark-free-tests-first-pilot.test.mjs"
+      - ".github/workflows/hh-benchmark-free-test-pilot.yml"
   push:
     branches:
       - codex/public-book-library
@@ -20,9 +24,17 @@ on:
       - "lib/benchmarking/**"
       - "scripts/benchmarking/**"
       - "tests/benchmark-reference-matrix.test.mjs"
+      - "components/free-entry-landing.tsx"
+      - "components/free-entry-landing.module.css"
+      - "tests/benchmark-free-tests-first-pilot.test.mjs"
+      - ".github/workflows/hh-benchmark-free-test-pilot.yml"
 
 permissions:
   contents: read
+
+concurrency:
+  group: hh-benchmark-contract-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   benchmark-contract:
@@ -36,6 +48,8 @@ jobs:
           node-version: "22"
       - name: Validate source-only competitor evidence, privacy and test contracts
         run: node --test tests/benchmark-reference-matrix.test.mjs
+      - name: Guest-first EN/RU/ES pilot and existing free review contracts
+        run: node --test tests/benchmark-free-tests-first-pilot.test.mjs tests/free-review-conversion.test.mjs
       - name: Verify no-network human-readable benchmark plan
         run: node scripts/benchmarking/plan.mjs
       - name: Verify machine-readable export

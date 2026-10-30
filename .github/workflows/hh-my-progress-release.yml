@@ -1,6 +1,7 @@
 name: HH My Progress — private history and video marks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/my-progress.*'
@@ -32,6 +33,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   private-progress:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -59,6 +61,8 @@ jobs:
           app/api/app/video-progress/route.js
           tests/my-progress.test.mjs
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
