@@ -13,6 +13,9 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { projectVerifiedCompletedTestKeys } from '../lib/holistic-support/intelligence-result-history.js'
 import { buildIntelligenceTestCatalog } from '../lib/holistic-support/intelligence-test-catalog.js'
 import { planIntelligenceRequest } from '../lib/holistic-support/intelligence-plan.mjs'
+import { readDevelopmentGoals, saveDevelopmentGoals } from '../lib/app/development-goals.js'
+import { DEFAULT_DEVELOPMENT_TARGETS } from '../lib/profile/development-program.js'
+import { projectDevelopmentCourse } from '../lib/holistic-support/intelligence-development-plan.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
 
 const a=actor(), b=actor(B,SB), config=getAppConfig(), repo=createAppRepository(config)
@@ -103,4 +106,16 @@ test('verified completed test affects only its owner after explicit consent',asy
   assert.equal(first.primary.id,'test:hh-current-state')
   assert.equal(second.primary.id,'test:hh-resource-pulse')
   for(const response of [first,second]) assert.equal(JSON.stringify(response).includes(ownerRows[0].id),false)
+})
+test('saved goals and verified scores are projected only for their owner',async()=>{
+  await saveDevelopmentGoals(config,a,{version:1,targets:{...DEFAULT_DEVELOPMENT_TARGETS,body:95,work:95,growth:95},details:{},revision:0})
+  const loadFor=who=>async()=>projectDevelopmentCourse({accountId:who.id,
+    snapshot:await readDevelopmentGoals(config,who),results:await repo.intelligenceResults(who,['hh-weekly-pulse'])})
+  const request={requestId:randomUUID(),surface:'cabinet',intent:{language:'en',selectedTopics:['goals'],formats:['course']},
+    preflight:{immediateDanger:'no',selfHarmThoughts:'no'},courseSelection:'development_plan'}
+  const own=await planIntelligenceRequest(request,{loadDevelopmentPlan:loadFor(a)})
+  const other=await planIntelligenceRequest(request,{loadDevelopmentPlan:loadFor(b)})
+  assert.equal(own.primary?.href,'/en/app/course?program=stress')
+  assert.equal(other.status,'no_match')
+  assert.doesNotMatch(JSON.stringify(own),/resultId|accountId|dimensions|95/)
 })

@@ -17,6 +17,8 @@ on:
       - 'lib/holistic-support/intelligence-plan.mjs'
       - 'lib/holistic-support/intelligence-test-catalog.js'
       - 'lib/holistic-support/intelligence-result-history.js'
+      - 'lib/holistic-support/intelligence-development-plan.js'
+      - 'tests/intelligence-development-plan.test.mjs'
       - 'tests/intelligence-result-history.test.mjs'
       - 'lib/assessments/verified-history.js'
       - 'lib/assessments/support-guide-tests.js'
@@ -95,7 +97,7 @@ jobs:
       - name: Rank accuracy and no health/goal score invention
         run: |
           node --test tests/axis-offer-matcher.test.mjs tests/axis-offer-ranker.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/holistic-intelligence-card.test.mjs
-          node --conditions=react-server --test tests/intelligence-plan.test.mjs tests/intelligence-result-history.test.mjs
+          node --conditions=react-server --test tests/intelligence-plan.test.mjs tests/intelligence-result-history.test.mjs tests/intelligence-development-plan.test.mjs
       - name: Scoped ESLint
         run: npx --no-install eslint lib/holistic-support/intelligence-result-history.js tests/intelligence-result-history.test.mjs lib/holistic-support/intelligence-test-catalog.js lib/holistic-support/client-reasoning-core.mjs lib/holistic-support/client-reasoning-bridge.mjs lib/holistic-support/intelligence-request.mjs lib/holistic-support/intelligence-risk.mjs lib/holistic-support/intelligence-plan.mjs 'app/api/app/[...path]/route.js' tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/intelligence-plan.test.mjs tests/holistic-intelligence-card.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs lib/holistic-support/axis-offer-matcher.mjs lib/holistic-support/client-intent-model.mjs lib/holistic-support/meditation-catalog-ranker.mjs lib/profile/portrait-recommendations.js components/holistic-intelligence-card.jsx components/holistic-meditation-finder.tsx components/app/personal-axis-matches.jsx components/app/my-tests-dashboard.jsx components/app/portrait-recommendations.jsx tests/axis-offer-matcher.test.mjs
       - name: Authenticated intelligence route and OAuth regression

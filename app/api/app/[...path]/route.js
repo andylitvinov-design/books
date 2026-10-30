@@ -569,6 +569,14 @@ async function handle(request, { params }) {
           loadVideoHistory: async ids => (await import('@/lib/app/video-progress')).matchingMarkedVideoIds(config, actor, ids),
           loadTestHistory: async keys => (await import('@/lib/holistic-support/intelligence-result-history')).projectVerifiedCompletedTestKeys({results:await repo.intelligenceResults(actor,keys),accountId:actor.id}),
           loadActiveCourse: async () => (await import('@/lib/app/intelligence-course')).hasActiveIntelligenceCourse(config,actor),
+          loadDevelopmentPlan: async () => {
+            const snapshot = await readDevelopmentGoals(config, actor)
+            if (snapshot.revision === 0) return { courseId: null }
+            const { PORTRAIT_SOURCE_RULES } = await import('@/lib/assessments/portrait-constructs')
+            const keys = [...new Set(PORTRAIT_SOURCE_RULES.filter(rule => rule.mode === 'directional' && rule.goalEligible).map(rule => rule.testKey))]
+            const results = await repo.intelligenceResults(actor, keys)
+            return (await import('@/lib/holistic-support/intelligence-development-plan')).projectDevelopmentCourse({ results, accountId:actor.id, snapshot })
+          },
           loadFeedback: async ids => (await import('@/lib/app/intelligence-feedback')).matchingUnhelpfulFeedback(config,actor,ids),
         }))
       } catch (error) {
