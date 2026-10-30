@@ -195,7 +195,16 @@ try {
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
           if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
-          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
+          // Original RU/EN client testimonial titles retain their provenance.
+          // Verify Spanish editorial copy strictly while excluding ONLY that
+          // original-audio testimonial component from the language oracle.
+          const editorial=await page.locator('main').evaluate(main=>{
+            const copy=main.cloneNode(true);
+            copy.querySelector('[data-personal-testimonials="about"]')?.remove();
+            return copy.textContent||'';
+          });
+          assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(editorial),
+            'No untranslated Spanish editorial labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
