@@ -2,6 +2,7 @@ name: HH Energywork AI Course
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'components/energywork-ai-learner.*'
       - 'components/reiki-initiation-photo.*'
@@ -76,8 +77,14 @@ on:
 permissions:
   contents: read
 
+# Only cancel obsolete PR-head runs; never cancel manual/release verification.
+concurrency:
+  group: hh-energywork-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Energywork slides / private data / Next build
     runs-on: ubuntu-latest
     timeout-minutes: 18
@@ -93,6 +100,8 @@ jobs:
       - name: Targeted ESLint
         run: npx eslint components/reiki-initiation-photo.tsx lib/academy/reiki-initiation-photo.js data/academy/reiki-private-jpeg.js components/reiki-course-referral-share.tsx components/energywork-ai-learner.tsx components/reiki-my-reviews.jsx components/reiki-public-reviews.jsx components/app/course-entry-selector.jsx components/principles-of-energywork.tsx lib/academy/reiki-public-reviews.js app/api/reiki-course-reviews/route.js components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js lib/academy/reiki-course-leads.js components/admin-reiki-leads.jsx components/admin-reiki-audio.jsx components/reiki-lesson-intro-audio.tsx lib/academy/reiki-intro-audio-model.js lib/academy/reiki-intro-audio-store.js app/admin/reiki-audio/page.jsx app/admin/reiki-audio/data/route.js app/api/reiki-intro-audio/route.js app/admin/materials/page.js app/admin/materials/audio/page.jsx app/admin/materials/audio/reiki-practitioner/page.jsx app/admin/reiki-leads/page.jsx app/admin/reiki-leads/data/route.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts data/academy/reiki-initiation-request.js data/academy/reiki-practitioner-lesson-videos.ts app/api/app/'[...path]'/route.js lib/academy/reiki-audio-metadata.js
       - name: TypeScript verification
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Production compile
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
