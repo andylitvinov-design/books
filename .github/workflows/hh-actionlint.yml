@@ -4,6 +4,7 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/**'
+      - 'tests/ci-workflow-globs.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
