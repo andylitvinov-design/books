@@ -1,5 +1,5 @@
 /**
- * Mandala-first unified iPhone editor E2E: actual Chromium and WebKit.
+ * Preview-first compact iPhone editor E2E: actual Chromium and WebKit.
  * Assert the new user-approved hierarchy, real file chooser/HEIC normalization
  * path, accessible in-place edits and real first-party local video encoding.
  * Never log client photos, call providers, write storage, or incur render costs.
@@ -32,12 +32,12 @@ function syntheticWav(){
 }
 
 const expectedTitle={
-  ru:"Личная видео-подкачка или видеотерапия",
-  en:"Personal video boost or video therapy",
-  es:"Vídeo de impulso personal o videoterapia",
+  ru:"Создать видео",
+  en:"Create video",
+  es:"Crear vídeo",
 };
 async function openStep(page,n){
-  const button=page.locator('button[aria-controls="video-step-'+n+'-panel"]');
+  const button=page.locator('[data-video-summary-step="'+n+'"]');
   assert.equal(await button.count(),1,"one accessible expander for step "+n);
   if(await button.getAttribute("aria-expanded")!=="true")await button.click();
   assert.equal(await button.getAttribute("aria-expanded"),"true","step "+n+" is open");
@@ -304,39 +304,73 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
     assert.equal(await page.locator("[data-mandala-support-bottom-nav]").count(),1,"exactly one Support dock");
     assert.equal(await page.locator("[data-video-quick-legacy]").count(),0,"no duplicated legacy editor");
     assert.equal(await page.locator("[data-video-quick-section]").count(),6);
+    if(process.env.HH_HYPNO_SCREENSHOT_DIR && locale==="ru"){
+      mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+      await page.screenshot({path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+width+"-compact-first-screen.png",
+        animations:"disabled",fullPage:false});
+    }
     assert.equal(await page.locator("[data-video-hero-create]").count(),1,"one genuine Create CTA");
+    const lead=page.locator("[data-video-editor-lead]");
+    const compactRows=page.locator("[data-video-compact-summary]");
+    const tabs=page.locator("[data-video-editor-tabs]");
+    await lead.waitFor({state:"visible"});
+    await compactRows.waitFor({state:"visible"});
+    assert.equal(await compactRows.locator("[data-video-summary-row]").count(),6);
+    assert.equal(await tabs.locator("button").count(),3);
     const geometry=await page.evaluate(()=>{
       const rect=q=>document.querySelector(q)?.getBoundingClientRect();
       const header=rect("[data-support-app-header]");
+      const lead=rect("[data-video-editor-lead]");
       const player=rect("[data-video-mandala-hero]");
+      const tabs=rect("[data-video-editor-tabs]");
+      const rows=rect("[data-video-compact-summary]");
       const builder=rect("[data-video-quick-builder]");
-      return {header:header?.top,headerBottom:header?.bottom,
-        player:player?.top,playerBottom:player?.bottom,builder:builder?.top,
+      return {headerBottom:header?.bottom,lead:lead?.top,leadBottom:lead?.bottom,
+        player:player?.top,playerBottom:player?.bottom,tabs:tabs?.top,
+        rows:rows?.top,rowsBottom:rows?.bottom,builder:builder?.top,
         viewport:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth};
     });
-    assert.ok(geometry.headerBottom<=geometry.player+1 && geometry.playerBottom<=geometry.builder+2,
-      engine+" "+locale+" "+width+" mandala-first hierarchy "+JSON.stringify(geometry));
+    assert.ok(geometry.headerBottom<=geometry.lead+2 &&
+      geometry.leadBottom<=geometry.player+3 &&
+      geometry.playerBottom<=geometry.tabs+3 &&
+      geometry.tabs<=geometry.rows+3 && geometry.rowsBottom<=geometry.builder+3,
+      engine+" "+locale+" "+width+" approved preview-first structure "+JSON.stringify(geometry));
     assert.ok(geometry.scroll<=geometry.viewport+2,
       engine+" "+locale+" "+width+" horizontal overflow "+JSON.stringify(geometry));
-    assert.ok((await builder.locator("h2").first().innerText()).includes(expectedTitle[locale]));
+    assert.ok((await lead.locator("h2").first().innerText()).includes(expectedTitle[locale]));
+    assert.equal(await page.locator("[data-video-mode-switch] button").count(),2);
+    assert.equal(await page.locator('[data-video-mode="pump"]').getAttribute("aria-pressed"),"true");
+    const previewFrame=await player.boundingBox();
+    assert.ok(previewFrame && previewFrame.height<=previewFrame.width*.65,
+      engine+" "+locale+" "+width+" player must remain compact 16:9");
     for(let n=1;n<=6;n++)assert.equal(await page.locator("#video-step-"+n+"-panel").isVisible(),false,
       "collapsed by default: "+n);
-
-    // Both the whole card title and its explicit control must expand the card.
-    const firstCardTitle=page.locator('[data-video-quick-section="1"] h3');
-    await firstCardTitle.click();
-    assert.equal(await page.locator("#video-step-1-panel").isVisible(),true,
-      "tapping the card title opens settings");
-    await firstCardTitle.click();
-    assert.equal(await page.locator("#video-step-1-panel").isVisible(),false,
-      "tapping the title again closes settings");
-    await openStep(page,1);
+    for(const name of ["visual","affirmations","montage","audio","format","effect"])
+      assert.equal(await compactRows.locator('[data-video-summary-row="'+name+'"]').count(),1);
+    assert.ok(await compactRows.locator("[data-video-summary-row='format'] [data-video-summary-aspect='landscape']").count());
+    assert.equal(await page.locator("[data-video-quick-theme]").count(),4);
+    await page.locator("[data-video-more-themes]").click();
     assert.equal(await page.locator("[data-video-quick-theme]").count(),6);
+    // One summary-button opens the existing edit panel, without duplicated forms.
+    await page.locator('[data-video-summary-step="1"]').click();
+    assert.equal(await page.locator("#video-step-1-panel").isVisible(),true);
+    await page.locator('[data-video-summary-step="1"]').click();
+    assert.equal(await page.locator("#video-step-1-panel").isVisible(),false);
+    await openStep(page,1);
     await page.locator('[data-video-quick-theme="money"]').click();
     assert.equal(await page.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
     await page.locator("[data-video-quick-wish]").fill("A calm clear goal");
     assert.equal(await page.locator("[data-video-wish]").inputValue(),"A calm clear goal");
     await page.locator("[data-video-quick-wish]").fill("");
+    await page.locator('[data-video-summary-aspect="portrait"]').click();
+    assert.equal(await page.locator('[data-video-summary-aspect="portrait"]').getAttribute("aria-pressed"),"true");
+    await page.locator('[data-video-summary-aspect="landscape"]').click();
+    await page.locator('[data-video-summary-duration="30"]').click();
+    // Native user-visible mode switch, same real therapy planner, no auto-render.
+    await page.locator('[data-video-mode="therapy"]').click();
+    await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
+    await page.locator('[data-video-mode="pump"]').click();
+    await page.locator("[data-video-guided-course]").waitFor({state:"detached",timeout:12000});
 
     // A real label launches the OS/native Photos input: not a decorative button
     // attempting to .click() a 1x1 hidden control.
@@ -487,7 +521,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]){
       await page.screenshot({path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+width+"-mandala-first.png",fullPage:true,animations:"disabled"});
     }
     scenarios++;
-    console.log("PASS",engine,locale,width,"mandala-first accordion, native photo, local audio");
+    console.log("PASS",engine,locale,width,"approved compact preview, native photo, local audio");
    } finally {await page.close();}
   }
  } finally {await browser.close();}
