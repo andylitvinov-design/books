@@ -47,7 +47,7 @@ test('OAuth server continues only to fixed first-party screens and preserves exi
  assert.match(route,/INVALID_CONTINUATION/)
  assert.match(route,/if \(program !== null/)
  assert.match(route,/continueTo === 'reports'/)
- assert.match(route,/new URL\(destination\)/)
+ assert.match(route,/new URL\(failedPracticeDestination\)/)
  assert.match(route,/scopes: 'openid email profile'/)
  assert.doesNotMatch(route,/continueTo.*client\/session/)
 })

@@ -53,7 +53,7 @@ test('New V5 enrolments have seven compact slides; older V3 lessons preserve 15 
  }
 })
 
-test('Public V6 fifteen-screen preview preserves seven skill IDs and supports all three public languages',()=>{
+test('Public current preview preserves seven skill IDs, five experiences and three public languages',()=>{
  for(const locale of ['ru','en','es']){
    const blueprint=antiStressBlueprint(locale)
    assert.equal(blueprint.skills.length,7)
@@ -69,7 +69,7 @@ test('Public V6 fifteen-screen preview preserves seven skill IDs and supports al
      assert.equal(d.screens.length,15)
      assert.ok(d.screens.every(s=>s.expected.length>=10))
      assert.equal(d.methodStatus,'implemented')
-     assert.equal(d.methodNames.length,3)
+     assert.equal(d.methodNames.length,5)
    }
  }
 })
@@ -92,7 +92,7 @@ test('V5 remains version-pinned while new AS2 cycles select V6 and keep old modu
 test('V5 practice screens omit visible Skip response buttons; saved legacy routes remain supported',()=>{
  const player=read('components/app/course-slide-player.jsx')
  assert.match(player,/\{!isSkillV5&&!isDayOne&&<button type="button" className=\{styles\.welcomeSkip\}/)
- assert.match(player,/\{!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
+ assert.match(player,/\{!finished&&!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
  assert.match(player,/\.\.\.\(!isSkillV5\?\[\['skip',learning\.practiceSkip\]\]:\[\]\)/)
  const feedbackGate=player.match(/\.\.\.\(!isSkillV5\?\[\['skip',words\.preferNot\]\]:\[\]\)/g)||[]
  assert.equal(feedbackGate.length,3)

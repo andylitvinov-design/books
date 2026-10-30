@@ -81,8 +81,8 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  assert.match(config.scripts.prebuild, /(?:^|&&\s*)node scripts\/build-public-card-artwork\.mjs(?:\s*&&|$)/);
+  assert.match(config.scripts.predev, /(?:^|&&\s*)node scripts\/build-public-card-artwork\.mjs(?:\s*&&|$)/);
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 

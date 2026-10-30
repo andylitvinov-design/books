@@ -5,7 +5,7 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay,OPORA_VARIETY_REVISION} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
@@ -21,7 +21,7 @@ async function click(player, label) {
 }
 
 for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
-  test(`AS-5.6 ${locale} day ${day}: actual five-moment player saves an exact V7 lesson through the owner repository`, async () => {
+  test(`AS-6.0 ${locale} day ${day}: current player saves an exact V7 lesson through the owner repository`, async () => {
     const owner = repositoryHarness({ freshPhase: true })
     const cycle = await owner.create('AS2')
     assert.equal(cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -48,7 +48,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         // The invitation requires an affirmative answer before the first action.
         await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
         assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-practice-overview']===1))
-        await click(player,t.next) // Goal preview -> actual practice.
+        await advanceOporaTo(player,'practice',t.next) // Traverse current editorial moments to the actual exercise.
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')
@@ -59,19 +59,19 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       }
       if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
-      await click(player,t.next)
+      await advanceOporaTo(player,'feel',t.next)
       await click(player,t.same)
-      await click(player,t.next)
-      if(day!==1){await click(player,t.vote);await click(player,t.next)}
+      if(day!==1){await advanceOporaTo(player,'affirmation',t.next);await click(player,t.vote)}
+      await advanceOporaTo(player,'save',t.next)
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      const daily=oporaAs60Day(day,locale)
+      const daily=oporaAs60VariedDay(day,locale)
       assert.ok(realLifeChoice?.label,'Archive choices must remain available')
       assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
       assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
       if(day===4){
         const field=nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
         assert.ok(field,'Day 4 emotion entry must exist')
-        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'calm'}})
+        field.props.onChange({target:{value:'violet moonstone feeling'}})
         await player.settle()
       }else await click(player,locale==='ru'?'Попробую позже':'I might try this')
       await advanceOporaTo(player,'recapFeedback',t.next)
@@ -80,7 +80,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player, t.save)
       assert.equal(requests, 1)
       assert.ok(receipt)
-      assert.ok(textOf(player.tree).includes(t.receipt))
+      assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-lesson-outro']==='saved'),'Server-confirmed receipt is shown')
       const saved = owner.sessions.at(-1)
       assert.equal(saved.lesson_id, data.lesson.id)
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -105,8 +105,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         'Free-text emotions must never be saved in plain JSONB')
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
       assert.equal(saved.signals.opora54.answers.experienceEdition,'as-6.0-experiments-v1')
+      assert.equal(saved.signals.opora54.answers.contentRevision,OPORA_VARIETY_REVISION)
       if(day===4){
-        const answer=locale==='ru'?'спокойствие':'calm'
+        const answer='violet moonstone feeling'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
         assert.equal(saved.signals.practiceEmotion?.customText,undefined)
         assert.ok(saved.signals.practiceEmotion?.customTextCiphertext?.length>30)
@@ -128,7 +129,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
   })
 }
 
-for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inventing an attempt, vote, plan or improvement`, async () => {
+for (const locale of ['en', 'ru']) test(`AS-6.0 ${locale} can save without inventing an attempt, vote, plan or improvement`, async () => {
   const owner = repositoryHarness({ freshPhase: true })
   await owner.create('AS2')
   owner.seedDay(1)
@@ -148,11 +149,11 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
     assert.deepEqual(saved.signals.opora54.answers, {
-        experienceEdition:'as-6.0-experiments-v1',lessonConfidence:'explored'})
+        experienceEdition:'as-6.0-experiments-v1',contentRevision:OPORA_VARIETY_REVISION,lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
-    assert.ok(textOf(player.tree).includes(t.receipt))
+    assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-lesson-outro']==='saved'),'Server-confirmed receipt is shown')
   } finally { player.unmount() }
 })
 
