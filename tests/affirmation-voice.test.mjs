@@ -1,0 +1,69 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {affirmationNarrationText,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
+import {validateStudioRequest,buildStudioPayload} from "../lib/mandala/voice-studio.mjs";
+
+const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+
+test("selected exact affirmation lines yield the speech transcript without wish/profile/metadata",()=>{
+  const lines=["Я ценю свой труд","Я дышу спокойно","Мне можно отдыхать"];
+  assert.equal(affirmationNarrationText(lines),"Я ценю свой труд. Я дышу спокойно. Мне можно отдыхать.");
+  assert.equal(affirmationNarrationText([]),"");
+  assert.equal(affirmationNarrationText(["<secret>"]),"");
+  assert.equal(affirmationNarrationText(["one\nsecond"]),"");
+  assert.equal(affirmationNarrationText(["a".repeat(41)]),"");
+  assert.equal(affirmationNarrationText(Array(11).fill("I feel safe")),"");
+  assert.equal(affirmationNarrationText(["I take my time!"]),"I take my time!");
+});
+test("guest mode refuses missing consent and only permits prebuilt voices and RU/EN/ES",()=>{
+  const data={mode:"affirmations",voiceId:"maya",language:"ru",text:"Я ценю свой труд.",consent:true};
+  const valid=validateStudioRequest(data);
+  const payload=buildStudioPayload(valid);
+  assert.equal(valid.mode,"affirmations");
+  assert.equal(payload.contents[0].parts[0].text,data.text);
+  assert.equal(payload.generationConfig.speechConfig.voiceConfig.voice,"Sulafat");
+  assert.throws(()=>validateStudioRequest({...data,consent:false}));
+  assert.throws(()=>validateStudioRequest({...data,voiceId:"made-up"}));
+  assert.throws(()=>validateStudioRequest({...data,language:"xx"}));
+  assert.equal(validateStudioRequest({...data,language:"es"}).language,"es");
+  assert.throws(()=>validateStudioRequest({...data,text:"<inject>"}));
+  assert.throws(()=>validateStudioRequest({...data,text:"x".repeat(651)}));
+  assert.throws(()=>validateStudioRequest({...data,provider:"paid"}));
+});
+test("WAV duration parser reads RIFF/fmt/data safely for exact video fit",()=>{
+  const sampleRate=24000,durationSeconds=7;
+  const bytes=Buffer.alloc(44+sampleRate*2*durationSeconds);
+  bytes.write("RIFF",0);bytes.writeUInt32LE(bytes.length-8,4);bytes.write("WAVE",8);
+  bytes.write("fmt ",12);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);
+  bytes.writeUInt16LE(1,22);bytes.writeUInt32LE(sampleRate,24);bytes.writeUInt32LE(sampleRate*2,28);
+  bytes.writeUInt16LE(2,32);bytes.writeUInt16LE(16,34);
+  bytes.write("data",36);bytes.writeUInt32LE(sampleRate*2*durationSeconds,40);
+  const head=bytes.subarray(0,128);
+  assert.equal(wavDurationFromHeader(head.buffer.slice(head.byteOffset,head.byteOffset+head.byteLength)),7);
+  assert.equal(wavDurationFromHeader(new ArrayBuffer(12)),null);
+});
+test("real button uses selected runtime affirmations and attaches WAV to existing video export",()=>{
+  const page=read("components/mandala-free-video-studio.tsx");
+  const client=read("components/mandala-affirmation-voice.tsx");
+  const api=read("app/api/holistic-support/voice/route.js");
+  const mix=read("lib/mandala/voice-audio-mix.ts");
+  const local=read("lib/mandala/local-video-music.ts");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(page,/lines=\{affirmationLines\}/);
+  assert.match(page,/attachedAudio\.narration!==true/);
+  assert.match(page,/onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
+  assert.match(page,/narrationInvalid/);
+  assert.match(client,/data-video-generate-affirmation-audio/);
+  assert.match(client,/mode:"affirmations"/);
+  assert.match(client,/consent:true/);
+  assert.match(client,/mixVoiceWithNature\(voice,bed,mixSeconds\)/);
+  assert.match(client,/URL\.createObjectURL\(file\)/);
+  assert.match(api,/voice-studio-affirmations-daily/);
+  assert.match(api,/requireSameOrigin/);
+  assert.match(api,/voiceStudioKey\(process\.env\)/);
+  assert.match(mix,/minimumSeconds/);
+  assert.match(local,/source\.loop = options\.loop !== false/);
+  assert.match(browser,/page\.route/);
+});
