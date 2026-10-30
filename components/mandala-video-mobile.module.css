@@ -1618,3 +1618,97 @@
   .postVideoSupportItem{gap:7px;padding:8px}
   .postVideoSupportIcon{width:29px;height:29px}
 }
+
+
+/* 30 Oct owner correction: the ONE original Canvas/MediaRecorder screen now
+   lives before the format accordion. The genuine H.264 sample stays miniature,
+   while Popular Templates and 24 compiled films form ONE shared library. */
+.quickBuilder>.previewStage{
+  display:grid;gap:10px;padding:14px;border:1px solid #badbca;border-radius:23px;
+  background:linear-gradient(150deg,#e9f6ed,#fffef9 68%);
+  box-shadow:0 9px 25px rgba(21,85,62,.08)
+}
+.previewStageHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.previewStageHeading>div{flex:1;min-width:0}
+.previewStageHeading small{display:block;color:#248568;font:800 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.07em}
+.previewStageHeading h3{margin:4px 0 5px!important;color:#174c3f;font:800 clamp(19px,3.2vw,25px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.previewStageHeading p{max-width:600px;color:#61786c;font:500 12px/1.43 Arial,Helvetica,sans-serif}
+.previewStageBadge{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:32px;max-width:36%;padding:7px 9px;border-radius:999px;
+  border:1px solid #bedac9;background:#f5fbf4;color:#147454;
+  text-align:center;font:800 10.5px/1.2 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.studio .previewStage .hero{width:100%;min-width:0;min-height:0;max-height:460px;
+  aspect-ratio:16/9;margin:0;border-radius:19px;overflow:hidden}
+.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+  min-height:0;max-height:460px;aspect-ratio:16/9}
+.previewMiniSource{display:grid;grid-template-columns:minmax(0,1fr) minmax(122px,39%);
+  align-items:center;gap:12px;min-width:0;padding:9px 11px;
+  border:1px solid #d8e8dc;border-radius:14px;background:#fffdf7}
+.previewMiniSource>div:first-child{display:grid;gap:4px;min-width:0}
+.previewMiniSource strong{color:#225441;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.previewMiniSource small{color:#6b7c72;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.previewMiniSource .quickFormatDemo{max-width:228px;justify-self:end;box-shadow:0 2px 8px rgba(6,56,40,.13)}
+.previewMiniSource .quickFormatDemo .quickPreviewPlay{width:44px;height:44px}
+.quickBuilder>.sceneLibrary{display:grid;gap:10px;padding:13px 13px 14px;border-radius:22px;
+  background:#fffdf7;border:1px solid #e8e9de;box-shadow:0 6px 20px #193e2d0e}
+.sceneLibraryHeading{display:grid;gap:4px}
+.sceneLibraryHeading h3{display:flex;align-items:center;gap:8px;
+  color:#174b3f;font:800 clamp(18px,3vw,23px)/1.2 Arial,Helvetica,sans-serif}
+.sceneLibraryHeading h3 svg{flex:none;color:#158667}
+.sceneLibraryHeading p{color:#688075;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.sceneLibrary .templates{margin:2px 0 0;padding:3px 0 11px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary [data-free-film-compilation-catalog]{margin:0;padding:3px 0 10px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary .templates .sectionHeading{margin-bottom:5px}
+.sceneLibrary .templates .sectionHeading h3,
+.sceneLibrary [data-free-film-compilation-catalog] h3{color:#205642;font-size:15px}
+.sceneLibrary .templateRail{display:grid;grid-auto-flow:column;
+  grid-auto-columns:clamp(104px,27%,153px);gap:8px;overflow-x:auto;
+  overscroll-behavior-x:contain;padding:3px 3px 10px;scroll-snap-type:x proximity}
+.sceneLibrary .templateTile{min-width:0;scroll-snap-align:start}
+.sceneLibrary .filmBadge{font-size:9px}
+.previewCoverOptions{min-width:0;border:1px solid #cfe4d6;border-radius:14px;background:#f5faf4}
+.previewCoverOptions>summary{display:flex;align-items:center;gap:9px;min-height:48px;
+  padding:10px 12px;color:#23694f;font:800 13px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.previewCoverOptions>summary::-webkit-details-marker{display:none}
+.previewCoverOptions>summary svg:last-child{margin-left:auto;transition:transform .2s ease}
+.previewCoverOptions[open]>summary svg:last-child{transform:rotate(180deg)}
+.previewCoverOptions>.quickSection{margin:0;padding:10px;border:0;border-top:1px solid #deede2;
+  border-radius:0 0 14px 14px;background:#fffef9;box-shadow:none}
+.previewCoverOptions .quickImageRail{max-width:100%;overflow-x:auto}
+.previewCoverOptions :is(summary,button,input):focus-visible{outline:3px solid #d9b56d;outline-offset:2px}
+/* The format list has its full width now; no squeezed 36/64 split. */
+.quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+.quickFormatStack{gap:9px}
+.quickFormatTitleLabel strong{font-size:clamp(13px,2.25vw,16px)}
+.quickFormatTitleLabel small{font-size:12px}
+.quickFormatBenefits li{font-size:12px;line-height:1.35}
+.quickFormatQuality button{min-height:44px;font-size:11px}
+@media(max-width:759px){
+  .quickBuilder>.previewStage,.quickBuilder>.sceneLibrary{padding:12px 10px}
+  .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:0;max-height:none;aspect-ratio:16/9}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .quickFormatTitle{gap:8px;min-height:49px;padding:9px 11px}
+  .quickFormatTitleLabel strong{font-size:14px}
+  .quickFormatTitleLabel small{font-size:11px}
+  .quickFormatBenefits li{font-size:11.5px;line-height:1.3}
+  .quickFormatQuality button{font-size:11px;min-height:44px}
+  .quickFormatPrice strong{font-size:18px}
+  /* The original sticky rail covered video cards and CTA on iPhone. */
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;margin:6px 0 2px}
+}
+@media(max-width:355px){
+  .previewStageHeading h3{font-size:18px}
+  .previewStageBadge{max-width:32%;font-size:9px;padding:6px}
+  .previewMiniSource{gap:7px;padding:7px;grid-template-columns:minmax(0,1fr) minmax(118px,45%)}
+  .previewMiniSource strong{font-size:12px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatTitleLabel strong{font-size:13px}
+  .quickFormatQuality button{font-size:10px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .previewCoverOptions>summary svg:last-child{transition:none}
+}
