@@ -70,6 +70,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
+  group: hh-public-performance-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   measure-public:
     runs-on: ubuntu-latest

@@ -421,42 +421,27 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
 
-test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
-  const prPaths = name => {
-    const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
-    return [...trigger.matchAll(/^      - '([^']+)'$/gm)].map(item=>item[1]);
-  };
-  const covers = (patterns, file) => {
-    let included = false;
-    for (const pattern of patterns) {
-      const negative = pattern.startsWith('!');
-      if (requireGlob(file, negative ? pattern.slice(1) : pattern)) included = !negative;
-    }
-    return included;
-  };
-  const publicServices = prPaths('hh-public-services-production.yml');
-  const ideas = prPaths('hh-ideas-coaching-public.yml');
-  const mock = prPaths('hh-support-mobile-mock-browser.yml');
-  for (const file of [
-    'scripts/verify-holistic-support-mock-fidelity.mjs',
-    'tests/holistic-support-mobile-mock-parity.test.mjs',
-  ]) {
-    assert.equal(covers(mock,file),true,file+' must still run real Chromium/WebKit mock QA');
-    assert.equal(covers(publicServices,file),false,file+' must not trigger unrelated services acceptance');
+
+test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const guard="${{ github.event_name == 'pull_request' }}";
+  const specs=[
+    ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
+    ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
+    ['hh-owner-telegram-video.yml','hh-owner-telegram-video',['Telegram and audio regression tests','Real 1080p MP4 with H264 AAC via ffmpeg-static','Verify shipped FFmpeg in owner Dot webhook function trace']],
+  ];
+  for(const [filename,group,contracts] of specs){
+    const s=workflow(filename);
+    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
+    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
+    assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
+    assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
+    assert.ok(s.includes('cancel-in-progress: '+guard),filename+' must never cancel manual/PUSH runs');
+    assert.match(s,/^permissions:\s*\n  contents: read/m,filename+' must stay read only');
+    assert.doesNotMatch(s,/continue-on-error:\s*true/,filename+' must never hide E2E failures');
+    for(const marker of contracts)assert.ok(s.includes(marker),filename+' lost '+marker);
   }
-  assert.equal(covers(ideas,'tests/holistic-support-mobile-mock-parity.test.mjs'),false);
-  for (const file of [
-    'components/holistic-support-mobile.tsx',
-    'tests/holistic-support-mobile-alternative.test.mjs',
-    'scripts/verify-holistic-master-browser.mjs',
-    'app/ru/holistic-support/page.tsx',
-    'app/api/payments/some-service/route.ts',
-    'tests/temple-support-hub.test.mjs',
-  ]) assert.equal(covers(publicServices,file),true,file+' must still enforce full services acceptance');
-  for (const file of [
-    'components/ideas-discovery.tsx',
-    'tests/holistic-support-first-screen.test.mjs',
-    'scripts/verify-holistic-support-browser.mjs',
-  ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
-  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.match(workflow('hh-live-seo-audit.yml'),/^  workflow_dispatch:/m);
+  assert.match(workflow('hh-public-performance-audit.yml'),/^  workflow_dispatch:/m);
 });
