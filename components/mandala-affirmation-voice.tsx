@@ -103,6 +103,7 @@ export function MandalaAffirmationVoice({
   const voiceDataRef=useRef<{blob:Blob;seconds:number;mixSeconds:number}|null>(null);
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
+  const originRef=useRef({speechText,voiceId,language});
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
 
@@ -117,7 +118,12 @@ export function MandalaAffirmationVoice({
 
   useEffect(()=>{
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
-    if(voiceDataRef.current)onInvalidateRef.current?.();
+    const textChanged=originRef.current.speechText!==speechText;
+    originRef.current={speechText,voiceId,language};
+    // Existing video marks a changed spoken script as STALE and shows
+    // a regenerate warning. Do not suppress that explicit safety feedback.
+    // A voice/language change with identical text instead detaches the file.
+    if(voiceDataRef.current&&!textChanged)onInvalidateRef.current?.();
     voiceDataRef.current=null;
     const previous=audioUrlRef.current;
     if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
