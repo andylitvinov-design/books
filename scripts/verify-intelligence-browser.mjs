@@ -71,7 +71,7 @@ try {
   const checkinPage=await browser.newPage({viewport:{width:390,height:844}})
   try {
     await checkinPage.context().route('https://www.youtube.com/**',route=>route.abort())
-    await checkinPage.goto(`${base}/en/holistic-support`,{waitUntil:'domcontentloaded'})
+    await checkinPage.goto(`${base}/en/holistic-support`,{waitUntil:'networkidle'})
     await checkinPage.locator('[data-meditation-finder-toggle]').click()
     const card=checkinPage.locator('[data-holistic-intelligence]')
     await card.locator('select').selectOption('energy')
