@@ -321,7 +321,7 @@ test('independent coaching, practitioner and digest domain tests keep coverage w
     assert.ok(source.includes("'"+'.github/workflows/'+name+"'"), name + ' must test its own workflow changes');
     if (manual) assert.match(source, /^  workflow_dispatch:/m);
     for (const [step, command] of buildSteps) {
-      assert.ok(source.includes('- name: '+step+'\\n        '+rule+'\\n        run: '+command),
+      assert.ok(source.includes('- name: '+step+'\n        '+rule+'\n        run: '+command),
         name+' '+step+' must run on nonproduction and manual and reuse only Core on production PR');
     }
     for (const item of domainTests) assert.ok(source.includes(item),name+' lost real domain contract '+item);
