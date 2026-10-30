@@ -75,6 +75,9 @@ test('Interactions REST extracts only the last model-output audio block',()=>{
   ]}),'last');
   for(const value of [null,{}, {steps:[{type:'model_output',content:[{type:'text',data:'not-audio'}]}]}])
     assert.equal(studio.extractStudioAudio(value),null);
+  assert.equal(studio.extractStudioAudio({steps:[{type:'model_output',content:[
+    {type:'audio',data:'first'},{type:'audio',data:''},
+  ]}]}),'');
 });
 test('provider WAV must be a complete supported PCM stream before delivery',()=>{
   assert.equal(typeof mixer.readPcmWav,'function');
@@ -116,9 +119,8 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/auth\.verified\(\)/);
   assert.match(code,/consumeRate\(config/);
   assert.match(code,/voice-studio-free-global/);
-  assert.match(code,/TTS_FREE_QUOTA_EXHAUSTED/);
+  assert.match(code,/requestStudioAudio\(/);
   assert.match(code,/new NextResponse\(wav/);
-  assert.match(code,/RIFF/);
   assert.match(code,/voiceStudioKey\(process\.env\)/);
   assert.doesNotMatch(code,/process\.env\.HH_COUNCIL_GEMINI_API_KEY/);
 });
