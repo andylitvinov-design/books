@@ -138,6 +138,10 @@ const COPY = {
 
 const DATE_LOCALES = { en:'en-US', ru:'ru-RU', es:'es-ES' }
 const TOPIC_IDS=['all','energy','money','relationships','meaning']
+// A mounted account view can survive a user switch for one render before effects run.
+// No previously loaded account data or private playback URL may cross that boundary.
+const EMPTY_SOURCES=Object.freeze({accountId:null,growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
+const EMPTY_PLAYER=Object.freeze({accountId:null,id:null,url:null,loading:false,error:false})
 const SECTION_HREF=(id,lang)=>({
   videos:'/'+lang+'/academy/videos',courses:'/'+lang+'/app/course?view=courses',
   tests:'/'+lang+'/app/tests',mandalas:'/'+lang+'/app/videos',
@@ -249,26 +253,28 @@ export default function MyProgress({ data, locale='en' }) {
     ? data.account.displayName.trim().slice(0,70) : ''
   const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
   const root='/'+lang+'/app'
-  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
+  const [loadedSources,setSources]=useState(EMPTY_SOURCES)
+  const sources=loadedSources.accountId===accountId?loadedSources:EMPTY_SOURCES
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
   const [selectedTopic,setSelectedTopic]=useState('all')
   const [historyExpanded,setHistoryExpanded]=useState(false)
   const mandalaEpoch=useRef(0)
-  const [mandalaPlayer,setMandalaPlayer]=useState({id:null,url:null,loading:false,error:false})
+  const [mandalaPlayer,setMandalaPlayer]=useState(EMPTY_PLAYER)
+  const safeMandalaPlayer=mandalaPlayer.accountId===accountId?mandalaPlayer:EMPTY_PLAYER
 
   useEffect(()=>{
     if(!accountId) return
     let active=true
-    setSources({growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
+    setSources({...EMPTY_SOURCES,accountId})
     const endpoints=['course','academy-energywork','personal-videos','video-progress','messages/my-orders','progress-extras']
     Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
       .then(results=>{
         if(!active) return
         const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
-          growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],
+          accountId,growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],
           orders:values[4]?.accountId===accountId&&Array.isArray(values[4]?.orders)?values[4]:null,
           extras:values[5]?.accountId===accountId?values[5]:null,loading:false,
           videosDisabled:results[2].status==='rejected'&&results[2].reason?.code==='FEATURE_UNAVAILABLE',
@@ -314,22 +320,22 @@ export default function MyProgress({ data, locale='en' }) {
   async function toggleMandala(entry) {
     const id=entry.id.startsWith('mandalas:')?entry.id.slice(9):''
     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-      setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+      setMandalaPlayer({accountId,id:entry.id,url:null,loading:false,error:true})
       return
     }
     const epoch=++mandalaEpoch.current
-    if(mandalaPlayer.id===entry.id) {
-      setMandalaPlayer({id:null,url:null,loading:false,error:false})
+    if(safeMandalaPlayer.id===entry.id) {
+      setMandalaPlayer({...EMPTY_PLAYER,accountId})
       return
     }
-    setMandalaPlayer({id:entry.id,url:null,loading:true,error:false})
+    setMandalaPlayer({accountId,id:entry.id,url:null,loading:true,error:false})
     try {
       const result=await appFetch('personal-videos/'+id,undefined,'GET',{accountId})
       if(epoch!==mandalaEpoch.current)return
       if(typeof result?.url!=='string'||!result.url.startsWith('https://'))throw new Error('INVALID_PRIVATE_URL')
-      setMandalaPlayer({id:entry.id,url:result.url,loading:false,error:false})
+      setMandalaPlayer({accountId,id:entry.id,url:result.url,loading:false,error:false})
     } catch {
-      if(epoch===mandalaEpoch.current)setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+      if(epoch===mandalaEpoch.current)setMandalaPlayer({accountId,id:entry.id,url:null,loading:false,error:true})
     }
   }
   // Invalidate outstanding signed-URL requests on account switch / unmount.
@@ -481,7 +487,7 @@ export default function MyProgress({ data, locale='en' }) {
       </div>
       {sources.loading?<div className={styles.skeletonRail} aria-hidden="true"><span/><span/></div>:mandalas.length?<div className={styles.mandalaRail}>
         {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}
-          player={mandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
+          player={safeMandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
       </div>:<div className={styles.mandalaEmpty}>
         <Sparkles size={23} aria-hidden="true"/>
         <span>{sources.videosDisabled?t.storageDisabled:selectedTopic!=='all'?t.noTopicHistory:t.noMandalas}</span>
