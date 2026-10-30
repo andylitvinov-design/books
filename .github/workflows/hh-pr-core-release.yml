@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -25,6 +26,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - name: Classify strictly documentation-only PRs
         id: diff
         shell: bash
@@ -56,6 +62,7 @@ jobs:
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-pr-readiness.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\

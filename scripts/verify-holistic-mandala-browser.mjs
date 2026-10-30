@@ -57,13 +57,20 @@ const bufferFromStream = async stream => {
 };
 
 let passes = 0;
-// WebKit runs first so iPhone-specific release blockers fail fast.
-// Two isolated contexts overlap I/O, audio and rendering without dropping any case.
-for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]) {
+// Run both real engines concurrently, but cap resource use at one isolated
+// context per engine (two total); preserve all six viewports per engine.
+const engines = [["webkit", webkit], ["chromium", chromium]];
+const runEngine = async ([engine, browserType]) => {
   const browser = await browserType.launch({ headless: true });
   try {
-    for (let from = 0; from < viewports.length; from += 2) {
-      const results = await Promise.allSettled(viewports.slice(from, from + 2).map(async ({ locale, width }) => {
+    // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
+    // native 13-track audio checks, reducing simultaneous encoding pressure.
+    const orderedViewports = engine === "chromium"
+      ? [...viewports.filter(v => v.locale !== "ru" || v.width !== 390),
+        ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
+      : viewports;
+    for (const { locale, width } of orderedViewports) {
+      const caseStartedAt = performance.now();
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -1237,20 +1244,25 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
-        console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus");
         passes++;
+        console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",
+          "elapsed", ((performance.now() - caseStartedAt) / 1000).toFixed(1) + "s");
       } finally {
         await context.close();
       }
-      }));
-      // An error must not close the browser while a sibling is still running.
-      const rejected = results.find(result => result.status === "rejected");
-      if (rejected) throw rejected.reason;
     }
   } finally {
     await browser.close();
   }
+};
+// Both engines finish before result handling; never waive a failed browser.
+const engineResults = await Promise.allSettled(engines.map(runEngine));
+const rejectedEngines = engineResults.filter(result => result.status === "rejected");
+if (rejectedEngines.length) {
+  throw new AggregateError(rejectedEngines.map(result => result.reason),
+    "Mandala real Chromium/WebKit E2E failed; no engine is waived");
 }
-assert.equal(passes, viewports.length * 2, "all locales and both browser engines must pass");
-console.log("Mandala browser E2E:", passes, "of", passes, "checks passed");
+assert.equal(passes, viewports.length * engines.length,
+  "Every language, viewport and real browser engine must pass");
+console.log("Mandala browser E2E:", passes, "of", viewports.length * engines.length, "checks passed");
 

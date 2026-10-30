@@ -92,6 +92,7 @@ on:
       - '!components/mandala-video-mobile.module.css'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: public-services-production-${{ github.ref }}
   cancel-in-progress: true
@@ -109,6 +110,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       # NODE_ENV=production is needed for the browser build, but our
