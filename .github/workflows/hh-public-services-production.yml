@@ -60,6 +60,13 @@ on:
       - '!components/mandala-cinematic-director.tsx'
       - '!components/mandala-cinematic-director.module.css'
       - '!scripts/verify-holistic-mandala-browser.mjs'
+      # Only the public /install PWA and signed-native-release registry use
+      # these two tests; holistic-house-mobile-install.yml runs both exact files,
+      # full production build and 320-430px Chromium/WebKit acceptance.
+      # They never touch Alchemy, Reiki, business, checkout or public services.
+      # Keep all public service path tests and broad holistic-* coverage intact.
+      - '!tests/holistic-house-free-install.test.mjs'
+      - '!tests/holistic-house-native-public-downloads.test.mjs'
 permissions:
   contents: read
 concurrency:
