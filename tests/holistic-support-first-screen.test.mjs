@@ -35,6 +35,7 @@ test("energy CTA transfers only in memory to the existing private intent field",
   const screen = read("app/[locale]/holistic-support/page.tsx");
   assert.ok(ideas.includes('onClick={() => stageRemoteSupportLandingIntention(question)}'));
   assert.ok(ideas.includes("data-ideas-energy-support"));
+  assert.match(ideas, /\{\(isHolistic \|\| daoFocused\) \? <Link[\s\S]*?data-ideas-energy-support/);
   assert.ok(ideas.includes('href={"/" + locale + "/services/remote-energy-support"}'));
   assert.ok(booking.includes("const stagedIntention = takeRemoteSupportLandingIntention()"));
   assert.ok(booking.includes("if (stagedIntention) setIntention(stagedIntention)"));

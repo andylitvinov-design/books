@@ -39,10 +39,17 @@ async function verify(engine, locale, width) {
     assert.equal(response?.status(), 200, label + ": first screen returned HTTP 200");
     const root = page.locator("[data-holistic-first-screen]");
     await root.waitFor({state: "visible", timeout: 30000});
-    const engineCard = root.locator('[data-ideas-discovery][data-holistic-entry="true"]');
-    assert.equal(await engineCard.count(), 1, label + ": single active insight engine");
-    assert.equal(await page.locator("[data-holistic-first-screen] #ideas-title").innerText(),
+    assert.equal(await root.locator('[data-holistic-choose]').count(), 3, label + ": three first-screen choices");
+    assert.equal(await page.locator('[data-holistic-dao-screen]').count(), 0, label + ": Dao waits for an explicit choice");
+    assert.equal(await root.locator('#holistic-journey-title').innerText(),
       copy[locale].title, label + ": localized heading");
+    const daoChoice = root.locator('[data-holistic-choose="dao"]');
+    await daoChoice.tap();
+    assert.equal(await daoChoice.getAttribute('aria-expanded'), 'true', label + ": Dao choice opens the panel");
+    const panel = page.locator('[data-holistic-dao-screen]');
+    await panel.waitFor({state: 'visible', timeout: 30000});
+    const engineCard = panel.locator('[data-ideas-discovery]');
+    assert.equal(await engineCard.count(), 1, label + ": single active insight engine");
     const scenic = engineCard.locator('[class*="templeScenic"]').first();
     assert.ok((await scenic.evaluate(node => getComputedStyle(node, "::before").backgroundImage))
       .includes("ideas-pine-sharp.avif"), label + ": approved pine photograph");
@@ -97,9 +104,10 @@ async function verify(engine, locale, width) {
 
     const insight = engineCard.locator("[data-ideas-tao]");
     const energy = engineCard.locator("[data-ideas-energy-support]");
-    const choices = [insight, energy];
+    const diagnostic = engineCard.locator("[data-ideas-free-diagnostic]");
+    const choices = [insight, energy, diagnostic];
     assert.equal(await engineCard.locator("[data-ideas-hero-actions] > button, [data-ideas-hero-actions] > a").count(),
-      2, label + ": exactly two primary actions");
+      3, label + ": exactly three Dao actions");
     assert.equal(await energy.getAttribute("href"),
       "/" + locale + "/services/remote-energy-support", label + ": existing energy route");
     const heading = await root.boundingBox();
@@ -111,13 +119,13 @@ async function verify(engine, locale, width) {
         box.x >= -1 && box.x + box.width <= width + 1,
         label + ": primary action " + index + " has visible touch target");
     }
-    assert.equal(await root.locator("[data-ideas-preview]").count(), 1,
-      label + ": example is visibly distinct from the personal result");
+    assert.equal(await engineCard.locator("[data-ideas-preview]").count(), 0,
+      label + ": no prefilled personal result");
 
     const question = engineCard.locator("#ideas-question");
     await question.fill(copy[locale].question);
     await insight.tap();
-    const result = root.locator('[data-ideas-result="dao"]');
+    const result = engineCard.locator('[data-ideas-result="dao"]');
     await result.waitFor({state:"visible", timeout: 20000});
     assert.ok((await result.locator("[data-ideas-dao-summary]").innerText()).trim().length > 15,
       label + ": genuine symbolic response");
@@ -125,7 +133,7 @@ async function verify(engine, locale, width) {
       label + ": original words kept only in editable field");
 
     await question.fill(copy[locale].intention);
-    assert.equal(await root.locator("[data-ideas-result]").count(), 0,
+    assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
     await energy.tap();
     await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
