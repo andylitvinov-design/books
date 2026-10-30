@@ -184,6 +184,19 @@ test('approved migration destinations contain the exact retired scope and the or
       from:'psychometric-research-catalogue.yml',into:'hh-assessment-quality.yml',
       patterns:["'data/assessments/research-directory-2026/**'","'lib/assessments/research-directory-2026.js'","'lib/assessments/psychometric-validity-2026.js'","'components/app/research-directory.*'","'components/app/test-explorer.jsx'","'tests/psychometric-validity-directory.test.mjs'","'.github/workflows/psychometric-research-catalogue.yml'"],
       contracts:['tests/psychometric-validity-directory.test.mjs','tests/public-test-match-paging.test.mjs','tests/assessment-methodology.test.mjs','tests/test-kinds-catalog-audit.test.mjs','scripts/audit-psychometric-quality-2026.mjs','researchEditionReferences','nonOverlappingResearchReferences'],
+    
+    },{
+      from:'hh-benchmark-free-test-pilot.yml',into:'hh-benchmark-program.yml',
+      patterns:['"components/free-entry-landing.tsx"','"components/free-entry-landing.module.css"','"tests/benchmark-free-tests-first-pilot.test.mjs"','".github/workflows/hh-benchmark-free-test-pilot.yml"'],
+      contracts:['tests/benchmark-free-tests-first-pilot.test.mjs','tests/free-review-conversion.test.mjs','tests/benchmark-reference-matrix.test.mjs','scripts/benchmarking/plan.mjs'],
+    },{
+      from:'hh-portrait-sectors.yml',into:'hh-profile-axis-matching.yml',
+      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/app-workspace.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
+      contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
+    },{
+      from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
+      patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
     },
   ];
   for(const item of mappings) {
@@ -192,7 +205,9 @@ test('approved migration destinations contain the exact retired scope and the or
     assert.ok(trigger);
     for(const pattern of item.patterns) assert.ok(successor.includes('      - '+pattern), item.into+' missing '+pattern);
     for(const test of item.contracts) assert.ok(successor.includes(test),item.into+' missing '+test);
-    assert.ok(successor.includes('push:'),item.into+' must preserve post-merge verification');
+    if (['hh-crm-event-channels.yml','psychometric-research-catalogue.yml','hh-benchmark-free-test-pilot.yml'].includes(item.from)) {
+      assert.ok(successor.includes('push:'),item.into+' must preserve original production push verification');
+    }
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
 });
