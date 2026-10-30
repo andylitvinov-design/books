@@ -51,7 +51,7 @@ test("paid generation stays behind two independent gates and read paths are owne
  const client=file("components/mandala-my-ai-videos.tsx");
  assert.match(api,/HH_VIDEO_PAID_ENABLED/);
  assert.match(api,/HH_VIDEO_HEYGEN_RELEASE_APPROVED/);
- assert.match(api,/https:\/\/api\.heygen\.com\/v3\/models\/videos/);
+ assert.match(api,/safeAssetUrl/);
  assert.match(api,/Idempotency-Key/);
  assert.match(api,/\.heygen\\\.ai/);
  assert.match(status,/listVideoAiJobs/);
