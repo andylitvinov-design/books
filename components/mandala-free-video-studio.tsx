@@ -1858,7 +1858,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <button type="button" data-video-summary-step="4" aria-expanded={expandedStep===4}
             aria-controls="video-step-4-panel" onClick={()=>setExpandedStep(old=>old===4?null:4)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===4?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
         <div className={videoStyles.videoSummaryRow} data-video-summary-row="affirmations">
           <span className={videoStyles.videoSummaryGlyph}><Sparkles size={19} aria-hidden="true"/></span>
@@ -1868,7 +1868,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <span className={videoStyles.videoSummaryHighlight}>{affirmationLines[0]||compact.off}</span>
           <button type="button" data-video-summary-step="3" aria-expanded={expandedStep===3}
             aria-controls="video-step-3-panel" onClick={()=>setExpandedStep(old=>old===3?null:3)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===3?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
         <div className={videoStyles.videoSummaryRow} data-video-summary-row="montage">
           <span className={videoStyles.videoSummaryGlyph}><SlidersHorizontal size={19} aria-hidden="true"/></span>
@@ -1879,7 +1879,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <button type="button" data-video-summary-montage aria-expanded={expandedStep===3}
             aria-controls="video-step-3-panel" onClick={()=>setExpandedStep(old=>old===3?null:3)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===3?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
         <div className={videoStyles.videoSummaryRow} data-video-summary-row="audio">
           <span className={videoStyles.videoSummaryGlyph}><Music2 size={19} aria-hidden="true"/></span>
@@ -1898,7 +1898,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <button type="button" data-video-summary-step="5" aria-expanded={expandedStep===5}
             aria-controls="video-step-5-panel" onClick={()=>setExpandedStep(old=>old===5?null:5)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===5?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
         <div className={videoStyles.videoSummaryRow} data-video-summary-row="format">
           <span className={videoStyles.videoSummaryGlyph}><Film size={19} aria-hidden="true"/></span>
@@ -1918,7 +1918,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <button type="button" data-video-summary-step="6" aria-expanded={expandedStep===6}
             aria-controls="video-step-6-panel" onClick={()=>setExpandedStep(old=>old===6?null:6)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===6?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
         <div className={videoStyles.videoSummaryRow} data-video-summary-row="effect">
           <span className={videoStyles.videoSummaryGlyph}><Heart size={19} aria-hidden="true"/></span>
@@ -1927,7 +1927,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <span className={videoStyles.videoSummaryHighlight}>{wish.trim()||compact.energyGoal}</span>
           <button type="button" data-video-summary-step="1" aria-expanded={expandedStep===1}
             aria-controls="video-step-1-panel" onClick={()=>setExpandedStep(old=>old===1?null:1)}>
-            {compact.edit}<ArrowRight size={15} aria-hidden="true"/></button>
+            {expandedStep===1?quick.collapse:quick.expand}<ArrowRight size={15} aria-hidden="true"/></button>
         </div>
       </section>
       <section className={videoStyles.quickBuilder} data-video-quick-builder
