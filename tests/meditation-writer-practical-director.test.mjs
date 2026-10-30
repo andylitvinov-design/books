@@ -171,4 +171,10 @@ test("UI and preview API wire user intent into approved optional skill",()=>{
   assert.ok(ui.includes("preview.practice.steps.slice(0,2)"));
   assert.ok(ui.includes("preview.practice.transferAction"));
   assert.ok(ui.includes("setGoal(defaultGoal[next])"));
+  assert.ok(ui.includes('<details className={styles.checkin}>'));
+  assert.ok(ui.includes('setBefore("");setAfter("");'));
+  assert.ok(ui.includes('before!==""&&after!==""'));
+  // The check-in is local UI state and not posted to the authenticated API.
+  assert.ok(!route.includes("beforeCheckinValue"));
+  assert.ok(!route.includes("afterCheckinValue"));
 });
