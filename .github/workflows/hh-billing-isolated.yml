@@ -12,6 +12,12 @@ on:
       - 'components/*cart*'
       - 'lib/commerce/**'
       - 'lib/billing/**'
+      - 'lib/wallet/**'
+      - 'components/wallet/**'
+      - 'app/api/app/wallet/**'
+      - 'app/admin/api/wallet/**'
+      - 'app/admin/wallet/**'
+      - 'tests/wallet-*.mjs'
       - 'lib/checkout/**'
       - 'tests/billing-*.mjs'
       - 'tests/square-*.mjs'
@@ -58,6 +64,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Square checkout syntax, TypeScript and focused lint
         run: |
+          node --check lib/wallet/model.js
+          node --check lib/wallet/service.js
+          node --check app/api/app/wallet/'[action]'/route.js
+          node --check app/admin/api/wallet/route.js
           node --check lib/commerce/square-payment-links.js
           node --check lib/commerce/square-gateway.js
           node --check lib/commerce/square-cart-service.js
@@ -67,9 +77,9 @@ jobs:
           node --check lib/commerce/talisman-checkout.js
           node --check app/api/payments/talismans/checkout/route.js
           npx tsc --noEmit --pretty false
-          npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
+          npx eslint lib/wallet/model.js lib/wallet/service.js app/api/app/wallet app/admin/api/wallet components/wallet/wallet-panel.jsx components/wallet/wallet-review.jsx lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
-        run: node --test tests/paypal-personal-payments.test.mjs
+        run: node --test tests/paypal-personal-payments.test.mjs tests/wallet-topups.test.mjs
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Talisman fixed-price provider checkout gate and Google account return
