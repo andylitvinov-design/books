@@ -166,7 +166,9 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(widget, /onClick=\{\(\) => \{ if \(!focusLocked\) setFocus\(area\); \}\}/);
   // Validate a single real click, not retries or programmatic radio selection.
   assert.match(script, /async function tapFocusAndVerify\(page, enquiry, focus\)/);
-  assert.match(script, /await enquiry\.locator\('\[data-express-focus=/);
+  assert.match(script, /const card = enquiry\.locator\('\[data-express-focus=/);
+  assert.match(script, /await card\.tap\(\)/, "mobile acceptance must use a native touch tap");
+  assert.doesNotMatch(script, /await card\.click\(/, "mouse click is not a native touch gesture");
   assert.match(script, /radio instanceof HTMLInputElement && radio\.checked/);
   assert.match(script, /card\?\.getAttribute\("data-selected"\) === "true"/);
   assert.match(script, /waitForFunction\(/);
