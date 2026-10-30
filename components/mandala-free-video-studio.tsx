@@ -943,6 +943,44 @@ const formatPracticeCopy = {
     pending:"Aún no disponible",
   },
 } as const;
+/* Optional human handoff only after a real local video file exists.
+   Never attach a raw wish, photo, test result or generated media to the URL. */
+const postVideoSupportCopy = {
+  ru: {
+    title:"Хотите продолжить работу с вашим запросом?",
+    lead:"Медитация уже создана. Если нужна личная поддержка, выберите один из вариантов — это необязательно.",
+    consultation:"Обсудить ситуацию лично",
+    consultationText:"30 минут · €50 или 60 минут · €100. Прояснить запрос и следующий шаг с Андреем.",
+    consultationAction:"Выбрать консультацию",
+    energy:"Личная энергетическая поддержка",
+    energyText:"Дистанционная практика или онлайн-сессия с мастером. Формат и актуальную цену выберите на странице услуги.",
+    energyAction:"Подобрать поддержку",
+    privacy:"Сохраните видео перед переходом: оно не хранится в кабинете автоматически. Ваши личные ответы, фото и медитация не передаются. Заявка — не бронь и не оплата.",
+  },
+  en: {
+    title:"Would you like personal support with this intention?",
+    lead:"Your video is ready. If you would value personal guidance, these optional services are separate.",
+    consultation:"Discuss your situation personally",
+    consultationText:"30 minutes · €50 or 60 minutes · €100. Clarify your question and next step with Andrey.",
+    consultationAction:"Choose a consultation",
+    energy:"Personal energy support",
+    energyText:"Remote wellbeing practice or live online session with a practitioner. See the available format and published price first.",
+    energyAction:"Explore energy support",
+    privacy:"Save your video first: it is not automatically stored in your account. Your words, photo and video are not transferred. A request is not a booking or payment.",
+  },
+  es: {
+    title:"¿Quieres apoyo personal para tu intención?",
+    lead:"Tu vídeo está listo. Si te gustaría contar con acompañamiento, estas opciones son independientes y voluntarias.",
+    consultation:"Hablar de tu situación personalmente",
+    consultationText:"30 minutos · 50 € o 60 minutos · 100 €. Aclarar tu situación y el siguiente paso con Andrey.",
+    consultationAction:"Elegir una consulta",
+    energy:"Apoyo energético personal",
+    energyText:"Práctica de bienestar a distancia o sesión online con un profesional. Consulta el formato y precio publicados.",
+    energyAction:"Explorar el apoyo energético",
+    privacy:"Guarda tu vídeo antes de salir: no se almacena automáticamente en tu cuenta. No se comparten tus respuestas, foto ni vídeo. La solicitud no confirma reserva ni pago.",
+  },
+} as const;
+
 type FormatPractice = "video" | "meditation" | "course";
 type FormatQuality = "basic" | "smart" | "pro";
 const formatPracticeOrder: FormatPractice[] = ["video","meditation","course"];
@@ -992,6 +1030,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const quick = quickVideoCopy[locale];
   const approved = approvedMobileCopy[locale];
   const practiceCopy = formatPracticeCopy[locale];
+  const postSupport = postVideoSupportCopy[locale];
   const [practiceType,setPracticeType] = useState<FormatPractice>("video");
   const [practiceLevels,setPracticeLevels] = useState<Record<FormatPractice,FormatQuality>>({
     video:"basic",meditation:"smart",course:"pro",
@@ -2989,6 +3028,38 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <Share2 size={18} aria-hidden="true"/>{ui.share}
               </button>
             </div>
+            <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
+              aria-labelledby="video-post-support-title">
+              <h4 id="video-post-support-title">{postSupport.title}</h4>
+              <p className={videoStyles.postVideoSupportLead}>{postSupport.lead}</p>
+              <div className={videoStyles.postVideoSupportGrid}>
+                <div className={videoStyles.postVideoSupportItem} data-video-upsell="consultation">
+                  <div className={videoStyles.postVideoSupportIcon}><Heart size={18} aria-hidden="true"/></div>
+                  <div className={videoStyles.postVideoSupportBody}>
+                    <strong>{postSupport.consultation}</strong>
+                    <p>{postSupport.consultationText}</p>
+                    <Link prefetch={false} href={"/"+locale+"/services#consultation"}
+                      target="_blank" rel="noopener noreferrer"
+                      data-video-upsell-action="consultation">
+                      {postSupport.consultationAction}<ArrowRight size={16} aria-hidden="true"/>
+                    </Link>
+                  </div>
+                </div>
+                <div className={videoStyles.postVideoSupportItem} data-video-upsell="energy">
+                  <div className={videoStyles.postVideoSupportIcon}><HandHeart size={18} aria-hidden="true"/></div>
+                  <div className={videoStyles.postVideoSupportBody}>
+                    <strong>{postSupport.energy}</strong>
+                    <p>{postSupport.energyText}</p>
+                    <Link prefetch={false} href={"/"+locale+"/services/remote-energy-support"}
+                      target="_blank" rel="noopener noreferrer"
+                      data-video-upsell-action="energy">
+                      {postSupport.energyAction}<ArrowRight size={16} aria-hidden="true"/>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              <p className={videoStyles.postVideoSupportPrivacy}>{postSupport.privacy}</p>
+            </aside>
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
