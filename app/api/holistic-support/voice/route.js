@@ -4,7 +4,7 @@ import { getAppConfig, requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { consumeRate } from '@/lib/app/database'
 import { readBody, PRIVATE_HEADERS, safeError } from '@/lib/app/http'
-import { VOICE_STUDIO_MODEL, voiceStudioReady, validateStudioRequest, buildStudioPayload } from '@/lib/mandala/voice-studio.mjs'
+import { VOICE_STUDIO_MODEL, voiceStudioReady, voiceStudioKey, validateStudioRequest, buildStudioPayload } from '@/lib/mandala/voice-studio.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -48,8 +48,8 @@ async function limitedJson(response) {
 export async function POST(request) {
   let auth
   try {
-    // In particular, NEVER fall back to the unrelated HH_COUNCIL_GEMINI_API_KEY.
-    // Billing must be absent from this dedicated API key's Google AI Studio project.
+    // Opt-in reuse of the existing server-side Google credential is permitted
+    // ONLY after Free-tier attestation and enabling the explicit reuse flag.
     if(!voiceStudioReady(process.env))
       throw new AppError('VOICE_STUDIO_NOT_CONFIGURED',503)
     const config = getAppConfig()
@@ -77,7 +77,7 @@ export async function POST(request) {
         method:'POST',signal,
         headers:{
           'Content-Type':'application/json',
-          'x-goog-api-key':process.env.HH_VOICE_STUDIO_GEMINI_API_KEY,
+          'x-goog-api-key':voiceStudioKey(process.env),
         },
         body:JSON.stringify(buildStudioPayload(validated)),
         cache:'no-store',
