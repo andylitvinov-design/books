@@ -20,11 +20,12 @@ Private RLS tables in app_private: media_credit_wallets, media_credit_ledger, me
 GET /api/app/media-credits returns current user balance + available merchant methods, or guest/pending state.
 POST /api/app/media-credits/checkout creates authenticated same-origin idempotent merchant checkout.
 POST /api/app/media-credits/paypal-capture completes an authenticated approved merchant order only after Orders v2 readback.
+POST /api/app/media-credits/reconcile checks a Stripe Checkout Session + PaymentIntent after return using merchant readback, independent of webhook delivery.
 POST /api/app/media-credits/stripe-webhook validates Stripe signature and real paid Checkout/PaymentIntent.
 POST /api/app/media-credits/paypal-webhook verifies PayPal signature and Orders v2 capture.
 Refund/dispute webhooks freeze or reverse balances; ambiguous partial refunds require merchant reconciliation. Never automatically add purchased credit from a return URL or activate generation without a real file.
 
-Internal reserveMediaCreditJob / finishMediaCreditJob hooks are prepared for future AI providers; only trusted server provider execution may call them. Successful delivery must be verified, and failed/abandoned jobs must refund. Do not charge for local video or a creative draft.
+Internal reserveMediaCreditJob / finishMediaCreditJob hooks are prepared for future AI providers and are disabled until HH_MEDIA_CREDITS_PAID_GENERATION_ENABLED=true; only trusted server provider execution may call them. Successful delivery must be verified, and failed/abandoned jobs must refund. Do not charge for local video or a creative draft.
 
 ## Rollout and activation gates
 1. Merge reviewed PR to canonical production branch codex/public-book-library, after exact-head Node, ESLint, TypeScript, Next build, billing and E2E. Coordinate with video-tiers PR #2625. Do not alter default codex/bootstrap-books.
