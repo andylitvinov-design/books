@@ -82,20 +82,21 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
   assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
 });
 
-test('protected cabinet navigation never speculatively prefetches during synthetic YouTube mobile acceptance', () => {
+test('isolated YouTube mobile QA shares a true same-origin loopback host with browser navigation', () => {
   const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
-  const header = read('components/prescription-admin-header.jsx');
+  const guard = read('lib/youtube/mobile-qa-guard.mjs');
   const qa = read('app/qa/youtube-phone/page.js');
   const verifier = read('scripts/verify-youtube-phone-mobile.mjs');
-  const headerLinks = [...header.matchAll(/<Link\b[^>]*>/g)].map(match => match[0]);
-  const fixtureLinks = [...qa.matchAll(/<Link\b[^>]*>/g)].map(match => match[0]);
-  assert.ok(headerLinks.length >= 9, 'real admin navigation must remain mounted');
-  assert.equal(fixtureLinks.length, 2, 'fixture keeps real cabinet links');
-  for (const link of [...headerLinks, ...fixtureLinks])
-    assert.match(link, /\bprefetch=\{false\}/, 'unauthenticated QA must not prefetch protected owner pages');
+  assert.match(verifier, /const origin = 'http:\/\/localhost:3157'/);
+  assert.match(verifier, /'start','-p','3157','-H','localhost'/);
+  assert.match(guard, /host==='localhost:3157'/);
+  assert.match(guard, /host==='127\.0\.0\.1:3157'/);
+  for(const field of ["CI==='true'","HH_APP_TEST_RUNTIME==='isolated'","!env.VERCEL"])
+    assert.ok(guard.includes(field), 'never open QA in production: ' + field);
   assert.match(qa, /phoneYoutubeQaAllowed/, 'QA owner gate must remain isolated');
-  assert.match(verifier, /assert\.deepEqual\(errors,\[\]/, 'real page JS errors must still fail mobile QA');
-  assert.match(verifier, /webkit/, 'WebKit acceptance must remain');
+  assert.match(verifier, /assert\.deepEqual\(errors,\[\]/, 'WebKit page JS errors must still fail');
+  assert.match(verifier, /webkit/, 'real Chromium/WebKit acceptance retained');
+  assert.match(verifier, /origin\+'\/admin\/youtube-upload'/, 'unauthenticated admin still explicitly denied');
 });
 test('express review accepts one real mobile tap only after radio and React card agree', () => {
   const source = readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs', import.meta.url), 'utf8');
