@@ -47,7 +47,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
-      await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
+      try {
+        await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
+      }catch(error){
+        const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
+        const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
+        throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
+          providerRequests:payloads.length,jsErrors:errors}),{cause:error});
+      }
       assert.equal(payloads.length,1);
       assert.equal(payloads[0].mode,"affirmations");
       assert.equal(payloads[0].text,transcript);
