@@ -210,9 +210,15 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // About now shows ten original, poster-backed reviews rather than three.
+  // Assert real distinct review cards and their playable videos, without iframes before a tap.
+  const aboutReviews = page.locator('[data-testimonial-video-id]')
+  await expect(aboutReviews).toHaveCount(10)
+  const reviewIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')))
+  assert.equal(new Set(reviewIds).size, 10, 'About must show ten distinct real testimonials')
+  assert.equal(await page.locator('.site-video-player').count(), 10, 'About must retain all ten original player posters')
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten distinct original reviews, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
