@@ -35,7 +35,7 @@ test('first practitioner screen is public in EN/RU/ES, never a Google gate',()=>
  assert.match(middleware,/new URL\('\/' \+ oldPractice\[1\] \+ '\/practice', request\.url\)/)
 })
 
-test('all public showcase actions resume after Google login at existing protected pages',()=>{
+test('public showcase OAuth returns to reviewed dashboard without automatic private editor actions',()=>{
  const actionKeys=['create','service','session','meditation','talisman','reiki','course','material',
   'meditationList','talismanList','reikiList','courseList','clients','requests','messages',
   'services','materials','analytics','profile']
@@ -48,10 +48,16 @@ test('all public showcase actions resume after Google login at existing protecte
  assert.equal((server.match(/validPracticeContinuation\(continueTo,profi\)/g)||[]).length,2)
  assert.match(server,/continueTo==='practice-preview'/)
  assert.match(server,/continueTo==='my-practice'/)
- assert.match(server,/profi && Object\.hasOwn\(PRACTICE_PREVIEW_ACTIONS,profi\)/)
- assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice\$\{profi && Object\.hasOwn/)
- assert.doesNotMatch(server,/\$\{origin\}\/\$\{locale==='es'\?'en':locale\}\$\{PRACTICE_PREVIEW_ACTIONS\[profi\]\}/)
- assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview', profi:key \}\)/)
+  // The action map is still an allowlist, not an automatic post-login redirect.
+  // Browser sign-in resumes the reviewed Practice dashboard; after login the
+  // user explicitly chooses a protected action, while native paths stay scoped.
+  assert.match(server,/continueTo === 'practice-preview'\s*\n[\s\S]{0,300}\? `\$\{origin\}\/\$\{locale\}\/practice`/)
+  assert.match(server,/const failedPracticeDestination = continueTo === 'practice-preview'\s*\? `\$\{origin\}\/\$\{locale\}\/practice`/)
+  assert.doesNotMatch(server,/continueTo === 'practice-preview'\s*\n[\s\S]{0,300}\$\{PRACTICE_PREVIEW_ACTIONS\[profi\]\}/)
+  // Browser OAuth returns to the reviewed dashboard, not an auto-open editor.
+  // After login, the user explicitly reselects a protected action.
+  assert.match(showcase,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview' \}\)/)
+  assert.doesNotMatch(showcase,/continueTo:'practice-preview'\s*,\s*profi:/)
  assert.match(showcase,/router\.push\(destination\(locale, key\)\)/)
  assert.match(server,/reiki:'\/app\/practice\?panel=services&create=1&starter=reiki'/)
  assert.match(server,/diagnostic:'\/app\/practice\?panel=services&create=1&starter=diagnostic'/)
