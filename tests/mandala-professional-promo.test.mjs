@@ -33,7 +33,7 @@ test("all professional formats produce editable local briefs in RU/EN/ES", () =>
 });
 
 test("all professional ad presets resolve to four DISTINCT existing first-party video clips", () => {
-  const match = studio.match(/const FREE_FILM_PRESETS:readonly FreeFilmPreset\\[\\] = (\\[[\\s\\S]*?\\]) as const;/);
+  const match = studio.match(/const FREE_FILM_PRESETS:readonly FreeFilmPreset\[\] = (\[[\s\S]*?\]) as const;/);
   assert.ok(match, "reuse the one existing first-party film catalogue");
   const presets = JSON.parse(match[1]);
   for (const format of PROFESSIONAL_PROMO_FORMATS) {
