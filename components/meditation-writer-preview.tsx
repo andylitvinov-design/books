@@ -16,8 +16,9 @@ const lang={
   ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика: шаблон или бесплатный AI-черновик при доступной модели.",
     focus:"Тема",style:"Стиль текста",duration:"Длительность",motif:"Образ",
     mode:"Как создать текст",templateMode:"Без внешнего AI",aiMode:"Бесплатный AI · черновик",
-    aiConsent:"Согласен на отправку Google только обезличенных настроек темы, образа и стиля. Google может использовать запросы бесплатного API для улучшения моделей. Мои личные фразы и данные кабинета не передаются.",
+    aiConsent:"Согласен на отправку Google только обезличенных настроек темы, образа и стиля. Google может использовать запросы бесплатного API для улучшения моделей. Мои личные фразы и данные кабинета не передаются и не используются AI-черновиком.",
     aiDraft:"Черновик Gemini · требует редакторской проверки",
+    estimated:"Оценочная длительность чтения с паузами",
     aiFallback:"AI сейчас недоступен или текст не прошёл проверку: показан шаблон.",
     phrase:"Необязательная личная фраза",phraseHelp:"Можно оставить пустым",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
@@ -31,8 +32,9 @@ const lang={
   en:{title:"Personal meditation — text preview",subtitle:"A gentle optional practice: a template or an AI draft if the free model is available.",
     focus:"Focus",style:"Writing style",duration:"Duration",motif:"Image",
     mode:"Text generation",templateMode:"No external AI",aiMode:"Free AI · draft",
-    aiConsent:"I agree to send Google only anonymous topic, image and style settings. Google may use free-tier prompts to improve its models. My personal phrases and account data are not sent.",
+    aiConsent:"I agree to send Google only anonymous topic, image and style settings. Google may use free-tier prompts to improve its models. My personal phrases and account data are not sent or used to write the AI draft.",
     aiDraft:"Gemini draft · editorial review required",
+    estimated:"Estimated spoken length with pauses",
     aiFallback:"AI is unavailable or the draft failed review; showing the template instead.",
     phrase:"Optional personal phrase",phraseHelp:"You can leave this empty",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
@@ -46,8 +48,9 @@ const lang={
   es:{title:"Meditación personal — vista previa",subtitle:"Una práctica suave: plantilla o borrador de IA si el modelo gratuito está disponible.",
     focus:"Tema",style:"Estilo",duration:"Duración",motif:"Imagen",
     mode:"Creación del texto",templateMode:"Sin IA externa",aiMode:"IA gratuita · borrador",
-    aiConsent:"Acepto enviar a Google solo ajustes anónimos de tema, imagen y estilo. Google puede usar solicitudes gratuitas para mejorar sus modelos. No se envían frases personales ni datos de mi cuenta.",
+    aiConsent:"Acepto enviar a Google solo ajustes anónimos de tema, imagen y estilo. Google puede usar solicitudes gratuitas para mejorar sus modelos. Las frases personales y los datos de mi cuenta no se envían ni se usan para crear el borrador de IA.",
     aiDraft:"Borrador Gemini · requiere revisión editorial",
+    estimated:"Duración estimada de voz con pausas",
     aiFallback:"La IA no está disponible o el borrador no pasó la revisión; se muestra la plantilla.",
     phrase:"Frase personal opcional",phraseHelp:"Puedes dejarla vacía",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
@@ -149,6 +152,8 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         {s.optionalSilenceSeconds>0&&<small>{t.pause}: {s.optionalSilenceSeconds} s</small>}
       </div>)}
       <p className={styles.caption}>{t.durationNote}</p>
+      {preview.estimatedDurationSeconds!==undefined&&
+        <p className={styles.caption}>{t.estimated}: {Math.max(1,Math.round(preview.estimatedDurationSeconds/60))} min</p>}
       <MeditationWriterDeviceVoice locale={l} segments={preview.segments} />
     </article>}
   </section>;
