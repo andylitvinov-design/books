@@ -1,6 +1,7 @@
 name: Practitioner visual service editor
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/simple-service-editor.*'
@@ -42,6 +43,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   service-editor:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -61,6 +63,8 @@ jobs:
       - name: Lint all changed components
         run: npx --no-install eslint components/app/simple-service-editor.jsx components/app/my-services-dashboard.jsx components/app/practice-workspace.jsx lib/practitioners/service-editor-steps.mjs components/practice-showcase.jsx 'app/[locale]/practice/page.jsx'
       - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

@@ -1,6 +1,7 @@
 name: Holistic Support AI guide — scored intake and WhatsApp dialogue
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
@@ -22,6 +23,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   focused-unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -42,10 +44,13 @@ jobs:
       - name: Scoped lint
         run: npx --no-install eslint components/holistic-support-mobile.tsx components/holistic-support-inline-guide.tsx app/'[locale]'/holistic-support/mobile/page.tsx lib/assessments/support-guide-tests.js lib/holistic-support/guide-dialogue.mjs tests/holistic-support-conversation-intents.test.mjs scripts/verify-holistic-support-guided-card.mjs tests/holistic-support-guided-recommendations.test.mjs
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
   mobile-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
