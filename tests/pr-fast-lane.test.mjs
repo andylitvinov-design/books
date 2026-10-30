@@ -460,3 +460,26 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
   ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
   assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
 });
+
+test('Growth Studio and Development Programme retain focused tests while reusing Core on production PRs', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for (const [name, step, tests] of [
+    ['hh-growth-studio.yml', 'Next.js build', ['tests/growth-studio-editorial.test.mjs','tests/growth-studio-composer-details-render.test.mjs']],
+    ['hh-reports-development-program.yml', 'Verify production Next.js build without preview deployment', ['tests/reports-development-program.test.mjs','tests/goal-profile-journey.test.mjs']],
+  ]) {
+    const source = workflow(name);
+    assert.match(source, /^  pull_request:/m, name);
+    assert.ok(source.includes('.github/workflows/' + name), name + ' self-YAML validation');
+    assert.ok(source.includes('- name: '+ step +'\n        '+gate+'\n        run: npm run build'), name+' must skip only redundant production PR build');
+    assert.match(source, /node --test/, name);
+    for (const path of tests) assert.ok(source.includes(path), name+' focused tests cannot be removed');
+    assert.doesNotMatch(source,/continue-on-error:\s*true/,name);
+  }
+  assert.match(workflow('hh-reports-development-program.yml'), /^  push:/m);
+  assert.match(workflow('hh-growth-studio.yml'), /^  workflow_dispatch:/m);
+});
