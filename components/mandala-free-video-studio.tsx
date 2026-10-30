@@ -8,6 +8,7 @@ import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
+import { MandalaProfessionalPromo } from "./mandala-professional-promo";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -2122,18 +2123,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
-  const applyAutoFilm=(presetId:string,seconds:10|20|30|60)=>{
+  const applyAutoFilm=(presetId:string,seconds:10|20|30|60,outputAspect:Aspect="landscape")=>{
     if(recording||preparing)return;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
     if(!preset){setNotice(ui.videoUnavailable);return;}
     try{
-      const plan=compileFreeFilmPreset(preset,locale,seconds,"landscape");
+      const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect);
       setActiveFreeFilmPreset(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
       if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
       else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
       setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
-      setAspect("landscape");setDuration(seconds);setCinematicPlan(plan);
+      setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
       setPreviewPlaying(false);setSuggestion("");
       setNotice(locale==="ru"?"Бесплатный монтаж из четырёх MP4 выбран. Дождитесь загрузки кадров и нажмите «Создать видео».":locale==="es"?
         "Montaje gratuito de cuatro MP4 seleccionado. Espera la carga y pulsa Crear vídeo.":
@@ -2347,6 +2348,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           clipLabel={freeFilmClipLabel}
           onGoalChange={next=>{setWish(graphemeTrim(next));setSuggestion("");setCinematicPlan(null);}}
           onApply={applyAutoFilm}/>
+
+        {/* Separate B2B brief, connected to the SAME browser-local film compiler.
+            The approved personal-practice accordion and recorder remain unchanged. */}
+        <MandalaProfessionalPromo locale={locale} disabled={recording||preparing}
+          onOpenAudio={()=>openQuickDetailed("video-audio")}
+          onApply={({presetId,durationSeconds,headline})=>{
+            applyAutoFilm(presetId,durationSeconds,"portrait");
+            setPracticeType("video");
+            setPracticeLevels(previous=>({...previous,video:"basic"}));
+            setCaptionMode("custom");
+            setCustomCaption(headline);
+            setAffirmations(previous=>({...previous,enabled:false}));
+            setBackgroundOnly(true);
+            setStudioMode("pump");
+            setNotice(locale==="ru"
+              ?"Рекламная видеозаготовка подготовлена. Дождитесь загрузки 4 сцен и нажмите «Создать видео». Для полноценной рекламы отдельно добавьте свой голос и проверьте готовый файл."
+              :locale==="es"
+              ?"El borrador visual está listo. Espera los cuatro clips y pulsa Crear vídeo. Añade tu voz y revisa el archivo antes de publicarlo."
+              :"Your promo visual draft is ready. Wait for four clips, then select Create video. Add your own voice and review the file before publishing.");
+          }}/>
+
 
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
