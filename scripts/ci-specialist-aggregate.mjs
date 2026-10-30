@@ -7,8 +7,8 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
-  TARGET, WORKFLOW_PREFIX, expectedWorkflows, inspectWorkflowRuns,
-  inspectJobs, validateParameters,
+  TARGET, WORKFLOW_PREFIX, expectedWorkflows, resolveExpectedSpecialists,
+  inspectWorkflowRuns, inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -76,7 +76,8 @@ export async function verify(api,ctx,files,options={}) {
   const changedRows=await api.changed(ctx.number);
   const changed=changedRows.map(row => row.filename);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
-  const expected=expectedWorkflows({ ...files,changed });
+  const baselineExpected=expectedWorkflows({ ...files,changed });
+  const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   const deadline=Date.now()+maxWait;
   let state;
   for (;;) {
@@ -100,7 +101,7 @@ export async function verify(api,ctx,files,options={}) {
   }
   const fresh=await api.pr(ctx.number);
   assertSame(fresh,ctx);
-  return {expected,executed,pushFailures:state.pushFailures,head:ctx.head,base:ctx.base};
+  return {expected,delegated,executed,pushFailures:state.pushFailures,head:ctx.head,base:ctx.base};
 }
 
 async function main() {
@@ -112,7 +113,8 @@ async function main() {
   const result=await verify(api,ctx,files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' base=' + ctx.base + '\nVerified applicable workflows: ' + result.expected.length +
-    '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n');
+    '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
+    '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ');
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }
