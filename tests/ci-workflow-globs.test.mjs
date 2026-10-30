@@ -81,3 +81,28 @@ test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves br
   assert.match(free, /Verify PR's local production build, not old live alias/, 'PR acceptance must test exact source');
   assert.match(free, /tests\/private-material-handoff\.test\.mjs/, 'privacy/consent checks must remain');
 });
+
+test('protected cabinet navigation never speculatively prefetches during synthetic YouTube mobile acceptance', () => {
+  const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+  const header = read('components/prescription-admin-header.jsx');
+  const qa = read('app/qa/youtube-phone/page.js');
+  const verifier = read('scripts/verify-youtube-phone-mobile.mjs');
+  const headerLinks = [...header.matchAll(/<Link\b[^>]*>/g)].map(match => match[0]);
+  const fixtureLinks = [...qa.matchAll(/<Link\b[^>]*>/g)].map(match => match[0]);
+  assert.ok(headerLinks.length >= 9, 'real admin navigation must remain mounted');
+  assert.equal(fixtureLinks.length, 2, 'fixture keeps real cabinet links');
+  for (const link of [...headerLinks, ...fixtureLinks])
+    assert.match(link, /\bprefetch=\{false\}/, 'unauthenticated QA must not prefetch protected owner pages');
+  assert.match(qa, /phoneYoutubeQaAllowed/, 'QA owner gate must remain isolated');
+  assert.match(verifier, /assert\.deepEqual\(errors,\[\]/, 'real page JS errors must still fail mobile QA');
+  assert.match(verifier, /webkit/, 'WebKit acceptance must remain');
+});
+test('express review accepts one real mobile tap only after radio and React card agree', () => {
+  const source = readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs', import.meta.url), 'utf8');
+  assert.match(source, /timeout: 8000/);
+  assert.match(source, /radio instanceof HTMLInputElement && radio.checked/);
+  assert.match(source, /getAttribute\("data-selected"\) === "true"/);
+  assert.match(source, /Single-tap focus was not committed/);
+  assert.match(source, /input\[type="checkbox"\]/);
+  assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
+});

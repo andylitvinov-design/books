@@ -24,7 +24,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
   return (
     <header className="prescription-admin-header prescription-admin-header--refined">
       <div className="prescription-admin-topbar">
-        <Link className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
+        <Link prefetch={false} className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
           <strong>Holistic House</strong>
           <span>{compactMarketing ? labels.marketing : labels.practice}</span>
         </Link>
@@ -43,28 +43,28 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
       </div>
 
       {compactMarketing ? <nav aria-label={labels.marketing} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-        <Link href={`/${locale}/app/practice?panel=marketing`}>{labels.practice}</Link>
-        <Link href="/admin/growth-studio">{labels.growth}</Link>
-        <Link href="/admin/seo">{labels.seo}</Link>
-        <Link href="/admin/acquisition">{labels.acquisition}</Link>
+        <Link prefetch={false} href={`/${locale}/app/practice?panel=marketing`}>{labels.practice}</Link>
+        <Link prefetch={false} href="/admin/growth-studio">{labels.growth}</Link>
+        <Link prefetch={false} href="/admin/seo">{labels.seo}</Link>
+        <Link prefetch={false} href="/admin/acquisition">{labels.acquisition}</Link>
       </nav> : <div className="prescription-admin-v4-shell-nav" data-admin-unified-nav>
         <nav aria-label={labels.cabinet} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-          <Link href={'/'+locale+'/app/practice'}>{labels.practice}</Link>
-          <Link href="/admin/clients">{labels.clients}</Link>
-          <Link href="/admin/materials">{labels.materials}</Link>
-          <Link href="/admin/materials/courses">{labels.reikiAudio}</Link>
-          <Link href="/admin/reports">{labels.reports}</Link>
+          <Link prefetch={false} href={'/'+locale+'/app/practice'}>{labels.practice}</Link>
+          <Link prefetch={false} href="/admin/clients">{labels.clients}</Link>
+          <Link prefetch={false} href="/admin/materials">{labels.materials}</Link>
+          <Link prefetch={false} href="/admin/materials/courses">{labels.reikiAudio}</Link>
+          <Link prefetch={false} href="/admin/reports">{labels.reports}</Link>
         </nav>
         <details className="prescription-admin-v4-more"><summary>{labels.more} ▾</summary>
           <nav aria-label={labels.more} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-            <Link href="/admin/tools">{labels.more}</Link>
-            <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
-            <Link href="/admin/seo">{labels.seo}</Link>
-            <Link href="/admin/growth-studio">{labels.growth}</Link>
-            <Link href="/admin/clients/legacy">{labels.legacy}</Link>
-            <Link href="/admin/videos">{labels.videos}</Link>
-            <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
-            <Link href="/admin/telegram-setup">{labels.telegram}</Link>
+            <Link prefetch={false} href="/admin/tools">{labels.more}</Link>
+            <Link prefetch={false} href="/admin/consultations/new">{labels.newConsultation}</Link>
+            <Link prefetch={false} href="/admin/seo">{labels.seo}</Link>
+            <Link prefetch={false} href="/admin/growth-studio">{labels.growth}</Link>
+            <Link prefetch={false} href="/admin/clients/legacy">{labels.legacy}</Link>
+            <Link prefetch={false} href="/admin/videos">{labels.videos}</Link>
+            <Link prefetch={false} href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
+            <Link prefetch={false} href="/admin/telegram-setup">{labels.telegram}</Link>
           </nav>
         </details>
       </div>}

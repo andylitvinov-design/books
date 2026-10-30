@@ -15,13 +15,26 @@ const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // React-selected card after ONE tap, rather than retrying a missed click.
 async function tapFocusAndVerify(page, enquiry, focus) {
   await enquiry.locator('[data-express-focus="' + focus + '"]').click();
-  await page.waitForFunction((target) => {
-    const root = document.querySelector('[data-personal-express-enquiry]');
-    const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
-    const card = root?.querySelector('[data-express-focus="' + target + '"]');
-    return radio instanceof HTMLInputElement && radio.checked
-      && card?.getAttribute("data-selected") === "true";
-  }, focus, { timeout: 3000 });
+  // WebKit can briefly delay React's selected-card paint while the mobile
+  // anchor settles. Still require BOTH native radio.checked and the real
+  // rendered selected card after a SINGLE user tap (never retry a lost tap).
+  try {
+    await page.waitForFunction((target) => {
+      const root = document.querySelector('[data-personal-express-enquiry]');
+      const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
+      const card = root?.querySelector('[data-express-focus="' + target + '"]');
+      return radio instanceof HTMLInputElement && radio.checked
+        && card?.getAttribute("data-selected") === "true";
+    }, focus, { timeout: 8000 });
+  } catch (error) {
+    const actual = await enquiry.evaluate((root, target) => ({
+      expanded: root.getAttribute("data-expanded"),
+      nativeChecked: root.querySelector('input[name="express-review-focus"][value="' + target + '"]')?.checked ?? null,
+      selectedCard: root.querySelector('[data-express-focus="' + target + '"]')?.getAttribute("data-selected") ?? null,
+      selectedRadio: root.querySelector('input[name="express-review-focus"]:checked')?.value ?? null,
+    }), focus);
+    throw new Error("Single-tap focus was not committed: " + JSON.stringify({focus, actual, reason:String(error)}));
+  }
 }
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
