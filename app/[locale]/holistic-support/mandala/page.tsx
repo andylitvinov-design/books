@@ -59,6 +59,7 @@ export default async function MandalaMeditationPage({ params }: Props) {
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
+      <HolisticSupportMandalaDock locale={locale} />
       <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
         <Sparkles size={17} aria-hidden="true" />
         <strong>{promo.label}</strong>
@@ -67,7 +68,6 @@ export default async function MandalaMeditationPage({ params }: Props) {
         </Link>
       </aside>
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
-      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }
