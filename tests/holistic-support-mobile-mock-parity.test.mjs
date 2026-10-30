@@ -12,7 +12,7 @@ const original = read("app/[locale]/holistic-support/page.tsx");
 test("mobile alternative preserves standard Support and excludes redundant marketing header", () => {
   assert.doesNotMatch(page, /PublicSiteHeader/);
   assert.match(client, /data-support-app-header/);
-  assert.match(css, /\.compactAppHeader \{ display: none; \}/);
+  assert.match(css, /\.compactAppHeader \{ display: flex; \}/);
   assert.match(banner, /holistic-support\\\/mobile/);
   assert.match(original, /PublicSiteHeader/);
   assert.match(original, /HolisticSupportChoices/);

@@ -49,6 +49,32 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
+          // The owner-approved profile-first page is fully visible on load.
+          // No user action or sign-in is required to see the three-step guide.
+          const onboarding = root.locator('[data-support-onboarding]');
+          assert.equal(await onboarding.count(),1,label+" one profile-first introduction");
+          assert.equal(await onboarding.locator('h1').count(),1,label+" one prominent page heading");
+          assert.equal(await onboarding.locator('[data-support-how-step]').count(),3,
+            label+" all three steps visible by default");
+          assert.ok(await onboarding.locator('[data-support-how-step]').first().isVisible(),
+            label+" first step visible without expanding a disclosure");
+          assert.equal(await onboarding.locator('[data-support-popular-profile]').count(),4,
+            label+" four topic choices visible before the dashboard");
+          assert.equal(await onboarding.locator('[data-support-start-profile]').getAttribute('href'),
+            '/'+locale+'/personality-profiles?start=1',label+" real builder CTA");
+          assert.equal(await onboarding.locator('[data-support-start-tests]').getAttribute('href'),
+            '/'+locale+'/client/tests',label+" real anonymous Test Explorer");
+          assert.equal(await onboarding.locator('[data-support-teaser-tests]').getAttribute('href'),
+            '/'+locale+'/client/tests',label+" test teaser is not a dummy");
+          const focusDest = {wellbeing:"wellbeing",work:"work",
+            relationships:"relationships",identity:"identity"};
+          for (const [topic, focus] of Object.entries(focusDest)) {
+            assert.equal(await onboarding.locator('[data-support-popular-profile="'+topic+'"]').getAttribute('href'),
+              '/'+locale+'/personality-profiles?start=1&focus='+focus,
+              label+" "+topic+" launches selected real profile wizard");
+          }
+          assert.ok(await root.locator('[data-support-app-header]').isVisible(),
+            label+" warm site header is visible above hero");
           assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
             label + " four top check-ins; Goals is part of Meaning");
           assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
@@ -91,6 +117,12 @@ for (const browserType of [chromium, webkit]) {
             });
             return {
               client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
+              onboarding:measure('[data-support-onboarding]'),
+              heroIntro:measure('[data-support-onboarding-hero]'),
+              how:measure('[data-support-how-it-works]'),
+              dirs:measure('[data-support-popular-directions]'),
+              testsTeaser:measure('[data-support-tests-teaser]'),
+              header:measure('[data-support-app-header]'),
               a:measure('[aria-labelledby="mobile-assessment-title"]'),
               photo:measure('[data-support-photo]'),
               tools:measure('[data-support-tool]'),
@@ -120,6 +152,19 @@ for (const browserType of [chromium, webkit]) {
           });
           const allowedMargin=3;
           assert.ok(geometry.scroll<=geometry.client+allowedMargin, label+" overflow "+JSON.stringify(geometry));
+          assert.ok(geometry.header.length===1 && geometry.onboarding.length===1 &&
+            geometry.heroIntro.length===1 && geometry.how.length===1 &&
+            geometry.dirs.length===1 && geometry.testsTeaser.length===1,
+            label+" exact profile-first page landmarks");
+          assert.ok(geometry.heroIntro[0].bottom<=geometry.how[0].y+2 &&
+            geometry.how[0].bottom<=geometry.dirs[0].y+2 &&
+            geometry.dirs[0].bottom<=geometry.testsTeaser[0].y+2 &&
+            geometry.testsTeaser[0].bottom<=geometry.a[0].y+2,
+            label+" hero → visible steps → profiles → tests precede interactive Support");
+          assert.ok(geometry.heroIntro[0].height<=520 && geometry.how[0].height<=550,
+            label+" onboarding cannot become oversized: "+JSON.stringify(geometry));
+          assert.ok(geometry.header[0].bottom<=geometry.heroIntro[0].y+2,
+            label+" one site header precedes the profile hero");
           assert.ok(geometry.hero.length===1, label+" main scenic hero");
           if(width===320) {
             const headHeight=Math.round(geometry.hero[0].y-geometry.a[0].y);
@@ -907,6 +952,23 @@ for (const browserType of [chromium, webkit]) {
             document.documentElement.scrollWidth-document.documentElement.clientWidth);
           assert.ok(testOverflow<=3,label+" Tests panel has no horizontal overflow: "+testOverflow);
           assert.deepEqual(errors,[],label+" browser exceptions");
+          // After existing modules are exercised, click the actual public
+          // routes. The profile card starts its published wizard, not a stub.
+          if (width===390 && locale==="ru") {
+            await page.goto(origin+"/ru/holistic-support/mobile",
+              {waitUntil:"domcontentloaded",timeout:75000});
+            await page.locator('[data-support-popular-profile="relationships"]').click();
+            await page.waitForURL(/\/ru\/personality-profiles\?start=1&focus=relationships/,
+              {timeout:45000});
+            await page.locator('[data-profile-focus-selection]').waitFor({state:"visible",timeout:45000});
+            assert.equal(await page.locator('[data-profile-focus="relationships"]').getAttribute("aria-pressed"),
+              "true",label+" selected profile opens real builder with the chosen topic");
+            await page.goto(origin+"/ru/holistic-support/mobile",
+              {waitUntil:"domcontentloaded",timeout:75000});
+            await page.locator('[data-support-start-tests]').click();
+            await page.waitForURL(origin+"/ru/client/tests",{timeout:45000});
+            await page.locator('#hh-test-list').waitFor({state:"visible",timeout:45000});
+          }
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
         } finally { await page.close(); }

@@ -4,6 +4,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-onboarding.tsx'
+      - 'components/holistic-support-onboarding.module.css'
+      - 'components/personality-profiles-builder.tsx'
+      - 'tests/holistic-support-onboarding-bridge.test.mjs'
       - 'data/academy/greek-video-series.ts'
       - 'tests/greek-video-series.test.mjs'
       - 'components/holistic-support-course-profiles.tsx'
@@ -37,6 +41,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-support-mobile.tsx'
+      - 'components/holistic-support-onboarding.tsx'
+      - 'components/holistic-support-onboarding.module.css'
+      - 'components/personality-profiles-builder.tsx'
+      - 'tests/holistic-support-onboarding-bridge.test.mjs'
       - 'data/academy/greek-video-series.ts'
       - 'tests/greek-video-series.test.mjs'
       - 'components/holistic-support-course-profiles.tsx'
@@ -92,8 +100,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
-          npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
+          node --test tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-onboarding-bridge.test.mjs tests/personality-profiles-builder.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
+          npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-onboarding.tsx components/personality-profiles-builder.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
           npx tsc --noEmit --pretty false
       - name: Install Chromium and WebKit
         run: |
@@ -109,6 +117,11 @@ jobs:
           for i in $(seq 1 120); do
             if curl --silent --fail http://127.0.0.1:3118/ru/holistic-support/mobile > /dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -80 /tmp/hh-support-mock-next.log; exit 1; fi
+            if (( i == 120 )); then
+              echo 'Support mobile server did not become ready' >&2
+              tail -80 /tmp/hh-support-mock-next.log
+              exit 1
+            fi
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs

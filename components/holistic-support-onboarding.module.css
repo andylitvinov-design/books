@@ -1,0 +1,164 @@
+/* Approved profile-first Holistic House mobile concept, 29 Oct 2026.
+   All cards navigate to existing verified public flows; no mock endpoints. */
+.root { display: grid; gap: 10px; min-width: 0; margin: 0 0 13px; color: #204a3d; }
+.root * { box-sizing: border-box; }
+.root :is(a,button,summary):focus-visible { outline: 3px solid #bb8b54; outline-offset: 3px; }
+.hero,.how,.directions,.testsTeaser { min-width: 0; overflow: hidden; border-radius: 22px;
+  border: 1px solid #dce5d9; box-shadow: 0 6px 20px #163d2c12; }
+.hero { position: relative; isolation: isolate; display: flex; align-items: center;
+  min-height: 315px; background: #ecf5ed; padding: 24px 26px 20px; }
+.heroPhoto { position: absolute; inset: 0 0 0 auto !important; width: 57% !important;
+  height: 100% !important; object-fit: cover; object-position: 53% 47%; z-index: -2; }
+.heroWash { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg,#edf7ef 0%,#edf7effc 39%,#edf7efdb 57%,#edf7ef00 87%),
+    linear-gradient(0deg,#e3ece53b,#ffffff00 60%); }
+.heroContent { width: min(65%, 670px); min-width: 0; position: relative; z-index: 1; }
+.eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 12px;
+  color: #205847; font: 800 13px/1.2 Arial,Helvetica,sans-serif; letter-spacing: .12em; }
+.eyebrow svg { flex: none; }
+.hero h1 { margin: 0; color: #285c4b;
+  font: 600 clamp(36px,4.6vw,62px)/.98 Georgia,"Times New Roman",serif;
+  letter-spacing: -.035em; text-wrap: balance; }
+.lead { max-width: 48ch; margin: 12px 0 16px; color: #365b50;
+  font: 16px/1.45 Arial,Helvetica,sans-serif; }
+.primary { display: flex; align-items: center; gap: 11px; width: min(530px,100%);
+  min-height: 71px; padding: 12px 16px; border-radius: 16px;
+  background: #802747; color: white; text-decoration: none;
+  box-shadow: 0 9px 23px #69243f27; }
+.primary:hover { background: #68213b; }
+.primary svg { flex: 0 0 auto; }
+.primary > svg:last-child { margin-left: auto; }
+.primary span { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.primary strong { color: white; font: 800 19px/1.15 Arial,Helvetica,sans-serif; }
+.primary small { color: #fff1f6; font: 13px/1.3 Arial,Helvetica,sans-serif; }
+.secondary { display: flex; align-items: center; width: fit-content; max-width: 100%;
+  min-height: 44px; gap: 8px; padding: 9px 1px 3px; color: #852d4f;
+  font: 800 14px/1.35 Arial,Helvetica,sans-serif; text-underline-offset: 3px; }
+.secondary span { min-width: 0; text-decoration: underline; }
+.secondary svg { flex: none; }
+.heroQuote { position: absolute; right: 16px; bottom: 23px; width: 140px;
+  color: #fffef2; font: italic 18px/1.3 Georgia,serif; text-shadow: 0 2px 8px #163529cf;
+  transform: rotate(-8deg); text-align: right; }
+.how { padding: 18px 21px 15px; background: #fffcf6; }
+.how h2,.sectionHeading h2 { margin: 0; color: #285c4b;
+  font: 500 clamp(26px,3vw,34px)/1.12 Georgia,"Times New Roman",serif; letter-spacing: -.02em; }
+.how h2 { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.how h2 svg { flex: none; color: #176e51; }
+.steps { display: grid; gap: 7px; list-style: none; padding: 0; margin: 0; }
+.step { display: grid; grid-template-columns: 46px 34px minmax(0,1fr); gap: 14px; align-items: center;
+  min-width: 0; min-height: 78px; padding: 12px 15px; border: 1px solid #e5e3dc;
+  border-radius: 16px; background: #fffdf9; }
+.step > svg { color: #225e4b; }
+.number { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 50%;
+  color: #285a4a; background: #e2efe7; font: 900 18px/1 Arial,Helvetica,sans-serif; }
+.step strong { display: block; color: #29584b; font: 800 17px/1.23 Arial,Helvetica,sans-serif; }
+.step p { margin: 4px 0 0; color: #62746d; font: 14px/1.36 Arial,Helvetica,sans-serif; }
+.privacy { display: flex; align-items: flex-start; gap: 11px; margin: 12px 5px 0;
+  color: #64756d; font: 13px/1.4 Arial,Helvetica,sans-serif; }
+.privacy svg { flex: none; color: #5e8072; }
+.directions { padding: 15px 15px 12px; background: #fffdf9; }
+.sectionHeading { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin: 0 2px 12px; }
+.sectionHeading a { display: flex; align-items: center; gap: 5px; flex: none;
+  min-height: 40px; color: #873451; font: 800 13px/1.3 Arial,Helvetica,sans-serif;
+  text-decoration: underline; text-underline-offset: 3px; }
+.tiles { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.tile { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; min-height: 160px;
+  gap: 7px; padding: 16px 12px; border: 1px solid #dfebe1; border-radius: 16px;
+  color: #1b3b34; text-decoration: none; overflow-wrap: break-word; background: #e8f2ec; }
+.tile svg { margin-bottom: 3px; color: #127961; flex: none; }
+.tile strong { color: #223c33; font: 800 17px/1.22 Arial,Helvetica,sans-serif; }
+.tile small { color: #435f53; font: 13px/1.28 Arial,Helvetica,sans-serif; }
+.tile[data-topic="wellbeing"] {
+  background: linear-gradient(160deg,#edf8f0bd,#d0e6d7b0),url("/images/holistic-house/hero-olive-incense.webp") right center/cover; }
+.tile[data-topic="work"] { border-color: #f0e1c7; background:
+  radial-gradient(ellipse at 96% 95%,#d2ae6e7c,transparent 62%),linear-gradient(#fff4e1,#edddbe); }
+.tile[data-topic="work"] svg { color: #aa7a2b; }
+.tile[data-topic="relationships"] { border-color: #f0dada; background:
+  radial-gradient(ellipse at 95% 100%,#f7b1c3b3,transparent 65%),linear-gradient(#fff0f1,#f6d8dd); }
+.tile[data-topic="relationships"] svg { color: #c84f67; }
+.tile[data-topic="identity"] { border-color: #e4dff1; background:
+  linear-gradient(0deg,#d5deec77,#f5f0fbbf),url("/images/holistic-house/course-focus-mountain-boy.webp") right center/cover; }
+.tile[data-topic="identity"] svg { color: #7761a0; }
+.tile:hover { border-color: #4c9c77; box-shadow: inset 0 0 0 1px #4c9c7780; }
+.testsTeaser { display: flex; align-items: center; justify-content: space-between; gap: 17px;
+  min-height: 139px; padding: 19px 21px;
+  border-color: #215345; background: linear-gradient(90deg,#103e33f7 0%,#214f40ee 55%,#194a3680 100%),
+    url("/images/holistic-house/hero-olive-incense.webp") right center/cover; color: white; }
+.testsTeaser > div { min-width: 0; max-width: 70%; }
+.teaserEyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 5px;
+  color: #d0ebd7; font: 700 12px/1.2 Arial,Helvetica,sans-serif; text-transform: uppercase; }
+.testsTeaser h2 { margin: 0; color: white;
+  font: 500 clamp(24px,2.8vw,34px)/1.1 Georgia,serif; }
+.testsTeaser p:not(.teaserEyebrow) { margin: 7px 0 0; color: #e5f3e9; font: 13px/1.3 Arial,Helvetica,sans-serif; }
+.testsTeaser > a { display: flex; align-items: center; justify-content: center; gap: 8px;
+  flex: none; min-height: 48px; padding: 12px 14px; border: 1px solid #a1d8c0;
+  border-radius: 13px; background: #145c48f0; color: white; text-decoration: none;
+  font: 800 14px/1.2 Arial,Helvetica,sans-serif; }
+.testsTeaser > a:hover { background: #067c5b; }
+@media (max-width: 640px) {
+  .root { gap: 8px; margin: 0 0 10px; }
+  .hero,.how,.directions,.testsTeaser { border-radius: 18px; }
+  .hero { align-items: flex-start; min-height: 315px; padding: 17px 15px 11px; }
+  .heroPhoto { width: 75% !important; object-position: 59% 44%; }
+  .heroWash { background: linear-gradient(90deg,#f0f8f1 0%,#f0f8f1fc 30%,#f0f8f1dd 53%,#f0f8f1a8 72%,#f0f8f100 100%),
+    linear-gradient(0deg,#e3eee66b,transparent 70%); }
+  .heroContent { width: 100%; }
+  .eyebrow { font-size: 10.5px; letter-spacing: .11em; margin: 0 0 8px; gap: 6px; }
+  .eyebrow svg { width: 14px; height: 14px; }
+  .hero h1 { max-width: 280px; font-size: clamp(30px,8vw,37px); line-height: 1.04; }
+  .lead { width: min(95%,340px); max-width: 340px; margin: 9px 0 11px;
+    font-size: clamp(12px,3.35vw,14px); line-height: 1.34; }
+  .primary { width: min(100%,370px); min-height: 64px; padding: 9px 11px; border-radius: 14px; }
+  .primary > svg:first-child { display: none; }
+  .primary strong { font-size: clamp(16px,4.4vw,19px); }
+  .primary small { font-size: clamp(10.5px,2.9vw,12px); }
+  .secondary { min-height: 43px; font-size: clamp(11.5px,3.05vw,13px); }
+  .heroQuote { display: none; }
+  .how { padding: 12px 11px 10px; }
+  .how h2 { gap: 8px; margin-bottom: 9px; font-size: clamp(23px,6.3vw,29px); }
+  .how h2 svg { width: 19px; height: 19px; }
+  .steps { gap: 6px; }
+  .step { grid-template-columns: 33px 24px minmax(0,1fr); gap: 8px;
+    min-height: 74px; padding: 8px; border-radius: 13px; }
+  .number { width: 32px; height: 32px; font-size: 15px; }
+  .step > svg { width: 21px; height: 21px; }
+  .step strong { font-size: clamp(12px,3.43vw,14.5px); line-height: 1.18; }
+  .step p { margin-top: 3px; font-size: clamp(10.4px,2.92vw,12px); line-height: 1.29; }
+  .privacy { gap: 7px; margin: 9px 2px 0; font-size: 10.5px; }
+  .privacy svg { width: 16px; height: 16px; }
+  .directions { padding: 10px 8px 8px; }
+  .sectionHeading { margin: 0 2px 8px; gap: 5px; }
+  .sectionHeading h2 { font-size: clamp(21px,5.65vw,26px); }
+  .sectionHeading a { font-size: 10.5px; gap: 2px; }
+  .sectionHeading a svg { width: 14px; height: 14px; }
+  .tiles { gap: 5px; }
+  .tile { min-height: 135px; gap: 5px; padding: 9px 6px; border-radius: 12px; }
+  .tile svg { width: 23px; height: 23px; margin-bottom: 5px; }
+  .tile strong { font-size: clamp(10.8px,2.98vw,13.5px); line-height: 1.18; }
+  .tile small { font-size: clamp(9.5px,2.63vw,11.5px); line-height: 1.18; }
+  .testsTeaser { min-height: 115px; padding: 12px 11px; gap: 7px; border-radius: 16px; }
+  .testsTeaser h2 { font-size: clamp(22px,6vw,27px); }
+  .testsTeaser p:not(.teaserEyebrow) { font-size: 10.5px; }
+  .testsTeaser > a { min-height: 44px; padding: 8px 9px; font-size: 11px; }
+}
+@media (max-width: 350px) {
+  .hero { min-height: 326px; padding: 12px 11px 9px; }
+  .hero h1 { font-size: 29px; }
+  .lead { font-size: 12px; }
+  .primary strong { font-size: 16px; }
+  .step { grid-template-columns: 29px 18px minmax(0,1fr); gap: 6px; padding: 7px 6px; }
+  .number { width: 28px; height: 28px; }
+  .step > svg { width: 17px; height: 17px; }
+  .step strong { font-size: 11.7px; }
+  .step p { font-size: 10px; }
+  .sectionHeading h2 { font-size: 19px; }
+  .tiles { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(100px,35%);
+    grid-template-columns: none; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; padding: 2px 2px 7px; }
+  .tile { scroll-snap-align: start; }
+  .testsTeaser { flex-direction: column; align-items: stretch; min-height: 160px; }
+  .testsTeaser > div { max-width: none; }
+  .testsTeaser > a { align-self: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .primary,.tile,.testsTeaser > a { transition: none; } }
