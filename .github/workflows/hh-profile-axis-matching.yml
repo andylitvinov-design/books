@@ -1,7 +1,7 @@
 name: Holistic House axis-to-offer matching
 on:
   push:
-    branches: ['codex/hh-intelligence-link-safety-20261029']
+    branches: ['codex/hh-intelligence-link-safety-20261029', 'codex/hh-intelligence-current-focus-20261029']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
