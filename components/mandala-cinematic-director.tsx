@@ -360,7 +360,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
           <p data-director-new-ai-status>
             {referencePack.requestedNovelVideo&&!referencePack.newAiVideoAvailable?t.newAiRequired:t.supportedLocal}</p>
           <details><summary>{t.referenceHint}</summary>
-            <ol>{referencePack.shots.map(shot=><li key={shot.shotId}>
+            <ol>{referencePack.shots.map((shot:{shotId:string;reference:{start:string;end:string}})=><li key={shot.shotId}>
               <span>{shot.reference.start}</span>
               <span>{shot.reference.end}</span>
             </li>)}</ol>
