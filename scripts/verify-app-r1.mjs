@@ -84,7 +84,9 @@ async function ready(){
  for(let attempt=0;attempt<3;attempt++){
   try {
    await expect(nav).toBeVisible({timeout:attempt===0?30000:20000})
-   await page.waitForLoadState('networkidle')
+   // The authenticated navigation is the semantic readiness marker. Background
+   // billing/notification requests need not become idle for the page to work.
+   // Every journey still asserts its own content and server-side responses.
    return
   } catch(error) {
    console.log('SYNTHETIC_READINESS_PENDING_REQUESTS',JSON.stringify([...pendingRequests.values()]))
@@ -361,9 +363,10 @@ async function openCompletedPlanResult(){
  await expect(page.locator('#my-tests-list')).toBeVisible()
  const resultLink=page.getByRole('link',{name:'View result'}).first()
  await expect(resultLink).toHaveAttribute('href',/\/results\//)
- // WebKit can hydrate a newly completed test overview more slowly in CI.
- // Wait for route readiness before exercising client-side navigation.
- await page.waitForLoadState('networkidle')
+ // The specific result link and subsequent route are the readiness contract;
+ // unrelated background requests must not delay a real user navigation.
+ await expect(resultLink).toBeVisible()
+ await expect(resultLink).toBeEnabled()
  await resultLink.click()
  await expect(page).toHaveURL(/\/results\//,{timeout:20000})
 }
@@ -436,7 +439,8 @@ async function verifyPublicServiceConversionJourneys(){
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    const serviceResponse=await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded'})
+     assert.equal(serviceResponse?.status(),200,locale+'/'+slug+'/'+width+': service route HTTP 200')
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
@@ -517,7 +521,8 @@ async function verifyPublicServiceConversionJourneys(){
    : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
-   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const reviewResponse=await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded'})
+    assert.equal(reviewResponse?.status(),200,locale+': free review route HTTP 200')
    const quick=publicPage.locator('[data-free-quick-request]').first()
    await expect(quick).toBeVisible({timeout:30000})
    const intake=publicPage.locator('[data-free-drawing-intake]')
@@ -528,7 +533,8 @@ async function verifyPublicServiceConversionJourneys(){
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
   await publicPage.setViewportSize({width:390,height:844})
-  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+  const reviewResponse=await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded'})
+    assert.equal(reviewResponse?.status(),200,locale+': free review route HTTP 200')
   await publicPage.evaluate(()=>{
    document.documentElement.dataset.analyticsConsent='granted'
    window.__publicAcquisition=[]
@@ -867,7 +873,7 @@ try {
   // reload, cancelling WebKit's in-flight Home click. Compile it before setting
   // up the archive route; the actual single user click and URL checks stay intact.
   await warmCabinetExitDocument(context,origin)
-  await page.waitForLoadState('networkidle')
+  // Already warmed in the isolated context; next protected route asserts its real archive.
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
   await expect(page.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
@@ -1367,7 +1373,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
