@@ -3,9 +3,19 @@ import assert from 'node:assert/strict'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { DEFAULT_DEVELOPMENT_TARGETS } from '../lib/profile/development-program.js'
-import { projectDevelopmentCourse } from '../lib/holistic-support/intelligence-development-plan.js'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { planIntelligenceRequest } from '../lib/holistic-support/intelligence-plan.mjs'
 
+// Exercise the genuine server-only module under the server condition even
+// when this file is included in the repository-wide default Node test run.
+if (!process.execArgv.includes('--conditions=react-server')) {
+  test('development course projection retains the server-only boundary', () => {
+    const run = spawnSync(process.execPath, ['--conditions=react-server', '--test', fileURLToPath(import.meta.url)], { encoding: 'utf8', timeout: 60000 })
+    assert.equal(run.status, 0, run.stdout + run.stderr)
+  })
+} else {
+const { projectDevelopmentCourse } = await import('../lib/holistic-support/intelligence-development-plan.js')
 const owner='10000000-0000-4000-8000-000000000001', other='10000000-0000-4000-8000-000000000002'
 const now=Date.parse('2026-10-29T00:00:00Z')
 const def=getAssessmentDefinition('hh-weekly-pulse','v1','en')
@@ -52,3 +62,5 @@ test('goal and result analysis occurs only on the explicit private choice after 
   assert.equal((await planIntelligenceRequest(chosen,{loadDevelopmentPlan:async()=>({courseId:null})})).status,'no_match')
   assert.equal((await planIntelligenceRequest(chosen,{loadDevelopmentPlan:async()=>({courseId:'unapproved'})})).status,'unavailable')
 })
+
+}
