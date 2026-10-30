@@ -170,7 +170,6 @@ try {
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -189,13 +188,26 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000, message: route + ' must load its approved video: ' + expectedUrl }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
+    // The FREE personal review is now a dedicated free-entry page, not a
+    // paid service's ServiceVideoShowcase. Assert its actual published intro
+    // (poster first, no eager iframe, real approved YouTube after user click).
+    await navigate('/en/services/free-situation-review')
+    const freeIntro=page.locator('[data-free-review-video-story] [data-free-review-intro-video]')
+    await expect(freeIntro).toHaveCount(1)
+    await expect(freeIntro.locator('button.site-video-play')).toBeVisible()
+    await expect(freeIntro.locator('iframe')).toHaveCount(0)
+    await freeIntro.locator('button.site-video-play').click()
+    await expect.poll(async()=> (await freeIntro.locator('iframe').getAttribute('src'))?.startsWith(
+      'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'), {
+      timeout: 10000, message: 'Free situation review must play the approved overview after explicit click',
+    }).toBe(true)
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
     await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
     assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
       'The separate Dao free start must not imply a video consultation')
-    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
+    pass('Eight detailed service video routes, the actual free review intro, and Dao free entry preserve approved formats')
   }
 
   await navigate('/en/about')
