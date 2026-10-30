@@ -3,7 +3,8 @@
  * Offline browser rendering, no server processing, external media or upload.
  */
 import { presetAudioUrl } from "@/lib/mandala/local-video-music";
-export type NatureBed = "ocean" | "rain" | "breeze";
+import type { AmbientMusic } from "@/lib/mandala/local-video-music";
+export type NatureBed = Exclude<AmbientMusic,"none">;
 
 function encodeWav(buffer: AudioBuffer): Blob {
   const frames = buffer.length;
@@ -25,27 +26,49 @@ function encodeWav(buffer: AudioBuffer): Blob {
   return new Blob([data],{type:"audio/wav"});
 }
 
-export async function mixVoiceWithNature(voice:Blob,preset:NatureBed,minimumSeconds?:number):Promise<Blob> {
-  if(!["ocean","rain","breeze"].includes(preset))throw new Error("INVALID_NATURE");
+export const VOICE_BED_PRESETS = [
+  "ocean","rain","breeze","meditation","harmony","prosperity","energy",
+  "love","focus","grounding","breath","sunrise","pulse",
+] as const;
+
+/** Sound levels are user-selected percentages; they never reach the TTS provider. */
+export function voiceMixLevel(value: number | undefined, fallback: number): number {
+  return typeof value==="number" && Number.isFinite(value)
+    ? Math.min(100,Math.max(0,value))/100 : fallback/100;
+}
+
+export async function mixVoiceWithNature(
+  voice: Blob,
+  preset: "none" | NatureBed,
+  minimumSeconds?: number,
+  levels: {voiceLevel?:number;musicLevel?:number} = {},
+): Promise<Blob> {
+  if(preset!=="none" && !VOICE_BED_PRESETS.includes(preset))
+    throw new Error("INVALID_BACKGROUND");
   if(typeof window==="undefined")throw new Error("BROWSER_AUDIO_REQUIRED");
   const AudioCtor=window.AudioContext ||
     (window as typeof window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
   if(!AudioCtor||typeof OfflineAudioContext==="undefined")throw new Error("OFFLINE_AUDIO_UNSUPPORTED");
+  // Personal speech stays in the browser. Music comes only from the first-party library.
   const decoder=new AudioCtor();
-  let speech:AudioBuffer, background:AudioBuffer;
+  let speech:AudioBuffer, background:AudioBuffer|null=null;
   try {
-    const nature=await fetch(presetAudioUrl(preset),{cache:"force-cache"});
-    if(!nature.ok)throw new Error("NATURE_AUDIO_UNAVAILABLE");
-    const [voiceBytes,natureBytes]=await Promise.all([voice.arrayBuffer(),nature.arrayBuffer()]);
+    const [voiceBytes,natureBytes]=await Promise.all([
+      voice.arrayBuffer(),
+      preset==="none"?Promise.resolve(null):fetch(presetAudioUrl(preset),{cache:"force-cache"}).then(async response=>{
+        if(!response.ok)throw new Error("BACKGROUND_UNAVAILABLE");
+        return response.arrayBuffer();
+      }),
+    ]);
     speech=await decoder.decodeAudioData(voiceBytes);
-    background=await decoder.decodeAudioData(natureBytes);
+    if(natureBytes)background=await decoder.decodeAudioData(natureBytes);
   } finally {
     await decoder.close().catch(()=>{});
   }
   if(speech.duration<=0 || speech.duration>180 ||
-    background.duration<1 || speech.sampleRate<8000 || speech.length*2>12*1024*1024)
+    (background!==null&&background.duration<1) ||
+    speech.sampleRate<8000 || speech.length*2>12*1024*1024)
     throw new Error("AUDIO_OUT_OF_RANGE");
-  // Let the first-party nature bed continue to the end of the video after speech stops.
   const totalSeconds=minimumSeconds===undefined?speech.duration:
     Math.max(speech.duration,Math.min(65,Math.max(1,minimumSeconds)));
   const totalFrames=Math.ceil(totalSeconds*speech.sampleRate);
@@ -53,18 +76,24 @@ export async function mixVoiceWithNature(voice:Blob,preset:NatureBed,minimumSeco
   const voiceSource=output.createBufferSource();
   voiceSource.buffer=speech;
   const voiceGain=output.createGain();
-  voiceGain.gain.value=0.88;
+  voiceGain.gain.value=voiceMixLevel(levels.voiceLevel,90);
   voiceSource.connect(voiceGain).connect(output.destination);
-  const bedSource=output.createBufferSource();
-  bedSource.buffer=background;
-  bedSource.loop=true;
-  const bedGain=output.createGain();
-  bedGain.gain.setValueAtTime(0.0,0);
-  bedGain.gain.linearRampToValueAtTime(0.11,Math.min(0.65,totalSeconds/4));
-  bedGain.gain.setValueAtTime(0.11,Math.max(.65,totalSeconds-1.2));
-  bedGain.gain.linearRampToValueAtTime(0,Math.max(.66,totalSeconds));
-  bedSource.connect(bedGain).connect(output.destination);
-  voiceSource.start(0);bedSource.start(0);
+  if(background){
+    const bedSource=output.createBufferSource();
+    bedSource.buffer=background;
+    bedSource.loop=true;
+    const bedGain=output.createGain();
+    const volume=voiceMixLevel(levels.musicLevel,12);
+    const fade=Math.min(.65,totalSeconds/4);
+    const fadeEnd=Math.max(fade,totalSeconds-Math.min(1.2,totalSeconds/3));
+    bedGain.gain.setValueAtTime(0,0);
+    bedGain.gain.linearRampToValueAtTime(volume,fade);
+    bedGain.gain.setValueAtTime(volume,fadeEnd);
+    bedGain.gain.linearRampToValueAtTime(0,totalSeconds);
+    bedSource.connect(bedGain).connect(output.destination);
+    bedSource.start(0);
+  }
+  voiceSource.start(0);
   const mixed=await output.startRendering();
   return encodeWav(mixed);
 }
