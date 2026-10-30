@@ -56,3 +56,28 @@ test("actual PNG renderer TypeScript parses; browser runner covers WebKit and do
   assert.match(browser, /width: 320/);
   assert.match(browser, /width: 430/);
 });
+
+test("Mandala browser acceptance preserves 10 independent encoded-video E2E scenarios with bounded parallelism", () => {
+  const script = read("scripts/verify-holistic-mandala-browser.mjs");
+  for (const locale of ["ru", "en", "es"]) assert.ok(script.includes('locale: "' + locale + '"'));
+  for (const width of [320, 390, 430]) assert.ok(script.includes('width: ' + width));
+  assert.match(script, /\["webkit", webkit\], \["chromium", chromium\]/);
+  assert.match(script, /Promise\.allSettled\(viewports\.slice\(from, from \+ 2\)/);
+  assert.match(script, /if \(rejected\) throw rejected\.reason/);
+  assert.match(script, /assert\.equal\(passes, 10\)/);
+  assert.match(script, /await context\.close\(\)/);
+  assert.match(script, /spawnSync\("ffprobe"/);
+  assert.match(script, /spawnSync\("ffmpeg"/);
+});
+
+test('synthetic Mandala screenshots retain the full public page without animation-stability hangs', () => {
+  const browser = read('scripts/verify-holistic-mandala-browser.mjs');
+  assert.match(browser, /async function captureSyntheticOverview\(page, locator, path\)/);
+  assert.match(browser, /getBoundingClientRect\(\)/);
+  assert.match(browser, /bounds\.width>0 && bounds\.height>0/);
+  assert.match(browser, /page\.screenshot\(\{path,fullPage:true,animations:"disabled",timeout:30000\}\)/);
+  assert.match(browser, /captureSyntheticOverview\(page, compactHypno/);
+  assert.match(browser, /captureSyntheticOverview\(page, page\.locator/);
+  assert.match(browser, /Mandala browser E2E:/);
+  assert.doesNotMatch(browser, /compactHypno\.screenshot\(/);
+});

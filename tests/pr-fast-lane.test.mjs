@@ -421,6 +421,32 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
 
+
+test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const guard="${{ github.event_name == 'pull_request' }}";
+  const specs=[
+    ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
+    ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
+    ['hh-owner-telegram-video.yml','hh-owner-telegram-video',['Telegram and audio regression tests','Real 1080p MP4 with H264 AAC via ffmpeg-static','Verify shipped FFmpeg in owner Dot webhook function trace']],
+  ];
+  for(const [filename,group,contracts] of specs){
+    const s=workflow(filename);
+    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
+    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
+    assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
+    assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
+    assert.ok(s.includes('cancel-in-progress: '+guard),filename+' must never cancel manual/PUSH runs');
+    assert.match(s,/^permissions:\s*\n  contents: read/m,filename+' must stay read only');
+    assert.doesNotMatch(s,/continue-on-error:\s*true/,filename+' must never hide E2E failures');
+    for(const marker of contracts)assert.ok(s.includes(marker),filename+' lost '+marker);
+  }
+  assert.match(workflow('hh-live-seo-audit.yml'),/^  workflow_dispatch:/m);
+  assert.match(workflow('hh-public-performance-audit.yml'),/^  workflow_dispatch:/m);
+});
+
+// Preserve #2652's already merged, independent path-scope regression.
 test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
   const prPaths = name => {
     const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
@@ -459,4 +485,57 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
     'scripts/verify-holistic-support-browser.mjs',
   ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
   assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+});
+
+test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const reports = workflow('hh-reports-development-program.yml');
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.match(reports, /^  pull_request:/m);
+  assert.match(reports, /^  push:/m);
+  assert.ok(reports.includes('.github/workflows/hh-reports-development-program.yml'));
+  assert.ok(reports.includes('- name: Verify production Next.js build without preview deployment\n        '+gate+'\n        run: npm run build'));
+  assert.ok(reports.includes('tests/reports-development-program.test.mjs'));
+  assert.ok(reports.includes('tests/goal-profile-journey.test.mjs'));
+  assert.match(reports, /node --conditions=react-server --test/);
+  assert.match(reports, /npx --no-install eslint/);
+  assert.doesNotMatch(reports,/continue-on-error:\s*true/);
+});
+
+ 
+test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()=>{
+  const guarded="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [file,step,contract] of [
+    ['dao-iching-library.yml','Build exact app (without Vercel paid preview)','tests/dao-hexagrams.test.mjs'],
+    ['admin-seo-dashboard.yml','Production build','tests/admin-seo-dashboard.test.mjs'],
+    ['compact-lead-capture-ci.yml','TypeScript and production build with unchanged payment gates','tests/compact-lead-channel-handoff.test.mjs'],
+  ]){
+    const source=workflow(file);
+    assert.ok(source.includes('- name: '+step+'\n        '+guarded+'\n'),file+' global build must be delegated to protected Core');
+    assert.ok(source.includes(contract),file+' original specialist contracts still mandatory');
+  }
+  const crm=workflow('hh-crm-source-check.yml');
+  assert.match(crm,/^  crm:\s*$/m);
+  assert.doesNotMatch(crm,/^  build:\s*$/m);
+  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
+  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
+  const app=workflow('hh-app-browser.yml');
+  assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
+  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
+  const voice=workflow('andrey-voice-free-contract.yml');
+  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
+  assert.match(voice,/^  redis-atomic:\s*$/m);
+  assert.ok(voice.includes('test_andrey_voice_local_engine.py'));
+  assert.ok(voice.includes('Independent Next.js production build'));
+  const perf=workflow('hh-public-performance-audit.yml');
+  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
+  assert.match(perf,/^  push:\s*$/m);
+  const services=workflow('hh-public-services-production.yml');
+  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  assert.ok(!services.includes('npx tsc --noEmit'));
 });

@@ -273,6 +273,19 @@ skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
 
+
+## Ideas & Coaching Draft/Ready CI acceleration (30 October 2026)
+The existing `hh-ideas-coaching-public.yml` retains the actual Next.js
+production build, original EN/RU/ES Chromium/WebKit journey and all consent,
+source and lead tests. It skips costly Draft PR commits and re-runs on
+`ready_for_review` and subsequent Ready commits; manual dispatch is unchanged.
+Superseded PR runs are cancelled per PR number; manual runs cannot be cancelled
+by newer PR heads. Only the duplicate global TypeScript step is skipped for
+production-targeted PRs, where core `release-ready` already requires full
+`tsc --noEmit`. Draft-skipped never counts as merge success and the base-trusted
+specialist aggregate still requires every applicable executed job to succeed.
+No assertions, RLS, checkout, browser checks or paid APIs are disabled.
+
 ## Wave 3: website About video coverage only (30 October 2026)
 
 The BASE-trusted migration now considers only `holistic-about-video-check.yml` → `site-video-browser.yml`. Original source tests for intro, defaults and player are included in the existing Chromium/WebKit + Redis + EN/RU/ES workflow. Scope includes all original PR paths; global TypeScript and Next build remain mandatory in `release-ready` for changed application/browser harness source (CI-only changes have a separate strictly allowlisted fast lane). After green exact-head CI and a reviewed additive merge, a separate deletion-only PR may remove this single obsolete YAML (90 → 89) subject to unchanged successor and exact-head successful-job evidence.
