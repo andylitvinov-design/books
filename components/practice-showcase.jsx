@@ -261,7 +261,11 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   function continueAction() {
     if (!signedIn || !RESUMABLE_ACTIONS.has(nextAction)) return
-    router.push(destination(locale, nextAction))
+    // A protected Next document needs a fresh CSP nonce/session-bound bootstrap.
+    // Safari can drop a lazy JS chunk during SPA transition from the public
+    // practitioner showcase to /app. This is an explicit user action, not OAuth
+    // auto-navigation. Destination remains a local allowlisted route.
+    window.location.assign(destination(locale, nextAction))
   }
   function dismissContinue() {
     setNextAction('')
@@ -286,7 +290,9 @@ export default function PracticeShowcase({ locale = 'en' }) {
       return
     }
     if (signedIn) {
-      router.push(destination(locale, key))
+      // Use a new document for the protected cabinet: preserve complete
+      // hydration and server-owned CSP/session context on iOS WebKit.
+      window.location.assign(destination(locale, key))
       return
     }
     // Actual edit/actions prompt Google, then open the existing protected tool.
@@ -308,7 +314,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
           void checkSession()
           // The user has already tapped a protected action. If the session
           // was merely still checking, honour that explicit click directly.
-          router.push(destination(locale, key))
+          window.location.assign(destination(locale, key))
           return
         } catch (error) {
           if (error?.status !== 401) throw error

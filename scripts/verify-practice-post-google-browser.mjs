@@ -91,6 +91,7 @@ for(const engine of [chromium,webkit]){
         if(width===390||locale==='ru'){
           // The previous test stopped at waitForURL here, so it never saw
           // the oversized private service composer shown in the owner's image.
+          await page.evaluate(()=>{window.__publicPracticeDocumentMarker='showcase'})
           await root.locator('[class*="quickGrid"] > button').first().click()
           // The public ES showcase deliberately routes its protected editor to
           // the currently supported EN cabinet, never the unsupported ES app URL.
@@ -101,6 +102,8 @@ for(const engine of [chromium,webkit]){
             {timeout:30000})
           assert.equal(new URL(page.url()).pathname,'/'+protectedLocale+'/app/practice',
             label+' real server-supported protected editor locale')
+          assert.equal(await page.evaluate(()=>window.__publicPracticeDocumentMarker),undefined,
+            label+' protected view uses a fresh document, not a fragile Next SPA chunk transition')
           const editor=page.locator('[data-service-slide-editor]')
           await editor.waitFor({state:'visible',timeout:45000})
           assert.equal(await editor.getAttribute('data-service-stage'),'0',label+' opens stage one')

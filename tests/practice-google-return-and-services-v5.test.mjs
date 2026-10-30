@@ -47,6 +47,15 @@ test('Pro explicit start remains available, while Google sign-in never forwards 
  assert.match(front,/signedIn && practice \? String\(active\) : t\.countUnknown/)
 })
 
+test('explicit protected entry performs fresh-document navigation with a new CSP nonce',()=>{
+ assert.match(front,/if \(signedIn\) \{\s*\/\/ Use a new document for the protected cabinet:[\s\S]*?window\.location\.assign\(destination\(locale, key\)\)/)
+ assert.match(front,/window\.location\.assign\(destination\(locale, nextAction\)\)/)
+ assert.match(front,/window\.location\.assign\(destination\(locale, key\)\)/)
+ assert.match(editorBrowser,/__publicPracticeDocumentMarker/)
+ assert.match(editorBrowser,/fresh document, not a fragile Next SPA chunk transition/)
+ assert.match(callback,/continueTo === 'practice-preview'/)
+})
+
 test('service list uses one inner header, real totals, functional filters, existing editor',()=>{
  assert.match(account,/practiceInner \? 'hh-app hh-app--practice-inner'/)
  assert.match(practice,/<PracticeInnerHeader locale=\{locale\} panel=\{activePanel\}/)
