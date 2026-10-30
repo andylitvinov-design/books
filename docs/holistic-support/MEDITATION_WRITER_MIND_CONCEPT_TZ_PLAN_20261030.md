@@ -459,4 +459,17 @@ KIP curricula: https://www.dgkip.de/curricula ; KIP overview: https://igkip.org/
 
 Подготовить единый исполнительный промпт Codex на PR-A + PR-B (минимальный текстовый MVP) с точными файлами, обязательным аудитом исходного кода и запросом на создание небольших PR; сценарий PR-C/D/E оставить следующими задачами. На этом этапе не поручать Codex включать TTS/платные API или сливать в production до проверки.
 
-\n## 22. Архитектурное уточнение v1.1: два интеллектуальных контура + Editor\n\nНовая обязательная спецификация: [Meditation Writer Mind v1.1 — Dual Intelligence Architecture](./MEDITATION_WRITER_DUAL_INTELLIGENCE_ARCHITECTURE_V1_1_20261030.md).\n\n**Контур A / Psychological-Narrative Director:** Psychologist Mind разрешает режим/мотив/цель; планировщик получает выбранные клиентом установку, задачу, проблему, запреты и делает структурированный семитактовый PsychologicalCreativeBrief. Не диагноз и не новая самостоятельная терапия.\n\n**Контур B / Literary Director:** отдельный LiteraryStyleProfile (не психологический prompt), версии техник, художественный автор, идиоматичный RU/EN/ES, continuity между chunks. Стиль меняет звучание, но не допущенный мотив и психологическую задачу.\n\n**Контур C / Editor:** независимые hard safety gates + литературные шкалы, только одна bounded repair-итерация, гуманная редактура при необходимости. «Оценка модели» не может отменить противопоказания.\n\n**Контур D / Voice Director:** TTS-ready сегменты, смысловые паузы, реальные voice/audio timestamps только после рендера; текст не является подтверждённым аудио.\n\nПлан PR-A/B/C/D/E/F из этого документа **не заменяется**, а уточняется в новой спецификации: PR-A = meaning contracts/brief/styles; PR-B = художественный генератор/редактор; остальные этапы UI→TTS→credits→quality. Обязательное сравнение одного approved brief в четырёх литературных стилях, без изменения safety/consent.\n
+
+## 22. Архитектурное уточнение v1.1: два интеллектуальных контура + Editor
+
+Новая обязательная спецификация: [Meditation Writer Mind v1.1 — Dual Intelligence Architecture](./MEDITATION_WRITER_DUAL_INTELLIGENCE_ARCHITECTURE_V1_1_20261030.md).
+
+**Контур A / Psychological-Narrative Director:** Psychologist Mind разрешает режим/мотив/цель; планировщик получает выбранные клиентом установку, задачу, проблему, запреты и делает структурированный семитактовый PsychologicalCreativeBrief. Не диагноз и не новая самостоятельная терапия.
+
+**Контур B / Literary Director:** отдельный LiteraryStyleProfile (не психологический prompt), версии техник, художественный автор, идиоматичный RU/EN/ES, continuity между chunks. Стиль меняет звучание, но не допущенный мотив и психологическую задачу.
+
+**Контур C / Editor:** независимые hard safety gates + литературные шкалы, только одна bounded repair-итерация, гуманная редактура при необходимости. «Оценка модели» не может отменить противопоказания.
+
+**Контур D / Voice Director:** TTS-ready сегменты, смысловые паузы, реальные voice/audio timestamps только после рендера; текст не является подтверждённым аудио.
+
+План PR-A/B/C/D/E/F из этого документа **не заменяется**, а уточняется в новой спецификации: PR-A = meaning contracts/brief/styles; PR-B = художественный генератор/редактор; остальные этапы UI→TTS→credits→quality. Обязательное сравнение одного approved brief в четырёх литературных стилях, без изменения safety/consent.
