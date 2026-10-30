@@ -310,7 +310,7 @@ test('Ideas & Coaching Ready validates original browsers without Draft churn or 
   for(const preserved of [
     'node --test tests/public-coaching-discovery.test.mjs',
     '- name: Next.js production build\n        run: npm run build',
-    'playwright install --with-deps chromium webkit',
+    'playwright install --with-deps --only-shell chromium webkit',
     'node scripts/verify-coaching-lounge-mobile.mjs',
     'node scripts/verify-holistic-support-browser.mjs',
     'node scripts/verify-ideas-mobile-browser.mjs'

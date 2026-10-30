@@ -26,6 +26,9 @@ on:
       - 'components/tests-coaching-switchboard.tsx'
       - 'components/tests-coaching-switchboard.module.css'
       - 'components/ideas-discovery.module.css'
+      - 'lib/ideas-guidance.mjs'
+      - 'lib/ideas-preview-rotation.mjs'
+      - 'lib/ideas-coaching-handoff.ts'
       - 'components/public-coaching-discovery.jsx'
       - 'components/public-coaching-discovery.module.css'
       - 'app/[locale]/coaching/page.jsx'
@@ -39,9 +42,16 @@ on:
       - 'app/[locale]/books/page.tsx'
       - 'app/es/books/page.tsx'
       - 'tests/ideas-guidance.test.mjs'
-      - 'tests/tests-coaching-switchboard.test.mjs tests/coaching-diagnostic-funnel.test.mjs tests/coaching-intake-form.test.mjs tests/temple-insights-compact-cta.test.mjs tests/public-service-enquiries.test.mjs'
+      - 'tests/tests-coaching-switchboard.test.mjs'
+      - 'tests/coaching-diagnostic-funnel.test.mjs'
+      - 'tests/coaching-intake-form.test.mjs'
+      - 'tests/temple-insights-compact-cta.test.mjs'
+      - 'tests/public-service-enquiries.test.mjs'
       - 'scripts/verify-ideas-mobile-browser.mjs'
       - 'scripts/verify-coaching-lounge-mobile.mjs'
+      - 'scripts/ci-ideas-coaching-scope.mjs'
+      - 'scripts/ci-mobile-browser-batch.mjs'
+      - 'tests/ci-ideas-coaching-optimization.test.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
       - 'tests/public-coaching-discovery.test.mjs'
       # The separately owned mobile-mock screenshot QA does not exercise Ideas
@@ -56,20 +66,28 @@ concurrency:
 jobs:
   public-coaching-release:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
-        with: {persist-credentials: false}
+        with: {persist-credentials: false, fetch-depth: 2}
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Cache incremental Next.js compilation (one cache per PR)
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: hh-ideas-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json', 'next.config.ts') }}-${{ github.event.pull_request.number || github.run_id }}
+          restore-keys: |
+            hh-ideas-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json', 'next.config.ts') }}-
       - name: Focused Ideas and Coaching regression tests
         run: |
+          node --test tests/ci-ideas-coaching-optimization.test.mjs
           node --check lib/personal-coaching/model-matcher.js
           node --check scripts/verify-coaching-lounge-mobile.mjs
           node --check scripts/verify-ideas-mobile-browser.mjs
@@ -83,18 +101,29 @@ jobs:
       - name: TypeScript noEmit
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
+      - name: Classify exact PR diff for safe browser selection
+        id: browser_scope
+        env:
+          HH_EVENT_NAME: ${{ github.event_name }}
+          HH_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ci-ideas-coaching-scope.mjs
       - name: Next.js production build
         run: npm run build
       - name: Install isolated mobile browsers
         run: |
           mkdir -p /tmp/hh-ideas-playwright
           npm install --prefix /tmp/hh-ideas-playwright --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          /tmp/hh-ideas-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+          /tmp/hh-ideas-playwright/node_modules/.bin/playwright install --with-deps --only-shell chromium webkit
       - name: Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)
         env:
           HH_PLAYWRIGHT_PACKAGE: /tmp/hh-ideas-playwright/node_modules/playwright
           HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+          HH_BROWSER_QA_PARALLEL: '2'
+          HH_COACHING: ${{ steps.browser_scope.outputs.coaching }}
+          HH_SUPPORT: ${{ steps.browser_scope.outputs.support }}
+          HH_IDEAS: ${{ steps.browser_scope.outputs.ideas }}
         run: |
+          set -euo pipefail
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-next.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
@@ -104,9 +133,11 @@ jobs:
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
-          node scripts/verify-coaching-lounge-mobile.mjs
-          node scripts/verify-holistic-support-browser.mjs
-          node scripts/verify-ideas-mobile-browser.mjs
+          # Empty/invalid selection must never create a false-green release.
+          [[ "$HH_COACHING" == true || "$HH_SUPPORT" == true || "$HH_IDEAS" == true ]] || exit 1
+          if [[ "$HH_COACHING" == true ]]; then node scripts/verify-coaching-lounge-mobile.mjs; fi
+          if [[ "$HH_SUPPORT" == true ]]; then node scripts/verify-holistic-support-browser.mjs; fi
+          if [[ "$HH_IDEAS" == true ]]; then node scripts/verify-ideas-mobile-browser.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
