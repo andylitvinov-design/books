@@ -255,3 +255,36 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.ok(browser.includes(summaryGate),'browser suite aggregate must be fail-closed on Ready');
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });
+
+const PR_NUMBER_CANCELLATION_BROWSER_PILOT = [["hh-public-journey-wave1.yml","hh-public-wave1"],["hh-public-journey-toronto-wave2.yml","hh-toronto-wave2"]];
+test('two public journey browser suites cancel superseded PR heads without other events',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const cancel="${{ github.event_name == 'pull_request' }}";
+  const required={
+    'hh-public-journey-wave1.yml':['verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs'],
+    'hh-public-journey-toronto-wave2.yml':['verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs'],
+  };
+  for(const [filename,group] of PR_NUMBER_CANCELLATION_BROWSER_PILOT){
+    const source=read(filename);
+    assert.match(source,/^  pull_request:/m,'PR coverage missing: '+filename);
+    assert.match(source,/^    paths:/m,'Path coverage missing: '+filename);
+    assert.equal((source.match(/^concurrency:/gm)||[]).length,1,filename+' must have exactly one concurrency block');
+    assert.ok(source.includes('group: '+group+'-'+suffix),filename+' must group by immutable PR number');
+    assert.ok(source.includes('cancel-in-progress: '+cancel),filename+' must not cancel production or manual');
+    assert.match(source,/^jobs:/m);
+    for(const contract of required[filename])assert.ok(source.includes(contract),filename+' lost '+contract);
+    assert.ok(!source.includes('continue-on-error: true'),filename+' cannot hide real failures');
+  }
+});
+
+
+test('PR-number cancellation browser suites use shellchecked bounded readiness loops',()=>{
+  for(const [file,limit] of [['hh-public-journey-wave1.yml',75],
+                             ['hh-public-journey-toronto-wave2.yml',75]]){
+    const source=read(file);
+    assert.ok(source.includes('for ((i=1; i<='+limit+'; i++)); do'),
+      file+' readiness loop must use the counter and remain bounded');
+    assert.ok(!source.includes('for i in $(seq 1 '+limit+'); do'),
+      file+' must not reintroduce shellcheck SC2034');
+  }
+});

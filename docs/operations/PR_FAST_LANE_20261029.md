@@ -272,22 +272,3 @@ production push checks disappear, or `release-ready` accepts a cancelled/
 skipped/error/empty-job result. Restore the broader workflow in a
 reviewed PR and re-verify release behavior. **Merge != live**: require
 Vercel READY exact deployment SHA, correct alias and real smoke/E2E proof.
-
-## CI Fast Lane V3 — implementation programme / 30 October 2026
-
-Canonical progress and measured proof: [issue #1419](https://github.com/andylitvinov-design/books/issues/1419#issuecomment-6522460615). GitHub Actions `pull_request` workflow runs in eight 3-hour windows from 29 Oct 12:00 to 30 Oct 12:00 UTC total **8,932**. This count includes cancelled/failed/skipped runs, not unique PRs or billable runner-minutes.
-
-| Priority | Action / acceptance requirement | Estimated saved executed runner-min/day* |
-| --- | --- | ---: |
-| P0 | Targeted path exclusions for mock-only QA, retain all production service/API/payment scopes (merged #2652) | 75–300 |
-| P0 | Bounded two-at-a-time real Mandala and Support browser cases (#2647; 10/10 and 18/18 preserved) | 53–159 |
-| P1 | Skip heavy Draft-only suites, rerun complete exact-head on Ready (#2655) | 40–250 |
-| P1 | Reuse Core production Next/TS for non-browser source-only specialists; keep unit/lint, feature push and manual builds | 30–120 |
-| P1 | Trial pinned-version Playwright cache only after cache scope and install time benchmark | 15–100 |
-| P2 | Existing three staggered Repair/Merge/Triage 24/7 agents: one coherent tested push/PR instead of repeated intermediate SHA churn | 30–400 |
-
-\* Forecast based on hypothetical daily completed/avoided job counts, not realized savings. Effects overlap: never add maxima as independent. **Runner-minutes/day ≠ critical-path PR waiting-minutes/day**; a faster concurrent job only shortens PR wait when it is on that PR's blocking path. Measure actual started→completed job durations, cancelled in-progress costs, exact-HEAD green→merge and Vercel READY→canonical-alias time daily for seven days. Do not skip actual auth, RLS, privacy, payment, client-data, EN/RU/ES or browser checks; absence/cancellation of a required specialist fails closed.
-
-Rollout: #2652 exact scoped fanout first; #2647 complete exact-head CI then merge; #2655 full Ready gate; next source-only redundant builds; cache experiment only if repeated cache hit improves both runner consumption and wall-clock. Existing #2630 remains Draft with unrelated genuine source failures and must not be force-merged or bypassed. Live deployment always requires Vercel READY and matching production SHA, not merely GitHub merge.
-
-**P1 source-only acceptance note (30 Oct):** Reports Development Programme's independent unit/lint CI passed on #2659; preserve only that approved de-dup in this PR. Growth Studio independent `editorial-security` failed two pre-existing source oracles expecting the old OAuth allowlist (actual owner-only `youtubeConnect` is approved). Aligning the two oracles triggered four unrelated pre-existing Practitioner Materials source failures, so all Growth and those extra tests were reverted from this CI-only PR. Do **not** bypass security/media checks, and do not claim Growth de-dup deployed until an independently verified source-level baseline fix lands. Forecast for this limited Reports release is smaller than the original 30–120 runner-min/day two-suite scenario.
