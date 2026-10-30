@@ -24,6 +24,9 @@ async function renderMandalaDock(source, locale) {
     if(id==="react")return React;
     if(id==="react/jsx-runtime")return jsx;
     if(id==="next/link")return {__esModule:true,default:LinkStub};
+    // Child settings sheet is already covered by its own component checks;
+    // this harness proves the real dock header accessible label.
+    if(id==="@/components/holistic-support-settings-panel") return {HolisticSupportSettingsPanel:()=>null};
     if(id==="lucide-react")return icons;
     if(id.endsWith(".module.css"))return {__esModule:true,default:{}};
     throw new Error("Unexpected dependency in dock: "+id);

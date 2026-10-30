@@ -266,3 +266,21 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
  const rejected=await route.POST(forbidden,{params:Promise.resolve({path:['auth','start']})})
  assert.equal(rejected.status,400)
 })
+
+test('Google OAuth Settings continuation preserves the protected account destination', async t => {
+  const flow = await routeStart([], null, 'settings')
+  assert.equal(flow.callback.searchParams.get('continue'), 'settings')
+  provider(t, flow.challenge)
+  const response = await routeCallback(flow, flow.cookies)
+  assert.equal(response.status, 303)
+  assert.equal(response.headers.get('location'), origin + '/en/app/settings')
+})
+
+test('Spanish profile settings OAuth preserves ES rather than silently falling back to EN', async t => {
+  const flow = await routeStart([], null, 'settings', {locale:'es'})
+  assert.equal(flow.callback.searchParams.get('locale'), 'es')
+  provider(t, flow.challenge)
+  const response = await routeCallback(flow, flow.cookies)
+  assert.equal(response.status, 303)
+  assert.equal(response.headers.get('location'), origin + '/es/app/settings')
+})

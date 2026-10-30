@@ -1758,3 +1758,57 @@
     padding: 0 !important;
   }
 }
+
+/* Unified account and settings hub. Existing private forms/API remain owners of their data. */
+.hh-settings-hub { display:grid; gap:14px; width:100%; min-width:0; }
+.hh-settings-hub .hh-panel { min-width:0; max-width:100%; }
+.hh-settings-overview { display:grid; gap:13px; }
+.hh-settings-overview h1 { margin:0; font-size:clamp(24px,3.8vw,35px); line-height:1.15; }
+.hh-settings-identity {
+  display:flex; align-items:center; gap:12px; min-width:0; padding:13px;
+  border-radius:16px; background:#f2f8f1; border:1px solid #d6e6d9;
+}
+.hh-settings-monogram {
+  display:grid; flex:none; place-items:center; width:51px; height:51px;
+  border-radius:50%; color:#086e50; background:#e3f3e9; border:2px solid #fff;
+}
+.hh-settings-identity > div { min-width:0; display:grid; gap:3px; }
+.hh-settings-identity strong { color:#194b39; font-size:18px; line-height:1.2; overflow-wrap:anywhere; }
+.hh-settings-identity span:not(.hh-settings-monogram) {
+  color:#506759; font-size:13px; line-height:1.35; overflow-wrap:anywhere;
+}
+.hh-settings-identity small { display:flex; gap:5px; align-items:center; color:#077b58; font-size:11px; }
+.hh-settings-index { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.hh-settings-index a {
+  display:flex; gap:8px; align-items:center; min-width:0; min-height:51px;
+  padding:10px 11px; border:1px solid #d9e8db; border-radius:13px;
+  background:#fffdf8; color:#155b46; font-size:13px; font-weight:750;
+  line-height:1.18; text-decoration:none;
+}
+.hh-settings-index a:hover, .hh-settings-index a:focus-visible { background:#eaf7ef; border-color:#0d8662; }
+.hh-settings-index svg { flex:none; color:#0b8662; }
+.hh-settings-index span { min-width:0; overflow-wrap:anywhere; }
+.hh-settings-section { min-width:0; display:grid; gap:14px; }
+.hh-settings-hub [id^="hh-settings-"] { scroll-margin-top:20px; }
+.hh-settings-account-email {
+  display:flex; gap:9px; align-items:flex-start; padding:10px 12px; border-radius:12px;
+  color:#2d5545; background:#f3f7f1; border:1px solid #d9e5d6;
+}
+.hh-settings-account-email > svg { flex:none; margin-top:3px; color:#0a8665; }
+.hh-settings-account-email > span { min-width:0; display:grid; gap:3px; }
+.hh-settings-account-email strong { font-size:13px; }
+.hh-settings-account-email span span { overflow-wrap:anywhere; font-size:14px; }
+.hh-settings-account-email small { font-size:11px; color:#5c7366; }
+@media (max-width:720px) {
+  .hh-settings-index { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hh-settings-index a { padding:9px; font-size:12px; }
+  .hh-settings-overview { padding:15px; }
+}
+@media (max-width:350px) {
+  .hh-settings-index { gap:6px; }
+  .hh-settings-index a { min-height:54px; gap:6px; padding:7px; font-size:11px; }
+  .hh-settings-index svg { width:16px; height:16px; }
+  .hh-settings-identity { gap:8px; padding:9px; }
+  .hh-settings-monogram { width:43px; height:43px; }
+  .hh-settings-identity strong { font-size:16px; }
+}

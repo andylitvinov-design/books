@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HolisticSupportSettingsPanel } from "@/components/holistic-support-settings-panel";
 import { useState } from "react";
 import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -29,19 +30,8 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={20} aria-hidden="true" /></button>
       </header>
       {settingsOpen ? (
-        <section className={styles.settingsPanel} id="mandala-support-settings" aria-label={t.settings} data-mandala-settings-panel>
-          <h2><Settings2 size={21} aria-hidden="true" />{t.settings}</h2>
-          <p>{t.language}</p>
-          <div className={styles.localeLinks}>
-            {(["en", "ru", "es"] as const).map(language => (
-              <Link key={language} href={"/" + language + "/holistic-support/mandala"}
-                hrefLang={language} aria-current={locale === language ? "page" : undefined}>
-                {language.toUpperCase()}
-              </Link>
-            ))}
-          </div>
-          <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
-        </section>
+        <HolisticSupportSettingsPanel locale={locale} id="mandala-support-settings" section="mandala"
+          onClose={() => setSettingsOpen(false)} />
       ) : null}
       <nav className={styles.bottomNav} aria-label={t.home} data-mandala-support-bottom-nav>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}>
@@ -57,7 +47,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <BarChart3 size={24} aria-hidden="true" /><span>{t.progress}</span>
         </Link>
         <button type="button" aria-expanded={settingsOpen} aria-controls="mandala-support-settings"
-          onClick={() => setSettingsOpen(open => !open)}>
+          onClick={() => setSettingsOpen(open => !open)} data-mandala-account-settings>
           <Settings2 size={24} aria-hidden="true" /><span>{t.settings}</span>
         </button>
       </nav>

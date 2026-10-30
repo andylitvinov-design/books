@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { HolisticSupportSettingsPanel } from "@/components/holistic-support-settings-panel";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
@@ -178,7 +179,7 @@ const copy = {
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
-    settings: "Languages & privacy", language: "Language", close: "Close settings",
+    settings: "Profile & settings", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
   ru: {
@@ -278,7 +279,7 @@ const copy = {
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
-    settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
+    settings: "Профиль и настройки", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
   es: {
@@ -378,7 +379,7 @@ const copy = {
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
-    settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
+    settings: "Perfil y ajustes", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
 } as const;
@@ -1037,17 +1038,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </footer>
       </div>
 
-      {settingsOpen ? <section className={styles.settingsPanel} id="support-mobile-settings" aria-label={t.settings}>
-        <h2><Settings2 size={22} aria-hidden="true" />{t.settings}</h2>
-        <p>{t.language}</p>
-        <div className={styles.localeLinks}>
-          {(["en", "ru", "es"] as PublicLocale[]).map(language => <Link key={language}
-            href={"/" + language + "/holistic-support/mobile"} hrefLang={language} aria-current={locale === language ? "page" : undefined}>
-            {language.toUpperCase()}</Link>)}
-        </div>
-        <p>{t.privateInfo}</p>
-        <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
-      </section> : null}
+      {settingsOpen ? <HolisticSupportSettingsPanel locale={locale} id="support-mobile-settings"
+        section="mobile" privacyNote={t.privateInfo} onClose={() => setSettingsOpen(false)} /> : null}
 
       <nav className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
@@ -1057,7 +1049,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         </Link>
         <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
         <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
-          onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
+          onClick={() => setSettingsOpen(open => !open)} data-support-mobile-account-settings>
+          <Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span>
+        </button>
       </nav>
     </main>
   );
