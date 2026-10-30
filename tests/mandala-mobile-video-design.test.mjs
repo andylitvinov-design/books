@@ -331,7 +331,8 @@ test("sitewide and local diagnostic ribbons are absent; compact app header is fi
   const globalBanner=read("components/sitewide-antistress-banner.tsx");
   const appHeaderCss=read("components/mandala-meditation.module.css");
   assert.doesNotMatch(route,/slimDiagnostic|data-video-diagnostic-banner|const promo/);
-  assert.match(globalBanner,/holistic-support\\\/\(\?:mobile\|mandala\)/);
+  assert.match(globalBanner,/holistic-support\\\/mobile/);
+  assert.match(globalBanner,/holistic-support\\\/mandala/);
   assert.ok(route.indexOf("<HolisticSupportMandalaDock")<route.indexOf("<MandalaMeditationClient"));
   assert.match(appHeaderCss,/\.page :global\(\[data-support-app-header\]\) \{/);
   assert.match(appHeaderCss,/position: sticky/);
