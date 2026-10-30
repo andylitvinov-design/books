@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { flushSync } from "react-dom";
-import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, LockKeyhole, RotateCcw, Sparkles, UserRound, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
@@ -184,6 +184,12 @@ const ui = {
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
+    cabinetTitle: "Open your free private Cabinet",
+    cabinetText: "Keep your chosen goals and Now → Want ratings in your Holistic House account.",
+    cabinetButton: "Continue with Google & save",
+    cabinetNote: "Private to your account. No booking, CRM contact or messages will be created.",
+    cabinetBusy: "Opening your account…",
+    cabinetFailed: "Could not open Google sign-in. Try again; your choices are still here.",
     checkinTitle: "Overall now",
     checkinHint: "Same rating as the top-left check-in",
     formatTitle: "4. What would you like to receive?",
@@ -205,6 +211,12 @@ const ui = {
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
+    cabinetTitle: "Бесплатно откройте личный кабинет",
+    cabinetText: "Сохраните цели и оценки «Сейчас → Хочу» в личном кабинете Holistic House.",
+    cabinetButton: "Войти через Google и сохранить",
+    cabinetNote: "Данные только в вашем кабинете. Заявка и рассылка не создаются.",
+    cabinetBusy: "Открываем кабинет…",
+    cabinetFailed: "Не удалось начать вход через Google. Повторите попытку — выбор остаётся на странице.",
     checkinTitle: "Общая оценка сейчас",
     checkinHint: "Связана с оценкой вверху слева",
     formatTitle: "4. Что включить в рекомендации?",
@@ -226,6 +238,12 @@ const ui = {
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
+    cabinetTitle: "Abre tu cuenta privada gratis",
+    cabinetText: "Guarda tus metas y valoraciones Ahora → Quiero en Holistic House.",
+    cabinetButton: "Continuar con Google y guardar",
+    cabinetNote: "Solo en tu cuenta privada. Sin solicitudes ni mensajes.",
+    cabinetBusy: "Abriendo tu cuenta…",
+    cabinetFailed: "No se pudo iniciar sesión con Google. Vuelve a intentarlo; tus datos siguen aquí.",
     checkinTitle: "Valoración general actual",
     checkinHint: "La misma puntuación del bloque superior izquierdo",
     formatTitle: "4. ¿Qué quieres en las recomendaciones?",
@@ -258,8 +276,8 @@ type Props = {
   initial: GoalSelection | null;
   preferredSector?: GoalSector;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
-  selectedFormats: GoalRecommendationFormat[];
-  onSelectedFormatsChange: (formats: GoalRecommendationFormat[]) => void;
+  onSaveToCabinet: (profile: { scores: Record<GoalCheckinKey, number>;
+    savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>; activeSector: GoalSector }) => Promise<void>;
   onSave: (sector: GoalSector, value: GoalSectorSnapshot) => void;
   onApply: (value: GoalSelection) => void;
   onReset: () => void;
@@ -268,7 +286,7 @@ type Props = {
 
 export function HolisticSupportGoalFilter({
   locale, scores, onCheckinChange, initial, preferredSector, savedSectors,
-  selectedFormats, onSelectedFormatsChange, onSave, onApply, onReset, onClose,
+  onSaveToCabinet, onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
   const initialSector = preferredSector ?? initial?.sector ?? "energy";
@@ -283,6 +301,8 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  const [cabinetBusy, setCabinetBusy] = useState(false);
+  const [cabinetError, setCabinetError] = useState(false);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
@@ -366,12 +386,23 @@ export function HolisticSupportGoalFilter({
     const all = { ...accepted, [sector]: snapshot };
     onSave(sector, snapshot);
     onApply({ ...snapshot, sector, savedSectors: all,
-      recommendationFormats: [...selectedFormats] });
+      recommendationFormats: [...GOAL_RECOMMENDATION_FORMATS] });
+  }
+  async function saveToCabinet() {
+    if (cabinetBusy) return;
+    const snapshot = snapshotCurrent();
+    const all = { ...accepted, ...drafts, [sector]: snapshot };
+    setCabinetError(false); setCabinetBusy(true);
+    try {
+      onSave(sector, snapshot);
+      await onSaveToCabinet({ scores, savedSectors: all, activeSector: sector });
+    } catch {
+      setCabinetError(true);
+    } finally { setCabinetBusy(false); }
   }
   function reset() {
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     setDrafts({}); setAccepted({}); setDirty({});
-    onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);
     onReset();
   }
   return (
@@ -502,23 +533,6 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.next} data-support-goal-next
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
-        <fieldset className={styles.formatFieldset} data-support-goal-formats>
-          <legend>{t.formatTitle}</legend>
-          <p className={styles.formatHelp}>{t.formatHelp}</p>
-          <div className={styles.formatGrid}>
-            {GOAL_RECOMMENDATION_FORMATS.map(id => (
-              <label key={id} className={styles.formatChoice}
-                data-support-goal-format={id} data-checked={selectedFormats.includes(id)}>
-                <input type="checkbox" checked={selectedFormats.includes(id)}
-                  onChange={() => onSelectedFormatsChange(selectedFormats.includes(id)
-                    ? selectedFormats.filter(item => item !== id)
-                    : GOAL_RECOMMENDATION_FORMATS.filter(item =>
-                        item === id || selectedFormats.includes(item)))} />
-                <span>{t.formatLabels[id]}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
         </button>
@@ -527,6 +541,21 @@ export function HolisticSupportGoalFilter({
         </button>
         {Object.values(accepted).some(Boolean) ? <p className={styles.savedNote}
           role="status">{t.savedNote}</p> : null}
+        <section className={styles.cabinetCard} data-support-goal-cabinet-cta aria-label={t.cabinetTitle}>
+          <div className={styles.cabinetIcon}><UserRound size={24} aria-hidden="true" /></div>
+          <div className={styles.cabinetCopy}>
+            <h3>{t.cabinetTitle}</h3>
+            <p>{t.cabinetText}</p>
+          </div>
+          <button type="button" className={styles.cabinetButton} data-support-goal-cabinet-save
+            disabled={cabinetBusy} onClick={saveToCabinet}>
+            <LockKeyhole size={18} aria-hidden="true" />
+            {cabinetBusy ? t.cabinetBusy : t.cabinetButton}
+            {!cabinetBusy ? <ArrowRight size={19} aria-hidden="true" /> : null}
+          </button>
+          <small>{t.cabinetNote}</small>
+          {cabinetError ? <p className={styles.cabinetError} role="alert">{t.cabinetFailed}</p> : null}
+        </section>
       </footer>
     </form>
   );
