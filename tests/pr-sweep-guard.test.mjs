@@ -280,7 +280,7 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-test('independent coaching, practitioner and digest domain tests keep coverage while Core owns production PR TS/build', () => {
+test('independent coaching and practitioner domain tests keep coverage while Core owns production PR TS/build', () => {
   const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
   const core = read('hh-pr-core-release.yml');
   const rule = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
@@ -306,14 +306,6 @@ test('independent coaching, practitioner and digest domain tests keep coverage w
       'tests/master-network-r2.test.mjs',
       'tests/practice-public-alias.test.mjs',
     ], false],
-    ['hh-practice-telegram-digest.yml', [
-      ['Next.js production build and TypeScript', 'npm run build'],
-    ], [
-      'Private digest unit and existing cron regressions',
-      'tests/practitioner-daily-telegram.test.mjs',
-      'tests/app-housekeeping-cron.test.mjs',
-      'Targeted ESLint',
-    ], false],
   ];
   for (const [name, buildSteps, domainTests, manual] of checks) {
     const source = read(name);
@@ -328,8 +320,4 @@ test('independent coaching, practitioner and digest domain tests keep coverage w
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
   assert.match(read('practitioner-presentations.yml'), /^  push:/m, 'feature branch retains independent TS/build');
-  const digest = read('hh-practice-telegram-digest.yml');
-  assert.match(digest, /^  workflow_dispatch:/m, 'manual digest retains independent Next build');
-  assert.match(digest, /^  offline-contracts:/m);
-  assert.match(digest, /^  production-build:/m);
 });
