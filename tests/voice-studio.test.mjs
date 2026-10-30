@@ -141,7 +141,7 @@ test('editor offers free samples and custom text generation in main video page a
   assert.match(mandala,/holistic-support\/voice-studio/);
   assert.match(redirect,/NextResponse\.redirect/);
   assert.match(redirect,/isPublicLocale/);
-  assert.match(redirect,/#voice-studio/);
+  assert.match(redirect,/url\.hash="voice-studio"/);
   assert.match(editor,/data-video-voice-studio/);
   assert.match(editor,/MandalaCloudVoiceStudio locale=\{locale\}/);
   assert.match(client,/VOICE_STUDIO_VOICES/);
