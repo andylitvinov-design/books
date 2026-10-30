@@ -260,3 +260,16 @@ test('public journey and Reiki browser suites cancel superseded PR heads, not ma
   assert.match(reiki,/fail-fast: false/);
   assert.match(reiki,/postgres:17-alpine/);
 });
+
+
+test('PR-number cancellation browser suites use shellchecked bounded readiness loops',()=>{
+  for(const [file,limit] of [['hh-public-journey-wave1.yml',75],
+                             ['hh-public-journey-toronto-wave2.yml',75],
+                             ['hh-reiki-all-slides-browser.yml',110]]){
+    const source=read(file);
+    assert.ok(source.includes('for ((i=1; i<='+limit+'; i++)); do'),
+      file+' readiness loop must use the counter and remain bounded');
+    assert.ok(!source.includes('for i in $(seq 1 '+limit+'); do'),
+      file+' must not reintroduce shellcheck SC2034');
+  }
+});

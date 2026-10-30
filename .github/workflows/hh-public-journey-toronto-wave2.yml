@@ -50,7 +50,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
-          for i in $(seq 1 75); do
+          for ((i=1; i<=75; i++)); do
             if curl --silent --fail http://127.0.0.1:3104/en/toronto >/dev/null; then ready=1; break; fi
             sleep 2
           done
