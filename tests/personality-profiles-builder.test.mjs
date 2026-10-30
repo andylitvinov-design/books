@@ -240,7 +240,10 @@ test('Tests step keeps three plus five cards in place when checkboxes change and
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
   const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
-  assert.match(builder, /rankProfileAxisTests\(tests, scaleGroups, selectedScaleIds, batteryMode\)/)
+  // Three primary recommendations stay fixed; the All / Check-in / Pro selector only filters extras.
+  assert.match(builder, /rankProfileAxisTests\(tests, scaleGroups, selectedScaleIds, "all"\)/)
+  assert.match(builder, /recommendProfileTopThreeTests\(tests, scaleGroups,\s*selectedScaleIds, "all"\)/)
+  assert.match(builder, /const additionalCandidates = rankedCandidates\s*\.filter\(candidate => !recommendedKeys\.includes\(candidate\.key\)\)\s*\.filter\(candidate => batteryMode === "all"/)
   assert.match(builder, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
   assert.match(builder, /const featuredTestKeys = new Set\(/)
   assert.match(slide, /recommendedTests\.map\(\(\{ test, matchPercent \}\) =>/)

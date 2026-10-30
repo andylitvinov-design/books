@@ -70,6 +70,7 @@ jobs:
           for i in $(seq 1 100); do
             if curl -fsS http://127.0.0.1:3119/ru/personality-profiles >/dev/null; then break; fi
             if ! kill -0 "$APP_PID" 2>/dev/null; then tail -n 150 /tmp/hh-profile-filter-next.log; exit 1; fi
+            printf 'Profile server startup check %s/100\n' "$i" >&2
             sleep 2
           done
           node scripts/verify-profile-unique-axes-filter-browser.mjs
