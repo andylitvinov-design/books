@@ -68,4 +68,3 @@ test('confirmed creative choices map to existing storyboard fields without expor
   });
   assert.deepEqual(fields, {subjectChoice: 'eagle', actionChoice: 'metamorphosis', styleId: 'dream', durationSeconds: 30, aspect: 'portrait'});
 });
-

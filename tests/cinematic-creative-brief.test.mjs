@@ -200,6 +200,3 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(css,/:focus-visible/);
   assert.doesNotMatch(ui,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
 });
-
-
-
