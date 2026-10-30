@@ -106,3 +106,14 @@ relevant specialist evidence; configure protection before enabling PR-level
 automatic merging. Next improvements: group related scoped specialist workflows,
 share expensive builds where browser tests allow it, and reduce agent-created
 duplicate PRs. Never drop privacy/auth/RLS/payment/E2E gates.
+
+## Workflow consolidation wave 1: reviewed migration before deleting jobs (30 October 2026)
+
+Two strictly reviewed one-to-one replacements are staged in existing domain workflows:
+
+- `hh-crm-event-channels.yml` → `hh-event-referral-contract.yml`: union of PR/push paths; preserves event-source, CRM marketing, organic referral, GBP and TypeScript contracts, with one Node 24 install/typecheck and PR-number concurrency. Original still runs until later removal PR.
+- `psychometric-research-catalogue.yml` → `hh-assessment-quality.yml`: union of paths; preserves research catalogue's four tests and two reference-count thresholds, in addition to all author-quality/evidence/privacy checks and report artifact. The replacement supports original PR branch scope, production push and manual dispatch. Original still runs until later removal PR.
+
+The `specialist-aggregate.mjs` base-trusted allowlist *only* accepts deletion of the two explicitly named workflows when their already present replacement is byte-identical to the BASE version, the replacement is actually scoped to the changed PR files, and its exact-head associated run has completed successfully with real jobs. Unmapped YAML deletion, weakening of a replacement in the same PR, jobless/skipped/failed/queued/mismatched-head run, or unrelated failed current-HEAD workflow remains blocking. Core `hh-pr-core-release.yml` continues extracting its verifier from immutable BASE SHA. The `hh-actionlint.yml` deletion-only branch checks statuses, validates all remaining YAMLs and still relies on the exact-head specialist gate to allow any removal.
+
+**Two-PR protocol:** first merge this additive / trusted-allowlist PR with exact-head actionlint, sweep-guard and both specialist jobs green, then create a separate *deletion-only* PR. Do not remove legacy workflows before approved replacements and policy are in BASE. Do not treat lower YAML count as evidence of cost or E2E gains; compare runner-minutes and actual status parity. GitHub branch ruleset for production remains a separate owner-admin step.
