@@ -39,6 +39,14 @@ on:
       - 'components/*service*'
       - 'components/practice-showcase*'
       - 'lib/holistic-support/**'
+      # Pure, side-effect-free Intelligence Core policy/bridge input parsers
+      # have their own focused axis-to-offer unit, type and production-build gate.
+      # No public services routes, client UI, checkout or publication logic are
+      # edited by these files, so do NOT launch unrelated 20-minute storefront
+      # mobile browser matrix for a policy-only PR. All real service/UI changes
+      # still match the surrounding positive globs and run full acceptance.
+      - '!lib/holistic-support/client-reasoning-*.mjs'
+      - '!lib/holistic-support/intelligence-request.mjs'
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
