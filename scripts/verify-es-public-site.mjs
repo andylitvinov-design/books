@@ -110,7 +110,10 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
+  const activeMobileItem = page.locator('.mobile-bottom-navigation [aria-current="page"]');
+  await expect(activeMobileItem).toHaveCount(1);
+  await expect(activeMobileItem).toHaveAttribute('data-nav-item', 'courses');
+  await expect(activeMobileItem).toHaveAttribute('href', '/es/academy');
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
