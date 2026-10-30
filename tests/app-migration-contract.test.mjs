@@ -55,15 +55,35 @@ test('synthetic browser fixture replays approved private Academy/Express migrati
   ]
   const sourceBase = "../supabase/migrations/"
   let previous = -1
+  const sqlByFile = new Map()
   for (const path of files) {
     const index = setup.indexOf(path)
     assert.ok(index > previous, 'Original schema fixture migration missing or out of order: ' + path)
     previous = index
     const sql = await readFile(new URL(sourceBase + path, import.meta.url), 'utf8')
-    assert.match(sql, /row level security/i, 'Owner RLS must be defined in approved migration: ' + path)
+    sqlByFile.set(path, sql)
+    // Some migrations only ALTER an already RLS-protected table. Assert the
+    // earlier source both ENABLES and FORCES RLS instead of demanding that
+    // every additive patch repeats those DDL statements.
+    if (path !== files[1] && path !== files[4]) {
+      assert.match(sql, /enable row level security/i, 'RLS must be enabled on new private tables: ' + path)
+      assert.match(sql, /force row level security/i, 'Private table RLS must be forced: ' + path)
+    }
+    assert.doesNotMatch(sql, /disable row level security/i, 'An additive migration must not disable RLS: ' + path)
     assert.doesNotMatch(sql, /grant all on [^;]+ to (?:anon|authenticated)/i,
       'No direct client grant for owner-only schemas: ' + path)
   }
+  // Reiki v2 reuses the original owner-scoped Academy progress table.
+  assert.match(sqlByFile.get(files[0]), /alter table app_private\\.academy_course_progress force row level security/i)
+  assert.match(sqlByFile.get(files[0]), /create policy academy_course_progress_select/i)
+  assert.match(sqlByFile.get(files[1]), /alter table app_private\\.academy_course_progress/i)
+  assert.match(sqlByFile.get(files[1]), /grant update \\(course_version\\) on app_private\\.academy_course_progress to hh_app_backend/i)
+  // The saved-account reply adds a practitioner policy to the previously
+  // owner-protected link; it does not create a new unprotected table.
+  assert.match(sqlByFile.get(files[3]), /alter table app_private\\.free_express_account_links force row level security/i)
+  assert.match(sqlByFile.get(files[3]), /create policy free_express_account_links_owner_read/i)
+  assert.match(sqlByFile.get(files[4]), /create policy free_express_account_links_practitioner_read/i)
+  assert.match(sqlByFile.get(files[4]), /trusted_auth_user_id=\\(select auth\\.uid\\(\\)\\)/i)
   assert.match(setup, /HH_APP_TEST_RUNTIME!=='isolated'/, 'must remain isolated only')
   assert.match(setup, /process.env.VERCEL/, 'must never initialize production')
   assert.match(setup, /Refusing to initialize nonempty test DB/, 'must not edit populated DB')
