@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join,matchesGlob as requireGlob } from 'node:path';
 import test from 'node:test';
@@ -581,6 +582,9 @@ test('all 14 Public Services browser suites use semantic readiness rather than n
   assert.equal(unique.length, 14, 'existing full browser acceptance list must be retained');
   for (const script of unique) {
     const file = readFileSync(join(root, script), 'utf8');
+    // Fail cheaply in Core before downloading browsers/building a Next server.
+    assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', join(root, script)],
+      {timeout: 5000, stdio: 'pipe'}), script + ': script must parse before heavy E2E');
     assert.doesNotMatch(file, /waitUntil\s*:\s*['"]networkidle['"]/,
       script + ': navigation must use semantic DOM readiness');
     assert.doesNotMatch(file, /waitForLoadState\(\s*['"]networkidle['"]/,
