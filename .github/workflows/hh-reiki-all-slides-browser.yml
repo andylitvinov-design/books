@@ -25,11 +25,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
-  group: hh-reiki-all-slides-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   course-and-save-gate:
     name: Full course / save checkpoint — ${{ matrix.browser }}
@@ -90,7 +85,7 @@ jobs:
           node tests/helpers/app-auth-double.mjs > /tmp/hh-reiki-provider.log 2>&1 & PROVIDER_PID=$!
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-reiki-next.log 2>&1 & APP_PID=$!
           trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
-          for ((i=1; i<=110; i++)); do
+          for i in $(seq 1 110); do
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/academy/principles-of-energywork/learn >/dev/null; then break; fi
             sleep 2
           done
