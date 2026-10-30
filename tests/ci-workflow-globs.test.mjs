@@ -101,6 +101,10 @@ test('isolated YouTube mobile QA shares a true same-origin loopback host with br
 test('express review accepts one real mobile tap only after radio and React card agree', () => {
   const source = readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs', import.meta.url), 'utf8');
   assert.match(source, /timeout: 8000/);
+  assert.match(source, /scrollIntoView\\(\\{block:"center"/, 'real user-like scroll must make full card visible');
+  assert.match(source, /document\\.elementFromPoint\\(x,y\\)/, 'fixed toolbar must not intercept tap');
+  assert.match(source, /assert\\.ok\\(targetHit\\.hittable/, 'do not silently click blocked card');
+  assert.match(source, /await card\\.click\\(\\)/, 'one full-card tap, no retry');
   assert.match(source, /radio instanceof HTMLInputElement && radio.checked/);
   assert.match(source, /getAttribute\("data-selected"\) === "true"/);
   assert.match(source, /Single-tap focus was not committed/);
