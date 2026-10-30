@@ -57,7 +57,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(module, 'OPORA unit suite must be retained');
   const executed = [...module.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
   assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
-  assert.equal(executed.length, 47, 'all 47 existing distinct OPORA assertions remain');
+  assert.ok(executed.length >= 47, 'retain all 47 proven OPORA cases as the suite grows');
   for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
     assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
   }
