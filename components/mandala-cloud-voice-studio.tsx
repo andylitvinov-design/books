@@ -83,9 +83,10 @@ const bedNames:Record<string,{ru:string;en:string;es:string}>={
   pulse:{ru:"Ритм",en:"Pulse",es:"Pulso"}
 };
 
-export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,onAudioReady}:{
+export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,onAudioReady,onAudioInvalidated}:{
   locale:PublicLocale;sourceText?:string;ambientSrc?:string|null;
   onAudioReady?:(file:File)=>Promise<boolean>;
+  onAudioInvalidated?:()=>void;
 }) {
   const t=text[locale];
   const b=balanceCopy[locale];
@@ -117,6 +118,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
   const natureRef=useRef<HTMLAudioElement|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const controllerRef=useRef<AbortController|null>(null);
+  const attachedRef=useRef(false);
 
   useEffect(()=>{
     const abort=new AbortController();
@@ -140,7 +142,11 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     if(audioRef.current)audioRef.current.volume=mixedUrl?1:voiceLevel/100;
     if(natureRef.current)natureRef.current.volume=musicLevel/100;
   },[voiceLevel,musicLevel,mixedUrl]);
+  function detachOldNarration(){
+    if(attachedRef.current){attachedRef.current=false;onAudioInvalidated?.();}
+  }
   function invalidateMix(stop=false){
+    detachOldNarration();
     mixJobRef.current++;
     setMixing(false);
     if(stop){audioRef.current?.pause();stopNature();}
@@ -148,6 +154,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
     setMixedUrl("");setMixedBlob(null);setAttaching(false);
   }
   function resetAudio(){
+    detachOldNarration();
     latestRef.current++;
     mixJobRef.current++;
     setMixing(false);
@@ -242,6 +249,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
       // This file remains local; it is the exact WAV heard/downloaded by the visitor.
       const file=new File([mixedBlob],"holistic-house-meditation-"+language+"-"+voiceId+".wav",{type:"audio/wav"});
       const success=await onAudioReady(file);
+      if(success)attachedRef.current=true;
       setNotice(success?attachedLabel:attachError);
     } catch {setNotice(attachError);}
     finally{setAttaching(false);}
