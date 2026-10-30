@@ -57,13 +57,13 @@ test("actual PNG renderer TypeScript parses; browser runner covers WebKit and do
   assert.match(browser, /width: 430/);
 });
 
-test("Mandala browser acceptance preserves 10 independent encoded-video E2E scenarios with bounded parallelism", () => {
+test("Mandala browser acceptance preserves 12 independent encoded-video E2E scenarios with bounded parallelism", () => {
   const script = read("scripts/verify-holistic-mandala-browser.mjs");
   for (const locale of ["ru", "en", "es"]) assert.ok(script.includes('locale: "' + locale + '"'));
-  for (const width of [320, 390, 430]) assert.ok(script.includes('width: ' + width));
+  for (const width of [320, 354, 390, 430]) assert.ok(script.includes('width: ' + width));
   assert.match(script, /\["webkit", webkit\], \["chromium", chromium\]/);
   // The two engines may overlap, but each has a single active context.
-  // The full 5 × 2 coverage, native media decoding and fail-closed semantics remain.
+  // The full 6 × 2 coverage, native media decoding and fail-closed semantics remain.
   assert.match(script, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
   assert.match(script, /for \(const \{ locale, width \} of orderedViewports\)/);
   assert.doesNotMatch(script, /viewports\.slice\(from, from \+ 2\)/);
