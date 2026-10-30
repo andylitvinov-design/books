@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect,useMemo,useRef,useState} from "react";
-import {Check, ChevronDown, Film, Pause, Play, RefreshCw, Sparkles} from "lucide-react";
+import {Check, ChevronDown, Pause, Play, RefreshCw, Sparkles} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import {buildFreeVideoPlan,FREE_VIDEO_EXAMPLES,FREE_VIDEO_FAMILIES,
