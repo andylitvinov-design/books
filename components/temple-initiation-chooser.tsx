@@ -375,6 +375,7 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
           </div>
           {ready ? (
             <ContactChannelChooser
+              stayAfterSave
               locale={locale}
               whatsappUrl={whatsappUrl}
               className={styles.action}

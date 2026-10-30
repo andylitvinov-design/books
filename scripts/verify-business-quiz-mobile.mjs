@@ -74,7 +74,12 @@ async function verify(browserType,locale,width){
       await extras.waitFor({state:'visible'})
       if (!(await extras.evaluate(node=>node.open))) await extras.locator('summary').first().click()
       await finder.waitFor({state:'visible'})
+      await page.waitForFunction(() => {
+        const control=document.querySelector('[data-business-need], [data-business-finder-reset]')
+        return Boolean(control && Object.keys(control).some(key=>key.startsWith('__reactProps$')))
+      },null,{timeout:30000})
       if (await page.locator('[data-business-finder-reset]').count()) await page.locator('[data-business-finder-reset]').click()
+      await page.locator('[data-business-finder-step="need"]').waitFor({state:'visible'})
     }
     await cta.click()
     await page.waitForURL('**/'+locale+'/services/business-consulting?businessFormat=express#business-direct-request')

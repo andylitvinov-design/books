@@ -154,8 +154,8 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   assert.equal(await trigger.getAttribute("aria-expanded"), "true");
   assert.equal(page.url(), startUrl, "Order first click must stay on this page");
   assert.equal((await panel.locator("p").first().innerText()).trim(), questions[locale]);
-  const wa = panel.locator('a[data-contact-channel="whatsapp"]');
-  const tg = panel.locator('a[data-contact-channel="telegram"]');
+  const wa = chooser.locator('a[data-contact-channel="whatsapp"]');
+  const tg = chooser.locator('a[data-contact-channel="telegram"]');
   assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
   assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
   await submitSyntheticForm(page,chooser,locale,submissions);

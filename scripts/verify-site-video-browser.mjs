@@ -356,7 +356,9 @@ try {
           }, RECEIPT_SESSION_KEY)
           await page.reload({ waitUntil: 'domcontentloaded' })
         }
-        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+        // The owner withdrew the homepage introduction, even if an editor publishes it.
+        // Other approved placements must still render their published snapshot.
+        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(slot.id === 'home-intro' ? 0 : 1)
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
     }

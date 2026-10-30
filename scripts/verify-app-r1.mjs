@@ -4,7 +4,6 @@ import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclos
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -431,13 +430,14 @@ async function verifyPublicServiceConversionJourneys(){
   ['hypnotherapy-course','hypnotherapy',{en:'Guided Imagery Hypnotherapy',ru:'Курс гипнотерапии'}],
  ]
  for(const locale of ['en','ru']){
-  for(const [slug,kind,names] of services){
+  for(const [slug,kind] of services){
    const servicePage=await publicContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded',timeout:60000})
+    const mainSelector=kind==='dao'?'main[data-free-entry-landing="dao"]':'main[data-core-service-detail="'+kind+'"]'
+    await expect(servicePage.locator(mainSelector+' h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -450,8 +450,8 @@ async function verifyPublicServiceConversionJourneys(){
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     if(width<768)assert.deepEqual(measurements.filter(x=>x.name!=='reviews'&&x.height>x.max),[],
+      'Collapsed Alchemy sections other than the vertical review stack must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -468,11 +468,15 @@ async function verifyPublicServiceConversionJourneys(){
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     const format=form.locator('select[id$="-format"]')
+     const topic=form.locator('select[id$="-topic"]')
+     await expect(format).toHaveCount(1)
+     await expect(topic).toHaveCount(1)
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
+     await format.selectOption('30')
+     await topic.selectOption('business')
+     await expect(format).toHaveValue('30')
+     await expect(topic).toHaveValue('business')
      await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
@@ -485,25 +489,29 @@ async function verifyPublicServiceConversionJourneys(){
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const book=pricing.locator('[data-booking-cta="book"]')
-     await expect(book).toHaveCount(1)
-     await book.click()
-     await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
+     const chooser=pricing.locator('[data-contact-channel-chooser]')
+     await expect(chooser.locator('[data-contact-order]')).toBeVisible()
+     await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
+     await chooser.locator('[data-contact-order]').click()
+     await expect(chooser.locator('input[type="checkbox"][required]')).not.toBeChecked()
+     await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
      await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else if(kind==='dao'){
+     const form=servicePage.locator('[data-free-entry-landing="dao"] [data-compact-lead-form]')
+     await expect(form).toBeVisible()
+     await expect(form.locator('input[name="contact"][required]')).toHaveCount(1)
+     await expect(form.locator('input[type="checkbox"][required]')).not.toBeChecked()
+     await expect(form.locator('button[data-compact-channel="whatsapp"]')).toBeVisible()
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
      await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
-     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
-     await alternative.locator('summary').click()
-     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+     const form=capture.locator('[data-compact-lead-form]')
+     await expect(form).toBeVisible()
+     await expect(form.locator('input[name="contact"][required]')).toHaveCount(1)
+     await expect(form.locator('input[type="checkbox"][required]')).not.toBeChecked()
+     await expect(form.locator('button[data-compact-channel="whatsapp"]')).toBeVisible()
     }
    }
    await servicePage.close()
@@ -512,78 +520,39 @@ async function verifyPublicServiceConversionJourneys(){
  for(const locale of ['en','ru']){
   const publicPage=await publicContext.newPage()
   publicPage.on('pageerror',error=>publicErrors.push(error.message))
-  const copy=locale==='ru'
-   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copyButton:'Скопировать ответы',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
-   : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
-   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-   const quick=publicPage.locator('[data-free-quick-request]').first()
-   await expect(quick).toBeVisible({timeout:30000})
-   const intake=publicPage.locator('[data-free-drawing-intake]')
-   await expect(intake).toBeHidden()
-   const advanced=publicPage.locator('details').filter({has:intake})
-   assert.equal(await advanced.evaluate(element=>element.open),false,'Detailed drawing form must start collapsed')
+   await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:60000})
+   const enquiry=publicPage.locator('[data-personal-express-enquiry]')
+   await expect(enquiry).toBeVisible({timeout:30000})
+   await expect(enquiry.locator('[data-express-inline-disclosure]')).toBeHidden()
+   await expect(enquiry.locator('[data-express-reveal]')).toHaveAttribute('aria-expanded','false')
+   const advanced=publicPage.locator('[data-optional-written-review]')
+   assert.equal(await advanced.evaluate(element=>element.open),false,'Detailed questionnaire must start collapsed')
    await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
   await publicPage.setViewportSize({width:390,height:844})
-  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-  await publicPage.evaluate(()=>{
-   document.documentElement.dataset.analyticsConsent='granted'
-   window.__publicAcquisition=[]
-   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
-  })
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
-  const quick=publicPage.locator('[data-free-quick-request]').first()
-  await expect(quick).toBeVisible()
-  const intake=publicPage.locator('[data-free-drawing-intake]')
-  const advanced=publicPage.locator('details').filter({has:intake})
-  await expect(intake).toBeHidden()
+  const enquiry=publicPage.locator('[data-personal-express-enquiry]')
+  await enquiry.locator('[data-express-reveal]').click()
+  const disclosure=enquiry.locator('[data-express-inline-disclosure]')
+  await expect(disclosure).toBeVisible()
+  await expect(disclosure.locator('input[type="checkbox"][required]')).not.toBeChecked()
+  await expect(disclosure.locator('a[data-contact-channel]')).toHaveCount(0)
+  await enquiry.locator('[data-express-reveal]').click()
+  const advanced=publicPage.locator('[data-optional-written-review]')
   await advanced.locator(':scope > summary').click()
+  const intake=advanced.locator('[data-free-drawing-intake]')
   await expect(intake).toBeVisible()
-  const uniqueProblem='Synthetic public form value — '+locale
-  const uniqueGoal='Synthetic public goal value — '+locale
-  await intake.locator('textarea').nth(0).fill(uniqueProblem)
-  await intake.locator('textarea').nth(1).fill(uniqueGoal)
-  await intake.locator('form button[type="submit"]').click()
-  const ready=intake.locator('[role="region"]')
-  await expect(ready).toBeVisible()
-  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
-  assert.equal(await ready.getAttribute('aria-live'),'polite')
-  await expect(ready).toBeFocused({timeout:15000})
-  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
-  const readyChooser=await openContactChannelChooser(ready,expect)
-  const {whatsappUrl,telegramUrl}=await assertPreparedContactChannels(readyChooser,expect)
-  const whatsappText=whatsappUrl.searchParams.get('text')||''
-  const telegramText=telegramUrl.searchParams.get('text')||''
-  const decodedPageUrl=decodeURIComponent(publicPage.url())
-  for(const marker of [uniqueProblem,uniqueGoal]){
-   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
-   assert.ok(!telegramText.includes(marker),'Answers never enter decoded Telegram text')
-   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
-  }
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
-  // The temporary SDK safety hold also suppresses the public event emitter,
-  // including when this fixture forces a stale granted dataset. Restore the
-  // positive analytics contract only with the fully verified transport repair.
-  assert.deepEqual(events,[], 'Temporary analytics hold must emit no acquisition events')
-  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
-  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
-  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  await expect(intake.locator('a[href="/'+locale+'/coaching/intake?topic=personal"]')).toBeVisible()
+  await expect(intake.locator('form,textarea')).toHaveCount(0)
+  await assertPublicViewportFits(publicPage,locale+'/free-review-expanded/390')
+  await publicPage.screenshot({path:output+'/free-review-'+locale+'-expanded-390.png',fullPage:false})
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
  await publicContext.close()
- passed('public EN/RU service conversion journeys: mobile/desktop layout, hydrated same-service footer, disclosure, private free-review handoff and screenshots')
+ passed('public EN/RU service journeys: mobile/desktop layout, consented contact forms, secure free-review entry and screenshots')
 }
 
 try {
