@@ -116,7 +116,7 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   const mobileNav=css.slice(css.indexOf('.hh-mobile-app-nav{display:none}'))
   assert.ok(mobileNav.startsWith('.hh-mobile-app-nav{display:none}'))
   assert.match(mobileNav,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/)
-  assert.match(mobileNav,/\.hh-app \.hh-mobile-app-nav\{\s*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
+  assert.match(mobileNav,/\.hh-app \.hh-mobile-app-nav\{\s*display:grid;\s*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
   assert.match(shell,/hh-mobile-app-nav-home/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
