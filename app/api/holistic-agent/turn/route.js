@@ -25,6 +25,14 @@ const GOALS = new Set(["energy","relationships","money","goals","meaning"]);
 const LOCALES = new Set(["ru","en","es"]);
 const MODES = new Set(["rules","device","owned"]);
 const GUIDE_FORMATS = new Set(["video","audio","test","course","service"]);
+const SAFE_CONTENT_ID = /^[a-z][a-z0-9_-]*:[A-Za-z0-9_:-]{1,85}$/;
+function validFeedback(value) {
+  return value && typeof value==="object" && !Array.isArray(value) &&
+    Object.keys(value).every(k=>["dismissedIds","completedIds"].includes(k)) &&
+    ["dismissedIds","completedIds"].every(k=>value[k]===undefined ||
+      Array.isArray(value[k]) && value[k].length<=20 &&
+      value[k].every(id=>typeof id==="string" && SAFE_CONTENT_ID.test(id)));
+}
 function publishedVideos(locale) {
   return locale === "ru"
     ? freeMeditationVideos("ru").map(item => ({...item,sourceLanguage:"ru"}))
@@ -39,7 +47,7 @@ function validatedAxes(value) {
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
-    "chosenAxes","usePrivateProfile","preferredFormat"]);
+    "chosenAxes","usePrivateProfile","preferredFormat","feedback"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -48,7 +56,9 @@ function inputOf(body) {
     (body.usePrivateProfile !== undefined && typeof body.usePrivateProfile !== "boolean") ||
     (body.chosenAxes !== undefined && !validatedAxes(body.chosenAxes)) ||
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
-      !GUIDE_FORMATS.has(body.preferredFormat))) throw new AppError("INVALID_AGENT_INPUT",400);
+      !GUIDE_FORMATS.has(body.preferredFormat)) ||
+    (body.feedback !== undefined && !validFeedback(body.feedback)))
+    throw new AppError("INVALID_AGENT_INPUT",400);
   if (!Array.isArray(body.history) || body.history.length > 6 ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
       typeof row.text !== "string" || row.text.length > 420 ||
@@ -134,6 +144,7 @@ export async function POST(request) {
       consent:{paidSuggestions:false,measuredPersonalization:useMeasurements,
         profilePersonalization:useMeasurements},
       profile:{measurements},
+      feedback:body.feedback||{},
       safety, catalogs:{services,axisOffers,publishedReikiAudio:publicAudio},
     });
     const enabled=process.env.HH_AGENT_OWNED_ENABLED==="true";
