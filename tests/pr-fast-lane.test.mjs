@@ -563,3 +563,21 @@ test('CI wave 5 preserves live browser E2E in Public Services and Mandala', () =
   assert.ok(mandala.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(!mandala.includes('- name: Typecheck\n'), 'Core owns duplicate typing');
 });
+
+test('CI wave 5 consolidates speech and Telegram into real specialist jobs, no separate Next build', () => {
+  const guard="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const voice=workflow('andrey-voice-free-contract.yml');
+  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
+  assert.match(voice,/^  protocol:\s*$/m);
+  assert.match(voice,/^  redis-atomic:\s*$/m);
+  for(const contract of ['tests/local-narration-queue.test.mjs','tests/report-narration.test.mjs','tests/local-narration-redis-runtime.test.mjs','tests/test_andrey_voice_local_engine.py'])
+    assert.ok(voice.includes(contract),'speech privacy/Redis/worker verification removed: '+contract);
+  assert.ok(voice.includes('- name: Independent Next.js production build\n        '+guard+'\n'));
+  const digest=workflow('hh-practice-telegram-digest.yml');
+  assert.doesNotMatch(digest,/^  production-build:\s*$/m);
+  assert.match(digest,/^  offline-contracts:\s*$/m);
+  assert.ok(digest.includes('tests/practitioner-daily-telegram.test.mjs'));
+  assert.ok(digest.includes('tests/app-housekeeping-cron.test.mjs'));
+  assert.ok(digest.includes('- name: Targeted ESLint\n'));
+  assert.ok(digest.includes('- name: Next.js production build and TypeScript for standalone manual verification\n        '+guard+'\n'));
+});
