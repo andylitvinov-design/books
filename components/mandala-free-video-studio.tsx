@@ -2248,6 +2248,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
   const createQuickVideo = () => {
+    if(usingFreeFilmCompilation&&!freeFilmReady){
+      setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
+        locale==="es"?"Aún se están cargando los cuatro vídeos.":
+        "Four original videos are still loading.");
+      return;
+    }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       // Audio controls are inside the collapsed advanced editor.
@@ -2519,7 +2525,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-            disabled={recording||preparing||!freeVideoSelected} onClick={createQuickVideo}>
+            disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmReady)} onClick={createQuickVideo}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
             {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>
