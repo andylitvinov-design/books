@@ -21,6 +21,7 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          serviceWorkers: "block", // Isolate the synthetic practitioner fixture from SW.
         });
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
@@ -57,6 +58,10 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
+          await page.waitForFunction(() => {
+            const button = document.querySelector('[data-holistic-topic="business"]');
+            return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
+          }, null, {timeout:15000});
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");

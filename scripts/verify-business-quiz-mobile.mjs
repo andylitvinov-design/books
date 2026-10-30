@@ -97,6 +97,10 @@ async function verify(engine, locale, width) {
     await guide.locator("[data-dialog-close]").click();
     assert.equal(await root.locator("[data-direction-dialogue]").count(),0,label+": guide can close");
     await root.locator('[data-direction-intent="session"]').click();
+    // Wait for a committed React state rather than a transient pre-update DOM.
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-direction-offers="business"] [data-direction-section]')]
+      .map(node => node.getAttribute("data-direction-section")).join(",") === "session",
+      null, {timeout:10000});
     assert.deepEqual(await root.locator("[data-direction-section]").evaluateAll(nodes =>
       nodes.map(node=>node.getAttribute("data-direction-section"))),["session"],
       label+": session focus leaves one visible section");

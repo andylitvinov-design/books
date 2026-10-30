@@ -460,3 +460,37 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
   ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
   assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
 });
+
+
+test('Public Services and Alchemy preserve real exact-head E2E with scoped browser cache and bounded readiness', () => {
+  const publicQa = workflow('hh-public-services-production.yml');
+  const alchemy = workflow('hh-alchemy-mobile-acceptance.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /run: npx --no-install tsc --noEmit/);
+  assert.match(core, /run: npm run build/);
+  for (const [name, source] of [['public services', publicQa], ['alchemy', alchemy]]) {
+    assert.match(source, /npm run build > artifacts\//, name + ': independent exact-head production build remains');
+    assert.match(source, /playwright install --with-deps chromium webkit/, name + ': real browsers remain');
+    assert.match(source, /actions\/cache@v4/, name + ': real browser cache');
+    assert.match(source, /path: ~\/\.cache\/ms-playwright/, name + ': browser binaries only');
+    assert.match(source, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/,
+      name + ': no cross-PR or cross-version binaries');
+    assert.match(source, /if ! kill -0 "\$SERVER_PID"/, name + ': detect a dead server');
+    assert.match(source, /--max-time 3/, name + ': bounded readiness HTTP probe');
+    assert.ok(source.includes('if [[ "$ready" != "1" ]]') || source.includes('if [ "$ready" != 1 ]'),
+      name + ': no success on a missing server');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/, name + ': never weaken required tests');
+  }
+  assert.match(publicQa, /timeout-minutes: 20/);
+  for (const browser of [
+    'verify-alchemy-one-screen', 'verify-business-quiz-mobile', 'verify-ideas-mobile-browser',
+    'verify-holistic-master-browser', 'verify-reiki-mobile-order-browser',
+    'verify-holistic-support-recommendations-mobile', 'verify-talisman-google-checkout-browser',
+    'verify-holistic-topics-browser', 'verify-direction-focus-mobile',
+    'verify-public-services-production', 'verify-home-consultation-first-screen',
+    'verify-contact-channel-chooser-browser', 'verify-service-cart-browser',
+    'verify-storefront-shop-browser',
+  ]) assert.ok(publicQa.includes('node scripts/' + browser + '.mjs'), browser + ': no browser suite deleted');
+  assert.match(publicQa, /timings\.csv/, 'runner costs measured per browser suite');
+});

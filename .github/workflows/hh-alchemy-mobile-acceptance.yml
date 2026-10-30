@@ -70,6 +70,12 @@ jobs:
             components/alchemy-example-report.tsx \
             'app/[locale]/services/alchemy-of-soul/example-report/page.tsx' \
             app/es/services/alchemy-of-soul/example-report/page.tsx
+      # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
+      - name: Cache exact Playwright Chromium and WebKit browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install browser once for real responsive check
         run: |
           npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
@@ -86,12 +92,20 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
-          for ((i=1; i<=90; i++)); do
-            if curl --silent --fail http://127.0.0.1:3100/en/services/alchemy-of-soul >/dev/null; then ready=1; break; fi
-            echo "Alchemy readiness attempt ${i}/90" >&2
+          for ((i=1; i<=30; i++)); do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Alchemy server exited before readiness" >&2
+              break
+            fi
+            if curl --silent --fail --max-time 3 --output /dev/null http://127.0.0.1:3100/en/services/alchemy-of-soul; then ready=1; break; fi
+            echo "Alchemy readiness attempt ${i}/30" >&2
             sleep 2
           done
-          if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
+          if [ "$ready" != 1 ]; then
+            echo "::error::Alchemy server not ready; no browser suites were run" >&2
+            tail -n 100 /tmp/hh-alchemy-qa-next.log || true
+            exit 1
+          fi
           browser_status=0
           node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
           HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
