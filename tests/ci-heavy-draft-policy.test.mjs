@@ -48,6 +48,28 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
+test('core Draft skips heavy checkout but cannot pass release-ready, and Ready restores full checks', () => {
+  const core = read('hh-pr-core-release.yml');
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
+  assert.ok(core.includes("  merge_group:"));
+  assert.ok(core.includes("  workflow_dispatch:"));
+  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  assert.ok(scope);
+  assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+  assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
+  assert.ok(core.includes("run: npm run build"));
+  assert.ok(core.includes("run: npx --no-install tsc --noEmit --pretty false"));
+  const gate = core.split('  release-ready:')[1];
+  assert.ok(gate);
+  assert.ok(gate.includes("    if: always()"));
+  assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
+  assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("[[ \"$CODE_RESULT\" == success ]] || exit 1"));
+  assert.ok(gate.includes("ci-specialist-aggregate.mjs"));
+  assert.doesNotMatch(core, /continue-on-error:\s*true/);
+});
+
 const runGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 const prOnlyCancellation = "${{ github.event_name == 'pull_request' }}";
 const supersededRunWorkflows = [
@@ -124,7 +146,7 @@ const prodBuildReuse = [
 
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/^  pull_request:\s*\n\s+branches: \['codex\/public-book-library'\]/m);
+  assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
   assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  release-ready:/m);
