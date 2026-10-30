@@ -105,6 +105,6 @@ test('editor has a real cloud voice component and public route linked in all loc
   assert.match(client,/consent:true/);
   assert.match(client,/data-voice-studio-generate/);
   assert.match(client,/mixVoiceWithNature/);
-  assert.match(mix,/OfflineAudioContext/);
+  assert.match(mix,/mixPcmWavs/);
   assert.match(mix,/presetAudioUrl/);
 });

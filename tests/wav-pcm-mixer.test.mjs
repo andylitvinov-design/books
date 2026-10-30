@@ -22,8 +22,8 @@ test("cross-platform PCM mixer appends nature until exactly video duration, not 
   assert.equal(v.getUint32(24,true),24000);
   assert.equal(v.getUint32(40,true),24000*10*2);
   assert.equal(result.byteLength,44+24000*10*2);
-  const voiceAtHalf=v.getInt16(44+24000,true);
-  const voiceAfter=v.getInt16(44+24000*5*2,true);
+  const voiceAtHalf=v.getInt16(44+Math.round(24000*.503)*2,true);
+  const voiceAfter=v.getInt16(44+Math.round(24000*5.003)*2,true);
   assert.ok(Math.abs(voiceAtHalf)>2000,"speech and ambient are audible");
   assert.ok(Math.abs(voiceAfter)>100,"nature continues without looping voice");
 });

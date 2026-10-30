@@ -66,6 +66,7 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(api,/requireSameOrigin/);
   assert.match(api,/voiceStudioKey\(process\.env\)/);
   assert.match(mix,/minimumSeconds/);
+  assert.match(mix,/mixPcmWavs/);
   assert.match(local,/source\.loop = options\.loop !== false/);
   assert.match(browser,/page\.route/);
 });
