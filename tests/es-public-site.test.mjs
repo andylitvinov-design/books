@@ -78,5 +78,9 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.doesNotMatch(browser,/service-home-card-grid/);
   assert.doesNotMatch(browser,/first\.push\('/);
   assert.match(browser,/const cabinet = navigation\.locator/);
-  assert.match(browser,/toHaveAttribute\('href','\/en\/app'\)/);
+  assert.match(browser,/toHaveAttribute\('aria-controls','home-personal-space-dialog'\)/);
+  assert.match(browser,/await cabinet\.click\(\)/);
+  assert.match(browser,/a\[href\^="\/en\/app"\]/);
+  assert.match(browser,/Cerrar Mi espacio/);
+  assert.doesNotMatch(browser,/toHaveAttribute\('href','\/en\/app'\)/);
 });

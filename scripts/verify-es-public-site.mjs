@@ -36,10 +36,20 @@ async function assertSpanishNavigation(page, path) {
   assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
   const cabinet = navigation.locator('.site-cabinet-entry');
   await expect(cabinet).toHaveCount(1);
-  if (path === '/es') {
-    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
-    await expect(cabinet).toHaveAccessibleName('Mi espacio');
-  } else await expect(cabinet).toHaveAttribute('href','/en/app');
+  // The root HomePersonalSpaceProvider renders this as an accessible
+  // dialog opener on every Spanish public route, never as a direct /en/app
+  // anchor. Keep the real authenticated-Cabinet destination inside the panel.
+  await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+  await expect(cabinet).toHaveAttribute('aria-controls','home-personal-space-dialog');
+  await expect(cabinet).toHaveAccessibleName('Mi espacio');
+  if (path === '/es/library') {
+    await cabinet.click();
+    const spaceDialog = page.locator('#home-personal-space-dialog');
+    await expect(spaceDialog).toBeVisible();
+    await expect(spaceDialog.locator('a[href^="/en/app"]').first()).toBeVisible({timeout:15000});
+    await spaceDialog.getByRole('button',{name:'Cerrar Mi espacio'}).click();
+    await expect(spaceDialog).toBeHidden();
+  }
   // Derive the complete ordering from the same reviewed public navigation
   // model used by SiteNavigation; retain independent, exact ID/route guards so
   // a deleted destination in that model cannot silently turn browser CI green.
