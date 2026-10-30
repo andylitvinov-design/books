@@ -32,6 +32,19 @@ test("all professional formats produce editable local briefs in RU/EN/ES", () =>
   }
 });
 
+test("all professional ad presets resolve to four DISTINCT existing first-party video clips", () => {
+  const match = studio.match(/const FREE_FILM_PRESETS:readonly FreeFilmPreset\\[\\] = (\\[[\\s\\S]*?\\]) as const;/);
+  assert.ok(match, "reuse the one existing first-party film catalogue");
+  const presets = JSON.parse(match[1]);
+  for (const format of PROFESSIONAL_PROMO_FORMATS) {
+    const brief = buildProfessionalPromo({format});
+    const source = presets.find(preset => preset.id === brief.presetId);
+    assert.ok(source, format + " must resolve to a real existing compilation preset");
+    assert.equal(source.clips.length, 4, format + " requires four source clips");
+    assert.equal(new Set(source.clips).size, 4, format + " must not repeat a clip");
+  }
+});
+
 test("user-owned public details are sanitized; no arbitrary raw clinical input or diagnosis is required", () => {
   assert.equal(normalizePublicPracticeName(" \n<A>\tDr"), "A Dr");
   assert.ok(normalizePublicPracticeName("a".repeat(100)).length <= 48);
