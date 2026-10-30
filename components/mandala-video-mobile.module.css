@@ -1398,7 +1398,7 @@
 .quickPersonalActions svg{color:#138664;flex:none}
 .quickBuilder .quickWish{min-height:56px;background:#f8f8f3;border-color:#d7e3db}
 .quickBuilder .quickWish input{font-size:15px}
-.quickGenerate{position:sticky;z-index:22;bottom:calc(76px + env(safe-area-inset-bottom));
+.quickGenerate{position:relative;z-index:1;
   min-height:62px;margin:0 2px;border:2px solid #d0eadb;border-radius:17px;
   background:linear-gradient(100deg,#07916e,#09aa80);
   color:#fff;font-size:20px;box-shadow:0 5px 17px #0c624d39}
@@ -1539,4 +1539,28 @@
   .quickFormatQuality button{font-size:9.2px;padding:2px 0;min-height:40px}
   .quickFormatBenefits li{font-size:10px}
   .quickFormatPrice strong{font-size:16px}
+}
+
+
+/* Approved visual's compact sticky price-and-create rail. No credits are
+   claimed or charged; actual cost comes only from the draft local selection. */
+.quickOrderBar{position:sticky;z-index:22;bottom:calc(76px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);align-items:stretch;
+  gap:8px;min-width:0;margin:2px 0;padding:0 2px}
+.quickOrderSummary{display:flex;flex-direction:column;justify-content:center;gap:2px;
+  min-width:0;min-height:63px;padding:8px 12px;border:1px solid #def0e5;
+  border-radius:16px;background:linear-gradient(120deg,#e9f6ed,#f7fbf5);
+  color:#214a3d;box-shadow:0 3px 12px #1b543010}
+.quickOrderSummary small{display:block;min-width:0;color:#69867a;
+  font:550 clamp(10px,1.25vw,12px)/1.22 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickOrderSummary strong{color:#0c7355;font:850 clamp(17px,2.25vw,24px)/1.12 Arial,Helvetica,sans-serif}
+.quickOrderBar .quickGenerate{position:relative;bottom:auto;display:flex;align-items:center;
+  justify-content:center;gap:8px;width:100%;min-width:0;min-height:63px;
+  margin:0;padding:9px 10px;font-size:clamp(13px,2vw,17px)}
+.quickOrderBar .quickGenerate:disabled{opacity:.7;cursor:not-allowed}
+@media(max-width:369px){
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+  .quickOrderSummary{padding:7px 8px}
+  .quickOrderBar .quickGenerate{padding:8px 5px;font-size:12.5px}
 }
