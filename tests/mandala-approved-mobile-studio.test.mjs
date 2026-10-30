@@ -77,3 +77,13 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(script,/data-mandala-video-generate/);
   assert.match(script,/ffprobe|ffmpeg/);
 });
+
+
+test("selected money MP4 is requested and retried after Safari decoding without autoplaying other cards",()=>{
+  const src=read("components/mandala-free-video-studio.tsx");
+  assert.match(src,/autoPlay=\{playing&&visible\}/);
+  assert.match(src,/preload=\{playing&&visible\?"auto":"none"\}/);
+  assert.match(src,/if\(video\.readyState<2\)video\.load\(\)/);
+  assert.match(src,/onCanPlay=\{event=>\{/);
+  assert.match(src,/data-real-mp4=\{film\.src\}/);
+});

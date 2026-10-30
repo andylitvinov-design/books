@@ -484,10 +484,18 @@ function CinematicSceneThumbnail({ scene, photo, title, playing }: {
     // Genuine H.264 frames from first-party MP4: never start playback on
     // page load, never render a fake canvas loop as a video thumbnail.
     video.muted=true;
-    void video.play().catch(()=>{/* iPhone may need another direct tap. */});
+    // Safari may reject a play() attempted before a preload=none MP4 is
+    // decoded. Request the selected clip only; other thumbnails stay posters.
+    if(video.readyState<2)video.load();
+    void video.play().catch(()=>{/* onCanPlay retries only the selected visible clip. */});
     return ()=>video.pause();
   },[playing,visible,scene]);
-  return <video ref={ref} muted playsInline loop preload="none"
+  return <video ref={ref} muted playsInline loop autoPlay={playing&&visible}
+    preload={playing&&visible?"auto":"none"}
+    onCanPlay={event=>{
+      if(playing&&visible){event.currentTarget.muted=true;
+        void event.currentTarget.play().catch(()=>{/* Safari can await another tap. */});}
+    }}
     src={film.src} poster={film.poster}
     aria-label={title} data-mandala-scene-preview={scene}
     data-real-mp4={film.src} data-photo-overlay-available={photo?"true":"false"}

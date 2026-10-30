@@ -565,9 +565,24 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
-              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
+            // Playwright uncheck() can hit an offscreen reflowing input on
+            // WebKit; exercise the real accessible checkbox via the keyboard
+            // and require every React-controlled state change to commit.
+            const formatIds=["meditation","consultation","tests","courses",
+              "talismans","healing","masters","initiations","mandala"];
+            for(const kind of formatIds){
+              const input=filter.locator('[data-support-goal-format="'+kind+'"] input');
+              if(await input.isChecked()){
+                await input.focus();
+                await input.press("Space");
+                await page.waitForFunction(id=>{
+                  const el=document.querySelector('[data-support-goal-format="'+id+'"] input');
+                  return el && !el.checked;
+                },kind,{timeout:5000});
+              }
             }
+            assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),0,
+              label+" every explicit format opt-out persists");
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
             await root.locator('[data-support-goal-no-inline]').waitFor({state:"visible",timeout:8000});

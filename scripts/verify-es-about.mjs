@@ -67,7 +67,15 @@ try {
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
-        assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
+        // Published testimonials keep their original-language titles; the ES
+        // editorial page, headings and consultation must still be Spanish.
+        const spanishEditorial=await page.locator('main').evaluate(main=>{
+          const copy=main.cloneNode(true);
+          copy.querySelector('[data-personal-testimonials="about"]')?.remove();
+          return copy.textContent||'';
+        });
+        assert.doesNotMatch(spanishEditorial, /[\u0400-\u04ff]/,
+          'Spanish editorial copy must not inherit Russian; original RU testimonials stay intact');
         await summary.press('Enter');
         const capture = page.locator('[data-consultation-capture="personal"]');
         await expect(capture).toHaveAttribute('lang', 'es');
