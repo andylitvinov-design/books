@@ -11,6 +11,7 @@ import css from "./mandala-affirmation-voice.module.css";
 
 type SpeechLanguage="ru"|"en"|"es";
 type Bed="none"|NatureBed;
+export type AffirmationVoicePreferences={voiceId:string;language:SpeechLanguage;bed:Bed};
 export type AffirmationVoiceResult={
   file:File;spokenText:string;voiceId:string;language:SpeechLanguage;
   speechSeconds:number;mixSeconds:number;bed:Bed;
@@ -56,11 +57,12 @@ const copy={
 } as const;
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,
+  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,onPreferencesChange,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
+  onPreferencesChange:(prefs:AffirmationVoicePreferences)=>void;
 }) {
   const t=copy[locale];
   const speechText=enabled?affirmationNarrationText(lines):"";
@@ -78,6 +80,7 @@ export function MandalaAffirmationVoice({
   const controllerRef=useRef<AbortController|null>(null);
   const audioUrlRef=useRef("");
   const onGeneratingRef=useRef(onGenerating);
+  useEffect(()=>onPreferencesChange({voiceId,language,bed}),[voiceId,language,bed,onPreferencesChange]);
   onGeneratingRef.current=onGenerating;
 
   useEffect(()=>{
