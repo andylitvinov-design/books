@@ -10,6 +10,7 @@ export type FreeVideoPlan={
   motion:"calm"|"flow"|"dynamic";
   seed:number;variation:number;
   hasRecognizedMotif:boolean;
+  durationSeconds?:10|20|30|60;
 };
 type Palette={back:string;deep:string;glow:string;light:string;stroke:string};
 const PALETTES:Record<FreeVideoPlan["palette"],Palette>={
@@ -190,12 +191,29 @@ export function paintFreeVideoFrame(
   const p=PALETTES[plan.palette];
   const multiplier=plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
   const t=Math.max(0,Number.isFinite(time)?time:0)*multiplier;
+  // Four coherent original artworks, rather than one repeating wallpaper.
+  const total=plan.durationSeconds||30,section=total/4;
+  const slot=Math.min(3,Math.floor(t/section)),local=Math.max(0,t-slot*section);
+  const familyFor=(i:number)=>i===1?(plan.family==="light"?"mandala":"light"):
+    i===3?(plan.family==="mandala"?"light":"mandala"):plan.family;
+  const draw=(i:number,seconds:number)=>{
+    const seed=(plan.seed+Math.imul(i+1,0x9e3779b1))>>>0;
+    background(ctx,w,h,p,seconds+i*7);
+    dust(ctx,w,h,seed,seconds+i*3,p,i===1?1.35:1);
+    const family=familyFor(i);
+    if(family==="mandala")mandala(ctx,w,h,seed,seconds,p);
+    else if(family==="lotus")lotus(ctx,w,h,seed,seconds,p);
+    else light(ctx,w,h,seed,seconds,p);
+  };
   ctx.save();
-  background(ctx,w,h,p,t);
-  dust(ctx,w,h,plan.seed,t,p);
-  if(plan.family==="mandala")mandala(ctx,w,h,plan.seed,t,p);
-  else if(plan.family==="lotus")lotus(ctx,w,h,plan.seed,t,p);
-  else light(ctx,w,h,plan.seed,t,p);
+  draw(slot,local);
+  const dissolve=.7;
+  if(slot<3&&local>section-dissolve){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,Math.max(0,(local-(section-dissolve))/dissolve));
+    draw(slot+1,0);
+    ctx.restore();
+  }
   if(permittedLocalPortrait)portrait(ctx,w,h,permittedLocalPortrait,p);
   ctx.restore();
 }
