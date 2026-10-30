@@ -1,5 +1,8 @@
 # Holistic Video Studio · Cinematic Director / six-module delivery
 
+> **Актуальная единая программа · v4.0 от 30 октября 2026.** Здесь сохранена исходная история Cinematic Director v2/v3 и технические проекты G0–G6. Объединённый проверенный аудит, Free/Smart/Pro, восемь Free-мотивов, LTX v2/HeyGen/Kling, калькулятор, гибридный мастер, приватная доставка, матрица PR/QA и подробное задание для Codex находятся в [VIDEO_STUDIO_MASTER_PROGRAM_V4_20261030.md](./VIDEO_STUDIO_MASTER_PROGRAM_V4_20261030.md). Считайте v4 текущей программой исполнения; сведения «не реализовано» ниже относятся к датам исходных ревизий и требуют сверки exact HEAD. Paid flags не активируются этим документом.
+
+
 > **Версия документа v2.0:** объединены ранее реализованный бесплатный редактор и новая подробная инженерная программа в разделе ниже. Baseline: merged интеграционный PR #2534; исходный PR #2518 закрыт как superseded. Частные сохранения/платные AI jobs/8 готовых мастеров не считать завершёнными.
 **Product:** Holistic House · **Owner:** Andrey Litvinov · **2026-10-29**  
 **Source of truth:** [books #2397](https://github.com/andylitvinov-design/books/issues/2397); personal eight-session course [#2503](https://github.com/andylitvinov-design/books/issues/2503); Kling pilot [#2256](https://github.com/andylitvinov-design/books/issues/2256).  
