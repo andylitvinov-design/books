@@ -85,6 +85,56 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.ok(!request.website);
 }
 
+async function verifyCompactTantra(page, chooser, locale, name, submissions, selectedLabel) {
+  const form = chooser.locator('form');
+  await form.waitFor({state:"visible"});
+  const phone = form.locator('input[type="tel"]');
+  const consent = form.locator('input[type="checkbox"][required]');
+  const submit = form.locator('[data-contact-channel-submit="whatsapp"]');
+  assert.equal(await consent.isChecked(), false, name + ": consent starts unchecked");
+  assert.equal(await chooser.locator('a[data-contact-channel]').count(), 0,
+    name + ": no prepared messenger before registration");
+  await phone.fill("4165550123");
+  const before = submissions.length;
+  await submit.click();
+  assert.equal(submissions.length, before, name + ": phone cannot bypass consent");
+  await form.locator('[role="alert"]').waitFor({state:"visible"});
+  await consent.check();
+  const [popup] = await Promise.all([
+    page.waitForEvent("popup", {timeout:10000}),
+    submit.click(),
+  ]);
+  try {
+    const wa = chooser.locator('a[data-contact-channel="whatsapp"]');
+    const tg = chooser.locator('a[data-contact-channel="telegram"]');
+    await wa.waitFor({state:"visible",timeout:10000});
+    assert.equal(submissions.length, before + 1, name + ": one synthetic registration");
+    const request = submissions.at(-1);
+    assert.equal(request.locale, locale);
+    assert.equal(request.contactConsent, true);
+    assert.equal(request.contact.phone, "+14165550123");
+    assert.equal(request.contact.email, "");
+    assert.match(request.operationId, /^[a-f0-9-]{36}$/i);
+    assert.ok(request.sourcePath.startsWith("/" + locale + "/"));
+    assert.ok(request.serviceTitle && !request.website);
+    assert.ok(request.description.includes(selectedLabel), name + ": selected request reaches the synthetic enquiry");
+    const waDraft = draft(await wa.getAttribute("href"), "wa.me", "/14376066502");
+    const tgDraft = draft(await tg.getAttribute("href"), "t.me", "/AndyTherapist");
+    assert.equal(waDraft, tgDraft, name + ": both channels preserve the request");
+    assert.match(waDraft, /HH-CA5016DE79E4/);
+    assert.doesNotMatch(waDraft, /4165550123|qa-browser@example.test/);
+    for (const channel of [wa, tg]) {
+      await channel.scrollIntoViewIfNeeded();
+      const box = await channel.boundingBox();
+      assert.ok(box && box.height >= 44 && box.width >= 100 && box.x >= -1 &&
+        box.x + box.width <= page.viewportSize().width + 1, name + ": usable channel target");
+      await channel.click({trial:true,timeout:8000});
+    }
+    results.push({name, locale, viewportWidth:page.viewportSize().width,
+      channels:["WhatsApp","Telegram"], matchingDrafts:true, contactSubmitted:true, nonNavigating:true});
+  } finally { await popup.close().catch(() => {}); }
+}
+
 async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
   const trigger = chooser.locator("button[data-contact-order]");
   await trigger.scrollIntoViewIfNeeded();
@@ -166,6 +216,8 @@ async function runEngine(name, engine) {
           viewport:{width,height:844}, serviceWorkers:"block", reducedMotion:"reduce",
           locale: locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA",
         });
+        // Block the popup navigation before any request reaches a messenger.
+        await context.route(/^https:\/\/(?:wa\.me|t\.me)\//, route => route.abort());
         const page = await context.newPage();
         const submissions=[];
         await page.route("**/api/service-enquiries",async route=>{
@@ -199,8 +251,10 @@ async function runEngine(name, engine) {
                 "All original request types remain available through one chooser");
               for (const intent of intents) {
                 await select.selectOption(intent);
-                await verifyChooser(page,items.first(),locale,
-                  [name,locale,width,slug(item.path),intent].join("-"),width===390,submissions);
+                assert.equal(await select.inputValue(), intent, "Selected Tantra request is active");
+                const selectedLabel = await select.locator('option:checked').innerText();
+                await verifyCompactTantra(page,items.first(),locale,
+                  [name,locale,width,slug(item.path),intent].join("-"),submissions,selectedLabel);
               }
             } else {
               const indexes = count > 2 ? [0,count-1] : [0];
@@ -229,21 +283,28 @@ async function runEngine(name, engine) {
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
             const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
             await daoForm.waitFor({state:"visible",timeout:25000});
+            await page.waitForFunction(() => {
+              const input = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form] input[name="contact"]');
+              return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+            }, null, {timeout:30000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
+            assert.equal(await consent.isChecked(),false,"Dao consent starts unchecked");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
-            // The network request is intercepted above; synthetic consent
-            // validates the CRM handoff without touching a real lead/account.
             const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
+            const submit = daoForm.locator('button[data-compact-channel="whatsapp"]');
             await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
-            await consent.check();
             await submit.click();
-            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            assert.equal(submissions.length,previous,"Contact cannot bypass consent");
+            await daoForm.locator('[role="alert"]').waitFor({state:"visible"});
+            await consent.check();
+            const [popup] = await Promise.all([
+              page.waitForEvent("popup",{timeout:10000}), submit.click(),
+            ]);
+            try {
+              await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            } finally { await popup.close().catch(() => {}); }
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
             assert.equal(enquiry.locale,locale);
@@ -255,6 +316,10 @@ async function runEngine(name, engine) {
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
             const temple = page.locator("[data-temple-initiation-chooser]");
+            await page.waitForFunction(() => {
+              const button = document.querySelector('[data-temple-step="tradition"] button');
+              return Boolean(button && Object.keys(button).some(key => key.startsWith("__reactProps$")));
+            }, null, {timeout:30000});
             await temple.locator('[data-temple-step="tradition"] button').first().click();
             await temple.locator('[data-temple-step="deity"] button').first().click();
             await temple.locator('[data-temple-step="initiation"] button').first().click();
