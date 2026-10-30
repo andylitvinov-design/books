@@ -67,7 +67,24 @@ jobs:
             done < <(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
           fi
           if (( ${#files[@]} == 0 )); then
-            echo 'Workflow filter triggered but no workflow file remains; check deleted paths or run manually.' >&2
+            # A verified deletion-only migration has no current YAML to shellcheck.
+            # The previous step validated ALL remaining workflow definitions;
+            # BASE-trusted release-ready requires an explicit mapped replacement.
+            deleted_only=false
+            if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
+              saw_deletion=false
+              deleted_only=true
+              while IFS= read -r -d '' status && IFS= read -r -d '' filename; do
+                saw_deletion=true
+                [[ -n "$filename" && "$status" == D ]] || deleted_only=false
+              done < <(git diff --no-renames --name-status -z "$BASE_SHA" HEAD -- '.github/workflows/')
+              [[ "$saw_deletion" == true ]] || deleted_only=false
+            fi
+            if [[ "$deleted_only" == true ]]; then
+              echo 'Deletion-only YAML changes: all current definitions passed actionlint; BASE-trusted exact-head replacement validation remains mandatory.' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo 'Workflow filter triggered but no changed YAML is available; refusing unverified changes.' >&2
             exit 1
           fi
           printf '%s\n' "${files[@]}" >> "$GITHUB_STEP_SUMMARY"

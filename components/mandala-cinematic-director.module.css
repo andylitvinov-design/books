@@ -108,3 +108,26 @@
 .profileConsent input{flex:none;width:19px;height:19px;margin-top:1px;accent-color:#087e5e}
 .profileOptions .sheetChoices button{min-height:44px}
 .profileOptions .secondary{margin-top:0}
+
+/* Free visual-only brief: one field first, at most two contextual questions. */
+.ideaInput{display:grid;gap:7px;margin:0 0 12px;min-width:0}
+.ideaInput strong,.contextQuestions strong,.reference strong{font-size:13px;color:#20543d;font-weight:850}
+.ideaInput textarea{box-sizing:border-box;width:100%;min-height:77px;max-width:100%;
+ resize:vertical;padding:12px;line-height:1.5;font:inherit;font-size:15px;color:#23483b;
+ background:#fffef9;border:1px solid #c5d8c9;border-radius:13px}
+.ideaInput small{color:#6a8272;font-size:11px;line-height:1.45}
+.contextQuestions{display:grid;gap:10px;margin:0 0 12px;padding:10px;
+ border-radius:12px;background:#fffaf0;border:1px solid #e7dabc}
+.contextQuestions>div{display:grid;gap:7px}
+.contextQuestions .chips button{flex:1 1 105px;font-size:12px}
+.contextQuestions .chips button[aria-pressed=true]{background:#e4eddf}
+.reference{margin:10px 0 12px;border:1px solid #d9e5d9;background:#f7faf4;
+ padding:12px;border-radius:13px;min-width:0}
+.reference p{font-size:12px;line-height:1.5;color:#3e6651;margin:9px 0}
+.reference summary{font-size:11px;line-height:1.5;color:#087e5e;cursor:pointer;
+ min-height:44px;display:flex;align-items:center}
+.reference ol{padding-left:22px;margin:0}
+.reference li{padding:8px 0;border-bottom:1px solid #dfebdf}
+.reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
+ color:#536c5c}
+.reference li span+span{color:#788c7c;margin-top:3px}

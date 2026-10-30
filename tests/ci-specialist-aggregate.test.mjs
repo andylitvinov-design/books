@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, expectedWorkflows, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -116,6 +116,7 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 90, 'Unexpectedly empty/reduced workflow catalog');
+  assert.ok(names.length <= 93, 'Workflow budget exceeded: consolidate existing checks before adding new YAML; change this budget only in an explicitly reviewed CI architecture PR');
   for(const name of names) {
     const file='.github/workflows/'+name;
     assert.doesNotThrow(()=>parsePrTrigger(readFileSync(file,'utf8'),file),name);
@@ -131,4 +132,82 @@ test('unexpected real PR failures and unassociated jobless PR runs are never ign
   const orphans=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),missingAssociation]});
   assert.deepEqual(orphans.orphanFailures,['753:failure']);
   assert.deepEqual(inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({path:'.github/workflows/hh-pr-core-release.yml',status:'in_progress',conclusion:null})]}).observedUnrelated,[]);
+});
+
+
+test('reviewed specialist migration delegates only when the BASE-approved replacement already runs unchanged', async () => {
+  const old='.github/workflows/hh-crm-event-channels.yml';
+  const replacement='.github/workflows/hh-event-referral-contract.yml';
+  const oldYaml="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - 'lib/crm/marketing.js'\n      - '.github/workflows/hh-crm-event-channels.yml'\n";
+  const newYaml="on:\n  pull_request:\n    paths:\n      - 'lib/crm/marketing.js'\n      - '.github/workflows/hh-crm-event-channels.yml'\n";
+  const base=new Map([[old,oldYaml],[replacement,newYaml]]);
+  const current=new Map([[replacement,newYaml]]);
+  const changed=['.github/workflows/hh-crm-event-channels.yml'];
+  const baselineExpected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(baselineExpected,[old,replacement]);
+  const prepared=resolveExpectedSpecialists({base,current,changed,expected:baselineExpected});
+  assert.deepEqual(prepared.expected,[replacement]);
+  assert.deepEqual(prepared.delegated,[{retired:old,replacement}]);
+  assert.deepEqual(resolveExpectedSpecialists({base,current:new Map(base),changed,expected:baselineExpected}).expected,[old,replacement]);
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const replacementRun=run({id:303,path:replacement});
+  const api={
+    pr:async()=>pr(),changed:async()=>changed.map(filename=>({filename})),
+    runs:async()=>[replacementRun],
+    jobs:async()=>[{name:'tracked-handoff-regression',status:'completed',conclusion:'success'}],
+  };
+  assert.deepEqual((await verify(api,ctx,{base,current},{maxWaitMs:0})).delegated,prepared.delegated);
+  api.jobs=async()=>[];
+  await assert.rejects(()=>verify(api,ctx,{base,current},{maxWaitMs:0}),/ZERO_JOB/);
+  api.jobs=async()=>[{name:'tracked-handoff-regression',status:'completed',conclusion:'failure'}];
+  await assert.rejects(()=>verify(api,ctx,{base,current},{maxWaitMs:0}),/UNSUCCESSFUL/);
+  api.jobs=async()=>[{name:'tracked-handoff-regression',status:'completed',conclusion:'success'}];
+  api.runs=async()=>[replacementRun,{...replacementRun,id:304,path:old,conclusion:'failure'}];
+  await assert.rejects(()=>verify(api,ctx,{base,current},{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  for (const invalid of [
+    new Map([[replacement,newYaml+'\n# altered in PR']]),
+    new Map([[replacement,'on:\n  pull_request:\n    paths:\n      - lib/unrelated/**\n']]),
+    new Map(),
+  ]) assert.throws(()=>resolveExpectedSpecialists({base,current:invalid,changed,expected:baselineExpected}),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
+  const wrongHead=run({id:303,path:replacement,head_sha:'c'.repeat(40)});
+  api.runs=async()=>[wrongHead];
+  await assert.rejects(()=>verify(api,ctx,{base,current},{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('approved migration destinations contain the exact retired scope and the original evidence tests',()=>{
+  const mappings=[
+    {
+      from:'hh-crm-event-channels.yml',into:'hh-event-referral-contract.yml',
+      patterns:["'lib/crm/marketing.js'","'components/app/crm-marketing.jsx'","'lib/organic-event-referrals.js'","'supabase/migrations/*hh_crm_event_channel_sources*.sql'","'tests/crm-event-channel-attribution.test.mjs'","'.github/workflows/hh-crm-event-channels.yml'"],
+      contracts:['tests/crm-event-channel-attribution.test.mjs','tests/crm-marketing.test.mjs','tests/organic-event-referrals.test.mjs','tests/gbp-v3-toronto.test.mjs','npx tsc --noEmit'],
+    },{
+      from:'psychometric-research-catalogue.yml',into:'hh-assessment-quality.yml',
+      patterns:["'data/assessments/research-directory-2026/**'","'lib/assessments/research-directory-2026.js'","'lib/assessments/psychometric-validity-2026.js'","'components/app/research-directory.*'","'components/app/test-explorer.jsx'","'tests/psychometric-validity-directory.test.mjs'","'.github/workflows/psychometric-research-catalogue.yml'"],
+      contracts:['tests/psychometric-validity-directory.test.mjs','tests/public-test-match-paging.test.mjs','tests/assessment-methodology.test.mjs','tests/test-kinds-catalog-audit.test.mjs','scripts/audit-psychometric-quality-2026.mjs','researchEditionReferences','nonOverlappingResearchReferences'],
+    
+    },{
+      from:'hh-benchmark-free-test-pilot.yml',into:'hh-benchmark-program.yml',
+      patterns:['"components/free-entry-landing.tsx"','"components/free-entry-landing.module.css"','"tests/benchmark-free-tests-first-pilot.test.mjs"','".github/workflows/hh-benchmark-free-test-pilot.yml"'],
+      contracts:['tests/benchmark-free-tests-first-pilot.test.mjs','tests/free-review-conversion.test.mjs','tests/benchmark-reference-matrix.test.mjs','scripts/benchmarking/plan.mjs'],
+    },{
+      from:'hh-portrait-sectors.yml',into:'hh-profile-axis-matching.yml',
+      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/app-workspace.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
+      contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
+    },{
+      from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
+      patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
+    },
+  ];
+  for(const item of mappings) {
+    const successor=readFileSync('.github/workflows/'+item.into,'utf8');
+    const trigger=parsePrTrigger(successor,item.into);
+    assert.ok(trigger);
+    for(const pattern of item.patterns) assert.ok(successor.includes('      - '+pattern), item.into+' missing '+pattern);
+    for(const test of item.contracts) assert.ok(successor.includes(test),item.into+' missing '+test);
+    if (['hh-crm-event-channels.yml','psychometric-research-catalogue.yml','hh-benchmark-free-test-pilot.yml'].includes(item.from)) {
+      assert.ok(successor.includes('push:'),item.into+' must preserve original production push verification');
+    }
+    assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
+  }
 });
