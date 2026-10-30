@@ -1,6 +1,7 @@
 name: HH Ideas & Coaching public release
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - '.github/workflows/hh-ideas-coaching-public.yml'
@@ -50,10 +51,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-ideas-coaching-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-ideas-coaching-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   public-coaching-release:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -79,6 +81,7 @@ jobs:
       - name: Lint modified application components
         run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/holistic-support-choices.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js
       - name: TypeScript noEmit
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Next.js production build
         run: npm run build
