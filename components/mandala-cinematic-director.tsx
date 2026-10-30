@@ -4,6 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
+import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
@@ -26,6 +27,16 @@ const copy={
   en:{title:"Cinematic director",tag:"NEW · LOCAL & PRIVATE",
     intro:"Describe the atmosphere and change you would like to explore. Get four connected scenes, not a random AI clip.",
     open:"Plan my film",close:"Close director",edit:"Edit",done:"Done",back:"Back",
+    visualIdea:"What would you like to see happen on screen?",
+    visualIdeaPlaceholder:"For example: A white eagle flies over mountains and becomes a constellation of light",
+    visualIdeaHelp:"Optional. This stays on your device. Only known fictional visual elements appear in the safe reference pack.",
+    subjectQuestion:"What should appear on screen?",subjectChoices:["An eagle","A wolf","Nature only"],
+    actionQuestion:"What should happen?",actionChoices:["Fly","Transform","Travel"],
+    referenceTitle:"Style and reference plan (not generated AI footage)",
+    referenceHint:"These are text descriptions of suggested keyframes, not generated pictures.",
+    newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
+    supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
+    understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",
     theme:"Topic",difficulty:"Main challenge",goal:"Desired change",profile:"My profile",style:"Visual style",avoid:"Avoid these images",
     profileEmpty:"Not connected",profileReady:"Verified test suggestions available",
     profileConsent:"I allow the site to read my saved test results in this browser to suggest a video theme. The results are not shared with video AI services, analytics or CRM.",
@@ -47,6 +58,16 @@ const copy={
   ru:{title:"Кинорежиссёр",tag:"НОВОЕ · ЛОКАЛЬНО И ПРИВАТНО",
     intro:"Опишите желаемые изменения и атмосферу. Получите четыре связанных сюжета вместо случайных кадров.",
     open:"Спланировать фильм",close:"Закрыть режиссёра",edit:"Изменить",done:"Готово",back:"Назад",
+    visualIdea:"Что вы хотите увидеть в кадре?",
+    visualIdeaPlaceholder:"Например: Белый орёл летит над горами и превращается в созвездие",
+    visualIdeaHelp:"Необязательное поле. Текст остаётся на устройстве; в безопасный план попадают только распознанные вымышленные образы.",
+    subjectQuestion:"Кто или что в кадре?",subjectChoices:["Орёл","Волк","Только природа"],
+    actionQuestion:"Что происходит?",actionChoices:["Летит","Превращается","Путешествует"],
+    referenceTitle:"План стиля и референсов (не готовое AI-видео)",
+    referenceHint:"Это текстовые описания начальных и конечных кадров, а не созданные AI-картинки.",
+    newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
+    supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
+    understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",
     theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",profile:"Мой профиль",style:"Визуальный стиль",avoid:"Нежелательные образы",
     profileEmpty:"Не подключён",profileReady:"Есть рекомендации по проверенным тестам",
     profileConsent:"Я разрешаю прочитать мои сохранённые тесты в браузере для подбора темы видео. Результаты не передаются AI-видеосервисам, аналитике или CRM.",
@@ -68,6 +89,16 @@ const copy={
   es:{title:"Director cinematográfico",tag:"NUEVO · LOCAL Y PRIVADO",
     intro:"Describe los cambios y el ambiente que deseas explorar. Crea cuatro escenas conectadas.",
     open:"Planificar mi película",close:"Cerrar director",edit:"Editar",done:"Listo",back:"Volver",
+    visualIdea:"¿Qué quieres ver en la pantalla?",
+    visualIdeaPlaceholder:"Por ejemplo: Un águila blanca vuela sobre las montañas y se transforma en una constelación",
+    visualIdeaHelp:"Opcional. El texto permanece en tu dispositivo; el plan seguro solo incluye elementos ficticios reconocidos.",
+    subjectQuestion:"¿Quién o qué aparece?",subjectChoices:["Un águila","Un lobo","Solo naturaleza"],
+    actionQuestion:"¿Qué sucede?",actionChoices:["Vuela","Se transforma","Viaja"],
+    referenceTitle:"Plan de estilo y referencias (no vídeo IA generado)",
+    referenceHint:"Son descripciones de fotogramas iniciales y finales, no imágenes creadas por IA.",
+    newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
+    supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
+    understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",
     theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",profile:"Mi perfil",style:"Estilo visual",avoid:"Evitar estas imágenes",
     profileEmpty:"Sin conectar",profileReady:"Hay sugerencias de tests verificados",
     profileConsent:"Autorizo consultar mis tests guardados en este navegador para sugerir temas del vídeo. Los resultados no se envían a IA de vídeo, analítica ni CRM.",
@@ -102,6 +133,9 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   const [topic,setTopic]=useState<VideoTheme>(theme);
   const [difficulty,setDifficulty]=useState("");
   const [goal,setGoal]=useState("");
+  const [visualIdea,setVisualIdea]=useState("");
+  const [subjectChoice,setSubjectChoice]=useState("");
+  const [actionChoice,setActionChoice]=useState("");
   const [avoid,setAvoid]=useState("");
   const [style,setStyle]=useState<StyleId>("warm");
   const [aspect,setAspect]=useState<"portrait"|"square"|"landscape">("landscape");
@@ -121,6 +155,9 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
   }),[locale,topic,style,aspect,seconds,goal,difficulty,avoid,therapyMode]);
   const plan:CinematicStoryboard=customPlan && customPlan.requiresPractitionerReview===therapyMode ? customPlan : basePlan;
   const showStoryboard=generated && generatedMode===therapyMode;
+  const referencePack=useMemo(()=>compileCinematicReferencePack({
+    visualIdea,plan,answers:{subjectChoice,actionChoice},
+  }),[visualIdea,plan,subjectChoice,actionChoice]);
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -210,7 +247,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     setApplied(true);
   };
   const save=()=>{
-    const safeManifest={...manifest,shots:plan.shots.map(s=>({title:s.title,camera:s.camera,
+    const safeManifest={...manifest,creativeReferencePack:referencePack,
+      shots:plan.shots.map(s=>({title:s.title,camera:s.camera,
       visualCue:s.visualCue,providerPrompt:s.providerPrompt,...manifest.clips[s.number-1]}))};
     const url=URL.createObjectURL(new Blob([JSON.stringify(safeManifest,null,2)+"\n"],
       {type:"application/json"}));
@@ -230,6 +268,30 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
       </button>
     </div>
     {expanded?<div id="cinematic-director-content" className={css.body}>
+      <label className={css.ideaInput} data-director-visual-idea>
+        <strong>{t.visualIdea}</strong>
+        <textarea rows={3} maxLength={320} value={visualIdea} disabled={disabled}
+          placeholder={t.visualIdeaPlaceholder}
+          onChange={event=>{setVisualIdea(event.target.value);invalidate();}}/>
+        <small>{t.visualIdeaHelp}</small>
+      </label>
+      {visualIdea.trim()&&referencePack.contextualQuestions.length?
+        <div className={css.contextQuestions} data-director-contextual-questions>
+          {referencePack.contextualQuestions.map(kind=><div key={kind}>
+            <strong>{kind==="subject"?t.subjectQuestion:t.actionQuestion}</strong>
+            <div className={css.chips}>
+              {(kind==="subject"?["eagle","wolf","landscape"]:["flight","metamorphosis","journey"]).map((id,i)=>
+                <button type="button" key={id} disabled={disabled}
+                  aria-pressed={(kind==="subject"?referencePack.recognized.subject:actionChoice)===id}
+                  onClick={()=>{
+                    if(kind==="subject")setSubjectChoice(id);else setActionChoice(id);
+                    invalidate();
+                  }}>
+                  {kind==="subject"?t.subjectChoices[i]:t.actionChoices[i]}
+                </button>)}
+            </div>
+          </div>)}
+        </div>:null}
       <div className={css.fields}>
         {FIELDS.map(field=><button type="button" key={field} className={css.field}
           data-director-field={field} disabled={disabled} onClick={()=>setEditing(field)}>
@@ -290,11 +352,25 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
             </label>
             <details><summary>{t.safe}</summary><p>{shot.providerPrompt}</p></details></div>
         </article>)}</div>
+        <div className={css.reference} data-director-reference-pack>
+          <strong>{t.referenceTitle}</strong>
+          {referencePack.creativeSummary?<p data-director-recognized-visuals>
+            {t.understood}: {referencePack.creativeSummary}</p>:null}
+          {referencePack.contextualQuestions.length?<p>{t.needsMore}</p>:null}
+          <p data-director-new-ai-status>
+            {referencePack.requestedNovelVideo&&!referencePack.newAiVideoAvailable?t.newAiRequired:t.supportedLocal}</p>
+          <details><summary>{t.referenceHint}</summary>
+            <ol>{referencePack.shots.map((shot:{shotId:string;reference:{start:string;end:string}})=><li key={shot.shotId}>
+              <span>{shot.reference.start}</span>
+              <span>{shot.reference.end}</span>
+            </li>)}</ol>
+          </details>
+        </div>
         <button type="button" className={css.primary} data-director-apply-montage
           disabled={disabled} onClick={apply}><Check size={18} aria-hidden="true"/>{t.local}</button>
         <p className={css.helper}>{applied?t.applied:t.localHint}</p>
         <div className={css.secondary}>
-          <button type="button" onClick={save}><Download size={16} aria-hidden="true"/>{t.download}</button>
+          <button type="button" data-director-download-packet onClick={save}><Download size={16} aria-hidden="true"/>{t.download}</button>
           <Link prefetch={false} href={"/"+locale+"/app/videos"}>{t.myVideos}<ArrowRight size={14} aria-hidden="true"/></Link>
         </div><p className={css.helper}>{t.myVideosHint}</p>
         <div className={css.quote} data-director-provider-quote><strong>{t.quote}</strong>
@@ -350,3 +426,4 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,onAp
     </div>:null}
   </section>;
 }
+
