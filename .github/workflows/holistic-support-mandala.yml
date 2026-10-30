@@ -51,8 +51,8 @@ concurrency:
   group: holistic-support-mandala-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
+  # No expensive E2E on non-mergeable Draft; all 10 cases run again when Ready.
   focused-unit-types-build:
-    # No expensive E2E on non-mergeable Draft; all 10 cases run again when Ready.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
