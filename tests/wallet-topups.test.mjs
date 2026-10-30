@@ -52,6 +52,13 @@ test('admin wallet reviews require both legacy admin and verified owner identity
   for (const contract of ['receiptDigest', 'reviewerId', 'receiptReference(body.transactionId)',
     'squareApiRequest', 'verifiedSquarePayment', 'for update', 'wallet_entries',
     'WALLET_IDEMPOTENCY_CONFLICT']) assert.ok(service.includes(contract))
+  // An already reviewed or credited PayPal top-up must not create a new
+  // payable link when its original operation ID is retried.
+  assert.match(service, /created.status === 'pending' \? trustedPayPalLink\(created\) : null/)
+  // Signed Square webhooks that arrive before order persistence return 503 for
+  // provider redelivery, rather than silently losing a paid wallet event.
+  assert.match(service, /WALLET_PAYMENT_RECONCILIATION_REQUIRED/)
+  assert.match(service, /\^HH wallet/)
 })
 test('private DB schema prevents unauthenticated credits and duplicate receipt/ledger events', () => {
   const sql = file('supabase/migrations/20261030045723_hh_wallet_cad_topups.sql')
