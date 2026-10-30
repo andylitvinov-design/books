@@ -67,7 +67,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
-test('one unconditional fail-closed release-ready gate protects core code validation', () => {
+test('Ready-only fail-closed release-ready gate protects core code validation', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  merge_group:/m);
@@ -427,7 +427,7 @@ test('core Draft staging never bypasses Ready, manual, or merge-queue acceptance
   const source = workflow('hh-pr-core-release.yml');
   const eventBlock = source.split('  pull_request:\n')[1]?.split('  merge_group:')[0];
   assert.ok(eventBlock, 'core must retain the production PR trigger');
-  assert.match(eventBlock, /branches: \['codex\\/public-book-library'\]/);
+  assert.match(eventBlock, /branches: \['codex\/public-book-library'\]/);
   for (const event of ['opened', 'synchronize', 'reopened', 'ready_for_review', 'converted_to_draft']) {
     assert.ok(eventBlock.includes(event), 'missing Draft/Ready transition: ' + event);
   }
