@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {ownerVideoMetadataValue,ownerVideoMetadataEditButtons,
- ownerVideoMetadataMenuButtons} from '../lib/practitioners/owner-telegram-video-metadata.mjs'
+ ownerVideoMetadataMenuButtons,ownerVideoMetadataReplyPrompt} from '../lib/practitioners/owner-telegram-video-metadata.mjs'
 import {parseOwnerVideoUpdate} from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {ownerRuSnippetUpdateBody,ownerRuYoutubeMetadata,
  changeOwnerRuYoutubeMetadata} from '../lib/practitioners/owner-telegram-video-visibility.mjs'
@@ -24,6 +24,16 @@ function callback(data){
      from:{is_bot:true,username:'Andydotbot'}}}}
 }
 const parsed=update=>parseOwnerVideoUpdate(update,{botUsername:'Andydotbot'})
+
+function directReply(value,field,{jobId=JOB,username='Andydotbot',chatType='private'}={}){
+ const update=message(value,{id:123456,type:chatType})
+ update.message.reply_to_message={
+   message_id:20,chat:{id:123456,type:'private'},
+   from:{is_bot:true,username},
+   text:'Введите текст\n[hh-video:'+field+':'+jobId+']'
+ }
+ return update
+}
 test('owner-only Dot parses title and multiline description without accepting group messages',()=>{
  assert.equal(parsed(message('/video_title Новый заголовок'))?.metadataValue,'Новый заголовок')
  assert.deepEqual(
@@ -38,6 +48,33 @@ test('owner-only Dot parses title and multiline description without accepting gr
  assert.equal(parsed(callback('hh-video:me:'+JOB))?.action,'metadata_menu')
  assert.equal(parsed(callback('hh-video:mt:'+JOB))?.metadataField,'title')
  assert.equal(parsed(callback('hh-video:md:'+JOB))?.metadataField,'description')
+})
+
+test('ForceReply accepts plain title and multiline description only from the current owner bot',()=>{
+ const titlePrompt=ownerVideoMetadataReplyPrompt(JOB,'title')
+ assert.equal(titlePrompt.reply_markup.force_reply,true)
+ assert.match(titlePrompt.text,/\[hh-video:title:/)
+ const descriptionPrompt=ownerVideoMetadataReplyPrompt(JOB,'description')
+ assert.equal(descriptionPrompt.reply_markup.force_reply,true)
+ assert.match(descriptionPrompt.text,/\[hh-video:description:/)
+ const title=parsed(directReply('Моя персональная практика','title'))
+ assert.equal(title?.action,'metadata_set')
+ assert.equal(title?.jobId,JOB)
+ assert.equal(title?.metadataField,'title')
+ assert.equal(title?.metadataValue,'Моя персональная практика')
+ const desc=parsed(directReply('Первая строка\nВторая строка','description'))
+ assert.equal(desc?.metadataValue,'Первая строка\nВторая строка')
+ assert.equal(parsed(directReply('-','description'))?.metadataValue,'-')
+ assert.equal(parsed(directReply('Wrong bot','title',{username:'Otherbot'})),null)
+ assert.equal(parsed(directReply('Group','title',{chatType:'group'})),null)
+ assert.equal(parsed(directReply('Malformed','title',{jobId:'bad-job'})),null)
+ assert.equal(parsed(directReply('/video_visibility','title'))?.action,'visibility_menu')
+ assert.throws(()=>ownerVideoMetadataReplyPrompt('invalid','title'),/INVALID_METADATA_REPLY/)
+ const service=read('lib/practitioners/owner-telegram-video-metadata-service.js')
+ assert.match(service,/jobId&&jobId!==row\.job_id/)
+ const webhook=read('lib/practitioners/owner-telegram-video-service.js')
+ assert.match(webhook,/jobId:event\.jobId\|\|null/)
+ assert.match(webhook,/ownerVideoMetadataReplyPrompt\(row\.job_id/)
 })
 test('metadata is valid, bound to 56-bit nonce and two separate callback taps',()=>{
  assert.equal(ownerVideoMetadataValue('title','  До встречи  '),'До встречи')
