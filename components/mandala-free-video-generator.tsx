@@ -73,11 +73,25 @@ export function MandalaFreeVideoGenerator({
   const [palette,setPalette]=useState<Palette>("auto");
   const [motion,setMotion]=useState<Motion>("auto");
   const [variation,setVariation]=useState(0);
+  // Default to the gentler rendering until the device preference is known.
+  const [reducedMotion,setReducedMotion]=useState(true);
   const [playing,setPlaying]=useState(false);
   const previewRef=useRef<HTMLCanvasElement|null>(null);
   const plan=useMemo(()=>buildFreeVideoPlan({
-    description,theme,locale,family,palette,motion,variation,
-  }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation]);
+    description,theme,locale,family,palette,motion,variation,reducedMotion,
+  }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation,reducedMotion]);
+  useEffect(()=>{
+    if(typeof window.matchMedia!=="function")return;
+    const preference=window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update=()=>setReducedMotion(preference.matches);
+    update();
+    if(typeof preference.addEventListener==="function"){
+      preference.addEventListener("change",update);
+      return()=>preference.removeEventListener("change",update);
+    }
+    preference.addListener(update);
+    return()=>preference.removeListener(update);
+  },[]);
   useEffect(()=>{onPlanChange(plan);},[onPlanChange,plan]);
   const size=aspect==="portrait"?[252,448]:aspect==="square"?[352,352]:[480,270];
   useEffect(()=>{

@@ -10,6 +10,7 @@ export type FreeVideoPlan={
   family:"mandala"|"light"|"lotus"|"temple"|"tree"|"cosmic"|"light_tunnel"|"flowering_garden";
   palette:"gold"|"ocean"|"violet";
   motion:"calm"|"flow"|"dynamic";
+  reducedMotion?:boolean;
   seed:number;variation:number;
   hasRecognizedMotif:boolean;
 };
@@ -190,7 +191,7 @@ export function paintFreeVideoFrame(
   const w=ctx.canvas.width,h=ctx.canvas.height;
   if(!w||!h)return;
   const p=PALETTES[plan.palette];
-  const multiplier=plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
+  const multiplier=plan.reducedMotion ? 0.18 : plan.motion==="calm" ? 0.48 : plan.motion==="dynamic" ? 1.55 : 1;
   const t=Math.max(0,Number.isFinite(time)?time:0)*multiplier;
   ctx.save();
   background(ctx,w,h,p,t);

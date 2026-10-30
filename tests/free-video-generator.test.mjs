@@ -78,6 +78,15 @@ test("another variation changes reproducible geometry without any provider or PI
   assert.throws(()=>buildFreeVideoPlan({...args,family:"actor"}),/invalid_free_video_options/);
   assert.ok(Object.isFrozen(a));
 });
+test("reduced-motion preference is preserved in the shared preview and export plan",()=>{
+  const options={locale:"en",theme:"energy",family:"temple",motion:"dynamic",variation:2};
+  const normal=buildFreeVideoPlan(options), reduced=buildFreeVideoPlan({...options,reducedMotion:true});
+  assert.equal(normal.reducedMotion,false);
+  assert.equal(reduced.reducedMotion,true);
+  assert.equal(reduced.seed,normal.seed,'motion preference must not change the visual identity');
+  assert.equal(reduced.motion,'dynamic','the user choice remains available when preference changes');
+  assert.throws(()=>buildFreeVideoPlan({...options,reducedMotion:'yes'}),/invalid_free_video_options/);
+});
 test("visual descriptions are bounded and never echoed into exported plan",()=>{
   assert.equal(cleanVisualDescription("hello\nworld"),"hello world");
   const secret="PRIVATE_TEST_PERSONAL_ID_123";
