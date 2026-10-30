@@ -99,6 +99,11 @@ test('expanded ES menu acceptance matches current seven quick destinations and f
   assert.match(browser,/await click\(accountLink\)/);
   assert.match(browser,/expect\(page\)\.toHaveURL\(origin\+'\/en\/app\/portrait'\)/);
   assert.doesNotMatch(browser,/toHaveAttribute\('href','\/en\/app'\)/);
+  // The genuine signed-out portrait is CabinetGuestOverview, not old hh-entry.
+  assert.ok(browser.includes('data-cabinet-guest-overview="true"'));
+  assert.ok(browser.includes('Discover where you are. Grow into what comes next.'));
+  assert.ok(browser.includes('Your personal tests and reports stay private.'));
+  assert.ok(browser.includes("'Open the previous access page'"));
 });
 
 test('Spanish Cabinet entry fails closed on unknown bootstrap states', () => {

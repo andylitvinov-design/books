@@ -354,16 +354,24 @@ try {
         await expect(accountLink).toHaveAttribute('href', entry.href);
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
-        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
-        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        // The signed-out /en/app/portrait uses CabinetGuestOverview, not the
+        // legacy .hh-entry of course/deep-link screens. Verify the real public
+        // guest flow, privacy and exact destinations after following the dialog.
+        const guestOverview = page.locator('main.hh-app [data-cabinet-guest-overview="true"]');
+        await expect(guestOverview).toBeVisible();
+        await expect(guestOverview.getByRole('heading',{name:'Discover where you are. Grow into what comes next.',level:1,exact:true})).toBeVisible();
+        await expect(guestOverview.getByRole('link',{name:'Explore free tests',exact:true})).toHaveAttribute('href','/en/client/tests');
+        await expect(guestOverview.getByText('Your personal tests and reports stay private. You choose what to submit for public publication.',{exact:true})).toBeVisible();
+        await expect(guestOverview.getByRole('link',{name:'Open the previous access page',exact:true})).toHaveAttribute('href','/en/client');
         await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
-        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(guestOverview).toBeVisible();
+        await expect(guestOverview.getByRole('heading',{name:'Discover where you are. Grow into what comes next.',level:1,exact:true})).toBeVisible();
+        await expect(guestOverview.getByRole('link',{name:'Open the previous access page',exact:true})).toHaveAttribute('href','/en/client');
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
