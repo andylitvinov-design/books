@@ -760,7 +760,7 @@ const quickVideoCopy = {
   ru: {
     quickThemes:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Смыслы",health:"Здоровье"},
     title:"Создать видео",sub:"Персональное видео с нужной атмосферой, образами и звуком",
-    smart:"Умный подбор",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
+    smart:"Подобрать готовое видео",theme:"1. Тема и цель",myGoals:"Выбрать из своих целей",
     wish:"Что я хочу получить или изменить?",image:"2. Моё изображение",
     imageHelp:"Добавьте своё фото или выберите готовый сюжет (по желанию)",
     pick:"Загрузить фото",scene:"Выбрать образ",photoOn:"Вставить моё фото в видео",
@@ -789,7 +789,7 @@ const quickVideoCopy = {
   en: {
     quickThemes:{energy:"Energy",money:"Money",relationships:"Relationships",goals:"Goals",life:"Meaning",health:"Wellbeing"},
     title:"Create video",sub:"Personal video with the right atmosphere, imagery and sound",
-    smart:"Smart match",theme:"1. Theme & goal",myGoals:"Choose from my goals",
+    smart:"Find existing footage",theme:"1. Theme & goal",myGoals:"Choose from my goals",
     wish:"What would I like to gain or change?",image:"2. My imagery",
     imageHelp:"Add your photo or pick a ready-made scene (optional)",
     pick:"Upload photo",scene:"Choose imagery",photoOn:"Include my photo in video",
@@ -818,7 +818,7 @@ const quickVideoCopy = {
   es: {
     quickThemes:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Objetivos",life:"Sentido",health:"Bienestar"},
     title:"Crear vídeo",sub:"Vídeo personal con imágenes, ambiente y sonido adecuados",
-    smart:"Selección inteligente",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
+    smart:"Elegir vídeos existentes",theme:"1. Tema y objetivo",myGoals:"Elegir mis objetivos",
     wish:"¿Qué me gustaría conseguir o cambiar?",image:"2. Mis imágenes",
     imageHelp:"Añade tu foto o elige una escena (opcional)",
     pick:"Subir foto",scene:"Elegir imagen",photoOn:"Incluir mi foto en el vídeo",
@@ -1648,11 +1648,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   return (
     <section className={videoStyles.studio} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode} lang={locale} aria-label={ui.title}>
-      {effectiveFilm ? <video
-        key={effectiveFilm.src} ref={premiumVideoRef}
-        src={effectiveFilm.src} poster={effectiveFilm.poster}
+      {activeFilm && creationMode!=="generated" ? <video
+        key={activeFilm.src} ref={premiumVideoRef}
+        src={activeFilm.src} poster={activeFilm.poster}
         muted playsInline loop preload="auto"
-        data-mandala-master-mp4={effectiveFilm.src}
+        data-mandala-master-mp4={activeFilm.src}
         onLoadedData={event=>{
           if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
             setPremiumReady(true);
