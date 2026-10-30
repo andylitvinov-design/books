@@ -35,7 +35,7 @@ const copy = {
     programTitle:"Программа из 8 практик — предварительный план",
     programInfo:"Это образовательный план. Видео и аудио для этих 8 занятий ещё не созданы. Для индивидуальной психотерапии нужна проверка специалиста.",
     programFocus:"Выберите тему",programFocusItems:{stress:"Стресс и восстановление",relationships:"Отношения и границы",self_worth:"Самоподдержка и самооценка",meaning:"Смыслы и направление"},
-    programTime:"Длительность одной практики",programSafety:"Я выбираю мягкий образовательный формат и могу остановить его в любой момент. Мне не требуется экстренная помощь.",
+    programTime:"Предпочитаемая длительность практики (не готового видео)",programSafety:"Я выбираю мягкий образовательный формат и могу остановить его в любой момент. Мне не требуется экстренная помощь.",
     programImagery:"Добавить добровольные ресурсные образы",programStart:"Подготовить план",
     programError:"Не удалось сформировать план. Проверьте вход в кабинет или выберите другую тему.",
     programReady:"План готов для ознакомления, не опубликован. Медиафайлы не создавались.",programEmpty:"Выберите тему и подтвердите готовность.",
@@ -59,7 +59,7 @@ const copy = {
     programTitle:"Eight-practice program — preview outline",
     programInfo:"Educational outline only. None of the eight video/audio lessons has been produced. Individual psychotherapy requires practitioner review.",
     programFocus:"Choose a topic",programFocusItems:{stress:"Stress and recovery",relationships:"Relationships and boundaries",self_worth:"Self-support and confidence",meaning:"Meaning and direction"},
-    programTime:"Length of each practice",programSafety:"I choose a gentle educational outline, can stop anytime, and do not need immediate emergency help.",
+    programTime:"Preferred practice length (not a finished video)",programSafety:"I choose a gentle educational outline, can stop anytime, and do not need immediate emergency help.",
     programImagery:"Allow optional resource imagery",programStart:"Create outline",
     programError:"Could not prepare the outline. Check your account or choose another topic.",
     programReady:"Draft outline, not published. No media was generated.",programEmpty:"Choose a topic and confirm readiness.",
@@ -83,7 +83,7 @@ const copy = {
     programTitle:"Programa de ocho prácticas — borrador",
     programInfo:"Es un esquema educativo. No se han creado ocho vídeos o audios. La psicoterapia individual requiere revisión profesional.",
     programFocus:"Elige un tema",programFocusItems:{stress:"Estrés y recuperación",relationships:"Relaciones y límites",self_worth:"Autoapoyo y confianza",meaning:"Sentido y dirección"},
-    programTime:"Duración de cada práctica",programSafety:"Elijo un esquema educativo suave, puedo detenerlo cuando quiera y no necesito ayuda de emergencia inmediata.",
+    programTime:"Duración deseada de la práctica (no del vídeo)",programSafety:"Elijo un esquema educativo suave, puedo detenerlo cuando quiera y no necesito ayuda de emergencia inmediata.",
     programImagery:"Permitir imágenes de recursos opcionales",programStart:"Preparar esquema",
     programError:"No se pudo crear el esquema. Comprueba tu cuenta o elige otro tema.",
     programReady:"Esquema no publicado. No se ha generado ningún vídeo.",programEmpty:"Elige un tema y confirma tu disposición.",
@@ -114,7 +114,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
   const [busy,setBusy]=useState(false);
   const controller=useRef<AbortController|null>(null);
   const [previewFocus,setPreviewFocus]=useState<PreviewFocus>("");
-  const [previewMinutes,setPreviewMinutes]=useState<5|8|12|20>(12);
+  const [previewMinutes,setPreviewMinutes]=useState<8|12|20>(12);
   const [previewReady,setPreviewReady]=useState(false);
   const [previewImagery,setPreviewImagery]=useState(false);
   const [outline,setOutline]=useState<Outline|null>(null);
@@ -284,7 +284,7 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
         <label className={styles.mode}>{t.programTime}
           <select value={previewMinutes}
             onChange={e=>setPreviewMinutes(Number(e.target.value) as typeof previewMinutes)}>
-            {[5,8,12,20].map(n=><option key={n} value={n}>{n} min</option>)}
+            {[8,12,20].map(n=><option key={n} value={n}>{n} min</option>)}
           </select>
         </label>
         <label className={styles.consent}>
