@@ -43,3 +43,30 @@ test('calculated writes and source ownership are explicitly constrained', async 
   assert.ok(sql.includes('createtriggerimmutable_result'))
   assert.ok(sql.includes('Noproductionpassword'))
 })
+
+test('synthetic browser fixture replays approved private Academy/Express migrations with owner-only RLS', async () => {
+  const setup = await readFile(new URL('./helpers/app-db-setup.mjs', import.meta.url), 'utf8')
+  const files = [
+    '20261017181000_hh_academy_energywork_progress.sql',
+    '20261018142000_hh_academy_reiki_unified_five_lessons.sql',
+    '20261025173000_hh_practitioner_express_reports.sql',
+    '20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',
+    '20261026164817_hh_free_express_owner_account_reply_20261026.sql',
+  ]
+  const sourceBase = "../supabase/migrations/"
+  let previous = -1
+  for (const path of files) {
+    const index = setup.indexOf(path)
+    assert.ok(index > previous, 'Original schema fixture migration missing or out of order: ' + path)
+    previous = index
+    const sql = await readFile(new URL(sourceBase + path, import.meta.url), 'utf8')
+    assert.match(sql, /row level security/i, 'Owner RLS must be defined in approved migration: ' + path)
+    assert.doesNotMatch(sql, /grant all on [^;]+ to (?:anon|authenticated)/i,
+      'No direct client grant for owner-only schemas: ' + path)
+  }
+  assert.match(setup, /HH_APP_TEST_RUNTIME!=='isolated'/, 'must remain isolated only')
+  assert.match(setup, /process.env.VERCEL/, 'must never initialize production')
+  assert.match(setup, /Refusing to initialize nonempty test DB/, 'must not edit populated DB')
+  assert.ok(setup.indexOf('20261019152000_hh_public_service_enquiries_secure.sql') <
+    setup.indexOf(files[2]), 'private report must follow public enquiry model')
+});

@@ -41,6 +41,17 @@ export async function setup(){const db=await adminClient();try{
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
+ // The real production-approved private Academy and Express schemas must exist
+ // in the EMPTY isolated browser DB: otherwise real browser QA gets SQL 42P01
+ // instead of verifying owner RLS and user-facing responses. Never invent tables
+ // or bypass the role policies; execute the original migrations in dependency
+ // order, after public enquiries and practitioner/request fixtures are present.
+ await db.query(await readFile(new URL('../../supabase/migrations/20261017181000_hh_academy_energywork_progress.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261018142000_hh_academy_reiki_unified_five_lessons.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261025173000_hh_practitioner_express_reports.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',import.meta.url),'utf8'))
+
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}
  }finally{await db.end()}}
