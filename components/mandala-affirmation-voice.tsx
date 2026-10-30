@@ -12,6 +12,7 @@ import css from "./mandala-affirmation-voice.module.css";
 
 type SpeechLanguage="ru"|"en"|"es";
 type Bed="none"|NatureBed;
+export type AffirmationVoicePreferences={voiceId:string;language:SpeechLanguage;bed:Bed};
 export type AffirmationVoiceResult={
   file:File;spokenText:string;voiceId:string;language:SpeechLanguage;
   speechSeconds:number;mixSeconds:number;bed:Bed;
@@ -74,12 +75,13 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,onInvalidate,
+  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,onInvalidate,onPreferencesChange,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
+  onPreferencesChange:(prefs:AffirmationVoicePreferences)=>void;
 }) {
   const t=copy[locale];
   const levels=levelCopy[locale];
@@ -104,6 +106,7 @@ export function MandalaAffirmationVoice({
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
   const originRef=useRef({speechText,voiceId,language});
+  useEffect(()=>onPreferencesChange({voiceId,language,bed}),[voiceId,language,bed,onPreferencesChange]);
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
 
