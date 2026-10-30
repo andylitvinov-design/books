@@ -11,6 +11,16 @@ const project=({locale='ru',theme='energy'}={})=>
   buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
+test('fictional purple phoenix and glass temple survive in the art-only plan',()=>{
+  const visualIdea='Личная заметка SECRET_912: фиолетовый феникс летит внутри стеклянного храма';
+  const packet=compileCinematicReferencePack({plan:project(),visualIdea});
+  assert.equal(packet.recognized.color,'purple');
+  assert.equal(packet.recognized.setting,'glass_temple');
+  assert.match(packet.shots[0].artOnlyPrompt,/purple.*phoenix.*glass temple/i);
+  assert.doesNotMatch(JSON.stringify(packet),/SECRET_912/);
+  assert.equal(packet.newAiVideoAvailable,false);
+});
+
 test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+3 named internal scales',()=>{
   assert.equal(VIDEO_STUDIO_BRIEF_SCHEMA,'hh-video-brief-v1.4');
   assert.deepEqual(VIDEO_STUDIO_QUESTION_COUNTS,{PERSONAL:16,BASIC:12,ADV:18,PRO:34,EXTRA:16});
