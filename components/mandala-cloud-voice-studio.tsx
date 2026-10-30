@@ -83,6 +83,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   const [wav,setWav]=useState<Blob|null>(null);
   const [notice,setNotice]=useState("");
   const latestRef=useRef(0);
+  const mixJobRef=useRef(0);
   const urlRef=useRef("");
   const mixedRef=useRef("");
   const natureRef=useRef<HTMLAudioElement|null>(null);
@@ -101,6 +102,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   useEffect(()=>()=> {
     controllerRef.current?.abort();
     latestRef.current++;
+    mixJobRef.current++;
     natureRef.current?.pause();
     audioRef.current?.pause();
     if(urlRef.current)URL.revokeObjectURL(urlRef.current);
@@ -108,6 +110,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   },[]);
   function resetAudio(){
     latestRef.current++;
+    mixJobRef.current++;
+    setMixing(false);
     controllerRef.current?.abort();
     audioRef.current?.pause();
     natureRef.current?.pause();
@@ -179,20 +183,22 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   async function downloadMixed(){
     if(!wav||background==="none"||mixing)return;
     setMixing(true);setNotice("");
-    const token=latestRef.current;
+    const token=++mixJobRef.current;
     try{
       const mixed=await mixVoiceWithNature(wav,background);
-      if(token!==latestRef.current)return;
+      if(token!==mixJobRef.current)return;
       const uri=URL.createObjectURL(mixed);
       if(mixedRef.current)URL.revokeObjectURL(mixedRef.current);
       mixedRef.current=uri;
       setMixedUrl(uri);
       // Safari needs a genuine second tap on an <a download> element; an
       // asynchronous synthetic click after OfflineAudioContext is unreliable.
-    }catch{if(token===latestRef.current)setNotice(t.mixedError);}
-    finally{if(token===latestRef.current)setMixing(false);}
+    }catch{if(token===mixJobRef.current)setNotice(t.mixedError);}
+    finally{if(token===mixJobRef.current)setMixing(false);}
   }
   function chooseBackground(value:Background) {
+    mixJobRef.current++;
+    setMixing(false);
     audioRef.current?.pause();stopNature();
     if(mixedRef.current){URL.revokeObjectURL(mixedRef.current);mixedRef.current="";}
     setMixedUrl("");setBackground(value);
