@@ -49,10 +49,14 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        const testimonialArchive=page.locator('[data-personal-testimonials="about"]');
+        await expect(testimonialArchive.locator('[data-testimonial-video-id]')).toHaveCount(10);
+        await expect(testimonialArchive.locator('.site-video-player--minimal')).toHaveCount(10);
+        assert.equal(await testimonialArchive.locator('iframe').count(),0,
+          'Original About testimonials stay poster-first until Play is requested');
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
-        const intro = page.locator('[data-video-locale="es"]');
+        const intro = page.locator('[data-video-slot="about-intro"][data-video-locale="es"]');
         await expect.poll(() => intro.locator('img.site-video-poster').evaluate(el => el.complete && el.naturalWidth >= 320)).toBe(true);
         assert.equal(await page.locator('iframe').count(), 0);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('Avatar IA');
@@ -64,7 +68,10 @@ try {
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
-        assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
+        // Foreign-language original testimonial titles are intentionally kept
+        // verbatim; the editorial UI and service copy must remain Spanish.
+        const editorial=await page.locator('.about-introduction, .about-biography, .about-consultation, .about-client-cabinet').allInnerTexts();
+        assert.doesNotMatch(editorial.join(' '), /[\u0400-\u04ff]/);
         await summary.press('Enter');
         const capture = page.locator('[data-consultation-capture="personal"]');
         await expect(capture).toHaveAttribute('lang', 'es');
