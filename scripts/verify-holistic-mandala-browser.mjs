@@ -416,10 +416,17 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         const realSrc = await selectedClip.getAttribute("data-real-mp4");
         assert.match(realSrc || "", /^\/videos\/holistic-house\/money-films-v1\/golden-rain\.mp4$/);
         assert.equal(await selectedClip.evaluate(el => el.tagName), "VIDEO");
-        await page.waitForFunction(() => {
-          const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
-          return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
-        }, undefined, {timeout: 30000});
+        try {
+          await page.waitForFunction(() => {
+            const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
+            return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
+          }, undefined, {timeout: 30000});
+        } catch (error) {
+          const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
+            networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
+            width:video.videoWidth,error:video.error?.code ?? null,src:video.currentSrc}));
+          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify(state)}`, {cause:error});
+        }
         const firstTime = await selectedClip.evaluate(video => video.currentTime);
         await page.waitForTimeout(760);
         const secondTime = await selectedClip.evaluate(video => video.currentTime);

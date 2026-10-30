@@ -40,10 +40,11 @@ async function assertSpanishNavigation(page, path) {
     await expect(cabinet).toHaveAccessibleName('Mi espacio');
   } else await expect(cabinet).toHaveAttribute('href','/en/app');
   const destinations = [
-    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
-    '/es/explore/business', '/es/books', '/es/pro',
-    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
-    '/es/services', '/es/academy', '/es/about',
+    '/es/services/free-situation-review', '/es', '/es/services/free-situation-review',
+    '/es/academy', '/es/personality-profiles', '/es/services/alchemy-of-soul',
+    '/es/pro', '/es/holistic-support', '/es/shop', '/es/cart', '/es/install',
+    '/es/explore/energy', '/es/explore/love', '/es/explore/business',
+    '/es/library', '/es/events', '/es/temple-insights', '/es/services', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -57,9 +58,9 @@ async function assertSpanishNavigation(page, path) {
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
   for (const link of await links.all()) await expect(link).toBeVisible();
-  await expect(links.nth(2)).toHaveAccessibleName('Energía');
-  await expect(links.nth(3)).toHaveAccessibleName('Amor');
-  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
+  await expect(menu.locator('[data-nav-item="energy"]')).toHaveAccessibleName('Cuerpo y energía');
+  await expect(menu.locator('[data-nav-item="love"]')).toHaveAccessibleName('Estrés y relaciones');
+  await expect(menu.locator('[data-nav-item="business"]')).toHaveAccessibleName('Dinero y negocios');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
