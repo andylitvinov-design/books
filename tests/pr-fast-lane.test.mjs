@@ -479,3 +479,23 @@ test('Reports Development Programme keeps its focused verification and separate 
   assert.match(reports, /npx --no-install eslint/);
   assert.doesNotMatch(reports,/continue-on-error:\s*true/);
 });
+
+test('Growth Studio source-only PR reuses exact-head Core build, never bypasses unique owner/editor checks', () => {
+  const studio = workflow('hh-growth-studio.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(studio, /^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(studio, /^  workflow_dispatch:/m);
+  assert.match(studio, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  const ready = "if: \$" + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  assert.ok(studio.includes('  editorial-security:\n    # Draft work gets lightweight core checks; full privacy/editor tests run on Ready.\n    '+ready));
+  assert.ok(studio.includes('  next-build:\n    '+ready));
+  const reuse = "if: \$" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(studio.includes('- name: Next.js build\n        '+reuse+'\n        run: npm run build'));
+  for (const kept of ['tests/growth-studio-editorial.test.mjs','tests/growth-studio-storage-health.test.mjs','tests/admin-login-security.test.mjs','tests/growth-studio-composer-details-render.test.mjs','node --test','npm ci --include=dev']) {
+    assert.ok(studio.includes(kept), 'Must retain independent Growth Studio evidence: '+kept);
+  }
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(studio,/continue-on-error:\s*true/);
+});
