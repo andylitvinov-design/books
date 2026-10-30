@@ -170,7 +170,6 @@ try {
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
@@ -189,6 +188,21 @@ try {
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
+    // The redesigned written Situation Review has its own introductory
+    // video container, not the old generic ServiceVideoShowcase wrapper.
+    // Keep the same real poster-first, click-to-play and source checks.
+    await navigate('/en/services/free-situation-review')
+    const freeReviewIntro = page.locator('[data-free-review-intro-video]')
+    await expect(freeReviewIntro).toHaveCount(1)
+    await expect(freeReviewIntro.locator('.site-video-play')).toBeVisible()
+    assert.equal(await freeReviewIntro.locator('iframe').count(), 0,
+      'free written review must not load third-party video before consented Play')
+    await freeReviewIntro.locator('.site-video-play').click()
+    await expect.poll(async () => (await freeReviewIntro.locator('iframe').getAttribute('src'))?.startsWith(
+      'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'), {timeout: 10000}).toBe(true)
+    assert.equal(await freeReviewIntro.locator('.site-video-play').count(),0,
+      'free written review intro poster remained after Play')
+
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
