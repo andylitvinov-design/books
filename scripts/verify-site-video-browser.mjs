@@ -210,9 +210,16 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  // About now uses the approved 10 local-poster testimonial masters, not
+  // the old 3-card landing section. Verify the complete real inventory.
+  const aboutTestimonials=page.locator('[data-testimonial-video-id]');
+  await expect(aboutTestimonials).toHaveCount(10);
+  await expect(page.locator('.site-video-player')).toHaveCount(10);
+  assert.equal(new Set(await aboutTestimonials.evaluateAll(cards=>
+    cards.map(card=>card.getAttribute('data-testimonial-video-id')))).size,10,
+    'Every approved About video must have a unique reviewed identity');
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten original testimonials and form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
