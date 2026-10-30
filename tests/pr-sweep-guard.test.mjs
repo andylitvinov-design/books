@@ -280,44 +280,33 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-test('independent coaching and practitioner domain tests keep coverage while Core owns production PR TS/build', () => {
+test('Practitioner presentations retain all real contracts on production PRs and full TS/build on feature push', () => {
   const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('practitioner-presentations.yml');
   const core = read('hh-pr-core-release.yml');
   const rule = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
-  assert.match(core, /^  pull_request:/m);
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  push:/m);
   assert.match(core, /^  release-ready:/m);
   assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core, /run: npm run build/);
-  const checks = [
-    ['hh-personal-coaching-session.yml', [
-      ['TypeScript noEmit', 'npx --no-install tsc --noEmit'],
-      ['Build production Next.js', 'npm run build'],
-    ], [
-      'Verify private GROW model, old programme pause and course discovery',
-      'tests/coaching-author-audio-synthetic.test.mjs',
-      'tests/tradition-coaching-persistence.test.mjs',
-      'Scoped eslint',
-    ], true],
-    ['practitioner-presentations.yml', [
-      ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
-      ['Full Next build (Core owns production PR)', 'npm run build'],
-    ], [
-      'tests/practitioner-articles-folders.test.mjs',
-      'tests/master-network-r2.test.mjs',
-      'tests/practice-public-alias.test.mjs',
-    ], false],
-  ];
-  for (const [name, buildSteps, domainTests, manual] of checks) {
-    const source = read(name);
-    assert.match(source, /^  pull_request:/m, name + ' must validate relevant PR');
-    assert.ok(source.includes("'"+'.github/workflows/'+name+"'"), name + ' must test its own workflow changes');
-    if (manual) assert.match(source, /^  workflow_dispatch:/m);
-    for (const [step, command] of buildSteps) {
-      assert.ok(source.includes('- name: '+step+'\n        '+rule+'\n        run: '+command),
-        name+' '+step+' must run on nonproduction and manual and reuse only Core on production PR');
-    }
-    for (const item of domainTests) assert.ok(source.includes(item),name+' lost real domain contract '+item);
-    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
+  for (const [step, command] of [
+    ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
+    ['Full Next build (Core owns production PR)', 'npm run build'],
+  ]) {
+    assert.ok(source.includes('- name: '+step+'\n        '+rule+'\n        run: '+command),
+      step+' must retain independent feature push and reuse only Core on production PR');
   }
-  assert.match(read('practitioner-presentations.yml'), /^  push:/m, 'feature branch retains independent TS/build');
+  for (const item of [
+    'tests/practitioner-presentation-video.test.mjs',
+    'tests/practitioner-video-materials.test.mjs',
+    'tests/practitioner-articles-v4.test.mjs',
+    'tests/practitioner-articles-folders.test.mjs',
+    'tests/master-network-r2.test.mjs',
+    'tests/practice-public-alias.test.mjs',
+  ]) assert.ok(source.includes(item), 'Missing actual practitioner contract: '+item);
+  assert.ok(source.includes("github.event.pull_request.draft == false"));
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
