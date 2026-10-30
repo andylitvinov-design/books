@@ -87,6 +87,12 @@ test('unsafe URLs and malformed untrusted results cannot enter decisions', () =>
   assert.equal(res.status, 'no_match');
   assert.equal(res.question.key, 'broaden_search');
 });
+test('backslash URLs cannot escape the site when opened in a browser', () => {
+  const href = '/\\evil.example/path';
+  assert.equal(new URL(href, 'https://holistichouse.vercel.app').origin, 'https://evil.example');
+  const result = planClientNextStep({ ...base, rankOffers: () => [item('video:escape', { href })] });
+  assert.equal(result.status, 'no_match');
+});
 test('limit has a hard cap and deterministic selection', () => {
   const res = planClientNextStep({ ...base, limit: 100, rankOffers: () => Array.from({ length: 10 }, (_, i) => item('video:' + i)) });
   assert.equal(res.suggestions.length, 5);
