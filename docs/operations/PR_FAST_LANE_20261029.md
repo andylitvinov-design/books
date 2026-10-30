@@ -156,3 +156,24 @@ The allowlist intentionally excludes `AGENTS.md`, dependencies/lockfiles, SQL an
 ## Fail-closed protection against unmapped workflow deletion (30 October 2026)
 
 The immutable BASE-SHA `release-ready` specialist verifier must reject deletion of **any** `.github/workflows/*.yml|*.yaml` file lacking an explicit approved successor, including push-only, workflow-dispatch-only and PR workflows that intentionally do not include their own YAML path in the PR trigger. The old verifier only iterated `expectedWorkflows` (the PR-triggered subset); this allowed an unrelated CI-only deletion to evade review. The new resolver enumerates the complete BASE-vs-current removed workflow set. For every approved retirement it additionally proves the successor exists **unchanged in BASE**, matches current PR path scope and has an exact-HEAD completed-success run with real successful jobs. Missing/altered replacement, unmapped deletion or cancelled/pending/skipped/empty-job successor remains blocking. No workflow is removed by this safety PR; existing approved mappings and all domain tests remain intact.
+
+
+## Draft-heavy App / OPORA / public services staging (30 October 2026)
+
+Four previously ungated expensive acceptance workflows now stage their **jobs**
+for non-mergeable Draft PRs: `hh-app-r1.yml`, `hh-app-browser.yml`,
+`opora-module-ci.yml`, and `hh-public-services-production.yml`.
+Their full original unit/database/Chromium/WebKit/production-browser jobs execute
+on `ready_for_review` and each subsequent `synchronize` of a non-Draft PR;
+`converted_to_draft` cancels superseded running checks. Existing App/OPORA
+feature-branch `push` audits still run. `browser-journey-complete` retains
+`always()` fail-closed status aggregation on Ready, not on Draft.
+
+**Draft-skipped is NOT CI-success or merge eligibility.** Work Repair may use
+focused local tests while iterating a Draft, but must explicitly mark the PR
+Ready to obtain current-head specialist acceptance. Work Merge continues to
+require the unconditional exact-head `release-ready`, all applicable actual
+executed specialist jobs, reviews, and live delivery checks. Dedicated
+`tests/ci-heavy-draft-policy.test.mjs`, PR Sweep Guard and actionlint verify
+the event transitions, job guards and preserved push safety on any workflow
+change. No check, RLS, consent, payment or E2E assertions were removed.
