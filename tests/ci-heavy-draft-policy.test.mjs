@@ -386,3 +386,48 @@ test('wave 5: Support Mock readiness loop is bounded, strict and ShellCheck-clea
   assert.match(mock,/exit 1/);
   assert.doesNotMatch(mock,/for i in \$\(seq 1 120\)/);
 });
+
+const heavyDraftStage = [
+  ['ia-v2.yml', ['verify']],
+  ['hh-live-seo-audit.yml', ['audit', 'public-tests-mobile']],
+  ['hh-public-performance-audit.yml', ['measure-public']],
+];
+
+for (const [name, jobs] of heavyDraftStage) {
+  test(name + ': skip Draft-only runner work but restore exact Ready checks', () => {
+    const source = read(name);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'));
+    assert.match(source, /^concurrency:/m);
+    assert.match(source, /cancel-in-progress:/);
+    const block = source.split(/^jobs:\s*$/m)[1];
+    assert.ok(block);
+    const suffix = '$' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+    for (const job of jobs) {
+      assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
+    }
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  });
+}
+
+test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
+  const ia = read('ia-v2.yml');
+  // YAML-only edits belong to the exact-head Core/actionlint gates, not IA's product suite.
+  assert.doesNotMatch(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  assert.match(read('hh-actionlint.yml'), /^      - '\.github\/workflows\/\*\*'$/m);
+  assert.match(read('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(ia, /verify:ia-v2/);
+  assert.match(ia, /redis:7-alpine/);
+  assert.match(ia, /^  workflow_dispatch:/m);
+  const seo = read('hh-live-seo-audit.yml');
+  const sourceBlock = seo.split('  source-build:')[1]?.split('  audit:')[0];
+  assert.ok(sourceBlock);
+  assert.ok(sourceBlock.includes("    if: $" + "{{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"));
+  assert.match(sourceBlock, /npm run build/);
+  assert.match(seo, /^  push:/m);
+  assert.match(seo, /^  workflow_dispatch:/m);
+  assert.match(seo, /verify-live-sitemap\.mjs/);
+  const performance = read('hh-public-performance-audit.yml');
+  assert.match(performance, /^  push:/m);
+  assert.match(performance, /^  workflow_dispatch:/m);
+  assert.match(performance, /tests\/holistic-house-image-quota\.test\.mjs/);
+});
