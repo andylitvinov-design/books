@@ -42,3 +42,39 @@ The seven heavy specialist suites are required for their **matching product/sour
 The relevant validation for **CI-only** edits is the dedicated always-triggered `HH workflow syntax — actionlint` (all YAML syntax/expression validation plus strict changed-file shellcheck) and unconditional `HH PR core release gate` (exact-head `tests/pr-fast-lane.test.mjs`, targeted ESLint, full TypeScript, Next production build, and fail-closed `release-ready`). The narrow regression above checks that removing `AGENTS.md` and each workflow's own YAML from heavy `pull_request.paths` does not remove any other product, middleware, dependency, migration or security-sensitive path. For any change to actual app/API/DB/security/payment/test harness paths, all relevant specialist jobs still trigger and their failures remain blocking. No test commands, steps, service isolation, RLS, browser matrices or privacy assertions were deleted.
 
 Important: **skipped workflow is never considered green**; GitHub branch protection must not require an optional path-filtered job globally, because filtered jobs can remain Pending. Before enabling native auto-merge, a protected unconditional aggregator must enforce successful *applicable* specialist checks, reviews and safety gates, and a read-back must confirm protected production branch. CI-only changes need review of the full YAML diff and green actionlint/core; changed production behavior requires green corresponding specialist suites. If this scoping proves unsafe, restore previous filters and quarantine auto-merge.
+
+
+## Full exact-head applicable specialist gate — rollout 29 October 2026
+
+The core release-ready job now checks ALL applicable pull_request GitHub Actions
+workflows discovered from the repository, instead of a partial hardcoded map.
+The dependency-free Node 22 reader compares the exact production base SHA
+workflow catalog with the candidate merge checkout catalog. Deleting or
+weakening an existing workflow in a PR cannot silently remove its obligation.
+It uses the complete paginated changed-file list and GitHub branch/path filters,
+with ordered exclusions, and verifies the linked PR, exact head and exact base.
+
+A required workflow must have a successful current-HEAD pull_request run with
+real successfully completed jobs. Missing, waiting, failed, skipped, cancelled,
+wrong-HEAD, and jobs=0 workflows block release-ready. Exact-head feature push
+validation failures also block (including unregistered YAML jobs=0 failures).
+The check re-reads the PR identity before reporting success.
+
+The gate is read-only (contents, actions, pull-requests read permissions),
+does not rerun checks or call paid services. It waits at most 12 minutes after
+the core build; if a valid browser check is longer, rerun ONLY the failed
+release-ready job after specialist completion. Do not disable real tests.
+
+For workflow_dispatch and merge_group the original full core checks still run;
+full specialist aggregation applies to pull_request only. Do not use GitHub
+Merge Queue until its separate specialist evidence is explicitly verified.
+External booking, payments, provider message delivery and production E2E are
+separate gates that this GitHub CI reader does not claim to prove.
+
+ADMINISTRATIVE HOLD: repository-native Auto-merge remains disabled until
+the exact-head aggregated release-ready passes positive and negative integration
+scenarios, a branch ruleset protecting ONLY codex/public-book-library is enabled
+with required review, resolved conversations, no force push/delete and required
+release-ready from GitHub Actions, and settings are verified by readback.
+GitHub default codex/bootstrap-books is not production. The currently connected
+GitHub tool has no repository ruleset/auto-merge settings write operation.
