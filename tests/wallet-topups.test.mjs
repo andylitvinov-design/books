@@ -67,6 +67,8 @@ test('private DB schema prevents unauthenticated credits and duplicate receipt/l
     'wallet_topup_update_guard', 'wallet_ledger_guard', 'WALLET_LEDGER_EVIDENCE_MISMATCH',
     'WALLET_PROVIDER_PROOF_REQUIRED', 'hh.wallet_review_verified',
     'hh.wallet_provider_verified']) assert.ok(sql.includes(condition), condition)
+  const dedupe = file('supabase/migrations/20261030050812_hh_wallet_receipt_reference_uniqueness.sql')
+  assert.match(dedupe, /unique index if not exists wallet_topups_paypal_reference_once/)
   const ui = file('components/wallet/wallet-panel.jsx')
   assert.match(ui, /WALLET_PRESETS_MINOR/)
   assert.match(ui, /order\.status === 'pending'/)
