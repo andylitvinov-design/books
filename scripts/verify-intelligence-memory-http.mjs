@@ -160,7 +160,11 @@ try {
           window.__hhAdvanceStable={x,y,count:same?last.count+1:0}
           return y>60&&y<innerHeight-60&&hit&&(hit===node||node.contains(hit))&&window.__hhAdvanceStable.count>=6
         },await button.elementHandle())
-        await button.click()
+        // Use the verified viewport point directly: locator.click() may trigger
+        // a second asynchronous WebKit scroll after the hit test.
+        const box=await button.boundingBox()
+        assert.ok(box && box.width>0 && box.height>0,'advance button must have a visible box')
+        await page.mouse.click(box.x+box.width/2,box.y+box.height/2)
         const reached=await page.evaluate(()=>window.__hhAdvanceReceived)
         if (!reached) console.log(JSON.stringify({phase:'advance-click-diagnostic',diagnostic:await page.evaluate(()=>window.__hhAdvanceDiagnostic)}))
         assert.equal(reached,true,'format advance click must reach its button')
