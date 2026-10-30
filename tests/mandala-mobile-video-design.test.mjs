@@ -357,7 +357,11 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const switches=studio.slice(studio.indexOf('data-video-preview-choices'),studio.indexOf('id="video-hero"'));
-  const hero=studio.slice(studio.indexOf('id="video-hero"'),studio.indexOf('data-video-editor-nav'));
+  const heroStart=studio.indexOf('id="video-hero"');
+  const hero=studio.slice(heroStart,studio.indexOf("</section>",heroStart));
+  assert.ok(heroStart>0,"the original central visual player remains mounted");
+  assert.ok(studio.indexOf("data-video-live-stage")<studio.indexOf('data-video-quick-tier'),
+    "single main player comes before tier, style and all advanced settings");
   assert.match(switches,/data-video-photo-enabled/);
   assert.match(switches,/data-video-affirmations-feature/);
   assert.match(switches,/checked=\{affirmations\.enabled\}/);
