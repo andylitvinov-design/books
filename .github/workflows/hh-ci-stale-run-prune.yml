@@ -1,0 +1,60 @@
+name: HH CI prune superseded queued runs
+
+# Elevated cleanup runs exclusively on trusted production PUSH.
+# PRs execute only a separate read-only policy job. Do not execute PR HEAD
+# with an actions:write token. The production branch is NOT GitHub default.
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-ci-stale-run-prune.yml'
+      - 'scripts/ci-prune-stale-runs.mjs'
+      - 'tests/ci-prune-stale-runs.test.mjs'
+  push:
+    branches: ['codex/public-book-library']
+
+permissions: {}
+concurrency:
+  group: hh-ci-prune-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/ci-prune-stale-runs.test.mjs
+  prune:
+    if: github.repository == 'andylitvinov-design/books' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Exact event commit was already merged into production.
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed stale-run policy
+        run: node --test tests/ci-prune-stale-runs.test.mjs
+      - name: Cancel verified superseded queued PR runs (limit 20)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HH_CI_PRUNE_LIMIT: '20'
+          HH_CI_RELEASE_BRANCH: codex/public-book-library
+        run: node scripts/ci-prune-stale-runs.mjs
