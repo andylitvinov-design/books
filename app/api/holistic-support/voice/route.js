@@ -47,8 +47,9 @@ export async function POST(request) {
     } else {
       const ip = (request.headers.get('x-vercel-forwarded-for') ||
         request.headers.get('x-real-ip') || 'shared').split(',')[0].trim().slice(0,64)
-      if(validated.mode==='affirmations') {
-        // Limited guest text generation; explicit opt-in and exact-text TTS.
+      if(validated.mode==='affirmations'||validated.mode==='short_text') {
+        // Shared tiny free quota for guest affirmations and voluntarily entered text.
+        // Both require explicit consent; never receive profile/test fields.
         await consumeRate(config,{op:'voice-studio-affirmations',ip},3,3600)
         await consumeRate(config,{op:'voice-studio-affirmations-daily'},60,86400)
       } else {

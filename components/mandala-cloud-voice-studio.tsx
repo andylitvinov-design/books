@@ -21,7 +21,7 @@ const text = {
     sample:"Образец без личных данных",custom:"Мой текст",personal:"Взять текст из моей медитации",
     customLabel:"Текст озвучки (до 650 знаков)",customPlaceholder:"Напишите небольшой спокойный отрывок…",
     consent:"Я разрешаю отправить именно этот текст в Google для генерации голоса. Я понимаю, что данные бесплатного тарифа могут использоваться Google для улучшения продуктов. Не отправляю личные и медицинские сведения.",
-    register:"Для озвучки собственного текста необходим вход в личный кабинет. Бесплатные образцы можно прослушивать без входа.",
+    register:"Для озвучки персональной медитации необходим вход в личный кабинет. Бесплатные образцы можно слушать без входа.",guestText:"Короткий собственный текст доступен без входа: до 3 попыток в час с одного подключения. Не вводите личные или медицинские сведения.",
     background:"Природный фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать WAV с природой",prepareMix:"Подготовить WAV с природой",mixing:"Смешиваем дорожки…",
     unavailable:"Генерация сейчас недоступна. Проверьте подключение Gemini и бесплатный тариф проекта.",
@@ -37,7 +37,7 @@ const text = {
     sample:"Public sample, no personal text",custom:"My own script",personal:"Use my meditation text",
     customLabel:"Narration text (up to 650 characters)",customPlaceholder:"Write a short, gentle passage…",
     consent:"I explicitly consent to sending this exact text to Google for voice generation. I understand free-tier data may be used to improve Google's products. I will not send medical or identifying information.",
-    register:"Sign in to your account for your own text. Public voice samples do not require an account.",
+    register:"Sign in to generate a personal meditation excerpt. Public samples require no account.",guestText:"Short original text works without sign-in, up to 3 requests per connection per hour. Do not include identifying or medical information.",
     background:"Nature background",none:"No background",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download nature WAV",prepareMix:"Prepare nature WAV",mixing:"Mixing audio…",
     unavailable:"Cloud generation is unavailable. Check the Gemini connection and free-tier settings.",
@@ -53,7 +53,7 @@ const text = {
     sample:"Prueba pública sin datos privados",custom:"Mi propio texto",personal:"Usar el texto de mi meditación",
     customLabel:"Texto narrado (máximo 650 caracteres)",customPlaceholder:"Escribe un pasaje breve y tranquilo…",
     consent:"Autorizo enviar exactamente este texto a Google. Sé que el nivel gratuito puede usar datos para mejorar sus productos. No enviaré datos médicos ni personales.",
-    register:"Debes iniciar sesión para generar tu propio texto. Las pruebas públicas no lo requieren.",
+    register:"Inicia sesión para generar un fragmento de tu meditación personal.",guestText:"Un texto breve funciona sin registro, hasta 3 intentos por hora por conexión. No incluyas datos personales ni médicos.",
     background:"Sonido natural",none:"Sin sonido",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     generate:"Generar voz por API",loading:"Generando audio…",voice:"Descargar voz · WAV",mixed:"Descargar WAV con naturaleza",prepareMix:"Preparar WAV con naturaleza",mixing:"Mezclando audio…",
     unavailable:"La generación aún no está habilitada; hace falta una clave independiente de Google AI Studio sin facturación.",
@@ -73,6 +73,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   const [voiceId,setVoiceId]=useState("mark");
   const [mode,setMode]=useState<Mode>("sample");
   const [script,setScript]=useState("");
+  const [personalText,setPersonalText]=useState(false);
   const [consent,setConsent]=useState(false);
   const [background,setBackground]=useState<Background>("ocean");
   const [available,setAvailable]=useState(false);
@@ -124,7 +125,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   function sourceToText(){
     resetAudio();
     const excerpt=studioExcerpt(sourceText);
-    setMode("custom");setScript(excerpt);setConsent(false);
+    setMode("custom");setPersonalText(true);setScript(excerpt);setConsent(false);
     setNotice(excerpt?t.sourceAdded:t.noText);
   }
   async function generate(){
@@ -137,8 +138,9 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     const abort=new AbortController();
     controllerRef.current=abort;
     try{
-      const body=mode==="sample"?{mode,voiceId,language}:
-        {mode,voiceId,language,text:script.trim(),consent:true};
+      const apiMode=mode==="sample"?"sample":personalText?"custom":"short_text";
+      const body=apiMode==="sample"?{mode:apiMode,voiceId,language}:
+        {mode:apiMode,voiceId,language,text:script.trim(),consent:true};
       const response=await fetch("/api/holistic-support/voice",{
         method:"POST",signal:abort.signal,cache:"no-store",
         headers:{"Content-Type":"application/json"},
@@ -242,7 +244,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
           <button type="button" aria-pressed={mode==="sample"}
             onClick={()=>{resetAudio();setMode("sample");setConsent(false);}}>{t.sample}</button>
           <button type="button" aria-pressed={mode==="custom"}
-            onClick={()=>{resetAudio();setMode("custom");setConsent(false);}}>{t.custom}</button>
+            onClick={()=>{resetAudio();setMode("custom");setPersonalText(false);setConsent(false);}}>{t.custom}</button>
         </div>
         {mode==="custom"?<>
           {sourceText?<button type="button" className={css.fromMeditation} onClick={sourceToText}>
@@ -255,7 +257,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
           <span className={css.count}>{Array.from(script).length} / {VOICE_STUDIO_MAX_CHARS}</span>
           <label className={css.consent}><input type="checkbox" checked={consent}
             onChange={event=>setConsent(event.currentTarget.checked)}/><span>{t.consent}</span></label>
-          <p className={css.hint}>{t.register}</p>
+          <p className={css.hint}>{personalText?t.register:t.guestText}</p>
         </>:null}
       </fieldset>
       <div className={css.background}>

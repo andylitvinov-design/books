@@ -54,6 +54,11 @@ test('invalid languages, unknown voices, additional fields and missing consent f
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'   ',consent:true}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'x'.repeat(VOICE_STUDIO_MAX_CHARS+1),consent:true}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'<xml>',consent:true}));
+  const guest=validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'Сегодня я выбираю спокойствие.',consent:true});
+  assert.equal(guest.mode,'short_text');
+  assert.equal(buildStudioPayload(guest).input[0].content[0].text,guest.text);
+  assert.throws(()=>validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'private',consent:false}));
+  assert.throws(()=>validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'<script>',consent:true}));
 });
 test('request speaks verbatim transcript via 3.8 Flash-Lite prebuilt voice and WAV',()=>{
   const input=validateStudioRequest({mode:'custom',voiceId:'maya',language:'ru',text:'Тихий свет и покой.',consent:true});
@@ -119,6 +124,7 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/auth\.verified\(\)/);
   assert.match(code,/consumeRate\(config/);
   assert.match(code,/voice-studio-free-global/);
+  assert.match(code,/validated\.mode==='affirmations'\|\|validated\.mode==='short_text'/);
   assert.match(code,/requestStudioAudio\(/);
   assert.match(code,/new NextResponse\(wav/);
   assert.match(code,/voiceStudioKey\(process\.env\)/);
