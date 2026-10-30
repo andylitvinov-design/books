@@ -67,10 +67,16 @@ try {
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
-    let response = await page.goto(new URL(target, origin).href, options)
-    // Different placements can be anchors on the same Services page. A hash-only
-    // navigation makes no HTTP request and returns null. Reload to inspect the
-    // newly published server snapshot rather than the old document already open.
+    const destination = new URL(target, origin)
+    const previous = new URL(page.url())
+    // Multiple placements can share one Services path and differ by #anchor.
+    // Avoid dispatching an unnecessary Next.js same-document navigation, which
+    // does not request fresh publication data and can recurse through popstate.
+    const sameDocument = previous.origin === destination.origin &&
+      previous.pathname === destination.pathname && previous.search === destination.search
+    let response = sameDocument
+      ? await page.reload(options)
+      : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)

@@ -48,3 +48,17 @@ test('video editor reconciles locale after independently hydrated header and man
   assert.match(source,/await expect\(target\.locator\('\.site-video-manager'\)\)\.toHaveAttribute\('lang', 'en'\)/)
 })
 
+
+
+test('same-document anchor navigation reloads published snapshot without popstate recursion',()=>{
+  for (const script of [source, publicSource]) {
+    assert.match(script,/const sameDocument\s*=/);
+    assert.match(script,/previous\.origin\s*===\s*destination\.origin/);
+    assert.match(script,/previous\.pathname\s*===\s*destination\.pathname/);
+    assert.match(script,/previous\.search\s*===\s*destination\.search/);
+    assert.match(script,/sameDocument\s*\?\s*await page\.reload\(options\)\s*:\s*await page\.goto\(destination\.href,\s*options\)/);
+    assert.match(script,/await expect\(page\.locator\('main'\)\.first\(\)\)\.toBeVisible\(\)/);
+  }
+  assert.match(source,/assert\.deepEqual\(pageErrors,\[\],/);
+  assert.doesNotMatch(source,/^[ \t]*pageErrors\s*=\s*\[\]/m); // no post-initialization reset.
+});

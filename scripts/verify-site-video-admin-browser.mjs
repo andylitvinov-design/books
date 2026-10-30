@@ -79,7 +79,16 @@ async function authenticateOwner(context){
 
 async function navigate(target){
   const options={waitUntil:'domcontentloaded',timeout:60000}
-  let response=await page.goto(new URL(target,origin).href,options)
+  const destination=new URL(target,origin)
+  const previous=new URL(page.url())
+  // Repeated slots share a Services URL and differ only by #anchor.
+  // A hash-only page.goto dispatches Next.js history events without fetching a
+  // new published server snapshot; reload directly rather than entering popstate.
+  const sameDocument=previous.origin===destination.origin &&
+    previous.pathname===destination.pathname && previous.search===destination.search
+  let response=sameDocument
+    ? await page.reload(options)
+    : await page.goto(destination.href,options)
   if(!response)response=await page.reload(options)
   assert.ok(response,'No response for '+target)
   assert.equal(response.status(),200,target)
