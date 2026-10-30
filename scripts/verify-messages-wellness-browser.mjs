@@ -86,8 +86,18 @@ for(const browserType of [chromium,webkit]){
       })).catch(()=>({unavailable:true}))
       console.error('MESSAGES_SYNTHETIC_ORDER_DIAGNOSTIC',key,JSON.stringify(snapshot),
         'pageErrors',JSON.stringify(errors))
-      if(snapshot.section!=='orders'||!snapshot.visible)throw firstError
-      await page.reload({waitUntil:'domcontentloaded',timeout:90000})
+      if(snapshot.unavailable===true){
+        // Dev locale recompilation can leave the page mid-navigation.
+        // Retry the same real route ONCE; all assertions remain mandatory.
+        const retried=await page.goto(origin+'/'+locale+'/app/messages',
+          {waitUntil:'domcontentloaded',timeout:90000})
+        assert.equal(retried?.status(),200,key+' recompilation retry route')
+        await root.waitFor({state:'visible',timeout:40000})
+        await orderTab.waitFor({state:'visible',timeout:30000})
+      } else {
+        if(snapshot.section!=='orders'||!snapshot.visible)throw firstError
+        await page.reload({waitUntil:'domcontentloaded',timeout:90000})
+      }
       await orderCard.waitFor({state:'visible',timeout:25000})
     }
     assert.equal(await orderTab.getAttribute('aria-selected'),'true',key+' order default')
