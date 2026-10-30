@@ -421,6 +421,32 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
 });
 
+
+test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const guard="${{ github.event_name == 'pull_request' }}";
+  const specs=[
+    ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
+    ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
+    ['hh-owner-telegram-video.yml','hh-owner-telegram-video',['Telegram and audio regression tests','Real 1080p MP4 with H264 AAC via ffmpeg-static','Verify shipped FFmpeg in owner Dot webhook function trace']],
+  ];
+  for(const [filename,group,contracts] of specs){
+    const s=workflow(filename);
+    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
+    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
+    assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
+    assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
+    assert.ok(s.includes('cancel-in-progress: '+guard),filename+' must never cancel manual/PUSH runs');
+    assert.match(s,/^permissions:\s*\n  contents: read/m,filename+' must stay read only');
+    assert.doesNotMatch(s,/continue-on-error:\s*true/,filename+' must never hide E2E failures');
+    for(const marker of contracts)assert.ok(s.includes(marker),filename+' lost '+marker);
+  }
+  assert.match(workflow('hh-live-seo-audit.yml'),/^  workflow_dispatch:/m);
+  assert.match(workflow('hh-public-performance-audit.yml'),/^  workflow_dispatch:/m);
+});
+
+// Preserve #2652's already merged, independent path-scope regression.
 test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
   const prPaths = name => {
     const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
