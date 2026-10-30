@@ -23,6 +23,8 @@ const lang={
     focus:"Тема",goal:"Какой навык потренировать?",style:"Стиль текста",
     duration:"Длительность",motif:"Образ",practice:"Попробуйте один небольшой шаг",
     nextAction:"Необязательный шаг в жизни",practicalNote:"Это практика самоподдержки, не обещание лечения.",
+    checkin:"По желанию: оценка до и после",checkinNone:"Не оценивать",
+    checkinScore:"Личные оценки до и после — это наблюдение, а не показатель лечебного эффекта.",
     mode:"Как создать текст",templateMode:"Без внешнего AI",aiMode:"Бесплатный AI · черновик",
     aiConsent:"Согласен на отправку Google только обезличенных настроек темы, образа и стиля. Google может использовать запросы бесплатного API для улучшения моделей. Мои личные фразы и данные кабинета не передаются и не используются AI-черновиком.",
     aiDraft:"Черновик Gemini · требует редакторской проверки",
@@ -41,6 +43,8 @@ const lang={
     focus:"Focus",goal:"What would you like to practice?",style:"Writing style",
     duration:"Duration",motif:"Image",practice:"Try one small step",
     nextAction:"Optional step in daily life",practicalNote:"Self-help practice, not a promise of treatment.",
+    checkin:"Optional: before and after",checkinNone:"Skip rating",
+    checkinScore:"These are your own observations, not evidence of a treatment effect.",
     mode:"Text generation",templateMode:"No external AI",aiMode:"Free AI · draft",
     aiConsent:"I agree to send Google only anonymous topic, image and style settings. Google may use free-tier prompts to improve its models. My personal phrases and account data are not sent or used to write the AI draft.",
     aiDraft:"Gemini draft · editorial review required",
@@ -59,6 +63,8 @@ const lang={
     focus:"Tema",goal:"¿Qué habilidad quieres practicar?",style:"Estilo",
     duration:"Duración",motif:"Imagen",practice:"Prueba un pequeño paso",
     nextAction:"Paso opcional en la vida diaria",practicalNote:"Apoyo personal, no una promesa de tratamiento.",
+    checkin:"Opcional: antes y después",checkinNone:"Omitir evaluación",
+    checkinScore:"Estas son observaciones personales, no una medida de eficacia terapéutica.",
     mode:"Creación del texto",templateMode:"Sin IA externa",aiMode:"IA gratuita · borrador",
     aiConsent:"Acepto enviar a Google solo ajustes anónimos de tema, imagen y estilo. Google puede usar solicitudes gratuitas para mejorar sus modelos. Las frases personales y los datos de mi cuenta no se envían ni se usan para crear el borrador de IA.",
     aiDraft:"Borrador Gemini · requiere revisión editorial",
@@ -115,9 +121,12 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [preview,setPreview]=useState<Preview|null>(null);
+  const [before,setBefore]=useState("");
+  const [after,setAfter]=useState("");
   async function submit(){
     if(!consented||loading||(mode==="llm"&&!externalOptIn))return;
     setLoading(true);setError("");setPreview(null);
+    setBefore("");setAfter("");
     try{
       const response=await fetch("/api/holistic-support/meditation-writer/brief",{
         method:"POST",cache:"no-store",credentials:"same-origin",
@@ -212,6 +221,28 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         <p>{s.text}</p>
         {s.optionalSilenceSeconds>0&&<small>{t.pause}: {s.optionalSilenceSeconds} s</small>}
       </div>)}
+      {preview.practice&&<details className={styles.checkin}>
+        <summary>{t.checkin}</summary>
+        <div className={styles.checkinControls}>
+          <label>{preview.practice.beforeCheckinPrompt}
+            <select value={before} onChange={e=>setBefore(e.target.value)}>
+              <option value="">{t.checkinNone}</option>
+              {Array.from({length:11},(_,i)=>i).map(n=>
+                <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <label>{preview.practice.afterCheckinPrompt}
+            <select value={after} onChange={e=>setAfter(e.target.value)}>
+              <option value="">{t.checkinNone}</option>
+              {Array.from({length:11},(_,i)=>i).map(n=>
+                <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+        </div>
+        {before!==""&&after!==""&&<p className={styles.caption}>
+          {before} → {after}. {t.checkinScore}
+        </p>}
+      </details>}
       <p className={styles.caption}>{t.durationNote}</p>
       {preview.estimatedDurationSeconds!==undefined&&
         <p className={styles.caption}>{t.estimated}: {Math.max(1,Math.round(preview.estimatedDurationSeconds/60))} min</p>}
