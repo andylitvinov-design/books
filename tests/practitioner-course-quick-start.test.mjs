@@ -15,7 +15,10 @@ test('a course starts with its author-entered title and first editable screen',(
  assert.match(builder,/course=\{title,description:'',locale:newLocale,contentType:isMeditation\?meditationType\+'_meditation':'course',slides:\[isMeditation\?\{\.\.\.makeSlide\(\),kind:meditationType\}:makeSlide\(\)\]\}/)
  assert.doesNotMatch(builder,/title:t\.new,description:'',locale:/)
  assert.match(builder,/onSubmit=\{event=>void create\(event\)\}/)
- assert.match(builder,/setCreating\(!list\.length\)/)
+ // A deliberate quick-start request opens creation even with existing courses.
+ // When loading fails, do not guess that the owner has no courses.
+ assert.match(builder,/setCreating\(Boolean\(startCreate\)\|\|!list\.length\)/)
+ assert.match(builder,/if\(startCreate&&!loading&&!loadFailed\)setCreating\(true\)/)
 })
 
 test('editing stays in one workspace and protects pending changes and active slide',()=>{
