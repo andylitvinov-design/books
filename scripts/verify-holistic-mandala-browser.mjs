@@ -210,7 +210,9 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         const detailed=page.locator("[data-video-quick-legacy]");
         await detailed.waitFor({state:"visible",timeout:12000});
         assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
-        assert.equal(await detailed.locator("[data-video-quick-duration]").count(),4);
+        assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
+          "Director adds the 15-second option while preserving 10/20/30/60");
+        assert.equal(await detailed.locator('[data-video-quick-duration="15"]').count(),1);
         await detailed.locator('[data-video-quick-duration="30"]').click();
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
         await detailed.locator('[data-video-quick-aspect="landscape"]').click();
