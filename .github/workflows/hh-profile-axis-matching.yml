@@ -95,7 +95,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   axis-unit-types-build:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false || github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
