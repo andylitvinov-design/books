@@ -116,6 +116,7 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 90, 'Unexpectedly empty/reduced workflow catalog');
+  assert.ok(names.length <= 93, 'Workflow budget exceeded: consolidate existing checks before adding new YAML; change this budget only in an explicitly reviewed CI architecture PR');
   for(const name of names) {
     const file='.github/workflows/'+name;
     assert.doesNotThrow(()=>parsePrTrigger(readFileSync(file,'utf8'),file),name);
