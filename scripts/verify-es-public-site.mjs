@@ -209,7 +209,23 @@ try {
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
             await assertSpanishHomeAlternates(page);
-            if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
+            if(width===390) {
+              // The legacy service-home-card-grid was replaced by the seven
+              // first-party workspace modules. Verify an actual visible
+              // photo-and-copy offer in the new mobile entry, not a retired
+              // CSS selector that no longer exists.
+              const card=page.locator('[data-home-featured-workspace] [data-home-module-offers="courses"] [data-home-offer-card]').first();
+              await expect(card).toBeVisible();
+              const layout=await card.evaluate(el=>({
+                columns:getComputedStyle(el).gridTemplateColumns,
+                width:el.getBoundingClientRect().width,
+                overflow:el.scrollWidth>el.clientWidth+2,
+              }));
+              assert.match(layout.columns,/^\d+(?:\.\d+)?px\s+\d+(?:\.\d+)?px$/,
+                'Spanish mobile workspace offer preserves photo + copy columns');
+              assert.ok(layout.width>120&&!layout.overflow,
+                'Spanish mobile offer remains legible without internal clipping: '+JSON.stringify(layout));
+            }
           }
           if(path==='/es/client') {
             // Also exercise desktop hover without clicking a language.
