@@ -54,7 +54,7 @@ try {
         assert.equal(await intro.locator('.site-video-title, .site-video-description, .site-video-duration-text, .site-video-play-label').count(), 0);
         await expect(intro.locator('.site-video-duration')).toHaveCount(1);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('ИИ-аватар');
-        await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         const frameBox = await intro.locator('.site-video-frame').boundingBox();
         const figureBox = await intro.locator('figure').boundingBox();
         assert.ok(figureBox.height < frameBox.height + 64, 'Excessive caption height');
@@ -68,8 +68,8 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        await expect(intro.locator('.site-video-watch-link')).toBeVisible();
-        await expect(intro.locator('.site-video-watch-link')).toHaveAttribute('href', `https://app.heygen.com/share/${videoId}`);
+        // About is intentionally internal-only, including when its transcript opens.
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
@@ -93,3 +93,4 @@ try {
 } finally {
   if (app) app.kill('SIGTERM');
 }
+
