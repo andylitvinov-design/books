@@ -11,7 +11,7 @@ import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
-import type { AffirmationVoiceResult } from "./mandala-affirmation-voice";
+import type { AffirmationVoiceResult, AffirmationVoicePreferences } from "./mandala-affirmation-voice";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
@@ -41,7 +41,7 @@ type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
 // A selected sound is only a preview; attaching it is a separate, explicit step.
-type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true};
+type AttachedAudio = {kind:"preset";id:Exclude<AmbientMusic,"none">} | {kind:"file";file:File;id:string;narration?:true;spokenText?:string;speechSeconds?:number;mixSeconds?:number;nonLoop?:true;voiceId?:string;language?:string;bed?:string};
 type Job = {
   recorder: MediaRecorder;
   stream: MediaStream;
@@ -918,6 +918,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
   const [voiceGenerating,setVoiceGenerating] = useState(false);
+  const [voicePreferences,setVoicePreferences] = useState<AffirmationVoicePreferences>({voiceId:"maya",language:locale,bed:"none"});
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -951,6 +952,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
   const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
     (attachedAudio.spokenText!==currentAffirmationSpeech || attachedAudio.mixSeconds!==duration ||
+      attachedAudio.voiceId!==voicePreferences.voiceId || attachedAudio.language!==voicePreferences.language ||
+      attachedAudio.bed!==voicePreferences.bed ||
       (attachedAudio.speechSeconds||0)>duration-0.35));
   const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none":"preset:"+music;
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
@@ -1383,7 +1386,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // export at unity gain instead of silently reducing both by another 20%.
     setSoundVolume(100);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
-      spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds});
+      spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds,
+      voiceId:clip.voiceId,language:clip.language,bed:clip.bed});
     if(duration!==clip.mixSeconds){setDuration(clip.mixSeconds as (typeof durations)[number]);setCinematicPlan(null);}
     setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
@@ -1809,7 +1813,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
             onInvalidate={()=>setAttachedAudio(current=>
               current?.kind==="file"&&current.narration?null:current)}
-            onGenerating={setVoiceGenerating}/>
+            onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
           {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
             {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
               locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
