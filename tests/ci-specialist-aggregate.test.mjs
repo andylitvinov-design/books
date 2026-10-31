@@ -555,36 +555,49 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
 
-test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
+test('Toronto postretirement owner retains both actual browser suites without obsolete workflow triggers', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
-  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
-  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
-  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement,
+    'Retired specialist authorization remains auditable in the trusted registry');
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false,
+    'Retired workflow must stay absent');
   const source=readFileSync(replacement,'utf8');
-  for (const expected of [
-    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
+  for (const contract of [
     'node scripts/verify-public-pathway-mobile.mjs',
     'node scripts/verify-public-pathway-toronto-mobile.mjs',
     'tests/public-pathway-migration.test.mjs',
     'tests/public-pathway-toronto.test.mjs',
+    "app/\\[locale\\]/toronto/**",
     'Build exact candidate once for both real-browser suites',
     'playwright install --with-deps chromium webkit',
     'Whole-project TypeScript outside protected production PRs',
     'HH_RUN_WAVE1',
     'HH_RUN_WAVE2',
-  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
-  const base=new Map([[oldName,old],[replacement,source]]);
+  ]) assert.ok(source.includes(contract), 'Active consolidated owner dropped '+contract);
+  assert.ok(!source.includes("      - '.github/workflows/hh-public-journey-toronto-wave2.yml'"),
+    'Retired YAML should not trigger another expensive browser suite');
+
+  // Historical migration assurance remains strict. The one-time deletion was
+  // valid because the BASE version of the successor watched the old YAML.
+  // Reconstruct that approved old BASE for the regression, without re-adding
+  // obsolete path triggers to the current production workflow.
+  const ownPath="      - '.github/workflows/hh-public-journey-wave1.yml'";
+  assert.ok(source.includes(ownPath),'Current owner must remain self-triggering');
+  const historical=source.replace(ownPath,
+    ownPath+"\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'");
+  const oldYaml="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
+  const baseline=new Map([[oldName,oldYaml],[replacement,historical]]);
+  const candidate=new Map([[replacement,historical]]);
   const changed=[oldName];
-  const current=new Map([[replacement,source]]);
-  const expected=expectedWorkflows({base,current,changed});
-  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
-  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
-  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
-    {retired:oldName,replacement},
-  ]);
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
-    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+  const expected=expectedWorkflows({base:baseline,current:candidate,changed});
+  assert.ok(expected.includes(oldName),'Immutable historical BASE must require old specialist');
+  assert.ok(expected.includes(replacement),'Historical successor must cover deleted filename');
+  assert.deepEqual(resolveExpectedSpecialists({base:baseline,current:candidate,changed,expected}).delegated,
+    [{retired:oldName,replacement}]);
+  assert.throws(()=>resolveExpectedSpecialists({
+    base:baseline,current:new Map([[replacement,historical+'\n# altered']]),changed,expected
+  }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });
 
 test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
