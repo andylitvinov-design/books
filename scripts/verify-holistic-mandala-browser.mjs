@@ -107,6 +107,48 @@ const runEngine = async ([engine, browserType]) => {
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
 
+        // First free video: real exported moving media in both engines.
+        const firstStart=page.locator("[data-first-free-video]");
+        await firstStart.waitFor({state:"visible",timeout:12000});
+        assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-filters]").getAttribute("open"),null);
+        if(locale==="ru"&&width===390){
+          const firstPage=await context.newPage();
+          try{
+            const freshResponse=await firstPage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+            assert.equal(freshResponse?.status(),200);
+            const form=firstPage.locator("[data-first-free-video]");
+            await form.locator("[data-first-video-wish]").fill("Хочу спокойный рассвет у моря и мягкую дорогу к новой цели");
+            await firstPage.waitForFunction(()=>{
+              const prompt=document.querySelector("[data-first-video-prompt]");
+              return prompt?.value?.length>80;
+            },undefined,{timeout:15000});
+            const filters=form.locator("[data-first-video-filters]");
+            await filters.locator("summary").click();
+            await expect(filters).toHaveAttribute("open","",{timeout:10000});
+            await form.locator("[data-first-video-aspect]").selectOption("portrait");
+            assert.match(await form.locator("[data-first-video-prompt]").inputValue(),/9:16/);
+            await form.locator("[data-first-video-generate]").click({timeout:15000});
+            const save=firstPage.locator("[data-mandala-video-download]");
+            await save.waitFor({state:"visible",timeout:85000});
+            const [download]=await Promise.all([
+              firstPage.waitForEvent("download",{timeout:20000}),save.click(),
+            ]);
+            const bytes=await bufferFromStream(await download.createReadStream());
+            assert.ok(bytes.length>10000,"free first video encodes moving media, not a text-only placeholder");
+            const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
+              "-show_entries","stream=codec_type,width,height",
+              "-of","default=noprint_wrappers=1","pipe:0"],{input:bytes,maxBuffer:1024*1024});
+            assert.equal(probe.status,0,"first free video must decode");
+            const details=probe.stdout.toString();
+            assert.match(details,/codec_type=video/);
+            assert.match(details,/width=720|width=1080/);
+            assert.match(details,/height=1280|height=1920/);
+          }finally{await firstPage.close();}
+        }
+
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
         assert.equal(await quick.locator("[data-video-quick-section]").count(),4,

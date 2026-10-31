@@ -8,6 +8,7 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -1574,6 +1575,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? moneyScenes.slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getRealMoneyFilm(item.id).poster}))
     : otherVideoScenes[theme].slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getThemedRealFilm(theme,item.id)?.poster||null}));
   const jobRef = useRef<Job | null>(null);
+  const firstVideoRequestRef=useRef(false);
+  useEffect(()=>{
+    if(!result||!firstVideoRequestRef.current)return;
+    firstVideoRequestRef.current=false;
+    window.requestAnimationFrame(()=>document.getElementById("personal-video-result")?.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",
+    }));
+  },[result]);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
   const source = backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl || BACKGROUND_CLIP;
@@ -2314,6 +2323,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
+  const applyFirstVideoDraft=(
+    draft:{plan:CinematicStoryboard;wish:string;theme:VideoTheme;aspect:Aspect;durationSeconds:20|30|60},
+    prefs:{motion:Speed;music:"none"|"harmony"|"meditation";caption:boolean},
+  )=>{
+    if(recording||preparing)return;
+    clearUploadedAudio();
+    setTheme(draft.theme);setVideoCategory(draft.theme);
+    const first=draft.plan.shots[0];
+    if(draft.theme==="money")setMoneyScene(first?.theme==="money"
+      ?first.sceneId as MoneySceneId:"golden-rain");
+    else{
+      setMoneyScene(null);
+      setOtherScene(first?.theme===draft.theme
+        ?first.sceneId as LocalSceneId:otherVideoScenes[draft.theme][0].id);
+    }
+    setBackgroundOnly(true);
+    setAspect(draft.aspect);
+    setDuration(draft.durationSeconds as (typeof durations)[number]);
+    setSpeed(prefs.motion);
+    setCinematicPlan(draft.plan);
+    setMusic(prefs.music);
+    setAttachedAudio(prefs.music==="none"?null:{kind:"preset",id:prefs.music});
+    setAudioAuto(false);setAudioDurationInvalid(false);setMusicWarning("");
+    setCaptionMode(prefs.caption?"custom":"none");
+    if(prefs.caption)setCustomCaption(captionFromWish(draft.wish));
+    setPreviewPlaying(false);setSuggestion("");
+  };
   const createQuickVideo = () => {
     if(usingFreeFilmCompilation&&!freeFilmReady){
       setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
@@ -2357,6 +2393,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
           <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
         </nav>
+        <MandalaFirstVideoStart locale={locale} wish={wish}
+          disabled={recording||preparing} preparing={preparing} recording={recording}
+          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
+          onWishChange={value=>{setWish(value);setSuggestion("");}}
+          onApply={applyFirstVideoDraft}
+          onCreate={()=>{
+            firstVideoRequestRef.current=canGenerate;
+            createQuickVideo();
+          }}
+          onCancel={()=>{
+            const job=jobRef.current;
+            if(job)stopJob(job,true);
+            firstVideoRequestRef.current=false;
+          }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
