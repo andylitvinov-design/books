@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      - '.github/workflows/hh-public-services-production.yml'
       - 'components/academy-course-video-playlist.tsx'
       - 'lib/practitioners/taoist-talisman-cart.js'
       - 'scripts/fixtures/holistic-support-directory.mjs'
@@ -123,6 +124,76 @@ jobs:
         run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - name: Select full browser suite only for actual public-service changes
+        id: scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import { appendFileSync } from 'node:fs';
+          // Only modifications to unit tests ALREADY run by this job use the
+          // fast lane. App/auth/checkout/payment/provider/SQL/dependencies,
+          // added/removed tests, unknown changes and API errors use full QA.
+          const unitTests = new Set([
+            "tests/temple-support-hub.test.mjs",
+            "tests/holistic-support-first-screen.test.mjs",
+            "tests/temple-insights-compact-cta.test.mjs",
+            "tests/holistic-support-topics.test.mjs",
+            "tests/remote-energy-support-mobile-compact.test.mjs",
+            "tests/remote-energy-support-booking.test.mjs",
+            "tests/practitioner-remote-energy-support.test.mjs",
+            "tests/holistic-support-meditations.test.mjs",
+            "tests/holistic-inline-talisman-order.test.mjs",
+            "tests/holistic-compact-search.test.mjs",
+            "tests/holistic-support-mobile-alternative.test.mjs",
+            "tests/holistic-support-recommendation-engine.test.mjs",
+            "tests/holistic-talisman-mobile-categories.test.mjs",
+            "tests/talisman-google-checkout.test.mjs",
+            "tests/direction-three-sections.test.mjs",
+            "tests/direction-offers.test.mjs",
+            "tests/goal-support-offers.test.mjs",
+            "tests/direction-extras.test.mjs",
+            "tests/practitioner-homeopathy-canonical-route.test.mjs",
+            "tests/alchemy-soul-mobile-landing.test.mjs",
+            "tests/alchemy-soul-spanish-parity.test.mjs",
+            "tests/service-alchemy-one-screen-story.test.mjs",
+            "tests/alchemy-panel-overflow-diagnostics.test.mjs"
+          ]);
+          let fullAcceptance = true;
+          let changed = [];
+          try {
+            if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+              const repo = process.env.GITHUB_REPOSITORY;
+              const number = Number(process.env.HH_PR_NUMBER);
+              if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !Number.isInteger(number) || number < 1) {
+                throw Error('Invalid PR identity');
+              }
+              for (let page = 1; page <= 30; page++) {
+                const url = `https://api.github.com/repos/${repo}/pulls/${number}/files?per_page=100&page=${page}`;
+                const response = await fetch(url, {
+                  headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${process.env.GITHUB_TOKEN}` },
+                  signal: AbortSignal.timeout(10000),
+                });
+                if (!response.ok) throw Error(`GitHub changed-files HTTP ${response.status}`);
+                const batch = await response.json();
+                if (!Array.isArray(batch)) throw Error('Invalid changed-files payload');
+                changed.push(...batch);
+                if (changed.length > 2999) throw Error('Changed-files list too large');
+                if (batch.length < 100) break;
+                if (page === 30) throw Error('Changed-files pagination incomplete');
+              }
+              fullAcceptance = !(changed.length > 0 &&
+                changed.every(file => file.status === 'modified' && unitTests.has(file.filename)));
+            }
+          } catch (error) {
+            console.warn('Unknown PR scope: running FULL acceptance:', error.message);
+            fullAcceptance = true;
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `full_acceptance=${fullAcceptance}\n`);
+          console.log(`Public Services ${fullAcceptance ? 'FULL browsers+build' : 'focused unit-only'}: ${changed.length} changed files`);
+          JS
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
@@ -137,6 +208,7 @@ jobs:
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       - name: Install Chromium and WebKit for isolated public acceptance
+        if: steps.scope.outputs.full_acceptance == 'true'
         run: |
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
@@ -144,6 +216,7 @@ jobs:
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       - name: Production build and public browser acceptance
+        if: steps.scope.outputs.full_acceptance == 'true'
         run: |
           mkdir -p artifacts/public-services-production
           npm run build > artifacts/public-services-production/build.log 2>&1
@@ -180,7 +253,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.scope.outputs.full_acceptance == 'true'
         with:
           name: public-services-production-acceptance
           path: |
