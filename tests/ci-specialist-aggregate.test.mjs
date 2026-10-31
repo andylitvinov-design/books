@@ -59,7 +59,9 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  const failed=run({path:file,conclusion:'failure'});
  const syntaxRun=run({id:153,path:syntax});
  const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
- assert.deepEqual((await verify(api,ctx,files,{maxWaitMs:0})).expected,[syntax]);
+ const result=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(result.expected,[syntax]);
+ assert.deepEqual(result.advisory.concurrencyOnly,[file]);
  api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
  await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
