@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU/ES homepage omits the unapproved HeyGen introduction without touching the video library", () => {
+test("EN/RU homepage uses only the newly approved presentation and keeps withdrawn legacy introductions retired", () => {
   const en = read("app/page.tsx"), ru = read("app/[locale]/page.tsx");
   const es = read("app/es/page.tsx");
   const home = read("components/holistic-house-home.tsx");
@@ -13,6 +13,15 @@ test("EN/RU/ES homepage omits the unapproved HeyGen introduction without touchin
   }
   assert.doesNotMatch(home, /introVideoContent|HomeIntroVideoSection|SiteVideoPlayer/);
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
+  assert.match(home, /<HomePresentationVideoSection locale=\{locale\} \/>/);
+  const presentation = read("components/home-presentation-video-section.tsx");
+  assert.match(presentation, /youtubeId: "G0Db6yOCMto"/);
+  assert.match(presentation, /data-video-slot="home-presentation"/);
+  assert.match(presentation, /videoKey\("home-intro", "en"\)/);
+  assert.match(presentation, /isApprovedEnglishPresentation/);
+  assert.match(presentation, /video\.language === "en"/);
+  assert.match(presentation, /durationSeconds \?\? 0\) >= 70/);
+  assert.doesNotMatch(presentation, /72e3e6f45c3664b0b8d75281b1b413a5\.mp4/);
   // Archive / owner video manager entries remain available, but may not
   // make an unapproved AI introduction reappear on the homepage.
   const archived = read("components/home-intro-video-section.tsx");
