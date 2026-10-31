@@ -310,3 +310,67 @@ test('Practitioner presentations retain all real contracts on production PRs and
   assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retains owner-safe contracts', () => {
+  const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('practice-visual-services.yml');
+  const core = read('hh-pr-core-release.yml');
+  const dollar = String.fromCharCode(36);
+  const expectedEvents = 'types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const prGroup = 'group: practice-visual-services-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const prCancel = 'cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}";
+  const draftGate = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const coreReuse = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes(expectedEvents), 'Draft→Ready must trigger the full real practice suite');
+  assert.match(source, /^    branches: \['codex\/public-book-library'\]/m);
+  assert.ok(source.includes(prGroup), 'cancel only superseded commits of the same PR');
+  assert.ok(source.includes(prCancel), 'do not cancel unrelated release/manual runs');
+  assert.ok(source.includes('  service-editor:\n    '+draftGate+'\n'), 'Draft must not run expensive editor QA');
+  assert.ok(source.includes('node-version: 22\n          cache: npm'), 'reuse npm package cache, not node_modules or PHI');
+  for (const [step, command] of [
+    ['TypeScript', 'npx --no-install tsc --noEmit'],
+    ['Production build', 'npm run build'],
+  ]) assert.ok(source.includes('- name: '+step+'\n        '+coreReuse+'\n        run: '+command),
+    step+' must run outside production-targeted PRs; Core validates exact-HEAD globally');
+  for (const contract of [
+    'tests/practice-google-return-and-services-v5.test.mjs',
+    'tests/practice-public-private-unified.test.mjs',
+    'tests/practice-photo-upload.test.mjs',
+    'tests/practitioner-preview-auth.test.mjs',
+    'tests/remote-support-privacy-contract.test.mjs',
+    'tests/remote-energy-support-booking.test.mjs',
+    'npx --no-install eslint components/app/simple-service-editor.jsx',
+    "'.github/workflows/practice-visual-services.yml'",
+  ]) assert.ok(source.includes(contract), 'missing real practice/consent/security gate '+contract);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+
+test('Pro master workflow delegates duplicate global TS/Next to unconditional exact-head Core', () => {
+  const pro = readFileSync(new URL('../.github/workflows/pro-reiki-master-paths.yml', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml', import.meta.url), 'utf8');
+  const reuse = 'if: '+String.fromCharCode(36)+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(pro.includes('name: Pro Reiki master learning paths'));
+  assert.ok(pro.includes("    branches: ['codex/public-book-library']"));
+  assert.ok(pro.includes("- 'tests/profi-hub.test.mjs'"));
+  assert.ok(pro.includes("- 'tests/pro-master-search-placement.test.mjs'"));
+  assert.ok(pro.includes("- '.github/workflows/pro-reiki-master-paths.yml'"));
+  assert.ok(pro.includes('node --test tests/profi-hub.test.mjs tests/pro-master-search-placement.test.mjs tests/temple-support-hub.test.mjs'));
+  assert.ok(pro.includes('npx --no-install eslint'));
+  assert.ok(pro.includes('components/profi-hub.tsx'));
+  assert.ok(pro.includes('components/master-network-explorer.tsx'));
+  for (const [step,command] of [
+    ['Type-check the application','npx --no-install tsc --noEmit'],
+    ['Validate the Next.js production build','npm run build'],
+  ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
+    'Pro '+step+' must be owned by immutable-base Core on production PRs');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.ok(core.includes('ci-specialist-aggregate.mjs'));
+  assert.doesNotMatch(pro,/continue-on-error:\s*true/);
+});

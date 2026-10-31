@@ -23,7 +23,7 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
   assert.equal(CINEMATIC_THEMES.length,6);
   assert.equal(Object.keys(CINEMATIC_STYLES).length,4);
   for(const locale of ["en","ru","es"])for(const theme of CINEMATIC_THEMES){
-    for(const durationSeconds of [20,30,60]){
+    for(const durationSeconds of [20,30]){
       const p=buildCinematicStoryboard({locale,theme,durationSeconds,style:"nature",aspect:"portrait"});
       assert.equal(p.version,CINEMATIC_PLAN_VERSION);
       assert.equal(p.shotCount,4);
@@ -38,6 +38,31 @@ test("six existing themes, EN/RU/ES and four distinct contiguous licensed-safe s
       assert.equal(p.paidRenderApproved,false);
     }
   }
+});
+test("a one-minute montage has six distinct contiguous shots and a valid manifest",()=>{
+  for(const locale of ["en","ru","es"])for(const theme of CINEMATIC_THEMES){
+    const plan=buildCinematicStoryboard({locale,theme,durationSeconds:60});
+    assert.equal(plan.shotCount,6);
+    assert.equal(new Set(plan.shots.map(shot=>shot.sceneId)).size,6);
+    assert.equal(plan.shots.reduce((sum,shot)=>sum+shot.durationSeconds,0),60);
+    assert.equal(buildCinematicAssemblyManifest(plan).clips.length,6);
+    assert.equal(cinematicPreviewSeconds(plan,61),1);
+    assert.ok(safeCinematicPrompt(plan,6));
+  }
+});
+test("a fifteen-second brief keeps its explicitly selected duration",()=>{
+  const plan=buildCinematicStoryboard({locale:"en",theme:"energy",style:"warm",durationSeconds:15});
+  assert.equal(plan.durationSeconds,15);
+  assert.equal(plan.shots.at(-1)?.startSeconds+plan.shots.at(-1)?.durationSeconds,15);
+  assert.match(studio,/const durations = \[10, 15, 20, 30, 60\] as const/);
+});
+test("brief audio and caption choices reuse existing local controls without rendering",()=>{
+  assert.match(directorUI,/onMusicPreference/);
+  assert.match(directorUI,/onCaptionPreference/);
+  assert.match(studio,/onMusicPreference=\{choice=>/);
+  assert.match(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
+  assert.match(studio,/onCaptionPreference=\{choice=>setCaptionMode\(choice==="none"\?"none":"theme"\)\}/);
+  assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|sendBeacon/);
 });
 test("long-running cinematic preview loops actual scene times and synchronized affirmations",()=>{
   const film=buildCinematicStoryboard({theme:"money",durationSeconds:20,locale:"ru"});
@@ -281,7 +306,10 @@ test("cinematic director preserves the agreed four-field profile flow without pr
 });
 test("same iPhone editor records actual four-shot canvas montage without sending private brief",()=>{
   assert.match(studio,/MandalaCinematicDirector/);
+  // #2691 preserves the approved inline adapter, while the Director receives
+  // exactly the same plan and uses the same local four/six-shot recorder.
   assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
+  assert.match(studio,/setDuration\(plan.durationSeconds as \(typeof durations\)\[number\]\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
   assert.match(studio,/const activeFilm = cinematicPlan \? null/);
@@ -300,4 +328,12 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(css,/@media\(max-width:360px\)/);
   assert.match(css,/:focus-visible/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+});
+test("approved #2691 quick and legacy wish controls share the Director's single React state",()=>{
+  assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
+  assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
+  assert.match(studio,/data-video-quick-wish/);
+  assert.match(studio,/id="personal-video-wish"/);
+  assert.match(studio,/onIntentTextChange=\{value=>\{setWish\(value\)/);
+  assert.match(directorUI,/onIntentTextChange/);
 });

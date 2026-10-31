@@ -22,7 +22,17 @@ for (const name of workflows) {
     const jobBlock = source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobBlock, 'jobs block missing');
     const jobNames = [...jobBlock.matchAll(/^  ([a-z][a-z0-9-]+):\s*$/gm)].map(match => match[1]);
-    assert.equal(jobNames.length, 1, 'unexpected job count; update all jobs when expanding workflow');
+    const expanded = name === 'site-video-browser.yml';
+    assert.equal(jobNames.length, expanded ? 2 : 1, 'unexpected job count; update all jobs when expanding workflow');
+    if (expanded) {
+      assert.deepEqual(jobNames, ['browser','admin-verified-owner-browser']);
+      assert.match(jobBlock, /^  admin-verified-owner-browser:\n    name: [^\n]+\n    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false/m,
+        'The isolated owner DB/browser job must never run on production PUSH or Draft PRs');
+      assert.match(jobBlock, /postgres:17-alpine/);
+      assert.match(jobBlock, /redis:7-alpine/);
+      assert.match(jobBlock, /\/api\/app\/practitioner\/open|verify-site-video-admin-browser\.mjs/,
+        'Protected browser job must run the verified owner, not a fabricated v1 cookie');
+    }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
     assert.match(source, /^  cancel-in-progress: true/m);
@@ -385,4 +395,131 @@ test('wave 5: Support Mock readiness loop is bounded, strict and ShellCheck-clea
   assert.match(mock,/tail -80 \/tmp\/hh-support-mock-next\.log/);
   assert.match(mock,/exit 1/);
   assert.doesNotMatch(mock,/for i in \$\(seq 1 120\)/);
+});
+
+const heavyDraftStage = [
+  ['ia-v2.yml', ['verify']],
+  ['hh-live-seo-audit.yml', ['audit', 'public-tests-mobile']],
+  ['hh-public-performance-audit.yml', ['measure-public']],
+];
+
+for (const [name, jobs] of heavyDraftStage) {
+  test(name + ': skip Draft-only runner work but restore exact Ready checks', () => {
+    const source = read(name);
+    assert.ok(source.includes('  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n'));
+    assert.match(source, /^concurrency:/m);
+    assert.match(source, /cancel-in-progress:/);
+    const block = source.split(/^jobs:\s*$/m)[1];
+    assert.ok(block);
+    const suffix = '$' + "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+    for (const job of jobs) {
+      assert.ok(block.includes('  ' + job + ':\n    if: ' + suffix + '\n'), name + '/' + job + ' Ready gate missing');
+    }
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  });
+}
+
+test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
+  const ia = read('ia-v2.yml');
+  // YAML-only edits belong to the exact-head Core/actionlint gates, not IA's product suite.
+  assert.doesNotMatch(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  assert.match(read('hh-actionlint.yml'), /^      - '\.github\/workflows\/\*\*'$/m);
+  assert.match(read('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(ia, /verify:ia-v2/);
+  assert.match(ia, /redis:7-alpine/);
+  assert.match(ia, /^  workflow_dispatch:/m);
+  const seo = read('hh-live-seo-audit.yml');
+  const sourceBlock = seo.split('  source-build:')[1]?.split('  audit:')[0];
+  assert.ok(sourceBlock);
+  assert.ok(sourceBlock.includes("    if: $" + "{{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"));
+  assert.match(sourceBlock, /npm run build/);
+  assert.match(seo, /^  push:/m);
+  assert.match(seo, /^  workflow_dispatch:/m);
+  assert.match(seo, /verify-live-sitemap\.mjs/);
+  const performance = read('hh-public-performance-audit.yml');
+  assert.match(performance, /^  push:/m);
+  assert.match(performance, /^  workflow_dispatch:/m);
+  assert.match(performance, /tests\/holistic-house-image-quota\.test\.mjs/);
+});
+
+
+// Existing Guard job exercises the new preflight's fail-closed decision table.
+// The preflight adds no standalone CI workflow, job, or required check.
+import { assessPrReadiness } from '../scripts/ci-pr-readiness.mjs';
+
+const earlyRepo = 'andylitvinov-design/books';
+const earlyEvent = {
+  repository: { full_name: earlyRepo },
+  pull_request: {
+    number: 4242, draft: false,
+    head: { sha: 'a'.repeat(40), repo: { full_name: earlyRepo } },
+    base: { ref: 'codex/public-book-library', sha: 'b'.repeat(40) },
+  },
+};
+const earlyLive = {
+  number: 4242, state: 'open', draft: false, mergeable: true, mergeable_state: 'clean',
+  head: { sha: 'a'.repeat(40), repo: { full_name: earlyRepo } },
+  base: { ref: 'codex/public-book-library', sha: 'b'.repeat(40) },
+};
+
+test('early readiness accepts current mergeable HEAD without deadlocking pending reviews', () => {
+  assert.equal(assessPrReadiness(earlyEvent, earlyLive, earlyRepo).ready, true);
+  assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'blocked' }, earlyRepo).ready, true);
+  assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'unstable' }, earlyRepo).ready, true);
+});
+
+test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
+  const mutations = [
+    [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
+    [{ ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) } }, 'superseded_base'],
+    [{ ...earlyLive, mergeable: false }, 'conflict'],
+    [{ ...earlyLive, mergeable_state: 'dirty' }, 'conflict'],
+    [{ ...earlyLive, mergeable: null }, 'mergeability_pending'],
+    [{ ...earlyLive, mergeable_state: 'unknown' }, 'mergeability_pending'],
+    [{ ...earlyLive, draft: true }, 'draft'],
+    [{ ...earlyLive, state: 'closed' }, 'closed'],
+    [{ ...earlyLive, number: 7 }, 'pr_mismatch'],
+    [{ ...earlyLive, head: { ...earlyLive.head, repo: { full_name: 'fork/external' } } }, 'fork_head'],
+  ];
+  for (const [live, code] of mutations) {
+    const result = assessPrReadiness(earlyEvent, live, earlyRepo);
+    assert.equal(result.ready, false, code);
+    assert.equal(result.code, code);
+  }
+  assert.equal(assessPrReadiness({}, earlyLive, earlyRepo).ready, false);
+  assert.equal(assessPrReadiness(earlyEvent, earlyLive, 'wrong/repo').ready, false);
+});
+
+test('existing heavy jobs preflight before dependency install; core release gate stays required', () => {
+  const expected = [
+    ['hh-app-r1.yml', 3], ['hh-app-browser.yml', 1],
+    ['opora-module-ci.yml', 2], ['hh-public-services-production.yml', 1],
+    ['site-video-browser.yml', 2],
+  ];
+  for (const [name, expectedCount] of expected) {
+    const source = read(name);
+    assert.equal((source.match(/- name: Verify live PR readiness before costly CI/g) || []).length,
+      expectedCount, name + ' preflight steps');
+    assert.match(source, /^  pull-requests: read$/m, name + ' read-only permission');
+    const jobText = source.split(/^jobs:\s*$/m)[1];
+    assert.ok(jobText, name + ' missing jobs');
+    const jobBlocks = jobText.split(/^  (?=[a-z][a-z0-9-]*:\s*$)/m).slice(1);
+    for (const block of jobBlocks) {
+      const install = block.indexOf('      - run: npm ci');
+      if (install === -1) continue;
+      const preflight = block.indexOf('run: node scripts/ci-pr-readiness.mjs');
+      assert.ok(preflight >= 0 && preflight < install, name + ' costly job starts before preflight');
+    }
+    assert.doesNotMatch(source, /continue-on-error:\s*true/);
+  }
+  const core = read('hh-pr-core-release.yml');
+  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  assert.ok(scope && scope.includes('run: node scripts/ci-pr-readiness.mjs'));
+  assert.ok(scope.indexOf('run: node scripts/ci-pr-readiness.mjs') <
+    scope.indexOf('name: Classify strictly documentation-only PRs'));
+  assert.ok(core.includes('scripts/ci-pr-readiness.mjs|\\'));
+  assert.ok(core.includes('needs: scope'));
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npm run build/);
+  assert.ok(read('hh-pr-sweep-guard.yml').includes("'scripts/ci-pr-readiness.mjs'"));
 });

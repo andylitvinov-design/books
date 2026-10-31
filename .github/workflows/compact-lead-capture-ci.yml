@@ -72,7 +72,9 @@ jobs:
           components/personal-support-landing.tsx
           components/commerce/consultation-cart-entry.tsx
 
+      # PR Core verifies whole-project TypeScript + build on the same candidate SHA.
       - name: TypeScript and production build with unchanged payment gates
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: |
           npx --no-install tsc --noEmit
           npm run build

@@ -65,6 +65,11 @@ on:
       - ".github/workflows/hh-owner-telegram-video.yml"
 permissions:
   contents: read
+concurrency:
+  # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
+  group: hh-owner-telegram-video-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   owner-video:
     runs-on: ubuntu-latest
