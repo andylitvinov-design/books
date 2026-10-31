@@ -6,6 +6,7 @@ on:
       - feat/hh-my-courses-presets-five-tests-20261013
       - codex/course-subscriptions-commerce-20261013
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'lib/inner-growth/course-presets.js'
       - 'components/app/course-preset-catalog.*'
@@ -36,14 +37,21 @@ on:
       - 'tests/helpers/course-ui-harness.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
+      - 'tests/ci-growth-course-core-reuse.test.mjs'
       - 'package.json'
+      - '.github/workflows/hh-course-presets.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: hh-course-presets-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   course-presets:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Five-test presets + legacy course
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -55,6 +63,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify Core reuse and domain scope
+        run: node --test tests/ci-growth-course-core-reuse.test.mjs
       - name: Test exact five-test fixed curricula, old R3 and multicourse
         run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-ai-course-private-save.test.mjs
       - name: Lint course code
@@ -62,4 +72,5 @@ jobs:
       - name: Lint Energywork learner
         run: npx eslint components/energywork-ai-learner.tsx data/academy/energywork-ai-curriculum.ts components/principles-of-energywork.tsx components/academy-free-course-banner.tsx lib/academy/energywork-course-repository.js data/academy/energywork-ai-schema.js
       - name: Next production compile
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
