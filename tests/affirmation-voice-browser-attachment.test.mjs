@@ -6,14 +6,15 @@ const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.m
 
 test("affirmation attachment acceptance opens the advanced disclosure and checks both visible exact filenames",()=>{
   const start=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav"');
-  const open=source.indexOf('await advanced.locator(":scope > summary").click()',start);
-  const selectedVisible=source.indexOf('await selectedFile.waitFor({state:"visible"})',open);
+  const open=source.indexOf('await advanced.locator(":scope > summary").click()');
+  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',open);
+  const selectedVisible=source.indexOf('await selectedFile.waitFor({state:"visible"})',start);
   const attachedVisible=source.indexOf('await attachedFile.waitFor({state:"visible"})',selectedVisible);
   const selectedName=source.indexOf('assert.equal(await selectedFile.innerText(),expectedFileName)',attachedVisible);
   const attachedName=source.indexOf('assert.equal(await attachedFile.innerText(),expectedFileName)',selectedName);
   const close=source.indexOf('await advanced.locator(":scope > summary").click()',attachedName);
   const hidden=source.indexOf('await selectedFile.waitFor({state:"hidden"})',close);
-  assert.ok(start>=0&&open>start&&selectedVisible>open&&attachedVisible>selectedVisible&&
+  assert.ok(open>=0&&generate>open&&start>generate&&selectedVisible>start&&attachedVisible>selectedVisible&&
     selectedName>attachedVisible&&attachedName>selectedName&&close>attachedName&&hidden>close,
     "inspect actual visible selected/attached filenames through the user disclosure, then return to compact editor");
   assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
