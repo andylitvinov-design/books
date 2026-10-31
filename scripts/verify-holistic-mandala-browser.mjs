@@ -776,6 +776,12 @@ const runEngine = async ([engine, browserType]) => {
         // Scene options are genuinely editable, but collapsed on the compact mobile overview.
         await compactHypno.locator("[data-hypno-design-edit]").click();
         assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
+        // The compact overview presents the selected scene first; the real
+        // thumbnail gallery is still accessible through the original Edit button.
+        const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
+        assert.equal(await sceneSummary.count(),1);
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
