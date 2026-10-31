@@ -14,6 +14,8 @@ on:
       - 'components/mandala-cloud-voice-studio*'
       - 'components/mandala-affirmation-voice*'
       - 'tests/affirmation-voice.test.mjs'
+      - 'tests/affirmation-voice-browser-attachment.test.mjs'
+      - 'tests/wav-pcm-mixer.test.mjs'
       - 'scripts/verify-affirmation-voice-browser.mjs'
       - 'app/api/holistic-support/voice/**'
       - 'tests/voice-studio.test.mjs'
