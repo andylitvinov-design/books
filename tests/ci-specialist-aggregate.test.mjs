@@ -447,3 +447,31 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
 });
+
+test('Toronto wave 2 retirement requires exact unchanged and BASE-trusted full browser successor',()=>{
+  const old='.github/workflows/hh-public-journey-toronto-wave2.yml';
+  const successor='.github/workflows/hh-public-journey-wave1.yml';
+  const successorYaml=readFileSync(successor,'utf8');
+  for(const contract of [
+    'scripts/verify-public-pathway-mobile.mjs',
+    'scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-migration.test.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
+    'playwright install --with-deps chromium webkit',
+    'run: npm run build',
+  ]) assert.ok(successorYaml.includes(contract), 'Trusted successor dropped '+contract);
+  assert.equal((successorYaml.match(/run: npm run build/g)||[]).length,1);
+  const prior="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
+  const base=new Map([[old,prior],[successor,successorYaml]]);
+  const current=new Map([[successor,successorYaml]]);
+  const changed=[old];
+  const required=expectedWorkflows({base,current,changed});
+  assert.deepEqual(required,[old,successor]);
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected:required}),{
+    expected:[successor],delegated:[{retired:old,replacement:successor}],
+  });
+  assert.throws(()=>resolveExpectedSpecialists({
+    base,current:new Map([[successor,successorYaml+'\n# unreviewed edit']]),changed,expected:required,
+  }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
