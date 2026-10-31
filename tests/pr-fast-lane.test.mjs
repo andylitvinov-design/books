@@ -62,8 +62,10 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
     assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
   }
   assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
-  assert.match(opora, /browser: \[chromium, webkit\]/);
-  assert.match(opora, /cancel-in-progress: true/);
+  assert.ok(opora.includes("fromJSON(github.event_name == 'pull_request'"), 'OPORA browser matrix must route by event');
+  assert.ok(opora.includes("'[\"chromium\"]'"), 'Ready PR runs one isolated Chromium');
+  assert.ok(opora.includes("'[\"chromium\",\"webkit\"]'"), 'manual and feature-push still cover WebKit');
+  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"), 'manual jobs cannot be cancelled by unrelated PRs');
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 

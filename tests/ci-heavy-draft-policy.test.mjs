@@ -249,7 +249,8 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
       name+' must target production explicitly');
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
-    assert.match(source,/^  cancel-in-progress: true/m);
+    if (name === 'opora-module-ci.yml') assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
+    else assert.match(source,/^  cancel-in-progress: true/m);
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
     const jobs=source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobs,name+' has no jobs');
