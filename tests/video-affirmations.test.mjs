@@ -250,7 +250,7 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 
@@ -384,4 +384,12 @@ test("Wave draft leaves live video unchanged until explicit approval",()=>{
   assert.match(section("function approvePhrases()","  return ("),/onChange\(next\)/);
   assert.match(src,/buildWaveNarrativeDraft\(\{\.\.\.waveInput,currentText:problemNote,goalText:goalNote/);
   assert.match(src,/requestKey=JSON\.stringify\(\[waveInput,problemNote,goalNote\]\)/);
+});
+
+test("explicit high-risk Wave note disables Hypno preview, export and opt-in",()=>{
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/data-video-affirmation-preview[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-overview-enable[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
+  assert.match(compact,/data-hypno-gemini-generate disabled=\{disabled\|\|safetyBlocked/);
 });
