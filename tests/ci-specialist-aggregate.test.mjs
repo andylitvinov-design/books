@@ -544,6 +544,19 @@ test('client progress owner is complete before the trusted second-phase deletion
   }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });
 
+test('PR cleanup specialist accepts only its successful policy and intentionally skipped push-only job', () => {
+  const name = '.github/workflows/hh-ci-stale-run-prune.yml';
+  const policy = { name: 'policy', status: 'completed', conclusion: 'success' };
+  const pushOnly = { name: 'prune', status: 'completed', conclusion: 'skipped' };
+  assert.equal(inspectJobs([policy, pushOnly], name), 2);
+  for (const jobs of [
+    [pushOnly], [policy], [policy, { ...pushOnly, conclusion: 'failure' }],
+    [{ ...policy, conclusion: 'skipped' }, pushOnly],
+    [policy, pushOnly, { name: 'unexpected', status: 'completed', conclusion: 'skipped' }],
+  ]) assert.throws(() => inspectJobs(jobs, name));
+  assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
+});
+
 test('Toronto browser owner has trusted retirement mapping before deleting old workflow', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
