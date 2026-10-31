@@ -112,7 +112,8 @@ test('all shared, auth, checkout, booking, config and unclassified changes fail 
 test('synthetic GitHub merge checkout scopes only the exact PR delta, not later production commits', () => {
   const base = 'a'.repeat(40), head = 'b'.repeat(40);
   const first = 'c'.repeat(40), checkout = 'd'.repeat(40);
-  const changed = 'scripts/verify-ideas-mobile-browser.mjs' + String.fromCharCode(0);
+  const changed = 'M' + String.fromCharCode(0) +
+    'scripts/verify-ideas-mobile-browser.mjs' + String.fromCharCode(0);
   const calls = [];
   const mockGit = (_command,args) => {
     calls.push(args);
@@ -130,7 +131,7 @@ test('synthetic GitHub merge checkout scopes only the exact PR delta, not later 
   assert.equal(plan.mode, 'focused');
   assert.equal(plan.cases, 'verify-ideas-mobile-browser.mjs');
   assert.deepEqual(calls.find(args => args[0] === 'diff'),
-    ['diff', '--no-renames', '--name-only', '-z', first, 'HEAD']);
+    ['diff', '--no-renames', '--name-status', '-z', first, 'HEAD']);
   assert.deepEqual(calls.find(args => args[0] === 'merge-base'),
     ['merge-base', '--is-ancestor', base, first]);
 });
@@ -160,8 +161,9 @@ test('direct exact-head PR checkout retains focused test-only lane', () => {
     if (args[0] === 'rev-parse') return Buffer.from(head + String.fromCharCode(10));
     if (args[0] === 'merge-base') return Buffer.alloc(0);
     if (args[0] === 'diff') {
-      assert.equal(args[4], base);
-      return Buffer.from('tests/temple-support-hub.test.mjs' + String.fromCharCode(0));
+      assert.equal(args[5], base);
+      return Buffer.from('M' + String.fromCharCode(0) +
+        'tests/temple-support-hub.test.mjs' + String.fromCharCode(0));
     }
     throw Error('Unknown git invocation');
   };
@@ -246,4 +248,26 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   assert.match(src,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.ok(src.includes('wait "$lane_a_pid"'));
   assert.ok(src.includes('wait "$lane_b_pid"'));
+});
+
+test('added, deleted, type-changed and malformed test-only diffs never use a browser fast lane', () => {
+  const base='a'.repeat(40), head='b'.repeat(40);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const z=String.fromCharCode(0);
+  const statusPlan = raw => planPublicServicesEvent(env, (_cmd,args) => {
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(raw);
+    throw Error('Unexpected git invocation '+args);
+  });
+  for(const status of ['A','D','T','U','R100']){
+    const result=statusPlan(status+z+'tests/temple-support-hub.test.mjs'+z);
+    assert.equal(result.mode,'full',status+' must not skip public browser QA');
+    assert.equal(result.reason,'ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
+  }
+  for(const malformed of ['', 'M'+z+'tests/temple-support-hub.test.mjs',
+    'M'+z+'tests/temple-support-hub.test.mjs'+z+'D']){
+    assert.equal(statusPlan(malformed).mode,'full','malformed status must fail closed');
+  }
+  assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });

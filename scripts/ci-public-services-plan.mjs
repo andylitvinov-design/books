@@ -125,9 +125,20 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       // A direct HEAD checkout still must contain the recorded event base.
       git('git', ['merge-base', '--is-ancestor', base, head], options);
     }
+    // -z name-status makes additions/deletions/type changes explicit. The fast
+    // lanes are approved ONLY for modifications of already-present sources.
+    // An added/deleted test or script must never masquerade as a safe edit.
     const raw = git('git',
-      ['diff', '--no-renames', '--name-only', '-z', diffBase, 'HEAD'], options);
-    return planPublicServicesChangedPaths(raw.toString('utf8').split('\0').filter(Boolean));
+      ['diff', '--no-renames', '--name-status', '-z', diffBase, 'HEAD'], options);
+    const rows = raw.toString('utf8').split('\0');
+    if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
+      return full('MALFORMED_GIT_NAME_STATUS');
+    const changed = [];
+    for (let i = 0; i < rows.length; i += 2) {
+      if (rows[i] !== 'M') return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
+      changed.push(rows[i + 1]);
+    }
+    return planPublicServicesChangedPaths(changed);
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
