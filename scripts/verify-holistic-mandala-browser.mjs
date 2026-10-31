@@ -61,8 +61,10 @@ let passes = 0;
 // context per engine (two total); preserve all six viewports per engine.
 const engines = [["webkit", webkit], ["chromium", chromium]];
 const runEngine = async ([engine, browserType]) => {
-  const browser = await browserType.launch({ headless: true });
-  try {
+    // Keep genuine Chromium + WebKit checks and all locale/viewport cases.
+    // A fresh browser process per case prevents WebKit's decoded H264 state
+    // leaking between closed contexts across repeated iPhone dimensions.
+    // This is isolation, not a skipped assertion or retry of a failed case.
     // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
     // native 13-track audio checks, reducing simultaneous encoding pressure.
     const orderedViewports = engine === "chromium"
@@ -71,6 +73,7 @@ const runEngine = async ([engine, browserType]) => {
       : viewports;
     for (const { locale, width } of orderedViewports) {
       const caseStartedAt = performance.now();
+      const browser = await browserType.launch({ headless: true });
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -106,9 +109,25 @@ const runEngine = async ([engine, browserType]) => {
 
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
-        assert.equal(await quick.locator("[data-video-quick-section]").count(),3);
+        assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
+          "the cover/photo panel is now part of the shared scene library");
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
-        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),4);
+        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3,
+          "advanced editor retains hypno, audio and detailed format controls");
+        const stage=quick.locator("[data-video-live-stage]");
+        const screen=stage.locator("[data-video-mandala-hero]");
+        assert.equal(await screen.locator("canvas").count(),1,
+          "the original Canvas renderer is the only full-size editable screen");
+        assert.deepEqual(await quick.locator(
+          '[data-video-live-stage], [data-video-scene-library], [data-video-quick-tier], [data-video-quick-section="4"]'
+        ).evaluateAll(elements=>elements.map(el=>el.hasAttribute("data-video-live-stage")?"preview":
+          el.hasAttribute("data-video-scene-library")?"library":
+          el.hasAttribute("data-video-quick-tier")?"format":"style")),
+          ["preview","library","format","style"],
+          "main preview and combined templates must precede format/quality and style");
+        const playerRect=await screen.boundingBox();
+        assert.ok(playerRect&&playerRect.width>playerRect.height,
+          engine+" "+locale+" "+width+"px central player must be widescreen");
         assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
@@ -117,6 +136,18 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-practice-accordion]").count(),1);
         assert.equal(await quick.locator("[data-video-quality-option]").count(),9,
           "each expandable format retains its Basic / Smart / Pro choices");
+        assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
+          "the source MP4 sample is a small secondary player beneath the main screen");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
+          "the same unified library includes the existing 4-MP4 film presets");
+        const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
+        await expandAllFilms.click();
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
+          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        await expandAllFilms.click();
+        const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
+        assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
+          "source-video example must fit beneath the large preview");
         assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-expanded"),"true");
         assert.equal(await quick.locator('[data-video-practice-details="video"]').isVisible(),true);
         assert.equal(await quick.locator('[data-video-practice-details="meditation"]').isVisible(),false);
@@ -158,18 +189,44 @@ const runEngine = async ([engine, browserType]) => {
         assert.ok(firstMaster?.startsWith("/videos/holistic-house/"),
           "same-origin published first-party film master");
         const tapPlay=livePreview.locator("button");
-        await tapPlay.click();
+        const clickMini=async phase=>{
+          try {
+            await tapPlay.click({timeout:15000});
+          }catch(error){
+            const state=await page.evaluate(()=>({
+              path:location.pathname,
+              quick:!!document.querySelector("[data-video-quick-builder]"),
+              stage:!!document.querySelector("[data-video-live-stage]"),
+              mini:!!document.querySelector("[data-video-quick-live-preview]"),
+              miniButton:!!document.querySelector("[data-video-quick-live-preview] button"),
+              videoReady:document.querySelector("[data-video-quick-live-preview] video")?.readyState,
+              videoError:document.querySelector("[data-video-quick-live-preview] video")?.error?.code??null,
+              body:document.body?.innerText.slice(0,180)
+            })).catch(()=>null);
+            throw new Error(engine+" "+locale+" "+width+"px "+phase+
+              " mini MP4 tap failed: "+JSON.stringify({state,errors})+"; "+String(error));
+          }
+        };
+        await clickMini("play");
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"true",
           "preview play activates actual native video");
-        await tapPlay.click();
+        await clickMini("pause");
         assert.equal(await tapPlay.getAttribute("aria-pressed"),"false");
-        // Reference hero Play is a real control for this same original MP4.
+        // The compact header Play also uses the one original MP4, not
+        // a second renderer. Verify the genuine React player state.
         await quick.locator("[data-video-quick-hero-play]").click();
         await expect(tapPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
-        await tapPlay.click();
+        await clickMini("pause after compact header Play");
         await expect(tapPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
-        assert.equal(await quick.locator("[data-video-quick-scene]").count(),6);
-        await quick.locator("[data-video-quick-scene]").nth(1).click();
+        const coverOptions=quick.locator("[data-video-cover-options]");
+        assert.equal(await coverOptions.locator("[data-video-quick-scene]").count(),6,
+          "six cover/thumbnail scene choices remain separate from six style thumbnails");
+        assert.equal(await coverOptions.getAttribute("open"),null,
+          "photo and cover choices are collapsed by default to keep the library compact");
+        await coverOptions.locator("summary").click();
+        assert.equal(await coverOptions.evaluate(el=>el.open),true,
+          "photo cover and user-owned image choices must open on user request");
+        await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
         await quick.locator('[data-video-quick-theme="money"]').click();
@@ -354,18 +411,40 @@ const runEngine = async ([engine, browserType]) => {
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
-        const landmarks=await page.evaluate(()=>{
+        const hierarchy=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
-          return ["[data-video-daily-picks]",
-            "[data-video-support-layout]","[data-video-category-rail]",
-            "[data-video-preview-choices]","[data-video-mandala-hero]",
-            "[data-video-therapy-banner]","#video-templates",
-            "[data-video-audio-section]","[data-video-hypnosis-section]"]
-            .map(top);
+          return {
+            // Owner-approved flow: ONE real hero and its existing film library
+            // appear BEFORE the format cards, styles and secondary settings.
+            preview:[
+              '[data-video-quick-section="1"]',
+              "[data-video-mandala-hero]",
+              "[data-video-mini-source]",
+              "[data-video-scene-library]",
+              "[data-video-quick-tier]",
+              '[data-video-quick-section="4"]',
+              "[data-video-quick-personal]",
+              "[data-video-order-bar]"
+            ].map(top),
+            // Historical Support/diagnostic functionality is retained below,
+            // with its own real video interactions, audio and hypno editors.
+            support:[
+              "[data-video-daily-picks]",
+              "[data-video-support-layout]",
+              "[data-video-category-rail]",
+              "[data-video-preview-choices]",
+              "[data-video-therapy-banner]",
+              "[data-video-audio-section]",
+              "[data-video-hypnosis-section]"
+            ].map(top)
+          };
         });
-        assert.ok(landmarks.every(Number.isFinite),"all key video blocks must be rendered");
-        for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
-          engine+" "+locale+" "+width+"px hierarchy "+i+": "+landmarks);
+        for(const [group,landmarks] of Object.entries(hierarchy)){
+          assert.ok(landmarks.every(Number.isFinite),
+            engine+" "+locale+" "+width+"px "+group+" contains all real sections");
+          for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
+            engine+" "+locale+" "+width+"px "+group+" hierarchy "+i+": "+landmarks);
+        }
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
@@ -1304,11 +1383,9 @@ const runEngine = async ([engine, browserType]) => {
           "elapsed", ((performance.now() - caseStartedAt) / 1000).toFixed(1) + "s");
       } finally {
         await context.close();
+        await browser.close();
       }
     }
-  } finally {
-    await browser.close();
-  }
 };
 // Both engines finish before result handling; never waive a failed browser.
 const engineResults = await Promise.allSettled(engines.map(runEngine));
