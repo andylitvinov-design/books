@@ -50,8 +50,8 @@ permissions:
 
 # Keep only the latest validation for a moving PR head; manual dispatches are not canceled.
 concurrency:
-  group: growth-studio-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: growth-studio-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   editorial-security:
