@@ -23,7 +23,7 @@ test('signed booking proof carries no PII and resists forging and expiry', () =>
   for (const secret of ['+14165550101','person@example.com','health']) assert.ok(!token.includes(secret))
 })
 
-test('only fixed public Alchemy tariffs, correct source and consent can be booked', () => {
+test('only fixed public Alchemy or Services tariffs, correct source and consent can be requested', () => {
   assert.deepEqual(BOOKABLE_SKUS, {'express-consultation-30':30,'personal-session-60':60})
   const base = {
     operationId:op, serviceTitle:'Alchemy of the Soul', locale:'en',
@@ -31,6 +31,15 @@ test('only fixed public Alchemy tariffs, correct source and consent can be booke
     contact:{displayName:'Demo Test',email:'example@example.com'}, bookingSku:'personal-session-60',
   }
   assert.equal(normalizePublicServiceEnquiry(base).bookingSku,'personal-session-60')
+  for (const locale of ['en','ru','es']) {
+    for (const bookingSku of Object.keys(BOOKABLE_SKUS)) {
+      const validServiceRequest = normalizePublicServiceEnquiry({
+        ...base, locale, sourcePath:'/' + locale + '/services', bookingSku,
+      })
+      assert.equal(validServiceRequest.bookingSku,bookingSku)
+      assert.equal(validServiceRequest.sourcePath,'/' + locale + '/services')
+    }
+  }
   for (const mutation of [
     {bookingSku:'personal-session-60?amount=1'}, {bookingSku:'month'},
     {sourcePath:'/en/services/personal-support'},{contactConsent:false},
@@ -45,6 +54,24 @@ test('owner-confirmed appointment must use future UTC timestamp, never browser t
     '2025-10-27T12:00:00Z','2026-10-27T12:00:00-04:00','foo',
     new Date(now+200*24*3600*1000).toISOString(),
   ]) assert.equal(validConfirmedSlot(candidate, now), null)
+})
+
+test('owner confirmation rejects rolled-over calendar dates without rejecting leap years', () => {
+  // Keep the impossible dates inside the allowed 180-day window.
+  const now = Date.parse('2027-01-15T12:00:00.000Z')
+  for (const [raw, expected] of [
+    ['2027-02-28T14:00Z', '2027-02-28T14:00:00.000Z'],
+    ['2027-03-01T14:00:00Z', '2027-03-01T14:00:00.000Z'],
+    ['2027-02-28T14:00:00.123Z', '2027-02-28T14:00:00.123Z'],
+  ]) assert.equal(validConfirmedSlot(raw, now), expected)
+  for (const raw of [
+    '2027-02-29T14:00Z', '2027-02-30T14:00:00Z',
+    '2027-04-31T10:00:00Z', '2027-03-01T24:00:00Z',
+    '2027-02-28T14:61Z', '2027-02-28T14:00+00:00',
+  ]) assert.equal(validConfirmedSlot(raw, now), null, raw)
+  const leapNow = Date.parse('2028-02-01T12:00:00.000Z')
+  assert.equal(validConfirmedSlot('2028-02-29T14:00Z', leapNow), '2028-02-29T14:00:00.000Z')
+  assert.equal(validConfirmedSlot('2028-02-30T14:00Z', leapNow), null)
 })
 
 test('server checks practitioner/RLS, prevents double booking and separates payment state', () => {
