@@ -9,9 +9,10 @@ test('real public enquiry alerts are opt-in, owner-only, at-most-once and privac
  const route=read('app/api/service-enquiries/route.js')
  const dispatch=read('lib/app/public-enquiry-telegram.js')
  const sql=read('supabase/migrations/20261025181314_hh_owner_telegram_public_enquiry_pilot_20261025.sql')
+ const guestSql=read('supabase/migrations/20261031183000_hh_public_enquiry_traffic_attribution.sql')
  const bot=read('lib/app/client-telegram-transport.js')
  const policy=read('lib/app/client-telegram-policy.js')
- assert.match(route,/result.saved === true && result.contactPending === false/)
+ assert.match(route,/if \(result.saved === true\)/)
  assert.match(route,/after\(async \(\) =>/)
  assert.match(route,/dispatchPublicServiceEnquiryTelegram\(config, result.id\)/)
  assert.match(route,/HH_PUBLIC_ENQUIRY_OWNER_TG_UNCONFIRMED/)
@@ -24,6 +25,8 @@ test('real public enquiry alerts are opt-in, owner-only, at-most-once and privac
  assert.match(sql,/force row level security/i)
  assert.match(sql,/on conflict do nothing/i)
  assert.match(sql,/e.contact_ciphertext is not null/i)
+ assert.doesNotMatch(guestSql,/e.contact_ciphertext is not null/i)
+ assert.match(guestSql,/app.public_service_enquiries/)
  assert.match(sql,/e.created_at>now\(\)-interval '15 minutes'/)
  assert.match(sql,/n.topics->>'booking'='true'/)
  assert.match(sql,/n.consent_version='hh-messenger-contact-v1'/)
@@ -43,6 +46,7 @@ function fixture({ready=true,targets=[{target_account_id:'owner',target_chat_has
   if(query.includes('notification_tg_public_enquiry_claim'))return {rows:targets}
   if(query.includes('notification_tg_public_enquiry_allowed'))return {rows:[{allowed}]}
   if(query.includes('notification_tg_public_enquiry_finish')){events.push(['finish',args[1]]);return {rows:[{ok:true}]}}
+  if(query.includes('from app.public_service_enquiries e'))return {rows:[{serviceTitle:'60-minute personal session · €100',sourcePath:'/en/services',referenceCode:'HH-111111111111',hasContact:false,attribution:null}]}
   throw new Error('unexpected query')
  }})
  const fn=runInNewContext(source,{
