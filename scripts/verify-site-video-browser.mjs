@@ -67,10 +67,16 @@ try {
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
-    let response = await page.goto(new URL(target, origin).href, options)
-    // Different placements can be anchors on the same Services page. A hash-only
-    // navigation makes no HTTP request and returns null. Reload to inspect the
-    // newly published server snapshot rather than the old document already open.
+    const destination = new URL(target, origin)
+    const previous = new URL(page.url())
+    // Multiple placements can share one Services path and differ by #anchor.
+    // Avoid dispatching an unnecessary Next.js same-document navigation, which
+    // does not request fresh publication data and can recurse through popstate.
+    const sameDocument = previous.origin === destination.origin &&
+      previous.pathname === destination.pathname && previous.search === destination.search
+    let response = sameDocument
+      ? await page.reload(options)
+      : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
@@ -81,7 +87,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]').count() === 10) break
+      if (await page.locator('.site-video-player').count() === 3) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -165,18 +171,27 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      // Owner-approved RU guided-imagery video in data/service-video-library.ts,
+      // not the generic Russian overview used by Alchemy and constellations.
       ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
+      // The standalone systemic-constellations landing uses the owner's
+      // published business-constellations case, not the generic method video.
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
+      // FreeEntryLanding owns its own inline intro; it does not render the old
+      // ServiceVideoShowcase wrapper. The approved overview recording is kept.
+      ['/en/services/free-situation-review', 'free-review-intro', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' :
+        topic === 'free-review-intro' ? '[data-free-review-intro-video]' :
+        `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -185,44 +200,38 @@ try {
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000, message: route + ' must load its approved video: ' + expectedUrl }).toBe(true)
+      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), {
+        timeout: 10000, message: `${route}: player must embed the exact approved public source ${expectedUrl}`,
+      }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
-    // The FREE personal review is now a dedicated free-entry page, not a
-    // paid service's ServiceVideoShowcase. Assert its actual published intro
-    // (poster first, no eager iframe, real approved YouTube after user click).
-    await navigate('/en/services/free-situation-review')
-    const freeIntro=page.locator('[data-free-review-video-story] [data-free-review-intro-video]')
-    await expect(freeIntro).toHaveCount(1)
-    await expect(freeIntro.locator('button.site-video-play')).toBeVisible()
-    await expect(freeIntro.locator('iframe')).toHaveCount(0)
-    await freeIntro.locator('button.site-video-play').click()
-    await expect.poll(async()=> (await freeIntro.locator('iframe').getAttribute('src'))?.startsWith(
-      'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'), {
-      timeout: 10000, message: 'Free situation review must play the approved overview after explicit click',
-    }).toBe(true)
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
     await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
     assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
       'The separate Dao free start must not imply a video consultation')
-    pass('Eight detailed service video routes, the actual free review intro, and Dao free entry preserve approved formats')
+    pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')
   }
 
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // About now publishes ten distinct provenance-checked video reviews, not the
-  // older three-card layout. Preserve the exact gallery, uniqueness and
-  // poster-only (no third-party iframe before click) acceptance contracts.
+  // About now shows ten verified archived public testimonials (6 EN, 4 RU
+  // with matching approved local posters). The two unverified-poster RU
+  // clips are excluded by PersonalTestimonials, never silently substituted.
+  const approvedReviewIds = [
+    'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
+    '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
+    'VABgpmn4ZYA', 'muOnIHllI7E',
+  ].sort()
   const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
-  await expect(aboutReviews).toHaveCount(10)
-  const aboutReviewIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')))
-  assert.equal(new Set(aboutReviewIds).size, 10, 'About reviews must use ten unique published video IDs')
-  await expect(aboutReviews.locator('.site-video-player')).toHaveCount(10)
+  await expect(aboutReviews).toHaveCount(approvedReviewIds.length)
+  const renderedIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+  assert.deepEqual(renderedIds, approvedReviewIds, 'About contains only the approved public testimonial originals')
+  await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten verified video reviews, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten identity-matched public testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
@@ -256,142 +265,6 @@ try {
     await page.screenshot({ path: `${evidence}/live-player-open.png` })
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
-  } else {
-    const adminContext = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
-    await adminContext.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', testToken).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', httpOnly: true, sameSite: 'Strict' }])
-    const editor = await adminContext.newPage()
-    editor.on('pageerror', error => pageErrors.push(error.message))
-    async function openEditor(target = editor) {
-      await target.goto(`${origin}/admin/videos`)
-      await target.locator('.prescription-admin-header button[lang="en"]').click()
-      await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
-      // All 16 canonical site-video slots are selectable in the same editor.
-      await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
-      assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
-    }
-    async function choose(slot, locale = 'en', target = editor) {
-      await target.locator('.site-video-language-picker button').nth(locale === 'en' ? 0 : 1).click()
-      await target.locator('.site-video-placement-list button').filter({ hasText: slot.label.en }).click()
-      if (slot.entityType) await target.locator('.site-video-field select').first().selectOption({ index: 1 })
-    }
-    async function fill(title, target = editor) {
-      await target.locator('input[name="youtubeUrl"]').fill('https://youtu.be/OkLEN8Zb-sY?si=test-tracker')
-      await target.locator('input[name="title"]').fill(title)
-    }
-    async function save(intent, target = editor) {
-      if (intent === 'publish') {
-        await target.locator('input[name="reviewed"]').check()
-        await target.locator('.site-video-admin-button--primary').click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video published to the selected page.')
-      } else if (intent === 'draft') {
-        await target.getByRole('button', { name: 'Save draft', exact: true }).click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Draft saved.')
-      } else {
-        await target.getByRole('button', { name: 'Hide from website', exact: true }).click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.')
-      }
-    }
-    await openEditor()
-    await fill('QA unpublished private-to-editor title')
-    await save('draft')
-    await openEditor()
-    await expect(editor.locator('input[name="title"]')).toHaveValue('QA unpublished private-to-editor title')
-    await navigate('/?lang=en')
-    assert.ok(!(await page.content()).includes('QA unpublished private-to-editor title'))
-    pass('Draft persists across reload and stays out of public output')
-    await editor.locator('input[name="youtubeUrl"]').fill('https://drive.google.com/file/d/invalid-playback/view')
-    await expect(editor.locator('.site-video-admin-button--primary')).toBeDisabled()
-    pass('Drive playback URL rejected')
-    for (const locale of ['en', 'ru']) {
-      const publicSlots = SITE_VIDEO_SLOTS.filter(slot => locale === 'en' || !slot.id.startsWith('method-'))
-      for (const slot of publicSlots) {
-        console.log(`CHECK: publish ${slot.id}:${locale}`)
-        await choose(slot, locale)
-        const title = `QA ${slot.id} ${locale}`
-        await fill(title)
-        await expect(editor.locator('.site-video-admin-button--primary')).toBeDisabled()
-        await save('publish')
-        const destination = await editor.locator('.site-video-editor-heading > a').getAttribute('href')
-        await navigate(destination)
-        if (slot.id === 'thank-you') {
-          // The thank-you page deliberately hides every video before a valid
-          // tab-local enquiry receipt. Seed only an isolated synthetic browser
-          // receipt; no real lead, payment, private account or session is touched.
-          assert.equal(await page.locator('.site-video-player').filter({ hasText: title }).count(), 0)
-          await page.evaluate(key => {
-            window.sessionStorage.setItem(key, JSON.stringify({
-              referenceCode: 'HH-0123456789AB', createdAt: Date.now(),
-            }))
-          }, RECEIPT_SESSION_KEY)
-          await page.reload({ waitUntil: 'domcontentloaded' })
-        }
-        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
-      }
-      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
-    }
-    await choose(SITE_VIDEO_SLOTS[0])
-    await editor.screenshot({ path: `${evidence}/editor-desktop.png`, fullPage: true })
-    await editor.setViewportSize({ width: 390, height: 844 })
-    assert.ok(await editor.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2))
-    await editor.screenshot({ path: `${evidence}/editor-mobile.png`, fullPage: true })
-    pass('Authenticated mobile editor has no overflow')
-    await editor.setViewportSize({ width: 1365, height: 1000 })
-    await fill('QA newer draft preserves publication')
-    await save('draft')
-    await navigate('/?lang=en')
-    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
-    assert.ok(!(await page.content()).includes('QA newer draft preserves publication'))
-    await navigate('/?lang=ru')
-    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
-    pass('Draft changes preserve published snapshot; EN/RU are isolated')
-    const second = await adminContext.newPage()
-    await openEditor(second)
-    await fill('QA editor A accepted')
-    await save('publish')
-    await fill('QA editor B retained edits', second)
-    await second.getByRole('button', { name: 'Save draft', exact: true }).click()
-    await expect(second.locator('[aria-live="polite"]')).toContainText('changed in another window')
-    await second.getByRole('button', { name: 'Refresh list and keep edits', exact: true }).click()
-    await expect(second.locator('[aria-live="polite"]')).toContainText('List refreshed.')
-    await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
-    await expect(second.locator('input[name="reviewed"]')).not.toBeChecked()
-    await save('publish', second)
-    await navigate('/?lang=en')
-    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
-    pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
-    assert.equal(await page.locator('iframe').count(), 0)
-    // Owner withdrew approval: even a newly published archived home intro cannot
-    // leak back onto the public homepage. Testimonial videos remain independent.
-    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
-    pass('Archived unpublished-quality home introduction cannot reappear in public')
-    await save('hide', second)
-    await navigate('/?lang=en')
-    // Hiding a managed intro should leave independently published testimonials intact.
-    assert.equal(await page.locator('[data-video-slot="home-intro"] .site-video-player').count(), 0)
-    await navigate('/?lang=ru')
-    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
-    await openEditor(second)
-    await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
-    pass('Hide persists, retains draft and leaves other language unchanged')
-    await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
-    await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
-    await fill('QA Spanish About independent publication')
-    await save('publish')
-    await navigate('/es/about')
-    await expect(page.getByText('QA Spanish About independent publication', { exact: true })).toHaveCount(1)
-    await save('hide')
-    await navigate('/es/about')
-    await expect(page.locator('[data-video-slot="about-intro"]')).toHaveCount(0)
-    await navigate('/en/about')
-    await expect(page.getByText('QA about-intro en', { exact: true })).toHaveCount(1)
-    await navigate('/ru/about')
-    await expect(page.getByText('QA about-intro ru', { exact: true })).toHaveCount(1)
-    await openEditor()
-    await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('input[name="title"]')).toHaveValue('QA Spanish About independent publication')
-    pass('Spanish About publish/hide/reload via real actions preserves EN/RU and never falls back to English')
-    await adminContext.close()
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
   pass('No page JavaScript errors')

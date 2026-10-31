@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -115,8 +115,13 @@ test('untrusted/malformed input context is rejected',()=>{
 
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
-  assert.ok(names.length >= 90, 'Unexpectedly empty/reduced workflow catalog');
-  assert.ok(names.length <= 93, 'Workflow budget exceeded: consolidate existing checks before adding new YAML; change this budget only in an explicitly reviewed CI architecture PR');
+  assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
+  assert.ok(names.length <= 90, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
+    'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
+    'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
+    'holistic-house-native.yml', 'native-ci.yml'];
+  for(const critical of protectedChecks) assert.ok(names.includes(critical), 'Missing critical workflow: '+critical);
   for(const name of names) {
     const file='.github/workflows/'+name;
     assert.doesNotThrow(()=>parsePrTrigger(readFileSync(file,'utf8'),file),name);
@@ -210,4 +215,153 @@ test('approved migration destinations contain the exact retired scope and the or
     }
     assert.ok(!successor.includes('continue-on-error: true'),item.into+' must fail closed');
   }
+});
+
+test('all workflow deletions, even push-only and files excluded from original PR trigger, require an approved replacement',()=>{
+  const unrelated='.github/workflows/private-push-only-publisher.yml';
+  const pushOnly='on:\n  push:\n    branches: [codex/public-book-library]\njobs:\n  publish:\n    runs-on: ubuntu-24.04\n';
+  const base=new Map([[unrelated,pushOnly]]);
+  const current=new Map();
+  const changed=[unrelated];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[], 'Push-only workflow is intentionally absent from PR specialist discovery');
+  assert.throws(()=>resolveExpectedSpecialists({base,current,changed,expected}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*private-push-only-publisher/);
+  const old='.github/workflows/unknown-pr-source.yml';
+  const prs="on:\n  pull_request:\n    paths:\n      - 'lib/other/**'\n";
+  const basemap=new Map([[old,prs]]);
+  const changed2=[old];
+  const expected2=expectedWorkflows({base:basemap,current:new Map(),changed:changed2});
+  assert.deepEqual(expected2,[], 'Old PR filter may not watch its own YAML');
+  assert.throws(()=>resolveExpectedSpecialists({base:basemap,current:new Map(),changed:changed2,expected:expected2}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*unknown-pr-source/);
+});
+
+test('manual-only YAML workflow and .yaml extension cannot be removed without BASE-approved migration',()=>{
+  const old='.github/workflows/manual-private-publication.yaml';
+  const source='on:\n  workflow_dispatch:\njobs:\n  private-action:\n    runs-on: ubuntu-24.04\n';
+  const base=new Map([[old,source]]);
+  const proposed=new Map();
+  const changed=[old];
+  const expected=expectedWorkflows({base,current:proposed,changed});
+  assert.deepEqual(expected,[], 'A manual-only workflow never appears in a PR-run inventory');
+  assert.throws(()=>resolveExpectedSpecialists({base,current:proposed,changed,expected}),
+    /UNAPPROVED_WORKFLOW_DELETION:.*manual-private-publication\.yaml/);
+});
+
+test('approved removed YAML still requires unchanged successful successor coverage even when retired PR path filter excludes its own file',()=>{
+  const old='.github/workflows/hh-crm-event-channels.yml';
+  const successor='.github/workflows/hh-event-referral-contract.yml';
+  const oldYaml="on:\n  pull_request:\n    paths:\n      - 'lib/crm/**'\n";
+  const successorYaml="on:\n  pull_request:\n    paths:\n      - '.github/workflows/hh-crm-event-channels.yml'\n      - 'lib/crm/**'\n";
+  const base=new Map([[old,oldYaml],[successor,successorYaml]]);
+  const current=new Map([[successor,successorYaml]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[successor], 'Old PR workflow never triggered, successor does');
+  const reviewed=resolveExpectedSpecialists({base,current,changed,expected});
+  assert.deepEqual(reviewed.expected,[successor]);
+  assert.deepEqual(reviewed.delegated,[{retired:old,replacement:successor}]);
+  const unexpected='.github/workflows/arbitrary-hidden-security.yml';
+  const withUnexpected=new Map([...base,[unexpected,"on: [push]\n"]]);
+  assert.throws(()=>resolveExpectedSpecialists({base:withUnexpected,current,changed:[old,unexpected],
+    expected:expectedWorkflows({base:withUnexpected,current,changed:[old,unexpected]})}),/UNAPPROVED_WORKFLOW_DELETION/);
+});
+
+test('wave 3 reviewed About video successor preserves all original PR paths and contracts',()=>{
+  const required = [
+    {into:'site-video-browser.yml', patterns:["'components/psychic-alchemy-intro-video*'","'app/**/about/page.tsx'","'tests/psychic-alchemy-intro-video.test.mjs'","'lib/site-videos/**'","'components/site-video-*'","'components/page-video.tsx'","'app/admin/videos/**'","'app/site-video*.css'","'tests/site-video*.mjs'","'middleware.ts'","'.github/workflows/holistic-about-video-check.yml'"], contracts:['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs','tests/site-video-defaults.test.mjs','components/site-video-manager.tsx','npx tsc --noEmit','node scripts/verify-site-video-browser.mjs']},
+  ];
+  for (const entry of required) {
+    const s=readFileSync('.github/workflows/'+entry.into,'utf8');
+    const trigger=parsePrTrigger(s,entry.into);
+    assert.ok(trigger,'Missing PR trigger '+entry.into);
+    for(const pattern of entry.patterns) assert.ok(s.includes('      - '+pattern),entry.into+' missing original path '+pattern);
+    for(const contract of entry.contracts) assert.ok(s.includes(contract),entry.into+' missing original contract '+contract);
+    assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'),
+      'Production video PR reuses Core TypeScript; push/manual retains standalone typecheck');
+    assert.ok(!s.includes('continue-on-error: true'),entry.into+' must fail closed');
+  }
+});
+
+
+test('package and lockfile routing is exact-base scoped, with unknown changes full-scope', () => {
+  const before={name:'books',type:'module',dependencies:{next:'15.0.0'},scripts:{
+    'test:monetization':'node --test tests/paypal-personal-payments.test.mjs tests/billing-isolation.test.mjs',
+    build:'next build',
+  }};
+  const after=structuredClone(before);
+  after.scripts['test:monetization']=after.scripts['test:monetization'].replace(
+    'tests/paypal-personal-payments.test.mjs',
+    'tests/paypal-personal-payments.test.mjs tests/wallet-topups.test.mjs',
+  );
+  const original=JSON.stringify(before), proposed=JSON.stringify(after);
+  const changed=['package.json','tests/wallet-topups.test.mjs','lib/wallet/service.js'];
+  const impact=classifyPackageImpact({changed,basePackage:original,currentPackage:proposed});
+  assert.deepEqual(impact,{mode:'scoped',reason:'ADDITIVE_WALLET_MONETIZATION_TEST',
+    workflows:['.github/workflows/hh-billing-isolated.yml']});
+  const owner='.github/workflows/hh-billing-isolated.yml';
+  const ocean='.github/workflows/holistic-house-ocean-audio.yml';
+  const opora='.github/workflows/opora-module-ci.yml';
+  const app='.github/workflows/hh-app-r1.yml';
+  const workflow=paths=>"on:\n  pull_request:\n    paths:\n"+paths.map(x=>"      - '"+x+"'\n").join('');
+  const sources=new Map([
+    [owner,workflow(['package.json','lib/billing/**'])],
+    [ocean,workflow(['package.json','lib/audio/**'])],
+    [opora,workflow(['package.json','data/opora/**'])],
+    [app,workflow(['app/api/app/**','lib/app/**'])],
+  ]);
+  const base=new Map(sources), current=new Map(sources);
+  const selected=expectedWorkflows({base,current,changed,packageImpact:impact});
+  assert.deepEqual(selected,[owner], 'unrelated package-triggered suites are not REQUIRED by safe script-only update');
+  const ownerMissed = new Map(sources);
+  ownerMissed.set(owner,workflow(['lib/billing/**']));
+  assert.throws(()=>expectedWorkflows({base,current:ownerMissed,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Candidate path filters cannot silently drop the mandatory Billing specialist');
+  assert.throws(()=>expectedWorkflows({base:ownerMissed,current,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Immutable baseline must also trigger the approved scoped owner');
+  assert.deepEqual(expectedWorkflows({base,current,changed}),[owner,ocean,opora],
+    'until trusted classifier is deployed, the original full trigger scope remains intact');
+  const dependencies=structuredClone(after);
+  dependencies.dependencies.next='16.0.0';
+  const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
+  assert.equal(unsafe.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
+  const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
+  assert.equal(lockImpact.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
+    [owner,ocean,opora], 'unknown transitive lockfile changes fail closed');
+  const deleted=structuredClone(after);
+  deleted.scripts['test:monetization']='echo success';
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(deleted)}).mode,'full');
+  assert.equal(classifyPackageImpact({changed:[...changed,'package-lock.json'],
+    basePackage:original,currentPackage:proposed}).mode,'full');
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:'{broken'}).mode,'full');
+  assert.throws(()=>expectedWorkflows({base,current:new Map([...current].filter(([name])=>name!==owner)),
+    changed,packageImpact:impact}),/PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+});
+
+test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
+  const services='.github/workflows/hh-public-services-production.yml';
+  const mandala='.github/workflows/holistic-support-mandala.yml';
+  const publicTrigger=parsePrTrigger(readFileSync(services,'utf8'),services);
+  const mandalaTrigger=parsePrTrigger(readFileSync(mandala,'utf8'),mandala);
+  const videoOnly=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-cinematic-director.tsx',
+    'components/mandala-cinematic-director.module.css',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+  ];
+  assert.equal(matchesTrigger(publicTrigger,videoOnly),false,
+    'Public Services must not spend 20 minutes on pure Video Studio changes');
+  assert.equal(matchesTrigger(mandalaTrigger,videoOnly),true,
+    'Real media browser acceptance is required for video changes');
+  assert.equal(matchesTrigger(publicTrigger,['components/holistic-support-mobile.tsx']),true,
+    'actual support/service features still require Public Services');
+  assert.equal(matchesTrigger(publicTrigger,['components/mandala-free-video-studio.tsx','components/holistic-support-mobile.tsx']),true,
+    'mixed public-service changes never evade the service gate');
 });

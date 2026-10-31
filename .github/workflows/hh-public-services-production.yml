@@ -1,6 +1,7 @@
 name: Holistic House public services production acceptance
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/academy-course-video-playlist.tsx'
@@ -39,6 +40,14 @@ on:
       - 'components/*service*'
       - 'components/practice-showcase*'
       - 'lib/holistic-support/**'
+      # Pure, side-effect-free Intelligence Core policy/bridge input parsers
+      # have their own focused axis-to-offer unit, type and production-build gate.
+      # No public services routes, client UI, checkout or publication logic are
+      # edited by these files, so do NOT launch unrelated 20-minute storefront
+      # mobile browser matrix for a policy-only PR. All real service/UI changes
+      # still match the surrounding positive globs and run full acceptance.
+      - '!lib/holistic-support/client-reasoning-*.mjs'
+      - '!lib/holistic-support/intelligence-request.mjs'
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
@@ -60,13 +69,42 @@ on:
       - '!components/mandala-cinematic-director.tsx'
       - '!components/mandala-cinematic-director.module.css'
       - '!scripts/verify-holistic-mandala-browser.mjs'
+      # Only the public /install PWA and signed-native-release registry use
+      # these two tests; holistic-house-mobile-install.yml runs both exact files,
+      # full production build and 320-430px Chromium/WebKit acceptance.
+      # They never touch Alchemy, Reiki, business, checkout or public services.
+      # Keep all public service path tests and broad holistic-* coverage intact.
+      - '!tests/holistic-house-free-install.test.mjs'
+      - '!tests/holistic-house-native-public-downloads.test.mjs'
+      # The dedicated Support Mobile Mock workflow checks these exact synthetic
+      # screenshot/QAs in 18 Chromium/WebKit EN/RU/ES viewport combinations.
+      # They do not change real public services, booking, checkout or navigation.
+      # Real service/UI/auth/payment paths above still trigger the full suite.
+      - '!scripts/verify-holistic-support-mock-fidelity.mjs'
+      - '!tests/holistic-support-mobile-mock-parity.test.mjs'
+      # Video Studio creative/editor changes are independently covered by
+      # holistic-support-mandala.yml: exact-head Node/lint/tsc/Next build,
+      # RU/EN/ES Chromium+WebKit, real MediaRecorder output and audio rights.
+      # Do not duplicate unrelated Alchemy/checkout/browser test matrices for
+      # a change isolated to the Video Studio. Other public routes and support
+      # components still run the full Public Services suite.
+      - '!components/mandala-free-video-studio.tsx'
+      - '!components/mandala-video-mobile.module.css'
+      # The goal-first Auto Video Director only selects previously licensed
+      # local MP4 montages. Its entire Node/TypeScript/Next.js/Chromium/WebKit
+      # recorder/rights acceptance is owned by holistic-support-mandala.yml.
+      # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
+      # Main public service routes/components still match the positive globs.
+      - '!components/mandala-auto-video-director*'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: public-services-production-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   public-services:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -78,6 +116,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       # NODE_ENV=production is needed for the browser build, but our
@@ -90,7 +133,7 @@ jobs:
           node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
           npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
-          npx tsc --noEmit
+          # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       - name: Install Chromium and WebKit for isolated public acceptance

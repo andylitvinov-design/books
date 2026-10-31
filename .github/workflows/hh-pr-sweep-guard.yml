@@ -6,7 +6,9 @@ on:
       - 'lib/ci/pr-sweep-guard.mjs'
       - 'lib/ci/specialist-aggregate.mjs'
       - 'scripts/ci-specialist-aggregate.mjs'
+      - 'scripts/ci-pr-readiness.mjs'
       - 'tests/ci-specialist-aggregate.test.mjs'
+      - 'tests/ci-specialist-wait.test.mjs'
       - '.github/workflows/hh-pr-core-release.yml'
       - 'scripts/pr-sweep-guard.mjs'
       - 'tests/pr-sweep-guard.test.mjs'
@@ -33,4 +35,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs
