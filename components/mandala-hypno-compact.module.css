@@ -287,3 +287,10 @@
  .overview .preview{min-height:74px;padding:5px}
  .overview .privacy{font-size:9.4px}
 }
+
+/* Show the full short psychological conclusion once a real draft arrives.
+ * The initial preview stays one line to preserve the 320px acceptance height;
+ * the visitor can read the entire strategy after the server call. */
+.overview [data-hypno-strategy]:has(.strategyHint) .strategySummary{
+ display:block;-webkit-line-clamp:unset;max-height:none;white-space:normal;
+}

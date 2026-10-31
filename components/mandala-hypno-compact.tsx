@@ -547,7 +547,7 @@ export function MandalaHypnoCompact({
           <small className={css.contextNote}>{extra.aiPrompt}</small>
         </div>}
         {draft&&<p className={css.strategyHint}>{extra.aiDraft}</p>}
-        {strategyNotice&&<p role="status" className={css.strategyNotice}>{strategyNotice}</p>}
+
         <small className={css.strategyPrivacy}>{extra.aiPrivacy}</small>
       </section>
 
