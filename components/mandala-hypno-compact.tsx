@@ -524,11 +524,15 @@ export function MandalaHypnoCompact({
             data-hypno-display-edit aria-expanded={open==="display"} aria-controls="hypno-display-options"
             onClick={()=>toggle("display")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
+        {open==="display"?<>
         <div className={css.metaGrid}>
           <div><small>{ui.every}</small><strong>{settings.frequency===1?"8":settings.frequency===3?"3":"5"} {locale==="ru"?"сек":locale==="es"?"s":"sec"}</strong></div>
           <div><small>{ui.size}</small><strong>{ui.sizes[scale==="small"?0:scale==="large"?2:1]}</strong></div>
           <div><small>{ui.position}</small><strong>{ui.placements[position==="top"?0:position==="bottom"?2:1]}</strong></div>
         </div>
+        </>:<div className={css.compactOverviewLine} data-hypno-display-summary>
+          {settings.frequency===1?"8":settings.frequency===3?"3":"5"} {locale==="ru"?"сек":locale==="es"?"s":"sec"} · {ui.sizes[scale==="small"?0:scale==="large"?2:1]} · {ui.placements[position==="top"?0:position==="bottom"?2:1]}
+        </div>}
         {open==="display"&&<fieldset className={css.editPane} id="hypno-display-options" disabled={disabled} data-hypno-display-options>
           <strong className={css.fieldLabel}>{ui.every}</strong>
           <div className={css.chipGrid}>{([1,2,3] as const).map((v,i)=><button type="button" key={v}
@@ -555,6 +559,7 @@ export function MandalaHypnoCompact({
             data-hypno-design-edit aria-expanded={open==="design"} aria-controls="hypno-design-options"
             onClick={()=>toggle("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
+        {open==="design"?<>
         <div className={css.sceneRail} aria-label={ui.scenery}>
           {scenes.map(scene=><button type="button" key={scene.id} disabled={disabled}
             aria-pressed={activeScene===scene.id} data-hypno-scene={scene.id}
@@ -570,6 +575,9 @@ export function MandalaHypnoCompact({
           <a href="#video-templates">{ui.moreScenes}<ChevronRight size={14}/></a>
           <a href="#video-audio">{ui.sound} · {ui.adjustAudio}<ChevronRight size={14}/></a>
         </div>
+        </>:<div className={css.compactOverviewLine} data-hypno-design-summary>
+          <Film size={14} aria-hidden="true"/>{scenes.find(scene=>scene.id===activeScene)?.label||ui.scenery} · {ui.sound}
+        </div>}
         {open==="design"&&<div className={css.editPane} id="hypno-design-options">
           <p className={css.contextNote}>{ui.scenery}</p>
           <div className={css.chipGrid}>
@@ -592,7 +600,7 @@ export function MandalaHypnoCompact({
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
           <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview disabled={disabled}
+        <button type="button" data-video-affirmation-preview aria-label={ui.previewButton} disabled={disabled}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}

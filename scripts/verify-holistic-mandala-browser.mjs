@@ -773,6 +773,9 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        // Scene options are genuinely editable, but collapsed on the compact mobile overview.
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -780,6 +783,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"false");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {

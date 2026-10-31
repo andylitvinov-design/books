@@ -211,3 +211,15 @@
 .strategyPrivacy{grid-area:strategyprivacy;display:block;max-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.7px}
 .geminiControls{grid-column:1/-1;grid-row:auto}
 @media(max-width:360px){.strategyCard{gap:2px 4px;padding:5px 6px}.strategyHead h4{font-size:10px}.modelChoice button{font-size:10px}.strategyPrivacy{font-size:9px}}
+
+
+/* Collapsed summary rows keep real video controls accessible with Edit. */
+.compactOverviewLine{display:flex;align-items:center;gap:5px;min-height:32px;margin-top:5px;padding:5px 9px;border:1px solid #e0e9dd;border-radius:9px;background:#f8faf3;color:#245b49;font-size:11px;font-weight:750;line-height:1.25;min-width:0}
+.compactOverviewLine svg{flex:none}
+.overview .preview{grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:7px;min-height:78px;padding:9px}
+.overview .preview>div{gap:2px;min-width:0}
+.overview .preview strong{font-size:15px;line-height:1.2}
+.overview .preview button{width:44px;min-width:44px;max-width:44px;min-height:44px;max-height:44px;padding:0;border-radius:50%;font-size:0;gap:0}
+.overview .preview button svg:first-child{width:25px;height:25px}
+.overview .preview button svg:last-child{display:none}
+@media(max-width:360px){.compactOverviewLine{font-size:10.5px}.overview .preview{padding:7px;gap:5px}.overview .preview strong{font-size:14px}}
