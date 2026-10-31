@@ -2079,3 +2079,73 @@
 @media(prefers-reduced-motion:reduce){
   .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
 }
+
+/* Compact iPhone music + voice picker: one short horizontal rail instead of
+   a second tall audio catalogue. Native audio player/recorder stay in the
+   existing expanded section. Two independent hit targets per soundtrack. */
+.studio .quickMusicSection{
+  gap:4px;min-width:0;padding:7px 9px 8px;border-radius:15px;
+  scroll-margin-top:74px;
+}
+.quickMusicSection .quickSectionHeading h3{
+  font:800 clamp(15px,4vw,19px)/1.2 Georgia,serif;
+}
+.quickMusicSettings{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:36px;padding:5px 9px;border:1px solid #cce3d7;
+  border-radius:11px;background:#edf7f0;color:#13654d;
+  font:750 12px/1.1 Arial,Helvetica,sans-serif;white-space:nowrap;
+}
+.studio .quickMusicRail{
+  display:grid;grid-auto-flow:column;grid-auto-columns:minmax(142px,46%);
+  gap:6px;padding:1px 1px 4px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+  scrollbar-width:thin;max-width:100%;
+}
+.quickMusicItem{
+  display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:2px;
+  align-items:center;min-width:0;min-height:44px;
+  padding:1px 2px 1px 4px;border:1px solid #dce7dc;border-radius:12px;
+  background:#fffefa;scroll-snap-align:start;
+}
+.quickMusicItem[data-video-melody-active="true"]{
+  background:#e9f7ee;border-color:#22a681;
+}
+.studio .quickMusicRail .quickMusicCheck{
+  display:flex;align-items:center;justify-content:flex-start;gap:6px;
+  min-width:0;min-height:44px;padding:3px 2px;
+  border:0;border-radius:8px;background:transparent;color:#234b3d;
+  font:750 12px/1.13 Arial,Helvetica,sans-serif;text-align:left;
+  overflow-wrap:anywhere;
+}
+.quickMusicCheckbox{
+  display:grid;place-items:center;flex:none;width:20px;height:20px;
+  border:2px solid #699e88;border-radius:6px;background:#fff;color:#fff;
+}
+.quickMusicCheck[aria-checked="true"] .quickMusicCheckbox{
+  border-color:#078c6b;background:#078c6b;
+}
+.studio .quickMusicRail .quickMusicPlay{
+  display:grid;place-items:center;min-width:44px;min-height:44px;
+  padding:5px;border:0;border-radius:10px;background:#e2f5e9;color:#087158;
+}
+.studio .quickMusicRail .quickMusicPlay[aria-pressed="true"]{
+  background:#147c60;color:#fff;
+}
+.quickMusicCheck:focus-visible,.quickMusicPlay:focus-visible,.quickMusicSettings:focus-visible{
+  outline:3px solid #d9ab4e;outline-offset:1px;
+}
+.quickSoundBadge{
+  position:absolute;z-index:2;left:11px;bottom:10px;max-width:65%;
+  display:flex;align-items:center;gap:4px;min-height:25px;padding:3px 7px;
+  border:1px solid #ffffff65;border-radius:9px;background:#123a2fdc;
+  color:#fff;font:650 10px/1.22 Arial,Helvetica,sans-serif;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.quickSoundBadge svg{flex:none}
+@media(max-width:380px){
+  .studio .quickMusicSection{padding:6px 6px 7px}
+  .studio .quickMusicRail{grid-auto-columns:minmax(137px,48%);gap:4px}
+  .studio .quickMusicRail .quickMusicCheck{font-size:11px}
+  .quickMusicSettings{font-size:11px}
+  .quickSoundBadge{font-size:9px}
+}
