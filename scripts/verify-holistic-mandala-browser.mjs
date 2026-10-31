@@ -404,9 +404,14 @@ const runEngine = async ([engine, browserType]) => {
         // Older deep features still run: the original audio attach, aspect,
         // duration and phrase tests continue under the single advanced section.
         await quick.locator('[data-video-quick-style="0"]').click();
-        await page.locator("[data-video-quick-legacy] > summary").click();
         const detailed=page.locator("[data-video-quick-legacy]");
         await detailed.waitFor({state:"visible",timeout:12000});
+        // The real visitor flow can already have this native disclosure open.
+        // Blindly clicking its summary again would close and hide the controls.
+        if(!(await detailed.evaluate(element=>element.open))){
+          await detailed.locator(':scope > summary').click();
+        }
+        await expect(detailed).toHaveAttribute("open","",{timeout:10000});
         assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "Director adds the 15-second option while preserving 10/20/30/60");
