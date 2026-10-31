@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildFirstVideoDraft, inferFirstVideoTheme } from "../lib/mandala/first-video-director.mjs";
+import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 const browserSource=()=>readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
 
 test("RU/EN/ES auto classify with stable fallback", () => {
@@ -176,4 +177,33 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
   }));
   assert.equal(exhausted.error,"VIDEO_PROMPT_FREE_QUOTA");
   assert.match(readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8"),/data-first-video-refresh/);
+});
+
+
+test("real iPhone Safari 26 chooses WebM first; other browsers keep MP4 first",()=>{
+  const mp4=["video/mp4;codecs=avc1.42E01E","video/mp4"];
+  const webm=["video/webm;codecs=vp8","video/webm"];
+  const ua="Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
+  assert.equal(prefersSafariWebm(ua),true);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua}),[...webm,...mp4]);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:"Mozilla/5.0 Chrome/153.0"}),[...mp4,...webm]);
+  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/26.1 Safari/605.1"),true);
+  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/25.0 Safari/605.1"),false);
+  assert.equal(prefersSafariWebm("Mozilla/5.0 (Macintosh; Intel Mac OS X)",5),true);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,preferWebm:true}),webm);
+  assert.deepEqual(orderRecordingMimes({mp4,webm,userAgent:ua,forceMp4:true}),mp4);
+});
+
+test("iPhone encoder recovery preserves real media, truthful playback state and share",()=>{
+  const src=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(src,/orderRecordingMimes\(\{/);
+  assert.match(src,/maxTouchPoints:typeof navigator/);
+  assert.match(src,/const encoded = new Blob\(chunks/);
+  assert.match(src,/isWebm=header\.length>=4/);
+  assert.match(src,/job\.recorder\.stop\(\)/);
+  assert.match(src,/data-video-recording-format/);
+  assert.match(src,/data-video-save-direct/,"direct download must remain available when iPhone share sheet fails");
+  assert.match(src,/onClick=\{\(\)=>void createVideo\(false,true\)\}/);
+  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
+  assert.doesNotMatch(src,/recorder\.start\(500\)/);
 });
