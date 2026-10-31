@@ -242,7 +242,9 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       if (operation === 'mixed') write(to, 'synthetic source\n');
       git('add', '--all'); git('commit', '--quiet', '--allow-empty', '-m', 'synthetic change');
       const source = workflow('hh-pr-core-release.yml');
-      const block = source.match(/        run: \|\n([\s\S]*?)^  code:/m);
+      const classifierStep = source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+       assert.ok(classifierStep, 'the named classifier step is present');
+       const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
       assert.ok(block, 'classifier shell block is present');
       // Preserve classifier logic exactly; isolate only its fixed temporary file.
       const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'));
