@@ -317,6 +317,27 @@ const runEngine = async ([engine, browserType]) => {
         // Older deep features still run: the original audio attach, aspect,
         // duration and phrase tests continue under the single advanced section.
         await quick.locator('[data-video-quick-style="0"]').click();
+        // The single real Hypno editor opens directly under the top six-tab bar.
+        const hypnoTab=quick.locator('[data-video-quick-control="phrases"]');
+        const inlineHypno=quick.locator('[data-video-quick-hypno-panel]');
+        assert.equal(await hypnoTab.getAttribute("aria-expanded"),"false");
+        assert.equal(await inlineHypno.isVisible(),false);
+        await hypnoTab.click();
+        await inlineHypno.waitFor({state:"visible",timeout:10000});
+        assert.equal(await hypnoTab.getAttribute("aria-expanded"),"true");
+        assert.equal(await inlineHypno.locator("[data-hypno-overview]").count(),1);
+        assert.equal(await page.locator("[data-hypno-overview]").count(),1,
+          "one existing editor must feed the original Canvas and MediaRecorder");
+        const inlinePositions=await page.evaluate(()=>{
+          const rect=query=>document.querySelector(query)?.getBoundingClientRect();
+          return {bar:rect("[data-video-quick-controls]"),
+            pane:rect("[data-video-quick-hypno-panel]"),
+            next:rect("[data-video-mini-source]")};
+        });
+        assert.ok(inlinePositions.bar && inlinePositions.pane && inlinePositions.next &&
+          inlinePositions.pane.top>=inlinePositions.bar.bottom-8 &&
+          inlinePositions.pane.top<inlinePositions.next.top,
+          "Hypnocorrection opens beneath the button, never as another page");
         await page.locator("[data-video-quick-legacy] > summary").click();
         const detailed=page.locator("[data-video-quick-legacy]");
         await detailed.waitFor({state:"visible",timeout:12000});
@@ -423,8 +444,7 @@ const runEngine = async ([engine, browserType]) => {
               "[data-video-support-layout]",
               "[data-video-category-rail]",
               "[data-video-preview-choices]",
-              "[data-video-audio-section]",
-              "[data-video-hypnosis-section]"
+              "[data-video-audio-section]"
             ].map(selector=>Boolean(document.querySelector(selector)))
           };
         });
@@ -438,7 +458,7 @@ const runEngine = async ([engine, browserType]) => {
         const supportSelectors=[
           "[data-video-daily-picks]","[data-video-support-layout]",
           "[data-video-category-rail]","[data-video-preview-choices]",
-          "[data-video-audio-section]","[data-video-hypnosis-section]"
+          "[data-video-audio-section]"
         ];
         const supportOrder=await page.evaluate(selectors=>{
           const nodes=selectors.map(selector=>document.querySelector(selector));
@@ -446,6 +466,8 @@ const runEngine = async ([engine, browserType]) => {
             Boolean(nodes[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING));
         },supportSelectors);
         assert.equal(supportOrder,true,"collapsed detailed Support editor preserves complete DOM order");
+        assert.equal(await page.locator("[data-video-hypnosis-section]").count(),1,
+          "Hypno editor moved to one inline slot and did not duplicate");
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
@@ -774,6 +796,9 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        // Full scene gallery is behind Edit to preserve the approved compact layout.
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -781,6 +806,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"false");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {

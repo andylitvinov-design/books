@@ -2291,7 +2291,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
+  const [quickHypnoOpen,setQuickHypnoOpen]=useState(false);
   const openQuickDetailed=(anchor:string)=>{
+    if(anchor==="video-hypnosis")setQuickHypnoOpen(true);
     const token=++quickNavTokenRef.current;
     const path=window.location.pathname+window.location.search;
     const desired="#"+anchor;
@@ -2468,18 +2470,62 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {id:"style",label:{ru:"Стиль",en:"Style",es:"Estilo"},Icon:Film},
           {id:"parameters",label:{ru:"Параметры",en:"Settings",es:"Parámetros"},Icon:SlidersHorizontal},
           {id:"personal",label:{ru:"Персонализация",en:"Personalize",es:"Personalizar"},Icon:Sparkles},
-          {id:"phrases",label:{ru:"Фразы",en:"Phrases",es:"Frases"},Icon:HandHeart},
+          {id:"phrases",label:{ru:"Фразы и гипнокоррекция",en:"Phrases & hypnocorrection",es:"Frases e hipnocorrección"},Icon:HandHeart},
           {id:"sound",label:{ru:"Звук",en:"Sound",es:"Sonido"},Icon:Music2},
           {id:"extra",label:{ru:"Дополнительно",en:"More",es:"Más"},Icon:SlidersHorizontal},
         ] as const).map(item=><button type="button" key={item.id} data-video-quick-control={item.id}
+          aria-controls={item.id==="phrases"?"video-hypnosis":undefined}
+          aria-expanded={item.id==="phrases"?quickHypnoOpen:undefined}
+          aria-label={item.id==="phrases"?item.label[locale]:undefined}
           disabled={recording||preparing} onClick={()=>{
+            if(item.id==="phrases"){
+              setQuickHypnoOpen(previous=>!previous);
+              if(!quickHypnoOpen)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+              return;
+            }
             if(item.id==="parameters"||item.id==="extra"){openQuickDetailed("video-settings");return;}
             const target=item.id==="style"?'[data-video-quick-section="4"]':
-              item.id==="personal"?"#quick-personal-title":
-              item.id==="phrases"?"[data-video-quick-phrases]":"[data-video-quick-audio-choices]";
+              item.id==="personal"?"#quick-personal-title":"[data-video-quick-audio-choices]";
             document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
           }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
       </nav>
+      {/* One existing editor reused by the new video page; no duplicate instance or route. */}
+      <div className={videoStyles.quickHypnoInline} data-video-quick-hypno-panel hidden={!quickHypnoOpen}>
+      <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
+        <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
+          <p>{layout.hypnosisHelp}</p></div>
+      <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations}
+        onChange={setAffirmations} disabled={recording||preparing}
+        scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
+        activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
+        onSelectScene={id=>{
+          setCinematicPlan(null);
+          if(theme==="money")setMoneyScene(id as MoneySceneId);
+          else setOtherScene(id as LocalSceneId);
+          setPreviewPlaying(false);
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+      <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
+        <summary>{ui.wishTitle}</summary>
+      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
+        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
+        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
+          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
+          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
+        <p>{ui.wishHelp}</p>
+        <div className={videoStyles.wishActions}>
+          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
+            <Target size={17} aria-hidden="true"/>{ui.wishAction}
+          </button>
+          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
+            {ui.wishCaption}
+          </button>
+        </div>
+        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
+      </section>
+      </details>
+      </section>
+      </div>
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
@@ -3611,39 +3657,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </fieldset>
       </section>
 
-      <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
-        <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
-          <p>{layout.hypnosisHelp}</p></div>
-      <MandalaHypnoCompact key={theme} locale={locale} theme={theme} settings={affirmations}
-        onChange={setAffirmations} disabled={recording||preparing}
-        scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
-        activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
-        onSelectScene={id=>{
-          setCinematicPlan(null);
-          if(theme==="money")setMoneyScene(id as MoneySceneId);
-          else setOtherScene(id as LocalSceneId);
-          setPreviewPlaying(false);
-        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
-      <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
-        <summary>{ui.wishTitle}</summary>
-      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
-        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
-        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
-          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
-        <p>{ui.wishHelp}</p>
-        <div className={videoStyles.wishActions}>
-          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
-            <Target size={17} aria-hidden="true"/>{ui.wishAction}
-          </button>
-          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
-            {ui.wishCaption}
-          </button>
-        </div>
-        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
-      </section>
-      </details>
-      </section>
+
 
       <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
         onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}

@@ -11,7 +11,9 @@ const browser=read("scripts/verify-holistic-mandala-browser.mjs");
 
 test("audio-only mobile list: no fake video images, real readable controls and filters",()=>{
   const start=studio.indexOf('<section className={videoStyles.audioSection}');
-  const end=studio.indexOf('<section className={videoStyles.hypnosisSection}',start);
+  // Hypno now appears inline beneath the six tabs; the audio block ends before
+  // the existing cinematic director, not before the relocated Hypno section.
+  const end=studio.indexOf('<MandalaCinematicDirector',start);
   assert.ok(start>0 && end>start);
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
@@ -112,7 +114,9 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   const quickStart=studio.indexOf('data-video-quick-section="5"');
   const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
   const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
-  const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
+  // No duplicate player: full audio controls remain below quick choices,
+  // ending before the separate cinematic director section.
+  const fullEnd=studio.indexOf('<MandalaCinematicDirector',fullStart);
   assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);

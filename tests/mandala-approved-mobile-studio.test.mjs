@@ -224,3 +224,24 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.ok(heroSegment.length>0);
   assert.doesNotMatch(heroSegment,/new MediaRecorder|fetch\(/);
 });
+
+test("phrases and hypnocorrection button expands one shared editor below six video tabs",()=>{
+ const src=read("components/mandala-free-video-studio.tsx");
+ const css=read("components/mandala-video-mobile.module.css");
+ const hypno=read("components/mandala-hypno-compact.tsx");
+ assert.match(src,/id:"phrases",label:\{ru:"Фразы и гипнокоррекция"/);
+ assert.match(src,/aria-expanded=\{item.id==="phrases"\?quickHypnoOpen:undefined\}/);
+ assert.match(src,/if\(item.id==="phrases"\)\{[\s\S]*?setQuickHypnoOpen/);
+ assert.ok(src.indexOf("data-video-quick-controls")<src.indexOf("data-video-quick-hypno-panel"));
+ assert.ok(src.indexOf("data-video-quick-hypno-panel")<src.indexOf("data-video-mini-source"));
+ assert.equal((src.match(/<MandalaHypnoCompact /g)||[]).length,1);
+ assert.equal((src.match(/id="video-hypnosis"/g)||[]).length,1);
+ assert.match(src,/data-video-quick-hypno-panel hidden=\{!quickHypnoOpen\}/);
+ assert.match(src,/onChange=\{setAffirmations\}/);
+ assert.match(src,/onPreview=\{openAffirmationPreview\}/);
+ assert.match(src,/onCreate=\{startFromHero\}/);
+ assert.match(css,/\.quickHypnoInline\[hidden\]\{display:none\}/);
+ assert.match(hypno,/data-hypno-suggest-tests/);
+ assert.match(hypno,/data-hypno-filter-tone/);
+ assert.match(hypno,/data-hypno-approve/);
+});

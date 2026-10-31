@@ -2079,3 +2079,16 @@
 @media(prefers-reduced-motion:reduce){
   .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
 }
+
+
+/* One shared Hypno editor is expanded immediately below the six Studio tabs. */
+.quickHypnoInline{min-width:0;margin:8px 0 10px;scroll-margin-top:82px}
+.quickHypnoInline[hidden]{display:none}
+.quickHypnoInline .hypnosisSection{min-width:0;margin:0;padding:10px 8px;border:1px solid #c9e3d6;border-radius:16px;background:linear-gradient(130deg,#fffefb,#f4faf3)}
+.quickVideoNav button[data-video-quick-control="phrases"]{border-color:#aedac6;color:#075d48}
+.quickVideoNav button[data-video-quick-control="phrases"][aria-expanded="true"]{border-color:#087d62;background:linear-gradient(125deg,#e4f7ed,#f7fbf3);color:#046a50;box-shadow:inset 0 0 0 1px #4fb695}
+.quickVideoNav button[data-video-quick-control="phrases"] span{font-size:clamp(8.1px,2vw,10px);line-height:1.15;overflow-wrap:anywhere;hyphens:auto}
+@media(max-width:355px){
+ .studio .quickVideoNav button[data-video-quick-control="phrases"] span{font-size:8.2px;line-height:1.1}
+ .studio .quickHypnoInline .hypnosisSection{padding:8px 6px}
+}

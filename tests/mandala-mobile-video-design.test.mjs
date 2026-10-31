@@ -321,13 +321,16 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const deep=[
     "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
     "data-video-category-rail","data-video-preview-choices","data-video-editor-nav",
-    "data-video-audio-section","data-video-hypnosis-section"
+    "data-video-audio-section"
   ].map(marker=>studio.indexOf(marker));
   for(const [name,locations] of [["owner preview-first mobile editor",top],["retained deep Support editor",deep]]){
     assert.ok(locations.every(pos=>pos>0),name+" must keep its original functional landmarks");
     for(let i=1;i<locations.length;i++)
       assert.ok(locations[i]>locations[i-1],name+" out of order: "+i);
   }
+  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-hypnosis-section") &&
+    studio.indexOf("data-video-hypnosis-section")<studio.indexOf("data-video-mini-source"),
+    "Hypno panel opens directly beneath new Studio navigation");
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
