@@ -631,7 +631,12 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
   const app=workflow('hh-app-browser.yml');
   assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
-  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'ordinary PR must route to just one core Chromium job');
+  assert.ok(app.includes('{"include":[{"browser":"chromium","suite":"core"}]}'),
+    'ordinary PR must have exactly one browser task');
+  assert.ok(app.includes('{"browser":"webkit","suite":"extended"}'),
+    'legacy full matrix must run only when manually requested');
   assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
   const voice=workflow('andrey-voice-free-contract.yml');
   assert.doesNotMatch(voice,/^  production-build:\s*$/m);
