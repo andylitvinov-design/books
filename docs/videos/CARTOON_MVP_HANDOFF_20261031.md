@@ -17,7 +17,7 @@ This implementation intentionally lives in **the existing Draft PR #2606**, pres
 ```
 node --test tests/cartoon-storyboard.test.mjs
 node scripts/render-cartoon-mp4.mjs --output /tmp/fox-demo.mp4 --locale ru --preset friendship --aspect portrait --silent-demo --preview-seconds 3 --width 360 --height 640
-node scripts/render-cartoon-mp4.mjs --output /tmp/fox-60s.mp4 --locale ru --preset friendship --audio /private/licensed-voice.wav
+node scripts/render-cartoon-mp4.mjs --output /tmp/fox-60s.mp4 --locale ru --preset friendship --source-fps 12 --audio /private/licensed-voice.wav
 ffprobe -v error -show_streams -show_format -of json /tmp/fox-60s.mp4
 ```
 

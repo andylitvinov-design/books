@@ -30,9 +30,9 @@ function assertOutput(meta,{width,height,seconds,audio}){
   return {duration,videoCodec:v.codec_name,audioCodec:a?.codec_name??null,
     fps:v.avg_frame_rate,width:v.width,height:v.height};
 }
-export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=false,previewSeconds=60,width,height,onProgress=()=>{}}){
+export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=false,previewSeconds=60,sourceFps=24,width,height,onProgress=()=>{}}){
   validateCartoonStoryboard(plan);
-  if(!Number.isInteger(previewSeconds)||previewSeconds<1||previewSeconds>60||
+  if(![12,24].includes(sourceFps)||!Number.isInteger(previewSeconds)||previewSeconds<1||previewSeconds>60||
      !output||extname(output).toLowerCase()!=='.mp4'||
      (!audioPath&&!silentDemo))throw Error('cartoon_render_request_invalid');
   const w=width??(plan.aspect==='portrait'?720:1280);
@@ -45,7 +45,7 @@ export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=fa
   const out=resolve(output);await mkdir(dirname(out),{recursive:true});
   const sharp=require('sharp');
   const args=['-hide_banner','-loglevel','error','-nostdin','-y',
-    '-f','rawvideo','-pix_fmt','rgb24','-s',`${w}x${h}`,'-r','24','-i','pipe:0'];
+    '-f','rawvideo','-pix_fmt','rgb24','-s',`${w}x${h}`,'-r',String(sourceFps),'-i','pipe:0'];
   if(voice)args.push('-i',voice);
   args.push('-map','0:v');
   if(voice)args.push('-map','1:a:0','-af',`apad=whole_dur=${previewSeconds}`,'-c:a','aac','-b:a','128k');
@@ -55,11 +55,11 @@ export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=fa
   const child=spawn(binary('ffmpeg'),args,{stdio:['pipe','ignore','pipe']});
   let stderr='';child.stderr.on('data',b=>{stderr=(stderr+b.toString()).slice(-4000)});
   const finished=new Promise((yes,no)=>{child.once('error',no);child.once('close',(code)=>code===0?yes():no(Error('cartoon_ffmpeg_failed: '+stderr.slice(-900))))});
-  const frames=previewSeconds*24;
+  const frames=previewSeconds*sourceFps;
   try{
     for(let f=0;f<frames;f++){
       if(child.exitCode!==null||child.stdin.destroyed)throw Error('cartoon_worker_stopped');
-      const svg=renderCartoonSvg(plan,Math.floor(f*1000/24),{width:w,height:h});
+      const svg=renderCartoonSvg(plan,Math.floor(f*1000/sourceFps),{width:w,height:h});
       const {data,info}=await sharp(Buffer.from(svg)).removeAlpha().raw().toBuffer({resolveWithObject:true});
       if(info.width!==w||info.height!==h||info.channels!==3)throw Error('cartoon_frame_invalid');
       if(!child.stdin.write(data))await once(child.stdin,'drain');
@@ -69,20 +69,20 @@ export async function renderCartoonMp4({plan,output,audioPath=null,silentDemo=fa
     const media=assertOutput(probe(out),{width:w,height:h,seconds:previewSeconds,audio:!!voice});
     const size=(await stat(out)).size;
     if(size<16000)throw Error('cartoon_output_too_small');
-    return {output:out,bytes:size,frames,voiced:!!voice,...media};
+    return {output:out,bytes:size,sourceFrames:frames,encodedFrames:previewSeconds*24,sourceFps,voiced:!!voice,...media};
   }catch(e){child.stdin.destroy();if(child.exitCode===null)child.kill('SIGKILL');
     await finished.catch(()=>{});throw e;}
 }
 function readArgs(args){const result={};for(let i=0;i<args.length;i++){
   const key=args[i];if(key==='--silent-demo'){result.silentDemo=true;continue;}
-  if(!['--output','--locale','--preset','--aspect','--audio','--preview-seconds','--width','--height'].includes(key)||!args[i+1])throw Error('cartoon_cli_invalid');
+  if(!['--output','--locale','--preset','--aspect','--audio','--preview-seconds','--width','--height','--source-fps'].includes(key)||!args[i+1])throw Error('cartoon_cli_invalid');
   result[key.slice(2).replace(/-([a-z])/g,(_,s)=>s.toUpperCase())]=args[++i];
 }return result;}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const o=readArgs(process.argv.slice(2));
   const plan=createCartoonStoryboard({locale:o.locale||'ru',preset:o.preset||'friendship',aspect:o.aspect||'portrait'});
   renderCartoonMp4({plan,output:o.output,audioPath:o.audio,silentDemo:o.silentDemo,
-    previewSeconds:o.previewSeconds?Number(o.previewSeconds):60,
+    previewSeconds:o.previewSeconds?Number(o.previewSeconds):60,sourceFps:o.sourceFps?Number(o.sourceFps):24,
     width:o.width?Number(o.width):undefined,height:o.height?Number(o.height):undefined,
     onProgress:s=>{if(s.frame%120===0)process.stderr.write(`cartoon frames ${s.frame}/${s.totalFrames}\n`);}})
     .then(x=>process.stdout.write(JSON.stringify({ok:true,...x})+'\n'),e=>{

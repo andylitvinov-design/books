@@ -24,9 +24,12 @@ try{
   assert.ok(moving>300,`No visible animation; changed pixels=${moving}`);
   const output=join(dir,'fox-2-sec.mp4');
   const result=await renderCartoonMp4({plan,output,silentDemo:true,previewSeconds:2,width:360,height:640});
-  assert.equal(result.frames,48);assert.equal(result.videoCodec,'h264');
+  assert.equal(result.sourceFrames,48);assert.equal(result.encodedFrames,48);assert.equal(result.videoCodec,'h264');
   assert.equal(result.fps,'24/1');assert.equal(result.duration,2);
   assert.ok(result.bytes>16000);
+  const economy=await renderCartoonMp4({plan,output:join(dir,"economy.mp4"),silentDemo:true,previewSeconds:2,sourceFps:12,width:360,height:640});
+  assert.equal(economy.sourceFrames,24);assert.equal(economy.encodedFrames,48);
+  assert.equal(economy.fps,"24/1");
   console.log(JSON.stringify({ok:true,mode:'silent_test_fixture_only',changedPixels:moving,
-    videoCodec:result.videoCodec,frames:result.frames,seconds:result.duration,bytes:result.bytes}));
+    videoCodec:result.videoCodec,frames:result.encodedFrames,seconds:result.duration,bytes:result.bytes}));
 }finally{await rm(dir,{recursive:true,force:true});}
