@@ -1,4 +1,5 @@
 import test from "node:test";
+import "./hypno-wave-engine.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
@@ -371,4 +372,16 @@ test("Wave/Gemini strategy appears before phrases, uses enum privacy and approve
    "reviewGeminiStrategy","consumeRate(config","PRIVATE_HEADERS","gemini-3.5-flash-lite"])
    assert.ok(route.includes(label),label);
  assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|testScores|profile|custom|medicalHistory)/);
+});
+
+test("Wave draft leaves live video unchanged until explicit approval",()=>{
+  const src=read("components/mandala-hypno-compact.tsx");
+  const section=(a,b)=>src.slice(src.indexOf(a),src.indexOf(b,src.indexOf(a)+a.length));
+  for(const [a,b] of [["function filtered(","async function suggestFromTests()"],
+    ["function addCustom()","const toggle=(panel"],["const ready=()=>","async function generateGemini()"]]){
+    assert.doesNotMatch(section(a,b),/onChange\(\{\.\.\.settings/);
+  }
+  assert.match(section("function approvePhrases()","  return ("),/onChange\(next\)/);
+  assert.match(src,/buildWaveNarrativeDraft\(\{\.\.\.waveInput,currentText:problemNote,goalText:goalNote/);
+  assert.match(src,/requestKey=JSON\.stringify\(\[waveInput,problemNote,goalNote\]\)/);
 });
