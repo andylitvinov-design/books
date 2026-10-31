@@ -54,6 +54,22 @@ const workflows = [
   ['youtube-phone-uploader.yml', 'hh-youtube-phone'],
   ['hh-personal-coaching-session.yml', 'personal-coaching'],
   ['practice-material-previews.yml', 'practice-material-previews'],
+  ['hh-alchemy-mobile-acceptance.yml', 'hh-alchemy-mobile'],
+  ['hh-app-browser.yml', 'app-r1-browser'],
+  ['hh-app-r1.yml', 'app-r1'],
+  ['hh-billing-isolated.yml', 'hh-billing-database'],
+  ['hh-growth-journey.yml', 'hh-growth-journeys'],
+  ['hh-home-conversation.yml', 'hh-home-conversation'],
+  ['hh-my-progress-release.yml', 'hh-my-progress'],
+  ['hh-profile-axis-matching.yml', 'profile-axis'],
+  ['hh-public-services-production.yml', 'public-services-production'],
+  ['hh-public-test-collections.yml', 'hh-public-test-collections'],
+  ['hh-sitemap-runtime-assets.yml', 'sitemap-runtime-assets'],
+  ['hh-tantra-photo-levels.yml', 'hh-tantra-photo'],
+  ['ia-v2.yml', 'ia-v2'],
+  ['mentor-community-acceptance.yml', 'mentor-community-acceptance'],
+  ['pro-reiki-master-paths.yml', 'pro-reiki-master'],
+  ['site-video-browser.yml', 'site-video-browser'],
 ];
 
 test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {

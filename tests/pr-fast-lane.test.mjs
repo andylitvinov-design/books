@@ -710,6 +710,10 @@ test('native auto-merge is requested from trusted base for ready same-repository
   assert.match(source, /head\.repo\.full_name == github\.repository/);
   assert.match(source, /draft == false/);
   assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.match(source, /attempt<=3/);
+  assert.match(source, /Unable to determine if workflow can be created or updated due to timeout/);
+  assert.match(source, /--match-head-commit "\$PR_HEAD"/);
+  assert.match(source, /\.headRefOid == env\.PR_HEAD and \.autoMergeRequest != null/);
   assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });
 
