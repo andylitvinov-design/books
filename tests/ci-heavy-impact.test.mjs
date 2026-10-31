@@ -41,9 +41,33 @@ test('CI-only App R1 policy and new routing tests skip obsolete unrelated app an
     one('.github/workflows/hh-app-browser.yml'),
     one('scripts/ci-heavy-impact.mjs'),
     one('tests/ci-heavy-impact.test.mjs', 'added'),
+    one('tests/ci-specialist-aggregate.test.mjs'),
     [ { filename: '.github/workflows/ia-v2.yml', status: 'modified' },
       { filename: 'tests/pr-fast-lane.test.mjs', status: 'modified' } ],
   ]) assert.deepEqual(decideHeavyImpact('app-r1', source), routed);
+  // Exact workflow/guard CI-only PR: immutable BASE guard runs separately;
+  // no App runtime, SQL, auth, payment, or user data changed.
+  const ciOnlyProduction = [
+    '.github/workflows/hh-app-browser.yml',
+    '.github/workflows/hh-app-r1.yml',
+    '.github/workflows/hh-free-review-live-mobile.yml',
+    '.github/workflows/hh-pr-sweep-guard.yml',
+    '.github/workflows/holistic-support-mandala.yml',
+    '.github/workflows/ia-v2.yml',
+    '.github/workflows/opora-module-ci.yml',
+    '.github/workflows/site-video-browser.yml',
+    'scripts/ci-heavy-impact.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs',
+    'tests/ci-heavy-impact.test.mjs',
+    'tests/ci-specialist-aggregate.test.mjs',
+    'tests/pr-fast-lane.test.mjs',
+  ].map(name=>({filename:name,status:name.endsWith('ci-heavy-impact.test.mjs')||name==='scripts/ci-heavy-impact.mjs'?'added':'modified'}));
+  assert.deepEqual(decideHeavyImpact('app-r1',ciOnlyProduction),routed,
+    'Current CI-only cleanup must not launch unrelated App PostgreSQL/OPORA; guard-unit & Core still mandatory');
+  assert.deepEqual(decideHeavyImpact('app-r1',[
+    ...ciOnlyProduction,{filename:'app/api/app/secure/route.ts',status:'modified'},
+  ]),{full_app:true,database:true,banner:true,profile:true},
+    'Mixed private API changes must keep full RLS/database checks');
   const strict = { full_app: true, database: true, banner: true, profile: true };
   for (const source of [
     one('.github/workflows/hh-pr-core-release.yml'),
