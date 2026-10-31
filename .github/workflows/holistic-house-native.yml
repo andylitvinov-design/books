@@ -159,7 +159,8 @@ jobs:
     # Full native builds run on verified production pushes or manual dispatch only.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Holistic House iOS unsigned simulator app
-    runs-on: macos-14
+    # PR performs only a lightweight delegation on Linux; genuine iOS builds always use macOS.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-24.04' || 'macos-14' }}
     timeout-minutes: 40
     steps:
       - name: Verify delegated lightweight PR native coverage
