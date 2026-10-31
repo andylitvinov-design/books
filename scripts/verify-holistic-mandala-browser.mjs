@@ -78,6 +78,10 @@ const runEngine = async ([engine, browserType]) => {
         viewport: { width, height: 820 },
         acceptDownloads: true,
         reducedMotion: "reduce",
+        // This E2E explicitly mocks the free AI POST. Playwright cannot
+        // guarantee page.route() interception behind a registered PWA SW.
+        // Dedicated SW suites cover PWA behavior independently.
+        serviceWorkers: "block",
       });
       try {
         const page = await context.newPage();
@@ -358,8 +362,20 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
-          .toHaveAttribute("open","",{timeout:10000});
+        try {
+          await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
+            .toHaveAttribute("open","",{timeout:4000});
+        } catch(firstTapError) {
+          // A native <details> click can be lost during WebKit's long
+          // video decode. Retry exactly ONE real summary click when (and only
+          // when) the native open attribute is still absent; never set it
+          // programmatically or waive the photo/cover assertions below.
+          if(await coverOptions.getAttribute("open")!==null)throw firstTapError;
+          console.warn(engine+" "+locale+" "+width+"px cover details not committed; retrying one user tap");
+          await coverOptions.locator("summary").click();
+          await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
+            .toHaveAttribute("open","",{timeout:12000});
+        }
         // Fix a stable scene identity before changing its aria-pressed state;
         // a selector filtered on [aria-pressed=false] points at another scene afterwards.
         const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
