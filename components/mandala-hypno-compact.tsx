@@ -12,6 +12,7 @@ import {
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
+import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import css from "./mandala-hypno-compact.module.css";
 
@@ -20,7 +21,7 @@ type EditPanel = "request"|"phrases"|"display"|"design"|null;
 type Position = "top"|"center"|"bottom";
 type TextScale = "small"|"medium"|"large";
 type HypnoModel="wave"|"gemini";
-type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[]};
+type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[];custom:string;status:string};
 
 const topicGoals: Record<VideoTheme, VideoAffirmationGoal[]> = {
   energy:["rhythm","recovery","strength"], money:["value","planning","stability"],
@@ -217,22 +218,45 @@ export function MandalaHypnoCompact({
   const runId=useRef(0);
   const pending=useRef<AbortController|null>(null);
   const waveInput={locale,theme,problemIndex,goalId:extraGoal,tone,focus,kind,length};
-  const requestKey=JSON.stringify(waveInput);
+  const requestKey=JSON.stringify([waveInput,problemNote,goalNote]);
   const latestKey=useRef(requestKey);
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
   const candidates=draft?.phrases??(settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
   const chosen=draft?.selected??settings.selected;
-  const selectedCount=chosen.length;
+  const currentCustom=draft?.custom??settings.custom;
+  const countCustom=(value:string)=>value.split(/\r?\n/u).filter(v=>v.trim()).length;
+  const selectedCount=chosen.length+countCustom(currentCustom);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
-  const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
+  const waveNow=buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,round:generation,
+    fallbackStrategy:buildWaveStrategy(waveInput),
+    fallbackPhrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation)});
+  const safetyBlocked=waveNow.status==="safety_handoff";
+  const summary=safetyBlocked?waveNow.strategy:
+    model==="wave"?(draft?.strategy??waveNow.strategy):(draft?.strategy??extra.aiPrompt);
+
+  function snapshotAsDraft():HypnoDraft {
+    const phrases=settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme];
+    return {model,key:requestKey,strategy:summary,phrases:[...phrases],
+      selected:[...settings.selected],custom:settings.custom,status:"category_only"};
+  }
+  function waveDraftFor(input:typeof waveInput, nextRound:number, key:string):HypnoDraft {
+    const outcome=buildWaveNarrativeDraft({...input,currentText:problemNote,goalText:goalNote,round:nextRound,
+      fallbackStrategy:buildWaveStrategy(input),
+      fallbackPhrases:buildHypnoFilteredPhrases(locale,input.theme,input.problemIndex,input.goalId,
+        input.tone,input.kind,input.focus,input.length,nextRound)});
+    return {model:"wave",key,strategy:outcome.strategy,phrases:outcome.phrases,
+      selected:outcome.status==="safety_handoff"?[]:[0,1,2],
+      custom:draftState?.custom??settings.custom,status:outcome.status};
+  }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
-    const suggestions=buildHypnoFilteredPhrases(locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,next);
-    onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
+    const input={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
+    const key=JSON.stringify([input,problemNote,goalNote]);
+    setModel("wave");setGeminiBusy(false);setGeminiNotice("");
+    setDraftState(waveDraftFor(input,next,key));
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){
@@ -258,18 +282,24 @@ export function MandalaHypnoCompact({
     setTestProposal(null);setSelectionSource("tests");setOpen(null);
   }
   function addCustom(){
-    if(!ownText.trim())return;
-    const custom=compactCustomAffirmationInput([settings.custom,ownText.trim()].filter(Boolean).join("\n"));
-    onChange({...settings,enabled:true,custom});setOwnText("");setApprovalKey("");
+    if(!ownText.trim()||safetyBlocked)return;
+    const base=draft??snapshotAsDraft();
+    const combined=compactCustomAffirmationInput([base.custom,ownText.trim()].filter(Boolean).join("\n"));
+    if(base.selected.length+countCustom(combined)>5){
+      setNote(locale==="ru"?"Можно утвердить не более пяти фраз. Уберите одну выбранную.":
+        locale==="es"?"Confirma hasta cinco frases; desmarca una primero.":
+        "Approve up to five phrases; deselect one first.");
+      return;
+    }
+    setDraftState({...base,custom:combined});setOwnText("");setApprovalKey("");
   }
   function toggleSelected(i:number){
-    if(draft)setDraftState({...draft,selected:draft.selected.includes(i)?
-      draft.selected.filter(v=>v!==i):[...draft.selected,i].slice(0,5)});
-    else{
-      const selected=settings.selected.includes(i)?settings.selected.filter(v=>v!==i):[...settings.selected,i].slice(0,5);
-      onChange({...settings,enabled:true,selected});
-    }
-    setApprovalKey("");
+    if(safetyBlocked)return;
+    const base=draft??snapshotAsDraft();
+    const selected=base.selected.includes(i)?base.selected.filter(v=>v!==i):[...base.selected,i];
+    if(selected.length+countCustom(base.custom)>5){setNote(locale==="ru"?"Не больше пяти фраз":
+      locale==="es"?"Máximo cinco frases":"Maximum five phrases");return;}
+    setDraftState({...base,selected});setApprovalKey("");
   }
 
   const toggle=(panel:Exclude<EditPanel,null>)=>setOpen(current=>current===panel?null:panel);
@@ -278,17 +308,22 @@ export function MandalaHypnoCompact({
   };
   const ready=()=>{
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
-    onChange({...settings,enabled:true,presetOverride:undefined,selected:[0,1,2]});
+    setModel("wave");setGeminiBusy(false);setGeminiNotice("");
+    setDraftState({model:"wave",key:requestKey,strategy:buildWaveStrategy(waveInput),
+      phrases:[...suggestedVideoAffirmations[locale][theme]],selected:[0,1,2],
+      custom:draftState?.custom??settings.custom,status:"category_only"});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
   const changeTheme=(next:VideoTheme)=>{
     if(next===theme)return;
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    const input={...waveInput,theme:next,problemIndex:0,goalId:topicGoals[next][0]};
+    const key=JSON.stringify([input,problemNote,goalNote]);
+    setModel("wave");setGeminiBusy(false);setGeminiNotice("");
+    setDraftState(waveDraftFor(input,generation+1,key));
     onSelectTheme(next);
-    onChange({...settings,enabled:settings.enabled,presetOverride:undefined,selected:[0,1,2]});
-    setSelectionSource("ready");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
+    setGeneration(n=>n+1);
+    setSelectionSource("smart");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
     setOpen("request");
   };
 
@@ -297,14 +332,11 @@ export function MandalaHypnoCompact({
     pending.current?.abort();runId.current++;
     setGeminiBusy(false);setGeminiNotice("");setApprovalKey("");
     setModel(next);setDraftState(null);
-    if(next==="wave"){
-      setDraftState({model:"wave",key:requestKey,strategy:buildWaveStrategy(waveInput),
-        phrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation+1),
-        selected:[0,1,2]});
-    }else if(geminiConsent)void generateGemini();
+    if(next==="wave")setDraftState(waveDraftFor(waveInput,generation+1,requestKey));
+    else if(geminiConsent&&!safetyBlocked)void generateGemini();
   }
   async function generateGemini(){
-    if(disabled||!geminiConsent)return;
+    if(disabled||!geminiConsent||safetyBlocked)return;
     pending.current?.abort();
     const controller=new AbortController();pending.current=controller;
     const number=++runId.current,key=requestKey;
@@ -321,7 +353,7 @@ export function MandalaHypnoCompact({
       const checked=reviewGeminiStrategy(raw,locale,length);
       if(!checked)throw Error("GEMINI_REVIEW");
       if(number!==runId.current||key!==latestKey.current)return;
-      setDraftState({model:"gemini",key,...checked,selected:[0,1,2]});
+      setDraftState({model:"gemini",key,...checked,selected:[0,1,2],custom:draftState?.custom??settings.custom,status:"category_only"});
       setSelectionSource("gemini");
     }catch{
       if(number!==runId.current||key!==latestKey.current)return;
@@ -330,16 +362,18 @@ export function MandalaHypnoCompact({
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
   function approvePhrases(){
-    if(draft){
-      if(!draft.selected.length)return;
-      const next={...settings,enabled:true,presetOverride:draft.phrases,selected:draft.selected};
-      onChange(next);
-      setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
-    }else setApprovalKey(signature);
+    if(!draft||draft.status==="safety_handoff"||safetyBlocked)return;
+    const selected=[...new Set(draft.selected)].filter(i=>Number.isInteger(i)&&i>=0&&i<draft.phrases.length).slice(0,5);
+    const custom=compactCustomAffirmationInput(draft.custom);
+    if(!selected.length&&!countCustom(custom))return;
+    if(selected.length+countCustom(custom)>5)return;
+    if(draft.phrases.length!==5)return; // legacy adapter remains five slots
+    const next={...settings,enabled:true,presetOverride:[...draft.phrases],selected,custom};
+    onChange(next); // the ONLY phrase-draft -> live-video transition
+    setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
+    setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
   }
 
-  const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
       <section className={css.card} data-hypno-request>
@@ -426,6 +460,9 @@ export function MandalaHypnoCompact({
             disabled={disabled} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
         </div>
         <p className={css.strategySummary} aria-live="polite" data-hypno-strategy-summary>{summary}</p>
+        {model==="wave"&&<small data-hypno-wave-source>{waveNow.status==="personalized"?
+          (locale==="ru"?"По смыслу вашего описания · локально":locale==="es"?"Según tu descripción · local":"Based on your notes · on device"):
+          (locale==="ru"?"По выбранным категориям":locale==="es"?"Según temas elegidos":"By selected categories")}</small>}
         {model==="gemini"&&<div className={css.geminiControls}>
           <label className={css.geminiConsent}>
             <input type="checkbox" data-hypno-gemini-consent checked={geminiConsent} disabled={disabled||geminiBusy}
@@ -513,7 +550,7 @@ export function MandalaHypnoCompact({
           <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(!draft&&!settings.enabled)||(!selectedCount&&!settings.custom.trim())}
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||safetyBlocked||(!draft&&!settings.enabled)||!selectedCount}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
