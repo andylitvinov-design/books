@@ -60,7 +60,7 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(client,/data-video-generate-affirmation-audio/);
   assert.match(client,/mode:"affirmations"/);
   assert.match(client,/consent:true/);
-  assert.match(client,/mixVoiceWithNature\(voice,bed,mixSeconds\)/);
+  assert.match(client,/mixVoiceWithNature\(clip\.blob,selected\.bed,clip\.mixSeconds,selected\)/);
   assert.match(client,/URL\.createObjectURL\(file\)/);
   assert.match(api,/voice-studio-affirmations-daily/);
   assert.match(api,/requireSameOrigin/);

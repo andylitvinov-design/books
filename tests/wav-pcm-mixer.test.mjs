@@ -35,3 +35,17 @@ test("PCM mixer rejects invalid, truncated and unsupported payloads before alloc
   const weird=sample.slice(0);new DataView(weird).setUint16(20,3,true);
   assert.throws(()=>mixPcmWavs(weird,sample));
 });
+
+test("gain faders support exact silence, 100% voice and background without any browser audio API",()=>{
+  const spoken=createWav({seconds:2,freq:300,amplitude:15000});
+  const bed=createWav({seconds:1,freq:123,amplitude:9000});
+  const silent=new DataView(mixPcmWavs(spoken,null,3,{voiceLevel:0,musicLevel:100}));
+  const voiced=new DataView(mixPcmWavs(spoken,null,3,{voiceLevel:100,musicLevel:100}));
+  const bgOnly=new DataView(mixPcmWavs(spoken,bed,3,{voiceLevel:0,musicLevel:100}));
+  // 300Hz at 24kHz -> 80 samples/cycle, so 20 samples is a voice peak.
+  assert.equal(silent.getInt16(44+20*2,true),0);
+  assert.ok(Math.abs(voiced.getInt16(44+20*2,true))>12000);
+  assert.equal(voiced.getInt16(44+24000*2*2,true),0,"speech does not loop");
+  assert.ok(Math.abs(bgOnly.getInt16(44+24000*2*2+14*2,true))>500,
+    "background continues after speech without voice");
+});

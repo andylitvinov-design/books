@@ -130,11 +130,15 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/voiceStudioKey\(process\.env\)/);
   assert.doesNotMatch(code,/process\.env\.HH_COUNCIL_GEMINI_API_KEY/);
 });
-test('editor offers free samples and custom text generation in the canonical video page',()=>{
+test('editor offers free samples and custom text generation in main video page and preserves legacy link',()=>{
+  const meditation=get('components/mandala-personal-meditation.tsx');
+  const mandala=get('components/mandala-meditation-client.tsx');
   const redirect=get('app/[locale]/holistic-support/voice-studio/route.ts');
   const editor=get('components/mandala-free-video-studio.tsx');
   const client=get('components/mandala-cloud-voice-studio.tsx');
   const mix=get('lib/mandala/voice-audio-mix.ts');
+  assert.match(meditation,/MandalaCloudVoiceStudio locale=\{locale\} sourceText=\{script\}/);
+  assert.match(mandala,/holistic-support\/voice-studio/);
   assert.match(redirect,/NextResponse\.redirect/);
   assert.match(redirect,/isPublicLocale/);
   assert.match(redirect,/url\.hash="voice-studio"/);
@@ -144,6 +148,45 @@ test('editor offers free samples and custom text generation in the canonical vid
   assert.match(client,/consent:true/);
   assert.match(client,/data-voice-studio-generate/);
   assert.match(client,/mixVoiceWithNature/);
-  assert.match(mix,/mixPcmWavs/);
+  assert.match(mix,/OfflineAudioContext/);
   assert.match(mix,/presetAudioUrl/);
+});
+
+test('free meditation and affirmation mixing expose independent voice and music sliders',()=>{
+  const mixer=get('lib/mandala/voice-audio-mix.ts');
+  const cloud=get('components/mandala-cloud-voice-studio.tsx');
+  const affirmations=get('components/mandala-affirmation-voice.tsx');
+  const movie=get('components/mandala-free-video-studio.tsx');
+  assert.match(mixer,/voiceMixLevel\(levels\.voiceLevel,90\)/);
+  assert.match(mixer,/voiceMixLevel\(levels\.musicLevel,12\)/);
+  assert.match(mixer,/VOICE_BED_PRESETS/);
+  assert.match(mixer,/preset==="none"/);
+  assert.match(mixer,/OfflineAudioContext/);
+  assert.match(mixer,/mixPcmWavs/);
+  assert.match(mixer,/UNSUPPORTED_WAV_PCM/);
+  assert.match(cloud,/data-voice-volume/);
+  assert.match(cloud,/data-music-volume/);
+  assert.match(cloud,/data-voice-background-extra/);
+  assert.match(cloud,/mixVoiceWithNature\(wav,background,undefined,\{voiceLevel,musicLevel\}\)/);
+  assert.match(affirmations,/data-video-voice-volume/);
+  assert.match(affirmations,/data-video-bed-volume/);
+  assert.match(affirmations,/voiceDataRef/);
+  assert.match(affirmations,/onInvalidateRef\.current\?\.\(\)/);
+  assert.match(movie,/setSoundVolume\(100\)/);
+});
+test('personal meditation can attach a complete local mastered WAV to a MOVIE',()=>{
+  const cloud=get('components/mandala-cloud-voice-studio.tsx');
+  const meditation=get('components/mandala-personal-meditation.tsx');
+  const movie=get('components/mandala-free-video-studio.tsx');
+  assert.match(cloud,/data-voice-add-to-video/);
+  assert.match(cloud,/data-voice-upload-local/);
+  assert.match(cloud,/isSupportedLocalAudio\(file\)/);
+  assert.match(cloud,/setWav\(file\)/);
+  assert.match(cloud,/onAudioReady\(file\)/);
+  assert.match(meditation,/onAudioReady=\{onNarrationReady\}/);
+  assert.match(movie,/onNarrationReady=\{attachMeditationNarration\}/);
+  assert.match(movie,/wavDurationFromHeader/);
+  assert.match(movie,/nonLoop:true/);
+  assert.match(movie,/attachedAudio\.nonLoop!==true/);
+  assert.match(movie,/durations\.find\(value=>value>=seconds\+0\.35\)/);
 });

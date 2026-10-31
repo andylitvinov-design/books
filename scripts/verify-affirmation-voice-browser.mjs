@@ -83,6 +83,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await advanced.locator(":scope > summary").click();
       await selectedFile.waitFor({state:"hidden"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
+      const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
+      assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
+        "the first-party library offers none and thirteen backgrounds");
+      await page.locator("[data-video-voice-volume]").focus();
+      await page.keyboard.press("ArrowLeft");
+      await page.locator("[data-video-bed-volume]").focus();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForFunction(previous=>{
+        const audio=document.querySelector("[data-video-affimations-audio-ready] audio");
+        return audio?.getAttribute("src") && audio.getAttribute("src")!==previous;
+      },firstAudio,{timeout:25000});
+      assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
+      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+        "newly remixed WAV must automatically attach to local movie");
       if(engine==="chromium") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
@@ -111,8 +125,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
         assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
       }
-      // Render/export can restore the disclosure's controlled React open state.
-      // Reopen it only if actually closed, never blindly toggle a visible panel shut.
+      // React can restore this disclosure's open state after the export rerender.
+      // Reopen only when closed, not blindly toggle an existing visible panel.
       if((await advanced.getAttribute("open"))===null)
         await advanced.locator(":scope > summary").click();
       await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
