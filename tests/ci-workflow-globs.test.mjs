@@ -133,3 +133,20 @@ test('Public Services: only existing executed unit-test changes may skip duplica
     "'app/api/payments/**'"]) assert.ok(s.includes(required), 'missing full acceptance: ' + required);
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
 });
+
+test('Reiki PR runs current course source contracts; full 64-slide browser suite stays manual', () => {
+  const yaml=workflow('hh-reiki-all-slides-browser.yml');
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.ok(yaml.includes("if: github.event_name == 'pull_request'\n        run: |\n          node --check scripts/verify-reiki-all-slides-browser.mjs"));
+  for (const step of [
+    'Isolated Chromium/WebKit runtime (manual deep QA only)',
+    'Initialize synthetic isolated account database',
+    'Verify Chromium full 64 screens and Safari guest save-only checkpoint',
+  ]) {
+    assert.ok(yaml.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+      'old extended browser/DB matrix must not block an ordinary product PR: '+step);
+  }
+  assert.ok(yaml.includes('node --test tests/reiki-referral-landing.test.mjs'));
+  assert.match(yaml,/HH_APP_TEST_RUNTIME: isolated/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
