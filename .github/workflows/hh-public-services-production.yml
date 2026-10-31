@@ -138,11 +138,8 @@ on:
       - '!app/api/holistic-support/voice/**'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
-      # The Mandala specialist owns goal-first Video Director, first-video prompt and voice API.
-      - '!components/mandala-first-video-start*'
-      - '!app/api/holistic-support/first-video-prompt/route.js'
+      # Video Director's isolated source-only test also belongs to Mandala.
       - '!tests/first-video-director.test.mjs'
-      - '!app/api/holistic-support/voice/**'
       - '!components/mandala-meditation.module.css'
 permissions:
   contents: read
