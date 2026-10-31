@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { classifyStaticUiText } from '../lib/ci/fast-static-ui-text.mjs';
+import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
   inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
@@ -86,10 +86,12 @@ export async function verify(api,ctx,files,options={}) {
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   let risk=classifyReleaseRisk(changed);
+  const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
+    {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
+  const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
+  if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
   if (risk !== 'FAST') {
-    const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
-      {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
-    risk=classifyStaticUiText(changedRows,(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path));
+    risk=classifyStaticUiText(changedRows,sources);
   }
   if (risk === 'FAST') {
     assertSame(await api.pr(ctx.number),ctx);

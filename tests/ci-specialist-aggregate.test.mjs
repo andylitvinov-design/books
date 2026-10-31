@@ -416,8 +416,8 @@ test('FAST bypasses specialist wait but verifies live HEAD and old names in rena
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css'}], runs:async()=>{throw Error('should not wait');}};
-  const result=await verify(api,ctx,sources, {maxWaitMs:0});
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}], runs:async()=>{throw Error('should not wait');}};
+  const result=await verify(api,ctx,sources, {maxWaitMs:0,readSource:()=>'.card { color: red; }'});
   assert.equal(result.risk,'FAST');
   assert.equal(reads,2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
@@ -442,7 +442,7 @@ test('presentation changes cannot bypass an applicable private app browser workf
 test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
   const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
-  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.module.css']), 'FAST');
   assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
@@ -504,8 +504,8 @@ test('public FAST CSS does not wait for broadly triggered diagnostic specialists
   const broad='.github/workflows/diagnostic.yml';
   const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
   const ctx={repo,number:27,head:SHA,base:BASE};
-  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>{throw Error('must not poll diagnostics');}};
-  const result=await verify(api,ctx,sources,{maxWaitMs:0});
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>{throw Error('must not poll diagnostics');}};
+  const result=await verify(api,ctx,sources,{maxWaitMs:0,readSource:()=>'.card { color: red; }'});
   assert.equal(result.risk,'FAST');
   assert.deepEqual(result.expected,[]);
 });
@@ -591,5 +591,9 @@ test('Toronto browser owner has trusted retirement mapping before deleting old w
 test('installation and account guidance CSS stays STRICT', async () => {
   const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
   assert.equal(classifyReleaseRisk(['app/[locale]/install/install.module.css']),'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/contact/page.module.css']),'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/events/[eventId]/event-detail.module.css']),'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css']),'STRICT');
+  assert.equal(classifyReleaseRisk(['app/academy.css']),'STRICT');
 });

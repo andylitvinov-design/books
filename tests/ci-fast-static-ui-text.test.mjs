@@ -4,13 +4,22 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { classifyStaticUiText } from '../lib/ci/fast-static-ui-text.mjs';
+import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { verify } from '../scripts/ci-specialist-aggregate.mjs';
 
 const before='export default function Page() {\n  return <main>\n    <h1>Welcome</h1>\n    <p>Discover our story</p>\n  </main>;\n}\n';
 const after=before.replace('Welcome','Bienvenidos').replace('Discover our story','Наша история');
 const row={filename:'app/[locale]/about/page.tsx',status:'modified'};
-const source=(sha)=>sha==='base'?before:after;
+const source=(sha,path)=>path?.endsWith('.css') ? '.card { color: red; }' : sha==='base'?before:after;
+
+test('CSS modules using global escapes, network imports or unknown content stay STRICT',()=>{
+  const css={filename:'app/[locale]/about/page.module.css',status:'modified'};
+  assert.equal(scopedCssIsSafe([css],()=>'.card { color: red; }'),true);
+  for(const value of [':global(body) { display:none }','@import "remote.css";','.card { background: url(https://example.test/x) }','.card { composes: hidden from "other" }',':export { flag: x }','.card { color: \\72 ed }','\0',null]) {
+    assert.equal(scopedCssIsSafe([css],()=>value),false);
+  }
+  assert.equal(scopedCssIsSafe([{...css,status:'removed'}],()=>'.x { color: red }'),false);
+});
 
 test('public static UI text and localization changes route FAST',()=>{
   assert.equal(classifyStaticUiText([row],source),'FAST');
@@ -77,6 +86,16 @@ test('release verifier accepts proven text-only change without polling diagnosti
   const api={pr:async()=>pr,changed:async()=>[row],runs:async()=>{throw Error('unexpected diagnostic wait');}};
   const result=await verify(api,ctx,{}, {readSource:(rev)=>rev===base?before:after,maxWaitMs:0});
   assert.equal(result.risk,'FAST');
+});
+
+test('a CSS module with a global escape requires its applicable specialist',async()=>{
+  const sha='a'.repeat(40),base='b'.repeat(40),repo='andylitvinov-design/books';
+  const ctx={repo,head:sha,base,number:27};
+  const pr={number:27,state:'open',draft:false,head:{sha,ref:'ui',repo:{full_name:repo}},base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}};
+  const workflow='.github/workflows/diagnostic.yml';
+  const files={base:new Map([[workflow,'on: [pull_request]\n']]),current:new Map([[workflow,'on: [pull_request]\n']])};
+  const api={pr:async()=>pr,changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,files,{readSource:rev=>rev===base?'.card {color:red}':':global(body) {display:none}',maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
 test('release verifier reads the exact Git base and head, not uncommitted worktree content',async()=>{
