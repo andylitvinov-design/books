@@ -74,51 +74,53 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('current seven Cabinet destinations and five mobile quick links stay truthful and localized', () => {
+test('six private Cabinet tabs share menus while mobile adds a seventh public Home shortcut', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const navStart = workspace.indexOf('const nav = [')
-  const mobileModelStart = workspace.indexOf('  const mobileNav = [', navStart)
-  const navEnd = workspace.indexOf('  const navIsActive =', mobileModelStart)
-  assert.ok(navStart >= 0 && mobileModelStart > navStart && navEnd > mobileModelStart,
-    'one account navigation model and one independent mobile shortlist')
-  const accountNav = workspace.slice(navStart, mobileModelStart)
-  const mobileModel = workspace.slice(mobileModelStart, navEnd)
-  for (const [id, en, route] of [
-    ['portrait','Profile','/portrait'],
-    ['tests','Tests','/tests'],
-    ['portfolio','Reports','/portfolio'],
-    ['course','Courses','/course?view=courses'],
-    ['messages','Messages','/messages'],
+  const navEnd = workspace.indexOf('  const navIsActive =', navStart)
+  assert.ok(navStart >= 0 && navEnd > navStart, 'one shared account nav model')
+  const navModel = workspace.slice(navStart, navEnd)
+  for (const [id, title, route] of [
+    ['portrait', 'Profile', '/portrait'],
+    ['tests', 'Tests', '/tests'],
+    ['portfolio', 'Reports', '/portfolio'],
+    ['course', 'Courses', '/course?view=courses'],
+    ['practice', 'Practice', '/practice'],
+    ['messages', 'Messages', '/messages'],
   ]) {
-    assert.ok(accountNav.includes("id: '" + id + "'"), id)
-    assert.ok(accountNav.includes("'" + en + "'"), en)
-    assert.ok(accountNav.includes("href: root + '" + route + "'"), route)
+    assert.match(navModel, new RegExp("id: '" + id + "'"))
+    assert.ok(navModel.includes("label: locale === 'ru'"), 'EN and RU navigation labels')
+    assert.ok(navModel.includes("'" + title + "'"), title)
+    assert.ok(navModel.includes("href: root + '" + route + "'"), route)
   }
-  assert.ok(accountNav.includes("id: 'progress'"), 'saved progress belongs to the real Cabinet')
-  assert.ok(accountNav.includes("href: root + '/progress'"), 'progress opens account history')
-  assert.ok(accountNav.includes("id: 'practice'"), 'practice stays in account navigation')
-  assert.ok(accountNav.includes("href: '/' + locale + '/practice'"),
-    'practice links to the published first-party practitioner page')
-  assert.equal((accountNav.match(/^\s*\{ id:/gm)||[]).length,7,
-    'seven current account sections, no retired Analysis tab')
-  assert.doesNotMatch(accountNav, /\{ id: 'analysis'/)
-  for (const id of ['practice','messages','progress','settings'])
-    assert.ok(mobileModel.includes("id: '" + id + "'"), 'mobile shortcut: '+id)
-  assert.equal((mobileModel.match(/^\s*\{ id:/gm)||[]).length,4)
-  assert.ok(mobileModel.includes("'Mi progreso'"), 'Spanish mobile progress label')
-  const mobileStart = workspace.indexOf('<nav className="hh-mobile-app-nav"')
-  const mobile = workspace.slice(mobileStart, workspace.indexOf('</nav>}', mobileStart))
-  assert.ok(mobileStart > 0 && mobile.length > 100)
-  assert.match(mobile,/mobileNav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
+  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice|messages)'/g)||[]).length,6)
+  assert.doesNotMatch(navModel, /\{ id: 'analysis'/)
+  const mobileStart=workspace.indexOf('<nav className="hh-mobile-app-nav"')
+  const mobile=workspace.slice(mobileStart,workspace.indexOf('</nav>}',mobileStart))
+  assert.ok(mobileStart>0 && mobile.length>100)
+  assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
   assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
   assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
-  assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length-1,1)
-  assert.ok(mobile.includes("href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'}"),
-    'home goes to current localized public homepage')
+  assert.match(mobile,/className="hh-mobile-app-nav-home"/)
+  assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important;/)
+  // Preserve the verifier branch's stricter exact bilingual ordering and Home contract.
+  const entries=[...navModel.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
+  assert.deepEqual(entries,[
+    {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
+    {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
+    {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
+    {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
+    {id:'messages',ru:'Сообщения',en:'Messages',path:'/messages'},
+  ])
+  assert.doesNotMatch(mobile, />Analysis</)
+  assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
   assert.ok(mobile.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
-  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') < mobile.indexOf('mobileNav.map'),
-    'Home is first, then four real account shortcuts')
-  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\);/,
-    'five readable mobile columns, not retired seven-column geometry')
+  assert.ok(mobile.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
+  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') > mobile.indexOf('nav.map'))
+
 })
+
+
