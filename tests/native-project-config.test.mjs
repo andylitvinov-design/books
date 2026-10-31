@@ -37,8 +37,8 @@ test('declares public link handling, safe native navigation, and no automatic ve
 test('keeps association documents empty and native CI explicitly unsigned', () => {
   assert.deepEqual(JSON.parse(read('public/.well-known/assetlinks.json')), [])
   assert.deepEqual(JSON.parse(read('public/.well-known/apple-app-site-association')), { applinks: { apps: [], details: [] } })
-  const workflow = read('.github/workflows/native-ci.yml')
-  assert.match(workflow, /runs-on: macos-14/)
+  const workflow = read('.github/workflows/holistic-house-native.yml')
+  assert.match(workflow, /runs-on:.*macos-14/, 'Real production iOS builds remain on macOS')
   assert.match(workflow, /CODE_SIGNING_ALLOWED=NO/)
   assert.match(workflow, /assembleDebug/)
   assert.match(workflow, /actions\/upload-artifact@v4/)

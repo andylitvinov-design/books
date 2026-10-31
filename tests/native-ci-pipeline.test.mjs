@@ -6,34 +6,34 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
-const workflow = read('.github/workflows/native-ci.yml')
+const workflow = read('.github/workflows/holistic-house-native.yml')
 const plist = read('ios/App/HHCourseWidget/Info.plist')
 const project = read('ios/App/App.xcodeproj/project.pbxproj')
 
 function pipelineContract(source) {
   const shell = source.match(/^defaults:\n  run:\n    shell: (.+)$/m)?.[1]
-  assert.equal(shell, 'bash --noprofile --norc -eo pipefail {0}', 'Every logged native command must propagate pipeline failures')
-  assert.equal((source.match(/^\s+(?:-\s+)?shell:/gm) || []).length, 1, 'No weaker job or step shell override')
+  assert.equal(shell, 'bash --noprofile --norc -eo pipefail {0}',
+    'Native owner must propagate failed sync, simulator and Gradle pipelines')
+  assert.equal((source.match(/^\s+(?:-\s+)?shell:/gm) || []).length, 1,
+    'No weaker job or step shell override')
   assert.doesNotMatch(source, /continue-on-error:\s*true|\|\|\s*true|set\s+\+e|set\s+\+o\s+pipefail/)
-  const lines = source.split('\n'), commands = []
-  for (let index = 0; index < lines.length; index++) {
-    const run = lines[index].match(/^        run: (.+)$/)
-    if (!run) continue
-    let command = run[1]
-    if (command === '>-') {
-      const folded = []
-      while (/^          \S/.test(lines[index + 1] || '')) folded.push(lines[++index].trim())
-      command = folded.join(' ')
-    }
-    if (command.includes('| tee ')) commands.push(command)
-  }
-  assert.equal(commands.length, 4, 'Both platform syncs and both builds retain logged pipelines')
-  assert.match(commands[0], /^npm run native:sync -- ios /)
+  const folded = source.match(/^        run: >-\n((?:          \S.*\n)+)/m)?.[1]
+  const commands = [
+    source.match(/^        run: (npx cap sync ios 2>&1 \| tee \S+\.log)$/m)?.[1],
+    folded?.split('\n').map(line => line.trim()).join(' ').trim(),
+    source.match(/^        run: (npx cap sync android 2>&1 \| tee \S+\.log)$/m)?.[1],
+    source.match(/^        run: (\.\/gradlew assembleDebug --stacktrace 2>&1 \| tee \S+\.log)$/m)?.[1],
+  ]
+  assert.ok(commands.every(Boolean), 'Both platform syncs and unsigned simulator/Gradle pipelines must remain covered')
+  assert.match(commands[0], /^npx cap sync ios /)
   assert.match(commands[1], /^xcodebuild .*CODE_SIGNING_ALLOWED=NO build /)
-  assert.match(commands[2], /^npm run native:sync -- android /)
+  assert.match(commands[2], /^npx cap sync android /)
   assert.match(commands[3], /^\.\/gradlew assembleDebug --stacktrace /)
   for (const command of commands) assert.match(command, /2>&1 \| tee \S+\.log$/)
-  assert.equal((source.match(/if: always\(\)/g) || []).length, 2, 'Failure logs remain uploadable')
+  assert.match(source, /CODE_SIGNING_ALLOWED=NO build 2>&1 \| tee hh-xcodebuild-device\.log/,
+    'Hardware iPhone build must stay unsigned and pipefail-guarded')
+  assert.ok((source.match(/always\(\) && github\.event_name != 'pull_request'/g) || []).length >= 3,
+    'Failure artifacts remain uploadable only for production/manual runs')
   assert.match(source, /permissions:\n  contents: read/)
   return { shell, commands }
 }
@@ -46,7 +46,7 @@ function runPipeline(command, shell, upstreamStatus) {
     const bin = path.join(root, 'bin'), android = path.join(root, 'android')
     mkdirSync(bin); mkdirSync(android)
     const stub = '#!/bin/sh\nprintf "native fixture stdout\\n"\nprintf "native fixture stderr\\n" >&2\nexit "$NATIVE_FIXTURE_STATUS"\n'
-    for (const file of [path.join(bin, 'npm'), path.join(bin, 'xcodebuild'), path.join(android, 'gradlew')]) {
+    for (const file of [path.join(bin, 'npm'), path.join(bin, 'npx'), path.join(bin, 'xcodebuild'), path.join(android, 'gradlew')]) {
       writeFileSync(file, stub, { mode: 0o755 })
     }
     const script = path.join(root, 'step.sh')
@@ -102,7 +102,7 @@ test('removing pipefail reproduces the original false green and fails the source
   const weakened = shell.replace('-eo pipefail', '-e')
   for (const command of commands) assert.equal(runPipeline(command, weakened, 65).status, 0)
   assert.throws(() => pipelineContract(workflow.replace(shell, weakened)))
-  assert.throws(() => pipelineContract(workflow.replace('      - name: Build unsigned simulator target', '      - shell: bash -e {0}\n        name: Build unsigned simulator target')))
+  assert.throws(() => pipelineContract(workflow.replace('      - name: Build unsigned iOS simulator app (not installable on physical iPhone)', '      - shell: bash -e {0}\n        name: Build unsigned simulator target')))
   assert.throws(() => pipelineContract(workflow.replace('CODE_SIGNING_ALLOWED=NO', 'CODE_SIGNING_ALLOWED=YES')))
 })
 
