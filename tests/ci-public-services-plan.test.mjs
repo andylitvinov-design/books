@@ -37,7 +37,8 @@ test('unit-only and trusted CI-only diffs skip duplicate browser install and Nex
   assert.equal(config.build,false);
   assert.ok(filePath('scripts/ci-public-services-plan.mjs'));
   assert.ok(filePath('tests/ci-public-services-plan.test.mjs'));
-  assert.ok(filePath('.github/workflows/hh-public-services-production.yml'));
+  assert.equal(filePath('.github/workflows/hh-public-services-production.yml'),false,
+    'YAML-only changes are validated by Core/actionlint without launching Public Services');
 });
 
 test('browser-harness and isolated Alchemy presentation edits run focused REAL cases',()=>{

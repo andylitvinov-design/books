@@ -10,7 +10,6 @@ on:
       - 'scripts/measure-hh-public-ttfb.mjs'
       - 'scripts/ci-public-services-plan.mjs'
       - 'tests/ci-public-services-plan.test.mjs'
-      - '.github/workflows/hh-public-services-production.yml'
       - 'components/contact-channel-chooser*'
       - 'components/consultation-choice-capture*'
       - 'components/business-website-enquiry*'
