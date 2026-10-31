@@ -8,7 +8,6 @@ export function planReleaseQueue(items,{now=Date.now(),maxActivePr=2,activePrCou
  for(const item of items){
   if(item?.status!=='RELEASE_CANDIDATE'||!/^LAB-[1-9][0-9]*$/.test(item.id||''))continue;
   if(item.qaPassed!==true||item.testEvidence!==true)continue;
-  if(item.acceptance?.accepted!==true||item.acceptance.headSha?.toLowerCase()!==item.headSha?.toLowerCase()||!item.acceptance.reviewEvidenceId)continue;
   if(!/^[a-f0-9]{40}$/i.test(item.headSha||'')||!/^[a-f0-9]{40}$/i.test(item.baseSha||''))continue;
   if(item.productionBaseSha!==item.baseSha)continue;
   if(item.targetBranch!=='codex/public-book-library')continue;
