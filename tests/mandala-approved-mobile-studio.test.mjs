@@ -208,8 +208,10 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/if\(storyboard\?\.version===FREE_FILM_PLAN_VERSION\)/);
   assert.match(src,/selected\.theme,selected\.sceneId as LocalSceneId,speed,brightness,stockShotVideo\)/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/durationSeconds===10\?20:durationSeconds/);
-  assert.match(src,/startSeconds:start,durationSeconds:shotLength/);
+  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
+    "all supported lengths use the verified four-shot timeline allocator");
+  assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/,
+    "exported scene timing comes from the same timeline, not stale 10-second padding");
   assert.match(src,/providerPrompt:""/);
   assert.match(src,/new MediaRecorder\(stream/);
   assert.doesNotMatch(src.slice(start,src.indexOf("const effects:",start)),
