@@ -114,7 +114,8 @@ test('express review accepts one real mobile tap only after radio and React card
 
 test('Public Services: only existing executed unit-test changes may skip duplicate browser matrix', () => {
   const s = workflow('hh-public-services-production.yml');
-  assert.ok(s.includes("      - '.github/workflows/hh-public-services-production.yml'"));
+  assert.ok(!s.includes("      - '.github/workflows/hh-public-services-production.yml'"),
+    'YAML-only updates must use core/actionlint, not launch full public services browser matrix');
   assert.match(s, /pulls\/\$\{number\}\/files\?per_page=100/);
   assert.match(s, /file\.status === 'modified' && unitTests\.has\(file\.filename\)/);
   assert.match(s, /fullAcceptance = true;/);

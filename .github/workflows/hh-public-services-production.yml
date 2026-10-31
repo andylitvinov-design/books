@@ -4,7 +4,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-public-services-production.yml'
       - 'components/academy-course-video-playlist.tsx'
       - 'lib/practitioners/taoist-talisman-cart.js'
       - 'scripts/fixtures/holistic-support-directory.mjs'
