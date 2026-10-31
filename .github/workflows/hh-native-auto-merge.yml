@@ -13,8 +13,15 @@ jobs:
     steps:
       - name: Enable native auto-merge for this exact head
         env:
-          GH_TOKEN: ${{ github.token }}
+          # A repo-scoped token lets resulting merges trigger push workflows.
+          # Preserve native auto-merge if the optional credential is absent.
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD"
+        run: |
+          if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
+            echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
+          fi
+          gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD"
