@@ -20,6 +20,7 @@ on:
       - 'scripts/ci-public-journey-scope.mjs'
       - 'tests/ci-public-journey-consolidation.test.mjs'
       - '.github/workflows/hh-public-journey-wave1.yml'
+      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -83,22 +84,19 @@ jobs:
         if: steps.scope.outputs.wave2 == 'true'
         run: |
           node --check scripts/verify-public-pathway-toronto-mobile.mjs
-          node --test tests/public-pathway-toronto.test.mjs
+          node --test tests/public-pathway-migration.test.mjs tests/public-pathway-toronto.test.mjs
           npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
       - name: Whole-project TypeScript outside protected production PRs
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build exact candidate once for both real-browser suites
-        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install Chromium and WebKit once for both journeys
-        if: github.event_name != 'pull_request'
         run: |
           npm install --prefix /tmp/hh-public-wave1-browser --no-audit --no-fund --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/hh-public-wave1-browser/node_modules/@playwright node_modules/@playwright
           /tmp/hh-public-wave1-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server
-        if: github.event_name != 'pull_request'
         env:
           HH_RUN_WAVE1: ${{ steps.scope.outputs.wave1 }}
           HH_RUN_WAVE2: ${{ steps.scope.outputs.wave2 }}
@@ -123,7 +121,7 @@ jobs:
           if [[ "$HH_RUN_WAVE1" == true ]]; then node scripts/verify-public-pathway-mobile.mjs; fi
           if [[ "$HH_RUN_WAVE2" == true ]]; then node scripts/verify-public-pathway-toronto-mobile.mjs; fi
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         with:
           name: public-journeys-consolidated-browser
           path: |

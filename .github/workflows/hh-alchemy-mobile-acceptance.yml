@@ -83,8 +83,10 @@ jobs:
             tests/alchemy-of-soul-method.test.mjs
           # Core verifies this same production PR SHA with full TypeScript.
           # Manual verification remains standalone and runs the full typecheck.
-          if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
             npx --no-install tsc --noEmit
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
           fi
           npx eslint \
             components/alchemy-soul-landing.tsx \
