@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
@@ -2312,6 +2312,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
   const [quickHypnoOpen,setQuickHypnoOpen]=useState(false);
+  const [quickCourseOpen,setQuickCourseOpen]=useState(false);
   // Native #video-hypnosis links also work on first load and browser Back.
   // The editor remains a single mounted instance below the six quick tabs.
   useEffect(()=>{
@@ -2534,6 +2535,42 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
           }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
       </nav>
+      <button type="button" className={videoStyles.meditationCourseEntry}
+        data-video-meditation-course-toggle aria-expanded={quickCourseOpen}
+        aria-controls="meditation-course-inline" disabled={recording||preparing}
+        onClick={()=>{
+          const opening=!quickCourseOpen;
+          setQuickCourseOpen(opening);
+          if(opening){
+            setStudioMode("pump");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("meditation-course-inline")?.scrollIntoView({
+                behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+                block:"start",
+              })));
+          }
+        }}>
+        <BookOpen size={23} aria-hidden="true"/>
+        <span><strong>{locale==="ru"?"Курсы медитаций":locale==="es"?"Cursos de meditación":"Meditation courses"}</strong>
+          <small>{locale==="ru"?"Создать первую медитацию бесплатно · план на 8 дней":
+            locale==="es"?"Crea la primera gratis · programa de 8 días":
+            "Create the first one free · 8-day plan"}</small>
+        </span>
+        <ChevronDown size={20} aria-hidden="true"/>
+      </button>
+      {quickCourseOpen?<div id="meditation-course-inline"
+        className={videoStyles.meditationCourseInline} data-video-meditation-course-panel>
+        <MandalaPersonalMeditation coursePreview
+          locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
+          sound={attachedAudio?.kind==="file"?attachedAudio.file.name:
+            attachedAudio?.kind==="preset"?
+            (mandalaAudioTracks.find(item=>item.id===attachedAudio.id)?.name[locale]||""):""}
+          audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+            attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):null}
+          pace={speed} brightness={brightness}
+          affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+          focus={meditationFocus} disabled={recording||preparing}/>
+      </div>:null}
       {hypnoPanelOpen ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
         <MandalaHypnocorrectionMobile
           locale={locale} disabled={recording||preparing}
@@ -3922,7 +3959,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ):<p>{ui.myVideosInfo}</p>}
       </section>
       {studioMode==="therapy" ? <div id="video-hypno-meditation-editor" aria-hidden="true"/> : null}
-      {studioMode==="therapy" ? <MandalaPersonalMeditation
+      {studioMode==="therapy" && !quickCourseOpen ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?.kind==="file" ? attachedAudio.file.name :
           attachedAudio?.kind==="preset" ?
