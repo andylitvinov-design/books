@@ -163,7 +163,8 @@ async function verify(engine, locale, width) {
     await noOverflow("paid request");
     await page.locator('[data-business-cta="free-hero"]').click();
     await page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
-      url.searchParams.get("topic")==="business",{timeout:25000});
+      url.searchParams.get("topic")==="business",{waitUntil:"domcontentloaded",timeout:25000});
+    await page.locator('main[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:25000});
     assert.deepEqual(externalPosts,[],label+": navigation never sends lead, payment or analytics POST");
     assert.deepEqual(pageErrors,[],label+": no unhandled page errors");
     return label;

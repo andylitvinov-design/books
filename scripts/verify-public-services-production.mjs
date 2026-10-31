@@ -16,13 +16,29 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "production build; isolated synthetic database", console: [], pageErrors: [], signedOutResponses: {}, devIssueOverlay: false };
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const signedOutCodes = {
+    '/api/service-enquiries/booking-status': 'BOOKING_PROOF_REQUIRED',
+    '/api/app/bootstrap': 'SIGN_IN_REQUIRED',
+  };
+  for (const [path, code] of Object.entries(signedOutCodes)) {
+    const response = await context.request.get(origin + path);
+    assert.equal(response.status(), 401, 'Signed-out access must be denied: ' + path);
+    assert.deepEqual(await response.json(), {error:code});
+  }
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
+    page.on('response', response => {
+      const url = new URL(response.url());
+      if (response.request().method() === 'GET' && response.status() === 401 &&
+          url.origin === origin && Object.hasOwn(signedOutCodes, url.pathname)) {
+        diagnostics.signedOutResponses[url.pathname] = (diagnostics.signedOutResponses[url.pathname] || 0) + 1;
+      }
+    });
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
@@ -672,7 +688,15 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  const consoleErrors = diagnostics.console.filter(entry => entry.type === 'error');
+  const expectedSignedOutErrors = consoleErrors.filter(entry =>
+    Object.hasOwn(signedOutCodes, entry.path) &&
+    entry.text === 'Failed to load resource: the server responded with a status of 401 (Unauthorized)');
+  for (const path of Object.keys(signedOutCodes)) {
+    assert.ok(expectedSignedOutErrors.filter(entry => entry.path === path).length <= (diagnostics.signedOutResponses[path] || 0),
+      'Every expected signed-out console error must correspond to a real HTTP 401 response: ' + path);
+  }
+  assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry)), [], 'Unexpected browser console errors');
   await context.close();
 } catch (error) {
   failure = error;

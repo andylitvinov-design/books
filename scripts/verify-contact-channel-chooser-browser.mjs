@@ -367,7 +367,17 @@ async function runEngine(name, engine) {
               return Boolean(key && input[key]?.value === "qa-browser@example.test" &&
                 input.value === "qa-browser@example.test");
             }, null, {timeout:15000});
-            await submit.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
+            await submit.scrollIntoViewIfNeeded();
+            // Move the real control clear of the fixed mobile navigation, then
+            // verify hit testing rather than forcing a click through an overlay.
+            if (width < 700) await page.mouse.wheel(0, 240);
+            await page.waitForFunction(() => {
+              const button = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form] [data-compact-channel="whatsapp"]');
+              const rect = button?.getBoundingClientRect();
+              if (!rect || rect.top < 0 || rect.bottom > innerHeight) return false;
+              const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+              return hit === button || button.contains(hit);
+            }, null, {timeout:10000});
             await submit.click();
             assert.equal(submissions.length,previous,"Contact cannot bypass consent");
             await daoForm.locator('[role="alert"]').waitFor({state:"visible"});
