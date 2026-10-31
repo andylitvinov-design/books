@@ -1,33 +1,36 @@
 #!/usr/bin/env node
 /**
- * Admin-only, opt-in production review configuration. Default is read-only.
- * Never sends GH_TOKEN to stdout or logs.
- *
- * Usage:
- * GH_TOKEN=... node scripts/admin/production-review-gate.mjs inspect --reviewer USER
- * GH_TOKEN=... node scripts/admin/production-review-gate.mjs codeowners --reviewer USER
- * GH_TOKEN=... node scripts/admin/production-review-gate.mjs apply --reviewer USER --confirm-active
+ * Read-only by default. The only settings write is a confirmed PUT upgrading
+ * existing production ruleset #26269892 after effective CODEOWNERS is verified.
+ * Requires a HUMAN reviewer with an accepted write invitation.
+ * Never writes new rulesets, creates bypasses, merges PRs or echoes token data.
  */
 import {
-  REPO, BRANCH, RULESET_NAME, verifiedReviewerLogin, assertWritePermission,
-  renderCodeowners, assertCodeowners, productionRuleset, assertRulesetReadback,
+  REPO, BRANCH, RULESET_NAME, RULESET_ID, verifiedReviewerLogin,
+  assertWritePermission, renderCodeowners, assertCodeowners,
+  assertRulesetReadback, upgradeExistingRuleset,
 } from '../../lib/ci/production-review-policy.mjs';
 
 const [command, flag, candidate, confirm] = process.argv.slice(2);
-const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-if (!['inspect', 'codeowners', 'apply'].includes(command) || flag !== '--reviewer' || !token ||
+const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
+const hasReviewer = flag === '--reviewer' && typeof candidate === 'string';
+const usage = 'Usage: node scripts/admin/production-review-gate.mjs inspect [--reviewer HUMAN_LOGIN] | codeowners --reviewer HUMAN_LOGIN | apply --reviewer HUMAN_LOGIN --confirm-active';
+if (!['inspect', 'codeowners', 'apply'].includes(command) ||
+    (!hasReviewer && (flag !== undefined || candidate !== undefined)) ||
+    (command !== 'inspect' && (!hasReviewer || !token)) ||
     (command === 'apply' && confirm !== '--confirm-active') ||
-    (command !== 'apply' && confirm !== undefined)) {
-  console.error('Usage: GH_TOKEN=... node scripts/admin/production-review-gate.mjs inspect|codeowners|apply --reviewer HUMAN_LOGIN [--confirm-active for apply]');
+    (command !== 'apply' && confirm !== undefined) ||
+    (hasReviewer && !token)) {
+  console.error(usage);
   process.exit(2);
 }
-const reviewer = verifiedReviewerLogin(candidate);
+const reviewer = hasReviewer ? verifiedReviewerLogin(candidate) : null;
 const base = `https://api.github.com/repos/${REPO}`;
 const api = async (path, method = 'GET', body) => {
   const response = await fetch(`${base}${path}`, {
     method,
     headers: {
-      'Authorization': `Bearer ${token}`,
+      ...(token ? {'Authorization': `Bearer ${token}`} : {}),
       'Accept': 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       ...(body ? {'Content-Type': 'application/json'} : {}),
@@ -39,59 +42,73 @@ const api = async (path, method = 'GET', body) => {
 };
 
 try {
-  const permission = await api(`/collaborators/${reviewer}/permission`);
-  assertWritePermission(permission.permission);
+  let permission = null;
+  if (reviewer) {
+    const response = await api(`/collaborators/${reviewer}/permission`);
+    assertWritePermission(response.permission);
+    permission = response.permission;
+  }
   if (command === 'codeowners') {
     process.stdout.write(renderCodeowners(reviewer));
     process.exit(0);
   }
 
-  const branch = await api(`/branches/${BRANCH}`);
-  if (branch.name !== BRANCH) throw new Error('WRONG_PRODUCTION_BRANCH');
-  const existing = await api('/rulesets?includes_parents=true');
-  const target = existing.filter(rule => rule.name === RULESET_NAME);
-  if (target.length > 1) throw new Error('DUPLICATE_PRODUCTION_RULESETS');
+  const [branch, current] = await Promise.all([
+    api(`/branches/${BRANCH}`),
+    api(`/rulesets/${RULESET_ID}`),
+  ]);
+  if (branch.name !== BRANCH || !branch.protected) throw new Error('PRODUCTION_BRANCH_NOT_PROTECTED');
+  assertRulesetReadback(current, {requireCodeOwner: false});
 
-  // `inspect` reports missing CODEOWNERS and rulesets without writing anything.
   let codeownersReady = false;
-  try {
-    const file = await api(`/contents/.github/CODEOWNERS?ref=${encodeURIComponent(BRANCH)}`);
-    if (file.encoding !== 'base64') throw new Error('UNKNOWN_CODEOWNERS_ENCODING');
-    const content = Buffer.from(file.content, 'base64').toString('utf8');
-    assertCodeowners(content, reviewer);
-    codeownersReady = true;
-  } catch (error) {
-    if (command === 'apply') throw error;
-  }
-
-  if (command === 'inspect') {
-    let rulesetReady = false;
-    if (target.length === 1) {
-      const readback = await api(`/rulesets/${target[0].id}`);
-      try { assertRulesetReadback(readback); rulesetReady = true; } catch {}
+  let codeownersError = 'NOT_CHECKED_NO_REVIEWER';
+  if (reviewer) {
+    try {
+      const file = await api(`/contents/.github/CODEOWNERS?ref=${encodeURIComponent(BRANCH)}`);
+      if (file.encoding !== 'base64') throw new Error('UNKNOWN_CODEOWNERS_ENCODING');
+      const content = Buffer.from(file.content, 'base64').toString('utf8');
+      assertCodeowners(content, reviewer);
+      codeownersReady = true;
+      codeownersError = null;
+    } catch (error) {
+      codeownersError = String(error?.message || error);
+      if (command === 'apply') throw error;
     }
-    console.log(JSON.stringify({repo: REPO, branch: BRANCH, reviewer, permission: permission.permission,
-      codeownersReady, rulesetReady, branchProtected: branch.protected,
-      acceptance: codeownersReady && rulesetReady && branch.protected ? 'CONFIGURED_NOT_E2E_VERIFIED' : 'BLOCKED'}, null, 2));
-    process.exit(codeownersReady && rulesetReady && branch.protected ? 0 : 3);
   }
 
-  // Never create an active ruleset before CODEOWNERS is actually on production.
-  if (!codeownersReady) throw new Error('CODEOWNERS_MUST_MERGE_TO_PRODUCTION_FIRST');
-  if (target.length === 1) {
-    const readback = await api(`/rulesets/${target[0].id}`);
-    assertRulesetReadback(readback);
-  } else {
-    const created = await api('/rulesets', 'POST', productionRuleset());
-    const readback = await api(`/rulesets/${created.id}`);
-    assertRulesetReadback(readback);
+  const codeownerReviewEnabled = current.rules.find(rule => rule.type === 'pull_request')
+    ?.parameters?.require_code_owner_review === true;
+  if (command === 'inspect') {
+    const status = codeownersReady && codeownerReviewEnabled ? 'CONFIGURED_REQUIRE_LIVE_E2E' : 'WAIT_CODEOWNER_REVIEW';
+    console.log(JSON.stringify({repo: REPO, branch: BRANCH, protected: true,
+      ruleset_id: RULESET_ID, ruleset_name: RULESET_NAME, reviewer, permission,
+      codeownersReady, codeownersError, codeownerReviewEnabled,
+      status, mergeAuthorized: false}, null, 2));
+    process.exit(status === 'CONFIGURED_REQUIRE_LIVE_E2E' ? 0 : 3);
   }
-  const confirmed = await api(`/branches/${BRANCH}`);
-  if (!confirmed.protected) throw new Error('RULESET_CREATED_BUT_BRANCH_NOT_PROTECTED');
-  console.log(JSON.stringify({repo: REPO, branch: BRANCH, reviewer,
-    ruleset: RULESET_NAME, rulesetActive: true, branchProtected: true,
-    acceptance: 'CONFIGURED_NOT_E2E_VERIFIED',
-    next: 'Prove PR without approval BLOCKED, approved exact-head green PR MERGEABLE using separate human accounts.'}, null, 2));
+
+  if (!codeownersReady) throw new Error('CODEOWNERS_MUST_MERGE_TO_PRODUCTION_FIRST');
+  if (!codeownerReviewEnabled) {
+    // Refuse to accidentally overwrite another actor's policy edit.
+    const mostRecent = await api(`/rulesets/${RULESET_ID}`);
+    if (current.updated_at !== mostRecent.updated_at ||
+        JSON.stringify(current.rules) !== JSON.stringify(mostRecent.rules)) {
+      throw new Error('RULESET_CHANGED_DURING_PRECHECK');
+    }
+    const upgrade = upgradeExistingRuleset(mostRecent);
+    const response = await api(`/rulesets/${RULESET_ID}`, 'PUT', upgrade);
+    assertRulesetReadback(response, {requireCodeOwner: true});
+  }
+  const [confirmed, protectedBranch] = await Promise.all([
+    api(`/rulesets/${RULESET_ID}`), api(`/branches/${BRANCH}`),
+  ]);
+  assertRulesetReadback(confirmed, {requireCodeOwner: true});
+  if (!protectedBranch.protected) throw new Error('PRODUCTION_LOST_PROTECTION');
+  console.log(JSON.stringify({repo: REPO, branch: BRANCH,
+    ruleset_id: RULESET_ID, reviewer, codeownerReviewEnabled: true,
+    branchProtected: true, bypassActors: 0, mergeAuthorized: false,
+    status: 'CONFIGURED_REQUIRE_LIVE_E2E',
+    next: 'Verify a real green zero-review PR is blocked; obtain a separate human CODEOWNER APPROVE; verify protected squash merge and Vercel exact deployed SHA.'}, null, 2));
 } catch (error) {
   console.error(String(error?.message || error));
   process.exitCode = 1;
