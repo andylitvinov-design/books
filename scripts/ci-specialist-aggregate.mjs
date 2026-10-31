@@ -84,8 +84,10 @@ export async function verify(api,ctx,files,options={}) {
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
-  // BASE/HEAD rules enumerate applicable PR specialists. Unrelated feature
-  // branch PUSHes and unassociated/stale PR runs must not hold exact-head CI.
+  // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
+  // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
+  // failures and orphan/unassociated runs remain fail-closed: there is no
+  // trustworthy PR scope evidence to waive them.
   // Keep unknown workflows and failed retired migration workflows fail-closed.
   const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
   const retired = new Set(delegated.map(item => item.retired));
@@ -97,9 +99,12 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns,pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || unregistered.length || retiredProblems.length) {
-      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,
-        unregistered,retired:retiredProblems}));
+    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+        unregistered.length || retiredProblems.length) {
+      throw Error('SPECIALIST_FAILED:' + JSON.stringify({
+        failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
+        unregistered, retired:retiredProblems,
+      }));
     }
     if (!state.missing.length && !state.pending.length) break;
     if (Date.now() >= deadline) {
@@ -117,8 +122,6 @@ export async function verify(api,ctx,files,options={}) {
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
-    pushFailures:state.pushFailures,
-    orphanFailures:state.orphanFailures,
   };
   return {expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }

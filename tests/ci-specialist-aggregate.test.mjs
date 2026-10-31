@@ -106,16 +106,18 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
     runs:async()=>[
       run(),
       run({path:extra,id:752,conclusion:'failure'}),
-      run({event:'push',id:753,conclusion:'failure'}),
-      run({path:extra,id:754,pull_requests:[],conclusion:'failure'}),
     ],
     jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
   };
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  assert.deepEqual(good.advisory.pushFailures,['753:failure']);
-  assert.deepEqual(good.advisory.orphanFailures,['754:failure']);
+  // Exact-HEAD failed PUSH or unassociated PR run is never waived as unrelated:
+  // it has no trusted associated PR evidence for a safe exemption.
+  api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
   assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
 
