@@ -205,7 +205,8 @@ function ico(bytes) {
   }
 }
 export function validateImage(path,bytes) {
-  if(!IMAGE.test(path) || !Buffer.isBuffer(bytes) || bytes.length<16 || bytes.length>MAX_BYTES) throw Error('IMAGE_PATH_OR_SIZE');
+  if(!IMAGE.test(path) || path.split('/').some(segment=>segment==='.' || segment==='..') ||
+      SENSITIVE.test(path) || !Buffer.isBuffer(bytes) || bytes.length<16 || bytes.length>MAX_BYTES) throw Error('IMAGE_PATH_OR_SIZE');
   const ext=path.split('.').at(-1).toLowerCase();
   if(ext==='png') png(bytes);
   else if(ext==='jpg'||ext==='jpeg') jpeg(bytes);
