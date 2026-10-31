@@ -720,6 +720,28 @@ test('all 14 Public Services browser suites use semantic readiness rather than n
 });
 
 
+test('Public Services PR runs five critical browser cases, legacy duplicates only when manually requested', () => {
+  const source = workflow('hh-public-services-production.yml');
+  assert.match(source, /^  workflow_dispatch:/m);
+  const essential = [
+    'verify-public-services-production.mjs','verify-service-cart-browser.mjs',
+    'verify-reiki-mobile-order-browser.mjs','verify-talisman-google-checkout-browser.mjs',
+    'verify-storefront-shop-browser.mjs',
+  ];
+  const old = ["verify-alchemy-one-screen.mjs","verify-holistic-support-recommendations-mobile.mjs","verify-holistic-master-browser.mjs","verify-holistic-topics-browser.mjs","verify-direction-focus-mobile.mjs","verify-ideas-mobile-browser.mjs","verify-contact-channel-chooser-browser.mjs","verify-home-consultation-first-screen.mjs","verify-business-quiz-mobile.mjs"];
+  for(const item of essential) {
+    assert.ok(source.includes('run_case "'+item+'" node scripts/'+item),
+      'current services/payment must retain one real PR browser: '+item);
+    assert.ok(!source.includes("if [[ \\\"$GITHUB_EVENT_NAME\\\" == 'workflow_dispatch' ]]; then\\n              run_case \\\""+item),
+      'payment coverage must never be manually gated: '+item);
+  }
+  for(const item of old) {
+    const guarded = 'if [[ "$GITHUB_EVENT_NAME" == \'workflow_dispatch\' ]]; then\\n              run_case "'+item+'" node scripts/'+item;
+    assert.ok(source.includes(guarded.replace('\\n','\n')),
+      'old duplicated case must run only on manual QA: '+item);
+  }
+});
+
 test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
   const source = workflow('hh-public-services-production.yml');
   const required = [
