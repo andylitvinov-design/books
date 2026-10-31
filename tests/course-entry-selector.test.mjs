@@ -160,7 +160,7 @@ test('programme links offer one clear fast-start button without creating a cours
   const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
   assert.ok(consent)
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Yes, I'd like to enrol/)
+  assert.match(textOf(consent), /Continue to the first check-in/)
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
 })
@@ -302,12 +302,12 @@ test('iPhone My Courses layout puts scales below both columns and keeps Plan ful
   assert.match(css, /\.addTile\{grid-template-columns:43px minmax\(0,1fr\) 17px;min-height:79px/)
 })
 
-test('course page brand, Account menu and navigation share the Courses destination', () => {
+test('course page brand, Account menu and both tabs share the Courses destination', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const theme = read('components/app/my-course-theme.css')
   assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course\?view=courses'/)
   assert.match(workspace, /nav\.find\(item => navIsActive\(item\.id\)\)\?\.label/)
-  assert.equal((workspace.match(/nav\.map\(/g) || []).length, 2)
+  assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(workspace, /page === 'course'/)
   assert.match(theme, /:has\(\[data-course-selector\]\) \.hh-header/)
   assert.match(theme, /@media\(max-width:620px\)/)
