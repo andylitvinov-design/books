@@ -12,6 +12,10 @@ const workflows = [
   ['hh-cabinet-journey.yml', 'hh-cabinet-journey'],
   ['hh-messages-wellness-v2.yml', 'hh-messages-wellness'],
   ['reiki-enquiry-capture-ci.yml', 'reiki-enquiry-capture'],
+  ['assessment-range-mobile-browser.yml', 'hh-report-mobile'],
+  ['ga4-safety-hold.yml', 'ga4-safety-hold'],
+  ['hh-reports-development-program.yml', 'hh-development-program'],
+  ['hh-static-image-cost-guard.yml', 'hh-static-image'],
 ];
 
 test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {
