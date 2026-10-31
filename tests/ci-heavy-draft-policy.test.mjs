@@ -35,7 +35,11 @@ for (const name of workflows) {
     }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
-    assert.match(source, /^  cancel-in-progress: true/m);
+    if (name === 'hh-benchmark-public-browser.yml') {
+      assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+    } else {
+      assert.match(source, /^  cancel-in-progress: true/m);
+    }
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -486,12 +490,17 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, earlyLive, earlyRepo).ready, true);
   assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'blocked' }, earlyRepo).ready, true);
   assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'unstable' }, earlyRepo).ready, true);
+  // A newer production base alone is not a reason to redo Core or browsers.
+  // The trusted release gate still pins the tested merge snapshot and enforces
+  // fresh-base matching for sensitive source changes.
+  const advanced = { ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) }, mergeable_state: 'behind' };
+  assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
 test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
   const mutations = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
-    [{ ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) } }, 'superseded_base'],
+    [{ ...earlyLive, base: { ...earlyLive.base, sha: 'bad' } }, 'invalid_live_base_sha'],
     [{ ...earlyLive, mergeable: false }, 'conflict'],
     [{ ...earlyLive, mergeable_state: 'dirty' }, 'conflict'],
     [{ ...earlyLive, mergeable: null }, 'mergeability_pending'],
@@ -581,7 +590,7 @@ test('wave 4: Core owns duplicate global TypeScript on production PRs; specialis
   assert.match(crm,/github.event_name == 'workflow_dispatch'/);
 });
 
-test('public mobile-install PR runs source and consent contracts; full browser/install artifacts run after merge', () => {
+test('ready mobile-install PR preserves real browser and consent contracts', () => {
   const yaml=read('holistic-house-mobile-install.yml');
   assert.match(yaml, /ready_for_review/);
   for (const name of [
@@ -589,10 +598,10 @@ test('public mobile-install PR runs source and consent contracts; full browser/i
     'Install Chromium and WebKit for real public iPhone installation QA',
     'Check EN/RU install pages and real PNG icons',
   ]) {
-    assert.ok(yaml.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
-      'ordinary PR must skip duplicate mobile browser matrix: '+name);
+    assert.ok(yaml.includes('- name: '+name+"\n        run:"),
+      'applicable ready PR must retain the browser matrix: '+name);
   }
-  assert.ok(yaml.includes("if: always() && github.event_name != 'pull_request'"));
+  assert.ok(yaml.includes("if: always()"));
   assert.match(yaml, /^  push:/m);
   assert.match(yaml, /tests\/holistic-house-install-push-regression\.test\.mjs/);
   assert.match(yaml, /node --test tests\/holistic-house-pwa\.test\.mjs/);

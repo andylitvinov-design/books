@@ -89,6 +89,7 @@ jobs:
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-specialist-wait.test.mjs|\
                   tests/ci-workflow-globs.test.mjs|\
                   tests/pr-sweep-guard.test.mjs|\
                   tests/ci-heavy-draft-policy.test.mjs) ;;
@@ -181,7 +182,9 @@ jobs:
             echo 'No changed JS/TS files to lint'
           fi
       - name: Exact proposed release production build and TypeScript check
-        if: needs.scope.outputs.ci_only != 'true' || needs.scope.outputs.route == 'FULL'
+        # CI-only changes still run Core lint and guard-unit; a full app build
+        # adds no coverage for workflow/router/test changes.
+        if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
   release-ready:
     name: release-ready
