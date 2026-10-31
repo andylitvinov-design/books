@@ -19,6 +19,9 @@ test("EN/RU homepage uses only the newly approved presentation and keeps withdra
   assert.match(presentation, /data-video-slot="home-presentation"/);
   assert.match(presentation, /videoKey\("home-intro", "en"\)/);
   assert.match(presentation, /isApprovedEnglishPresentation/);
+  assert.match(presentation, /approvedEnglishYoutubeId: string = ""/);
+  assert.match(presentation, /if \(locale === "en" && !approvedEnglishYoutubeId\) return null/);
+  assert.match(presentation, /video\.youtubeId === approvedEnglishYoutubeId/);
   assert.match(presentation, /video\?\.language === "en"/);
   assert.match(presentation, /durationSeconds \?\? 0\) >= 70/);
   assert.doesNotMatch(presentation, /72e3e6f45c3664b0b8d75281b1b413a5\.mp4/);
