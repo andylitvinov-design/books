@@ -530,18 +530,59 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)
      assert.equal(unconsentedPosts,0,'Free profile must not submit a lead without contact and consent')
     }else{
+     // Current SitewideLeadCapture uses the consent-first CompactLeadCapture,
+     // not the legacy ContactChannelChooser. Verify its real UI and never
+     // send a synthetic request to a deployed endpoint.
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
      await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
+     const form=capture.locator('form[data-compact-lead-form]')
+     await expect(form).toBeVisible()
+     await expect(form).toHaveAttribute('data-compact-hydrated','true',{timeout:15000})
+     await expect(form.locator('input[name="contact"]')).toBeVisible()
+     const consent=form.locator('input[type="checkbox"][required]')
+     await expect(consent).toHaveCount(1)
+     assert.equal(await consent.isChecked(),false,'Public core-service consent starts unchecked')
+     await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0)
+     for(const channel of ['whatsapp','telegram'])
+      await expect(form.locator('button[data-compact-channel="'+channel+'"]')).toBeVisible()
+     const alternative=servicePage.locator('main[data-core-service-detail="'+kind+'"] section').last().locator('details')
+     await expect(alternative).toHaveCount(1)
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+     if(width===390){
+      // One verified synthetic consented registration per locale, bound to
+      // localhost interception. The popup is replaced before the real click:
+      // no external messenger opens during CI.
+      const submissions=[]
+      await servicePage.route('**/api/service-enquiries',async route=>{
+       if(route.request().method()!=='POST')return route.continue()
+       submissions.push(route.request().postDataJSON())
+       await route.fulfill({status:201,contentType:'application/json',
+        body:JSON.stringify({saved:true,referenceCode:'HH-ABCD1234EF56'})})
+      })
+      await servicePage.evaluate(()=>{
+       window.open=()=>({opener:null,closed:false,location:{replace:()=>{}},close:()=>{}})
+      })
+      await form.locator('input[name="contact"]').fill('service-ci@example.test')
+      await consent.check()
+      await form.locator('button[data-compact-channel="whatsapp"]').click()
+      await expect(capture.locator('[data-lead-saved]')).toBeVisible()
+      await expect(capture.locator('a[data-compact-channel]')).toHaveCount(2)
+      assert.equal(submissions.length,1,'Exactly one consented synthetic public enquiry')
+      assert.equal(submissions[0].contactConsent,true)
+      assert.equal(submissions[0].contact.email,'service-ci@example.test')
+      assert.equal(submissions[0].serviceTitle,names[locale])
+      const whatsappLink=capture.locator('a[data-compact-channel="whatsapp"]')
+      const href=await whatsappLink.getAttribute('href')
+      const url=new URL(href)
+      assert.equal(url.origin,'https://wa.me')
+      assert.match(url.searchParams.get('text')||'',/HH-ABCD1234EF56/)
+      assert.ok((url.searchParams.get('text')||'').includes(names[locale]))
+      assert.ok(!(url.searchParams.get('text')||'').includes('service-ci@example.test'),
+       'Contact details must never leak into external messenger draft')
+     }
     }
    }
    await servicePage.close()
