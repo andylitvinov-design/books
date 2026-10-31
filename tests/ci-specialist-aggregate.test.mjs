@@ -557,11 +557,12 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
 
-test('Toronto browser owner has trusted retirement mapping before deleting old workflow', () => {
+test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
-  const old=readFileSync(oldName,'utf8');
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
+  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
   const source=readFileSync(replacement,'utf8');
   for (const expected of [
     "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
