@@ -154,6 +154,7 @@ jobs:
         id: scope
         env:
           HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_PUBLIC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/ci-public-services-plan.mjs
       - name: Verify fail-closed Public Services routing
         run: node --test tests/ci-public-services-plan.test.mjs

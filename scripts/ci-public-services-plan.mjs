@@ -100,19 +100,36 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
-export function planPublicServicesEvent(env = process.env) {
+export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
-  if (!/^[0-9a-f]{40}$/.test(base || '')) return full('BASE_SHA_UNAVAILABLE');
+  const head = env.HH_PUBLIC_HEAD_SHA;
+  if (!/^[0-9a-f]{40}$/.test(base || '') || !/^[0-9a-f]{40}$/.test(head || ''))
+    return full('BASE_OR_PR_HEAD_SHA_UNAVAILABLE');
+  const options = { maxBuffer: 4 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] };
   try {
-    // Merge-ref HEAD contains the PR delta against this exact event base.
-    // No shallow history: checkout fetch-depth 0 is required by the workflow.
-    const raw = execFileSync('git',
-      ['diff', '--no-renames', '--name-only', '-z', base, 'HEAD'],
-      { maxBuffer: 4 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+    const read = args => String(git('git', args, options)).trim();
+    const checkout = read(['rev-parse', 'HEAD']);
+    let diffBase = base;
+    if (checkout !== head) {
+      // In pull_request CI, checkout is the synthetic target+PR merge.
+      // Its first parent is the actual tested target; its second must be
+      // EXACTLY the event PR head, otherwise no source-only fast lane.
+      const first = read(['rev-parse', 'HEAD^1']);
+      const second = read(['rev-parse', 'HEAD^2']);
+      if (second !== head || !/^[0-9a-f]{40}$/.test(first))
+        return full('UNVERIFIED_SYNTHETIC_MERGE');
+      git('git', ['merge-base', '--is-ancestor', base, first], options);
+      diffBase = first;
+    } else {
+      // A direct HEAD checkout still must contain the recorded event base.
+      git('git', ['merge-base', '--is-ancestor', base, head], options);
+    }
+    const raw = git('git',
+      ['diff', '--no-renames', '--name-only', '-z', diffBase, 'HEAD'], options);
     return planPublicServicesChangedPaths(raw.toString('utf8').split('\0').filter(Boolean));
   } catch {
-    return full('GIT_DIFF_FAILED_SAFE_FULL_FALLBACK');
+    return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
 }
 

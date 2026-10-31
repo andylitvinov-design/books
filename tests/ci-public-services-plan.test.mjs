@@ -108,6 +108,69 @@ test('all shared, auth, checkout, booking, config and unclassified changes fail 
   assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:''}).mode, 'full');
 });
 
+
+test('synthetic GitHub merge checkout scopes only the exact PR delta, not later production commits', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const first = 'c'.repeat(40), checkout = 'd'.repeat(40);
+  const changed = 'scripts/verify-ideas-mobile-browser.mjs' + String.fromCharCode(0);
+  const calls = [];
+  const mockGit = (_command,args) => {
+    calls.push(args);
+    if (args[0] === 'rev-parse') {
+      const refs = { HEAD: checkout, 'HEAD^1': first, 'HEAD^2': head };
+      return Buffer.from(refs[args[1]] + '\\n');
+    }
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') return Buffer.from(changed);
+    throw Error('Unexpected git args ' + args);
+  };
+  const plan = planPublicServicesEvent({
+    GITHUB_EVENT_NAME: 'pull_request', HH_PUBLIC_BASE_SHA: base, HH_PUBLIC_HEAD_SHA: head,
+  }, mockGit);
+  assert.equal(plan.mode, 'focused');
+  assert.equal(plan.cases, 'verify-ideas-mobile-browser.mjs');
+  assert.deepEqual(calls.find(args => args[0] === 'diff'),
+    ['diff', '--no-renames', '--name-only', '-z', first, 'HEAD']);
+  assert.deepEqual(calls.find(args => args[0] === 'merge-base'),
+    ['merge-base', '--is-ancestor', base, first]);
+});
+
+test('mismatched synthetic merge identity or invalid ancestry always executes full E2E', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const env = {GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const wrongHead = (_cmd,args) => {
+    if (args[0] === 'rev-parse') {
+      return Buffer.from(({HEAD:'d'.repeat(40),'HEAD^1':'c'.repeat(40),'HEAD^2':'e'.repeat(40)})[args[1]] + '\\n');
+    }
+    throw Error('Forbidden git execution');
+  };
+  assert.equal(planPublicServicesEvent(env, wrongHead).mode, 'full');
+  const untrusted = (_cmd,args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head + '\\n');
+    if (args[0] === 'merge-base') throw Error('Event base not an ancestor');
+    throw Error('Changed files must not be evaluated');
+  };
+  assert.equal(planPublicServicesEvent(env, untrusted).mode, 'full');
+  assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base}).mode, 'full');
+});
+
+test('direct exact-head PR checkout retains focused test-only lane', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const git = (_cmd,args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head + '\\n');
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') {
+      assert.equal(args[4], base);
+      return Buffer.from('tests/temple-support-hub.test.mjs' + String.fromCharCode(0));
+    }
+    throw Error('Unknown git invocation');
+  };
+  const result = planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },git);
+  assert.equal(result.mode,'contracts');
+});
+
 test('only proven alternative owner suites exclude unrelated full Public Services', () => {
   const pub = pathsOf('hh-public-services-production.yml');
   const mandala = pathsOf('holistic-support-mandala.yml');
