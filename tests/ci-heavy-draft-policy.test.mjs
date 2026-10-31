@@ -389,7 +389,7 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
-  assert.ok(source.includes('cancel-in-progress: true'));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"), 'manual runs cannot be cancelled by unrelated PRs');
   assert.match(core, /^  release-ready:/m);
   assert.match(core, /npm run build/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);

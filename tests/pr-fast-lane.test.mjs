@@ -644,13 +644,13 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
-test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+test('Mandala PR runs focused source contracts and manual dispatch owns exhaustive media engines', () => {
   const yaml = workflow('holistic-support-mandala.yml');
   const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
   assert.match(yaml, /focused-unit-types-build:/);
-  assert.match(yaml, /uses: actions\/cache@v4/);
-  assert.match(yaml, /path: \.next\/cache/);
-  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
+  assert.match(yaml, /^  workflow_dispatch:/m);
+  assert.ok(yaml.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"), 'full media browser must be manual-only');
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);
