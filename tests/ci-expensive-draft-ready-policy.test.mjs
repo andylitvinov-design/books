@@ -6,8 +6,8 @@ const read = filename => readFileSync(new URL('../.github/workflows/'+filename, 
 const dollar=String.fromCharCode(36);
 const events='  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n';
 const gate="    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
-const cancel="  cancel-in-progress: "+dollar+"{{ github.event_name == 'pull_request' }}";
-const refSelector=dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+const cancel="  cancel-in-progress: "+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const refSelector=dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 
 test('heavy Interpretation DB and Live Audio defer Draft jobs but fully rerun on Ready',()=>{
   for(const [file,job,group,original] of [
