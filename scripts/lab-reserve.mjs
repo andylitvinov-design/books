@@ -2,6 +2,8 @@
 // Fail-closed scheduler client. Only an explicitly allowlisted isolated Postgres host.
 import pg from 'pg';
 import {execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
 const {Client}=pg;
 function requireIsolatedDb(raw,allowedHost){
  if(!raw||!allowedHost)throw Error('Isolated scheduler database is not configured');
@@ -26,4 +28,4 @@ async function main(){
   if(result?.accepted!==true)process.exitCode=2;
  }finally{await client.end().catch(()=>{});}
 }
-if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href)main().catch(e=>{console.error(e.message);process.exitCode=1});
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(e=>{console.error(e.message);process.exitCode=1});
