@@ -52,7 +52,8 @@ test('collaborator must accept at least write; pending invite and read are insuf
 
 test('CODEOWNERS last-match-wins guard covers CI, login, billing, deployments, migrations, itself', () => {
   const content=renderCodeowners(human);
-  for(const path of ['/.github/CODEOWNERS','/.github/workflows/','/scripts/admin/production-review-gate.mjs','/vercel.json',
+  for(const path of ['/.github/CODEOWNERS','/.github/','/.github/workflows/','/scripts/admin/production-review-gate.mjs','/vercel.json',
+    '/tests/ci-*','/tests/pr-fast-lane.test.mjs','/tests/pr-sweep-guard.test.mjs','/tests/production-review-policy.test.mjs',
     '/lib/security/','/app/api/payments/','/app/api/client-access/','/supabase/']) {
     assert.ok(CODEOWNER_PATHS.includes(path),path);
   }
