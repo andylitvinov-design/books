@@ -1425,7 +1425,31 @@ const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
   life:["meadow-morning","wildflower-dance","fern-awakening","lone-tree","coastal-freedom","meadow-morning"],
   health:["morning-dew","sea-breeze","calm-sea","mossy-stream","gentle-falls","morning-dew"],
 };
-const quickThemeOrder: VideoTheme[] = ["energy","money","relationships","goals","life","health"];
+const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
+// Optional editorial phrases; chosen locally and painted by the existing Canvas renderer.
+const quickSupportPhrases: Record<PublicLocale,Record<VideoTheme,readonly string[]>> = {
+  ru:{
+    energy:["Я полон энергии и сил","Я в тебя верю, ты можешь","Ты способен на большее","Я спокоен и уверен","Каждый день я становлюсь сильнее"],
+    health:["Я бережно отношусь к себе","Ты достоин заботы и отдыха","Я слушаю своё тело","Мне можно отдыхать","Я могу попросить поддержку"],
+    relationships:["Я тебя люблю","Ты дорог мне","Я достоин любви","Я слышу тебя","Мы можем говорить открыто"],
+    money:["Я ценю свой труд","Ты справишься с этой задачей","Мои навыки имеют ценность","Я вижу новые возможности","Я прошу справедливую оплату"],
+    goals:["Я в тебя верю, ты можешь","Ты самый лучший","Я делаю первый шаг","Мой путь имеет смысл","Я могу двигаться вперёд"],
+    life:["Я могу замедлиться","Мне можно отдохнуть","Я выбираю спокойствие","Ты достоин внимания","Каждый мой шаг имеет ценность"]},
+  en:{
+    energy:["I am full of energy","I believe in you; you can do it","You are capable of more","I feel calm and confident","I grow stronger day by day"],
+    health:["I take care of myself","You deserve care and rest","I listen to my body","I am allowed to rest","I can ask for support"],
+    relationships:["I love you","You matter to me","I deserve love","I hear you","We can speak openly"],
+    money:["I value my work","You can handle this task","My skills have value","I see new opportunities","I can ask for fair pay"],
+    goals:["I believe in you; you can do it","You are wonderful","I take the first step","My journey has meaning","I can keep moving forward"],
+    life:["I can slow down","I am allowed to rest","I choose calm","You deserve attention","Every step I take matters"]},
+  es:{
+    energy:["Tengo energía y fuerza","Creo en ti; tú puedes","Eres capaz de más","Estoy en calma y con confianza","Cada día avanzo con fuerza"],
+    health:["Me cuido con cariño","Mereces cuidado y descanso","Escucho a mi cuerpo","Puedo descansar","Puedo pedir apoyo"],
+    relationships:["Te quiero","Eres importante para mí","Merezco amor","Te escucho","Podemos hablar con sinceridad"],
+    money:["Valoro mi trabajo","Puedes con esta tarea","Mis habilidades valen","Veo nuevas oportunidades","Puedo pedir un pago justo"],
+    goals:["Creo en ti; tú puedes","Eres una gran persona","Doy el primer paso","Mi camino tiene sentido","Puedo seguir avanzando"],
+    life:["Puedo ir más despacio","Puedo descansar","Elijo la calma","Mereces atención","Cada paso importa"]},
+};
 
 /** These Canvas-only animated scenes have NO standalone H.264 master.
  * Curated first-party JPGs in the gallery are illustrative, not fake MP4s. */
@@ -2366,12 +2390,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{approved.directions}</h3>
+            <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{locale==="ru"?"Выберите тему для видеотерапии":locale==="es"?"Elige un tema de videoterapia":"Choose your video-therapy theme"}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
-            {quickThemeOrder.map((value,index)=>{
-              const Icon=[Zap,Coins,Heart,Target,Sprout,HeartPulse][index];
+            {quickThemeOrder.map(value=>{
+              const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
                 :getThemedRealFilm(value,quickStyleSceneIds[value][0] as LocalSceneId)?.poster
@@ -2433,7 +2457,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
-
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls aria-label={locale==="ru"?"Настройки видео":locale==="es"?"Ajustes del vídeo":"Video controls"}>
+        {([
+          {id:"style",label:{ru:"Стиль",en:"Style",es:"Estilo"},Icon:Film},
+          {id:"parameters",label:{ru:"Параметры",en:"Settings",es:"Parámetros"},Icon:SlidersHorizontal},
+          {id:"personal",label:{ru:"Персонализация",en:"Personalize",es:"Personalizar"},Icon:Sparkles},
+          {id:"phrases",label:{ru:"Фразы",en:"Phrases",es:"Frases"},Icon:HandHeart},
+          {id:"sound",label:{ru:"Звук",en:"Sound",es:"Sonido"},Icon:Music2},
+          {id:"extra",label:{ru:"Дополнительно",en:"More",es:"Más"},Icon:SlidersHorizontal},
+        ] as const).map(item=><button type="button" key={item.id} data-video-quick-control={item.id}
+          disabled={recording||preparing} onClick={()=>{
+            if(item.id==="parameters"||item.id==="extra"){openQuickDetailed("video-settings");return;}
+            const target=item.id==="style"?'[data-video-quick-section="4"]':
+              item.id==="personal"?"#quick-personal-title":
+              item.id==="phrases"?"[data-video-quick-phrases]":"[data-video-quick-audio-choices]";
+            document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
+          }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
+      </nav>
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
@@ -2497,7 +2537,84 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
           </div>
         </section>
+      {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-video-therapy-banner>
+        <div className={videoStyles.therapyBannerCopy}>
+          <small>{layout.therapyBannerLabel}</small>
+          <h3>{locale==="ru"?"Сформировать индивидуальную программу видеотерапии бесплатно":locale==="es"?"Crear un programa personalizado de videoterapia gratis":"Create your free personalized video-therapy program"}</h3>
+          <p>{locale==="ru"?"Бесплатный план из 8 образных сессий; создание следующих видео отдельно.":locale==="es"?"Plan gratuito de 8 sesiones; los vídeos adicionales se crean aparte.":"Free 8-session plan; further videos are created separately."}</p>
+        </div>
+        <button type="button" data-video-therapy-start
+          disabled={recording||preparing}
+          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setTherapyJumpRequested(true);}}>
+          {locale==="ru"?"Подобрать программу":locale==="es"?"Crear programa":"Build my plan"}<ArrowRight size={19} aria-hidden="true"/>
+        </button>
+      </section> : null}
+        <section className={videoStyles.quickSection} data-video-quick-section="4"
+          aria-labelledby="quick-visual-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{practiceCopy.stylesTitle}</h3>
+              <p>{quick.visualHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
+            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
+              data-video-quick-style={index} data-video-quick-scene={quickStyleSceneIds[theme][index]}
+              aria-pressed={quickStyleIndex===index}
+              disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
+              {/* Curated first-party film artwork; no remote image requests. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={theme==="money"?getRealMoneyFilm(quickStyleSceneIds[theme][index] as MoneySceneId).poster:
+                getThemedRealFilm(theme,quickStyleSceneIds[theme][index] as LocalSceneId)?.poster||
+                quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)}
+                loading="lazy" alt=""/>
+              <span>{theme==="money"?
+                moneyTemplateLabels[quickStyleSceneIds[theme][index] as MoneySceneId]?.[locale]||quick.styles[index]:
+                otherVideoScenes[theme as OtherTheme].find(scene=>scene.id===quickStyleSceneIds[theme][index])?.label[locale]||quick.styles[index]}</span>
+            </button>)}
+          </div>
+          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
+        </section>
 
+
+
+      <section className={videoStyles.quickPhraseSection} data-video-quick-phrases aria-labelledby="quick-phrases-heading">
+        <div className={videoStyles.quickSectionHeading}>
+          <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
+          <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
+            onClick={()=>openQuickDetailed("video-hypnosis")}><Sparkles size={15} aria-hidden="true"/>
+            {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
+        </div>
+        <div className={videoStyles.quickPhraseRail} role="group" aria-label={locale==="ru"?"Фразы по теме":locale==="es"?"Frases por tema":"Phrases by theme"}>
+          {quickSupportPhrases[locale][theme].map((phrase,index)=><button type="button" key={phrase}
+            data-video-quick-affirmation={index}
+            aria-pressed={affirmations.enabled&&affirmations.custom.trim()===phrase}
+            disabled={recording||preparing} onClick={()=>{
+              setAffirmations(current=>({...current,enabled:true,selected:[],custom:phrase,visibility:["large"]}));
+              setPreviewPlaying(false);
+            }}><span aria-hidden="true">“</span>{phrase}</button>)}
+        </div>
+      </section>
+      <section className={videoStyles.quickMusicSection} data-video-quick-audio-choices aria-labelledby="quick-music-heading">
+        <div className={videoStyles.quickSectionHeading}>
+          <h3 id="quick-music-heading"><Music2 size={19} aria-hidden="true"/>{locale==="ru"?"Музыка":locale==="es"?"Música":"Music"}</h3>
+          <button type="button" className={videoStyles.quickPhrasePersonal}
+            onClick={()=>openQuickDetailed("video-audio")}><Mic size={15} aria-hidden="true"/>
+            {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</button>
+        </div>
+        <div className={videoStyles.quickMusicRail} role="group" aria-label={locale==="ru"?"Звуковые дорожки":locale==="es"?"Pistas de audio":"Audio tracks"}>
+          {audioMatches.slice(0,4).map(track=><button type="button" key={track.id}
+            data-video-quick-audio-track={track.id}
+            aria-pressed={attachedAudio?.kind==="preset"&&attachedAudio.id===track.id}
+            disabled={recording||preparing||micRecording} onClick={()=>{
+              const id=track.id as Exclude<AmbientMusic,"none">;
+              setAudioAuto(false);chooseMusic(id);setAttachedAudio({kind:"preset",id});
+            }}><Music2 size={16} aria-hidden="true"/><strong>{track.name[locale]}</strong>
+            <small>{track.detail[locale]}</small>
+            {attachedAudio?.kind==="preset"&&attachedAudio.id===track.id?<Check size={14} aria-hidden="true"/>:null}
+          </button>)}
+        </div>
+      </section>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
@@ -2784,30 +2901,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
-
-        <section className={videoStyles.quickSection} data-video-quick-section="4"
-          aria-labelledby="quick-visual-title">
-          <div className={videoStyles.quickSectionHeading}>
-            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{practiceCopy.stylesTitle}</h3>
-              <p>{quick.visualHelp}</p></div>
-            <button type="button" className={videoStyles.quickEdit}
-              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
-          </div>
-          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
-            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
-              data-video-quick-style={index} data-video-quick-scene={quickStyleSceneIds[theme][index]}
-              aria-pressed={quickStyleIndex===index}
-              disabled={recording||preparing} onClick={()=>quickPickStyle(index)}>
-              {/* Curated first-party film artwork; no remote image requests. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={"/videos/holistic-house/film-collection-v2/"+poster+".jpg"}
-                loading="lazy" alt=""/>
-              <span>{quick.styles[index]}</span>
-            </button>)}
-          </div>
-          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
-        </section>
-
 
         <section className={videoStyles.quickSection} data-video-quick-personal aria-labelledby="quick-personal-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3187,18 +3280,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <Play size={18} fill="currentColor" aria-hidden="true"/>{ui.create}
         </button>
       </div>
-      <section className={videoStyles.therapyBanner} data-video-therapy-banner>
-        <div className={videoStyles.therapyBannerCopy}>
-          <small>{layout.therapyBannerLabel}</small>
-          <h3>{layout.therapyBannerTitle}</h3>
-          <p>{layout.therapyBannerHint}</p>
-        </div>
-        <button type="button" data-video-therapy-start
-          disabled={recording||preparing}
-          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setTherapyJumpRequested(true);}}>
-          {layout.therapyBannerAction}<ArrowRight size={19} aria-hidden="true"/>
-        </button>
-      </section>
+
       </> : null}
 
       {theme==="health" && <p data-video-health-disclaimer role="note" className={videoStyles.healthNote}>
