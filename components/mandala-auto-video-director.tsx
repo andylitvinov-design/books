@@ -83,20 +83,19 @@ export function MandalaAutoVideoDirector({
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|20|30|60|null>(null);
- const [correctedTheme,setCorrectedTheme]=useState<VideoTheme|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const length=seconds||proposal?.durationSeconds||30;
  const choose=()=>{
-   setSelectedGoalId(null);setCorrectedTheme(null);
+   setSelectedGoalId(null);
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets}));
    setOverrideId(null);setSeconds(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
    // No test result or private objective is sent outside this component.
    onGoalChange("");
-   setSelectedGoalId(goalId);setCorrectedTheme(null);
+   setSelectedGoalId(goalId);
    setOverrideId(null);setSeconds(null);
    setProposal(recommendAutoVideo({goalId,locale,fallbackTheme:theme,presets}));
  };
@@ -118,7 +117,7 @@ export function MandalaAutoVideoDirector({
          maxLength={160} disabled={disabled} placeholder={t.placeholder}
          onChange={event=>{
            onGoalChange(event.currentTarget.value);
-           setProposal(null);setOverrideId(null);setSeconds(null);setCorrectedTheme(null);
+           setProposal(null);setOverrideId(null);setSeconds(null);
            setSelectedGoalId(null);
          }}/>
      </label>
@@ -143,7 +142,7 @@ export function MandalaAutoVideoDirector({
            {allThemes.map(value=><button type="button" key={value} disabled={disabled}
              aria-pressed={proposal.theme===value}
              onClick={()=>{
-               setCorrectedTheme(value);setOverrideId(null);
+               setOverrideId(null);
                setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
