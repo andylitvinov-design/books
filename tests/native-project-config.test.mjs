@@ -34,10 +34,11 @@ test('declares public link handling, safe native navigation, and no automatic ve
   assert.match(read('app/globals.css'), /safe-area-inset-bottom/)
 })
 
-test('keeps association documents empty and native CI explicitly unsigned', () => {
+test('keeps association documents empty and the current native successor explicitly unsigned', () => {
   assert.deepEqual(JSON.parse(read('public/.well-known/assetlinks.json')), [])
   assert.deepEqual(JSON.parse(read('public/.well-known/apple-app-site-association')), { applinks: { apps: [], details: [] } })
-  const workflow = read('.github/workflows/native-ci.yml')
+  const workflow = read('.github/workflows/holistic-house-native.yml')
+  assert.equal(existsSync('.github/workflows/native-ci.yml'), false, 'retired duplicate must stay removed')
   assert.match(workflow, /runs-on: macos-14/)
   assert.match(workflow, /CODE_SIGNING_ALLOWED=NO/)
   assert.match(workflow, /assembleDebug/)
