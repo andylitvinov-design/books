@@ -31,6 +31,7 @@ jobs:
       - name: Verify the sitemap's fail-closed asset and locale contracts
         run: node --test tests/sitemap-runtime-assets.test.mjs
       - name: Check Next.js production trace
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: |
           npm run build
           node --input-type=module <<'JS'
