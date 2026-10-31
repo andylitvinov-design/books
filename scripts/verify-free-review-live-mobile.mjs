@@ -8,7 +8,10 @@ const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app"
 const output = "artifacts/free-review-live-mobile";
 mkdirSync(output, { recursive: true });
 const results = [];
-const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
+// Production push/manual keeps all 24 localized cross-engine viewport scenarios.
+// PRs run one representative real Chromium viewport per locale; Core owns the separate security gate.
+const prSmoke = process.env.HH_FREE_REVIEW_PR_SMOKE === "1";
+const cases = prSmoke ? [[390, 844]] : [[320, 568], [375, 667], [390, 844], [430, 932]];
 
 // Safari can dispatch a label's forwarded radio change one frame after
 // Playwright's label click completes. Verify the actual native radio AND its
@@ -54,7 +57,7 @@ async function tapFocusAndVerify(page, enquiry, focus) {
   }
 }
 // One personal express review, with two focus categories in a single form.
-for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
+for (const [engine, driver] of (prSmoke ? [["chromium", chromium]] : [["chromium", chromium], ["webkit", webkit]])) {
   const browser = await driver.launch({ headless: true });
   try {
     for (const locale of ["en", "ru", "es"]) {

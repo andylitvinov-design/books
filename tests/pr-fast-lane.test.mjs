@@ -856,3 +856,17 @@ test('trusted native auto-merge can use a repo-scoped token to preserve push eve
   assert.match(source, /pull_request_target:/);
   assert.doesNotMatch(source, /checkout@|--admin/);
 });
+
+
+test('Free Review: PR runs only current localized Chromium smoke; post-merge retains all 24 full visual scenarios', () => {
+  const workflowSource = workflow('hh-free-review-live-mobile.yml');
+  const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
+  assert.ok(workflowSource.includes('HH_FREE_REVIEW_PR_SMOKE=1 HH_LIVE_ORIGIN=http://127.0.0.1:3100'),
+    'PR must use three representative real localized screenshots without repeating 24 layouts');
+  assert.ok(workflowSource.includes('run: node scripts/verify-free-review-live-mobile.mjs'),
+    'post-merge production audit must remain exhaustive');
+  assert.ok(script.includes('prSmoke ? [[390, 844]] : [[320, 568], [375, 667], [390, 844], [430, 932]]'),
+    'all four existing viewport shapes must remain available for manual and push verification');
+  assert.ok(script.includes('prSmoke ? [["chromium", chromium]] : [["chromium", chromium], ["webkit", webkit]]'),
+    'do not reintroduce WebKit matrix to the PR smoke');
+});
