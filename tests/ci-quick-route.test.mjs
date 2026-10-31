@@ -33,7 +33,7 @@ function validPng() {
 function validWebpContainer() {
   // Minimum VP8L RIFF envelope for structural tests; CI routes are still
   // checked by independent Git blob hashes and hardened image tooling.
-  const data=Buffer.from([47,0,0,0,0]);
+  const data=Buffer.from([47,0,0,0,0,0,0,0,0]);
   const length=Buffer.alloc(4); length.writeUInt32LE(data.length);
   const body=Buffer.concat([Buffer.from('WEBPVP8L'),length,data,Buffer.from([0])]);
   const ri=Buffer.alloc(4); ri.writeUInt32LE(body.length);
