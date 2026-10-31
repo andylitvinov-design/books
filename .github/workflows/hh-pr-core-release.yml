@@ -195,12 +195,24 @@ jobs:
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
             git fetch --no-tags --depth=1 origin "$BASE_SHA"
           fi
           git cat-file -e "$BASE_SHA^{commit}"
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || { echo 'Unexpected checkout commit' >&2; exit 1; }
+          first_parent="$(git rev-parse HEAD^1)"
+          second_parent="$(git rev-parse HEAD^2)"
+          [[ "$second_parent" == "$PR_HEAD_SHA" ]] || { echo 'Merge checkout has the wrong PR head' >&2; exit 1; }
+          if [[ "$first_parent" != "$BASE_SHA" ]]; then
+            relation="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_SHA...$first_parent" --jq '.status')"
+            [[ "$relation" == ahead ]] || { echo 'Merge checkout base is not a descendant of the event base' >&2; exit 1; }
+          fi
+          echo "HH_TRUSTED_BASE_SHA=$first_parent" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -222,10 +234,10 @@ jobs:
           }
           # On the bootstrap PR only, the baseline has no aggregator yet.
           # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
-          if git cat-file -e "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
             mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
-            git show "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
-            git show "$HH_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_TRUSTED_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and
