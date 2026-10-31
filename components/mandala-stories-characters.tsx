@@ -88,9 +88,10 @@ export function MandalaStoriesCharacters({locale,theme,disabled,applied,onApply}
   const arranged=(kind:StoryAddonKind)=>[...STORY_ADDONS.filter(item=>item.kind===kind)].sort(
     (a,b)=>Number(suggested.includes(b.id))-Number(suggested.includes(a.id))
   );
-  const toggle=(kind:StoryAddonKind,id:string)=>setDraft(current=>({
-    ...current,[kind]:current[kind]===id?undefined:id
-  }));
+  const toggle=(kind:StoryAddonKind,id:string)=>{
+    setHasApplied(false);
+    setDraft(current=>({...current,[kind]:current[kind]===id?undefined:id}));
+  };
   const renderRail=(kind:StoryAddonKind,compact=false)=>{
     const index=STORY_KIND_ORDER.indexOf(kind);
     const Icon=icons[kind];
@@ -166,7 +167,7 @@ export function MandalaStoriesCharacters({locale,theme,disabled,applied,onApply}
     <p className={styles.honestNote} role="note">{t.note}</p>
     {selectedCount>0?<div className={styles.selectionSummary} data-story-addons-selected>
       <div><strong>{selectedCount} · {t.selected}</strong>
-      <button type="button" onClick={()=>setDraft({})} disabled={disabled}><RotateCcw size={14}/>{t.clear}</button></div>
+      <button type="button" onClick={()=>{setHasApplied(false);setDraft({});}} disabled={disabled}><RotateCcw size={14}/>{t.clear}</button></div>
       <ul>{quote.items.map(item=><li key={item.id}>{item.title[locale]}</li>)}</ul>
     </div>:<small className={styles.noSelection}>{t.noSelection}</small>}
     <div className={styles.bottom}>
