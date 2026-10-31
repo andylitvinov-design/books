@@ -30,6 +30,10 @@ test('only verified concurrency-only edits can avoid unrelated specialists',()=>
   assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,unsafe]]))],[]);
  const collision=new Map([[file,next],['.github/workflows/other.yml',old]]);
  assert.deepEqual([...call([{filename:file,status:'M'}],collision)],[]);
+ for(const prefix of ['example-pr-','example-run-','exam']) {
+  const competing=old.replace('example-${{ github.ref }}',prefix+'${{ github.ref }}');
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,next],['.github/workflows/other.yml',competing]]))],[]);
+ }
  const relevantOld=old.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
  const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
  assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
