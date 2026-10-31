@@ -255,3 +255,35 @@
 .strategyBuild:disabled{opacity:.58;cursor:not-allowed}
 .strategyBuild:focus-visible{outline:3px solid #69c6a6;outline-offset:2px}
 @media(max-width:360px){.strategyBuild{padding:8px;font-size:12px;min-height:50px}}
+
+
+/* iPhone 320px regression: keep the actual one-tap API action and both models
+ * visible, reduce only redundant labels/gutters. All phrase, approval, audio,
+ * scene and video controls remain available; tap surfaces stay >=44px. */
+@media(max-width:360px){
+ .overview{gap:3px}
+ .overview>.card{padding:5px 7px}
+ .overview .cardHead{gap:4px}
+ .overview .emblem{width:29px;height:29px}
+ .overview [data-hypno-request] .heading p,
+ .overview [data-hypno-phrases] .heading p{display:none}
+ .overview .topicMiniRail{margin-top:4px}
+ .overview .profileMiniActions{margin-top:4px}
+ .overview .requestPreview{margin-top:3px;padding:5px 7px}
+ .overview .requestPreview>div{gap:1px}
+ .overview .shortNote{margin-top:3px}
+ .overview .card .modeRail{margin-top:3px}
+ .overview .card .phraseCounter{margin:3px 0 2px}
+ .overview .phraseMiniList{gap:2px}
+ .overview .phraseMiniList button{min-height:44px}
+ .overview .card .phraseFoot{margin-top:2px}
+ .overview .approveMini{margin-top:3px}
+ .overview .strategyBuild{min-height:44px;padding:5px 7px;font-size:11.5px;gap:5px}
+ .overview .strategyCard{gap:1px 4px;padding:4px 5px}
+ .overview [data-hypno-wave-source]{display:none}
+ .overview .filtersToggle{margin-top:3px}
+ .overview .compactOverviewLine{margin-top:3px;min-height:29px}
+ .overview .sceneMiniSummary{margin-top:3px}
+ .overview .preview{min-height:74px;padding:5px}
+ .overview .privacy{font-size:9.4px}
+}
