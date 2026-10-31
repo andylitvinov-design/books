@@ -20,21 +20,55 @@ on:
       - 'android/**'
       - 'ios/**'
       - 'native-web/**'
+      # Coverage inherited from the duplicate Native CI owner, which will be retired
+      # only after this successor is BASE-trusted in production.
+      - 'capacitor.config.json'
+      - 'components/native-**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/native-ci.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'native-web/**'
+      - 'lib/native/**'
+      - 'components/native-**'
+      - 'capacitor.config.json'
+      - 'capacitor.holistic-house.config.json'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-native-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-native-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
     shell: bash --noprofile --norc -eo pipefail {0}
 
 jobs:
+  native-current-contracts:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Verify native source, consent, ownership and account isolation
+        run: |
+          npm run native:check
+          node --test tests/holistic-house-native-build.test.mjs
+          node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
+
   android-test-installer:
+    if: github.event_name != 'pull_request'
     name: Holistic House Android installable debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -103,6 +137,7 @@ jobs:
             hh-gradle-android.log
 
   ios-simulator:
+    if: github.event_name != 'pull_request'
     name: Holistic House iOS unsigned simulator app
     runs-on: macos-14
     timeout-minutes: 40
