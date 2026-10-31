@@ -7,7 +7,7 @@
 .heading{min-width:0;flex:1}
 .heading h4{margin:0;color:#173b35;font-size:clamp(15px,3.7vw,19px);font-weight:800;line-height:1.2}
 .heading p{margin:2px 0 0;color:#688377;font-size:clamp(11px,2.8vw,12px);line-height:1.3}
-.edit{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:none;min-height:44px;padding:5px 5px;border:0;background:transparent;color:#027c60;font-size:12px;font-weight:800;cursor:pointer}
+.edit{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:none;min-height:44px;padding:5px 5px;border:0;background:transparent;color:#027c60;font-size:12px;font-weight:800;cursor:pointer;scroll-margin-block:96px 156px}
 .edit[aria-expanded="true"]{color:#123f32}
 .requestPreview{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:8px;align-items:center;margin-top:10px;padding:11px 10px;border-radius:13px;background:linear-gradient(120deg,#f5f7eb,#fff8ec)}
 .requestPreview>div{display:grid;min-width:0;gap:3px}

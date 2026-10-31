@@ -83,7 +83,14 @@ const runEngine = async ([engine, browserType]) => {
         const page = await context.newPage();
         const uploaded = [];
         const errors = [];
+        const mp4Responses = [];
         page.on("pageerror", err => errors.push(err.message));
+        page.on("response", response => {
+          if(!response.url().includes("/money-films-v1/golden-rain.mp4"))return;
+          const headers=response.headers();
+          mp4Responses.push({status:response.status(),acceptRanges:headers["accept-ranges"]||null,
+            contentRange:headers["content-range"]||null,contentType:headers["content-type"]||null});
+        });
         page.on("request", request => {
           if (request.method() === "POST" && /(?:upload|photos|storage\/v1|\/media\/)/i.test(request.url())) {
             uploaded.push(request.url());
@@ -698,10 +705,16 @@ const runEngine = async ([engine, browserType]) => {
             return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
           }, undefined, {timeout: 30000});
         } catch (error) {
-          const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
-            networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
-            width:video.videoWidth,error:video.error?.code ?? null,src:video.currentSrc}));
-          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify(state)}`, {cause:error});
+          const state = await selectedClip.evaluate(video => ({
+            readyState:video.readyState,networkState:video.networkState,paused:video.paused,
+            currentTime:video.currentTime,width:video.videoWidth,error:video.error?.code??null,
+            src:video.currentSrc,visibility:document.visibilityState,
+            buffered:Array.from({length:video.buffered.length},(_,i)=>[
+              video.buffered.start(i),video.buffered.end(i)]),
+            rect:(()=>{const r=video.getBoundingClientRect();
+              return {top:r.top,bottom:r.bottom,height:r.height};})(),
+          }));
+          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify({state,mp4Responses})}`, {cause:error});
         }
         const firstTime = await selectedClip.evaluate(video => video.currentTime);
         await page.waitForTimeout(760);
@@ -1197,7 +1210,21 @@ const runEngine = async ([engine, browserType]) => {
           await guidedPhrasesEdit.evaluate(element=>{
             element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
           });
-          await guidedPhrasesEdit.click({timeout:15000});
+          try {
+            await guidedPhrasesEdit.click({timeout:15000});
+          } catch (error) {
+            const geometry=await guidedPhrasesEdit.evaluate(element=>{
+              const r=element.getBoundingClientRect();
+              const x=r.left+r.width/2,y=r.top+r.height/2;
+              const hit=document.elementFromPoint(x,y);
+              return {rect:{top:r.top,bottom:r.bottom,left:r.left,right:r.right},
+                viewport:{width:innerWidth,height:innerHeight,scrollY},
+                hit:hit?.outerHTML.slice(0,240)||null,
+                panelOpen:document.querySelector("[data-video-quick-hypno-panel]")?.getAttribute("hidden")===null};
+            });
+            throw new Error(`${engine}/${locale}/${width} real guided edit click failed: ${JSON.stringify(geometry)}`,
+              {cause:error});
+          }
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);

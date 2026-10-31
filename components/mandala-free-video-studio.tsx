@@ -891,7 +891,38 @@ function CinematicSceneThumbnail({ scene, photo, title, playing }: {
     // decoded. Request the selected clip only; other thumbnails stay posters.
     if(video.readyState<2)video.load();
     void video.play().catch(()=>{/* onCanPlay retries only the selected visible clip. */});
-    return ()=>video.pause();
+    // Safari/WebKit may report HAVE_CURRENT_DATA and paused=false while the
+    // selected native H.264 decoder never advances beyond the first frame.
+    // Recover the ONE visible, user-selected thumbnail, never background clips.
+    let lastFrameTime=video.currentTime;
+    let stalledTicks=0;
+    let recovered=false;
+    const checkPlayback=window.setInterval(()=>{
+      if(!video.isConnected||video.paused||document.hidden)return;
+      const now=video.currentTime;
+      if(now>lastFrameTime+.04){
+        lastFrameTime=now;stalledTicks=0;return;
+      }
+      if(++stalledTicks<4||recovered)return;
+      recovered=true;
+      // A native in-buffer seek can restart a suspended WebKit decoder
+      // without fetching an unrelated clip. If nothing is buffered, reload
+      // this selected MP4 once; the real video E2E still fails if it stalls.
+      const ranges=video.buffered;
+      const end=ranges.length?ranges.end(ranges.length-1):0;
+      if(end>.45){
+        const resume=Math.min(.18,end-.1);
+        if(resume>now+.04){
+          video.currentTime=resume;
+          void video.play().catch(()=>{});
+          return;
+        }
+      }
+      video.pause();
+      video.load();
+      void video.play().catch(()=>{/* Native media failure remains visible to the E2E gate. */});
+    },800);
+    return ()=>{window.clearInterval(checkPlayback);video.pause();};
   },[playing,visible,scene]);
   return <video ref={ref} muted playsInline loop autoPlay={playing&&visible}
     preload={playing&&visible?"auto":"none"}
@@ -2515,11 +2546,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-label={item.id==="phrases"?item.label[locale]:undefined}
           disabled={recording||preparing} onClick={()=>{
             if(item.id==="phrases"){
+              // Cancel any older deep-editor anchor jump. In WebKit even an
+              // "instant" delayed scroll can steal the next real edit tap.
+              ++quickNavTokenRef.current;
               setQuickHypnoOpen(previous=>!previous);
-              // No delayed smooth scroll after a user opens phrases: on iOS
-              // this competes with the following real edit-button tap.
-              if(!quickHypnoOpen)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"instant",block:"start"})));
+              // The editor expands directly below these controls: preserve
+              // native scroll anchoring instead of issuing a competing rAF.
               return;
             }
             if(item.id==="extra"){
