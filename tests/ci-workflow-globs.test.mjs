@@ -221,3 +221,27 @@ test('CI wave A omits only redundant global typing, never billing or browser acc
     assert.doesNotMatch(src,/continue-on-error:\s*true/);
   }
 });
+
+test('CI wave B preserves real E2E while outsourcing only duplicate typing to Core', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/Full TypeScript check/);
+  const guard="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const you=workflow('youtube-phone-uploader.yml');
+  assert.ok(you.includes('- name: TypeScript check\n        # Mandatory protected Core owns TypeScript on Ready production PRs.\n        '+guard));
+  assert.match(you,/verify-youtube-phone-mobile\.mjs/);
+  for(const [name,contract] of [
+    ['hh-messages-wellness-browser.yml','scripts/verify-messages-wellness-browser.mjs'],
+    ['release-reaudit.yml','scripts/verify-release-reaudit.mjs'],
+    ['hh-public-journey-wave1.yml','scripts/verify-public-pathway-mobile.mjs'],
+    ['hh-public-journey-toronto-wave2.yml','scripts/verify-public-pathway-toronto-mobile.mjs'],
+    ['tantra-testimonials.yml','scripts/verify-tantra-testimonials.mjs'],
+  ]){
+    const src=workflow(name);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'),name+': typecheck guard absent');
+    assert.ok(src.includes('Protected Core owns whole-project TypeScript verification'));
+    assert.ok(src.includes(contract),name+': real browser/security contract lost');
+    assert.match(src,/playwright install|playwright:v1/,name+': real browsers must be retained');
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+});

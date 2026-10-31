@@ -79,7 +79,12 @@ jobs:
         run: |
           node --test tests/csp-history-provenance-probe.test.mjs tests/csp-history-provenance.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/video-csp-navigation.test.mjs tests/csp-navigation-initiator.test.mjs tests/csp-navigation-diagnostics.test.mjs tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
           npx eslint middleware.ts components/site-navigation.tsx components/translated-reader-content.jsx components/personal-consultation-form.tsx app/[locale]/about/page.tsx app/es/about/page.tsx app/books/maya-tradition/page.tsx
-          npx tsc --noEmit
+          # Mandatory protected Core already validates global TypeScript on this exact Ready PR.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          else
+            echo 'Protected Core owns whole-project TypeScript verification'
+          fi
       - name: Install isolated browser tools
         id: browser_tools
         run: |

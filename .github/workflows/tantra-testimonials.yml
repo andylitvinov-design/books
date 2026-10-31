@@ -34,7 +34,12 @@ jobs:
         run: |
           node --test tests/video-csp-navigation.test.mjs tests/tantra-video-lifecycle.test.mjs
           npx eslint middleware.ts components/tantra-reiki-testimonials.tsx components/tantra-video-testimonials.tsx
-          npx tsc --noEmit
+          # Mandatory protected Core already validates global TypeScript on this exact Ready PR.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          else
+            echo 'Protected Core owns whole-project TypeScript verification'
+          fi
       - name: Install isolated browser tools
         run: |
           npm install --prefix /tmp/tantra-tools --no-package-lock --ignore-scripts @playwright/test@1.64.0

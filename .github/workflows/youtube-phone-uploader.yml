@@ -57,6 +57,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: TypeScript check
+        # Mandatory protected Core owns TypeScript on Ready production PRs.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit
       - name: Lint practitioner YouTube implementation
         run: npx eslint lib/youtube/practitioner-upload-model.mjs lib/youtube/practitioner-upload-store.js app/api/app/practice/youtube/route.js components/app/practice-youtube-uploader.jsx components/app/compact-video-composer.jsx lib/practitioners/browser-presentation-upload.js
