@@ -49,7 +49,7 @@ test('third screen is topics only; full tests and questionnaire length appear on
   assert.match(tests, /data-profile-tests-step/);
   assert.match(tests, /data-profile-recommended-tests/);
   assert.match(tests, /data-profile-mode=\{mode\}/);
-  assert.match(tests, /\["questionnaires", "pro"\]/);
+  assert.match(tests, /\["all", "questionnaires", "pro"\]/);
   assert.match(tests, /test\.questions/);
   assert.match(tests, /data-profile-start-tests/);
 });
@@ -57,10 +57,10 @@ test('third screen is topics only; full tests and questionnaire length appear on
 test('fourth screen keeps five scoped alternatives visible without a repeated profile choice', () => {
   assert.ok(builder.includes('data-profile-five-more-tests'));
   assert.ok(builder.includes('data-profile-extra-selected-scope'));
-  assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)'));
+  assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, "all")'));
   assert.ok(builder.includes('if (!eligibleTestKeys.has(key)) return;'));
   assert.doesNotMatch(builder, /extraProfile|extraScales|extraGroups|setExtra/);
-  assert.ok(builder.includes('keys.length < 12'));
+  assert.ok(builder.includes('previous.length < 12'));
   assert.ok(builder.includes('makeTestSelectionIntent(selectedKeys)'));
   assert.ok(builder.includes('startTests='));
 });
@@ -70,7 +70,7 @@ test('independent scale controls and test mode targets are mobile accessible', (
   assert.match(css, /\.researchChoice\[aria-pressed=true\]/);
   assert.match(css, /\.researchChoice:focus-visible/);
   assert.match(css, /@media\(max-width:450px\)/);
-  assert.match(css, /\.batteryModeChoices button\{[^}]*min-height:65px/);
+  assert.match(css, /\.batteryModeChoices button\{[^}]*min-height:44px/);
 });
 
 test('goal topics are source-keyed and not presented as questionnaire names', () => {
@@ -113,7 +113,7 @@ test('main scales are short broad choices; step three selects source-backed topi
   assert.ok(tests.indexOf('data-profile-extra-toggle') < tests.indexOf('data-profile-extra-selected-scope'),
     'overflow must start with a single small toggle, not a long form');
   assert.match(builder, /setSelectedScaleIds\(\[\]\);/);
-  assert.match(builder, /setSelectedByMode\(\{ questionnaires: \[\], pro: \[\] \}\)/);
+  assert.match(builder, /setSelectedKeys\(\[\]\)/);
   assert.match(css, /\.mainScaleBody\{display:flex/);
   assert.match(css, /\.researchChoices\{grid-template-columns:minmax\(0,1fr\)\}/);
 });
