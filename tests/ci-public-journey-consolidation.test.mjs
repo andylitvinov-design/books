@@ -50,5 +50,5 @@ test('successor preserves both original real browsers with one local build and o
   assert.match(source, /draft == false/);
   assert.match(source, /workflow_dispatch:/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
-  assert.equal(existsSync(retiredWave2), false, 'Wave 2 is retired only after BASE-trusted successor covers it');
+  assert.equal(existsSync(retiredWave2), false, 'Retired Toronto suite is covered by the unified browser owner');
 });
