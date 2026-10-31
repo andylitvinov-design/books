@@ -16,7 +16,7 @@ test('creates detached Lab worktree without PR or push',async()=>{
   const sha=git(dir,'rev-parse','HEAD');
   git(dir,'update-ref','refs/remotes/origin/codex/public-book-library',sha);
   const item={id:'LAB-101',title:'Improve meditation editor',owner:'agent-a',baseSha:sha};
-  const {workspace,manifest}=await createLabWorkspace(item,{repo:dir,root:join(dir,'..','workspaces-'+Date.now())});
+  const {workspace,manifest}=await createLabWorkspace(item,{repo:dir,root:join(dir,'workspaces')});
   assert.equal(manifest.pr,null);
   assert.equal(manifest.releaseStatus,'LOCAL');
   assert.equal(git(workspace,'rev-parse','HEAD'),sha);
