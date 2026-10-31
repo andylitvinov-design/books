@@ -221,6 +221,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
+        await expect(screen.locator("[data-video-preview-toggle]")).toHaveAttribute("aria-pressed","true",
+          {timeout:10000}); // One style tap must immediately play the actual central video.
         // React/Next concurrent rendering can commit the shared state after
         // WebKit click() resolves. Await BOTH source button and real checkbox;
         // retain the exact on/off assertion (never skip on timeout).
@@ -384,7 +386,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
-        assert.equal(await hero.getAttribute("data-hero-promo"),"true");
+        assert.equal(await hero.getAttribute("data-hero-promo"),"false",
+          "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
