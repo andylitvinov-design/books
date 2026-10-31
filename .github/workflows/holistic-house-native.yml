@@ -68,7 +68,8 @@ jobs:
           node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
 
   android-test-installer:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # Full native builds run on verified production pushes or manual dispatch only.
+    if: ${{ github.event_name != 'pull_request' }}
     name: Holistic House Android installable debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -137,7 +138,8 @@ jobs:
             hh-gradle-android.log
 
   ios-simulator:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # Full native builds run on verified production pushes or manual dispatch only.
+    if: ${{ github.event_name != 'pull_request' }}
     name: Holistic House iOS unsigned simulator app
     runs-on: macos-14
     timeout-minutes: 40
