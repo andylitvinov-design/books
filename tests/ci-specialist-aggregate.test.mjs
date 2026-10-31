@@ -574,3 +574,9 @@ test('Toronto browser owner has trusted retirement mapping before deleting old w
   assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
 });
+
+test('installation and account guidance CSS stays STRICT', async () => {
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['app/[locale]/install/install.module.css']),'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+});
