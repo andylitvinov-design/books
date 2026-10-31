@@ -65,3 +65,53 @@ Google явно сообщает, что содержимое **бесплатн
 - https://ai.google.dev/gemini-api/docs/generate-content/speech-generation
 - https://ai.google.dev/gemini-api/docs/pricing
 - https://ai.google.dev/gemini-api/docs/api-key
+
+
+## 30.10.2026: OpenRouter/xAI — независимый резерв генерации голоса
+
+К существующему Gemini 3.8 Flash-Lite TTS добавлен второй TTS-транспорт: OpenRouter
+`POST /api/v1/audio/speech`, модель `x-ai/grok-voice-tts-1.0`, строго
+`response_format:pcm` (24 кГц, mono). API принимает только проверенный текст,
+фиксированную модель и допустимые профили; результат конвертируется сервером в
+RIFF/WAV для действующего плеера, смешивания с природой и реального экспорта видео.
+Это именно **xAI через OpenRouter**, а не `openrouter/free` (текстовая модель).
+
+**Резерв OFF по умолчанию**. Для включения нужны все флаги:
+- `HH_VOICE_STUDIO_ENABLED=true`
+- `HH_VOICE_STUDIO_OPENROUTER_ENABLED=true`
+- `HH_VOICE_STUDIO_PAID_BACKUP_APPROVED=true`
+- `HH_VOICE_STUDIO_OPENROUTER_API_KEY` (отдельный ключ с spend cap), либо
+  `HH_VOICE_STUDIO_USE_EXISTING_OPENROUTER_KEY=true` и существующий серверный
+  `HH_COUNCIL_OPENROUTER_API_KEY` (повторное использование только opt-in).
+
+OpenRouter **платный**: xAI Grok Voice TTS около $15/M символов на дату проверки.
+До 650 символов, максимум 20 резервных вызовов за скользящие 24 часа через
+`consumeRate` => теоретический верхний бюджет около $0.20/день на текстовые
+символы по текущему тарифу (при условии постоянства тарифа).
+Гостям 3/IP/час и 60/day глобально по-прежнему, auth для персональной медитации,
+origin/consent обязательны. Посетители не платят, скрытой оплаты нет.
+Владелец дополнительно должен поставить финансовый лимит в OpenRouter.
+При неготовности Gemini OpenRouter не вызывается без всех флагов.
+
+`GET /api/holistic-support/voice` теперь даёт безопасный список
+`providers.gemini` и `providers.openrouter`; WAV сообщает
+`X-HH-Voice-Provider`, UI показывает факт использования резерва.
+Тексты согласия обновлены на RU/EN/ES. У резервного xAI пять голосов,
+поэтому два из шести HH-профилей пока используют один и тот же резервный тембр;
+до акустической приёмки нельзя обещать полное совпадение с исходными шестью.
+
+Cloudflare Workers AI MeloTTS — следующий возможный бесплатный резерв
+(10 000 Neurons/сутки), но MP3 потребует безопасной декомпрессии/сведения,
+а RU/EN/ES сначала требуют проверки. Сейчас Cloudflare **не подключён**.
+Локальный Web Speech API остаётся нулевым по стоимости предпросмотром,
+но не заменяет скачиваемый WAV.
+
+**Проверки:** `node --test tests/voice-studio-openrouter.test.mjs
+ tests/voice-studio-provider.test.mjs tests/voice-studio.test.mjs`,
+Next TypeScript, eslint, сборка, реальный WebKit/Chromium Audio Export.
+Без успешных production ключевых проб, security review и точного SHA Vercel
+признак LIVE не заявлять.
+
+Источники: https://openrouter.ai/docs/guides/overview/multimodal/tts ;
+https://openrouter.ai/x-ai/grok-voice-tts-1.0 ;
+https://developers.cloudflare.com/workers-ai/platform/pricing/ .
