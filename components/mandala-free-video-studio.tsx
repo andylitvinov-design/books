@@ -4110,12 +4110,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 data-mandala-video-download>
                 <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
                   ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
-                  :" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
+                  :" · "+result.extension.toUpperCase()+" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
               </a>
               {result.mode!=="catalog" ? <button type="button"
                 onClick={shareVideo} data-video-share>
                 <Share2 size={18} aria-hidden="true"/>{ui.share}
               </button> : null}
+              {result.mode!=="catalog" ? <a
+                data-video-save-direct
+                className={videoStyles.audioDirectLink}
+                href={result.url}
+                download={"holistic-house-personal."+result.extension}>
+                {locale==="ru"?"Скачать файл напрямую (если меню «Файлы» не открылось)"
+                  :locale==="es"?"Descargar el archivo directamente (si no se abre Compartir)"
+                  :"Direct file download (if Share did not open)"}
+              </a> : null}
             </div>
             <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
               aria-labelledby="video-post-support-title">
