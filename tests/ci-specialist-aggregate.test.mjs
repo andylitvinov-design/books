@@ -563,7 +563,6 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
   const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
   const source=readFileSync(replacement,'utf8');
   for (const expected of [
-    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
     'node scripts/verify-public-pathway-mobile.mjs',
     'node scripts/verify-public-pathway-toronto-mobile.mjs',
     'tests/public-pathway-migration.test.mjs',
@@ -574,16 +573,25 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
     'HH_RUN_WAVE1',
     'HH_RUN_WAVE2',
   ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
-  const base=new Map([[oldName,old],[replacement,source]]);
+  // Production no longer routes deletions for an already retired YAML file.
+  // Reconstruct the historical trusted successor only for the synthetic
+  // BASE-migration proof; never require that obsolete trigger in live CI.
+  assert.ok(!source.includes("'.github/workflows/hh-public-journey-toronto-wave2.yml'"));
+  const historicalSource = source.replace(
+    "      - '.github/workflows/hh-public-journey-wave1.yml'",
+    "      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n      - '.github/workflows/hh-public-journey-wave1.yml'",
+  );
+  assert.notEqual(historicalSource,source);
+  const base=new Map([[oldName,old],[replacement,historicalSource]]);
   const changed=[oldName];
-  const current=new Map([[replacement,source]]);
+  const current=new Map([[replacement,historicalSource]]);
   const expected=expectedWorkflows({base,current,changed});
   assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
   assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
   assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
     {retired:oldName,replacement},
   ]);
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,historicalSource+'\\n# tampered']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
 });
 
