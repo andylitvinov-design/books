@@ -127,6 +127,9 @@ if (!ready) {
       await root.query('drop schema if exists app_private cascade').catch(()=>{})
       await root.query('drop schema if exists app cascade').catch(()=>{})
       await root.query('drop schema if exists auth cascade').catch(()=>{})
+      // The following billing suite requires a *fresh* PG service. Synthetic
+      // roles are global cluster objects and must not leak between tests.
+      await root.query('drop role if exists hh_app_backend,hh_app_inbox,service_role,authenticated,anon')
       await root.end()
     }
   })
