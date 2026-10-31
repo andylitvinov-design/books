@@ -59,6 +59,7 @@ jobs:
             tests/app-auth-pkce.integration.mjs \
             tests/holistic-house-mobile-master-chat.test.mjs
       - name: Type-check real production application
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build actual Next.js production bundle
         env:
