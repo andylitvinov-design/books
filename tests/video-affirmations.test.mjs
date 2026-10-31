@@ -364,7 +364,7 @@ test("Wave/Gemini strategy appears before phrases, uses enum privacy and approve
  const route=read("app/api/holistic-support/hypno-strategy/route.js");
  assert.ok(ui.indexOf("data-hypno-strategy>")<ui.indexOf("data-hypno-phrases>"));
  for(const label of ["data-hypno-model=\"wave\"","data-hypno-model=\"gemini\"",
-   "data-hypno-gemini-consent","data-hypno-gemini-generate",
+   "data-hypno-gemini-consent","data-hypno-build-strategy",
    "data-hypno-strategy-summary","approvePhrases","externalModelOptIn:true"])
    assert.ok(ui.includes(label),label);
  for(const label of ["auth.verified()","requireSameOrigin(request,config)",
@@ -392,4 +392,32 @@ test("explicit high-risk Wave note disables Hypno preview, export and opt-in",()
   assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
   assert.match(compact,/data-hypno-overview-enable[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
   assert.match(compact,/data-hypno-gemini-generate disabled=\{disabled\|\|safetyBlocked/);
+});
+
+
+test("one strategy CTA invokes live first-party POST for Wave and consented Gemini",()=>{
+ const source=read("components/mandala-hypno-compact.tsx");
+ const route=read("app/api/holistic-support/hypno-strategy/route.js");
+ const css=read("components/mandala-hypno-compact.module.css");
+ const callIndex=source.indexOf("data-hypno-build-strategy");
+ const strategyIndex=source.indexOf("data-hypno-strategy>");
+ assert.ok(callIndex>=0&&strategyIndex>callIndex,
+   "single strategy button must be before psychological strategy card");
+ assert.match(source,/function buildStrategy\(\)/);
+ assert.match(source,/fetch\("\/api\/holistic-support\/hypno-strategy"/);
+ assert.match(source,/model:chosenModel,round:nextRound/);
+ assert.match(source,/chosenModel==="gemini"\?\{externalModelOptIn:true\}:\{\}/);
+ assert.match(source,/onClick=\{\(\)=>\{void buildStrategy\(\);\}\}/);
+ assert.match(source,/response\.json\(\)/);
+ assert.match(source,/setDraftState\(\{/);
+ assert.doesNotMatch(source,/data-hypno-gemini-generate/,
+   "no second independent Gemini generation button");
+ assert.match(css,/\.strategyBuild\{[\s\S]*?min-height:48px/);
+ assert.match(route,/body\.model!=="wave"&&body\.model!=="gemini"/);
+ assert.match(route,/if\(body\.model==="wave"\)/);
+ assert.match(route,/provider:"holistic_wave"/);
+ assert.match(route,/buildHypnoFilteredPhrases/);
+ assert.match(route,/auth\.verified\(\)/);
+ assert.match(route,/externalModelOptIn!==true/);
+ assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|currentText|goalText|privateNote|rawResults)/);
 });
