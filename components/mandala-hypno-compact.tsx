@@ -229,6 +229,7 @@ export function MandalaHypnoCompact({
   const selectedCount=chosen.length+countCustom(currentCustom);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
+  // Any newly generated/edited options stay separate from the active video snapshot.
   const waveNow=buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,round:generation,
     fallbackStrategy:buildWaveStrategy(waveInput),
     fallbackPhrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation)});
@@ -483,7 +484,7 @@ export function MandalaHypnoCompact({
               onChange={e=>setGeminiConsent(e.target.checked)}/>
             <span>{extra.aiConsent}</span>
           </label>
-          <button type="button" data-hypno-gemini-generate disabled={disabled||geminiBusy||!geminiConsent}
+          <button type="button" data-hypno-gemini-generate disabled={disabled||safetyBlocked||geminiBusy||!geminiConsent}
             onClick={()=>{void generateGemini();}}><WandSparkles size={15} aria-hidden="true"/>
             {geminiBusy?extra.aiBusy:extra.aiRun}</button>
         </div>}
@@ -647,7 +648,7 @@ export function MandalaHypnoCompact({
       </section>
 
       <label className={css.enable}>
-        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
+        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled||safetyBlocked}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
         <span>{ui.use}</span>
         {!settings.enabled&&<small>{ui.enabledNote}</small>}
@@ -658,10 +659,10 @@ export function MandalaHypnoCompact({
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
           <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview aria-label={ui.previewButton} disabled={disabled}
+        <button type="button" data-video-affirmation-preview aria-label={ui.previewButton} disabled={disabled||safetyBlocked}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||safetyBlocked||!settings.enabled}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>
