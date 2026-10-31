@@ -519,7 +519,7 @@ export function MandalaHypnoCompact({
             {(["support","possibility","action"] as const).map((id,i)=><option key={id} value={id}>{extra.roles[i]}</option>)}
           </select></label>
           <label>{extra.goal}<select value={extraGoal} data-hypno-filter-goal disabled={disabled}
-            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setGoalNote("");setApprovalKey("");}}>
+            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setApprovalKey("");}}>
             {topicGoals[theme].map(id=><option key={id} value={id}>{affirmationGoalCatalog[locale].find(x=>x.id===id)?.label}</option>)}
           </select></label>
           <label>{extra.tone}<select value={tone} data-hypno-filter-tone disabled={disabled} onChange={e=>setTone(e.target.value as typeof tone)}>
