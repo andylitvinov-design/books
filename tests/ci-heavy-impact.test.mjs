@@ -1,11 +1,54 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { decideHeavyImpact } from '../scripts/ci-heavy-impact.mjs';
+import { decideHeavyImpact, readTestedCandidateChanges } from '../scripts/ci-heavy-impact.mjs';
 import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const one = (filename, status = 'modified') => [{ filename, status }];
 const read = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+
+
+test('App R1 uses only the verified GitHub synthetic merge delta, not a stale REST PR base', () => {
+  const eventHead = 'a'.repeat(40), eventMerge = 'b'.repeat(40), testedBase = 'c'.repeat(40);
+  const statusRows = ['M','.github/workflows/hh-app-r1.yml',
+    'A','tests/ci-heavy-impact.test.mjs',
+    'M','tests/ci-specialist-aggregate.test.mjs'];
+  const z = String.fromCharCode(0), calls = [];
+  const git = (_binary,args) => {
+    calls.push(args);
+    if (args[0] === 'rev-parse') {
+      const values = { HEAD: eventMerge, 'HEAD^1': testedBase, 'HEAD^2': eventHead };
+      return values[args[1]] + '\n';
+    }
+    if (args[0] === 'diff') return statusRows.join(z) + z;
+    throw Error('unexpected git command');
+  };
+  const changes = readTestedCandidateChanges(eventHead, eventMerge, git);
+  assert.deepEqual(changes, [
+    {filename:'.github/workflows/hh-app-r1.yml',status:'modified'},
+    {filename:'tests/ci-heavy-impact.test.mjs',status:'added'},
+    {filename:'tests/ci-specialist-aggregate.test.mjs',status:'modified'},
+  ]);
+  assert.deepEqual(decideHeavyImpact('app-r1',changes),
+    {full_app:false,database:false,banner:false,profile:false});
+  assert.deepEqual(calls.find(args => args[0] === 'diff'),
+    ['diff','--no-renames','--name-status','-z',testedBase,'HEAD']);
+  assert.throws(() => readTestedCandidateChanges(eventHead,'d'.repeat(40),git),
+    /NOT_EVENT_TESTED_CHECKOUT/);
+  assert.throws(() => readTestedCandidateChanges(eventHead,eventMerge,(_b,args) => {
+    if (args[0] === 'rev-parse') return ({
+      HEAD:eventMerge,'HEAD^1':testedBase,'HEAD^2':'f'.repeat(40)
+    })[args[1]]+'\n';
+    throw Error('unverified merge must not read changed files');
+  }),/UNVERIFIED_EVENT_MERGE_PARENTS/);
+  assert.throws(() => readTestedCandidateChanges(eventHead,eventMerge,(_b,args) => {
+    if (args[0] === 'rev-parse') return ({
+      HEAD:eventMerge,'HEAD^1':testedBase,'HEAD^2':eventHead
+    })[args[1]]+'\n';
+    if (args[0] === 'diff') return 'R100'+z+'old'+z+'new'+z;
+    throw Error('unexpected');
+  }),/UNSAFE_TESTED_FILE_STATUS/);
+});
 
 test('App R1: only modified client presentation permits avoiding duplicated full App, DB and banner matrix', () => {
   assert.deepEqual(decideHeavyImpact('app-r1', one('components/profile-compact-design.tsx')),

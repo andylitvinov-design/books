@@ -3,6 +3,7 @@
 // Auth, billing, API, SQL, dependencies, added/deleted files and API failures
 // always retain the original exhaustive suites.
 import { appendFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -87,7 +88,34 @@ async function requestJson(path) {
   return response.json();
 }
 
-async function getExactPullRequestChanges() {
+// GitHub's /pulls/:number/files can include unrelated already-merged production
+// changes when the event carries a stale base. Trust the exact GitHub-generated
+// merge checkout instead, never a live moving-base file listing. A wrong or
+// shallow checkout refuses the fast lane and retains ALL expensive checks.
+export function readTestedCandidateChanges(expectedHead, eventMerge, git = execFileSync) {
+  if (!/^[0-9a-f]{40}$/i.test(expectedHead || '') ||
+      !/^[0-9a-f]{40}$/i.test(eventMerge || '')) throw Error('INVALID_TESTED_MERGE_IDENTITY');
+  const opts = { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024, stdio: ['ignore','pipe','pipe'] };
+  const rev = ref => String(git('git', ['rev-parse', ref], opts)).trim();
+  if (rev('HEAD') !== eventMerge) throw Error('NOT_EVENT_TESTED_CHECKOUT');
+  const trustedBase = rev('HEAD^1');
+  if (!/^[0-9a-f]{40}$/i.test(trustedBase) ||
+      rev('HEAD^2') !== expectedHead) throw Error('UNVERIFIED_EVENT_MERGE_PARENTS');
+  const raw = String(git('git', ['diff','--no-renames','--name-status','-z',trustedBase,'HEAD'], opts));
+  const rows = raw.split('\0');
+  if (rows.pop() !== '' || rows.length < 2 || rows.length % 2 !== 0)
+    throw Error('INVALID_OR_EMPTY_TESTED_DIFF');
+  const files = [];
+  for (let i = 0; i < rows.length; i += 2) {
+    const status = { M: 'modified', A: 'added', D: 'removed' }[rows[i]];
+    if (!status || !rows[i + 1]) throw Error('UNSAFE_TESTED_FILE_STATUS');
+    files.push({ filename: rows[i + 1], status });
+  }
+  if (files.length > 3000) throw Error('TOO_MANY_TESTED_CHANGES');
+  return files;
+}
+
+async function getExactPullRequestChanges(mode) {
   const number = Number(process.env.HH_PR_NUMBER);
   const expectedHead = process.env.HH_HEAD_SHA;
   if (!Number.isSafeInteger(number) || number < 1 || !/^[0-9a-f]{40}$/i.test(expectedHead || '')) {
@@ -98,14 +126,23 @@ async function getExactPullRequestChanges() {
       pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY) {
     throw Error('STALE_HEAD_OR_WRONG_BASE');
   }
-  const files = [];
-  for (let page = 1; page <= 30; page++) {
-    const batch = await requestJson('/pulls/' + number + '/files?per_page=100&page=' + page);
-    if (!Array.isArray(batch)) throw Error('INVALID_CHANGED_FILES');
-    files.push(...batch.map(file => ({ filename: file.filename, status: file.status })));
-    if (files.length > 3000) throw Error('TOO_MANY_CHANGED_FILES');
-    if (batch.length < 100) break;
-    if (page === 30) throw Error('INCOMPLETE_CHANGED_FILES');
+  let files;
+  if (mode === 'app-r1') {
+    // The impact job checks out GitHub's exact PR-merge candidate with both
+    // parents, not an arbitrary local branch or the moving PR files endpoint.
+    files = readTestedCandidateChanges(expectedHead, process.env.GITHUB_SHA);
+  } else {
+    // Preserve established Mandala and Free Review behavior in this focused
+    // App R1 fix; unknown API state still falls back to FULL acceptance.
+    files = [];
+    for (let page = 1; page <= 30; page++) {
+      const batch = await requestJson('/pulls/' + number + '/files?per_page=100&page=' + page);
+      if (!Array.isArray(batch)) throw Error('INVALID_CHANGED_FILES');
+      files.push(...batch.map(file => ({ filename: file.filename, status: file.status })));
+      if (files.length > 3000) throw Error('TOO_MANY_CHANGED_FILES');
+      if (batch.length < 100) break;
+      if (page === 30) throw Error('INCOMPLETE_CHANGED_FILES');
+    }
   }
   // Recheck head after pagination: synchronize while paging must NEVER
   // silently classify a different snapshot as test-only.
@@ -123,7 +160,7 @@ async function main() {
   let reason = 'NON_PR_FULL_COVERAGE';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
     try {
-      files = await getExactPullRequestChanges();
+      files = await getExactPullRequestChanges(mode);
       reason = 'EXACT_HEAD_PATH_CLASSIFICATION';
     } catch (error) {
       reason = 'FAIL_CLOSED_' + error.message;
