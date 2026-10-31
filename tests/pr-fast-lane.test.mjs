@@ -473,7 +473,7 @@ const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
 const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
-    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
     ['library-public-feed.yml','hh-library-feed','isolated-build'],
   ]) {
     const src=workflow(file);
@@ -493,9 +493,36 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(lib,/run: npm run build/);
   assert.match(lib,/playwright install --with-deps chromium webkit/);
   assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
-  const about=workflow('holistic-about-video-check.yml');
-  assert.match(about,/npx tsc --noEmit/);
-  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  // A BASE-trusted two-PR migration may retire the duplicate About source-only
+  // workflow only after an unchanged Site Video successor covers the same paths.
+  const successor=workflow('site-video-browser.yml');
+  for(const inherited of [
+    'components/psychic-alchemy-intro-video*',
+    'app/**/about/page.tsx',
+    'tests/psychic-alchemy-intro-video.test.mjs',
+    'lib/site-videos/**',
+    'components/site-video-*',
+    'components/page-video.tsx',
+    'app/admin/videos/**',
+    'app/site-video*.css',
+    'tests/site-video*.mjs',
+    'middleware.ts',
+    '.github/workflows/holistic-about-video-check.yml',
+  ]) assert.ok(successor.includes("      - '"+inherited+"'"),'Missing original About trigger '+inherited);
+  for(const contract of ['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs',
+    'tests/site-video-defaults.test.mjs','node scripts/verify-site-video-browser.mjs','npx tsc --noEmit']) {
+    assert.ok(successor.includes(contract),'Missing About source/browser evidence '+contract);
+  }
+  assert.doesNotMatch(successor,/continue-on-error:\s*true/);
+  if(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml'))) {
+    const about=workflow('holistic-about-video-check.yml');
+    assert.match(about,/npx tsc --noEmit/);
+    assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  } else {
+    const policy=readFileSync(join(root,'lib','ci','specialist-aggregate.mjs'),'utf8');
+    assert.ok(policy.includes("'.github/workflows/holistic-about-video-check.yml': '.github/workflows/site-video-browser.yml'"),
+      'Only production BASE-approved migration can retire the old workflow');
+  }
 });
 
 
