@@ -1016,8 +1016,23 @@ const runEngine = async ([engine, browserType]) => {
             const src=await native.getAttribute("src");
             assert.equal(src,"/audio/mandala/"+preset+".wav",
               "preset must not use an iOS-unreliable blob URL");
-            const response=await page.request.get(BASE+src,{headers:{Range:"bytes=0-63"}});
-            assert.ok([200,206].includes(response.status()),preset+" media GET/range request");
+            // Parallel WebKit media decoders can transiently reset a loopback
+            // range connection under CI load. Retry ONLY transport resets,
+            // never HTTP failures, invalid media, or failed playback.
+            let response;
+            for(let attempt=0;attempt<3;attempt++){
+              try {
+                response=await page.request.get(BASE+src,{
+                  headers:{Range:"bytes=0-63"},timeout:15000,
+                });
+                break;
+              } catch(error) {
+                if(!/ECONNRESET|EPIPE|socket hang up/i.test(String(error)) || attempt===2)
+                  throw error;
+                await page.waitForTimeout(350*(attempt+1));
+              }
+            }
+            assert.ok(response && [200,206].includes(response.status()),preset+" media GET/range request");
             assert.match(response.headers()["content-type"]||"",/audio\/(?:wav|x-wav)/i,
               preset+" is served with an actual WAV media MIME");
             const body=Buffer.from(await response.body());
