@@ -56,8 +56,17 @@ export async function POST(request) {
     await consumeRate(config,{op:"first-video-prompt-global-day"},30,86400);
     await consumeRate(config,{op:"first-video-prompt-global-minute"},5,60);
     const result=await generateFreeFirstVideoPrompt(input,process.env);
-    if(result.error)throw unavailable(result.error);
-    return NextResponse.json(result,{headers:PRIVATE_HEADERS});
+    if(result.error){
+      // Restricted server logs only: coarse provider/status codes, never
+      // the visitor wish, provider body, authorization key or model output.
+      if(result.diagnostics?.length)
+        console.warn("HH_FIRST_VIDEO_FREE_PROVIDER_STATUS",JSON.stringify(result.diagnostics));
+      throw unavailable(result.error);
+    }
+    // Explicit success allowlist: internal diagnostics never reach visitors.
+    return NextResponse.json({prompt:result.prompt,provider:result.provider,
+      model:result.model,mediaGenerated:false,localAssemblyOnly:true},
+      {headers:PRIVATE_HEADERS});
   }catch(error){
     const e=safeError(error);
     return NextResponse.json({error:e.code},{status:e.status,headers:PRIVATE_HEADERS});

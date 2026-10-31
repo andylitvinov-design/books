@@ -177,3 +177,47 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
   assert.equal(exhausted.error,"VIDEO_PROMPT_FREE_QUOTA");
   assert.match(readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8"),/data-first-video-refresh/);
 });
+
+
+test("retired Gemini Lite model falls back ONLY to free-tier Gemini Flash; failures stay private",async()=>{
+  const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"verified-free-tier-gemini-key",
+    HH_COUNCIL_OPENROUTER_API_KEY:"verified-openrouter-free-key",
+  };
+  const input={locale:"ru",wish:"Горы",theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20};
+  const called=[];
+  const result=await generateFreeFirstVideoPrompt(input,env,async(url,options)=>{
+    called.push({url,body:JSON.parse(options.body)});
+    if(called.length===1)return {status:404,ok:false,text:async()=>""};
+    return {status:200,ok:true,text:async()=>JSON.stringify({
+      candidates:[{content:{parts:[{text:"Горные вершины с медленными облаками. Четыре сцены горного пейзажа с плавными переходами."}]}}],
+    })};
+  });
+  assert.equal(result.provider,"gemini_free");
+  assert.equal(result.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
+  assert.equal(called.length,2,"one 404 model fallback; no OpenRouter call");
+  assert.match(called[1].url,/gemini-2\.5-flash:generateContent/);
+  assert.ok(!JSON.stringify(called).includes("gemini-4-argon"));
+  const unavailable=await generateFreeFirstVideoPrompt(input,env,async()=>({
+    status:403,ok:false,text:async()=>JSON.stringify({error:{message:"never log an API key or private wish"}}),
+  }));
+  assert.equal(unavailable.error,"VIDEO_PROMPT_PROVIDER_UNAVAILABLE");
+  assert.deepEqual(unavailable.diagnostics,[
+    {provider:"gemini_free",model:"gemini-2.5-flash-lite",reason:"http_403"},
+    {provider:"openrouter_free",model:"openrouter/free",reason:"http_403"},
+  ]);
+  assert.ok(!JSON.stringify(unavailable).includes(input.wish));
+  assert.ok(!JSON.stringify(unavailable).includes("never log"));
+  const route=readFileSync(new URL("../app/api/holistic-support/first-video-prompt/route.js",import.meta.url),"utf8");
+  assert.match(route,/HH_FIRST_VIDEO_FREE_PROVIDER_STATUS/);
+  assert.match(route,/if\(result\.error\)/);
+  assert.match(route,/return NextResponse\.json\(\{prompt:result\.prompt,provider:result\.provider/);
+  const ui=readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8");
+  assert.match(ui,/const useLocal=mode==="local"/);
+  assert.match(ui,/setVariant\(nextVariant\);setPromptOverride\(""\);setMode\("local"\)/);
+  assert.match(ui,/localFallback:"Создан другой локальный вариант, без внешнего AI\."/);
+});

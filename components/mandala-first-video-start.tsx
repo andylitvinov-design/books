@@ -53,6 +53,7 @@ const l10n = {
     promptPlaceholder: "Напишите пожелание выше, чтобы получить промпт.",
     refresh: "Другой вариант промпта", ai: "Улучшить с AI · бесплатно",
     aiErrors:{quota:"Достигнут лимит бесплатного AI. Локальный вариант доступен.",config:"AI не настроен на сервере. Используйте локальный вариант.",response:"AI вернул непригодный ответ. Локальный вариант сохранён.",provider:"AI-провайдер недоступен. Попробуйте позже."},
+    localFallback:"Создан другой локальный вариант, без внешнего AI."
     aiConsent: "Разрешаю передать только мой текст пожелания внешней языковой модели. Фото, тесты и личный профиль не передаются.",
     aiLoading: "AI готовит промпт…", aiReady: "Промпт улучшен языковой моделью",
     local: "Локальный режиссёр · без API", aiUnavailable: "AI сейчас недоступен — локальный промпт сохранён.",
@@ -80,6 +81,7 @@ const l10n = {
     promptPlaceholder: "Write your wish above to generate a prompt.",
     refresh: "Another prompt option", ai: "Enhance with AI · free",
     aiErrors:{quota:"Free AI quota reached. Local draft is available.",config:"AI is not configured. Use the local draft.",response:"AI sent an invalid reply. Local draft saved.",provider:"AI provider unavailable. Try again later."},
+    localFallback:"Made another local option, without external AI."
     aiConsent: "I agree to send only my written wish to an external language model. My photo, tests and private profile are not shared.",
     aiLoading: "AI is enhancing your prompt…", aiReady: "AI-enhanced prompt is ready",
     local: "Local director · no API", aiUnavailable: "AI is unavailable now — your local prompt is preserved.",
@@ -107,6 +109,7 @@ const l10n = {
     promptPlaceholder: "Escribe tu deseo arriba para crear el prompt.",
     refresh: "Otra opción de prompt", ai: "Mejorar con IA · gratis",
     aiErrors:{quota:"Límite de IA gratuita alcanzado. Usa el borrador local.",config:"IA no configurada. Usa el borrador local.",response:"Respuesta IA incorrecta. Guardamos el borrador.",provider:"Proveedor IA no disponible. Inténtalo más tarde."},
+    localFallback:"Se creó otra opción local, sin IA externa."
     aiConsent: "Acepto enviar solo el texto de mi deseo a un modelo externo. Mi foto, pruebas y perfil no se comparten.",
     aiLoading: "La IA mejora el prompt…", aiReady: "Prompt mejorado por IA",
     local: "Director local · sin API", aiUnavailable: "IA no disponible — mantenemos el prompt local.",
@@ -208,8 +211,18 @@ export function MandalaFirstVideoStart({
       const category=code==="RATE_LIMITED"||code==="VIDEO_PROMPT_FREE_QUOTA"?"quota":
         code==="VIDEO_PROMPT_FREE_AI_DISABLED"?"config":
         code==="VIDEO_PROMPT_INVALID_RESPONSE"?"response":"provider";
-      if(revision===aiRevisionRef.current)setAiStatus(t.aiErrors[category]);
-      // Explicitly keep the locally prepared storyboard and prompt.
+      if(revision===aiRevisionRef.current){
+        // A failed free provider must not make this button look inert.
+        // Never overwrite a manually edited or already AI-enhanced prompt.
+        // The visible local alternative is labelled honestly, never as AI.
+        const useLocal=mode==="local"&&Boolean(wish.trim());
+        if(useLocal){
+          const nextVariant=(variant+1)%100;
+          setVariant(nextVariant);setPromptOverride("");setMode("local");
+          apply(wish,prefs,"",nextVariant);
+        }
+        setAiStatus(t.aiErrors[category]+(useLocal?" "+t.localFallback:""));
+      }
     } finally { if(revision===aiRevisionRef.current)setAiLoading(false); }
   }
   return <section className={css.root} data-first-free-video
