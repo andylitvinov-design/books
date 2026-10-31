@@ -161,7 +161,8 @@ test('direct exact-head PR checkout retains focused test-only lane', () => {
     if (args[0] === 'rev-parse') return Buffer.from(head + String.fromCharCode(10));
     if (args[0] === 'merge-base') return Buffer.alloc(0);
     if (args[0] === 'diff') {
-      assert.equal(args[5], base);
+      assert.equal(args[4], base);
+      assert.equal(args[5], 'HEAD');
       return Buffer.from('M' + String.fromCharCode(0) +
         'tests/temple-support-hub.test.mjs' + String.fromCharCode(0));
     }
