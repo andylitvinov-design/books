@@ -10,7 +10,7 @@ test('one full-width EN/RU/ES Messages page provides just two accessible tabs',(
   const css=read('components/app/messages-hub.module.css')
   const pageCss=read('app/[locale]/app/messages/messages-page.css')
   assert.match(page,/if\(!\['en','ru','es'\]\.includes\(locale\)\)notFound\(\)/)
-  assert.match(page,/<MessagesHub locale=\{locale\}\/>/)
+  assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
   assert.doesNotMatch(page,/<DirectMessageInbox locale=\{locale\}\/>/)
   assert.match(hub,/const VALID_TABS=new Set\(\['chats','requests'\]\)/)
   assert.match(hub,/role="tablist"/)
