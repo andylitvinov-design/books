@@ -604,6 +604,22 @@ test('public FAST CSS cannot skip an explicitly applicable specialist', async ()
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
 });
 
+test('a production base advance does not replace the tested checkout diff or waive HEAD checks', async () => {
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
+    changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
+  const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
+  const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
+    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  const legacySources = { base: sources.base, current: sources.current };
+  await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), base: { ...currentPr().base, ref: 'other' } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+});
+
 test('Native installer successor claims old native triggers before retiring duplicate macOS/Android CI', () => {
   const old='.github/workflows/native-ci.yml';
   const replacement='.github/workflows/holistic-house-native.yml';
