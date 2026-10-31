@@ -271,6 +271,12 @@ async function installLocalAccountMock(page) {
   await page.route("**/api/app/academy-energywork/photo", async route => {
     if (route.request().method() === "POST") {
       const upload = route.request().postDataBuffer();
+      console.log("REIKI_PHOTO_MOCK_POST", JSON.stringify({
+        size:upload?.length ?? 0,
+        contentType:(route.request().headers()["content-type"] || "").split(";")[0],
+        jpeg:Boolean(upload?.includes(Buffer.from([0xff,0xd8,0xff]))),
+        fileName:Boolean(upload?.includes(Buffer.from("initiation.jpg"))),
+      }));
       assert.ok(upload?.includes(Buffer.from("initiation.jpg")),
         "The iPhone photo picker sends a named JPEG to the private API");
       assert.ok(upload?.includes(Buffer.from([0xff,0xd8,0xff])),
@@ -281,6 +287,9 @@ async function installLocalAccountMock(page) {
     }
     await route.fulfill({status:200,contentType:"application/json",
       body:JSON.stringify({exists:Boolean(savedPhotoUrl),url:savedPhotoUrl})});
+    console.log("REIKI_PHOTO_MOCK_RESPONSE",JSON.stringify({
+      method:route.request().method(),exists:Boolean(savedPhotoUrl),
+    }));
   });
   await page.route(pattern, async route => {
     if (route.request().method() === "POST") {
@@ -386,7 +395,14 @@ async function exerciseJourney(page, locale, width) {
       await picker.setInputFiles({
         name:"portrait.jpg", mimeType:"image/jpeg", buffer:Buffer.from(photoFixture,"base64"),
       });
-      await expect(page.locator('[data-reiki-photo-saved]')).toBeVisible({timeout:30000});
+      const saved=page.locator('[data-reiki-photo-saved]');
+      const uploadError=page.locator('[data-reiki-initiation-photo] [role="alert"]');
+      await Promise.race([
+        expect(saved).toBeVisible({timeout:30000}),
+        uploadError.waitFor({state:"visible",timeout:30000}).then(async () => {
+          throw new Error("REIKI_PHOTO_UI_REJECTED_UPLOAD: " + (await uploadError.innerText()));
+        }),
+      ]);
       console.log("REIKI_PRIVATE_PHOTO_UPLOAD_UI_PASS",JSON.stringify({locale,width}));
     }
     if (id==="welcome-02") {
