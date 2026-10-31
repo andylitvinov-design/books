@@ -7,6 +7,7 @@ on:
       - 'app/[locale]/holistic-support/**'
       - 'components/mandala-meditation*'
       - 'components/mandala-free-video-studio.tsx'
+      - 'app/api/holistic-support/hypno-strategy/route.js'
       - 'components/mandala-hypnocorrection-mobile*'
       - 'components/mandala-video-affirmations*'
       - 'components/mandala-hypno-compact*'
