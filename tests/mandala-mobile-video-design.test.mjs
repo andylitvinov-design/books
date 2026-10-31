@@ -481,6 +481,6 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
   assert.match(css,/\.quickPhraseRail,/);
-  assert.match(css,/\.quickMusicRail,/);
+  assert.match(css,/\.quickMusicRail\{/);
   assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
 });
