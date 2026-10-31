@@ -406,7 +406,7 @@ test('Video Studio-only edits run dedicated Mandala real-media acceptance withou
 
 test('fast routing is limited to known public presentation assets and mixed risk is strict', async () => {
   const { classifyReleaseRisk } = await import('../lib/ci/specialist-aggregate.mjs');
-  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/globals.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/[locale]/about/page.module.css']), 'FAST');
   for (const changed of [[], ['app/globals.css', 'supabase/migrations/001.sql'], ['app/api/payment/route.ts'], ['.github/workflows/hh-pr-core-release.yml'], ['lib/unknown.js'], ['app/auth/login.css']]) {
     assert.equal(classifyReleaseRisk(changed), 'STRICT');
   }
@@ -416,7 +416,7 @@ test('FAST bypasses specialist wait but verifies live HEAD and old names in rena
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css'}], runs:async()=>{throw Error('should not wait');}};
   const result=await verify(api,ctx,sources, {maxWaitMs:0});
   assert.equal(result.risk,'FAST');
   assert.equal(reads,2);
@@ -446,6 +446,50 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
+});
+
+test('service and checkout presentation changes keep consent and payment checks', async () => {
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  for (const file of [
+    'components/commerce/service-cart.module.css',
+    'components/taoist-talisman-cart.module.css',
+    'components/holistic-support-mobile.module.css',
+    'app/[locale]/services/free-situation-review/review.module.css',
+    'app/[locale]/holistic-support/holistic-support.module.css',
+  ]) assert.equal(classifyReleaseRisk([file]),'STRICT',file);
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+});
+
+test('global CSS affecting the privacy consent banner is strict', async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  assert.match(readFileSync('app/globals.css','utf8'),/\.analytics-consent/);
+  assert.equal(classifyReleaseRisk(['app/globals.css']),'STRICT');
+  const security='.github/workflows/release-reaudit.yml';
+  const workflow=readFileSync(security,'utf8');
+  const sources={base:new Map([[security,workflow]]),current:new Map([[security,workflow]])};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/globals.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('checkout CSS blocks on missing billing workflow even when the filename is presentation-only',async()=>{
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const workflow=readFileSync(billing,'utf8');
+  const sources={base:new Map([[billing,workflow]]),current:new Map([[billing,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/commerce/service-cart.module.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('Google claim CSS requires the CRM auth and claim workflow',async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  const css='components/free-express-google-claim.module.css';
+  const crm='.github/workflows/hh-crm-source-check.yml';
+  const workflow=readFileSync(crm,'utf8');
+  const sources={base:new Map([[crm,workflow]]),current:new Map([[crm,workflow]])};
+  assert.equal(classifyReleaseRisk([css]),'STRICT');
+  assert.deepEqual(expectedWorkflows({...sources,changed:[css]}),[crm]);
+  const api={pr:async()=>pr(),changed:async()=>[{filename:css}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
 test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
@@ -498,4 +542,35 @@ test('client progress owner is complete before the trusted second-phase deletion
   assert.throws(()=>resolveExpectedSpecialists({
     base,current:new Map([[owner,source+'\n# untrusted owner update']]),changed,expected,
   }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
+
+test('Toronto browser owner has trusted retirement mapping before deleting old workflow', () => {
+  const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
+  const replacement='.github/workflows/hh-public-journey-wave1.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
+  const old=readFileSync(oldName,'utf8');
+  const source=readFileSync(replacement,'utf8');
+  for (const expected of [
+    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
+    'node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-migration.test.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Build exact candidate once for both real-browser suites',
+    'playwright install --with-deps chromium webkit',
+    'Whole-project TypeScript outside protected production PRs',
+    'HH_RUN_WAVE1',
+    'HH_RUN_WAVE2',
+  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
+  const base=new Map([[oldName,old],[replacement,source]]);
+  const changed=[oldName];
+  const current=new Map([[replacement,source]]);
+  const expected=expectedWorkflows({base,current,changed});
+  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
+  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
+    {retired:oldName,replacement},
+  ]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
 });

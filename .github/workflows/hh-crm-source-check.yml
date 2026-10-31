@@ -62,6 +62,7 @@ on:
       - 'lib/app/express-report-*.js'
       - 'lib/app/express-report-*.mjs'
       - 'app/api/free-express/claim/**'
+      - 'components/free-express-google-claim.module.css'
       - 'components/app/practice-express-reports.*'
       - 'tests/express-report-delivery.test.mjs'
       - 'tests/practitioner-express-reports.test.mjs'

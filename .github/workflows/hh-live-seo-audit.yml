@@ -13,6 +13,7 @@ on:
       - 'data/academy/catalog.ts'
       - 'tests/seo-nightly-crawl.test.mjs'
       - 'tests/seo-build-dedup-policy.test.mjs'
+      - 'tests/seo-browser-matrix-policy.test.mjs'
       - 'app/sitemap.ts'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
@@ -31,6 +32,7 @@ on:
       - 'data/academy/catalog.ts'
       - 'tests/seo-nightly-crawl.test.mjs'
       - 'tests/seo-build-dedup-policy.test.mjs'
+      - 'tests/seo-browser-matrix-policy.test.mjs'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
       - 'app/books/**'
@@ -81,7 +83,7 @@ jobs:
         if: github.event_name == 'push'
         run: sleep 150
       - name: Check localized book sitemap against real catalog
-        run: node --test tests/seo-localized-books.test.mjs tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs
+        run: node --test tests/seo-localized-books.test.mjs tests/seo-nightly-crawl.test.mjs tests/public-tests-seo-landing.test.mjs tests/seo-browser-matrix-policy.test.mjs
       # A PR is not production: do not require newly introduced routes on the old live build.
       - name: Check public crawler syntax
         run: |
@@ -168,7 +170,7 @@ jobs:
               fi
               sleep 2
             done
-            HH_SEO_AUDIT_ORIGIN=http://127.0.0.1:3182 node scripts/verify-public-tests-mobile.mjs
+            HH_SEO_QA_FAST_PR=1 HH_SEO_AUDIT_ORIGIN=http://127.0.0.1:3182 node scripts/verify-public-tests-mobile.mjs
           else
             node scripts/verify-public-tests-mobile.mjs
           fi
