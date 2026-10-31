@@ -312,7 +312,7 @@ jobs:
             exit 1
           fi
           status=0
-          # Keep 13 current acceptance suites; redundant, flaky contact-channel browser is retired.
+          # Keep the original 14 real acceptance suites, including payment,
           # consent, browser engines and RU/EN/ES viewports. One Next server,
           # two bounded independent lanes, never extra jobs or required checks.
           # Each suite writes its own diagnostics; both lanes MUST be awaited.
@@ -349,6 +349,7 @@ jobs:
           lane_b() {
             local failed=0
             run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs || failed=1
             run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
             run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
             run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1

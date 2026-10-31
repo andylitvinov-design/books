@@ -18,6 +18,11 @@ const scoped = [
   'opora-module-ci.yml',
 ];
 
+test('Public Services retains real cross-locale consent and private handoff browser coverage',()=>{
+  const source=workflow('hh-public-services-production.yml');
+  assert.match(source,/node scripts\/verify-contact-channel-chooser-browser\.mjs/);
+});
+
 test('seven formerly unconditional PR workflows run only on relevant paths', () => {
   for (const filename of scoped) {
     const source = workflow(filename);
@@ -690,18 +695,18 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
     'verify-holistic-support-recommendations-mobile', 'verify-talisman-google-checkout-browser',
     'verify-holistic-topics-browser', 'verify-direction-focus-mobile',
     'verify-public-services-production', 'verify-home-consultation-first-screen',
-    'verify-service-cart-browser',
+    'verify-contact-channel-chooser-browser', 'verify-service-cart-browser',
     'verify-storefront-shop-browser',
   ]) assert.ok(publicQa.includes('node scripts/' + browser + '.mjs'), browser + ': no browser suite deleted');
   assert.match(publicQa, /timings\.csv/, 'runner costs measured per browser suite');
 });
 
 
-test('the 13 current Public Services browser suites use semantic readiness rather than networkidle', () => {
+test('all 14 Public Services browser suites use semantic readiness rather than networkidle', () => {
   const source = workflow('hh-public-services-production.yml');
   const scripts = [...source.matchAll(/node (scripts\/verify-[\w-]+\.mjs)/g)].map(match => match[1]);
   const unique = [...new Set(scripts)];
-  assert.equal(unique.length, 13, 'current browser acceptance list excludes duplicate contact UI scenario');
+  assert.equal(unique.length, 14, 'existing full browser acceptance list must be retained');
   for (const script of unique) {
     const file = readFileSync(join(root, script), 'utf8');
     // Fail cheaply in Core before downloading browsers/building a Next server.
@@ -715,7 +720,7 @@ test('the 13 current Public Services browser suites use semantic readiness rathe
 });
 
 
-test('Public Services keeps 13 current browser checks in two bounded fail-closed lanes', () => {
+test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
   const source = workflow('hh-public-services-production.yml');
   const required = [
     'verify-alchemy-one-screen.mjs',
@@ -729,6 +734,7 @@ test('Public Services keeps 13 current browser checks in two bounded fail-closed
     'verify-direction-focus-mobile.mjs',
     'verify-public-services-production.mjs',
     'verify-home-consultation-first-screen.mjs',
+    'verify-contact-channel-chooser-browser.mjs',
     'verify-service-cart-browser.mjs',
     'verify-storefront-shop-browser.mjs',
   ];
@@ -739,7 +745,7 @@ test('Public Services keeps 13 current browser checks in two bounded fail-closed
       return match[1];
     }).sort(),
     [...required].sort(),
-    'every current real Chromium/WebKit, payment and localized browser script must run exactly once',
+    'every original real Chromium/WebKit, payment, consent and localized browser script must still run exactly once',
   );
   assert.match(source, /lane_a\(\) \{/);
   assert.match(source, /lane_b\(\) \{/);

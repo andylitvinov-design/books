@@ -78,7 +78,25 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     await noteDisclosure.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
-  await form.locator('input[type="checkbox"]').check();
+  const consent = form.locator('input[type="checkbox"]');
+  await consent.evaluate(input => {
+    window.__hhConsentEvents = [];
+    for (const type of ['pointerdown','click','input','change']) {
+      input.addEventListener(type, event => {
+        window.__hhConsentEvents.push({type:event.type,checked:input.checked,
+          connected:input.isConnected,trusted:event.isTrusted});
+      });
+    }
+  });
+  try { await consent.check(); }
+  catch (error) {
+    const state=await consent.evaluate(input=>({
+      checked:input.checked,disabled:input.disabled,connected:input.isConnected,
+      events:window.__hhConsentEvents,viewport:{width:innerWidth,height:innerHeight,scrollY},
+      box:(()=>{const rect=input.getBoundingClientRect();return {x:rect.x,y:rect.y,width:rect.width,height:rect.height};})(),
+    })).catch(()=>null);
+    throw new Error('Consent checkbox failed on '+locale+' '+page.url()+' '+JSON.stringify(state),{cause:error});
+  }
   const priorCount=submissions.length;
   await button.click();
   const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
