@@ -245,3 +245,22 @@ test("phrases and hypnocorrection button expands one shared editor below six vid
  assert.match(hypno,/data-hypno-filter-tone/);
  assert.match(hypno,/data-hypno-approve/);
 });
+
+test("Hypno links and advanced controls keep independent, accessible disclosure state",()=>{
+ const src=read("components/mandala-free-video-studio.tsx");
+ const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+ assert.match(src,/window\.addEventListener\("hashchange",openHypnoHash\)/,
+   "a direct #video-hypnosis link must open the hidden inline editor");
+ assert.match(src,/window\.location\.hash!=="#video-hypnosis"/);
+ assert.match(src,/href="#video-hypnosis"[\s\S]*?openQuickDetailed\("video-hypnosis"\)/,
+   "Configure affirmations navigates to the one live inline editor");
+ assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else setQuickDetailedOpen\(true\)/,
+   "opening Hypno must not also expand unrelated advanced settings");
+ assert.match(src,/open=\{quickDetailedOpen\}/);
+ assert.match(src,/<summary onClick=\{event=>\{event\.preventDefault\(\);setQuickDetailedOpen\(value=>!value\);\}\}>/,
+   "advanced disclosure is controlled once, never by both native toggle and React");
+ assert.doesNotMatch(src,/onToggle=\{event=>setQuickDetailedOpen/);
+ assert.match(browser,/advanced parameters must expand on a real click/);
+ assert.match(browser,/photo cover and user-owned image choices must open on user request/);
+ assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000\}\)/);
+});
