@@ -73,6 +73,7 @@ jobs:
     outputs:
       full_app: ${{ steps.choose.outputs.full_app }}
       database: ${{ steps.choose.outputs.database }}
+      profile: ${{ steps.choose.outputs.profile }}
       banner: ${{ steps.choose.outputs.banner }}
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +89,8 @@ jobs:
         run: node scripts/ci-heavy-impact.mjs app-r1
   unit-build:
     needs: impact
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # CI-only changes are validated by Core + actionlint + focused routing tests.
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' && needs.impact.outputs.profile == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

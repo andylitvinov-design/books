@@ -49,7 +49,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
   assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
   assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
-  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  assert.ok(app.includes('node --conditions=react-server --test tests/historical-interpretation-coverage.test.mjs'), 'focused historical contract remains');
   for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
     assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
   }
@@ -354,7 +354,9 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
     const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
     assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
-    assert.ok(!patterns.includes('.github/workflows/' + name), name + ' must use core/actionlint for YAML-only changes');
+    // App R1 explicitly routes its own YAML edits to cheap policy checks; other suites remain path-filtered.
+    const focusedSelfCheck = name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1');
+    assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }

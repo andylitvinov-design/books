@@ -9,17 +9,17 @@ const read = name => readFileSync(new URL('../.github/workflows/' + name, import
 
 test('App R1: only modified client presentation permits avoiding duplicated full App, DB and banner matrix', () => {
   assert.deepEqual(decideHeavyImpact('app-r1', one('components/profile-compact-design.tsx')),
-    { full_app: false, database: false, banner: false });
+    { full_app: false, database: false, banner: false, profile: true });
   assert.deepEqual(decideHeavyImpact('app-r1', one('components/my-course-dashboard.tsx')),
-    { full_app: false, database: false, banner: true });
+    { full_app: false, database: false, banner: true, profile: true });
   assert.deepEqual(decideHeavyImpact('app-r1', one('tests/free-course-banner.test.mjs')),
-    { full_app: false, database: false, banner: true });
+    { full_app: false, database: false, banner: true, profile: true });
   assert.deepEqual(decideHeavyImpact('app-r1', one('tests/profile-compact-design.test.mjs')),
-    { full_app: false, database: false, banner: false });
+    { full_app: false, database: false, banner: false, profile: true });
 });
 
 test('App R1: cross-feature, API, dependency, security, migrations, mixed and nonmodified changes keep ALL jobs', () => {
-  const strict = { full_app: true, database: true, banner: true };
+  const strict = { full_app: true, database: true, banner: true, profile: true };
   for (const changes of [
     null, [], one('app/api/app/login/route.ts'), one('lib/security/rls.ts'),
     one('supabase/migrations/20261031_more.sql'), one('package-lock.json'),
@@ -32,6 +32,37 @@ test('App R1: cross-feature, API, dependency, security, migrations, mixed and no
      { filename: 'lib/app/sessions.js', status: 'modified' }],
   ]) assert.deepEqual(decideHeavyImpact('app-r1', changes), strict);
   assert.throws(() => decideHeavyImpact('unknown', []), /UNKNOWN_SUITE/);
+});
+
+test('CI-only App R1 policy and new routing tests skip obsolete unrelated app and database matrices', () => {
+  const routed = { full_app: false, database: false, banner: false, profile: false };
+  for (const source of [
+    one('.github/workflows/hh-app-r1.yml'),
+    one('.github/workflows/hh-app-browser.yml'),
+    one('scripts/ci-heavy-impact.mjs'),
+    one('tests/ci-heavy-impact.test.mjs', 'added'),
+    [ { filename: '.github/workflows/ia-v2.yml', status: 'modified' },
+      { filename: 'tests/pr-fast-lane.test.mjs', status: 'modified' } ],
+  ]) assert.deepEqual(decideHeavyImpact('app-r1', source), routed);
+  const strict = { full_app: true, database: true, banner: true, profile: true };
+  for (const source of [
+    one('.github/workflows/hh-pr-core-release.yml'),
+    one('tests/app-database.integration.mjs'),
+    [ { filename: 'tests/ci-heavy-impact.test.mjs', status: 'added' },
+      { filename: 'app/api/app/owner/route.ts', status: 'modified' } ],
+    null,
+  ]) assert.deepEqual(decideHeavyImpact('app-r1', source), strict);
+});
+
+test('App Browser keeps one core Chromium PR job and makes full old matrix manual', () => {
+  const yaml = read('hh-app-browser.yml');
+  assert.match(yaml, /workflow_dispatch:/);
+  assert.match(yaml, /matrix: \$\{\{ fromJSON\(github\.event_name == 'workflow_dispatch'/);
+  assert.match(yaml, /"browser":"chromium","suite":"core"/);
+  assert.match(yaml, /"browser":"webkit","suite":"extended"/);
+  assert.match(yaml, /browser-journey-complete/);
+  assert.match(yaml, /verify-app-r1/);
+  assert.match(yaml, /Initialize empty synthetic database/);
 });
 
 test('Mandala: test-only changes keep contracts but avoid rebuilding the same site and installing two browsers', () => {
@@ -77,6 +108,7 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /^  impact:\n/m);
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs app-r1/);
   assert.match(yaml, /^  unit-build:\n    needs: impact\n/m);
+  assert.match(yaml, /needs\.impact\.outputs\.profile == 'true'/);
   assert.match(yaml, /^  course-banner-browser:\n    needs: impact\n/m);
   assert.match(yaml, /^  database:\n    needs: impact\n/m);
   assert.match(yaml, /needs\.impact\.outputs\.full_app == 'true'/);

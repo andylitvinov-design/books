@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const TARGET = 'codex/public-book-library';
 const APP_UI = /^(?:components\/(?:profile-[\w.-]+\.(?:tsx|jsx|js|css)|my-course[\w.-]*\.(?:tsx|jsx|js|css)|academy-video-library-client\.tsx)|tests\/(?:profile-(?:four-domains|assessment-overview|compact-design|integrated-summary)|cabinet-today|personal-analysis-cabinet|free-course-banner|course-immersive-start-ui)\.test\.mjs|tests\/course-banner\/browser\.mjs)$/;
 const BANNER = /^(?:components\/(?:my-course|academy-video-library-client)|tests\/(?:my-course|free-course-banner|course-immersive-start-ui|course-banner\/browser))/;
+const CI_ONLY_CONFIG = /^(?:\.github\/workflows\/(?:hh-app-r1|hh-app-browser|hh-free-review-live-mobile|hh-pr-sweep-guard|holistic-support-mandala|ia-v2|site-video-browser)\.yml|scripts\/ci-heavy-impact\.mjs|tests\/(?:ci-heavy-impact|ci-heavy-draft-policy|pr-fast-lane)\.test\.mjs)$/;
 const FREE_REVIEW_UNIT = new Set(['tests/free-diagnosis-three-offers.test.mjs',
   'tests/personal-testimonials-prefetch.test.mjs', 'tests/private-material-handoff.test.mjs']);
 const MANDALA_UNIT = new Set([
@@ -48,10 +49,16 @@ export function decideHeavyImpact(mode, changed) {
       !file.filename.split('/').some(segment => segment === '.' || segment === '..'));
   if (mode === 'app-r1') {
     const uiOnly = strictlyModified && changed.every(file => APP_UI.test(file.filename));
+    // Only preapproved CI-specific files may bypass unrelated App/DB/browser suites.
+    // This includes ADDING a new focused CI test, but never product, auth, SQL or payments.
+    const ciOnly = Array.isArray(changed) && changed.length > 0 && changed.length <= 3000 &&
+      changed.every(file => file && ['modified', 'added', 'removed'].includes(file.status) &&
+        typeof file.filename === 'string' && CI_ONLY_CONFIG.test(file.filename));
     return {
-      full_app: !uiOnly,
-      database: !uiOnly,
-      banner: !uiOnly || changed.some(file => BANNER.test(file.filename)),
+      full_app: !(uiOnly || ciOnly),
+      database: !(uiOnly || ciOnly),
+      banner: !ciOnly && (!uiOnly || changed.some(file => BANNER.test(file.filename))),
+      profile: !ciOnly,
     };
   }
   const testsOnly = strictlyModified && changed.every(file =>
