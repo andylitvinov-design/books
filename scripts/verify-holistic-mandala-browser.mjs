@@ -256,9 +256,15 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // A real WebKit tap may commit the native <details> toggle after the
+        // click promise resolves. Put the control above the fixed iPhone dock
+        // and await the actual open state without skipping the click or check.
+        const coverSummary=coverOptions.locator("summary");
+        await coverSummary.evaluate(element=>element.scrollIntoView({
+          behavior:"instant",block:"center",inline:"nearest",
+        }));
+        await coverSummary.click();
+        await expect(coverOptions).toHaveAttribute("open","",{timeout:12000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
