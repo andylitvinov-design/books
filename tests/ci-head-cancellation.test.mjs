@@ -16,6 +16,8 @@ const workflows = [
   ['ga4-safety-hold.yml', 'ga4-safety-hold'],
   ['hh-reports-development-program.yml', 'hh-development-program'],
   ['hh-static-image-cost-guard.yml', 'hh-static-image'],
+  ['admin-seo-dashboard.yml', 'admin-seo'],
+  ['release-reaudit.yml', 'release-reaudit'],
 ];
 
 test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {

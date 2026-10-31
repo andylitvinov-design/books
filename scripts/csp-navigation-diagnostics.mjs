@@ -11,7 +11,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
   const bootstrap = url.pathname === '/api/app/guest/bootstrap' && !url.search;
   const prefetch = ['/', '/en/services/free-situation-review'].includes(url.pathname)
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
-  const clientPrefetch = url.pathname === '/en/client'
+  const clientPrefetch = ['/en/client', '/en/contact'].includes(url.pathname)
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
   if (!bootstrap && !prefetch && !clientPrefetch) return null;
   for (const navigation of lifecycle) {
