@@ -7,6 +7,7 @@ import CrmMessengerPanel from './crm-messenger'
 import MessagesContactCard from './messages-contact-card'
 import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
+import PublicEnquiryReply from './public-enquiry-reply'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
 import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
@@ -356,7 +357,7 @@ export default function MessagesSimpleInbox({
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
             simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
         </div>
-        {!showCard&&selected?.kind==='request'&&<div className={styles.requestPane}>
+        {selected?.kind==='request'&&<div className={styles.requestPane} hidden={showCard}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>
@@ -365,11 +366,13 @@ export default function MessagesSimpleInbox({
             <PracticeRequestConversation key={selected.id} inline autoOpen
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
-            <div className={styles.requestActions}>
-              <p>{t.private}</p>
-              <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
-                {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
-            </div>}
+            <>
+              <PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}/>
+              <div className={styles.requestActions}>
+                <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
+                  {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
+              </div>
+            </>}
         </div>}
         {!showCard&&selected?.kind==='business'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
