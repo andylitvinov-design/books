@@ -423,15 +423,29 @@ test('presentation changes still require applicable exact-head specialists', asy
 
 test('presentation routing verifies live HEAD and old names in renames', async () => {
   const ctx={repo,number:27,head:SHA,base:BASE};
+  const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>[]};
-  const result=await verify(api,ctx,{base:new Map(),current:new Map()}, {maxWaitMs:0});
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
+  const result=await verify(api,ctx,sources, {maxWaitMs:0});
   assert.equal(result.risk,'FAST');
   assert.ok(reads>=2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
-  await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}));
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}));
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
-  await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}),/PR_CHANGED_FILES/);
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}),/PR_CHANGED_FILES/);
+});
+
+test('presentation changes cannot bypass an applicable private app browser workflow', async () => {
+  const browser='.github/workflows/hh-app-browser.yml';
+  const workflow=readFileSync(browser,'utf8');
+  const sources={base:new Map([[browser,workflow]]),current:new Map([[browser,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/app/my-progress.module.css'}],runs:async()=>[],jobs:async()=>[{name:'browser',status:'completed',conclusion:'success'}]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+  api.runs=async()=>[run({path:browser,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  api.runs=async()=>[run({path:browser})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[browser]);
 });
 
 test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
