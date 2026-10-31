@@ -12,7 +12,7 @@ const shared = path =>
   path === 'tests/public-pathway-migration.test.mjs' ||
   path === 'scripts/ci-public-journey-scope.mjs' ||
   path === 'tests/ci-public-journey-consolidation.test.mjs' ||
-  /^\.github\/workflows\/hh-public-journey-(?:wave1|toronto-wave2)\.yml$/.test(path);
+  path === '.github/workflows/hh-public-journey-wave1.yml';
 const first = path =>
   /^components\/(?:public-journey-refresh|personal-testimonials)\.module\.css$/.test(path) ||
   /^app\/[^/]+\/about\/page\.tsx$/.test(path) ||
