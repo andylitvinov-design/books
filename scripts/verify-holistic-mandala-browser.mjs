@@ -969,10 +969,19 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
         await page.locator('[data-video-affirmation-frequency="3"]').click();
         assert.equal(await page.locator('[data-video-affirmation-frequency="3"]').getAttribute("aria-pressed"),"true");
-        await page.locator('[data-video-affirmation-visibility="small"] input').check();
-        await page.locator('[data-video-affirmation-visibility="frame"] input').check();
-        assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
-        await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
+        // The fixed mobile navigation can cover controls Playwright considers
+        // merely in-view. Scroll as a user would, then perform real pointer
+        // actions and verify both states without hiding the navigation.
+        const smallVisibility=page.locator('[data-video-affirmation-visibility="small"] input');
+        const frameVisibility=page.locator('[data-video-affirmation-visibility="frame"] input');
+        await smallVisibility.evaluate(element=>element.scrollIntoView({block:"center",behavior:"instant"}));
+        await smallVisibility.check();
+        assert.equal(await smallVisibility.isChecked(),true);
+        await frameVisibility.evaluate(element=>element.scrollIntoView({block:"center",behavior:"instant"}));
+        await frameVisibility.check();
+        assert.equal(await frameVisibility.isChecked(),true);
+        await frameVisibility.uncheck();
+        assert.equal(await frameVisibility.isChecked(),false);
         await page.locator("[data-video-affirmations-custom] summary").click();
         await page.locator("[data-video-custom-affirmations]").fill("I choose a small, kind step");
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/5.*phrases|5.*фраз|5.*frases/i);
