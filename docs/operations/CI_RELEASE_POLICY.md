@@ -34,3 +34,18 @@ GitHub protection, unresolved discussions or security checks. Specialist
 aggregation still runs on all routes using BASE-trusted logic. No reduced
 workflow is allowed to treat a missing/pending/failed mandatory security check
 as success. Before #2777 merges, safe-looking UI text still follows CORE.
+
+## SAFE public-text and scoped-CSS release routing
+
+The immutable production BASE may classify literal public JSX/TSX text,
+noninteractive static content and self-contained local UI toggles through the
+pinned TypeScript AST parser. Only verified safe public CSS modules may treat
+specific unchanged browser diagnostics as advisory. The parser's own failure,
+untrusted source or unknown/mixed/sensitive paths revert to STRICT. Payment,
+authentication, privacy, consent and other security coverage remains mandatory.
+
+**Configuration alert — 31 October 2026:** GitHub ruleset #26269892 no
+longer contains the required-status-check rule. This is a deviation from
+the policy above, not an approved waiver. Restore a single required
+`release-ready` status with strict base synchronization OFF before relying
+on native Auto-merge. A GitHub PR merge is not evidence of successful CI.
