@@ -6,6 +6,9 @@ import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
+import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
+import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
+import { paintHypnoLightOverlay } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -1486,6 +1489,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
+  const [hypnoPanelOpen,setHypnoPanelOpen] = useState(false);
+  const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({
+    enabled:false,cyclesPerMinute:6,opacity:.18,
+  });
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -1589,7 +1596,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
+    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,hypnoLight,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
@@ -1834,7 +1841,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
-      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
+      paintHypnoLightOverlay(ctx,0,hypnoLight);
+          paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
       const previewFps=window.innerWidth<=600
@@ -1846,6 +1854,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const elapsed=(now-startedAt)/1000;
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
           paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(frameSecond));
+          paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
           paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -1854,7 +1863,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan]);
 
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -1894,7 +1903,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
-      paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
+      paintHypnoLightOverlay(ctx,0,hypnoLight);
+          paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
       const baselineFramesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
@@ -1978,6 +1988,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(Math.min(duration,(now-start)/1000)));
+          paintHypnoLightOverlay(ctx,Math.min(duration,(now-start)/1000),hypnoLight);
           paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -2195,6 +2206,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
+    setHypnoLight({enabled:false,cyclesPerMinute:6,opacity:.18});
     setCinematicPlan(null);
     setPreviewPlaying(false);
   };
@@ -2470,16 +2482,61 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {id:"personal",label:{ru:"Персонализация",en:"Personalize",es:"Personalizar"},Icon:Sparkles},
           {id:"phrases",label:{ru:"Фразы",en:"Phrases",es:"Frases"},Icon:HandHeart},
           {id:"sound",label:{ru:"Звук",en:"Sound",es:"Sonido"},Icon:Music2},
-          {id:"extra",label:{ru:"Дополнительно",en:"More",es:"Más"},Icon:SlidersHorizontal},
+          {id:"extra",label:{ru:"Гипнокоррекция",en:"Hypno effects",es:"Efectos"},Icon:Sparkles},
         ] as const).map(item=><button type="button" key={item.id} data-video-quick-control={item.id}
+          aria-expanded={item.id==="extra"?hypnoPanelOpen:undefined}
+          aria-controls={item.id==="extra"?"video-hypnocorrection-mobile":undefined}
           disabled={recording||preparing} onClick={()=>{
-            if(item.id==="parameters"||item.id==="extra"){openQuickDetailed("video-settings");return;}
+            if(item.id==="extra"){
+              const open=!hypnoPanelOpen;
+              setHypnoPanelOpen(open);
+              if(open)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.getElementById("video-hypnocorrection-mobile")?.scrollIntoView({
+                  behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",
+                })));
+              return;
+            }
+            if(item.id==="parameters"){openQuickDetailed("video-settings");return;}
             const target=item.id==="style"?'[data-video-quick-section="4"]':
               item.id==="personal"?"#quick-personal-title":
               item.id==="phrases"?"[data-video-quick-phrases]":"[data-video-quick-audio-choices]";
             document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
           }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
       </nav>
+      {hypnoPanelOpen ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
+        <MandalaHypnocorrectionMobile
+          locale={locale} disabled={recording||preparing}
+          affirmations={affirmations} onAffirmationsChange={setAffirmations}
+          light={hypnoLight} onLightChange={setHypnoLight}
+          posters={{
+            phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
+            audio:"/images/holistic-house/support-reference-avatar.webp",
+            visual:getThemedRealFilm("energy",otherVideoScenes.energy[1].id)?.poster||quickCanvasPoster(otherVideoScenes.energy[1].id),
+            meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
+          }}
+          hasVoiceFile={attachedAudio?.kind==="file"&&audioRights}
+          hasPhoto={!backgroundOnly&&Boolean(photoUrl)}
+          onOpenPhraseEditor={()=>openQuickDetailed("video-hypnosis")}
+          onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
+          onOpenScenes={()=>openQuickDetailed("video-templates")}
+          onOpenMeditation={()=>{
+            setStudioMode("therapy");setQuickDetailedOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("video-hypno-meditation-editor")?.scrollIntoView({
+                behavior:"smooth",block:"start",
+              })));
+          }}
+          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
+          onRemovePhoto={()=>setBackgroundOnly(true)}
+          onPreview={openAffirmationPreview}
+          onWavePreset={()=>{
+            setHypnoLight({enabled:true,cyclesPerMinute:6,opacity:.18});
+            setAffirmations(current=>({...current,enabled:true,
+              visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
+            setPreviewPlaying(false);
+          }}
+        />
+      </div> : null}
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
@@ -3820,7 +3877,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-      {studioMode==="therapy" ? <MandalaPersonalMeditation
+      {studioMode==="therapy" ? <div id="video-hypno-meditation-editor"><MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?.kind==="file" ? attachedAudio.file.name :
           attachedAudio?.kind==="preset" ?
@@ -3829,7 +3886,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           attachedAudio?.kind==="preset" ? presetAudioUrl(attachedAudio.id) : null}
         pace={speed} brightness={brightness}
         affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-        focus={meditationFocus} disabled={recording||preparing}/> : null}
+        focus={meditationFocus} disabled={recording||preparing}/></div> : null}
 
 
 
