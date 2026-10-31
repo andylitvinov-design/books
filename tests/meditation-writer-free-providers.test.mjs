@@ -33,6 +33,16 @@ test("providers are disabled without independent free-tier attestations",()=>{
   }).map(x=>x.id),["gemini_free","openrouter_free"]);
   assert.equal(FREE_OPENROUTER_MODEL,"openrouter/free");
 });
+test("free-only backup reuses its existing Council OpenRouter key",()=>{
+  const key="openrouter_demo_valid_123456";
+  const choices=freeWriterProviders({
+    HH_COUNCIL_OPENROUTER_API_KEY:key,
+    HH_MEDITATION_WRITER_OPENROUTER_FREE_ENABLED:"true",
+    HH_MEDITATION_WRITER_OPENROUTER_FREE_TIER_CONFIRMED:"true",
+  });
+  assert.deepEqual(choices.map(x=>x.id),["openrouter_free"]);
+  assert.equal(choices[0].key,key);
+});
 test("Psychologist Mind's public goal + issue codes form a bounded strategy",()=>{
   const value=strategy();
   assert.equal(value.issueCode,"fear_of_rejection");
@@ -158,7 +168,9 @@ test("both real app surfaces enforce opt-in, private server flags and no raw not
   for(const code of ["HH_MEDITATION_WRITER_BRIEF_ENABLED",
     "HH_MEDITATION_WRITER_PRODUCTION_APPROVED","requireSameOrigin",
     "auth.verified()","onlyKeys(body,FIELDS)","consumeRate",
-    "externalModelOptIn!==true","PRIVATE_HEADERS"])
+    "externalModelOptIn!==true","PRIVATE_HEADERS",
+    "buildPsychologyProgram","AFFIRMATION_DIRECTOR_NOT_READY",
+    "programme.primaryApproach"])
     assert.ok(route.includes(code),code);
   assert.ok(meditation.includes("createAnonymousOpenRouterSegmentProvider"));
   assert.ok(component.includes("data-hypno-ai-generate"));
