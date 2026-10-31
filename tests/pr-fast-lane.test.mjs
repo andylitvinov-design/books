@@ -465,7 +465,14 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
   for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
     const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
-    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
+    // A pinned CI-only parser may have its own nested package.json/lock;
+    // still forbid the root dependency manifests from using CI-only mode.
+    const rootManifest = forbidden === 'package.json' || forbidden === 'package-lock.json';
+    const exact = forbidden.replace(/[.*+?^${}()|[\]\\]/g, '\\    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);');
+    const unsafe = rootManifest
+      ? new RegExp('(?:^|\\n|\\|)\\s*' + exact + '(?=\\||\\))').test(classifier)
+      : classifier.includes(forbidden);
+    assert.ok(!unsafe,'Unsafe CI-only source inclusion: '+forbidden);
   }
 });
 
