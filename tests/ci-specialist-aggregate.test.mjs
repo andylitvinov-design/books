@@ -480,6 +480,18 @@ test('checkout CSS blocks on missing billing workflow even when the filename is 
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
+test('Google claim CSS requires the CRM auth and claim workflow',async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  const css='components/free-express-google-claim.module.css';
+  const crm='.github/workflows/hh-crm-source-check.yml';
+  const workflow=readFileSync(crm,'utf8');
+  const sources={base:new Map([[crm,workflow]]),current:new Map([[crm,workflow]])};
+  assert.equal(classifyReleaseRisk([css]),'STRICT');
+  assert.deepEqual(expectedWorkflows({...sources,changed:[css]}),[crm]);
+  const api={pr:async()=>pr(),changed:async()=>[{filename:css}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
 test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
   const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
   assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
