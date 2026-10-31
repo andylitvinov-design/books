@@ -88,6 +88,7 @@ jobs:
       - name: JS lint for touched files
         run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js app/api/internal/housekeeping/route.js app/api/admin/youtube-publications/route.js "app/api/admin/youtube-publications/[id]/preview/route.js" app/api/app/practice/youtube/share/route.js lib/youtube/owner-publication-service.js lib/youtube/upload-history-store.js components/admin-youtube-publications.jsx components/app/practice-youtube-share.jsx components/app/practice-video-field.jsx components/app/service-introduction-editor.jsx components/admin-telegram-videos.jsx tests/youtube-owner-publications.test.mjs tests/owner-telegram-youtube-visibility.test.mjs tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
       - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit --incremental false
       - name: Next production build
         run: npm run build

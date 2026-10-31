@@ -63,7 +63,13 @@ jobs:
             'app/[locale]/live/page.tsx' \
             'app/[locale]/live/host/page.tsx' \
             middleware.ts next.config.ts
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          else
+            echo 'Required Core release gate owns global TypeScript for production PRs'
+          fi
+        env:
+          HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}
       - name: Next production build — provider and recording disabled
         run: npm run build
       - name: Smoke 3 locale HTML and safe disabled status
