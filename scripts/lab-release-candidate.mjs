@@ -15,13 +15,16 @@ export async function prepareReleaseCandidate(workspace,{qaPassed=false,testEvid
  const mergeBase=git(['merge-base',base,'HEAD'],cwd);
  if(mergeBase.toLowerCase()!==base.toLowerCase())throw Error('Worktree diverged from task base');
  const status=git(['status','--porcelain','--untracked-files=all'],cwd).split('\n').filter(Boolean);
- const untracked=status.filter(x=>x.startsWith('??')&&!x.endsWith('.hh-lab-task.json'));
+ const localArtifacts=new Set(['.hh-lab-task.json','.hh-lab-release.json']);
+ const untracked=status.filter(x=>x.startsWith('??')&&!localArtifacts.has(x.slice(3)));
  if(untracked.length)throw Error('Untracked files must be explicitly staged or removed');
  const changed=git(['diff','--name-only',base,'HEAD'],cwd).split('\n').filter(Boolean);
  const dirty=status.filter(x=>!x.startsWith('??'));
  if(dirty.length)throw Error('Commit all tracked changes before release preparation');
+ if(changed.some(x=>localArtifacts.has(x)))throw Error('Lab metadata must never be included in release');
  if(!changed.length)throw Error('No committed changes');
  const head=git(['rev-parse','HEAD'],cwd);
+ if(manifest.releaseStatus==='LIVE')throw Error('Already live');
  if(head===base)throw Error('Nothing to release');
  const packet={id:manifest.id,title:manifest.title,owner:manifest.owner,baseSha:base,headSha:head,changedFiles:changed,qaPassed:true,testEvidence:true,status:'RELEASE_CANDIDATE',targetBranch:'codex/public-book-library',pr:null};
  await writeFile(join(cwd,'.hh-lab-release.json'),JSON.stringify(packet,null,2)+'\n');
