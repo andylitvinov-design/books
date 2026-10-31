@@ -2115,3 +2115,6 @@
  .workspaceCourseGrid>a,.workspaceCourseGrid>button{min-height:82px;grid-template-columns:24px 1fr 20px;gap:4px 8px;align-items:center}
  .workspaceCourseGrid strong{grid-column:2}.workspaceCourseGrid span{grid-column:2;grid-row:2}.workspaceCourseGrid svg:last-child{grid-column:3;grid-row:1 / span 2}
 }
+
+/* The full original sound library is now in this tab; avoid a second quick track picker. */
+.studio[data-active-workspace="audio"] .quickMusicRail,.studio[data-active-workspace="audio"] .quickMusicSection>.quickSectionHeading{display:none}
