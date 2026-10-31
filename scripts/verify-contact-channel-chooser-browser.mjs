@@ -426,6 +426,18 @@ async function runEngine(name, engine) {
 
 let failure = null;
 try {
+  // Native controls must not accept contact or consent before React installs
+  // their handlers. This check uses no JavaScript and submits no enquiry.
+  const browser = await chromium.launch({headless:true});
+  const context = await browser.newContext({javaScriptEnabled:false});
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/en/academy/reiki/tantra-reiki/free-initiation', {waitUntil:'domcontentloaded',timeout:60000});
+    const form = page.locator('[data-tantra-whatsapp-capture] [data-contact-channel-chooser] form');
+    assert.equal(await page.locator('#tantra-request-en').isDisabled(), true);
+    assert.equal(await form.locator('input[type="tel"]').isDisabled(), true);
+    assert.equal(await form.locator('[data-contact-channel-submit="whatsapp"]').isDisabled(), true);
+  } finally { await context.close(); await browser.close(); }
   await runEngine("chromium",chromium);
   await runEngine("webkit",webkit);
   assert.deepEqual(errors,[],"Unexpected browser JS errors");

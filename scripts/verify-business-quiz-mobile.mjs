@@ -174,6 +174,19 @@ async function verify(engine, locale, width) {
   }
 }
 
+// Before React hydrates there is no filter handler; do not expose an enabled
+// control that can silently lose a visitor's first selection.
+{
+  const browser = await webkit.launch({headless:true});
+  const context = await browser.newContext({javaScriptEnabled:false, viewport:{width:375,height:844}});
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
+    assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
+      'The server-rendered filter must wait for its real click handler');
+  } finally { await context.close(); await browser.close(); }
+}
+
 for (const locale of ["en","ru","es"]) {
   for (const width of [320,375,390,430]) results.push(await verify(webkit,locale,width));
   results.push(await verify(chromium,locale,390));
