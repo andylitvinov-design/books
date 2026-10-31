@@ -3,6 +3,7 @@
 import {execFileSync} from 'node:child_process';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {planLabWork} from './lab-work-item.mjs';
 function git(args,cwd){return execFileSync('git',args,{cwd,encoding:'utf8',timeout:30000}).trim()}
 export async function createLabWorkspace(item,{repo=process.cwd(),root=resolve(repo,'..','hh-lab-workspaces')}={}){
@@ -19,7 +20,7 @@ export async function createLabWorkspace(item,{repo=process.cwd(),root=resolve(r
  await writeFile(join(target,'.hh-lab-task.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
  return {workspace:target,manifest};
 }
-if(process.argv[1]&&process.argv[1].endsWith('/lab-workspace.mjs')){
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  try{
   const path=process.argv[2];if(!path)throw Error('Usage: node scripts/lab-workspace.mjs task.json');
   const item=JSON.parse(await readFile(resolve(path),'utf8'));
