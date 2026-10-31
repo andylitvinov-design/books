@@ -1,7 +1,7 @@
 name: Reports development programme isolated verification
 on:
   push:
-    branches: ['codex/reports-development-program-20261017']
+    branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']
     paths:
       - '.github/workflows/hh-reports-development-program.yml'
       - 'components/app/development-program*'
@@ -18,6 +18,14 @@ on:
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
       - 'package.json'
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
@@ -32,6 +40,15 @@ on:
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
       - '.github/workflows/hh-reports-development-program.yml'
+      - 'lib/clients/session-delivery-service.js'
+      - 'lib/documents/report-progress.js'
+      - 'components/prescription-document.jsx'
+      - 'components/admin-session-studio.jsx'
+      - 'tests/client-report-before-after-rings.test.mjs'
+      - 'tests/report-progress-before-after.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - '.github/workflows/hh-client-report-progress.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -52,6 +69,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test development programme and canonical sector calculations
         run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs tests/goal-profile-journey.test.mjs
+      - name: Check saved client report progress, before/after diagrams and safe republish
+        run: node --test tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs
       - name: Lint newly created feature files
         run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js lib/profile/goal-profile.js components/app/goal-profile-panel.jsx tests/profile-portrait-test-suggestions.test.mjs tests/goal-profile-journey.test.mjs
       - name: Verify production Next.js build without preview deployment

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -446,4 +446,38 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
+});
+
+test('client progress owner is complete before the trusted second-phase deletion', () => {
+  const old='.github/workflows/hh-client-report-progress.yml';
+  const owner='.github/workflows/hh-reports-development-program.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],owner);
+  const source=readFileSync(owner,'utf8');
+  for (const required of [
+    "      - 'lib/clients/session-delivery-service.js'",
+    "      - 'lib/documents/report-progress.js'",
+    "      - 'components/prescription-document.jsx'",
+    "      - 'components/admin-session-studio.jsx'",
+    "      - 'tests/client-report-before-after-rings.test.mjs'",
+    "      - 'tests/report-progress-before-after.test.mjs'",
+    "      - 'tests/session-publication-review.test.mjs'",
+    "      - '.github/workflows/hh-client-report-progress.yml'",
+    'tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs',
+    'node --conditions=react-server --test',
+    'npm run build',
+    '  workflow_dispatch:',
+  ]) assert.ok(source.includes(required), 'Replacement lost original evidence or trigger: ' + required);
+  assert.ok(source.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge report verification remains');
+  const oldSource="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-client-report-progress.yml'\n";
+  const base=new Map([[old,oldSource],[owner,source]]);
+  const current=new Map([[owner,source]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[old,owner]);
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[owner],delegated:[{retired:old,replacement:owner}],
+  });
+  assert.throws(()=>resolveExpectedSpecialists({
+    base,current:new Map([[owner,source+'\n# untrusted owner update']]),changed,expected,
+  }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });
