@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  REIKI_REQUEST_PREFIX, REIKI_REQUEST_PREFIX_V2, REIKI_INITIATION_IDS, REIKI_PERSONAL_SESSIONS,
+  REIKI_REQUEST_PREFIX, REIKI_REQUEST_PREFIX_V2, REIKI_REQUEST_PREFIX_V3, REIKI_INITIATION_IDS, REIKI_INITIATION_NAMES, REIKI_PERSONAL_SESSIONS, REIKI_CERTIFICATE_FEE,
   readReikiInitiationRequest, writeReikiInitiationRequest,
   reikiInitiationRequestValid, formatReikiInitiationRequest,
 } from '../data/academy/reiki-initiation-request.js'
@@ -78,7 +78,7 @@ test('private human-readable CRM and journal expose the options in English and R
     assert.match(output,/Tantra Reiki/)
     assert.match(output,/Kundalini Reiki/)
     assert.match(output,/Weekdays after 19:00/)
-    assert.doesNotMatch(output,/hh-reiki-personal-request-v[12]|\{"firstName"/)
+    assert.doesNotMatch(output,/hh-reiki-personal-request-v[123]|\{"firstName"/)
   }
   assert.match(russian,/Бесплатная инициация/)
   assert.match(english,/By donation|Additional initiations by donation/)
@@ -91,7 +91,7 @@ test('chat gift remains free; optional paid 1:1 uses exactly €50/30min or €1
   ])
   for (const personalSession of ['none','express','full']) {
     const answer=writeReikiInitiationRequest(validRequest({personalSession}))
-    assert.ok(answer.startsWith(REIKI_REQUEST_PREFIX_V2))
+    assert.ok(answer.startsWith(REIKI_REQUEST_PREFIX_V3))
     assert.equal(reikiInitiationRequestValid(answer),true)
     assert.equal(readReikiInitiationRequest(answer).personalSession,personalSession)
     assert.ok(answer.length <= 1600)
@@ -136,10 +136,40 @@ test('v1 signed-off applications remain valid and legacy text can still be edite
   assert.equal(reikiInitiationRequestValid(old),true,'Do not break submitted encrypted v1 data')
   assert.equal(readReikiInitiationRequest(old).personalSession,'none')
   assert.match(formatReikiInitiationRequest(old,'en'),/Personal initiation through chat mode/)
-  assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V2))
+  assert.ok(writeReikiInitiationRequest(readReikiInitiationRequest(old)).startsWith(REIKI_REQUEST_PREFIX_V3))
   assert.equal(reikiInitiationRequestValid(old.replace('"motivation":','"personalSession":"full","motivation":')),false)
   const newAnswer=writeReikiInitiationRequest(validRequest({personalSession:'full',donationInitiations:['kundalini']}))
   assert.match(formatReikiInitiationRequest(newAnswer,'en'),/Additional initiations by donation \(chat\): Kundalini Reiki/)
+})
+
+test('optional Level 1 certificate is off by default, selectable for any system, and never charges', () => {
+  assert.equal(REIKI_CERTIFICATE_FEE, '$50')
+  const initial = readReikiInitiationRequest(writeReikiInitiationRequest(validRequest()))
+  assert.equal(initial.certificateRequested, false)
+  assert.equal(initial.certificateSystem, '')
+  assert.match(formatReikiInitiationRequest(writeReikiInitiationRequest(validRequest()), 'ru'), /Сертификат Рейки I ступени: не запрошен/)
+  for (const certificateSystem of REIKI_INITIATION_IDS) {
+    const answer = writeReikiInitiationRequest(validRequest({ certificateRequested: true, certificateSystem }))
+    assert.equal(reikiInitiationRequestValid(answer), true)
+    const decoded = readReikiInitiationRequest(answer)
+    assert.equal(decoded.certificateRequested, true)
+    assert.equal(decoded.certificateSystem, certificateSystem)
+    assert.match(formatReikiInitiationRequest(answer, 'en'), /Level 1 Reiki certificate \(\$50\)/)
+    assert.match(formatReikiInitiationRequest(answer, 'ru'), /сертификат Рейки I ступени \(\$50\)/)
+    assert.match(formatReikiInitiationRequest(answer, 'en'), new RegExp(REIKI_INITIATION_NAMES[certificateSystem]))
+    assert.ok(answer.length <= 1600)
+  }
+  assert.equal(reikiInitiationRequestValid(writeReikiInitiationRequest(validRequest({certificateRequested: true, certificateSystem: ''}))), false)
+  const checked = writeReikiInitiationRequest(validRequest({certificateRequested: true, certificateSystem: 'tantra'}))
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateRequested":true', '"certificateRequested":"yes"')), false)
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateSystem":"tantra"', '"certificateSystem":"unknown"')), false)
+  assert.equal(reikiInitiationRequestValid(checked.replace('"certificateRequested":true', '"certificateRequested":false')), false)
+  // Previously encrypted v2 requests (including personal-session choices) remain unchanged and valid.
+  const v2 = REIKI_REQUEST_PREFIX_V2 + JSON.stringify({...validRequest({personalSession:'full'}), personalSession:'full'})
+  assert.equal(reikiInitiationRequestValid(v2), true)
+  assert.equal(readReikiInitiationRequest(v2).certificateRequested, false)
+  assert.equal(readReikiInitiationRequest(v2).personalSession, 'full')
+  assert.doesNotMatch(formatReikiInitiationRequest(v2, 'en'), /certificate/i)
 })
 
 test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct public or paid checkout', () => {
@@ -149,6 +179,12 @@ test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct publ
   assert.match(form,/data-reiki-free-choices/)
   assert.match(form,/data-reiki-donation-choices/)
   assert.match(form,/data-reiki-personal-choices/)
+  assert.match(form,/data-reiki-certificate-choice/)
+  assert.match(form,/name="reiki-level1-certificate"/)
+  assert.match(form,/checked=\{request\.certificateRequested\}/)
+  assert.match(form,/name="reiki-certificate-system"/)
+  assert.match(form,/certificateSystem: event\.target\.value/)
+  assert.match(form,/no \$50 charge/)
   assert.match(form,/type="radio" name="reiki-personal-session"/)
   assert.match(form,/REIKI_PERSONAL_SESSIONS\.map/)
   assert.match(form,/personalSession: option\.id/)
@@ -168,4 +204,39 @@ test('Lesson 5 uses stable end-01 ID and explicit opt-in rather than direct publ
   assert.match(css,/initiationChoiceSelected/)
   assert.match(css,/data-energywork-slide-id="end-01"/)
   assert.doesNotMatch(form,/window\.localStorage|sessionStorage\.setItem\([^)]*initiation/)
+})
+
+test('Reiki phone upload can decode only its local blob photo on the exact course route', () => {
+  const middleware = read('middleware.ts')
+  assert.match(middleware, /const reikiLocalPhotoImages = \/\^/)
+  assert.match(middleware, /publicMandalaLocalImages \|\| reikiLocalPhotoImages \? ' blob:'/)
+  const isReikiLearner = /^\/(en|ru)\/academy\/principles-of-energywork\/learn\/?$/
+  for (const path of ['/en/academy/principles-of-energywork/learn',
+    '/ru/academy/principles-of-energywork/learn/',
+  ]) assert.equal(isReikiLearner.test(path), true)
+  for (const path of ['/es/academy/principles-of-energywork/learn',
+    '/en/app/portrait', '/en/academy/principles-of-energywork',
+    '/admin/reiki-leads', '/en/academy/principles-of-energywork/learn/extra'
+  ]) assert.equal(isReikiLearner.test(path), false)
+  const component = read('components/reiki-initiation-photo.tsx')
+  assert.match(component, /URL\.createObjectURL\(file\)/)
+  assert.match(component, /canvas\.toBlob\(/)
+  assert.match(component, /'image\/jpeg'|"image\/jpeg"/)
+  assert.doesNotMatch(component, /localStorage|sendBeacon|canvas\.toDataURL\(/)
+})
+
+test('Safari photo decoding prefers native ImageBitmap, keeps EXIF-free JPEG and bounded private upload', () => {
+  const component = read('components/reiki-initiation-photo.tsx')
+  assert.match(component, /createImageBitmap\(file\)\.catch\(\(\) => null\)/)
+  assert.match(component, /const loaded = bitmap \? null : await imageElement\(file\)/)
+  assert.match(component, /const image = bitmap \?\? loaded!\.image/)
+  assert.match(component, /image\.onload = \(\) => resolve\(\{ image, release \}\)/)
+  assert.match(component, /loaded\?\.release\(\)/)
+  assert.doesNotMatch(component, /image\.onload = \(\) => \{\s*URL\.revokeObjectURL/)
+  assert.match(component, /bitmap\?\.close\(\)/)
+  assert.match(component, /context\.drawImage\(image, 0, 0, canvas\.width, canvas\.height\)/)
+  assert.match(component, /canvas\.toBlob\(/)
+  assert.match(component, /form\.set\("photo", jpg\)/)
+  assert.match(component, /"X-HH-Account-ID": accountId/)
+  assert.doesNotMatch(component, /localStorage|sendBeacon|canvas\.toDataURL\(/)
 })

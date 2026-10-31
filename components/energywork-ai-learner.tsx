@@ -25,7 +25,7 @@ import {
   energyworkCreateFirstLessonHandoff, energyworkReadFirstLessonHandoff,
 } from "@/data/academy/energywork-first-lesson";
 import { energyworkLessonRanges, energyworkAdvanceAlreadyStored, ENERGYWORK_REVIEW_MIN_CHARS, ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, energyworkReikiStudyAnswerComplete, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer } from "@/data/academy/energywork-ai-schema";
-import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS } from "@/data/academy/reiki-initiation-request.js";
+import { readReikiInitiationRequest, writeReikiInitiationRequest, reikiInitiationRequestValid, formatReikiInitiationRequest, REIKI_PERSONAL_SESSIONS, REIKI_CERTIFICATE_FEE } from "@/data/academy/reiki-initiation-request.js";
 import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
@@ -207,8 +207,8 @@ const copy = {
     consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
     initiationLetterHeading: "Your Reiki initiation request",
-    initiationLetterHint: "Your free chat initiation, optional donations and personal session choice, contact details and motivation reach Andrey’s private CRM only after you confirm.",
-    initiationConfirm: "I agree to share my photo, initiation and session choices, name, city, preferred time, motivation and all course answers with Andrey in his private CRM. This is not a booking or payment.",
+    initiationLetterHint: "Your free chat initiation, optional donations, certificate choice, personal session, contact details and motivation reach Andrey’s private CRM only after you confirm.",
+    initiationConfirm: "I agree to share my photo, initiation, certificate and session choices, name, city, preferred time, motivation and all course answers with Andrey in his private CRM. This is not a booking or payment.",
     initiationSend: "Send my initiation request",
     initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
     initiationTooShort: "Complete your initiation request on the previous lesson slide.",
@@ -362,8 +362,8 @@ const copy = {
     consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
     initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
-    initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, выбранная личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
-    initiationConfirm: "Согласен(на) передать Андрею фото, выбор инициаций и личной сессии, имя, город, удобное время, мотивацию и все ответы курса в закрытую CRM. Это не оплата и не бронь.",
+    initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, сертификат, личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
+    initiationConfirm: "Согласен(на) передать Андрею фото, выбор инициаций, сертификата и личной сессии, имя, город, удобное время, мотивацию и все ответы курса в закрытую CRM. Это не оплата и не бронь.",
     initiationSend: "Отправить заявку на инициацию",
     initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
     initiationTooShort: "Заполните заявку на инициацию на предыдущем слайде.",
@@ -736,8 +736,36 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
           ? "Пока только заявка — без оплаты и подтверждённой записи."
           : "This is only a request — no charge or confirmed booking yet."}</p>
       </fieldset>
+      <fieldset className={styles.initiationChoiceGroup} data-reiki-certificate-choice>
+        <legend>{ru ? "4. Хотите также сертификат Рейки I ступени?" : "4. Would you also like a Level 1 Reiki certificate?"}</legend>
+        <label className={styles.initiationChoice + " " + styles.initiationCertificateOptIn + (request.certificateRequested ? " " + styles.initiationChoiceSelected : "")}>
+          <input type="checkbox" name="reiki-level1-certificate"
+            checked={request.certificateRequested}
+            onChange={(event) => change({
+              certificateRequested: event.target.checked,
+              certificateSystem: event.target.checked ? (request.certificateSystem || request.freeInitiation) : "",
+            })} />
+          <span>{ru ? "Также хочу получить сертификат" : "I would also like a certificate"}</span>
+          <small>{REIKI_CERTIFICATE_FEE}</small>
+        </label>
+        {request.certificateRequested ? (
+          <label className={styles.initiationCertificateSystem}>
+            <span>{ru ? "Выберите систему Рейки для сертификата *" : "Choose the Reiki system for your certificate *"}</span>
+            <select name="reiki-certificate-system" value={request.certificateSystem}
+              onChange={(event) => change({ certificateSystem: event.target.value })} required>
+              <option value="">{ru ? "Выберите систему" : "Select a system"}</option>
+              {energyworkPathChoices.map((choice) => (
+                <option key={choice.id} value={choice.id}>{choice.title[locale]}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <p className={styles.initiationHelper}>{ru
+          ? "Необязательно · сертификат по одной из трёх систем. Здесь только заявка: $50 не списываются, выдача сертификата согласуется отдельно."
+          : "Optional · certificate for one of the three systems. This is only a request: no $50 charge, and issuance is arranged separately."}</p>
+      </fieldset>
       <div className={styles.initiationDetails}>
-        <p className={styles.initiationSectionTitle}>{ru ? "4. Как к вам обращаться и когда вам удобно?" : "4. Tell Andrey how to reach you and when you're available"}</p>
+        <p className={styles.initiationSectionTitle}>{ru ? "5. Как к вам обращаться и когда вам удобно?" : "5. Tell Andrey how to reach you and when you're available"}</p>
         <div className={styles.initiationFields}>
           <label className={styles.initiationField}>
             <span>{ru ? "Имя *" : "First name *"}</span>
@@ -773,7 +801,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
           : "There is no payment or automatic booking. Andrey will confirm the time and format in chat."}</p>
       </div>
       <label className={styles.initiationMotivation}>
-        <span>{ru ? "5. Почему вы выбрали эту инициацию? *" : "5. Why would you like this initiation? *"}</span>
+        <span>{ru ? "6. Почему вы выбрали эту инициацию? *" : "6. Why would you like this initiation? *"}</span>
         <textarea rows={3} maxLength={700} value={request.motivation}
           placeholder={ru ? "Что вы хотите развить, почувствовать или привнести в свою практику?" : "What would you like to explore or bring into your practice?"}
           onChange={(event) => change({ motivation: event.target.value })} required />

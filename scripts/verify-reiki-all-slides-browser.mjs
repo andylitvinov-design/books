@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium, webkit, expect } from "@playwright/test";
 import { energyworkLessonRanges, energyworkSequence } from "../data/academy/energywork-ai-schema.js";
+import { readReikiInitiationRequest } from "../data/academy/reiki-initiation-request.js";
 
 const origin = process.env.HH_TEST_APP_ORIGIN || "http://127.0.0.1:3100";
 assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]+$/, "Never browse a real account or production site");
@@ -136,6 +137,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(form.locator('[data-reiki-free-choices] input[type="radio"]')).toHaveCount(3);
     await expect(form.locator('input[autocomplete="given-name"]')).toBeVisible();
     await expect(form.locator('input[autocomplete="family-name"]')).toBeVisible();
+    const certificate = form.locator('input[name="reiki-level1-certificate"]');
+    await expect(certificate).not.toBeChecked();
+    await expect(form.locator('select[name="reiki-certificate-system"]')).toHaveCount(0);
   }
   // Teacher intro audio loads only after its first slide, never inside the
   // meditation video. Audio is optional until the author uploads his file.
@@ -150,7 +154,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     const photo = page.locator("[data-reiki-initiation-photo]");
     await expect(photo).toBeVisible();
     await expect(photo.locator('input[type="file"][accept="image/*"]')).toHaveCount(1);
-    await expect(photo.locator('[class*="upload"]')).toBeVisible();
+    await expect(photo.locator('label[class*="_upload__"]')).toBeVisible();
   }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
@@ -271,6 +275,11 @@ async function installLocalAccountMock(page) {
   await page.route("**/api/app/academy-energywork/photo", async route => {
     if (route.request().method() === "POST") {
       const upload = route.request().postDataBuffer();
+      console.log("REIKI_MOCK_PHOTO_UPLOAD", JSON.stringify({
+        engine: engineName, bytes: upload?.length,
+        filename: Boolean(upload?.includes(Buffer.from("initiation.jpg"))),
+        jpeg: Boolean(upload?.includes(Buffer.from([0xff,0xd8,0xff]))),
+      }));
       assert.ok(upload?.includes(Buffer.from("initiation.jpg")),
         "The iPhone photo picker sends a named JPEG to the private API");
       assert.ok(upload?.includes(Buffer.from([0xff,0xd8,0xff])),
@@ -289,6 +298,12 @@ async function installLocalAccountMock(page) {
         await route.fulfill({status: 409, contentType: "application/json",
           body: JSON.stringify({error: "COURSE_PROGRESS_CHANGED"})});
         return;
+      }
+      if (body.slideId === "end-01") {
+        const saved = readReikiInitiationRequest(body.answer);
+        assert.equal(saved.certificateRequested, true, "Certificate must be explicitly opted into");
+        assert.equal(saved.certificateSystem, "kundalini", "Selected system survives real onClick/save API path");
+        assert.equal(saved.freeInitiation, "", "No initiation was selected in this synthetic course tour");
       }
       progress.slideId = body.nextSlideId;
       if (body.answer !== undefined) {
@@ -391,6 +406,24 @@ async function exerciseJourney(page, locale, width) {
     }
     if (id==="welcome-02") {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
+    }
+    if (id === "end-01") {
+      const optIn = page.locator('[data-reiki-certificate-choice]');
+      const checkbox = optIn.locator('input[name="reiki-level1-certificate"]');
+      const picker = optIn.locator('select[name="reiki-certificate-system"]');
+      await expect(checkbox).not.toBeChecked();
+      await expect(picker).toHaveCount(0);
+      await checkbox.check();
+      await expect(checkbox).toBeChecked();
+      await expect(picker).toBeVisible();
+      await expect(picker.locator('option')).toHaveCount(4);
+      await picker.selectOption("yggdrasil");
+      await expect(picker).toHaveValue("yggdrasil");
+      await checkbox.uncheck();
+      await expect(picker).toHaveCount(0);
+      await checkbox.check();
+      await picker.selectOption("kundalini");
+      await expect(picker).toHaveValue("kundalini");
     }
     if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
       // A written review of at least 50 characters is required; no numeric meditation rating.
@@ -497,6 +530,10 @@ async function verifyPrivatePhonePhoto(page, locale, width) {
       assert.equal(route.request().headers()["x-hh-account-id"],accountId,
         "Private upload is bound to this learner's account");
       const body=route.request().postDataBuffer();
+      console.log("REIKI_MOCK_PHONE_POST",JSON.stringify({
+        engine:engineName, headerMatches:route.request().headers()["x-hh-account-id"]===accountId,
+        bytes:body?.length, jpeg:Boolean(body?.includes(Buffer.from([0xff,0xd8,0xff]))),
+      }));
       assert.ok(body?.includes(Buffer.from([0xff,0xd8,0xff])),
         "Safari uploads a re-encoded JPEG, not an original phone HEIC");
       assert.ok(body.length < 2_520_000,"Photo multipart request stays bounded");
@@ -524,7 +561,22 @@ async function verifyPrivatePhonePhoto(page, locale, width) {
     await picker.setInputFiles({name:"synthetic-test.jpg",mimeType:"image/jpeg",
       buffer:Buffer.from(photoFixture,"base64")});
     const saved=page.locator("[data-reiki-photo-saved]");
-    await expect(saved).toBeVisible({timeout:30000});
+    // A user-visible failed JPEG decode/upload must be diagnosed, never
+    // disguised as a 30-second timeout waiting for a success receipt.
+    await page.waitForFunction(() => {
+      const panel=document.querySelector("[data-reiki-initiation-photo]");
+      return Boolean(panel?.querySelector("[data-reiki-photo-saved]") ||
+        panel?.querySelector('[role="alert"]'));
+    },null,{timeout:30000});
+    const localError=await page.locator('[data-reiki-initiation-photo] [role="alert"]').textContent()
+      .catch(()=>null);
+    const capturedPhoto=await saved.count();
+    console.log("REIKI_PRIVATE_PHOTO_RECEIPT_OR_ERROR",JSON.stringify({
+      engine:engineName,locale,width,photoSaved:capturedPhoto===1,
+      error:localError?.slice(0,160)??null,
+    }));
+    assert.equal(localError,null,"Private photo decode/storage must succeed before marking saved");
+    await expect(saved).toBeVisible({timeout:10000});
     await expect(saved.locator("img")).toHaveAttribute("referrerpolicy","no-referrer");
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),
       "Private photo mobile slide must have no horizontal overflow");
@@ -578,7 +630,11 @@ async function verifySaveOnCompletion(page, locale) {
   await page.goto(origin + "/" + locale + "/academy/principles-of-energywork/learn",
     { waitUntil: "domcontentloaded", timeout: 90000 });
   await expect(page.locator('button[data-energywork-next]')).toBeEnabled({ timeout: 60000 });
-  for (const id of ["welcome-video","welcome-01","welcome-02","flight-01","flight-02","flight-voices",
+  // The real curriculum starts with the title and experience check-in,
+  // followed by the author's introduction; never invent a new course order.
+  assert.deepEqual(expectedSequence.slice(0,3),
+    ["welcome-01","welcome-02","welcome-video"]);
+  for (const id of ["welcome-01","welcome-02","welcome-video","flight-01","flight-02","flight-voices",
     "flight-05","flight-04","flight-03"]) {
     await expect(page.locator("[data-energywork-slide-id]"))
       .toHaveAttribute("data-energywork-slide-id", id);
@@ -679,8 +735,11 @@ async function verifyShortViewport(page,locale) {
     }
   }
 
-  await expectFits("welcome-video"); // owner intro is the first screen, ahead of the course
-  await page.locator("button[data-energywork-next]").click();
+  // Match the actual approved course order asserted above. The visitor
+  // first sees the welcome and experience check-in, THEN the author's video.
+  // Never assert a video-first order that the curriculum does not render.
+  assert.deepEqual(expectedSequence.slice(0,4),
+    ["welcome-01","welcome-02","welcome-video","flight-01"]);
   await expectFits("welcome-01");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("welcome-02");
@@ -688,6 +747,8 @@ async function verifyShortViewport(page,locale) {
   await expectFits("welcome-02"); // inspect the longest end-of-list selection
   await page.locator('input[name="welcome-02"][value="beginner"]').check();
   await expectFits("welcome-02"); // and the normal intro choice
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("welcome-video");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-01");
   await page.locator("button[data-energywork-next]").click();

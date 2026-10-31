@@ -1,7 +1,10 @@
 // Versioned encrypted lesson answer for the existing private end-01 journal.
-// Keep v1 readable/valid for already-saved applications; only new edits write v2.
+// Preserve old v1 and v2 applications exactly; only new edits write v3.
 export const REIKI_REQUEST_PREFIX = 'hh-reiki-personal-request-v1:'
 export const REIKI_REQUEST_PREFIX_V2 = 'hh-reiki-personal-request-v2:'
+export const REIKI_REQUEST_PREFIX_V3 = 'hh-reiki-personal-request-v3:'
+// Owner-approved fixed certificate request fee; not an online checkout.
+export const REIKI_CERTIFICATE_FEE = '$50'
 export const REIKI_INITIATION_IDS = Object.freeze(['tantra', 'kundalini', 'yggdrasil'])
 export const REIKI_INITIATION_NAMES = Object.freeze({
   tantra: 'Tantra Reiki',
@@ -17,14 +20,15 @@ export const REIKI_PERSONAL_SESSIONS = Object.freeze([
 const blank = () => ({
   firstName: '', lastName: '', location: '', timezone: '',
   preferredTime: '', freeInitiation: '', donationInitiations: [], motivation: '',
-  personalSession: 'none',
+  personalSession: 'none', certificateRequested: false, certificateSystem: '',
 })
 const text = (value, max) => typeof value === 'string' ? value.slice(0, max) : ''
 const ids = (value) => Array.isArray(value)
   ? [...new Set(value.filter((id) => REIKI_INITIATION_IDS.includes(id)))].slice(0, 2)
   : []
 const validPersonalSession = (value) => REIKI_PERSONAL_SESSIONS.some((item) => item.id === value)
-const prefixOf = (raw) => raw.startsWith(REIKI_REQUEST_PREFIX_V2) ? REIKI_REQUEST_PREFIX_V2
+const prefixOf = (raw) => raw.startsWith(REIKI_REQUEST_PREFIX_V3) ? REIKI_REQUEST_PREFIX_V3
+  : raw.startsWith(REIKI_REQUEST_PREFIX_V2) ? REIKI_REQUEST_PREFIX_V2
   : raw.startsWith(REIKI_REQUEST_PREFIX) ? REIKI_REQUEST_PREFIX : null
 
 // Legacy free-text letters reopen with their motivation intact.
@@ -45,6 +49,9 @@ export function readReikiInitiationRequest(raw) {
       donationInitiations: ids(value.donationInitiations).filter((id) => id !== value.freeInitiation),
       motivation: text(value.motivation, 700),
       personalSession: validPersonalSession(value.personalSession) ? value.personalSession : 'none',
+      certificateRequested: value.certificateRequested === true,
+      certificateSystem: value.certificateRequested === true && REIKI_INITIATION_IDS.includes(value.certificateSystem)
+        ? value.certificateSystem : '',
     }
   } catch {
     return blank()
@@ -52,8 +59,8 @@ export function readReikiInitiationRequest(raw) {
 }
 
 export function writeReikiInitiationRequest(value) {
-  const normalized = readReikiInitiationRequest(REIKI_REQUEST_PREFIX_V2 + JSON.stringify(value))
-  return REIKI_REQUEST_PREFIX_V2 + JSON.stringify(normalized)
+  const normalized = readReikiInitiationRequest(REIKI_REQUEST_PREFIX_V3 + JSON.stringify(value))
+  return REIKI_REQUEST_PREFIX_V3 + JSON.stringify(normalized)
 }
 
 export function reikiInitiationRequestValid(raw) {
@@ -61,11 +68,14 @@ export function reikiInitiationRequestValid(raw) {
   const prefix = prefixOf(raw)
   if (!prefix) return false
   const request = readReikiInitiationRequest(raw)
-  // v1 submissions remain valid after release without rewriting the user's
-  // existing signed-off choice or requiring them to resubmit anything.
+  // Signed-off v1/v2 requests stay valid; newly edited requests have v3 shape.
+  const oldFields = Object.entries(request).filter(([key]) =>
+    !['certificateRequested', 'certificateSystem'].includes(key))
   const canonical = prefix === REIKI_REQUEST_PREFIX
-    ? REIKI_REQUEST_PREFIX + JSON.stringify(Object.fromEntries(Object.entries(request).filter(([key]) => key !== 'personalSession')))
-    : writeReikiInitiationRequest(request)
+    ? REIKI_REQUEST_PREFIX + JSON.stringify(Object.fromEntries(oldFields.filter(([key]) => key !== 'personalSession')))
+    : prefix === REIKI_REQUEST_PREFIX_V2
+      ? REIKI_REQUEST_PREFIX_V2 + JSON.stringify(Object.fromEntries(oldFields))
+      : writeReikiInitiationRequest(request)
   if (canonical !== raw) return false
   return Boolean(
     request.firstName.trim().length >= 2 &&
@@ -76,7 +86,9 @@ export function reikiInitiationRequestValid(raw) {
     request.motivation.trim().length >= 20 &&
     REIKI_INITIATION_IDS.includes(request.freeInitiation) &&
     request.donationInitiations.every((id) => id !== request.freeInitiation) &&
-    validPersonalSession(request.personalSession)
+    validPersonalSession(request.personalSession) &&
+    (!request.certificateRequested || REIKI_INITIATION_IDS.includes(request.certificateSystem)) &&
+    (request.certificateRequested || request.certificateSystem === '')
   )
 }
 
@@ -105,6 +117,10 @@ export function formatReikiInitiationRequest(raw, locale = 'en') {
     (ru ? 'Дополнительно за добровольный донейшн (чат): ' : 'Additional initiations by donation (chat): ') +
       (request.donationInitiations.map(choice).join(', ') || (ru ? 'Не выбраны' : 'None selected')),
     (ru ? 'Формат личной инициации с Андреем: ' : 'Personal initiation format with Andrey: ') + personalSummary,
+    ...(prefixOf(raw) === REIKI_REQUEST_PREFIX_V3 ? [request.certificateRequested
+      ? (ru ? 'Также запрошен сертификат Рейки I ступени (' : 'Also requested a Level 1 Reiki certificate (') + REIKI_CERTIFICATE_FEE + '): ' + choice(request.certificateSystem)
+      : (ru ? 'Сертификат Рейки I ступени: не запрошен' : 'Level 1 Reiki certificate: not requested')
+    ] : []),
     ru ? 'Без оплаты и бронирования на этом шаге; детали согласуются отдельно.' : 'No payment or booking at this step; details are arranged separately.',
     '',
     ru ? 'Почему я хочу получить инициацию:' : 'Why I would like to receive this initiation:',

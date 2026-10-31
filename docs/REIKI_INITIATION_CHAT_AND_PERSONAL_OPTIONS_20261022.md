@@ -27,3 +27,11 @@ The no-paid-session choice is the default so a visitor cannot incur a fee by sel
 - Real personal-session booking/payment remains **not implemented**: owners contact applicants manually. Do not declare a paid order from a radio selection.
 
 Rollback: revert the UI/copy/schema changes; old v1 submissions and their encrypted records are preserved. New v2 source must remain available to parse already-saved requests if a future implementation replaces this form.
+
+## 29 October 2026 · optional Level 1 certificate request
+
+- Add an **unchecked by default** certificate checkbox on the existing final lesson `end-01`: “I would also like a certificate — $50 / Также хочу получить сертификат — $50”.
+- On opt-in, show a compact selection of the **one** Reiki system to certify (Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil). The system may differ from the free initiation selected. The fee is the same for all three.
+- Display the owner-approved **$50** exactly. The owner has not specified CAD vs USD; checkout, provider charging and receipt issuance must remain disabled until currency and billing terms are clarified separately. Submitting the request does not pay for, guarantee or automatically issue a certificate.
+- Reuse the existing encrypted `end-01` journal, explicit sharing consent and private CRM application lead. Version v3 adds `certificateRequested: boolean` and `certificateSystem`; server validates both. Previously saved v1/v2 remain valid and do not acquire a certificate request.
+- No new table/migration, payment integration, external message or new slide ID. Release requires tests, production build, mobile 320–430px visual QA, real owner/learner CRM readback and Vercel READY at an exact production SHA.
