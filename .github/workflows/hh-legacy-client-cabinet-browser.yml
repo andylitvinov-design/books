@@ -5,7 +5,7 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/client-cabinet.jsx'
-      - 'app/[locale]/client/[selector]/**'
+      - 'app/**/client/**'
       - 'app/globals.css'
       - 'scripts/verify-legacy-client-cabinet-browser.mjs'
       - 'tests/legacy-client-cabinet-design.test.mjs'

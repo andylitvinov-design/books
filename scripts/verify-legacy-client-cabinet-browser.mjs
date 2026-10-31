@@ -30,7 +30,7 @@ const css=stylesheet.css+'\n'+modernCss
 
 const Icon=({size=18})=>React.createElement('svg',{'aria-hidden':'true',width:size,height:size,viewBox:'0 0 20 20'},
   React.createElement('circle',{cx:10,cy:10,r:6,stroke:'currentColor',fill:'none'}))
-const Link=({href,children,...props})=>React.createElement('a',{href,...props},children)
+const Link=({href,children,prefetch,...props})=>React.createElement('a',{href,...props},children)
 const placeholder=(label,attribute)=>()=>React.createElement('section',{[attribute]:true},label)
 const imports={
   react:React,'react/jsx-runtime':jsx,
@@ -84,8 +84,8 @@ try{
     page.on('pageerror',error=>errors.push(error.message))
     await page.route('**/*',route=>{
       if(route.request().isNavigationRequest()&&route.request().url()===address)
-        return route.fulfill({status:200,contentType:'text/html',headers:{'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'},
-          body:'<!doctype html><html lang="'+locale+'"><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>'+
+        return route.fulfill({status:200,contentType:'text/html; charset=utf-8',headers:{'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'},
+          body:'<!doctype html><html lang="'+locale+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>'+
             css+'</style></head><body>'+markup+'</body></html>'})
       return route.abort('blockedbyclient')
     })
@@ -109,7 +109,8 @@ try{
       assert.ok(measure.documentWidth<=width+2,key+' horizontal overflow '+measure.documentWidth)
       assert.equal(measure.active.length,1,key+' one selected tab')
       assert.ok(measure.active[0].includes(view==='documents'?
-        (locale==='ru'?'Мои материалы':'My materials'):(locale==='ru'?'Мой профиль':'My profile')))
+        (locale==='ru'?'Мои материалы':'My materials'):(locale==='ru'?'Мой профиль':'My profile')),
+        key+' active label mismatch: '+JSON.stringify(measure.active))
       assert.equal(measure.activeColor,'rgb(40, 109, 86)',key+' approved green')
       assert.ok(measure.targets.every(([,height,left,right])=>height>=43.5&&left>=-2&&right<=width+2),
         key+' inaccessible targets '+JSON.stringify(measure.targets))
