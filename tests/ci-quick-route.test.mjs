@@ -124,3 +124,58 @@ test('Core workflow never accepts a skipped job on FULL or CORE',()=>{
   assert.match(w,/HH_HEAD_SHA: \${{ github\.event\.pull_request\.head\.sha }}/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
 });
+
+test('exact Git merge routes real modified images and fails corrupt media closed',async()=>{
+  const { mkdtempSync,mkdirSync,writeFileSync,rmSync }=await import('node:fs');
+  const { tmpdir }=await import('node:os');
+  const { join,resolve }=await import('node:path');
+  const { execFileSync,spawnSync }=await import('node:child_process');
+  const dir=mkdtempSync(join(tmpdir(),'hh-quick-route-merge-'));
+  const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',
+    GIT_AUTHOR_NAME:'Synthetic',GIT_AUTHOR_EMAIL:'synthetic@example.invalid',
+    GIT_COMMITTER_NAME:'Synthetic',GIT_COMMITTER_EMAIL:'synthetic@example.invalid'};
+  const git=(...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],
+    {cwd:dir,env,encoding:'utf8',timeout:10_000,maxBuffer:2_000_000}).trim();
+  const file=(path,value)=>{mkdirSync(join(dir,path,'..'),{recursive:true});writeFileSync(join(dir,path),value);};
+  try {
+    git('init','-q');
+    file('scripts/ci-quick-route.mjs',readFileSync('scripts/ci-quick-route.mjs'));
+    file('lib/ci/specialist-aggregate.mjs',readFileSync('lib/ci/specialist-aggregate.mjs'));
+    file('public/banner.png',validPng());
+    git('add','--all');git('commit','-q','-m','base with trusted router');
+    const base=git('rev-parse','HEAD'), branch=git('branch','--show-current');
+    git('checkout','-qb','image-change');
+    const changed=Buffer.from(validPng());changed[changed.length-5]^=1; // intentionally broken CRC
+    // First exercise the valid fast path with a fresh complete PNG.
+    file('public/banner.png',validPngWithColor(99));
+    git('add','--all');git('commit','-q','-m','new image');
+    const head=git('rev-parse','HEAD');
+    git('checkout','-q',branch);git('merge','-q','--no-ff','image-change','-m','exact merge checkout');
+    assert.equal(git('rev-parse','HEAD^1'),base);
+    assert.equal(git('rev-parse','HEAD^2'),head);
+    const script=resolve('scripts/ci-quick-route.mjs');
+    const run=(baseSha,headSha)=>spawnSync(process.execPath,[script],
+      {cwd:dir,env:{...env,HH_TESTED_BASE_SHA:baseSha,HH_HEAD_SHA:headSha},
+       encoding:'utf8',timeout:20_000,maxBuffer:1_000_000});
+    const good=run(base,head);
+    assert.equal(good.status,0,good.stderr);
+    assert.equal(good.stdout.trim(),'ASSETS');
+    const wrong=run(base,'0'.repeat(40));
+    assert.notEqual(wrong.status,0,'stale PR HEAD must never get fast routing');
+    git('checkout','-qb','corrupt-image',base);
+    file('public/banner.png',changed);
+    git('add','--all');git('commit','-q','-m','corrupt image');
+    const badHead=git('rev-parse','HEAD');
+    git('checkout','-q','-B','validate-bad',base);
+    git('merge','-q','--no-ff','corrupt-image','-m','candidate with broken media');
+    const bad=run(base,badHead);
+    assert.notEqual(bad.status,0,'invalid image cannot skip Core with a green route');
+    assert.match(bad.stderr,/PNG_CRC|CI_FAST_ROUTE_FAILED/);
+  } finally {rmSync(dir,{recursive:true,force:true});}
+});
+function validPngWithColor(value){
+  const out=Buffer.from([137,80,78,71,13,10,26,10]);
+  const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.writeUInt32BE(1,4);ihdr[8]=8;ihdr[9]=6;
+  return Buffer.concat([out,chunk('IHDR',ihdr),
+    chunk('IDAT',deflateSync(Buffer.from([0,value,0,0,255]))),chunk('IEND',Buffer.alloc(0))]);
+}
