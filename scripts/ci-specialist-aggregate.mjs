@@ -30,6 +30,31 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
   return {base,current,basePackage,currentPackage};
 }
 
+// Use the exact tested merge checkout, including both sides of renames, rather
+// than a live PR file listing that can change when production advances.
+export function checkoutChangedRows(baseSha, cwd = process.cwd()) {
+  const raw = execFileSync('git', ['diff','--no-renames','--name-status','-z',baseSha,'HEAD'],
+    {cwd, encoding:'utf8', maxBuffer:5e6}).split('\0');
+  if (raw.at(-1) === '') raw.pop();
+  if (!raw.length || raw.length % 2 || raw.length / 2 >= 3000) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+  const rows = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    if (!/^[AMDT]$/.test(raw[i]) || !raw[i + 1]) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+    rows.push({ status: raw[i], filename: raw[i + 1] });
+  }
+  return rows;
+}
+
+export function verifiedCheckoutBase(env, ctx, cwd = process.cwd()) {
+  if (!env.HH_TRUSTED_BASE_SHA) return null; // Compatibility with existing in-flight workflows.
+  const git = (...args) => execFileSync('git', args, {cwd,encoding:'utf8'}).trim();
+  if (!/^[0-9a-f]{40}$/.test(env.HH_TRUSTED_BASE_SHA) ||
+      git('rev-parse','HEAD') !== env.GITHUB_SHA ||
+      git('rev-parse','HEAD^1') !== env.HH_TRUSTED_BASE_SHA ||
+      git('rev-parse','HEAD^2') !== ctx.head) throw Error('UNVERIFIED_MERGE_CHECKOUT');
+  return env.HH_TRUSTED_BASE_SHA;
+}
+
 export function githubReader(repo, token, transport = fetch) {
   const root = 'https://api.github.com/repos/' + repo;
   const headers = {
@@ -63,9 +88,9 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx) {
+function assertSame(pr, ctx, allowBaseAdvance = false) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
+      pr.head?.sha !== ctx.head || (!allowBaseAdvance && pr.base?.sha !== ctx.base) || pr.base?.ref !== TARGET ||
       pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
@@ -76,9 +101,10 @@ export async function verify(api,ctx,files,options={}) {
   // long enough for their results instead of rejecting a still-running check.
   const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
   const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
+  const allowBaseAdvance = Array.isArray(files.changedRows);
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx);
-  const changedRows=await api.changed(ctx.number);
+  assertSame(pr,ctx,allowBaseAdvance);
+  const changedRows=files.changedRows ?? await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
@@ -89,7 +115,7 @@ export async function verify(api,ctx,files,options={}) {
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx);
+    assertSame(await api.pr(ctx.number),ctx,allowBaseAdvance);
     return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
   }
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
@@ -126,7 +152,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx);
+  assertSame(fresh,ctx,allowBaseAdvance);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -139,10 +165,13 @@ async function main() {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
   const ctx=validateParameters(env);
   const api=githubReader(ctx.repo,ctx.token);
-  const files=worktreeSources(ctx.base);
+  const verifiedBase = verifiedCheckoutBase(env, ctx);
+  const testedBase = verifiedBase || ctx.base;
+  const files=worktreeSources(testedBase);
+  if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
   const result=await verify(api,ctx,files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
-    ' base=' + ctx.base + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
+    ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
