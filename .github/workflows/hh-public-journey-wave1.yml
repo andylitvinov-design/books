@@ -89,16 +89,13 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build exact candidate once for both real-browser suites
-        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install Chromium and WebKit once for both journeys
-        if: github.event_name != 'pull_request'
         run: |
           npm install --prefix /tmp/hh-public-wave1-browser --no-audit --no-fund --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/hh-public-wave1-browser/node_modules/@playwright node_modules/@playwright
           /tmp/hh-public-wave1-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server
-        if: github.event_name != 'pull_request'
         env:
           HH_RUN_WAVE1: ${{ steps.scope.outputs.wave1 }}
           HH_RUN_WAVE2: ${{ steps.scope.outputs.wave2 }}
@@ -123,7 +120,7 @@ jobs:
           if [[ "$HH_RUN_WAVE1" == true ]]; then node scripts/verify-public-pathway-mobile.mjs; fi
           if [[ "$HH_RUN_WAVE2" == true ]]; then node scripts/verify-public-pathway-toronto-mobile.mjs; fi
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         with:
           name: public-journeys-consolidated-browser
           path: |
