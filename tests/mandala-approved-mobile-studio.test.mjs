@@ -90,7 +90,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
 test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(s,/data-video-quick-wish/);
+  assert.match(s,/data-video-goal-summary/);
   assert.match(s,/maxLength=\{160\} value=\{wish\}/);
   assert.match(s,/data-video-personal-affirmations/);
   assert.match(s,/enabled:!current\.enabled/);
