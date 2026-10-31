@@ -28,3 +28,15 @@ test('rejects unknown goals and locales instead of silently inventing a match', 
   assert.throws(() => proposeProfessionalTemplate({goal: 'unknown', locale: 'en'}), /unsupported_goal/);
   assert.throws(() => proposeProfessionalTemplate({goal: 'introduce', locale: 'fr'}), /unsupported_locale/);
 });
+
+test('each locale receives four timed editorial prompts, not invented claims', () => {
+  for (const {goal} of PROFESSIONAL_TEMPLATES) {
+    for (const locale of ['ru', 'en', 'es']) {
+      const proposal = proposeProfessionalTemplate({goal, locale});
+      assert.deepEqual(proposal.shotPlan.map(beat => [beat.startSec, beat.endSec]), [[0,3],[3,11],[11,24],[24,30]]);
+      assert.ok(proposal.shotPlan.every(beat => typeof beat.instruction === 'string' && beat.instruction.length > 10));
+      assert.equal(proposal.sceneIds.length, 0);
+      assert.equal(proposal.requiresReview, true);
+    }
+  }
+});
