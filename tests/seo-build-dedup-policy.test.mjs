@@ -13,7 +13,11 @@ test('SEO avoids duplicate production PR build while preserving nonproduction va
     assert.ok(step?.includes(guard), `${name} must run on nonproduction PRs only`);
   }
   assert.match(source, /node --test tests\/seo-build-dedup-policy\.test\.mjs/);
-  assert.match(core, /tsc --noEmit/);
-  assert.match(core, /npm run build/);
+  // Core moved to ONE type-checked Next production build in #2741;
+  // an old explicit-tsc oracle would incorrectly block every SEO PR.
+  assert.match(core, /Exact proposed release production build and TypeScript check/);
+  assert.match(core, /run: npm run build/);
+  const nextConfig = readFileSync('next.config.ts', 'utf8');
+  assert.doesNotMatch(nextConfig, /ignoreBuildErrors\\s*:\\s*true/);
   assert.match(seo, /node scripts\/verify-public-tests-mobile\.mjs/);
 });
