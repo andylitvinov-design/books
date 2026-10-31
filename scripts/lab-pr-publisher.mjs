@@ -14,7 +14,7 @@ export function validatePublish(packet,{head,base,prs,reviewerPublicKey}={}){
  if(packet?.status!=='RELEASE_CANDIDATE'||packet?.targetBranch!==BASE)return 'invalid-release-packet';
  if(!SHA.test(head||'')||!SHA.test(base||'')||packet.headSha!==head||packet.baseSha!==base)return 'stale-sha';
  if(packet.qaPassed!==true||packet.testEvidence!==true)return 'missing-qa';
- if(packet.acceptance?.accepted!==true || packet.acceptance.headSha!==head || !packet.acceptance.reviewEvidenceId)return 'acceptance-required';
+ if(packet.acceptance?.accepted!==true || packet.acceptance.headSha!==head || !packet.acceptance.reviewEvidenceId || packet.acceptance.attestation?.evidenceId!==packet.acceptance.reviewEvidenceId)return 'acceptance-required';
  if(!verifyAcceptance(packet.acceptance.attestation,{featureId:packet.id,headSha:head,baseSha:base,authorId:packet.owner,publicKeyPem:reviewerPublicKey}))return 'independent-signature-required';
  if(!Array.isArray(packet.changedFiles)||!packet.changedFiles.length||packet.changedFiles.some(f=>f.startsWith('.hh-lab-')))return 'invalid-diff';
  if(!Array.isArray(prs))return 'missing-pr-inventory';
