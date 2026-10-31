@@ -555,15 +555,14 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
 
-test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
+test('Toronto browser owner keeps both current journeys without watching a retired workflow', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
-  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
-  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false,
+    'Obsolete Toronto workflow remains removed');
   const source=readFileSync(replacement,'utf8');
-  for (const expected of [
-    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
+  for (const contract of [
     'node scripts/verify-public-pathway-mobile.mjs',
     'node scripts/verify-public-pathway-toronto-mobile.mjs',
     'tests/public-pathway-migration.test.mjs',
@@ -573,18 +572,11 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
     'Whole-project TypeScript outside protected production PRs',
     'HH_RUN_WAVE1',
     'HH_RUN_WAVE2',
-  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
-  const base=new Map([[oldName,old],[replacement,source]]);
-  const changed=[oldName];
-  const current=new Map([[replacement,source]]);
-  const expected=expectedWorkflows({base,current,changed});
-  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
-  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
-  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
-    {retired:oldName,replacement},
-  ]);
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
-    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+  ]) assert.ok(source.includes(contract),'Consolidated successor dropped current acceptance: '+contract);
+  assert.ok(!source.includes("'"+oldName+"'"),
+    'The production owner must not reactivate a retired YAML trigger after migration');
+  // The live migration is complete. Generic BASE-trusted replacement checks
+  // are exercised separately; never fake a new deletion of an already absent file.
 });
 
 test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
