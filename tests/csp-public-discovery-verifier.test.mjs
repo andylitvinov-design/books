@@ -15,9 +15,9 @@ async function scenario(fault) {
     async toHaveURL(url) { assert.equal(target, page); assert.equal(url, origin + '/en/app/portrait'); assert.notEqual(fault, 'wrong route'); },
     async toHaveAttribute(name, value) {
       if (target.selector === 'body') { assert.equal(name, 'data-csp-class'); assert.equal(value, 'private'); assert.notEqual(fault, 'public CSP'); }
-      else { assert.equal(target.selector, '.hh-app .hh-entry a.hh-text-link'); assert.equal(name, 'href'); assert.equal(value, '/en/client'); assert.notEqual(fault, 'wrong exit'); }
+      else { assert.equal(target.selector, '.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]'); assert.equal(name, 'href'); assert.equal(value, '/en/client'); assert.notEqual(fault, 'wrong exit'); }
     },
-    async toBeVisible() { assert.equal(target.selector, '.hh-app .hh-entry'); assert.notEqual(fault, 'missing anonymous entry'); },
+    async toBeVisible() { assert.equal(target.selector, '.hh-app--cabinet-guest [data-cabinet-guest-overview]'); assert.notEqual(fault, 'missing anonymous entry'); },
     async toHaveCount(value) {
       assert.equal(value, 0);
       assert.ok(['.mobile-bottom-navigation', '[data-profile-domains], [data-my-tests-dashboard]'].includes(target.selector));

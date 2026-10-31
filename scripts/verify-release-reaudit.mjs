@@ -44,10 +44,10 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
   await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href', '/en/client');
+  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]')).toHaveAttribute('href', '/en/client');
 }
 
 async function verifyCspBfcache() {
