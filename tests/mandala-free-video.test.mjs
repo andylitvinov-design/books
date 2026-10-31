@@ -33,7 +33,11 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
   assert.match(source, /job\.stream\.getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
-  assert.match(source, /extension: type\.includes\("mp4"\) \? "mp4" : "webm"/);
+  // Real file container bytes, not Safari's unreliable declared MIME,
+  // determine the saved format on the new iPhone recorder path.
+  assert.match(source, /const extension=isWebm\?"webm":"mp4"/);
+  assert.match(source, /const type=isWebm\?"video\\/webm":"video\\/mp4"/);
+  assert.match(source, /isMp4=header\.length>=8/);
 });
 
 test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compact controls", () => {
