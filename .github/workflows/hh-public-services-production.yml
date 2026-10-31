@@ -97,6 +97,12 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
+      # The first free-video form and text-only consent API are verified by
+      # Mandala's real Canvas/MediaRecorder/Chromium/WebKit and API contracts,
+      # not the unrelated public checkout/Alchemy/master-gallery E2E matrix.
+      # All OTHER support API, payment, auth and shared UI changes still run it.
+      - '!components/mandala-first-video-start*'
+      - '!app/api/holistic-support/first-video-prompt/route.js'
       # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
       # acceptance in the dedicated Mandala suite, not public Services checkout.
       - '!app/**/holistic-support/voice-studio/route.ts'
