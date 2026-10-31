@@ -294,3 +294,25 @@
 .overview [data-hypno-strategy][data-strategy-built="true"] .strategySummary{
  display:block;-webkit-line-clamp:unset;max-height:none;white-space:normal;
 }
+
+
+/* The 390/430px iPhone browser gate measures the complete overview, not merely
+ * horizontal overflow. Match the compact 320px density without shrinking the
+ * real 44px tap targets or hiding the API strategy/phrase controls. */
+@media(min-width:361px) and (max-width:430px){
+ .overview{gap:3px}
+ .overview>.card{padding:6px 8px}
+ .overview [data-hypno-request] .heading p,
+ .overview [data-hypno-phrases] .heading p{display:none}
+ .overview .topicMiniRail{margin-top:5px}
+ .overview .profileMiniActions{margin-top:4px}
+ .overview .requestPreview{margin-top:4px;padding:6px 7px}
+ .overview .shortNote{margin-top:4px}
+ .overview .card .modeRail{margin-top:4px}
+ .overview .card .phraseCounter{margin:4px 0 3px}
+ .overview .card .phraseFoot{margin-top:3px}
+ .overview .approveMini{margin-top:4px}
+ .overview .strategyBuild{min-height:44px;padding:6px 8px}
+ .overview .phraseMiniList button{min-height:44px}
+ .overview .preview{min-height:78px;padding:6px}
+}
