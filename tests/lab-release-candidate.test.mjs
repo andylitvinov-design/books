@@ -38,4 +38,3 @@ test('never publish Lab metadata as application changes',async()=>{
  }finally{await rm(dir,{recursive:true,force:true})}
 });
 
-test('rejects release candidate without independent acceptance',async()=>{const dir=await mkdtemp(join(tmpdir(),'hh-rc-no-accept-'));try{git(dir,'init','-q');git(dir,'config','user.email','test@example.invalid');git(dir,'config','user.name','Lab Test');await writeFile(join(dir,'base.txt'),'base');git(dir,'add','base.txt');git(dir,'commit','-qm','base');const base=git(dir,'rev-parse','HEAD');await writeFile(join(dir,'.hh-lab-task.json'),JSON.stringify({id:'LAB-106',title:'Improve course navigation',owner:'agent-a',baseSha:base}));await writeFile(join(dir,'feature.txt'),'new');git(dir,'add','feature.txt');git(dir,'commit','-qm','feature');await assert.rejects(prepareReleaseCandidate(dir,{qaPassed:true,testEvidence:true}),/Independent acceptance/)}finally{await rm(dir,{recursive:true,force:true})}});
