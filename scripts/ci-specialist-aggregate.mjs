@@ -88,22 +88,30 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx, allowBaseAdvance = false) {
+function assertSame(pr, ctx) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || (!allowBaseAdvance && pr.base?.sha !== ctx.base) || pr.base?.ref !== TARGET ||
+      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
       pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
 }
 
 export async function verify(api,ctx,files,options={}) {
-  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
-  // long enough for their results instead of rejecting a still-running check.
-  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
-  const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
-  const allowBaseAdvance = Array.isArray(files.changedRows);
+  // Distinguish an absent workflow from a queued run and genuine execution.
+  // Only a running specialist may use the long completion deadline.
+  const boundedMs = (value, maximum, minimum = 0) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
+    return Math.max(minimum, Math.min(maximum, n));
+  };
+  const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
+  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? delay;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx,allowBaseAdvance);
+  assertSame(pr,ctx);
   const changedRows=files.changedRows ?? await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
@@ -115,7 +123,7 @@ export async function verify(api,ctx,files,options={}) {
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx,allowBaseAdvance);
+    assertSame(await api.pr(ctx.number),ctx);
     return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
   }
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
@@ -126,7 +134,10 @@ export async function verify(api,ctx,files,options={}) {
   const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
   const retired = new Set(delegated.map(item => item.retired));
   const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
-  const deadline=Date.now()+maxWait;
+  const start = now();
+  const deadline = start + maxWait;
+  const missingDeadline = start + missingGrace;
+  const queuedDeadline = start + queuedGrace;
   let state;
   for (;;) {
     const allRuns=await api.runs(ctx.head);
@@ -141,10 +152,30 @@ export async function verify(api,ctx,files,options={}) {
       }));
     }
     if (!state.missing.length && !state.pending.length) break;
-    if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
+    // GitHub may take a few seconds to register a newly triggered workflow.
+    // After the short discovery grace, absence is a configuration/dispatch
+    // failure, NOT a 35-minute running test. Never waive an expected workflow.
+    const timestamp = now();
+    if (state.missing.length && timestamp >= missingDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
+        JSON.stringify({missing:state.missing,pending:state.pending}));
     }
-    await delay(pollMs);
+    // A registered but queued/requested/waiting workflow is not an executing
+    // test. Give the GitHub runner queue a separate bounded startup window.
+    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    if (notStarted.length && timestamp >= queuedDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
+        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+    }
+    if (timestamp >= deadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
+        JSON.stringify({pending:state.pending}));
+    }
+    const nextDeadline = Math.min(deadline,
+      state.missing.length ? missingDeadline : Infinity,
+      notStarted.length ? queuedDeadline : Infinity);
+    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
@@ -152,7 +183,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx,allowBaseAdvance);
+  assertSame(fresh,ctx);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -169,7 +200,9 @@ async function main() {
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
   if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
-  const result=await verify(api,ctx,files);
+  // The verified merge parent is the base actually tested. Reject a later
+  // production advance at both the start and end of specialist aggregation.
+  const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +

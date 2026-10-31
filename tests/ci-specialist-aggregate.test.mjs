@@ -604,18 +604,128 @@ test('public FAST CSS cannot skip an explicitly applicable specialist', async ()
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
 });
 
-test('a production base advance does not replace the tested checkout diff or waive HEAD checks', async () => {
+test('base advances fail closed while matching tested checkout retains HEAD checks', async () => {
   const ctx = { repo, number: 27, head: SHA, base: BASE };
   const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
     changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
   const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
   const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
     runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => pr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  let reads = 0;
+  api.pr = async () => (++reads === 1 ? pr() : currentPr());
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'base may not advance during specialist aggregation');
+  api.pr = async () => currentPr();
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), base: { ...currentPr().base, ref: 'other' } });
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+});
+
+function virtualSpecialistClock() {
+  let elapsed = 0;
+  const waits = [];
+  return {
+    now: () => elapsed,
+    sleep: async millis => {
+      assert.ok(millis > 0 && millis <= 30_000, 'poll is bounded');
+      elapsed += millis;
+      waits.push(millis);
+    },
+    elapsed: () => elapsed,
+    waits,
+  };
+}
+
+test('absent required workflow fails in one minute even while another specialist is running', async () => {
+  const second = '.github/workflows/another-required.yml';
+  const workflows = new Map([[path, yaml], [second, yaml]]);
+  const clock = virtualSpecialistClock();
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'in_progress', conclusion: null })],
+    jobs: async () => { throw Error('pending jobs must not be accepted'); },
+  };
+  await assert.rejects(
+    () => verify(api, ctx, { base: workflows, current: workflows },
+      { maxWaitMs: 35*60_000, missingGraceMs: 60_000, pollMs: 20_000, ...clock }),
+    error => /SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED/.test(error.message) && error.message.includes(second)
+  );
+  assert.equal(clock.elapsed(), 60_000);
+});
+
+test('late discovery then queue then real completion is accepted with successful jobs', async () => {
+  const clock = virtualSpecialistClock();
+  let polls = 0;
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => {
+      polls++;
+      if (polls <= 2) return [];
+      if (polls <= 4) return [run({ status: 'queued', conclusion: null })];
+      if (polls <= 6) return [run({ status: 'in_progress', conclusion: null })];
+      return [run()];
+    },
+    jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }],
+  };
+  const result = await verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, pollMs: 10_000, ...clock });
+  assert.equal(result.executed.length, 1);
+  assert.equal(polls, 7);
+  assert.ok(clock.elapsed() < 60_000 + 180_000);
+});
+
+test('registered but never started queued specialist fails promptly and cannot merge', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'queued', conclusion: null })],
+  };
+  await assert.rejects(() => verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, queuedGraceMs: 180_000, pollMs: 20_000, ...clock }),
+  /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
+  assert.equal(clock.elapsed(), 180_000);
+});
+
+test('actually running specialist can finish past discovery and queue deadlines', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [clock.elapsed() >= 220_000 ? run() : run({ status: 'in_progress', conclusion: null })],
+    jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }],
+  };
+  const result = await verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, pollMs: 20_000, ...clock });
+  assert.equal(result.executed.length, 1);
+  assert.ok(clock.elapsed() >= 220_000);
+});
+
+test('unfinished running specialist times out and failed/cancelled runs never pass', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'in_progress', conclusion: null })],
+  };
+  const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) };
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  await assert.rejects(() => verify(api, ctx, sources,
+    { maxWaitMs: 200_000, pollMs: 20_000, ...clock }), /SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
+  assert.equal(clock.elapsed(), 200_000);
+  for (const conclusion of ['failure', 'cancelled', 'skipped', 'timed_out']) {
+    api.runs = async () => [run({ status: 'completed', conclusion })];
+    await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, ...clock }), /SPECIALIST_FAILED/);
+  }
 });
