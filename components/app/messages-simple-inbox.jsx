@@ -241,7 +241,7 @@ export default function MessagesSimpleInbox({
       windowElement.style.removeProperty('--hh-mobile-window-top')
       delete windowElement.dataset.keyboardOpen
     }
-  },[openDetail]) // Switching between list and full-screen chat recalculates the visible viewport.
+  },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
   const select=item=>{
     setSelectedKey(item.key)
