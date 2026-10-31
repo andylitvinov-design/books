@@ -179,7 +179,7 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
 });
 
 
-test("unavailable current Gemini Lite model falls back ONLY to free-tier legacy Lite; failures stay private",async()=>{
+test("unavailable Gemini 3.1 Lite model falls back ONLY to current free-tier Gemini 3.5 Lite; failures stay private",async()=>{
   const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
     await import("../lib/mandala/first-video-free-providers.mjs");
   const env={
@@ -200,7 +200,7 @@ test("unavailable current Gemini Lite model falls back ONLY to free-tier legacy 
   assert.equal(result.provider,"gemini_free");
   assert.equal(result.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
   assert.equal(called.length,2,"one 404 model fallback; no OpenRouter call");
-  assert.match(called[1].url,/gemini-2\.5-flash-lite:generateContent/);
+  assert.match(called[1].url,/gemini-3\.5-flash-lite:generateContent/);
   assert.ok(!JSON.stringify(called).includes("gemini-4-argon"));
   const unavailable=await generateFreeFirstVideoPrompt(input,env,async()=>({
     status:403,ok:false,text:async()=>JSON.stringify({error:{message:"never log an API key or private wish"}}),
@@ -254,7 +254,7 @@ test("fast free-text failover is budgeted, skips same-project quota retries, kee
     FIRST_VIDEO_LEGACY_TIMEOUT_MS,FIRST_VIDEO_ROUTER_TIMEOUT_MS
   }=await import("../lib/mandala/first-video-free-providers.mjs");
   assert.equal(FIRST_VIDEO_GEMINI_MODEL,"gemini-3.1-flash-lite");
-  assert.equal(FIRST_VIDEO_GEMINI_ALT_MODEL,"gemini-2.5-flash-lite");
+  assert.equal(FIRST_VIDEO_GEMINI_ALT_MODEL,"gemini-3.5-flash-lite");
   assert.ok(FIRST_VIDEO_TOTAL_BUDGET_MS<=12000);
   assert.ok(FIRST_VIDEO_PRIMARY_TIMEOUT_MS+FIRST_VIDEO_LEGACY_TIMEOUT_MS+
     FIRST_VIDEO_ROUTER_TIMEOUT_MS<=FIRST_VIDEO_TOTAL_BUDGET_MS);
@@ -273,7 +273,7 @@ test("fast free-text failover is budgeted, skips same-project quota retries, kee
     return {status:503,ok:false};
   });
   assert.equal(failed.error,"VIDEO_PROMPT_PROVIDER_UNAVAILABLE");
-  assert.equal(calls.length,2,"Google quota MUST go directly to independent OpenRouter; no legacy retry");
+  assert.equal(calls.length,2,"Google quota MUST go directly to independent OpenRouter; no same-project retry");
   assert.match(calls[1].url,/openrouter\.ai\/api\/v1/);
   assert.deepEqual(failed.diagnostics.map(d=>d.reason),["quota","http_503"]);
   assert.ok(!JSON.stringify(failed).includes("Еда"));
@@ -289,5 +289,29 @@ test("fast free-text failover is budgeted, skips same-project quota retries, kee
   });
   assert.equal(legacy.provider,"gemini_free");
   assert.equal(legacy.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
-  assert.equal(legacyCalls.length,2,"model-incompatible 400 tries exactly one free legacy route");
+  assert.equal(legacyCalls.length,2,"model-incompatible 400 tries exactly one current free-tier 3.5 route");
+});
+
+test("transient primary model 503 uses current free Gemini 3.5 Lite before OpenRouter",async()=>{
+  const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"verified-gemini-free-tier-key",
+    HH_COUNCIL_OPENROUTER_API_KEY:"verified-openrouter-free-key",
+  };
+  const calls=[];
+  const r=await generateFreeFirstVideoPrompt({locale:"ru",wish:"Сад и горы",theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20},env,async url=>{
+    calls.push(url);
+    return calls.length===1?{status:503,ok:false}:{
+      status:200,ok:true,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"Мягкий свет над горным садом и зелёная долина. Четыре спокойные природные сцены с плавным движением камеры."}]}}],
+      }),
+    };
+  });
+  assert.equal(r.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
+  assert.equal(r.provider,"gemini_free");
+  assert.equal(calls.length,2);
+  assert.match(calls[1],/gemini-3\.5-flash-lite:generateContent/);
 });
