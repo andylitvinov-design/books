@@ -75,7 +75,15 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
-  await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
+  // Name is optional and lives in a collapsed disclosure on current mobile UI.
+  // Exercise the real disclosure before typing; never force-fill a hidden input.
+  const name = form.locator('input[autocomplete="name"]');
+  const nameDisclosure = form.locator('details').filter({ has: name });
+  await expect(nameDisclosure).toHaveCount(1);
+  await expect(nameDisclosure).not.toHaveAttribute('open', '');
+  await nameDisclosure.locator('summary').click();
+  await expect(name).toBeVisible();
+  await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
   await form.locator('input[type="checkbox"]').check();

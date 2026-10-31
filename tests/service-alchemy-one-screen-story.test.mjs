@@ -42,3 +42,34 @@ test("Very short iPhone keeps session descriptions and prices through progressiv
  assert.match(css,/\.heroPortrait\{height:74px\}/);
  assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
 });
+
+test("Alchemy/browser routes use semantic readiness with real booking and privacy oracles",()=>{
+ const s=read("scripts/verify-alchemy-one-screen.mjs");
+ assert.match(s,/page\.goto\([^\n]+waitUntil:"domcontentloaded",timeout:45000/);
+ assert.doesNotMatch(s,/waitUntil:"networkidle"/);
+ assert.match(s,/assert\.equal\(response\?\.status\(\), 200/);
+ assert.match(s,/data-session-booking-flow/);
+ assert.match(s,/data-booking-payment-options/);
+ assert.match(s,/booking submit enabled before phone and consent/);
+ assert.doesNotMatch(s,/data-compact-phone-trigger/);
+ const pub=read("scripts/verify-public-services-production.mjs");
+ assert.doesNotMatch(pub,/waitUntil:\s*"networkidle"/);
+ assert.ok((pub.match(/waitUntil:\s*"domcontentloaded"/g)||[]).length >= 9);
+ assert.match(pub,/data-booking-payment-options/);
+ const css=read("components/alchemy-soul-landing.module.css");
+ assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
+});
+
+test("Public Services real consent flow opens optional contact name disclosure before typing",()=>{
+ const chooser=read("components/contact-channel-chooser.tsx");
+ const helper=read("scripts/helpers/contact-channel-verifier.mjs");
+ assert.match(chooser,/<details className={styles.optionalName}>/);
+ assert.match(chooser,/autoComplete="name"/);
+ assert.match(helper,/const nameDisclosure = form\.locator\('details'\)\.filter\(\{ has: name \}\)/);
+ const reveal=helper.indexOf("await nameDisclosure.locator('summary').click()");
+ const input=helper.indexOf("await name.fill('Public QA Visitor')");
+ assert.ok(reveal>=0 && input>reveal,"optional contact name disclosure must open before actual browser fill");
+ assert.match(helper,/await expect\(name\)\.toBeVisible\(\)/);
+ assert.match(helper,/contactConsent,true/);
+ assert.match(helper,/submissions\.length,1/);
+});

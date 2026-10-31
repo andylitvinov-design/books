@@ -88,10 +88,33 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx) {
+// Loose BASE is permitted only for recognizable, non-sensitive source paths.
+// A surprising path, CI/policy change, credential-related name, private-data
+// surface, API, or billing/security feature retains fresh production-base
+// matching. This is deliberately independent of FAST UI routing: normal
+// application code still requires Core and all applicable specialist checks.
+export function requiresCurrentProductionBase(changed) {
+  if (!Array.isArray(changed) || changed.length === 0) return true;
+  const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|checkout|client|consent|credential|crm|database|health|identity|login|medical|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
+  return changed.some(file =>
+    typeof file !== 'string' ||
+    !ordinaryRoots.test(file) ||
+    file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
+    sensitiveName.test(file) ||
+    sensitiveRoots.test(file)
+  );
+}
+
+function assertSame(pr, ctx, requireCurrentBase = false) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
-      pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
+      pr.head?.sha !== ctx.head ||
+      !/^[0-9a-f]{40}$/i.test(pr.base?.sha || '') ||
+      (requireCurrentBase && pr.base.sha !== ctx.base) ||
+      pr.base?.ref !== TARGET || pr.base?.repo?.full_name !== ctx.repo ||
+      pr.head?.repo?.full_name !== ctx.repo || pr.mergeable === false ||
+      pr.mergeable_state === 'dirty') {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
 }
@@ -110,20 +133,27 @@ export async function verify(api,ctx,files,options={}) {
   const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
+  const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx);
-  const changedRows=files.changedRows ?? await api.changed(ctx.number);
+  // Loose base is never allowed for legacy/unverified live file listings.
+  // Only exact merged checkout rows can prove what was tested.
+  assertSame(pr,ctx,!pinnedChangeRows);
+  const changedRows=pinnedChangeRows ? files.changedRows : await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
+  // BASE/HEAD workflow definitions and the actual merge snapshot stay
+  // immutable even when the production target moves after the check started.
+  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  assertSame(pr,ctx,requireCurrentBase);
   const risk=classifyReleaseRisk(changed);
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx);
+    assertSame(await api.pr(ctx.number),ctx,requireCurrentBase);
     return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
   }
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
@@ -183,7 +213,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx);
+  assertSame(fresh,ctx,requireCurrentBase);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -200,8 +230,9 @@ async function main() {
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
   if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
-  // The verified merge parent is the base actually tested. Reject a later
-  // production advance at both the start and end of specialist aggregation.
+  // The verified merge parent is always the trusted tested BASE. Only
+  // non-sensitive ordinary paths permit a newer live production BASE; security,
+  // payment, privacy, auth, policy and unknown paths still require freshness.
   const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
