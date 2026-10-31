@@ -18,6 +18,7 @@ on:
       - 'components/app/my-tests-dashboard.jsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'tests/axis-offer-matcher.test.mjs'
+      - 'tests/account-picker-disclosure-verifier.test.mjs'
       - 'docs/myspace/PROFILE_AXIS_OFFER_MATCHING_V1_20261028.md'
       - 'lib/holistic-support/client-reasoning-core.mjs'
       - 'lib/holistic-support/client-reasoning-bridge.mjs'
@@ -112,7 +113,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   writer-practical-focused:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -131,7 +132,7 @@ jobs:
       - name: TypeScript contract check
         run: npx --no-install tsc --noEmit --pretty false
   axis-unit-types-build:
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030') }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030' || github.event.pull_request.base.ref == 'codex/public-book-library') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -147,6 +148,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Rank accuracy and no health/goal score invention
         run: node --test tests/axis-offer-matcher.test.mjs tests/meditation-catalog-candidates.test.mjs tests/my-tests-compact-finder.test.mjs tests/axis-offer-ranker.test.mjs tests/client-reasoning-core.test.mjs tests/client-reasoning-bridge.test.mjs tests/intelligence-request.test.mjs tests/intelligence-meditation-bridge.test.mjs tests/intelligence-risk.test.mjs tests/client-request-relevance-v2.test.mjs tests/conversation-context.test.mjs tests/holistic-guide-adapter.test.mjs tests/holistic-intelligence.test.mjs tests/natural-dialogue.test.mjs tests/owned-agent-gateway.test.mjs tests/psychologist-mind.test.mjs tests/psychologist-practice-engine.test.mjs tests/holistic-agent-consented-profile.test.mjs tests/holistic-agent-program-preview.test.mjs
+      - name: Real private account picker disclosure, original draft retention and negative controls
+        run: node --test tests/account-picker-disclosure-verifier.test.mjs
       - name: Portrait four-sector, missing-value, responsive and privacy contracts
         run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
       - name: Scoped ESLint

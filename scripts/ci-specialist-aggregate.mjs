@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
-  TARGET, WORKFLOW_PREFIX, expectedWorkflows, resolveExpectedSpecialists,
+  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
   inspectWorkflowRuns, inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 
@@ -24,7 +24,10 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
     if (/\.ya?ml$/.test(name)) current.set(WORKFLOW_PREFIX + name,readFileSync(join(dir,name),'utf8'));
   }
   if (!base.size || !current.size) throw Error('NO_WORKFLOW_SOURCES');
-  return {base,current};
+  // Always compare the immutable base manifest to the exact proposed checkout.
+  const basePackage = execFileSync('git', ['show',baseSha + ':package.json'], {cwd,encoding:'utf8',maxBuffer:2e6});
+  const currentPackage = readFileSync(join(cwd,'package.json'),'utf8');
+  return {base,current,basePackage,currentPackage};
 }
 
 export function githubReader(repo, token, transport = fetch) {
@@ -69,14 +72,17 @@ function assertSame(pr, ctx) {
 }
 
 export async function verify(api,ctx,files,options={}) {
-  const maxWait = Math.max(0,Math.min(15*60_000,Number(options.maxWaitMs ?? 12*60_000)));
+  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
+  // long enough for their results instead of rejecting a still-running check.
+  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
   const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
   const pr = await api.pr(ctx.number);
   assertSame(pr,ctx);
   const changedRows=await api.changed(ctx.number);
   const changed=changedRows.map(row => row.filename);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
-  const baselineExpected=expectedWorkflows({ ...files,changed });
+  const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
+  const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   const deadline=Date.now()+maxWait;
   let state;
@@ -101,7 +107,7 @@ export async function verify(api,ctx,files,options={}) {
   }
   const fresh=await api.pr(ctx.number);
   assertSame(fresh,ctx);
-  return {expected,delegated,executed,pushFailures:state.pushFailures,head:ctx.head,base:ctx.base};
+  return {expected,delegated,executed,pushFailures:state.pushFailures,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 async function main() {
@@ -114,7 +120,8 @@ async function main() {
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' base=' + ctx.base + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
-    '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ');
+    '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
+    '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')';
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }
