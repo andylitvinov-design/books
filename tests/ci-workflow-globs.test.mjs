@@ -137,6 +137,9 @@ test('Public Services: only existing executed unit-test changes may skip duplica
 test('Reiki PR runs current course source contracts; full 64-slide browser suite stays manual', () => {
   const yaml=workflow('hh-reiki-all-slides-browser.yml');
   assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.ok(yaml.includes("  course-and-save-gate:\n    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'specialist workflow cannot report a second skipped PR job to release-ready');
+  assert.ok(!yaml.includes('  reiki-current-contracts:'),'duplicate npm install and check job removed');
   assert.ok(yaml.includes("if: github.event_name == 'pull_request'\n        run: |\n          node --check scripts/verify-reiki-all-slides-browser.mjs"));
   for (const step of [
     'Isolated Chromium/WebKit runtime (manual deep QA only)',

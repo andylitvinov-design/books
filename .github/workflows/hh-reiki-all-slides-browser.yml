@@ -26,24 +26,9 @@ permissions:
   contents: read
 
 jobs:
-  reiki-current-contracts:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-        with: {persist-credentials: false}
-      - uses: actions/setup-node@v4
-        with: {node-version: 22, cache: npm}
-      - run: npm ci --no-audit --no-fund
-      - name: Reiki source, consent and referral contracts
-        run: |
-          node --check scripts/verify-reiki-all-slides-browser.mjs
-          node --check scripts/verify-reiki-referral-browser.mjs
-          node --test tests/reiki-referral-landing.test.mjs
-
   course-and-save-gate:
-    if: github.event_name == 'workflow_dispatch'
+    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
