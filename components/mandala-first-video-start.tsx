@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Film, RotateCcw, SlidersHorizontal, Sparkles, WandSparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -124,6 +124,10 @@ export function MandalaFirstVideoStart({
   onWishChange, onApply, onCreate, onCancel,
 }: Props) {
   const t = l10n[locale];
+  // Server-rendered inputs are not interactive until React hydration has
+  // installed their handlers. Prevent dropped pre-hydration keystrokes.
+  const [hydrated,setHydrated] = useState(false);
+  useEffect(()=>{setHydrated(true);},[]);
   const [prefs, setPrefs] = useState<Preferences>(initial);
   const [promptOverride, setPromptOverride] = useState("");
   const [mode, setMode] = useState<"local" | "manual" | "ai">("local");
@@ -194,7 +198,7 @@ export function MandalaFirstVideoStart({
     } finally { if(revision===aiRevisionRef.current)setAiLoading(false); }
   }
   return <section className={css.root} data-first-free-video
-    aria-labelledby="first-video-title">
+    data-first-video-hydrated={hydrated?"true":"false"} aria-labelledby="first-video-title">
     <div className={css.head}>
       <span className={css.symbol}><Film size={23} aria-hidden="true"/></span>
       <div><small>{t.eyebrow}</small><h3 id="first-video-title">{t.title}</h3>
@@ -202,7 +206,7 @@ export function MandalaFirstVideoStart({
     </div>
     <label className={css.label} htmlFor="first-video-wish">{t.wish}</label>
     <textarea id="first-video-wish" data-first-video-wish className={css.wish}
-      rows={3} maxLength={800} value={wish} disabled={disabled}
+      rows={3} maxLength={800} value={wish} disabled={disabled || !hydrated}
       onChange={event => changeWish(event.currentTarget.value)}
       placeholder={t.placeholder}/>
     <p className={css.subtle}>{t.wishHelp}</p>
@@ -211,7 +215,7 @@ export function MandalaFirstVideoStart({
       <summary><span><SlidersHorizontal size={18} aria-hidden="true"/>
         <strong>{t.filters}</strong><small>{t.filtersHelp}</small></span>
         <ChevronDown size={19} aria-hidden="true"/></summary>
-      <fieldset className={css.controls} disabled={disabled}>
+      <fieldset className={css.controls} disabled={disabled || !hydrated}>
         <label>{t.theme}
           <select data-first-video-theme value={prefs.theme}
             onChange={event => changePreferences({theme: event.currentTarget.value as ThemeChoice})}>
@@ -272,23 +276,23 @@ export function MandalaFirstVideoStart({
       <span><Check size={14} aria-hidden="true"/>{mode === "local" ? t.local : mode === "ai" ? "AI" : t.edit}</span>
     </div>
     <textarea id="first-video-prompt" data-first-video-prompt className={css.prompt}
-      rows={6} maxLength={1000} disabled={disabled || !wish.trim()}
+      rows={6} maxLength={1000} disabled={disabled || !hydrated || !wish.trim()}
       placeholder={t.promptPlaceholder} value={wish.trim() ? shownPrompt : ""}
       onChange={event => changePrompt(event.currentTarget.value)}/>
     <p className={css.subtle}>{t.promptHelp}</p>
     <div className={css.promptActions}>
       <button type="button" className={css.reset} onClick={resetPrompt}
-        disabled={disabled || !wish.trim()}>
+        disabled={disabled || !hydrated || !wish.trim()}>
         <RotateCcw size={16} aria-hidden="true"/>{t.refresh}
       </button>
       <button type="button" className={css.enhance} onClick={() => void enhancePrompt()}
-        disabled={disabled || aiLoading || !aiConsent || !wish.trim()}
+        disabled={disabled || !hydrated || aiLoading || !aiConsent || !wish.trim()}
         data-first-video-enhance>
         <WandSparkles size={16} aria-hidden="true"/>{aiLoading ? t.aiLoading : t.ai}
       </button>
     </div>
     <label className={css.consent}><input type="checkbox" checked={aiConsent}
-      onChange={event => {aiRevisionRef.current++;setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled}/>
+      onChange={event => {aiRevisionRef.current++;setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled || !hydrated}/>
       <span>{t.aiConsent}</span></label>
     {aiStatus && <p className={css.aiStatus} role="status">{aiStatus}</p>}
     {draft.descriptionLimited && <p className={css.warning} role="note">
@@ -297,7 +301,7 @@ export function MandalaFirstVideoStart({
     <p className={css.source}><Sparkles size={17} aria-hidden="true"/>
       {draft.plan.shotCount} {t.source.replace("4 ", "").replace("4 ", "")}</p>
     <button type="button" className={css.generate} data-first-video-generate
-      disabled={disabled || !wish.trim()} onClick={onCreate}>
+      disabled={disabled || !hydrated || !ready || !wish.trim()} onClick={onCreate}>
       <Sparkles size={20} aria-hidden="true"/>{t.create}
     </button>
     {(recording || preparing) && <div className={css.progress} role="status">

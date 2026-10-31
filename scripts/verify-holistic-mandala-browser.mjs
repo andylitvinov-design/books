@@ -115,38 +115,65 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-filters]").getAttribute("open"),null);
         if(locale==="ru"&&width===390){
-          const firstPage=await context.newPage();
+          // Use ONE real visitor page instead of running two heavy Canvas/video
+          // decoders concurrently on the CI worker. Hydration must finish
+          // before user input; no synthetic dispatch or mocked media allowed.
+          const form=page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
+          await form.waitFor({state:"visible",timeout:25000});
+          const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
+          await form.locator("[data-first-video-wish]").fill(typedWish);
+          await page.waitForFunction(expected=>{
+            const wish=document.querySelector("[data-first-video-wish]");
+            const prompt=document.querySelector("[data-first-video-prompt]");
+            return wish?.value===expected && prompt?.value?.length>80;
+          },typedWish,{timeout:25000});
+          const filters=form.locator("[data-first-video-filters]");
+          await filters.locator("summary").click();
+          await expect(filters).toHaveAttribute("open","",{timeout:10000});
+          await form.locator("[data-first-video-aspect]").selectOption("portrait");
+          await expect.poll(async()=>form.locator("[data-first-video-prompt]").inputValue(),
+            {timeout:20000}).toMatch(/9:16/);
+          // The original editor must have installed the exact new four-shot
+          // plan before we allow the real record button to become clickable.
+          const create=form.locator("[data-first-video-generate]");
+          await expect(create).toBeEnabled({timeout:25000});
+          await create.click({timeout:15000});
+          const save=page.locator("[data-mandala-video-download]");
           try{
-            const freshResponse=await firstPage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
-            assert.equal(freshResponse?.status(),200);
-            const form=firstPage.locator("[data-first-free-video]");
-            await form.locator("[data-first-video-wish]").fill("Хочу спокойный рассвет у моря и мягкую дорогу к новой цели");
-            await firstPage.waitForFunction(()=>{
-              const prompt=document.querySelector("[data-first-video-prompt]");
-              return prompt?.value?.length>80;
-            },undefined,{timeout:15000});
-            const filters=form.locator("[data-first-video-filters]");
-            await filters.locator("summary").click();
-            await expect(filters).toHaveAttribute("open","",{timeout:10000});
-            await form.locator("[data-first-video-aspect]").selectOption("portrait");
-            assert.match(await form.locator("[data-first-video-prompt]").inputValue(),/9:16/);
-            await form.locator("[data-first-video-generate]").click({timeout:15000});
-            const save=firstPage.locator("[data-mandala-video-download]");
             await save.waitFor({state:"visible",timeout:85000});
-            const [download]=await Promise.all([
-              firstPage.waitForEvent("download",{timeout:20000}),save.click(),
-            ]);
-            const bytes=await bufferFromStream(await download.createReadStream());
-            assert.ok(bytes.length>10000,"free first video encodes moving media, not a text-only placeholder");
-            const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
-              "-show_entries","stream=codec_type,width,height",
-              "-of","default=noprint_wrappers=1","pipe:0"],{input:bytes,maxBuffer:1024*1024});
-            assert.equal(probe.status,0,"first free video must decode");
-            const details=probe.stdout.toString();
-            assert.match(details,/codec_type=video/);
-            assert.match(details,/width=720|width=1080/);
-            assert.match(details,/height=1280|height=1920/);
-          }finally{await firstPage.close();}
+          }catch(error){
+            const state=await page.evaluate(()=>{
+              const get=(selector)=>document.querySelector(selector);
+              const prompt=get("[data-first-video-prompt]");
+              const generate=get("[data-first-video-generate]");
+              const progress=get("[data-first-free-video] progress");
+              const result=get("[data-video-result]");
+              const notices=Array.from(document.querySelectorAll("[role=status],[role=alert]"))
+                .map(node=>node.textContent?.trim()?.slice(0,200)).filter(Boolean);
+              return {promptLength:prompt?.value?.length,createDisabled:generate?.disabled,
+                progress:progress?.value,resultHidden:result?.hidden,notices};
+            });
+            throw new Error(engine+" free first-video export missing: "+JSON.stringify(state),{cause:error});
+          }
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),save.click(),
+          ]);
+          const bytes=await bufferFromStream(await download.createReadStream());
+          assert.ok(bytes.length>10000,"free first video encodes moving media, not a text-only placeholder");
+          const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
+            "-show_entries","stream=codec_type,width,height",
+            "-of","default=noprint_wrappers=1","pipe:0"],{input:bytes,maxBuffer:1024*1024});
+          assert.equal(probe.status,0,"first free video must decode");
+          const details=probe.stdout.toString();
+          assert.match(details,/codec_type=video/);
+          assert.match(details,/width=720|width=1080/);
+          assert.match(details,/height=1280|height=1920/);
+          // Restore original untouched Studio state for the existing full
+          // photo/audio/Hypno regression cases below, on this same page.
+          const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+          assert.equal(reloaded?.status(),200);
+          await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
+            .waitFor({state:"visible",timeout:25000});
         }
 
         // Real first-party video, real choices; the advanced editor is preserved

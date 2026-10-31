@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildFirstVideoDraft, inferFirstVideoTheme } from "../lib/mandala/first-video-director.mjs";
+const browserSource=()=>readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
 
 test("RU/EN/ES auto classify with stable fallback", () => {
   assert.equal(inferFirstVideoTheme("Тёплая любовь и близость"),"relationships");
@@ -69,6 +70,10 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(ui,/data-first-video-prompt/);
   assert.match(ui,/data-first-video-wish/);
   assert.match(ui,/data-first-video-filters/);
+  assert.match(ui,/data-first-video-hydrated/);
+  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !wish\.trim\(\)\}/);
+  assert.match(src,/useLayoutEffect\(\(\) => \{\s*const job=jobRef\.current;/);
+  assert.match(browserSource(),/free first-video export missing/);
   assert.match(ui,/setAiConsent\(event\.currentTarget\.checked\)/);
   assert.match(route,/MODEL = "openrouter\/free"/);
   assert.match(route,/HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED/);

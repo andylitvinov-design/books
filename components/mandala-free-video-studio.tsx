@@ -1772,9 +1772,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
   },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
-  // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
-  // tapped: selection itself is the explicit playback gesture.
-  useEffect(() => {
+  // A freshly edited storyboard invalidates only an OLD recording. Run the
+  // invalidation before paint/click so a delayed passive effect cannot cancel
+  // the visitor's new MediaRecorder session on the next animation frame.
+  useLayoutEffect(() => {
     const job=jobRef.current;
     if (job) stopJob(job, true);
     setResult(null);
