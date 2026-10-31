@@ -167,6 +167,10 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
   assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
   await submitSyntheticForm(page,chooser,locale,submissions);
+  // The CRM helper already waits for the WhatsApp receipt. Telegram is
+  // committed in the same asynchronous React success state, so also wait for
+  // its real visible link rather than sampling an intermediate count.
+  await tg.waitFor({state:"visible",timeout:10000});
   assert.equal(await wa.count(), 1);
   assert.equal(await tg.count(), 1);
   const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);

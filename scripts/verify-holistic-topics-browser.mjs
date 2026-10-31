@@ -39,6 +39,19 @@ async function waitForConsultationFixtures(page, locale, ids, label) {
   assert.deepEqual(actual, expected, label + " only the requested published EUR fixture; CAD and stale results excluded");
 }
 
+// The user must perform a NEW search against the isolated public directory.
+ // Seeing an old card that happens to satisfy the next budget is insufficient.
+async function searchConsultationFixtures(page, finder) {
+  const fresh = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/public/remote-energy-support-masters" &&
+      url.searchParams.get("kind") === "consultation" &&
+      response.status() === 200;
+  }, {timeout:15000});
+  await finder.locator("[data-support-search]").click();
+  await fresh;
+}
+
 for (const engine of [chromium, webkit]) {
   const browser = await engine.launch({ headless: true });
   try {
@@ -78,6 +91,10 @@ for (const engine of [chromium, webkit]) {
             priceOptions: [{ duration: 30, price: 50 }, { duration: 60, price: 100 }],
             reviewCount: 0, reviewAverage: 0,
           }];
+          // A fresh directory response is intentionally asynchronous: keep
+          // the loading/clear commit observable and reject stale previous
+          // result arrays. Fixtures are still isolated and fully synthetic.
+          if (isConsultation) await new Promise(resolve => setTimeout(resolve,75));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
@@ -143,14 +160,14 @@ for (const engine of [chromium, webkit]) {
           await finder.locator('[data-support-budget="20"]').click();
           await page.waitForFunction(() => document.querySelector('[data-support-budget="20"]')
             ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
-          await finder.locator("[data-support-search]").click();
+          await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["eur20"], label + " EUR 20");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
           await page.waitForFunction(() => document.querySelector('[data-support-budget="100"]')
             ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
-          await finder.locator("[data-support-search]").click();
+          await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
@@ -158,7 +175,7 @@ for (const engine of [chromium, webkit]) {
           await finder.locator('[data-support-budget="free"]').click();
           await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
             ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
-          await finder.locator("[data-support-search]").click();
+          await searchConsultationFixtures(page, finder);
           await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");

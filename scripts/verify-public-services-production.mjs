@@ -388,7 +388,12 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      // The first generic href can be an intentionally hidden site-menu link.
+      // Verify the user's visible free-review hero CTA instead, with one
+      // explicit destination in every public locale.
+      const free = main.locator('section[aria-labelledby="personal-service-title"] a[href="/' +
+        locale + '/services/free-situation-review"]');
+      assert.equal(await free.count(),1,"Personal service must expose one real free-review hero CTA: " + label);
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
