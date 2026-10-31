@@ -443,6 +443,7 @@ async function exercise(engine, browserType, width) {
             });
             const chooser = receiptPage.locator('[data-consultation-capture="service"] [data-contact-channel-chooser]');
             await expect(chooser.locator('[data-contact-channel]')).toHaveCount(0);
+            await receiptPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
             await chooser.locator('button[data-contact-order]').click();
             const form = chooser.locator('form');
             await expect(form).toBeVisible();

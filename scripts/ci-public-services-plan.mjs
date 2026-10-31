@@ -57,10 +57,12 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
   'scripts/public-poster-readiness.mjs',
+  'scripts/csp-navigation-diagnostics.mjs',
   'scripts/verify-release-reaudit.mjs',
   'tests/ci-head-cancellation.test.mjs',
   'tests/ci-stale-run-deduplication.test.mjs',
   'tests/csp-public-discovery-verifier.test.mjs',
+  'tests/csp-navigation-diagnostics.test.mjs',
   'tests/public-audit-readiness.test.mjs',
   'tests/release-reaudit.test.mjs',
 ]);

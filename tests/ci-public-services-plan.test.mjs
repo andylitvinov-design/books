@@ -64,10 +64,10 @@ test('browser harness-only changes keep exact targeted real browsers', () => {
 test('release audit and consent test helper changes run only their Public Services owner', () => {
   const files = [
     '.github/workflows/admin-seo-dashboard.yml', '.github/workflows/release-reaudit.yml',
-    'scripts/helpers/contact-channel-verifier.mjs', 'scripts/public-poster-readiness.mjs',
+    'scripts/helpers/contact-channel-verifier.mjs', 'scripts/public-poster-readiness.mjs', 'scripts/csp-navigation-diagnostics.mjs',
     'scripts/verify-public-services-production.mjs', 'scripts/verify-release-reaudit.mjs',
     'tests/ci-head-cancellation.test.mjs', 'tests/ci-stale-run-deduplication.test.mjs',
-    'tests/csp-public-discovery-verifier.test.mjs', 'tests/public-audit-readiness.test.mjs',
+    'tests/csp-public-discovery-verifier.test.mjs', 'tests/csp-navigation-diagnostics.test.mjs', 'tests/public-audit-readiness.test.mjs',
     'tests/release-reaudit.test.mjs', 'tests/service-alchemy-one-screen-story.test.mjs',
   ];
   const plan = planPublicServicesChangedPaths(files);

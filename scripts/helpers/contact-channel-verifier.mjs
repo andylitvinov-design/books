@@ -67,6 +67,9 @@ export async function openContactChannelChooser(scope, expect) {
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
   assertSyntheticLoopback(page.url());
+  // Choice changes reset the form in a React passive effect. Let that real
+  // rendering cycle settle before opening it, especially on mobile WebKit.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
