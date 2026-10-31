@@ -1498,7 +1498,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  const [aspect, setAspect] = useState<Aspect>("portrait");
+  const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
   const [speed,setSpeed] = useState<Speed>("slow");
@@ -2177,6 +2177,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectCategory=(next:VideoCategory)=>{
     setCinematicPlan(null);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
+    // A visitor-picked quick affirmation follows their selected video topic;
+    // arbitrary private custom lines are never overwritten by changing a topic.
+    setAffirmations(previous=>quickSupportPhrases[locale][theme].includes(previous.custom.trim())
+      ? {...previous,enabled:true,selected:[],custom:quickSupportPhrases[locale][next][0]} : previous);
     setPreviewPlaying(false); // Theme changes preserve the user's photo checkbox choice.
     if(next==="money")setMoneyScene("golden-rain");
     else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
@@ -2185,7 +2189,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const resetVideoSettings=()=>{
     if(recording||preparing)return;
     clearUploadedAudio();
-    setDuration(20);setAspect("portrait");setSpeed("slow");setBrightness("soft");
+    setDuration(20);setAspect("landscape");setSpeed("slow");setBrightness("soft");
     setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
     setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
