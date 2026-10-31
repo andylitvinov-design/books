@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 
 import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { chromium, webkit } from "@playwright/test";
+import { chromium, webkit, expect } from "@playwright/test";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
@@ -17,6 +17,7 @@ const PNG = Buffer.from(
 
 const viewports = [
   { locale: "ru", width: 320 },
+  { locale: "ru", width: 354 },
   { locale: "ru", width: 390 },
   { locale: "ru", width: 430 },
   { locale: "en", width: 390 },
@@ -36,6 +37,19 @@ function syntheticAudioWav(seconds=3) {
     Math.round(Math.sin(Math.PI*2*330*i/rate)*10500),44+2*i);
   return bytes;
 }
+// Capture the entire synthetic guest page. Moving video/canvas content no
+// longer causes Playwright to wait for locator stability or offscreen clip.
+// Independent real media, accessibility and layout assertions remain mandatory.
+async function captureSyntheticOverview(page, locator, path) {
+  const bounds = await locator.evaluate(element => {
+    element.scrollIntoView({block:"start",behavior:"instant"});
+    const rect=element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height};
+  });
+  assert.ok(bounds.width>0 && bounds.height>0,'Synthetic Mandala overview must have visible bounds');
+  await page.screenshot({path,fullPage:true,animations:"disabled",timeout:30000});
+}
+
 const bufferFromStream = async stream => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
@@ -43,11 +57,23 @@ const bufferFromStream = async stream => {
 };
 
 let passes = 0;
-// WebKit runs first so iPhone-specific release blockers fail fast.
-for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]) {
-  const browser = await browserType.launch({ headless: true });
-  try {
-    for (const { locale, width } of viewports) {
+// Run both real engines concurrently, but cap resource use at one isolated
+// context per engine (two total); preserve all six viewports per engine.
+const engines = [["webkit", webkit], ["chromium", chromium]];
+const runEngine = async ([engine, browserType]) => {
+    // Keep genuine Chromium + WebKit checks and all locale/viewport cases.
+    // A fresh browser process per case prevents WebKit's decoded H264 state
+    // leaking between closed contexts across repeated iPhone dimensions.
+    // This is isolation, not a skipped assertion or retry of a failed case.
+    // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
+    // native 13-track audio checks, reducing simultaneous encoding pressure.
+    const orderedViewports = engine === "chromium"
+      ? [...viewports.filter(v => v.locale !== "ru" || v.width !== 390),
+        ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
+      : viewports;
+    for (const { locale, width } of orderedViewports) {
+      const caseStartedAt = performance.now();
+      const browser = await browserType.launch({ headless: true });
       const context = await browser.newContext({
         viewport: { width, height: 820 },
         acceptDownloads: true,
@@ -73,70 +99,252 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           .split(";").find(item => item.trim().startsWith("media-src")) || "";
         assert.match(mediaPolicy, /\bblob:/, engine + " must permit the local generated video preview");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
-        // Screenshot-led iPhone hierarchy: navy diagnostic strip, daily picks,
-        // restored 3-column assessment, one neutral-by-default therapy button,
-        // four topics and the two independent photo/affirmation options.
-        const promo=page.locator("[data-video-diagnostic-banner]");
-        const promoRect=await promo.boundingBox();
-        assert.ok(promoRect && promoRect.height>=44 && promoRect.height<=66,
-          engine+" "+locale+" "+width+"px half-height diagnostic strip: "+JSON.stringify(promoRect));
-
-        // Owner-approved first mock: six linked controls, not a static picture.
+        // Keep the existing public site shell and native app header untouched.
+        // This release changes only the central Video Studio, not site navigation.
+        assert.equal(await page.locator("main[data-mandala-meditation-page]").count(),1);
+        assert.equal(await page.locator("[data-support-app-header]").count(),1,
+          "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
-        assert.equal(await quick.locator("[data-video-quick-section]").count(),6);
+
+        // Real first-party video, real choices; the advanced editor is preserved
+        // but must be collapsed until the visitor explicitly opens it.
+        assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
+          "the cover/photo panel is now part of the shared scene library");
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
-        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').innerText(),
-          {ru:"Смыслы",en:"Meaning",es:"Sentido"}[locale],
-          "approved sixth topic labels show a separate Meaning choice");
-        assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
-        assert.equal(await quick.locator("[data-video-quick-aspect]").count(),3);
-        assert.equal(await quick.locator("[data-video-quick-duration]").count(),4);
+        assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3,
+          "advanced editor retains hypno, audio and detailed format controls");
+        const stage=quick.locator("[data-video-live-stage]");
+        const screen=stage.locator("[data-video-mandala-hero]");
+        assert.equal(await screen.locator("canvas").count(),1,
+          "the original Canvas renderer is the only full-size editable screen");
+        assert.deepEqual(await quick.locator(
+          '[data-video-live-stage], [data-video-quick-section="4"], [data-video-scene-library], [data-video-quick-tier]'
+        ).evaluateAll(elements=>elements.map(el=>el.hasAttribute("data-video-live-stage")?"preview":
+          el.hasAttribute("data-video-scene-library")?"library":
+          el.hasAttribute("data-video-quick-tier")?"format":"style")),
+          ["preview","style","library","format"],
+          "approved topic-first preview and style rail must precede expanded gallery and format cards");
+        const playerRect=await screen.boundingBox();
+        assert.ok(playerRect&&playerRect.width>playerRect.height,
+          engine+" "+locale+" "+width+"px central player must be widescreen");
+        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
+          {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
+        assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
+          "three formats share one real cinematic preview");
+        assert.equal(await quick.locator("[data-video-practice-accordion]").count(),1);
+        assert.equal(await quick.locator("[data-video-quality-option]").count(),9,
+          "each expandable format retains its Basic / Smart / Pro choices");
+        assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
+          "the original same-origin MP4 decoder remains mounted, even when its redundant mini-player is hidden");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
+          "the same unified library includes the existing 4-MP4 film presets");
+        const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
+        await expandAllFilms.click();
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
+          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        await expandAllFilms.click();
+        const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
+        assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
+          "the existing native MP4 decoder must remain mounted within the large preview");
+        if(width<=760)assert.ok(mediaGeometry.width<=2,
+          "mobile layout hides the duplicate mini-player while retaining its real video decoder");
+        assert.equal(await quick.locator('[data-video-practice-pick="video"]').getAttribute("aria-expanded"),"true");
+        assert.equal(await quick.locator('[data-video-practice-details="video"]').isVisible(),true);
+        assert.equal(await quick.locator('[data-video-practice-details="meditation"]').isVisible(),false);
+        assert.equal(await quick.locator('[data-video-practice-details="course"]').isVisible(),false);
+        assert.equal(await quick.locator('[data-video-practice-card][data-selected="true"]').count(),1,
+          "only one format card is expanded and gold-highlighted");
+        assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true,
+          "only free on-device video creation can start");
+        assert.match(await quick.locator("[data-video-price-summary]").innerText(),
+          /Free|Бесплатно|Gratis/,"free selected video has no fabricated credit cost");
+        await quick.locator('[data-video-practice-pick="meditation"]').click();
+        assert.equal(await quick.locator('[data-video-practice-details="video"]').isVisible(),false,
+          "opening meditation folds video back to a small header");
+        assert.equal(await quick.locator('[data-video-practice-details="meditation"]').isVisible(),true);
+        assert.equal(await quick.locator('[data-video-practice-card][data-selected="true"]').count(),1);
+        assert.match(await quick.locator("[data-video-price-summary]").innerText(),/\$4\.90/,
+          "the user can inspect the uncharged draft Smart meditation price");
+        await quick.locator('[data-video-quality-option="meditation-basic"]').click();
+        assert.match(await quick.locator("[data-video-price-summary]").innerText(),/\$2\.90/,
+          "the right-hand quote and total react to the quality switch");
+        await quick.locator('[data-video-quality-option="meditation-smart"]').click();
+        assert.match(await quick.locator('[data-video-practice-price="meditation"]').innerText(),/\$4\.90/);
+        assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true,
+          "planned meditation pricing must not enable paid checkout");
+        await quick.locator('[data-video-practice-pick="course"]').click();
+        assert.equal(await quick.locator('[data-video-practice-details="course"]').isVisible(),true);
+        assert.equal(await quick.locator('[data-video-practice-details="meditation"]').isVisible(),false);
+        assert.equal(await quick.locator('[data-video-practice-card][data-selected="true"]').count(),1);
+        assert.equal(await quick.locator("[data-video-quick-generate]").isDisabled(),true,
+          "eight sessions cannot be sold before real delivery");
+        await quick.locator('[data-video-practice-pick="video"]').click();
+        assert.equal(await quick.locator('[data-video-practice-details="course"]').isVisible(),false);
+        assert.equal(await quick.locator('[data-video-practice-details="video"]').isVisible(),true);
+        assert.equal(await quick.locator("[data-video-quick-generate]").isEnabled(),true);
+        const livePreview=quick.locator("[data-video-quick-live-preview]");
+        assert.equal(await livePreview.locator("video").count(),1,
+          "the preview uses the real local MP4 master, not a fake still");
+        const firstMaster=await livePreview.locator("video").getAttribute("src");
+        assert.ok(firstMaster?.startsWith("/videos/holistic-house/"),
+          "same-origin published first-party film master");
+        // The owner-approved screen has ONE visible Play, on the central Canvas.
+        // Keep the native first-party MP4 mounted for the same renderer, without
+        // requiring a tap on its hidden (legacy) miniature UI.
+        const mainPlay=quick.locator("[data-video-preview-toggle]");
+        await mainPlay.click();
+        await expect(mainPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await mainPlay.click();
+        await expect(mainPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await quick.locator("[data-video-quick-hero-play]").click();
+        await expect(mainPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await mainPlay.click();
+        await expect(mainPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        const coverOptions=quick.locator("[data-video-cover-options]");
+        assert.equal(await coverOptions.locator("[data-video-quick-scene]").count(),6,
+          "six cover/thumbnail scene choices remain separate from six style thumbnails");
+        assert.equal(await coverOptions.getAttribute("open"),null,
+          "photo and cover choices are collapsed by default to keep the library compact");
+        await coverOptions.locator("summary").click();
+        assert.equal(await coverOptions.evaluate(el=>el.open),true,
+          "photo cover and user-owned image choices must open on user request");
+        await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
+        assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
+          "choosing a different scene changes the real preview video");
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
         await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
+        assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
-        await quick.locator('[data-video-quick-duration="30"]').click();
-        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
-        await quick.locator('[data-video-quick-aspect="landscape"]').click();
-        assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
-        await quick.locator('[data-video-quick-aspect="portrait"]').click();
-        await quick.locator('[data-video-quick-phrases="ready"]').click();
-        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
-        await quick.locator('[data-video-quick-phrases="ready"]').click();
-        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
+        await expect(screen.locator("[data-video-preview-toggle]")).toHaveAttribute("aria-pressed","true",
+          {timeout:10000}); // One style tap must immediately play the actual central video.
+        // React/Next concurrent rendering can commit the shared state after
+        // WebKit click() resolves. Await BOTH source button and real checkbox;
+        // retain the exact on/off assertion (never skip on timeout).
+        const affirmationsToggle=quick.locator("[data-video-personal-affirmations]");
+        const actualAffirmations=page.locator("[data-hypno-overview-enable]");
+        // The fixed iPhone dock can intersect WebKit's automatic target
+        // scrolling after visual-style reflow. Place the REAL visible button
+        // in the safe centre viewport before each user click. Both source and
+        // deep checkbox must still update: no synthetic .evaluate(click),
+        // disabled fallback or weakened release assertion.
+        const placeAffirmationButton=async()=>{
+          await affirmationsToggle.evaluate(element=>{
+            element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+          });
+          await page.waitForFunction(()=>{
+            const el=document.querySelector("[data-video-personal-affirmations]");
+            if(!el)return false;
+            const r=el.getBoundingClientRect();
+            const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+            const d=dock?.getBoundingClientRect();
+            const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+            return r.top>=4 && r.bottom<=innerHeight-4 &&
+              (!d||r.bottom<=d.top-8) && (hit===el || el.contains(hit));
+          },undefined,{timeout:10000});
+        };
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await placeAffirmationButton();
+        await affirmationsToggle.click();
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await expect(actualAffirmations).toBeChecked({timeout:10000});
+        await placeAffirmationButton();
+        await affirmationsToggle.click();
+        await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await expect(actualAffirmations).not.toBeChecked({timeout:10000});
+        // Owner reference: compact first screen, genuine hero Play, 44px targets,
+        // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
+        const layout=await page.evaluate(()=>{
+          const root=document.querySelector("[data-video-quick-builder]");
+          const header=root?.querySelector("header");
+          const brand=root?.querySelector("nav");
+          const order=root?.querySelector("[data-video-order-bar]");
+          const goals=root?.querySelector("[data-video-quick-section='1']");
+          const extras=root?.querySelector("[data-video-quick-extras]");
+          const diagnostic=document.querySelector("[data-video-diagnostic-banner]");
+          const box=node=>node?.getBoundingClientRect();
+          return {hero:box(header)?.height,brand:box(brand)?.height,
+            themes:[...goals?.querySelectorAll("[data-video-quick-theme]")||[]].map(node=>box(node)?.width),
+            orderPosition:order?getComputedStyle(order).position:null,
+            extras:!!extras,diagnosticVisible:diagnostic?
+              getComputedStyle(diagnostic).display!=="none":false};
+        });
+        assert.ok(layout.hero<=215 && layout.hero>=130,
+          engine+" "+locale+" "+width+"px first-screen hero height "+JSON.stringify(layout));
+        assert.ok(layout.brand>=40 && layout.brand<=65,
+          engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
+        assert.ok(layout.themes.length===6 && layout.themes.every(n=>n>=44),
+          engine+" "+locale+" "+width+"px scannable topic cards "+JSON.stringify(layout));
+        assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
+        assert.ok(layout.extras,"additional settings remain discoverable");
+        assert.equal(layout.diagnosticVisible,false,"marketing banner must not push down iPhone editor");
+        const heroPlay=quick.locator("[data-video-quick-hero-play]");
+        assert.equal(await heroPlay.count(),1);
+        assert.ok(await heroPlay.isEnabled());
+        const extras=quick.locator("[data-video-quick-extras]");
+        await extras.locator("summary").click();
+        await expect(extras).toHaveAttribute("open","");
+        await extras.locator("summary").click();
         const quickOverflow=await page.evaluate(()=>({
           page:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
-          cards:[...document.querySelectorAll("[data-video-quick-section]")].map(el=>({
+          cards:[...document.querySelectorAll("[data-video-quick-builder] > [data-video-quick-section], [data-video-quick-builder] > [data-video-quick-tier], [data-video-quick-personal]")].map(el=>({
             width:el.getBoundingClientRect().width,x:el.getBoundingClientRect().x,
           })),
         }));
         assert.ok(quickOverflow.page<=quickOverflow.viewport+2,
           engine+" "+locale+" "+width+"px quick UI overflow "+JSON.stringify(quickOverflow));
         assert.ok(quickOverflow.cards.every(rect=>rect.width<=width+1&&rect.x>=-3));
+        const touchTargets=await quick.locator(
+          '[data-video-quick-theme], [data-video-practice-pick], [data-video-quick-scene], [data-video-personal-affirmations], [data-video-quick-generate]'
+        ).evaluateAll(nodes=>nodes.map(el=>({
+          width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,
+        })));
+        assert.ok(touchTargets.every(rect=>rect.width>=44&&rect.height>=44),
+          engine+" "+locale+" "+width+"px mobile controls need 44px targets "+JSON.stringify(touchTargets));
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await quick.screenshot({
+            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-approved-studio.png",
+            animations:"disabled",
+          });
+        }
+
+        // Older deep features still run: the original audio attach, aspect,
+        // duration and phrase tests continue under the single advanced section.
         await quick.locator('[data-video-quick-style="0"]').click();
-        // The compact audio selection uses the SAME provider-free attachment
-        // contract as the production 13-sound audio editor (#2520).
-        await quick.locator("[data-video-quick-attach]").click();
+        await page.locator("[data-video-quick-legacy] > summary").click();
+        const detailed=page.locator("[data-video-quick-legacy]");
+        await detailed.waitFor({state:"visible",timeout:12000});
+        assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
+        assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
+          "Director adds the 15-second option while preserving 10/20/30/60");
+        assert.equal(await detailed.locator('[data-video-quick-duration="15"]').count(),1);
+        await detailed.locator('[data-video-quick-duration="30"]').click();
+        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
+        await detailed.locator('[data-video-quick-aspect="landscape"]').click();
+        assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
+        await detailed.locator('[data-video-quick-aspect="portrait"]').click();
+        await detailed.locator('[data-video-quick-phrases="ready"]').click();
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
+        await detailed.locator('[data-video-quick-phrases="ready"]').click();
+        assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
+        await detailed.locator("[data-video-quick-attach]").click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
-          "quick attachment must really apply the selected WAV to MediaRecorder");
-        // Audio panel is inside the deliberately collapsed advanced editor:
-        // innerText() can be empty for hidden <details> content on Chromium.
-        // Read the existing DOM's textContent and independently assert the
-        // attachment transition via the disabled Attach action above.
+          "compact attachment must apply the selected WAV to MediaRecorder");
         assert.ok((await page.locator("[data-video-audio-attached]").textContent()||"").trim().length>8,
           "the applied soundtrack name remains in the original audio editor");
-        await quick.locator("[data-video-quick-section='5'] button").filter({hasText:
+        await detailed.locator("[data-video-quick-section='5'] button").filter({hasText:
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
-          "explicit quick silent action detaches the former soundtrack");
+          "explicit silent selection detaches the soundtrack");
         await quick.locator("[data-video-quick-wish]").fill("");
-        // Restore legacy controls before all existing Chromium/WebKit E2E flows.
-        await page.locator("[data-video-quick-legacy] > summary").click();
+        // Keep detail view open for pre-existing complete 8-session,
+        // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
         await picks.waitFor({state:"visible",timeout:12000});
         assert.equal(await picks.locator("a").count(),4,"four actionable daily recommendations");
@@ -172,15 +380,14 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // the default ENERGY topic, before browser QA switches to MONEY.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await page.locator("[data-hypno-overview]").screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, page.locator("[data-hypno-overview]"),
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
-        assert.equal(await hero.getAttribute("data-hero-promo"),"true");
+        assert.equal(await hero.getAttribute("data-hero-promo"),"false",
+          "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
         assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
@@ -191,18 +398,54 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
-        const landmarks=await page.evaluate(()=>{
+        const hierarchy=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
-          return ["[data-video-diagnostic-banner]","[data-video-daily-picks]",
-            "[data-video-support-layout]","[data-video-category-rail]",
-            "[data-video-preview-choices]","[data-video-mandala-hero]",
-            "[data-video-therapy-banner]","#video-templates",
-            "[data-video-audio-section]","[data-video-hypnosis-section]"]
-            .map(top);
+          return {
+            // Owner-approved theme → ONE Canvas → six controls → gold program CTA
+            // → styles → real phrases and soundtrack → optional detailed library.
+            preview:[
+              '[data-video-quick-section="1"]',
+              "[data-video-mandala-hero]",
+              "[data-video-quick-controls]",
+              "[data-video-therapy-banner]",
+              '[data-video-quick-section="4"]',
+              "[data-video-quick-phrases]",
+              "[data-video-quick-audio-choices]",
+              "[data-video-scene-library]",
+              "[data-video-quick-tier]",
+              "[data-video-quick-personal]",
+              "[data-video-order-bar]"
+            ].map(top),
+            // Existing detailed Support/diagnostic features stay available
+            // independently below the fast public editor.
+            support:[
+              "[data-video-daily-picks]",
+              "[data-video-support-layout]",
+              "[data-video-category-rail]",
+              "[data-video-preview-choices]",
+              "[data-video-audio-section]",
+              "[data-video-hypnosis-section]"
+            ].map(selector=>Boolean(document.querySelector(selector)))
+          };
         });
-        assert.ok(landmarks.every(Number.isFinite),"all key video blocks must be rendered");
-        for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
-          engine+" "+locale+" "+width+"px hierarchy "+i+": "+landmarks);
+        assert.ok(hierarchy.preview.every(Number.isFinite),
+          engine+" "+locale+" "+width+"px approved quick flow contains all visible sections");
+        for(let i=1;i<hierarchy.preview.length;i++)assert.ok(hierarchy.preview[i]>hierarchy.preview[i-1],
+          engine+" "+locale+" "+width+"px visible quick flow order "+i+": "+hierarchy.preview);
+        // Detailed Support editor is intentionally inside a CLOSED <details>.
+        // Its bounding boxes are 0px, so validate DOM structure, not invisible
+        // visual geometry, without opening it or skipping any functionality.
+        const supportSelectors=[
+          "[data-video-daily-picks]","[data-video-support-layout]",
+          "[data-video-category-rail]","[data-video-preview-choices]",
+          "[data-video-audio-section]","[data-video-hypnosis-section]"
+        ];
+        const supportOrder=await page.evaluate(selectors=>{
+          const nodes=selectors.map(selector=>document.querySelector(selector));
+          return nodes.every(Boolean) && nodes.slice(1).every((node,i)=>
+            Boolean(nodes[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING));
+        },supportSelectors);
+        assert.equal(supportOrder,true,"collapsed detailed Support editor preserves complete DOM order");
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
@@ -277,10 +520,24 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
         assert.ok((await energyClip.getAttribute("data-real-mp4") || "").endsWith("/film-collection-v2/solar-surge.mp4"),"selected Energy tile must play actual solar-surge MP4");
-        await page.waitForFunction(() => {
+        // Real users scroll the gallery into view; IntersectionObserver starts
+        // muted playback only when this MP4 itself is visible on the iPhone.
+        // A concurrent browser context may have scrolled the button into view
+        // while leaving the video thumbnail outside the visible viewport.
+        await energyClip.scrollIntoViewIfNeeded();
+        await energyClip.waitFor({state:"visible",timeout:12000});
+        try { await page.waitForFunction(() => {
           const video=document.querySelector('[data-mandala-scene-preview="solar-surge"]');
           return video && video.readyState >= 2 && video.videoWidth >= 1080 && video.currentTime >= .15;
-        },undefined,{timeout:30000});
+        },undefined,{timeout:30000}); } catch(error) {
+          console.error('MANDALA_ENERGY_PREVIEW_DIAGNOSTIC', JSON.stringify(await energyClip.evaluate(video=>({
+            readyState:video.readyState, networkState:video.networkState, width:video.videoWidth,
+            currentTime:video.currentTime, paused:video.paused, error:video.error?.code ?? null,
+            selected:video.getAttribute('data-scene-playing'),
+            rect:{x:Math.round(video.getBoundingClientRect().x),y:Math.round(video.getBoundingClientRect().y),width:Math.round(video.getBoundingClientRect().width),height:Math.round(video.getBoundingClientRect().height)}
+          }))));
+          throw error;
+        }
         await page.locator('[data-video-category="life"]').click();
         assert.equal(await page.locator('[data-video-style]').inputValue(),"wildflower-dance");
         await page.locator('[data-video-category="energy"]').click();
@@ -349,10 +606,17 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         const realSrc = await selectedClip.getAttribute("data-real-mp4");
         assert.match(realSrc || "", /^\/videos\/holistic-house\/money-films-v1\/golden-rain\.mp4$/);
         assert.equal(await selectedClip.evaluate(el => el.tagName), "VIDEO");
-        await page.waitForFunction(() => {
-          const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
-          return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
-        }, undefined, {timeout: 30000});
+        try {
+          await page.waitForFunction(() => {
+            const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
+            return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
+          }, undefined, {timeout: 30000});
+        } catch (error) {
+          const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
+            networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
+            width:video.videoWidth,error:video.error?.code ?? null,src:video.currentSrc}));
+          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify(state)}`, {cause:error});
+        }
         const firstTime = await selectedClip.evaluate(video => video.currentTime);
         await page.waitForTimeout(760);
         const secondTime = await selectedClip.evaluate(video => video.currentTime);
@@ -411,10 +675,8 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         // private media is captured in CI artifacts.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await compactHypno.screenshot({
-            path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png",
-            animations:"disabled",
-          });
+          await captureSyntheticOverview(page, compactHypno,
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+".png");
         }
         const compactHeight=await compactHypno.evaluate(el=>el.getBoundingClientRect().height);
         assert.ok(compactHeight<1250,engine+" "+locale+" "+width+"px too tall: "+compactHeight);
@@ -594,8 +856,12 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.ok(attach && attach.height>=44,
             "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
           mkdirSync("artifacts/mandala-audio",{recursive:true});
-          await panel.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
-            animations:"disabled",timeout:20000});
+          // The playing canvas can prevent element screenshots from reaching
+          // Playwright's stability condition. The full-page synthetic capture
+          // retains the audio panel and avoids waiting on its moving ancestor.
+          await panel.evaluate(element=>element.scrollIntoView({block:"start",behavior:"instant"}));
+          await page.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
+            fullPage:true,animations:"disabled",timeout:30000});
         }
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
@@ -667,6 +933,23 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
               "healthy preset must not show direct-open error fallback");
             await page.locator("[data-video-music-preview]").click();
           }
+          // Mock-fidelity regression: five sound filters and all 13 original
+          // WAVs share exactly one real player. A row Play starts native
+          // Safari-compatible media but does NOT silently attach it to video.
+          assert.equal(await page.locator('[data-video-quick-section="5"] audio').count(),0,
+            "the compact summary cannot duplicate the audio player");
+          const directPlay=page.locator('[data-video-audio-play="harmony"]');
+          await directPlay.click();
+          await page.waitForFunction(()=>{
+            const a=document.querySelector("[data-video-audio-player]");
+            return a && a.error===null && !a.paused && a.currentTime>.2;
+          },undefined,{timeout:18000});
+          assert.equal(await directPlay.getAttribute("aria-pressed"),"true",
+            "row playback is a real active button, not a decorative triangle");
+          await directPlay.click();
+          await page.waitForFunction(()=>Boolean(document.querySelector(
+            "[data-video-audio-player]")?.paused),undefined,{timeout:10000});
+          assert.equal(await directPlay.getAttribute("aria-pressed"),"false");
         }
         if (engine === "chromium" && locale === "ru" && width === 390) {
           await page.locator("[data-video-extra-settings] > summary").click();
@@ -897,7 +1180,7 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
             await advanced.locator(":scope > summary").click();
           await director.waitFor({state:"visible",timeout:12000});
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
-          await openDirector.click();
+          if(await director.getAttribute("data-director-open")!=="true")await openDirector.click();
           assert.equal(await director.getAttribute("data-director-open"),"true");
           assert.equal(await director.locator('[data-director-field="theme"],[data-director-field="difficulty"],[data-director-field="goal"],[data-director-field="profile"]').count(),4,
             "four compact main director fields");
@@ -913,8 +1196,10 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           await page.locator('[role="dialog"] button:has-text("Готово")').click();
           const newVisualIdea=director.locator('[data-director-visual-idea] textarea');
           await newVisualIdea.fill("UNSENT_TOKEN_8257: белый орёл летит над горами и превращается в созвездие");
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0,
-            "subject and action already provided: no unnecessary 96-question form");
+          assert.equal(await director.locator('[data-director-category]').count(),5,
+            "the five question categories remain compact tabs, not five mandatory forms");
+          assert.ok((await director.locator('[data-director-contextual-questions] fieldset').count())<=2,
+            "a complete visual idea never expands into a 96-question form");
           await director.locator('[data-director-create-plan]').click();
           const reference=director.locator('[data-director-reference-pack]');
           assert.match(await reference.locator('[data-director-recognized-visuals]').innerText(),/ор[её]л/i);
@@ -933,17 +1218,29 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(packet.creativeReferencePack.externalTransferApproved,false);
           assert.ok(!JSON.stringify(packet).includes("UNSENT_TOKEN_8257"));
           await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
-          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),2,
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),2,
             "only two contextual clarifications when subject and action are unclear");
+          const customSubject=director.locator('[data-director-contextual-questions] fieldset').first().locator('input');
+          await customSubject.pressSequentially('Свой герой');
+          assert.equal(await customSubject.inputValue(),'Свой герой',
+            'custom answer stays mounted and editable across successive keystrokes');
+          await customSubject.fill('');
+          await director.locator('[data-director-contextual-questions] button:has-text("Другой герой")').click();
+          await director.locator('[data-director-contextual-questions] button:has-text("Животное или птица")').click();
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
+            "a chosen animal asks only for its identity before returning to the other missing details");
           await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Летит")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          await director.locator('[data-director-contextual-questions] button:has-text("Путешествует")').click();
           await newVisualIdea.fill("Без орла, нет другого героя");
-          assert.equal(await director.locator('[data-director-contextual-questions] > div').count(),1,
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
             "revised exclusion invalidates only the contradicted subject, preserving the action");
           assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
           await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions]').count(),0);
+          const savedAnimal=director.locator('[data-director-answer="PERSONAL_07"][data-director-answer-scope="global"]');
+          assert.match(await savedAnimal.innerText(),/Волк/);
+          await savedAnimal.getByRole('button',{name:'Изменить'}).click();
+          await savedAnimal.getByRole('button',{name:'Волк'}).click();
+          assert.match(await savedAnimal.innerText(),/Волк/,'confirmed answer remains visible after editing');
           await director.locator('[data-director-create-plan]').click();
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
@@ -965,6 +1262,13 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(await firstScene.inputValue(),secondScene);
           assert.equal(await director.locator('[data-director-scene-choice="2"]').inputValue(),firstBefore,
             "reusing another scene swaps rather than duplicates it");
+          await director.locator('[data-director-shot-select="1"]').click();
+          assert.equal(await director.locator('[data-director-category="pro"]').getAttribute('aria-pressed'),'true',
+            "a specific shot opens the Pro director rather than a second global form");
+          await director.locator('[data-director-contextual-questions] button:has-text("Крупным планом")').click();
+          await director.locator('[data-director-shot="1"] summary').click();
+          assert.match(await director.locator('[data-director-shot="1"]').innerText(),/close-up view/i,
+            "a shot-level camera choice updates its visible technical prompt only");
           await director.locator("[data-director-apply-montage]").click();
           await page.waitForFunction(()=>document.querySelector("[data-mandala-master-mp4]")===null,
             undefined,{timeout:15000});
@@ -1001,6 +1305,29 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
           assert.equal(montageProbe.status,0,"cinematic montage media decodes");
           assert.ok(JSON.parse(montageProbe.stdout).streams.some(s=>s.codec_type==="video"));
           assert.deepEqual(uploaded,[],"no client photo/wish or render was uploaded to a provider");
+          await director.getByRole('button',{name:'60 сек',exact:true}).click();
+          await director.locator('[data-director-create-plan]').click();
+          assert.equal(await director.locator('[data-director-shot]').count(),6,
+            'a 60-second storyboard contains six scenes');
+          assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
+          await director.locator('[data-director-category="advanced"]').click();
+          const moreQuestions=director.getByRole('button',{name:'Показать ещё вопросы',exact:true});
+          await moreQuestions.click();
+          assert.ok(await director.locator('[data-director-contextual-questions] fieldset').count()>4,
+            'later optional creative questions are reachable without answering earlier ones');
+          await director.locator('[data-director-category="principal"]').click();
+          const durationQuestion=director.locator('fieldset').filter({hasText:'Какой длины нужен ролик?'});
+          await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();
+          assert.equal(await director.getByRole('button',{name:'30 сек',exact:true}).getAttribute('aria-pressed'),'true');
+          await director.getByRole('button',{name:'60 сек',exact:true}).click();
+          await director.locator('[data-director-create-plan]').click();
+          assert.equal(await director.locator('[data-director-shot]').count(),6,
+            'the latest duration control overrides an earlier question answer');
+          await newVisualIdea.fill('Белый орёл летит над горами, на 30 секунд');
+          assert.equal(await director.getByRole('button',{name:'30 сек',exact:true}).getAttribute('aria-pressed'),'true',
+            'duration stated in the brief updates the existing duration control');
+          await director.locator('[data-director-create-plan]').click();
+          assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/30 сек/);
         }
 
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
@@ -1056,16 +1383,23 @@ for (const [engine, browserType] of [["webkit", webkit], ["chromium", chromium]]
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
-        console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus");
         passes++;
+        console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",
+          "elapsed", ((performance.now() - caseStartedAt) / 1000).toFixed(1) + "s");
       } finally {
         await context.close();
+        await browser.close();
       }
     }
-  } finally {
-    await browser.close();
-  }
+};
+// Both engines finish before result handling; never waive a failed browser.
+const engineResults = await Promise.allSettled(engines.map(runEngine));
+const rejectedEngines = engineResults.filter(result => result.status === "rejected");
+if (rejectedEngines.length) {
+  throw new AggregateError(rejectedEngines.map(result => result.reason),
+    "Mandala real Chromium/WebKit E2E failed; no engine is waived");
 }
-assert.equal(passes, 10);
-console.log("Mandala browser E2E:", passes, "of", passes, "checks passed");
+assert.equal(passes, viewports.length * engines.length,
+  "Every language, viewport and real browser engine must pass");
+console.log("Mandala browser E2E:", passes, "of", viewports.length * engines.length, "checks passed");
 

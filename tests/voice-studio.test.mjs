@@ -5,6 +5,8 @@ import {
   VOICE_STUDIO_VOICES,VOICE_STUDIO_MODEL,VOICE_STUDIO_MAX_CHARS,VOICE_STUDIO_SAMPLE,
   voiceStudioReady,voiceStudioKey,findStudioVoice,validateStudioRequest,buildStudioPayload,studioExcerpt,
 } from '../lib/mandala/voice-studio.mjs';
+import * as studio from '../lib/mandala/voice-studio.mjs';
+import * as mixer from '../lib/mandala/wav-pcm-mixer.mjs';
 
 const get=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('six stable gender/pitch voices, RU and EN names, distinct Google voice IDs',()=>{
@@ -52,16 +54,53 @@ test('invalid languages, unknown voices, additional fields and missing consent f
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'   ',consent:true}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'x'.repeat(VOICE_STUDIO_MAX_CHARS+1),consent:true}));
   assert.throws(()=>validateStudioRequest({mode:'custom',voiceId:'mark',language:'en',text:'<xml>',consent:true}));
+  const guest=validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'Сегодня я выбираю спокойствие.',consent:true});
+  assert.equal(guest.mode,'short_text');
+  assert.equal(buildStudioPayload(guest).input[0].content[0].text,guest.text);
+  assert.throws(()=>validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'private',consent:false}));
+  assert.throws(()=>validateStudioRequest({mode:'short_text',voiceId:'maya',language:'ru',text:'<script>',consent:true}));
 });
 test('request speaks verbatim transcript via 3.8 Flash-Lite prebuilt voice and WAV',()=>{
   const input=validateStudioRequest({mode:'custom',voiceId:'maya',language:'ru',text:'Тихий свет и покой.',consent:true});
   const payload=buildStudioPayload(input);
-  assert.deepEqual(payload.generationConfig.responseModalities,['AUDIO']);
-  assert.equal(payload.generationConfig.responseFormat.audio.mimeType,'AUDIO_WAV');
-  assert.equal(payload.generationConfig.speechConfig.voiceConfig.voice,'Sulafat');
-  assert.equal(payload.contents[0].parts[0].text,input.text);
-  assert.ok(payload.contents[0].parts[0].speech_metadata.style.includes('русском'));
+  assert.equal(payload.model,VOICE_STUDIO_MODEL);
+  assert.deepEqual(payload.response_format,{type:'audio'});
+  assert.deepEqual(payload.generation_config.speech_config,[{voice:'Sulafat'}]);
+  assert.equal(payload.input[0].type,'user_input');
+  assert.equal(payload.input[0].content[0].text,input.text);
+  assert.ok(payload.input[0].content[0].annotations[0].style.includes('русском'));
   assert.equal(JSON.stringify(payload).includes('HH_COUNCIL_GEMINI_API_KEY'),false);
+});
+test('Interactions REST extracts only the last model-output audio block',()=>{
+  assert.equal(typeof studio.extractStudioAudio,'function');
+  assert.equal(studio.extractStudioAudio({steps:[
+    {type:'user_input',content:[{type:'audio',data:'not-output'}]},
+    {type:'model_output',content:[{type:'audio',data:'first'},{type:'text',text:'ignored'}]},
+    {type:'model_output',content:[{type:'audio',data:'last'}]},
+  ]}),'last');
+  for(const value of [null,{}, {steps:[{type:'model_output',content:[{type:'text',data:'not-audio'}]}]}])
+    assert.equal(studio.extractStudioAudio(value),null);
+  assert.equal(studio.extractStudioAudio({steps:[{type:'model_output',content:[
+    {type:'audio',data:'first'},{type:'audio',data:''},
+  ]}]}),'');
+});
+test('provider WAV must be a complete supported PCM stream before delivery',()=>{
+  assert.equal(typeof mixer.readPcmWav,'function');
+  const wav=new ArrayBuffer(48),v=new DataView(wav);
+  const text=(offset,s)=>[...s].forEach((c,i)=>v.setUint8(offset+i,c.charCodeAt(0)));
+  text(0,'RIFF');v.setUint32(4,40,true);text(8,'WAVE');text(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,24000,true);v.setUint32(28,48000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  text(36,'data');v.setUint32(40,4,true);
+  assert.equal(mixer.readPcmWav(wav).frames,2);
+  v.setUint32(40,12,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/TRUNCATED_WAV/);
+  v.setUint32(40,4,true);v.setUint16(20,3,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/UNSUPPORTED_WAV_PCM/);
+  v.setUint16(20,1,true);v.setUint32(4,400,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/INVALID_RIFF_SIZE/);
+  v.setUint32(4,40,true);v.setUint16(32,4,true);
+  assert.throws(()=>mixer.readPcmWav(wav),/UNSUPPORTED_WAV_PCM/);
 });
 test('existing personal script is reduced to speech only, without metadata or pause instructions',()=>{
   const source=[
@@ -85,22 +124,26 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/auth\.verified\(\)/);
   assert.match(code,/consumeRate\(config/);
   assert.match(code,/voice-studio-free-global/);
-  assert.match(code,/TTS_FREE_QUOTA_EXHAUSTED/);
+  assert.match(code,/validated\.mode==='affirmations'\|\|validated\.mode==='short_text'/);
+  assert.match(code,/requestStudioAudio\(/);
   assert.match(code,/new NextResponse\(wav/);
-  assert.match(code,/RIFF/);
   assert.match(code,/voiceStudioKey\(process\.env\)/);
   assert.doesNotMatch(code,/process\.env\.HH_COUNCIL_GEMINI_API_KEY/);
 });
-test('editor has a real cloud voice component and public route linked in all locales',()=>{
+test('editor offers free samples and custom text generation in main video page and preserves legacy link',()=>{
   const meditation=get('components/mandala-personal-meditation.tsx');
   const mandala=get('components/mandala-meditation-client.tsx');
-  const standalone=get('app/[locale]/holistic-support/voice-studio/page.tsx');
+  const redirect=get('app/[locale]/holistic-support/voice-studio/route.ts');
+  const editor=get('components/mandala-free-video-studio.tsx');
   const client=get('components/mandala-cloud-voice-studio.tsx');
   const mix=get('lib/mandala/voice-audio-mix.ts');
   assert.match(meditation,/MandalaCloudVoiceStudio locale=\{locale\} sourceText=\{script\}/);
   assert.match(mandala,/holistic-support\/voice-studio/);
-  assert.match(standalone,/PublicSiteHeader/);
-  assert.match(standalone,/isPublicLocale/);
+  assert.match(redirect,/NextResponse\.redirect/);
+  assert.match(redirect,/isPublicLocale/);
+  assert.match(redirect,/url\.hash="voice-studio"/);
+  assert.match(editor,/data-video-voice-studio/);
+  assert.match(editor,/MandalaCloudVoiceStudio locale=\{locale\}/);
   assert.match(client,/VOICE_STUDIO_VOICES/);
   assert.match(client,/consent:true/);
   assert.match(client,/data-voice-studio-generate/);

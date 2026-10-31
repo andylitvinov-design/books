@@ -23,37 +23,37 @@ const copy={
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
     voice:"Голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
-    consent:"Разрешаю отправить только показанный текст аффирмаций в Google Gemini для озвучки. Не включаю в него личные или медицинские данные. На бесплатном тарифе Google может использовать данные для улучшения своих сервисов.",
+    consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
     generate:"Создать аудиодорожку",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
-    unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит бесплатных запросов исчерпан. Платная генерация не запускается.",
+    unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит запросов исчерпан. Платёж с посетителя не взимается.",
     error:"Не удалось получить звук. Выберите другой голос или повторите позже.",tooLong:"Аудио длиннее 60 секунд: сократите количество аффирмаций.",
     download:"Скачать WAV",tip:"Вы сможете прослушать, скачать WAV или нажать «Создать видео» — голос уже добавлен. При изменении фраз понадобится новая озвучка.",
     limit:"До 3 бесплатных попыток в час с одного подключения; без регистрации.",review:"Проверьте текст перед отправкой.",
-    finished:"Голос в видео",status:"Длительность речи",seconds:"сек."
+    finished:"Голос в видео",status:"Длительность речи",seconds:"сек.",backupUsed:" · OpenRouter/xAI",freeUsed:" · бесплатный OpenRouter/Deepgram"
   },
   en:{
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
     voice:"Voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
-    consent:"I agree to send only the displayed affirmation text to Google Gemini for speech generation. It contains no identifying or medical data. Free-tier submissions may be used by Google to improve its products.",
+    consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
     generate:"Generate voice track",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
-    unavailable:"Free voice generation has not been enabled yet.",quota:"Free usage limit reached. Paid generation will not be started.",
+    unavailable:"Free voice generation has not been enabled yet.",quota:"Audio request limit reached. No visitor charges.",
     error:"Audio could not be generated. Try another voice or again later.",tooLong:"Speech is longer than 60 seconds; shorten the affirmations.",
     download:"Download WAV",tip:"Listen, download WAV, or select Create video — your voice is already attached. Changed phrases require new narration.",
     limit:"Up to 3 free requests per hour per connection; no sign-in.",review:"Review this text before sending.",
-    finished:"Voice in video",status:"Speech duration",seconds:"sec"
+    finished:"Voice in video",status:"Speech duration",seconds:"sec",backupUsed:" · OpenRouter/xAI",freeUsed:" · free OpenRouter/Deepgram"
   },
   es:{
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
     voice:"Voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
-    consent:"Autorizo enviar solo estas frases a Google Gemini para generar voz. No incluyen datos médicos ni de identificación. Google puede usar datos del nivel gratuito para mejorar sus productos.",
+    consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
     generate:"Generar pista de voz",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
-    unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota gratuita agotada; no se usará un servicio de pago.",
+    unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota agotada; no hay cobros al visitante.",
     error:"No se pudo generar el sonido. Elige otra voz.",tooLong:"La voz dura más de 60 segundos; reduce las afirmaciones.",
     download:"Descargar WAV",tip:"Escucha, descarga el WAV o pulsa Crear vídeo. Si cambias las frases, genera la voz de nuevo.",
     limit:"Hasta 3 solicitudes gratuitas por hora y conexión, sin registro.",review:"Revisa el texto antes de enviarlo.",
-    finished:"Voz en el vídeo",status:"Duración",seconds:"s"
+    finished:"Voz en el vídeo",status:"Duración",seconds:"s",backupUsed:" · OpenRouter/xAI",freeUsed:" · OpenRouter/Deepgram gratis"
   }
 } as const;
 const levelCopy={
@@ -93,6 +93,8 @@ export function MandalaAffirmationVoice({
   const [musicLevel,setMusicLevel]=useState(12);
   const [consent,setConsent]=useState(false);
   const [available,setAvailable]=useState(false);
+  const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
+  const languageAvailable=available&&availableLanguages.includes(language);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
   const [audioUrl,setAudioUrl]=useState("");
@@ -102,7 +104,7 @@ export function MandalaAffirmationVoice({
   const controllerRef=useRef<AbortController|null>(null);
   const audioUrlRef=useRef("");
   const balanceTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
-  const voiceDataRef=useRef<{blob:Blob;seconds:number;mixSeconds:number}|null>(null);
+  const voiceDataRef=useRef<{blob:Blob;seconds:number;mixSeconds:number;providerNotice?:string}|null>(null);
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
   const originRef=useRef({speechText,voiceId,language});
@@ -114,8 +116,12 @@ export function MandalaAffirmationVoice({
     const controller=new AbortController();
     void fetch("/api/holistic-support/voice",{cache:"no-store",signal:controller.signal})
       .then(r=>r.ok?r.json():Promise.reject())
-      .then(data=>setAvailable(data.enabled===true&&data.publicAffirmationsEnabled===true))
-      .catch(()=>{if(!controller.signal.aborted)setAvailable(false);});
+      .then(data=>{
+        setAvailable(data.enabled===true&&data.publicAffirmationsEnabled===true);
+        setAvailableLanguages(Array.isArray(data.languages)?data.languages.filter(
+          (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
+      })
+      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);}});
     return ()=>controller.abort();
   },[]);
 
@@ -145,7 +151,7 @@ export function MandalaAffirmationVoice({
   },[]);
 
   async function renderBalance(
-    clip:{blob:Blob;seconds:number;mixSeconds:number},
+    clip:{blob:Blob;seconds:number;mixSeconds:number;providerNotice?:string},
     selected:{bed:Bed;voiceLevel:number;musicLevel:number},
     job:number,
   ){
@@ -161,7 +167,7 @@ export function MandalaAffirmationVoice({
       if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(clip.seconds);
       onAttach({file,spokenText:speechText,voiceId,language,speechSeconds:clip.seconds,mixSeconds:clip.mixSeconds,bed:selected.bed});
-      setMessage(t.ready);
+      setMessage(t.ready+(clip.providerNotice||""));
     }catch(error){
       if(job!==jobRef.current)return;
       const code=error instanceof Error?error.message:"";
@@ -184,7 +190,7 @@ export function MandalaAffirmationVoice({
   }
 
   async function createAudio(){
-    if(!available||disabled||busy||!speechText||!consent)return;
+    if(!languageAvailable||disabled||busy||!speechText||!consent)return;
     const job=++jobRef.current;
     const controller=new AbortController();
     controllerRef.current=controller;
@@ -209,7 +215,9 @@ export function MandalaAffirmationVoice({
       if(seconds>59)throw new Error("TOO_LONG");
       const mixSeconds=durationChoices.find(candidate=>candidate>=Math.ceil(seconds+0.4)&&candidate>=durationSeconds) || 60;
       if(job!==jobRef.current)return;
-      const clip={blob:voice,seconds,mixSeconds};
+      const providerNotice=reply.headers.get("X-HH-Voice-Provider")==="openrouter" ? t.backupUsed :
+        reply.headers.get("X-HH-Voice-Provider")==="openrouter-free" ? t.freeUsed : "";
+      const clip={blob:voice,seconds,mixSeconds,providerNotice};
       voiceDataRef.current=clip;
       await renderBalance(clip,{bed,voiceLevel,musicLevel},job);
     } catch(e) {
@@ -272,12 +280,12 @@ export function MandalaAffirmationVoice({
       <span>{t.consent}</span>
     </label>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!available||!speechText||!consent||busy||mixing||disabled}
+      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled}
       onClick={()=>void createAudio()}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
       {busy?mixing?t.mixing:t.busy:t.generate}
     </button>
-    {!available?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
+    {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
       <strong><Check size={16} aria-hidden="true"/>{t.finished} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
       <audio controls preload="metadata" src={audioUrl} aria-label={t.finished}/>

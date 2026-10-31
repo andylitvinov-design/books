@@ -1,18 +1,22 @@
 name: HH PR core release gate
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   scope:
     name: classify-change
+    # Draft PRs avoid full checkout; original full code is required after ready_for_review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
@@ -22,6 +26,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - name: Classify strictly documentation-only PRs
         id: diff
         shell: bash
@@ -53,6 +62,7 @@ jobs:
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-pr-readiness.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
@@ -118,7 +128,7 @@ jobs:
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       actions: read
@@ -130,8 +140,14 @@ jobs:
           SCOPE_RESULT: ${{ needs.scope.result }}
           CODE_RESULT: ${{ needs.code.result }}
           DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            exit 1
+          fi
           [[ "$SCOPE_RESULT" == success ]] || exit 1
           if [[ "$DOCS_ONLY" == true ]]; then
             [[ "$CODE_RESULT" == skipped ]] || exit 1

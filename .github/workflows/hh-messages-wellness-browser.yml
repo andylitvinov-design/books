@@ -1,0 +1,71 @@
+name: Holistic House Messages wellness synthetic browser QA
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'app/**/app/messages/**'
+      - 'components/app/messages-orders-clients.*'
+      - 'components/app/messages-simple-inbox.*'
+      - 'components/app/messages-hub.*'
+      - 'components/app/practice-request-conversation.*'
+      - 'scripts/verify-messages-wellness-browser.mjs'
+      - 'components/sitewide-antistress-banner.tsx'
+      - 'public/images/holistic-house/messenger-zen-stones.svg'
+      - '.github/workflows/hh-messages-wellness-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-messages-visual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  synthetic-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_MESSAGES_QA_ORIGIN: http://127.0.0.1:3127
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-messages-visual-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22',cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Script syntax and typecheck
+        run: |
+          node --check scripts/verify-messages-wellness-browser.mjs
+          npx --no-install tsc --noEmit --pretty false
+      - name: Build production Next.js before browser tests
+        run: npm run build
+      - name: Install synthetic browser engines
+        run: |
+          mkdir -p /tmp/hh-messages-visual-tools
+          npm install --prefix /tmp/hh-messages-visual-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-messages-visual-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Actual iPhone-sized Orders / Clients / request conversations
+        run: |
+          mkdir -p artifacts/messages-wellness
+          npx next start --hostname 127.0.0.1 --port 3127 >/tmp/hh-messages-visual-next.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 120); do
+            if curl --silent --fail http://127.0.0.1:3127/ru/app/messages >/dev/null; then break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null || [ "$i" -eq 120 ]; then
+              echo "Messages synthetic dev server unavailable after attempt $i" >&2
+              tail -80 /tmp/hh-messages-visual-next.log
+              exit 1
+            fi
+            sleep 2
+          done
+          # Production build has no on-demand locale recompilation / HMR.
+          for locale in en es; do
+            curl --silent --show-error --fail --max-time 35 "http://127.0.0.1:3127/$locale/app/messages" >/dev/null
+          done
+          node scripts/verify-messages-wellness-browser.mjs
+      - name: Preserve synthetic rendered screenshots only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: messages-wellness-synthetic-chromium-webkit
+          path: artifacts/messages-wellness/
+          retention-days: 7

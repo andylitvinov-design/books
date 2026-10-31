@@ -64,10 +64,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(payloads[0].voiceId,"maya");
       assert.equal(payloads[0].consent,true);
       assert.equal(payloads[0].language,locale);
-      const selected=await page.locator("[data-video-audio-selected]").innerText();
-      assert.match(selected,/holistic-house-affirmations/);
-      const attached=await page.locator("[data-video-audio-attached]").innerText();
-      assert.match(attached,/holistic-house-affirmations/);
+      const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
+      // These filename panels belong to the advanced editor. Open its real
+      // disclosure before checking the filenames as visible UI evidence.
+      const advanced=page.locator("[data-video-quick-legacy]");
+      assert.equal(await advanced.getAttribute("open"),null);
+      await advanced.locator(":scope > summary").click();
+      const selectedFile=page.locator("[data-video-audio-selected] strong");
+      const attachedFile=page.locator("[data-video-audio-attached] strong");
+      await selectedFile.waitFor({state:"visible"});
+      await attachedFile.waitFor({state:"visible"});
+      assert.equal(await selectedFile.innerText(),expectedFileName);
+      assert.equal(await attachedFile.innerText(),expectedFileName);
+      await advanced.locator(":scope > summary").click();
+      await selectedFile.waitFor({state:"hidden"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
@@ -114,8 +124,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
+      const voicePanel=page.locator("[data-video-voice-studio]");
+      await voicePanel.locator(":scope > summary").click();
+      const studio=voicePanel.locator("[data-voice-studio]");
+      await studio.waitFor({state:"visible"});
+      assert.equal(await studio.locator("[data-voice-id]").count(),6);
+      await studio.locator("[data-voice-studio-generate]").click();
+      await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
+      const sample=payloads.find(item=>item.mode==="sample");
+      assert.ok(sample,engine+" free text-to-speech sample reached provider");
+      assert.equal(sample.voiceId,"mark");
+      assert.equal(sample.language,locale);
+      assert.ok(!("text" in sample),"public voice sample never sends private content");
+      await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click();
+      const customText=locale==="ru"?"Сегодня я выбираю спокойствие.":"Today I choose calm.";
+      await studio.locator("textarea").fill(customText);
+      await studio.locator("input[type=checkbox]").check();
+      await studio.locator("[data-voice-studio-generate]").click();
+      await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
+      const typed=payloads.find(item=>item.mode==="short_text");
+      assert.ok(typed,engine+" guest short text reached TTS API");
+      assert.equal(typed.text,customText);
+      assert.equal(typed.consent,true);
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + real local nature WAV attachment + stale guard\n");
     }finally{await context.close();}
   }finally{await browser.close();}
 }
+
