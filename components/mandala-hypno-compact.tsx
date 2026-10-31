@@ -607,7 +607,7 @@ export function MandalaHypnoCompact({
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
           <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview aria-label={ui.previewButton} disabled={disabled}
+        <button type="button" data-video-affirmation-preview disabled={disabled} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
