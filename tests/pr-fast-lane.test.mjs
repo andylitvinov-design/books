@@ -762,3 +762,24 @@ test('five other specialists delegate TypeScript/build while Public Journey sing
     assert.doesNotMatch(src, /continue-on-error:\s*true/);
   }
 });
+
+
+test('Practice visual PR does not repeat Google-auth browser or old Chromium/WebKit overlays', () => {
+  const source = workflow('practice-visual-browser.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(source, /^  pull_request:/m, 'retain fast source tests on PR');
+  assert.match(source, /^  push:/m, 'retain post-merge real browser visuals');
+  for (const name of [
+    'Install Chromium and WebKit for synthetic UI verification',
+    'Render and verify real Practice page at 320, 354, 390 and 430 pixels',
+    'Generate reproducible Chromium-vs-WebKit visual overlays',
+  ]) {
+    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'duplicate browser work must not run for ordinary PR: '+name);
+  }
+  assert.match(source, /node --test tests\/compare-ui-screenshots\.test\.mjs/,
+    'current visual tooling source contracts must still run');
+  assert.ok(!source.includes('tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs'),
+    'Google auth source tests have a distinct owner');
+  assert.match(core, /^  release-ready:/m);
+});
