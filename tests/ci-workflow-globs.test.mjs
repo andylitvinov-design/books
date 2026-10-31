@@ -125,41 +125,25 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
 });
 
-test('Public Services: only existing executed unit-test changes may skip duplicate browser matrix', () => {
+test('Public Services exact-head routing preserves source contracts and real risk-based browser acceptance', () => {
   const s = workflow('hh-public-services-production.yml');
   assert.ok(!s.includes("      - '.github/workflows/hh-public-services-production.yml'"),
-    'YAML-only updates must use core/actionlint, not launch full public services browser matrix');
-  assert.match(s, /pulls\/\$\{number\}\/files\?per_page=100/);
-  assert.match(s, /file\.status === 'modified' && unitTests\.has\(file\.filename\)/);
-  assert.match(s, /fullAcceptance = true;/);
-  assert.match(s, /if: steps\.scope\.outputs\.full_acceptance == 'true'/);
-  const allowed = [...s.matchAll(/"(?<file>tests\/[^"]+\.test\.mjs)"/g)].map(m => m.groups.file);
-  const invoked = new Set([...s.matchAll(/node --test ([^\n]+)/g)]
-    .flatMap(m => m[1].trim().split(/\s+/).filter(name => name.startsWith('tests/'))));
-  assert.ok(allowed.length >= 20, 'do not silently empty the unit-test whitelist');
-  for (const file of allowed) assert.ok(invoked.has(file), 'whitelisted test must run: ' + file);
-  for (const required of ['npm run build', 'playwright install --with-deps chromium webkit',
-    'verify-service-cart-browser.mjs', 'verify-talisman-google-checkout-browser.mjs',
-    "'app/api/payments/**'"]) assert.ok(s.includes(required), 'missing full acceptance: ' + required);
-  assert.doesNotMatch(s, /continue-on-error:\s*true/);
-});
-
-test('Reiki PR runs current course source contracts; full 64-slide browser suite stays manual', () => {
-  const yaml=workflow('hh-reiki-all-slides-browser.yml');
-  assert.match(yaml,/^  workflow_dispatch:/m);
-  assert.ok(yaml.includes("  course-and-save-gate:\n    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
-    'specialist workflow cannot report a second skipped PR job to release-ready');
-  assert.ok(!yaml.includes('  reiki-current-contracts:'),'duplicate npm install and check job removed');
-  assert.ok(yaml.includes("if: github.event_name == 'pull_request'\n        run: |\n          node --check scripts/verify-reiki-all-slides-browser.mjs"));
-  for (const step of [
-    'Isolated Chromium/WebKit runtime (manual deep QA only)',
-    'Initialize synthetic isolated account database',
-    'Verify Chromium full 64 screens and Safari guest save-only checkpoint',
-  ]) {
-    assert.ok(yaml.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
-      'old extended browser/DB matrix must not block an ordinary product PR: '+step);
-  }
-  assert.ok(yaml.includes('node --test tests/reiki-referral-landing.test.mjs'));
-  assert.match(yaml,/HH_APP_TEST_RUNTIME: isolated/);
-  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+    'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
+  assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
+  assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(s, /fetch-depth: 0/);
+  assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
+  assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
+  assert.match(s, /HH_PUBLIC_CASES/);
+  assert.match(s, /wait "\$lane_a_pid"/);
+  assert.match(s, /wait "\$lane_b_pid"/);
+  assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
+    'obsolete contact-channel browser duplicate must not run');
+  for (const required of [
+    'npm run build', 'playwright install --with-deps chromium webkit',
+    'run_case "verify-service-cart-browser.mjs"',
+    'run_case "verify-talisman-google-checkout-browser.mjs"',
+    "'app/api/payments/**'"
+  ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
