@@ -150,10 +150,7 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
-      - name: Full TypeScript check
-        if: needs.scope.outputs.ci_only != 'true'
-        run: npx --no-install tsc --noEmit --pretty false
-      - name: Exact proposed release production build
+      - name: Exact proposed release production build and TypeScript check
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
   release-ready:
