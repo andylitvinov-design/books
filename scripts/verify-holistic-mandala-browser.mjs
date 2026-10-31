@@ -232,7 +232,7 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -356,7 +356,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-auto-video-input]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
