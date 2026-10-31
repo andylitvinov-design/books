@@ -1213,13 +1213,40 @@ const runEngine = async ([engine, browserType]) => {
             await guidedPhrasesEdit.click({timeout:15000});
           } catch (error) {
             const geometry=await guidedPhrasesEdit.evaluate(element=>{
+              const rectOf=(target)=>{
+                const r=target?.getBoundingClientRect();
+                return r?{x:Math.round(r.x),y:Math.round(r.y),
+                  width:Math.round(r.width),height:Math.round(r.height),
+                  right:Math.round(r.right)}:null;
+              };
               const r=element.getBoundingClientRect();
               const x=r.left+r.width/2,y=r.top+r.height/2;
               const hit=document.elementFromPoint(x,y);
-              return {rect:{top:r.top,bottom:r.bottom,left:r.left,right:r.right},
-                viewport:{width:innerWidth,height:innerHeight,scrollY},
-                hit:hit?.outerHTML.slice(0,240)||null,
-                panelOpen:document.querySelector("[data-video-quick-hypno-panel]")?.getAttribute("hidden")===null};
+              const lineage=[];
+              for(let current=element;current&&lineage.length<14;current=current.parentElement){
+                const style=getComputedStyle(current);
+                lineage.push({
+                  tag:current.tagName.toLowerCase(),
+                  identity:current.getAttribute("data-video-quick-hypno-panel")!==null?"quick-hypno-panel":
+                    current.id||String(current.className||"").slice(0,100),
+                  rect:rectOf(current),scrollLeft:current.scrollLeft,
+                  scrollWidth:current.scrollWidth,clientWidth:current.clientWidth,
+                  overflowX:style.overflowX,position:style.position,
+                  display:style.display,transform:style.transform,
+                });
+              }
+              return {
+                rect:{top:r.top,bottom:r.bottom,left:r.left,right:r.right},
+                viewport:{width:innerWidth,height:innerHeight,scrollY,scrollX,
+                  documentScrollWidth:document.documentElement.scrollWidth,
+                  documentClientWidth:document.documentElement.clientWidth,
+                  bodyScrollWidth:document.body.scrollWidth},
+                quickNav:rectOf(document.querySelector("[data-video-quick-controls]")),
+                quickBuilder:rectOf(document.querySelector("[data-video-quick-builder]")),
+                quickPanel:rectOf(document.querySelector("[data-video-quick-hypno-panel]")),
+                hit:hit?.outerHTML.slice(0,240)||null,lineage,
+                panelOpen:document.querySelector("[data-video-quick-hypno-panel]")?.getAttribute("hidden")===null,
+              };
             });
             throw new Error(`${engine}/${locale}/${width} real guided edit click failed: ${JSON.stringify(geometry)}`,
               {cause:error});
