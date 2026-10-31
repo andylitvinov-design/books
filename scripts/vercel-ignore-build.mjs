@@ -3,11 +3,16 @@ import { pathToFileURL } from "node:url";
 
 // Exit 0 = Vercel skips deploy; exit 1 = build continues.
 // Do NOT skip site code, public assets, test data, config or unknown files.
-// Only documentation that is never served by the application and CI workflow
-// definitions qualify as safe-to-ignore changes.
+// Only clearly non-runtime documentation, GitHub Actions configuration and
+// dedicated CI implementation/tests qualify as safe-to-ignore changes.
 const NON_RUNTIME = [
   /^docs\/myspace\/[\w./-]+\.(?:md|mdx|txt)$/i,
   /^\.github\/workflows\/[\w.-]+\.ya?ml$/,
+  /^docs\/operations\/CI_RELEASE_POLICY\.md$/,
+  /^scripts\/ci-[\w.-]+\.mjs$/,
+  /^lib\/ci\/[\w./-]+\.mjs$/,
+  /^tests\/ci-[\w.-]+\.test\.mjs$/,
+  /^tests\/pr-(?:fast-lane|sweep-guard)\.test\.mjs$/,
   /^README(?:\.[\w.-]+)?\.md$/i,
 ];
 
@@ -15,7 +20,10 @@ export function maySkipBuild(changedPaths) {
   return Array.isArray(changedPaths)
     && changedPaths.length > 0
     && changedPaths.every(path =>
-      typeof path === "string" && NON_RUNTIME.some(pattern => pattern.test(path))
+      typeof path === "string" &&
+      !path.split("/").some(part => part === "." || part === "..") &&
+      !path.includes("\\") &&
+      NON_RUNTIME.some(pattern => pattern.test(path))
     );
 }
 
@@ -86,7 +94,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const local = changedFilesBetween(previous, current);
   const changed = local ?? await changedFilesViaGithub(previous, current);
   if (maySkipBuild(changed)) {
-    console.log("Skip Vercel build: only My Space notes, README, or GitHub CI files changed.");
+    console.log("Skip Vercel build: only verified non-runtime documentation or dedicated GitHub CI files changed.");
     process.exit(0);
   }
   console.log("Run Vercel build: application changed or safe comparison unavailable.");
