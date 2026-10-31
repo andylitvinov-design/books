@@ -421,3 +421,29 @@ test("one strategy CTA invokes live first-party POST for Wave and consented Gemi
  assert.match(route,/externalModelOptIn!==true/);
  assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|currentText|goalText|privateNote|rawResults)/);
 });
+
+test("all 6 themes and 3 languages return client-reviewed Wave API drafts",()=>{
+ const strategy=read("lib/mandala/hypno-psych-strategy.ts");
+ const tr=ts.transpileModule(strategy,{compilerOptions:{
+   module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+ },reportDiagnostics:true});
+ assert.deepEqual(tr.diagnostics||[],[]);
+ const exported={};new Function("exports",tr.outputText)(exported);
+ const themes={energy:"rhythm",money:"value",relationships:"boundaries",
+   goals:"clarity",life:"meaning",health:"recovery"};
+ for(const locale of ["en","ru","es"])
+ for(const [theme,goalId] of Object.entries(themes))
+ for(const length of ["short","medium"])
+ for(const round of [0,1,2]){
+   const params={locale,theme,problemIndex:1,goalId,tone:"gentle",
+     kind:"support",focus:"support",length};
+   const phrases=buildHypnoFilteredPhrases(locale,theme,1,goalId,
+     "gentle","support","support",length,round);
+   assert.equal(phrases.length,5,locale+" "+theme+" "+length+" "+round);
+   const strategy=exported.buildWaveStrategy(params);
+   const reviewed=exported.reviewGeminiStrategy({strategy,phrases},locale,length);
+   assert.ok(reviewed,
+     "Wave API output must pass the actual client review: "+locale+" "+theme+
+     " "+length+" "+round+" "+JSON.stringify(phrases));
+ }
+});

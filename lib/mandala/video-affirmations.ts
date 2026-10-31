@@ -513,5 +513,5 @@ export function buildHypnoFilteredPhrases(
  if(extraLine)candidates.push(extraLine);
  const fallbacks=[...toneRows,...styles.short,...styles.medium,...uplifting,...base,...suggestedVideoAffirmations[locale][theme]];
  return [...new Set([...candidates,...fallbacks].map(x=>cleanLine(x||"")).filter(Boolean))]
-   .filter(x=>Array.from(x).length<=MAX_AFFIRMATION_LENGTH).slice(0,5);
+   .filter(x=>Array.from(x).length<= (length==="short"?26:MAX_AFFIRMATION_LENGTH)).slice(0,5);
 }
