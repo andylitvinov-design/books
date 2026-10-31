@@ -35,7 +35,7 @@ for (const name of workflows) {
     }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
-    if (name === 'hh-benchmark-public-browser.yml') {
+    if (['hh-benchmark-public-browser.yml', 'assessment-range-mobile-browser.yml'].includes(name)) {
       assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
     } else {
       assert.match(source, /^  cancel-in-progress: true/m);

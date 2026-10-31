@@ -12,8 +12,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ga4-safety-hold-${{ github.ref }}
-  cancel-in-progress: true
+  group: ga4-safety-hold-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   no-sdk-production-build:
     runs-on: ubuntu-24.04
