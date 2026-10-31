@@ -9,5 +9,6 @@ for(const [input,lane,status] of [
  [{kind:'feature',risk:'payments'},'lab-isolated','HOLD_FOR_ISOLATION'],
  [{kind:'feature',risk:'auth',urgent:true},'lab-isolated','HOLD_FOR_ISOLATION'],
  [{kind:'security-hotfix'},'github-hotfix','PR_REQUIRED'],
- [{kind:'feature',risk:'critical',urgent:true},'github-hotfix','PR_REQUIRED']
+ [{kind:'feature',risk:'critical',urgent:true},'github-hotfix','PR_REQUIRED'],
+ [{kind:'feature',alreadyValidated:true,releaseApproved:true},'github-release','PR_REQUIRED']
 ])test(JSON.stringify(input),()=>{const r=routeFeature(input);assert.equal(r.lane,lane);assert.equal(r.status,status)});
