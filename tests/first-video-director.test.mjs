@@ -60,8 +60,8 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   const route=readFileSync(new URL("../app/api/holistic-support/first-video-prompt/route.js",import.meta.url),"utf8");
   const first=src.indexOf("<MandalaFirstVideoStart ");
   const controls=src.indexOf("data-video-quick-controls");
-  const visual=src.indexOf('data-video-quick-section="4"');
-  assert.ok(first>visual&&visual>controls,"first-video form must be below the player, six buttons and Style section");
+  const style=src.indexOf('data-video-quick-section="4"');
+  assert.ok(first>style&&style>controls,"form follows video and third style block");
   assert.match(src,/onApply=\{applyFirstVideoDraft\}/);
   assert.match(src,/setCinematicPlan\(draft\.plan\)/);
   assert.match(src,/createQuickVideo\(\)/);
@@ -93,6 +93,21 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(providers,/HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED/);
   assert.match(route,/consumeRate\(config/);
   assert.match(route,/requireSameOrigin\(request,config\)/);
+});
+
+
+test("Safari export is never offered until the native video decoder succeeds",()=>{
+  const src=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(src,/recorder\.start\(\);/,"record one complete file rather than short Safari MP4 fragments");
+  assert.doesNotMatch(src,/recorder\.start\(500\)/);
+  assert.match(src,/playbackStatus==="ready"/);
+  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
+  assert.match(src,/onLoadedData=\{event=>confirmVideoPlayback/);
+  assert.match(src,/video\.videoWidth>0 && video\.videoHeight>0 && video\.readyState>=2/);
+  assert.match(src,/data-video-playback-error/);
+  assert.match(src,/data-video-retry-compatible/);
+  assert.match(src,/onClick=\{event=>\{\s*if\(result\.mode==="catalog"/);
+  assert.match(browserSource(),/simulated native decode failure/);
 });
 
 test("mountains in Russian lead to real mountain shots, localized scenes and genuinely new variants",()=>{
