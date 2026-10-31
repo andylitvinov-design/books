@@ -67,6 +67,14 @@ on:
       # covered by holistic-support-mandala.yml. They do not modify service
       # discovery, checkout, Alchemy or master-catalog journeys tested here.
       # Keep the broad shared mandala-* patterns for other Mandala components.
+      # This isolated speaker-consent and voice-cloning pilot is covered by
+      # holistic-support-mandala.yml (unit, Next build, mobile Chromium+WebKit).
+      # Do not force an unrelated storefront checkout/browser matrix for it.
+      - '!app/api/holistic-support/loved-voices/route.js'
+      - '!app/[locale]/holistic-support/loved-voices/page.tsx'
+      - '!components/mandala-loved-voices.tsx'
+      - '!tests/loved-voices-*.test.mjs'
+      - '!scripts/verify-loved-voices-browser.mjs'
       - '!components/mandala-cinematic-director.tsx'
       - '!components/mandala-cinematic-director.module.css'
       - '!scripts/verify-holistic-mandala-browser.mjs'

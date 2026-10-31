@@ -15,6 +15,9 @@ test("guest pilot has one real first-party form, no sign-in or external website 
     'href={url}','audio controls','locale={locale}']){
     assert.ok((ui+page).includes(s),s);
   }
+  assert.match(ui,/window\.location\.origin\+window\.location\.pathname/);
+  assert.match(ui,/#t="\+encodeURIComponent/);
+  assert.match(ui,/navigator\.share\(\{files:/);
   assert.doesNotMatch(ui,/aistudio\.google\.com|elevenlabs\.io|window\.open|supabase\.auth\.signIn/);
 });
 test("server requires source and separate owner's recorded consent, no storage or paid calls",()=>{

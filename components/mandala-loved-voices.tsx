@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useState} from "react";
 import Link from "next/link";
 import type {PublicLocale} from "@/lib/public-locales";
 import {LOVED_VOICE_CONSENT_PHRASES} from "@/lib/mandala/loved-voices.mjs";
@@ -19,7 +19,7 @@ const words={
     loading:"Проверяем доступность синтеза…",invalid:"Проверьте обе записи и текст. Если Telegram OGG/Opus не декодируется на iPhone, попросите M4A или MP3.",
     provider:"Генерация не удалась или бесплатная квота исчерпана. Голос не был заменён другим.",ready:"Готово: это синтетическая запись, а не настоящие слова близкого человека.",
     use:"Вставить в видео",useHint:"Скачайте WAV и прикрепите его через существующий раздел «Звук» видеоредактора. Автоматическая передача будет добавлена после выхода голосового микшера.",
-    share:"Пригласить близкого",shared:"Ссылка скопирована",how:"Близкий может открыть эту же страницу без регистрации, записать согласие и создать фразу либо передать вам оба разрешённых аудиофайла.",
+    share:"Пригласить близкого",shared:"Ссылка скопирована",send:"Отправить готовое WAV",how:"Близкий может открыть эту же страницу без регистрации, записать согласие и создать фразу либо передать вам оба разрешённых аудиофайла.",
     warning:"Синтезированные фразы не являются реальным высказыванием близкого. Не используйте их для обмана или публичной имитации человека.",
   },
   en:{
@@ -35,7 +35,7 @@ const words={
     loading:"Checking availability…",invalid:"Check both recordings and the text. If Safari cannot decode Telegram OGG/Opus, use M4A or MP3.",
     provider:"Generation failed or free quota exhausted. No substitute voice was used.",ready:"Ready: synthetic speech, not words the person actually said.",
     use:"Use in video",useHint:"Download WAV, then attach it in the existing Video Studio sound section. Automatic attachment follows the pending mixer release.",
-    share:"Invite the speaker",shared:"Link copied",how:"The speaker can use this same page without an account to record consent and generate the phrase, or share both approved audio files with you.",
+    share:"Invite the speaker",shared:"Link copied",send:"Share the finished WAV",how:"The speaker can use this same page without an account to record consent and generate the phrase, or share both approved audio files with you.",
     warning:"Synthetic phrases are not genuine statements from the person. Never use this to deceive or impersonate others.",
   },
   es:{
@@ -51,7 +51,7 @@ const words={
     loading:"Comprobando disponibilidad…",invalid:"Comprueba los dos audios y el texto. Si Safari no acepta OGG/Opus, usa M4A o MP3.",
     provider:"No se pudo generar o se agotó la cuota gratuita. No se utilizó otra voz.",ready:"Listo: es audio sintético, no palabras realmente dichas por esa persona.",
     use:"Usar en vídeo",useHint:"Descarga el WAV y adjúntalo en la sección de sonido del editor. La integración automática llegará después del mezclador.",
-    share:"Invitar a la persona",shared:"Enlace copiado",how:"La persona puede abrir esta página sin cuenta, grabar su consentimiento y crear el audio, o compartir contigo ambas grabaciones aprobadas.",
+    share:"Invitar a la persona",shared:"Enlace copiado",send:"Compartir WAV",how:"La persona puede abrir esta página sin cuenta, grabar su consentimiento y crear el audio, o compartir contigo ambas grabaciones aprobadas.",
     warning:"No es una declaración auténtica de la persona. No lo uses para engañar ni suplantar.",
   },
 } as const;
@@ -90,7 +90,7 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
   const [source,setSource]=useState<File|null>(null),[consent,setConsent]=useState<File|null>(null);
   const [text,setText]=useState<string>(ui.sample),[approved,setApproved]=useState(false);
   const [status,setStatus]=useState(""),[url,setUrl]=useState(""),[shared,setShared]=useState(false);
-  const urlRef=useRef("");
+  const [audioBlob,setAudioBlob]=useState<Blob|null>(null);
   useEffect(()=>{
     let cancelled=false;
     fetch("/api/holistic-support/loved-voices",{cache:"no-store"})
@@ -99,10 +99,15 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
       .finally(()=>{if(!cancelled)setLoading(false);});
     return ()=>{cancelled=true;};
   },[]);
-  useEffect(()=>{urlRef.current=url;return()=>{if(url)URL.revokeObjectURL(url);};},[url]);
+  useEffect(()=>{
+    // Fragment-only handoff: text never becomes a server query parameter.
+    const phrase=new URLSearchParams(window.location.hash.slice(1)).get("t");
+    if(phrase && [...phrase].length<=240 && !/[<>]/.test(phrase))setText(phrase);
+  },[]);
+  useEffect(()=>()=>{if(url)URL.revokeObjectURL(url);},[url]);
   async function generate(){
     if(busy||!available||!source||!consent||!approved||!text.trim())return;
-    setBusy(true);setStatus("");setUrl("");
+    setBusy(true);setStatus("");setUrl("");setAudioBlob(null);
     try{
       const [a,b]=await Promise.all([toPcmWav(source,10,30),toPcmWav(consent,2,22)]);
       const form=new FormData();
@@ -117,20 +122,30 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
       }
       const audio=await res.blob();
       if(audio.size<48 || !audio.type.includes("audio/"))throw Error("provider");
-      setUrl(URL.createObjectURL(audio));setStatus(ui.ready);
+      setAudioBlob(audio);setUrl(URL.createObjectURL(audio));setStatus(ui.ready);
     }catch(error){
       setStatus(error instanceof Error && /INVALID_AUDIO|decode|EncodingError/.test(error.message)
         ?ui.invalid:ui.provider);
     }finally{setBusy(false);}
   }
   async function invite(){
-    const link=window.location.href.split("#")[0];
+    const link=window.location.origin+window.location.pathname+"#t="+encodeURIComponent(text.trim().slice(0,240));
     try {
       if(navigator.share)await navigator.share({title:ui.title,text:ui.how,url:link});
       else{await navigator.clipboard.writeText(link);setShared(true);}
     }catch{ /* User cancelled share. */ }
   }
-  const clear=()=>{setUrl("");setStatus("");setApproved(false);};
+  async function shareAudio(){
+    if(!audioBlob)return;
+    const file=new File([audioBlob],"holistic-house-synthetic-support.wav",{type:"audio/wav"});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      try{await navigator.share({files:[file],title:ui.title,text:ui.ready});}catch{/* User cancelled sharing. */}
+    }else{
+      const anchor=document.createElement("a");anchor.href=url;
+      anchor.download=file.name;anchor.click();
+    }
+  }
+  const clear=()=>{setUrl("");setAudioBlob(null);setStatus("");setApproved(false);};
   return (
     <section data-loved-voice-mvp className="mx-auto max-w-3xl rounded-3xl border border-emerald-900/15 bg-white/90 p-5 shadow-lg sm:p-8">
       <h1 className="text-2xl font-bold text-emerald-950">{ui.title}</h1>
@@ -173,6 +188,7 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
         <label className="block text-sm font-semibold">{ui.play}</label>
         <audio controls src={url} className="w-full" preload="metadata"/>
         <a href={url} download="holistic-house-synthetic-support.wav" className="inline-block rounded-xl bg-emerald-800 px-4 py-3 text-sm font-semibold text-white">{ui.download}</a>
+        <button type="button" onClick={shareAudio} className="ml-2 rounded-xl border border-emerald-700 px-4 py-3 text-sm font-semibold text-emerald-900">{ui.send}</button>
       </div>:null}
       <div className="mt-6 border-t pt-5">
         <Link href={"/"+locale+"/holistic-support/mandala#video-audio"} className="font-semibold text-emerald-900 underline">{ui.use}</Link>
