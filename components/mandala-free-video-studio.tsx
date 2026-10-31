@@ -958,17 +958,15 @@ function ThemedFilmThumbnail({film,scene,photo,title,playing}: {
 // A video-only codec string can silently drop the selected audio track on
 // Safari. Prefer codecs that explicitly include AAC/Opus, then let the
 // actual MediaRecorder constructor validate each candidate with this stream.
-function recordingMimes(withAudio: boolean): string[] {
+function recordingMimes(withAudio: boolean, preferWebm = false): string[] {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return [];
-  const candidates = withAudio ? [
-    'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
-    "video/mp4",
-    'video/webm;codecs="vp8,opus"',
-    "video/webm",
-  ] : [
-    "video/mp4;codecs=avc1.42E01E", "video/mp4",
-    "video/webm;codecs=vp8", "video/webm",
-  ];
+  const mp4 = withAudio ? [
+    'video/mp4;codecs="avc1.42E01E,mp4a.40.2"', "video/mp4",
+  ] : ["video/mp4;codecs=avc1.42E01E", "video/mp4"];
+  const webm = withAudio ? [
+    'video/webm;codecs="vp8,opus"', "video/webm",
+  ] : ["video/webm;codecs=vp8", "video/webm"];
+  const candidates = preferWebm ? webm : [...mp4,...webm];
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
@@ -1554,6 +1552,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [notice, setNotice] = useState("");
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
+  const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
@@ -1676,6 +1676,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => () => {
     if (result?.url && result.mode!=="catalog") URL.revokeObjectURL(result.url);
   }, [result]);
+  // iOS can delay media decoding until the inline player becomes visible or
+  // the visitor taps Play. Never expose a broken file as a finished download.
+  useEffect(() => {
+    if (!result || playbackStatus !== "checking") return;
+    const timer=window.setTimeout(()=>{
+      setPlaybackStatus("failed");
+      setNotice(locale==="ru"
+        ?"Не удалось проверить воспроизведение. Файл не готов к сохранению. Попробуйте другой формат ниже."
+        :locale==="es"
+        ?"No se pudo verificar la reproducción. El archivo aún no se puede guardar. Prueba otro formato."
+        :"Video playback could not be verified. The file is not ready to save. Try the alternative format.");
+    },20000);
+    return ()=>window.clearTimeout(timer);
+  },[result,playbackStatus,locale]);
   // A completed local recording lives in the existing result pane.
   // Reveal that pane before scrolling; a collapsed result is not delivery.
   useEffect(() => {
@@ -1871,14 +1885,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
 
-  async function createVideo() {
+  async function createVideo(preferWebm = false) {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
     stopSoundPreview();
     const snapshot=source;
     const snapshotKey=signature;
     preparingRef.current=true;
     setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
-    setResult(null);setPreviewPlaying(false);
+    setResult(null);setPlaybackStatus("checking");setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
@@ -1953,7 +1967,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
 
-      const mimeTypes = recordingMimes(Boolean(musicSession));
+      const mimeTypes = recordingMimes(Boolean(musicSession), preferWebm);
       let mimeType = "";
       let recorder: MediaRecorder | null = null;
       for (const candidate of mimeTypes) {
@@ -2007,11 +2021,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           extension: type.includes("mp4") ? "mp4" : "webm",
           bytes: blob.size,blob,mime:type,
         });
-        setNotice(t.ready);
+        // Wait for the native player to decode an actual video frame.
+        // Safari may return a substantial but unreadable MP4.
+        setPlaybackStatus("checking");
+        setNotice(locale==="ru"
+          ?"Проверяем готовое видео. При необходимости нажмите ▶ в проигрывателе."
+          :locale==="es"
+          ?"Comprobando el vídeo. Si es necesario, pulsa ▶ para verificar."
+          :"Verifying video playback. Tap ▶ in the player if needed.");
       };
 
       // This user-triggered browser recorder never contacts a backend.
-      recorder.start(500);
+      // Safari/WebKit may emit unusable fragmented MP4 samples with short
+      // timeslices. Obtain one finalized recording when stop() fires instead.
+      recorder.start();
       const start = performance.now();
       let lastFrame = -1000;
       let lastProgress = 0;
@@ -2179,6 +2202,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }catch{
       stream?.getTracks().forEach(track=>track.stop());
       setMusicWarning(audioUi.recordFailed);
+    }
+  }
+  function confirmVideoPlayback(video:HTMLVideoElement){
+    if(video.videoWidth>0 && video.videoHeight>0 && video.readyState>=2 && !video.error){
+      setPlaybackStatus("ready");
+      if(result?.mode!=="catalog")setNotice(t.ready);
     }
   }
   async function shareVideo(){
@@ -2428,7 +2457,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </nav>
         <MandalaFirstVideoStart locale={locale} wish={wish}
           disabled={recording||preparing} preparing={preparing} recording={recording}
-          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
+          progress={progress} resultReady={Boolean(result)&&playbackStatus==="ready"} ready={canGenerate}
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onApply={applyFirstVideoDraft}
           onCreate={()=>{
@@ -3841,7 +3870,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       ):(
         <button type="button" className={videoStyles.generate} data-mandala-video-generate
-          disabled={!canGenerate} onClick={createVideo}>
+          disabled={!canGenerate} onClick={()=>void createVideo()}>
           <Play size={21} fill="currentColor" aria-hidden="true"/>{ui.create}
         </button>
       )}
@@ -3853,7 +3882,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </details>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}>
-        <h3>{ui.videoPreview}</h3>
+        <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
         {result ? (
           <>
             {result.mode==="catalog"?<p className={videoStyles.warning}
@@ -3864,11 +3893,57 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
-            <video src={result.url} controls playsInline preload="metadata"
-              data-mandala-video-preview/>
+            <video key={result.url} src={result.url} controls playsInline preload="auto"
+              data-mandala-video-preview
+              onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
+              onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
+              onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
+              onError={()=>{
+                setPlaybackStatus("failed");
+                setNotice(locale==="ru"
+                  ?"Файл не воспроизводится на этом устройстве. Не сохраняйте его как готовое видео."
+                  :locale==="es"
+                  ?"El archivo no se reproduce en este dispositivo. No lo guardes como vídeo terminado."
+                  :"This file cannot be played on this device. It is not a finished video.");
+              }}/>
+            {playbackStatus==="checking"?<p role="status" data-video-playback-check>
+              {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
+                :locale==="es"?"Verificando. Si no aparece un fotograma, pulsa ▶."
+                :"Checking playback. Tap ▶ if no frame appears."}
+            </p>:null}
+            {playbackStatus==="failed"?<div role="alert" data-video-playback-error>
+              <p>{locale==="ru"
+                ?"Этот файл не прошёл проверку воспроизведения. Видео не готово."
+                :locale==="es"
+                ?"El archivo no pasó la comprobación de reproducción."
+                :"This video failed playback verification."}</p>
+              {recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))
+                ?<button type="button" data-video-retry-compatible
+                  disabled={!canGenerate||recording||preparing}
+                  onClick={()=>void createVideo(true)}>
+                  {locale==="ru"?"Создать заново в формате WebM"
+                    :locale==="es"?"Volver a crear en formato WebM"
+                    :"Try again as WebM"}
+                </button>
+                :<p>{locale==="ru"
+                    ?"Попробуйте обновить Safari или создать видео на компьютере."
+                    :locale==="es"
+                    ?"Actualiza Safari o crea el vídeo en un ordenador."
+                    :"Update Safari or create the video on a desktop browser."}</p>}
+            </div>:null}
+            {playbackStatus==="ready" ? <>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
+                onClick={event=>{
+                  if(result.mode==="catalog" || !/iPad|iPhone|iPod/.test(navigator.userAgent))return;
+                  const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
+                  if(typeof navigator.share==="function" &&
+                    (typeof navigator.canShare!=="function"||navigator.canShare({files:[file]}))){
+                    event.preventDefault();
+                    void shareVideo();
+                  }
+                }}
                 data-mandala-video-download>
                 <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
                   ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
@@ -3911,6 +3986,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </div>
               <p className={videoStyles.postVideoSupportPrivacy}>{postSupport.privacy}</p>
             </aside>
+            </> : null}
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>

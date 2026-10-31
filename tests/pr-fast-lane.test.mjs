@@ -95,15 +95,16 @@ test('one unconditional fail-closed release-ready gate protects core code valida
 });
 
 test('PR automation policy and agent entry point require specialist safety gates', () => {
-  const docs = readFileSync(join(root, 'docs', 'operations', 'PR_FAST_LANE_20261029.md'), 'utf8');
+  const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-  assert.match(docs, /necessary but not sufficient/);
+  assert.match(docs, /sole required GitHub status is `release-ready`/);
+  assert.match(docs, /exact PR HEAD and current production BASE/);
+  assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
   }
-  assert.match(docs, /GitHub administrator setup|administrator setup/i);
-  assert.match(agents, /PR_FAST_LANE_20261029\.md/);
-  assert.match(agents, /release-ready/);
+  assert.match(agents, /CI_RELEASE_POLICY\.md/);
 });
 
 // Exercise only the classifier shell block in a disposable synthetic Git repository.
@@ -179,6 +180,11 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
+  // Public voice API is owned by Mandala real media/provider E2E; other
+  // public-service paths retain their normal independent checks.
+  const voiceRoute='app/api/holistic-support/voice/route.js';
+  assert.equal(covers(service,voiceRoute),false,'voice-only API not Public Services');
+  assert.equal(covers(mandala,voiceRoute),true,'voice-only API requires Mandala real WAV/MP4 tests');
   for(const file of [
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
@@ -467,7 +473,7 @@ const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
 const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
-    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
     ['library-public-feed.yml','hh-library-feed','isolated-build'],
   ]) {
     const src=workflow(file);
@@ -487,9 +493,36 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(lib,/run: npm run build/);
   assert.match(lib,/playwright install --with-deps chromium webkit/);
   assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
-  const about=workflow('holistic-about-video-check.yml');
-  assert.match(about,/npx tsc --noEmit/);
-  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  // A BASE-trusted two-PR migration may retire the duplicate About source-only
+  // workflow only after an unchanged Site Video successor covers the same paths.
+  const successor=workflow('site-video-browser.yml');
+  for(const inherited of [
+    'components/psychic-alchemy-intro-video*',
+    'app/**/about/page.tsx',
+    'tests/psychic-alchemy-intro-video.test.mjs',
+    'lib/site-videos/**',
+    'components/site-video-*',
+    'components/page-video.tsx',
+    'app/admin/videos/**',
+    'app/site-video*.css',
+    'tests/site-video*.mjs',
+    'middleware.ts',
+    '.github/workflows/holistic-about-video-check.yml',
+  ]) assert.ok(successor.includes("      - '"+inherited+"'"),'Missing original About trigger '+inherited);
+  for(const contract of ['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs',
+    'tests/site-video-defaults.test.mjs','node scripts/verify-site-video-browser.mjs','npx tsc --noEmit']) {
+    assert.ok(successor.includes(contract),'Missing About source/browser evidence '+contract);
+  }
+  assert.doesNotMatch(successor,/continue-on-error:\s*true/);
+  if(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml'))) {
+    const about=workflow('holistic-about-video-check.yml');
+    assert.match(about,/npx tsc --noEmit/);
+    assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  } else {
+    const policy=readFileSync(join(root,'lib','ci','specialist-aggregate.mjs'),'utf8');
+    assert.ok(policy.includes("'.github/workflows/holistic-about-video-check.yml': '.github/workflows/site-video-browser.yml'"),
+      'Only production BASE-approved migration can retire the old workflow');
+  }
 });
 
 
@@ -657,4 +690,14 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+  const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(source, /pull_request_target:/);
+  assert.match(source, /pull-requests: write/);
+  assert.match(source, /head\.repo\.full_name == github\.repository/);
+  assert.match(source, /draft == false/);
+  assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });

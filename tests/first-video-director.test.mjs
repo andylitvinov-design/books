@@ -89,3 +89,18 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(route,/consumeRate\(config/);
   assert.match(route,/requireSameOrigin\(request,config\)/);
 });
+
+
+test("Safari export is never offered until the native video decoder succeeds",()=>{
+  const src=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(src,/recorder\.start\(\);/,"record one complete file rather than short Safari MP4 fragments");
+  assert.doesNotMatch(src,/recorder\.start\(500\)/);
+  assert.match(src,/playbackStatus==="ready"/);
+  assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
+  assert.match(src,/onLoadedData=\{event=>confirmVideoPlayback/);
+  assert.match(src,/video\.videoWidth>0 && video\.videoHeight>0 && video\.readyState>=2/);
+  assert.match(src,/data-video-playback-error/);
+  assert.match(src,/data-video-retry-compatible/);
+  assert.match(src,/onClick=\{event=>\{\s*if\(result\.mode==="catalog"/);
+  assert.match(browserSource(),/simulated native decode failure/);
+});
