@@ -49,7 +49,6 @@ on:
       - '!lib/holistic-support/client-reasoning-*.mjs'
       - '!lib/holistic-support/intelligence-request.mjs'
       # Pure risk parsing has dedicated unit tests and the exact-head PR core build.
-      - '!lib/holistic-support/intelligence-risk.mjs'
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
