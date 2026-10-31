@@ -7,8 +7,8 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
-  TARGET, WORKFLOW_PREFIX, expectedWorkflows, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters,
+  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
+  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -24,7 +24,35 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
     if (/\.ya?ml$/.test(name)) current.set(WORKFLOW_PREFIX + name,readFileSync(join(dir,name),'utf8'));
   }
   if (!base.size || !current.size) throw Error('NO_WORKFLOW_SOURCES');
-  return {base,current};
+  // Always compare the immutable base manifest to the exact proposed checkout.
+  const basePackage = execFileSync('git', ['show',baseSha + ':package.json'], {cwd,encoding:'utf8',maxBuffer:2e6});
+  const currentPackage = readFileSync(join(cwd,'package.json'),'utf8');
+  return {base,current,basePackage,currentPackage};
+}
+
+// Use the exact tested merge checkout, including both sides of renames, rather
+// than a live PR file listing that can change when production advances.
+export function checkoutChangedRows(baseSha, cwd = process.cwd()) {
+  const raw = execFileSync('git', ['diff','--no-renames','--name-status','-z',baseSha,'HEAD'],
+    {cwd, encoding:'utf8', maxBuffer:5e6}).split('\0');
+  if (raw.at(-1) === '') raw.pop();
+  if (!raw.length || raw.length % 2 || raw.length / 2 >= 3000) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+  const rows = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    if (!/^[AMDT]$/.test(raw[i]) || !raw[i + 1]) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+    rows.push({ status: raw[i], filename: raw[i + 1] });
+  }
+  return rows;
+}
+
+export function verifiedCheckoutBase(env, ctx, cwd = process.cwd()) {
+  if (!env.HH_TRUSTED_BASE_SHA) return null; // Compatibility with existing in-flight workflows.
+  const git = (...args) => execFileSync('git', args, {cwd,encoding:'utf8'}).trim();
+  if (!/^[0-9a-f]{40}$/.test(env.HH_TRUSTED_BASE_SHA) ||
+      git('rev-parse','HEAD') !== env.GITHUB_SHA ||
+      git('rev-parse','HEAD^1') !== env.HH_TRUSTED_BASE_SHA ||
+      git('rev-parse','HEAD^2') !== ctx.head) throw Error('UNVERIFIED_MERGE_CHECKOUT');
+  return env.HH_TRUSTED_BASE_SHA;
 }
 
 export function githubReader(repo, token, transport = fetch) {
@@ -69,32 +97,85 @@ function assertSame(pr, ctx) {
 }
 
 export async function verify(api,ctx,files,options={}) {
-  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
-  // long enough for their results instead of rejecting a still-running check.
-  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
-  const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
+  // Distinguish an absent workflow from a queued run and genuine execution.
+  // Only a running specialist may use the long completion deadline.
+  const boundedMs = (value, maximum, minimum = 0) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
+    return Math.max(minimum, Math.min(maximum, n));
+  };
+  const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
+  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? delay;
   const pr = await api.pr(ctx.number);
   assertSame(pr,ctx);
-  const changedRows=await api.changed(ctx.number);
-  const changed=changedRows.map(row => row.filename);
+  const changedRows=files.changedRows ?? await api.changed(ctx.number);
+  if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
+    throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
+  }
+  const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
-  const baselineExpected=expectedWorkflows({ ...files,changed });
+  const risk=classifyReleaseRisk(changed);
+  const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
+  const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
-  const deadline=Date.now()+maxWait;
+  if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
+    assertSame(await api.pr(ctx.number),ctx);
+    return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
+  }
+  // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
+  // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
+  // failures and orphan/unassociated runs remain fail-closed: there is no
+  // trustworthy PR scope evidence to waive them.
+  // Keep unknown workflows and failed retired migration workflows fail-closed.
+  const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
+  const retired = new Set(delegated.map(item => item.retired));
+  const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
+  const start = now();
+  const deadline = start + maxWait;
+  const missingDeadline = start + missingGrace;
+  const queuedDeadline = start + queuedGrace;
   let state;
   for (;;) {
     const allRuns=await api.runs(ctx.head);
     state=inspectWorkflowRuns({expected,runs:allRuns,pr});
-    if (state.pushFailures.length || state.orphanFailures.length || state.failed.length ||
-        state.observedUnrelated.some(x => x.includes(':failure') || x.includes(':cancelled') || x.includes(':timed_out'))) {
-      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,push:state.pushFailures,
-        orphan:state.orphanFailures,other:state.observedUnrelated}));
+    const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
+    const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
+    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+        unregistered.length || retiredProblems.length) {
+      throw Error('SPECIALIST_FAILED:' + JSON.stringify({
+        failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
+        unregistered, retired:retiredProblems,
+      }));
     }
-    if (!state.missing.length && !state.pending.length && !state.observedUnrelated.length) break;
-    if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending,other:state.observedUnrelated}));
+    if (!state.missing.length && !state.pending.length) break;
+    // GitHub may take a few seconds to register a newly triggered workflow.
+    // After the short discovery grace, absence is a configuration/dispatch
+    // failure, NOT a 35-minute running test. Never waive an expected workflow.
+    const timestamp = now();
+    if (state.missing.length && timestamp >= missingDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
+        JSON.stringify({missing:state.missing,pending:state.pending}));
     }
-    await delay(pollMs);
+    // A registered but queued/requested/waiting workflow is not an executing
+    // test. Give the GitHub runner queue a separate bounded startup window.
+    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    if (notStarted.length && timestamp >= queuedDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
+        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+    }
+    if (timestamp >= deadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
+        JSON.stringify({pending:state.pending}));
+    }
+    const nextDeadline = Math.min(deadline,
+      state.missing.length ? missingDeadline : Infinity,
+      notStarted.length ? queuedDeadline : Infinity);
+    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
@@ -103,7 +184,11 @@ export async function verify(api,ctx,files,options={}) {
   }
   const fresh=await api.pr(ctx.number);
   assertSame(fresh,ctx);
-  return {expected,delegated,executed,pushFailures:state.pushFailures,head:ctx.head,base:ctx.base};
+  // Report non-gating runs for audit; never confuse them with validated CI.
+  const advisory={
+    nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+  };
+  return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 async function main() {
@@ -111,12 +196,19 @@ async function main() {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
   const ctx=validateParameters(env);
   const api=githubReader(ctx.repo,ctx.token);
-  const files=worktreeSources(ctx.base);
-  const result=await verify(api,ctx,files);
+  const verifiedBase = verifiedCheckoutBase(env, ctx);
+  const testedBase = verifiedBase || ctx.base;
+  const files=worktreeSources(testedBase);
+  if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
+  // The verified merge parent is the base actually tested. Reject a later
+  // production advance at both the start and end of specialist aggregation.
+  const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
-    ' base=' + ctx.base + '\nVerified applicable workflows: ' + result.expected.length +
+    ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
-    '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ');
+    '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
+    '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
+    '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }

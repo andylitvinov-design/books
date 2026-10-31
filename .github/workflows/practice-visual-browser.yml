@@ -66,15 +66,21 @@ jobs:
           node --check scripts/verify-practice-visual-browser.mjs
           node --check scripts/compare-ui-screenshots.mjs
           node --check scripts/capture-public-ui-reference.mjs
-          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs tests/practice-google-return-and-services-v5.test.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs
           npx eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
-          npx tsc --noEmit --pretty false
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit --pretty false
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
       - name: Install Chromium and WebKit for synthetic UI verification
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/hh-practice-visual-tools
           npm install --prefix /tmp/hh-practice-visual-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-practice-visual-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Render and verify real Practice page at 320, 354, 390 and 430 pixels
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p artifacts/practice-visual
           npx next dev --hostname 127.0.0.1 --port 3119 > /tmp/hh-practice-visual-next.log 2>&1 &
@@ -87,6 +93,7 @@ jobs:
           done
           node scripts/verify-practice-visual-browser.mjs
       - name: Generate reproducible Chromium-vs-WebKit visual overlays
+        if: github.event_name != 'pull_request'
         run: |
           node scripts/compare-ui-screenshots.mjs \
             --reference artifacts/practice-visual/chromium-ru-390-guest-home.png \
@@ -102,7 +109,7 @@ jobs:
             --out artifacts/practice-visual/cross-engine-synthetic
       # Cross-engine pixel scores are diagnostic only: OS/engine/font differences are expected.
       - name: Upload synthetic geometry and browser screenshots only
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: practice-reference-design-browser

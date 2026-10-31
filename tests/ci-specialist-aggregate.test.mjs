@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -92,6 +92,43 @@ test('end-to-end pure verifier succeeds only after scoped job completion and fre
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
 });
 
+test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are advisory',async()=>{
+  const extra='.github/workflows/non-applicable.yml';
+  const extraYaml="on:\n  pull_request:\n    paths:\n      - 'lib/audio/**'\n";
+  const sources={
+    base:new Map([[path,yaml],[extra,extraYaml]]),
+    current:new Map([[path,yaml],[extra,extraYaml]]),
+  };
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    runs:async()=>[
+      run(),
+      run({path:extra,id:752,conclusion:'failure'}),
+    ],
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const good=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.deepEqual(good.expected,[path]);
+  assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
+  // Exact-HEAD failed PUSH or unassociated PR run is never waived as unrelated:
+  // it has no trusted associated PR evidence for a safe exemption.
+  api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
+  api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+
+  // A workflow absent from BOTH trusted manifests may not be waived.
+  // An actual expected specialist failure also remains a hard blocker.
+  api.runs=async()=>[run(),run({path:'.github/workflows/unknown.yml',id:760,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*unregistered/);
+  api.runs=async()=>[run({conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
 test('read-only GitHub API adapter paginates files and runs without writing',async()=>{
   const requests=[];
   const transport=async(url,options)=>{requests.push({url,method:options.method||'GET',auth:options.headers.Authorization});
@@ -116,7 +153,8 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  assert.ok(names.length <= 90, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // One additional metadata-only trusted workflow enables native auto-merge.
+  assert.ok(names.length <= 94, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
@@ -268,3 +306,426 @@ test('approved removed YAML still requires unchanged successful successor covera
     expected:expectedWorkflows({base:withUnexpected,current,changed:[old,unexpected]})}),/UNAPPROVED_WORKFLOW_DELETION/);
 });
 
+test('wave 3 reviewed About video successor preserves all original PR paths and contracts',()=>{
+  const required = [
+    {into:'site-video-browser.yml', patterns:["'components/psychic-alchemy-intro-video*'","'app/**/about/page.tsx'","'tests/psychic-alchemy-intro-video.test.mjs'","'lib/site-videos/**'","'components/site-video-*'","'components/page-video.tsx'","'app/admin/videos/**'","'app/site-video*.css'","'tests/site-video*.mjs'","'middleware.ts'","'.github/workflows/holistic-about-video-check.yml'"], contracts:['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs','tests/site-video-defaults.test.mjs','components/site-video-manager.tsx','npx tsc --noEmit','node scripts/verify-site-video-browser.mjs']},
+  ];
+  for (const entry of required) {
+    const s=readFileSync('.github/workflows/'+entry.into,'utf8');
+    const trigger=parsePrTrigger(s,entry.into);
+    assert.ok(trigger,'Missing PR trigger '+entry.into);
+    for(const pattern of entry.patterns) assert.ok(s.includes('      - '+pattern),entry.into+' missing original path '+pattern);
+    for(const contract of entry.contracts) assert.ok(s.includes(contract),entry.into+' missing original contract '+contract);
+    assert.ok(s.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'),
+      'Production video PR reuses Core TypeScript; push/manual retains standalone typecheck');
+    assert.ok(!s.includes('continue-on-error: true'),entry.into+' must fail closed');
+  }
+});
+
+
+test('package and lockfile routing is exact-base scoped, with unknown changes full-scope', () => {
+  const before={name:'books',type:'module',dependencies:{next:'15.0.0'},scripts:{
+    'test:monetization':'node --test tests/paypal-personal-payments.test.mjs tests/billing-isolation.test.mjs',
+    build:'next build',
+  }};
+  const after=structuredClone(before);
+  after.scripts['test:monetization']=after.scripts['test:monetization'].replace(
+    'tests/paypal-personal-payments.test.mjs',
+    'tests/paypal-personal-payments.test.mjs tests/wallet-topups.test.mjs',
+  );
+  const original=JSON.stringify(before), proposed=JSON.stringify(after);
+  const changed=['package.json','tests/wallet-topups.test.mjs','lib/wallet/service.js'];
+  const impact=classifyPackageImpact({changed,basePackage:original,currentPackage:proposed});
+  assert.deepEqual(impact,{mode:'scoped',reason:'ADDITIVE_WALLET_MONETIZATION_TEST',
+    workflows:['.github/workflows/hh-billing-isolated.yml']});
+  const owner='.github/workflows/hh-billing-isolated.yml';
+  const ocean='.github/workflows/holistic-house-ocean-audio.yml';
+  const opora='.github/workflows/opora-module-ci.yml';
+  const app='.github/workflows/hh-app-r1.yml';
+  const workflow=paths=>"on:\n  pull_request:\n    paths:\n"+paths.map(x=>"      - '"+x+"'\n").join('');
+  const sources=new Map([
+    [owner,workflow(['package.json','lib/billing/**'])],
+    [ocean,workflow(['package.json','lib/audio/**'])],
+    [opora,workflow(['package.json','data/opora/**'])],
+    [app,workflow(['app/api/app/**','lib/app/**'])],
+  ]);
+  const base=new Map(sources), current=new Map(sources);
+  const selected=expectedWorkflows({base,current,changed,packageImpact:impact});
+  assert.deepEqual(selected,[owner], 'unrelated package-triggered suites are not REQUIRED by safe script-only update');
+  const ownerMissed = new Map(sources);
+  ownerMissed.set(owner,workflow(['lib/billing/**']));
+  assert.throws(()=>expectedWorkflows({base,current:ownerMissed,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Candidate path filters cannot silently drop the mandatory Billing specialist');
+  assert.throws(()=>expectedWorkflows({base:ownerMissed,current,changed,packageImpact:impact}),
+    /PACKAGE_ROUTE_OWNER_NOT_TRIGGERED/,
+    'Immutable baseline must also trigger the approved scoped owner');
+  assert.deepEqual(expectedWorkflows({base,current,changed}),[owner,ocean,opora],
+    'until trusted classifier is deployed, the original full trigger scope remains intact');
+  const dependencies=structuredClone(after);
+  dependencies.dependencies.next='16.0.0';
+  const unsafe=classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(dependencies)});
+  assert.equal(unsafe.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed,packageImpact:unsafe}),[owner,ocean,opora]);
+  const lockImpact=classifyPackageImpact({changed:['package-lock.json'],basePackage:original,currentPackage:proposed});
+  assert.equal(lockImpact.mode,'full');
+  assert.deepEqual(expectedWorkflows({base,current,changed:['package-lock.json'],packageImpact:lockImpact}),
+    [owner,ocean,opora], 'unknown transitive lockfile changes fail closed');
+  const deleted=structuredClone(after);
+  deleted.scripts['test:monetization']='echo success';
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:JSON.stringify(deleted)}).mode,'full');
+  assert.equal(classifyPackageImpact({changed:[...changed,'package-lock.json'],
+    basePackage:original,currentPackage:proposed}).mode,'full');
+  assert.equal(classifyPackageImpact({changed,basePackage:original,currentPackage:'{broken'}).mode,'full');
+  assert.throws(()=>expectedWorkflows({base,current:new Map([...current].filter(([name])=>name!==owner)),
+    changed,packageImpact:impact}),/PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
+});
+
+test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
+  const services='.github/workflows/hh-public-services-production.yml';
+  const mandala='.github/workflows/holistic-support-mandala.yml';
+  const publicTrigger=parsePrTrigger(readFileSync(services,'utf8'),services);
+  const mandalaTrigger=parsePrTrigger(readFileSync(mandala,'utf8'),mandala);
+  const videoOnly=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-cinematic-director.tsx',
+    'components/mandala-cinematic-director.module.css',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+  ];
+  assert.equal(matchesTrigger(publicTrigger,videoOnly),false,
+    'Public Services must not spend 20 minutes on pure Video Studio changes');
+  assert.equal(matchesTrigger(mandalaTrigger,videoOnly),true,
+    'Real media browser acceptance is required for video changes');
+  assert.equal(matchesTrigger(publicTrigger,['components/holistic-support-mobile.tsx']),true,
+    'actual support/service features still require Public Services');
+  assert.equal(matchesTrigger(publicTrigger,['components/mandala-free-video-studio.tsx','components/holistic-support-mobile.tsx']),true,
+    'mixed public-service changes never evade the service gate');
+});
+
+test('fast routing is limited to known public presentation assets and mixed risk is strict', async () => {
+  const { classifyReleaseRisk } = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/[locale]/about/page.module.css']), 'FAST');
+  for (const changed of [[], ['app/globals.css', 'supabase/migrations/001.sql'], ['app/api/payment/route.ts'], ['.github/workflows/hh-pr-core-release.yml'], ['lib/unknown.js'], ['app/auth/login.css']]) {
+    assert.equal(classifyReleaseRisk(changed), 'STRICT');
+  }
+});
+
+test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const sources={base:new Map(),current:new Map()};
+  let reads=0;
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css'}], runs:async()=>{throw Error('should not wait');}};
+  const result=await verify(api,ctx,sources, {maxWaitMs:0});
+  assert.equal(result.risk,'FAST');
+  assert.equal(reads,2);
+  api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}));
+  api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}),/PR_CHANGED_FILES/);
+});
+
+test('presentation changes cannot bypass an applicable private app browser workflow', async () => {
+  const browser='.github/workflows/hh-app-browser.yml';
+  const workflow=readFileSync(browser,'utf8');
+  const sources={base:new Map([[browser,workflow]]),current:new Map([[browser,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/app/my-progress.module.css'}],runs:async()=>[],jobs:async()=>[{name:'browser',status:'completed',conclusion:'success'}]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+  api.runs=async()=>[run({path:browser,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  api.runs=async()=>[run({path:browser})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[browser]);
+});
+
+test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
+});
+
+test('service and checkout presentation changes keep consent and payment checks', async () => {
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  for (const file of [
+    'components/commerce/service-cart.module.css',
+    'components/taoist-talisman-cart.module.css',
+    'components/holistic-support-mobile.module.css',
+    'app/[locale]/services/free-situation-review/review.module.css',
+    'app/[locale]/holistic-support/holistic-support.module.css',
+  ]) assert.equal(classifyReleaseRisk([file]),'STRICT',file);
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+});
+
+test('global CSS affecting the privacy consent banner is strict', async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  assert.match(readFileSync('app/globals.css','utf8'),/\.analytics-consent/);
+  assert.equal(classifyReleaseRisk(['app/globals.css']),'STRICT');
+  const security='.github/workflows/release-reaudit.yml';
+  const workflow=readFileSync(security,'utf8');
+  const sources={base:new Map([[security,workflow]]),current:new Map([[security,workflow]])};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/globals.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('checkout CSS blocks on missing billing workflow even when the filename is presentation-only',async()=>{
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const workflow=readFileSync(billing,'utf8');
+  const sources={base:new Map([[billing,workflow]]),current:new Map([[billing,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/commerce/service-cart.module.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('Google claim CSS requires the CRM auth and claim workflow',async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  const css='components/free-express-google-claim.module.css';
+  const crm='.github/workflows/hh-crm-source-check.yml';
+  const workflow=readFileSync(crm,'utf8');
+  const sources={base:new Map([[crm,workflow]]),current:new Map([[crm,workflow]])};
+  assert.equal(classifyReleaseRisk([css]),'STRICT');
+  assert.deepEqual(expectedWorkflows({...sources,changed:[css]}),[crm]);
+  const api={pr:async()=>pr(),changed:async()=>[{filename:css}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/app/messages/messages-page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/client/client-teal.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+});
+
+test('public FAST CSS cannot skip a broadly triggered specialist without a trusted exemption', async () => {
+  const broad='.github/workflows/diagnostic.yml';
+  const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('client progress owner is complete before the trusted second-phase deletion', () => {
+  const old='.github/workflows/hh-client-report-progress.yml';
+  const owner='.github/workflows/hh-reports-development-program.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],owner);
+  const source=readFileSync(owner,'utf8');
+  for (const required of [
+    "      - 'lib/clients/session-delivery-service.js'",
+    "      - 'lib/documents/report-progress.js'",
+    "      - 'components/prescription-document.jsx'",
+    "      - 'components/admin-session-studio.jsx'",
+    "      - 'tests/client-report-before-after-rings.test.mjs'",
+    "      - 'tests/report-progress-before-after.test.mjs'",
+    "      - 'tests/session-publication-review.test.mjs'",
+    "      - '.github/workflows/hh-client-report-progress.yml'",
+    'tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs',
+    'node --conditions=react-server --test',
+    'npm run build',
+    '  workflow_dispatch:',
+  ]) assert.ok(source.includes(required), 'Replacement lost original evidence or trigger: ' + required);
+  assert.ok(source.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge report verification remains');
+  const oldSource="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-client-report-progress.yml'\n";
+  const base=new Map([[old,oldSource],[owner,source]]);
+  const current=new Map([[owner,source]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[old,owner]);
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[owner],delegated:[{retired:old,replacement:owner}],
+  });
+  assert.throws(()=>resolveExpectedSpecialists({
+    base,current:new Map([[owner,source+'\n# untrusted owner update']]),changed,expected,
+  }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
+
+test('PR cleanup specialist accepts only its successful policy and intentionally skipped push-only job', () => {
+  const name = '.github/workflows/hh-ci-stale-run-prune.yml';
+  const policy = { name: 'policy', status: 'completed', conclusion: 'success' };
+  const pushOnly = { name: 'prune', status: 'completed', conclusion: 'skipped' };
+  assert.equal(inspectJobs([policy, pushOnly], name), 2);
+  for (const jobs of [
+    [pushOnly], [policy], [policy, { ...pushOnly, conclusion: 'failure' }],
+    [{ ...policy, conclusion: 'skipped' }, pushOnly],
+    [policy, pushOnly, { name: 'unexpected', status: 'completed', conclusion: 'skipped' }],
+  ]) assert.throws(() => inspectJobs(jobs, name));
+  assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
+});
+
+test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
+  const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
+  const replacement='.github/workflows/hh-public-journey-wave1.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
+  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
+  const source=readFileSync(replacement,'utf8');
+  for (const expected of [
+    'node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-migration.test.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Build exact candidate once for both real-browser suites',
+    'playwright install --with-deps chromium webkit',
+    'Whole-project TypeScript outside protected production PRs',
+    'HH_RUN_WAVE1',
+    'HH_RUN_WAVE2',
+  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
+  // Production no longer routes deletions for an already retired YAML file.
+  // Reconstruct the historical trusted successor only for the synthetic
+  // BASE-migration proof; never require that obsolete trigger in live CI.
+  assert.ok(!source.includes("'.github/workflows/hh-public-journey-toronto-wave2.yml'"));
+  const historicalSource = source.replace(
+    "      - '.github/workflows/hh-public-journey-wave1.yml'",
+    "      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n      - '.github/workflows/hh-public-journey-wave1.yml'",
+  );
+  assert.notEqual(historicalSource,source);
+  const base=new Map([[oldName,old],[replacement,historicalSource]]);
+  const changed=[oldName];
+  const current=new Map([[replacement,historicalSource]]);
+  const expected=expectedWorkflows({base,current,changed});
+  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
+  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
+    {retired:oldName,replacement},
+  ]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,historicalSource+'\\n# tampered']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+});
+
+test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
+  const owner = '.github/workflows/public-owner.yml';
+  const workflow = "on:\n  pull_request:\n    paths:\n      - 'app/[[]locale[]]/about/**'\n";
+  const sources = { base: new Map([[owner, workflow]]), current: new Map([[owner, workflow]]) };
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = { pr: async () => pr(), changed: async () => [{ filename: 'app/[locale]/about/page.module.css' }], runs: async () => [] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('base advances fail closed while matching tested checkout retains HEAD checks', async () => {
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
+    changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
+  const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
+  const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
+    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => pr();
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  let reads = 0;
+  api.pr = async () => (++reads === 1 ? pr() : currentPr());
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'base may not advance during specialist aggregation');
+  api.pr = async () => currentPr();
+  const legacySources = { base: sources.base, current: sources.current };
+  await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), base: { ...currentPr().base, ref: 'other' } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+});
+
+function virtualSpecialistClock() {
+  let elapsed = 0;
+  const waits = [];
+  return {
+    now: () => elapsed,
+    sleep: async millis => {
+      assert.ok(millis > 0 && millis <= 30_000, 'poll is bounded');
+      elapsed += millis;
+      waits.push(millis);
+    },
+    elapsed: () => elapsed,
+    waits,
+  };
+}
+
+test('absent required workflow fails in one minute even while another specialist is running', async () => {
+  const second = '.github/workflows/another-required.yml';
+  const workflows = new Map([[path, yaml], [second, yaml]]);
+  const clock = virtualSpecialistClock();
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'in_progress', conclusion: null })],
+    jobs: async () => { throw Error('pending jobs must not be accepted'); },
+  };
+  await assert.rejects(
+    () => verify(api, ctx, { base: workflows, current: workflows },
+      { maxWaitMs: 35*60_000, missingGraceMs: 60_000, pollMs: 20_000, ...clock }),
+    error => /SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED/.test(error.message) && error.message.includes(second)
+  );
+  assert.equal(clock.elapsed(), 60_000);
+});
+
+test('late discovery then queue then real completion is accepted with successful jobs', async () => {
+  const clock = virtualSpecialistClock();
+  let polls = 0;
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => {
+      polls++;
+      if (polls <= 2) return [];
+      if (polls <= 4) return [run({ status: 'queued', conclusion: null })];
+      if (polls <= 6) return [run({ status: 'in_progress', conclusion: null })];
+      return [run()];
+    },
+    jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }],
+  };
+  const result = await verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, pollMs: 10_000, ...clock });
+  assert.equal(result.executed.length, 1);
+  assert.equal(polls, 7);
+  assert.ok(clock.elapsed() < 60_000 + 180_000);
+});
+
+test('registered but never started queued specialist fails promptly and cannot merge', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'queued', conclusion: null })],
+  };
+  await assert.rejects(() => verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, queuedGraceMs: 180_000, pollMs: 20_000, ...clock }),
+  /SPECIALIST_MISSING_OR_PENDING:NOT_STARTED/);
+  assert.equal(clock.elapsed(), 180_000);
+});
+
+test('actually running specialist can finish past discovery and queue deadlines', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [clock.elapsed() >= 220_000 ? run() : run({ status: 'in_progress', conclusion: null })],
+    jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }],
+  };
+  const result = await verify(api, { repo, number: 27, head: SHA, base: BASE },
+    { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) },
+    { maxWaitMs: 35*60_000, pollMs: 20_000, ...clock });
+  assert.equal(result.executed.length, 1);
+  assert.ok(clock.elapsed() >= 220_000);
+});
+
+test('unfinished running specialist times out and failed/cancelled runs never pass', async () => {
+  const clock = virtualSpecialistClock();
+  const api = {
+    pr: async () => pr(),
+    changed: async () => [{ filename: 'lib/crm/a.js' }],
+    runs: async () => [run({ status: 'in_progress', conclusion: null })],
+  };
+  const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]) };
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  await assert.rejects(() => verify(api, ctx, sources,
+    { maxWaitMs: 200_000, pollMs: 20_000, ...clock }), /SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT/);
+  assert.equal(clock.elapsed(), 200_000);
+  for (const conclusion of ['failure', 'cancelled', 'skipped', 'timed_out']) {
+    api.runs = async () => [run({ status: 'completed', conclusion })];
+    await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, ...clock }), /SPECIALIST_FAILED/);
+  }
+});
