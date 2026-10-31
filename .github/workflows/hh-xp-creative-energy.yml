@@ -1,0 +1,55 @@
+name: HH XP creative-energy safety checks
+on:
+  push:
+    branches: ['feat/holistic-xp-wallet-20261030']
+    paths:
+      - 'lib/xp/**'
+      - 'components/xp/**'
+      - 'app/api/app/xp/**'
+      - 'app/[locale]/xp/invite/**'
+      - 'components/mandala-free-video-studio.tsx'
+      - 'components/wallet/**'
+      - 'lib/wallet/**'
+      - 'supabase/migrations/*xp*'
+      - 'tests/billing-xp.test.mjs'
+      - '.github/workflows/hh-xp-creative-energy.yml'
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/xp/**'
+      - 'components/xp/**'
+      - 'app/api/app/xp/**'
+      - 'app/[locale]/xp/invite/**'
+      - 'components/mandala-free-video-studio.tsx'
+      - 'components/wallet/**'
+      - 'lib/wallet/**'
+      - 'supabase/migrations/*xp*'
+      - 'tests/billing-xp.test.mjs'
+      - '.github/workflows/hh-xp-creative-energy.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-xp-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  xp-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: XP files syntax and economic/security regression
+        run: |
+          node --check lib/xp/model.js
+          node --check lib/xp/service.js
+          node --check app/api/app/xp/'[action]'/route.js
+          node --check components/xp/xp-panel.jsx
+          node --test tests/billing-xp.test.mjs
+      - name: Targeted XP and payment-adapter lint
+        run: npx eslint lib/xp app/api/app/xp components/xp components/mandala-free-video-studio.tsx components/wallet/wallet-panel.jsx lib/wallet/service.js
+      - name: TypeScript review on the dedicated XP implementation branch
+        if: github.event_name == 'push'
+        run: npx tsc --noEmit --pretty false
