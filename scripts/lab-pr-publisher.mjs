@@ -5,15 +5,17 @@ import {readFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {verifyAcceptance} from './lab-acceptance-signature.mjs';
 const REPO='andylitvinov-design/books';
 const BASE='codex/public-book-library';
 const SHA=/^[a-f0-9]{40}$/i;
 function command(bin,args,cwd){return execFileSync(bin,args,{cwd,encoding:'utf8',timeout:45000,maxBuffer:8*1024*1024}).trim()}
-export function validatePublish(packet,{head,base,prs}={}){
+export function validatePublish(packet,{head,base,prs,reviewerPublicKey}={}){
  if(packet?.status!=='RELEASE_CANDIDATE'||packet?.targetBranch!==BASE)return 'invalid-release-packet';
  if(!SHA.test(head||'')||!SHA.test(base||'')||packet.headSha!==head||packet.baseSha!==base)return 'stale-sha';
  if(packet.qaPassed!==true||packet.testEvidence!==true)return 'missing-qa';
  if(packet.acceptance?.accepted!==true || packet.acceptance.headSha!==head || !packet.acceptance.reviewEvidenceId)return 'acceptance-required';
+ if(!verifyAcceptance(packet.acceptance.attestation,{featureId:packet.id,headSha:head,baseSha:base,authorId:packet.owner,publicKeyPem:reviewerPublicKey}))return 'independent-signature-required';
  if(!Array.isArray(packet.changedFiles)||!packet.changedFiles.length||packet.changedFiles.some(f=>f.startsWith('.hh-lab-')))return 'invalid-diff';
  if(!Array.isArray(prs))return 'missing-pr-inventory';
  if(prs.some(pr=>pr.headRefName==='release/'+packet.id.toLowerCase()||pr.headRefOid===head||pr.title?.includes('['+packet.id+']')))return 'existing-pr';
@@ -25,7 +27,7 @@ export async function publishRelease(workspace,{execute=false}={}){
  const head=command('git',['rev-parse','HEAD'],cwd);
  const base=command('git',['rev-parse','refs/remotes/origin/'+BASE],cwd);
  const prs=JSON.parse(command('gh',['pr','list','--repo',REPO,'--state','open','--limit','500','--json','headRefName,headRefOid,title'],cwd));
- const error=validatePublish(packet,{head,base,prs});
+ const error=validatePublish(packet,{head,base,prs,reviewerPublicKey:process.env.HH_TRUSTED_REVIEWER_PUBLIC_KEY});
  if(error)throw Error('Release blocked: '+error);
  if(command('git',['status','--porcelain','--untracked-files=no'],cwd))throw Error('Dirty tracked files');
  const releaseBranch='release/'+packet.id.toLowerCase();
