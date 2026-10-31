@@ -40,10 +40,15 @@ export async function POST(request) {
       throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
     // Unknown/forged strategy, medical text and arbitrary client phrases fail
     // closed instead of being silently copied into the model prompt.
-    const strategy=compileAnonymousAffirmationStrategy({
-      locale:body.locale,theme:body.theme,problemIndex:body.problemIndex,
-      goalId:body.goalId,tone:body.tone,focus:body.focus,
-    });
+    let strategy;
+    try {
+      strategy=compileAnonymousAffirmationStrategy({
+        locale:body.locale,theme:body.theme,problemIndex:body.problemIndex,
+        goalId:body.goalId,tone:body.tone,focus:body.focus,
+      });
+    }catch{
+      throw new AppError("AFFIRMATION_STRATEGY_INVALID",400);
+    }
     const providers=freeWriterProviders(process.env);
     let payload=unavailable("AI_FREE_NOT_CONFIGURED");
     if(providers.length){
