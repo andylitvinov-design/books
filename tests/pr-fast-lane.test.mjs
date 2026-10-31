@@ -471,9 +471,8 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
 
 const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
 const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
-test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
+test('retired About video delegates to existing site-video browser; Library still cancels superseded PRs', () => {
   for (const [file,prefix,job] of [
-    ['holistic-about-video-check.yml','hh-about-video','check'],
     ['library-public-feed.yml','hh-library-feed','isolated-build'],
   ]) {
     const src=workflow(file);
@@ -493,9 +492,16 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(lib,/run: npm run build/);
   assert.match(lib,/playwright install --with-deps chromium webkit/);
   assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
-  const about=workflow('holistic-about-video-check.yml');
-  assert.match(about,/npx tsc --noEmit/);
-  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  // The old About workflow was already fully superseded by this unchanged
+  // BASE-trusted browser owner; keep both original Node and lint contracts.
+  const video=workflow('site-video-browser.yml');
+  assert.match(video,/^  browser:/m);
+  assert.match(video,/^  admin-verified-owner-browser:/m);
+  assert.match(video,/npx tsc --noEmit/);
+  assert.match(video,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs tests\/site-videos\.test\.mjs tests\/site-video-defaults\.test\.mjs/);
+  assert.match(video,/eslint components\/psychic-alchemy-intro-video\.tsx components\/site-video-player\.tsx/);
+  assert.ok(video.includes("'.github/workflows/holistic-about-video-check.yml'"));
+  assert.equal(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')),false,'old duplicate workflow must be retired');
 });
 
 
