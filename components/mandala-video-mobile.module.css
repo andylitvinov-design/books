@@ -2079,3 +2079,18 @@
 @media(prefers-reduced-motion:reduce){
   .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
 }
+
+
+/* Owner-approved large-type iPhone hypnocorrection: one 16:9 stage,
+   one scrolling navigation rail, and one large feature per row. */
+@media(max-width:600px){
+  .studio .quickVideoNav{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x proximity;gap:8px;padding:9px 1px 10px;scrollbar-width:thin}
+  .studio .quickVideoNav button{flex:0 0 112px;min-width:112px;min-height:56px;
+    scroll-snap-align:start;padding:7px 8px;font-size:13px;line-height:1.2}
+  .studio .quickVideoNav button[data-video-quick-control="extra"]{background:#f5eeff;
+    border:1px solid #d9c3f9;color:#443198}
+  .studio .quickVideoNav button[aria-expanded="true"]{box-shadow:inset 0 0 0 2px #8a67e0}
+  .studio .previewStage .hero{aspect-ratio:16/9!important;min-height:0!important;max-height:none!important}
+  .studio [data-video-hypnocorrection-panel]{width:100%;min-width:0;margin:2px 0 10px}
+}

@@ -112,6 +112,55 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
           "the cover/photo panel is now part of the shared scene library");
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
+        // Separate anonymous page prevents toggles in the new Hypnocorrection
+        // UI from altering the long-standing video/audio/codec acceptance flow.
+        // Real clicks (not mock DOM) validate the sixth quick tab in WebKit
+        // and Chromium, its large-type 1-column 3-feature cards and Wave.
+        const hypnoPage=await context.newPage();
+        try{
+          const hpResponse=await hypnoPage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+          assert.equal(hpResponse?.status(),200);
+          const sixth=hypnoPage.locator('[data-video-quick-control="extra"]');
+          await sixth.waitFor({state:"visible",timeout:15000});
+          assert.equal((await sixth.innerText()).trim(),{
+            ru:"Гипнокоррекция",en:"Hypno effects",es:"Efectos",
+          }[locale]);
+          await sixth.click();
+          const hp=hypnoPage.locator("[data-hypno-mobile]");
+          await hp.waitFor({state:"visible",timeout:15000});
+          assert.equal(await hp.locator("[data-hypno-group]").count(),4);
+          assert.equal(await hp.locator("[data-hypno-group='phrases'] [role='switch']").count(),3);
+          assert.equal(await hp.locator("[data-hypno-group='audio'] [role='switch']").count(),3);
+          assert.equal(await hp.locator("[data-hypno-group='visual'] [role='switch']").count(),2);
+          assert.equal(await hp.locator("[data-hypno-group='meditation'] button").count(),2,
+            "one meditation creation CTA plus disclosure header, not four miniature tiles");
+          const typo=await hp.locator("[data-hypno-group='phrases'] [role='switch']").first()
+            .evaluate(el=>{
+              const label=el.parentElement?.querySelector("strong");
+              return {fontSize:label?parseFloat(getComputedStyle(label).fontSize):0,
+                width:label?.getBoundingClientRect().width||0};
+            });
+          assert.ok(typo.fontSize>=17 && typo.width>=95,
+            engine+" "+locale+" "+width+"px hypno title readable "+JSON.stringify(typo));
+          const geo=await hp.evaluate(node=>({
+            width:node.getBoundingClientRect().width,
+            overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+          }));
+          assert.ok(geo.width<=width+1 && geo.overflow<=2,
+            engine+" "+locale+" "+width+"px mobile hypno overflow "+JSON.stringify(geo));
+          await hp.locator("[data-hypno-wave]").click();
+          await hp.locator("[data-hypno-light-settings]").waitFor({state:"visible",timeout:10000});
+          await expect(hp.getByRole("switch",{name:{
+            ru:"Импульс энергии и света",en:"Light and energy pulse",es:"Pulso de luz y energía",
+          }[locale]})).toHaveAttribute("data-on","true");
+          if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+            mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+            await hp.screenshot({path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"
+              +engine+"-"+locale+"-"+width+"-hypnocorrection.png",animations:"disabled"});
+          }
+          await sixth.click();
+          await expect(hp).toHaveCount(0,{timeout:10000});
+        } finally { await hypnoPage.close(); }
         assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3,
           "advanced editor retains hypno, audio and detailed format controls");
         const stage=quick.locator("[data-video-live-stage]");
@@ -207,9 +256,15 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // A real WebKit tap may commit the native <details> toggle after the
+        // click promise resolves. Put the control above the fixed iPhone dock
+        // and await the actual open state without skipping the click or check.
+        const coverSummary=coverOptions.locator("summary");
+        await coverSummary.evaluate(element=>element.scrollIntoView({
+          behavior:"instant",block:"center",inline:"nearest",
+        }));
+        await coverSummary.click();
+        await expect(coverOptions).toHaveAttribute("open","",{timeout:12000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
