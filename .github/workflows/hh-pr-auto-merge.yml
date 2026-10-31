@@ -1,0 +1,38 @@
+name: HH native PR auto-merge
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
+    branches: ['codex/public-book-library']
+permissions: {}
+concurrency:
+  group: hh-pr-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  enable-auto-merge:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Never check out or execute pull request code in this trusted workflow.
+      - name: Enable protected squash auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          pr="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest)"
+          if ! jq -e --arg head "$EVENT_HEAD" '.state == "OPEN" and .isDraft == false and .baseRefName == "codex/public-book-library" and .headRefOid == $head' <<< "$pr" >/dev/null; then
+            echo 'PR changed since the event; a newer event can handle it.'
+            exit 0
+          fi
+          if jq -e '.autoMergeRequest != null' <<< "$pr" >/dev/null; then
+            echo 'Native auto-merge already enabled.'
+            exit 0
+          fi
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --auto --squash --match-head-commit "$EVENT_HEAD"

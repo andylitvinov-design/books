@@ -157,7 +157,13 @@ test('production workflow directory can be parsed without silently ignoring unkn
   // 2026-10-31. Freeze growth at that verified baseline (previous cap of 90
   // incorrectly made every CI guard run red); future additions still require
   // a reviewed consolidation or explicit architecture budget change.
-  assert.ok(names.length <= 93, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // This target-only coordinator runs no PR test suite or PR checkout. Keep it
+  // outside the CI suite budget while asserting it cannot add another PR check.
+  const coordinator = 'hh-pr-auto-merge.yml';
+  if (names.includes(coordinator)) {
+    assert.equal(parsePrTrigger(readFileSync('.github/workflows/' + coordinator, 'utf8'), coordinator), null);
+  }
+  assert.ok(names.filter(name => name !== coordinator).length <= 93, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',

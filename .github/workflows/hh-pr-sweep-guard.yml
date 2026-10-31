@@ -18,18 +18,14 @@ on:
       - '.github/workflows/hh-home-conversation.yml'
       - '.github/workflows/site-video-browser.yml'
       - '.github/workflows/hh-pr-sweep-guard.yml'
-  pull_request_target:
-    types: [opened, reopened, ready_for_review, synchronize]
-    branches: ['codex/public-book-library']
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-pr-sweep-guard-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: hh-pr-sweep-guard-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   guard-unit:
-    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     steps:
@@ -40,32 +36,3 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs
-  enable-auto-merge:
-    if: >-
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      # This trusted base workflow never checks out or executes pull request code.
-      - name: Enable protected squash auto-merge
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          pr="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest)"
-          if ! jq -e --arg head "$EVENT_HEAD" '.state == "OPEN" and .isDraft == false and .baseRefName == "codex/public-book-library" and .headRefOid == $head' <<< "$pr" >/dev/null; then
-            echo 'PR changed since the event; a newer event can handle it.'
-            exit 0
-          fi
-          if jq -e '.autoMergeRequest != null' <<< "$pr" >/dev/null; then
-            echo 'Native auto-merge already enabled.'
-            exit 0
-          fi
-          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --auto --squash --match-head-commit "$EVENT_HEAD"
