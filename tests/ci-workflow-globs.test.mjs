@@ -164,7 +164,7 @@ test('lighter specialist CI preserves contract tests, Ready rechecks, and protec
   for (const [file, jobs, steps] of suites) {
     const source = workflow(file);
     assert.ok(source.includes(readyEvents), file + ': Draft must rerun automatically on Ready');
-    assert.match(source, /node --test/, file + ': focused domain contracts must remain');
+    assert.match(source, /node (?:--conditions=react-server )?--test/, file + ': focused domain contracts must remain');
     assert.doesNotMatch(source, /continue-on-error:\s*true/, file + ': no weakened failures');
     for (const job of jobs) {
       assert.ok(source.includes('  ' + job + ':\n    ' + draftGuard),
