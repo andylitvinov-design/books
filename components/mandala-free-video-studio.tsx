@@ -2282,7 +2282,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(theme==="money")setMoneyScene(sceneId as MoneySceneId);
     else setOtherScene(sceneId as LocalSceneId);
     setSuggestion("");
-    setPreviewPlaying(false);
+    // A style tile is an explicit user gesture: start that same real central
+    // Canvas/MP4 preview immediately; never render or charge from this tap.
+    setPreviewPlaying(true);
   };
   // Keep the deep editor tabs usable on mobile WebKit during rapid clicks.
   // One active request controls the fragment and scroll; no delayed scroll
