@@ -424,3 +424,12 @@ test('FAST bypasses specialist wait but verifies live HEAD and old names in rena
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
   await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}),/PR_CHANGED_FILES/);
 });
+
+test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
+});
