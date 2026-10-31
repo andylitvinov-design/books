@@ -196,6 +196,7 @@ export function MandalaHypnoCompact({
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
+  const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   const [showHint,setShowHint]=useState(false);
   const [tone,setTone]=useState<"gentle"|"balanced"|"uplifting">("gentle");
   const [kind,setKind]=useState<"support"|"possibility"|"action">("support");
