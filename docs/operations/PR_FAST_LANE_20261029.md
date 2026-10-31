@@ -286,6 +286,12 @@ production-targeted PRs, where core `release-ready` already requires full
 specialist aggregate still requires every applicable executed job to succeed.
 No assertions, RLS, checkout, browser checks or paid APIs are disabled.
 
+## Wave 3: website About video coverage only (30 October 2026)
+
+The BASE-trusted migration now considers only `holistic-about-video-check.yml` → `site-video-browser.yml`. Original source tests for intro, defaults and player are included in the existing Chromium/WebKit + Redis + EN/RU/ES workflow. Scope includes all original PR paths; global TypeScript and Next build remain mandatory in `release-ready` for changed application/browser harness source (CI-only changes have a separate strictly allowlisted fast lane). After green exact-head CI and a reviewed additive merge, a separate deletion-only PR may remove this single obsolete YAML (90 → 89) subject to unchanged successor and exact-head successful-job evidence.
+
+**Pro Reiki consolidation HOLD:** the attempted `pro-reiki-master-paths.yml` → `hh-energywork-ai.yml` transfer exposed 5 failing source tests in [original Pro Reiki contracts](https://github.com/andylitvinov-design/books/actions/runs/41000113247) (directory placement, bottom navigation, OAuth categorical handoff, draft editor and localized paths). No test is removed or weakened. Pro Reiki stays a separate original workflow until product defects are corrected and its full suite is green. This PR restores `hh-energywork-ai.yml` byte-for-byte from BASE and removes the unapproved migration. Do not describe that baseline as green.
+
 ## Wave 4b: Growth Journey and My Courses Presets source-only build reuse (30 October 2026)
 
 Two source-only suites retain all original domain tests, EN/RU/ES, consent and scoped lint but defer duplicate whole-project checks to the mandatory `HH PR core release gate` for PRs targeting production `codex/public-book-library`. `hh-growth-journey.yml` skips only its separate TS and Next build on these production PRs; `hh-course-presets.yml` skips only its separate Next build, runs its exact tests on its own workflow YAML changes, and cancels obsolete **PR** runs, never manual/branch-push validation. Feature branch pushes, workflow dispatch and PRs targeting other bases keep the prior global validations. `release-ready` and exact-head specialist runs still fail closed on missing/failed/skipped jobs. This is a cost/concurrency optimization, not removing test files or site features.

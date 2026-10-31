@@ -22,9 +22,9 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.doesNotMatch(video, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling|higgsfield|heygen/i);
 });
 
-test("video recorder has 10/20/30 seconds, 1:1/9:16 and four local effects mirrored across EN/RU/ES", () => {
+test("video recorder keeps legacy durations and adds the 15-second brief option across EN/RU/ES", () => {
   const source = read("components/mandala-free-video-studio.tsx");
-  assert.match(source, /const durations = \[10, 20, 30, 60\] as const/);
+  assert.match(source, /const durations = \[10, 15, 20, 30, 60\] as const/);
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));

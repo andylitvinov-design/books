@@ -146,7 +146,7 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
   }
 });
 
-test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+test('Video Studio-only changes run Mandala real-media QA, not unrelated Public Services E2E',()=>{
   const fromWorkflow=name=>{
     const source=workflow(name);
     const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
@@ -169,18 +169,24 @@ test('Director-only changes run Mandala media QA, not unrelated public services 
     'components/mandala-cinematic-director.tsx',
     'components/mandala-cinematic-director.module.css',
     'scripts/verify-holistic-mandala-browser.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-first-video-start.tsx',
+    'components/mandala-first-video-start.module.css',
+    'app/api/holistic-support/first-video-prompt/route.js',
+    'tests/first-video-director.test.mjs',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
   for(const file of [
-    'components/mandala-free-video-studio.tsx',
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
     'scripts/verify-holistic-master-browser.mjs',
     'scripts/verify-holistic-support-recommendations-mobile.mjs',
     'app/en/holistic-support/mandala/page.tsx',
     'tests/practitioner-remote-energy-support.test.mjs',
+    'app/api/holistic-support/checkout/route.js',
   ])assert.equal(covers(service,file),true,file+' still covered for public service changes');
 });
 
@@ -241,7 +247,9 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       if (operation === 'mixed') write(to, 'synthetic source\n');
       git('add', '--all'); git('commit', '--quiet', '--allow-empty', '-m', 'synthetic change');
       const source = workflow('hh-pr-core-release.yml');
-      const block = source.match(/        run: \|\n([\s\S]*?)^  code:/m);
+      const classifierStep = source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+      assert.ok(classifierStep);
+      const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
       assert.ok(block, 'classifier shell block is present');
       // Preserve classifier logic exactly; isolate only its fixed temporary file.
       const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'));
@@ -260,6 +268,69 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+
+test('PR fast lane ignores unrelated production commits in verified merge checkout', () => {
+  const dir=mkdtempSync(join(tmpdir(),'hh-pr-merge-base-'));
+  const run=(cmd,args,env={})=>{
+    const out=spawnSync(cmd,args,{cwd:dir,encoding:'utf8',timeout:10_000,maxBuffer:1024*1024,
+      env:{PATH:process.env.PATH,HOME:dir,TMPDIR:dir,GIT_CONFIG_NOSYSTEM:'1',
+        GIT_CONFIG_GLOBAL:'/dev/null',GIT_AUTHOR_NAME:'Synthetic',
+        GIT_AUTHOR_EMAIL:'synthetic@example.invalid',GIT_COMMITTER_NAME:'Synthetic',
+        GIT_COMMITTER_EMAIL:'synthetic@example.invalid',...env}});
+    assert.ifError(out.error);
+    return out;
+  };
+  const git=(...args)=>{
+    const out=run('git',['-c','core.hooksPath=/dev/null',...args]);
+    assert.equal(out.status,0,'synthetic git: '+out.stderr);
+    return out.stdout.trim();
+  };
+  const write=(path,value)=>{
+    mkdirSync(join(dir,path,'..'),{recursive:true});
+    writeFileSync(join(dir,path),value);
+  };
+  try {
+    git('init','--quiet');
+    write('.github/workflows/example.yml','original\n');
+    git('add','--all'); git('commit','--quiet','-m','base');
+    const base=git('rev-parse','HEAD');
+    git('switch','--quiet','-c','feature');
+    write('.github/workflows/example.yml','updated\n');
+    git('add','--all'); git('commit','--quiet','-m','CI-only PR');
+    const feature=git('rev-parse','HEAD');
+    git('switch','--quiet','-c','production',base);
+    write('app/api/payments/route.js','unrelated production payment change\n');
+    git('add','--all'); git('commit','--quiet','-m','other production PR');
+    git('merge','--quiet','--no-ff','feature','-m','PR merge checkout');
+    assert.match(git('diff','--name-only',base,'HEAD'),/app\/api\/payments\/route\.js/,
+      'stale event base falsely treats production changes as PR changes');
+    const source=workflow('hh-pr-core-release.yml');
+    const classifierStep=source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+    assert.ok(classifierStep, 'the named classifier step is present');
+    const block=classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
+    assert.ok(block);
+    const script=block[1].replace(/^          /gm,'')
+      .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
+    const output=join(dir,'output'),summary=join(dir,'summary');
+    const checked=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
+    assert.equal(checked.status,0,checked.stderr);
+    assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
+      ['docs_only=false','ci_only=true']);
+    assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
+      ['.github/workflows/example.yml']);
+    const bad=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
+    assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
+    const lint=source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+    assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
+      'changed-file lint must also exclude unrelated target-branch updates');
+  } finally {
+    rmSync(dir,{recursive:true,force:true});
+  }
+});
 
 test('policy-only YAML edits and AGENTS.md do not fan out into seven product acceptance suites', () => {
   // A workflow definition is checked by the dedicated actionlint+core policy gates.
@@ -506,6 +577,88 @@ test('Reports Development Programme keeps its focused verification and separate 
   assert.doesNotMatch(reports,/continue-on-error:\s*true/);
 });
 
+ 
+test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()=>{
+  const guarded="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [file,step,contract] of [
+    ['dao-iching-library.yml','Build exact app (without Vercel paid preview)','tests/dao-hexagrams.test.mjs'],
+    ['admin-seo-dashboard.yml','Production build','tests/admin-seo-dashboard.test.mjs'],
+    ['compact-lead-capture-ci.yml','TypeScript and production build with unchanged payment gates','tests/compact-lead-channel-handoff.test.mjs'],
+  ]){
+    const source=workflow(file);
+    assert.ok(source.includes('- name: '+step+'\n        '+guarded+'\n'),file+' global build must be delegated to protected Core');
+    assert.ok(source.includes(contract),file+' original specialist contracts still mandatory');
+  }
+  const crm=workflow('hh-crm-source-check.yml');
+  assert.match(crm,/^  crm:\s*$/m);
+  assert.doesNotMatch(crm,/^  build:\s*$/m);
+  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
+  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
+  const app=workflow('hh-app-browser.yml');
+  assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
+  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
+  const voice=workflow('andrey-voice-free-contract.yml');
+  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
+  assert.match(voice,/^  redis-atomic:\s*$/m);
+  assert.ok(voice.includes('test_andrey_voice_local_engine.py'));
+  assert.ok(voice.includes('Independent Next.js production build'));
+  const perf=workflow('hh-public-performance-audit.yml');
+  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
+  assert.match(perf,/^  push:\s*$/m);
+  const services=workflow('hh-public-services-production.yml');
+  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  assert.ok(!services.includes('npx tsc --noEmit'));
+});
+
+test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+  const yaml = workflow('holistic-support-mandala.yml');
+  const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
+  assert.match(yaml, /focused-unit-types-build:/);
+  assert.match(yaml, /uses: actions\/cache@v4/);
+  assert.match(yaml, /path: \.next\/cache/);
+  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
+    'mandatory Core owns production PR typecheck; standalone TypeScript remains');
+  assert.match(yaml, /run: npm run build/);
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(source, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
+  assert.match(source, /for \(const \{ locale, width \} of orderedViewports\)/);
+  assert.doesNotMatch(source, /viewports\.slice\(from, from \+ 2\)/, 'no extra same-engine contexts');
+  assert.match(source, /Promise\.allSettled\(engines\.map\(runEngine\)\)/);
+  assert.match(source, /if \(rejectedEngines\.length\)/);
+  assert.match(source, /assert\.equal\(passes, viewports\.length \* engines\.length/);
+  for (const contract of [
+    'locale: "ru", width: 320', 'locale: "ru", width: 390', 'locale: "ru", width: 430',
+    'locale: "en", width: 390', 'locale: "es", width: 390',
+    'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
+    'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
+  ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
+});
+
+test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
+  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+  const release = source.split(/^  release-ready:/m)[1];
+  for (const [name, job] of [['scope', scope], ['code', code]]) {
+    assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
+    assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
+    assert.doesNotMatch(job, /fetch-depth:\s*2/);
+  }
+  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 2);
+  assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 1);
+  assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
+  assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
+  assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
+  assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
+  assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
+  assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(release, /timeout-minutes: 45/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
 test('Growth Studio source-only PR reuses exact-head Core build, never bypasses unique owner/editor checks', () => {
   const studio = workflow('hh-growth-studio.yml');
   const core = workflow('hh-pr-core-release.yml');
@@ -554,41 +707,6 @@ test('Growth Journey and My Courses keep specialist tests while reusing core pro
   assert.match(course,/^  push:/m);
 });
 
- 
-test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()=>{
-  const guarded="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
-  for(const [file,step,contract] of [
-    ['dao-iching-library.yml','Build exact app (without Vercel paid preview)','tests/dao-hexagrams.test.mjs'],
-    ['admin-seo-dashboard.yml','Production build','tests/admin-seo-dashboard.test.mjs'],
-    ['compact-lead-capture-ci.yml','TypeScript and production build with unchanged payment gates','tests/compact-lead-channel-handoff.test.mjs'],
-  ]){
-    const source=workflow(file);
-    assert.ok(source.includes('- name: '+step+'\n        '+guarded+'\n'),file+' global build must be delegated to protected Core');
-    assert.ok(source.includes(contract),file+' original specialist contracts still mandatory');
-  }
-  const crm=workflow('hh-crm-source-check.yml');
-  assert.match(crm,/^  crm:\s*$/m);
-  assert.doesNotMatch(crm,/^  build:\s*$/m);
-  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
-  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
-  const app=workflow('hh-app-browser.yml');
-  assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
-  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
-  assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
-  const voice=workflow('andrey-voice-free-contract.yml');
-  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
-  assert.match(voice,/^  redis-atomic:\s*$/m);
-  assert.ok(voice.includes('test_andrey_voice_local_engine.py'));
-  assert.ok(voice.includes('Independent Next.js production build'));
-  const perf=workflow('hh-public-performance-audit.yml');
-  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
-  assert.match(perf,/^  push:\s*$/m);
-  const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
-  assert.ok(!services.includes('npx tsc --noEmit'));
-});
-
-
 test('Growth/Courses Draft gating preserves complete Ready specialist source privacy and account testing',()=>{
   const ready="if: $"+ "{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   const files=['hh-growth-journey.yml','hh-course-presets.yml'];
@@ -619,7 +737,6 @@ test('Growth/Courses Draft gating preserves complete Ready specialist source pri
   assert.match(core,/ci-specialist-aggregate\.mjs/);
   assert.match(core,/PR_DRAFT/);
 });
-
 
 test('Personal Coaching keeps all private guided-session contracts while delegating duplicate Core compile', () => {
   const coaching = workflow('hh-personal-coaching-session.yml');
