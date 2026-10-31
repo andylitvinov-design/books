@@ -81,6 +81,11 @@ jobs:
                   .github/workflows/*.yaml|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
                   lib/ci/specialist-aggregate.mjs|\
+                  lib/ci/fast-static-ui-text.mjs|\
+                  lib/ci/fast-ui-parser/package.json|\
+                  lib/ci/fast-ui-parser/package-lock.json|\
+                  tests/ci-fast-static-ui-text.test.mjs|\
+                  docs/operations/CI_RELEASE_POLICY.md|\
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-quick-route.mjs|\
                   tests/ci-quick-route.test.mjs|\
@@ -275,6 +280,9 @@ jobs:
             mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
             git show "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
             git show "$HH_TRUSTED_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
+            fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and
