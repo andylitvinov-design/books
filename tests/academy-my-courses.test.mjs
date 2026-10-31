@@ -66,7 +66,7 @@ function harness(handler, locale = 'en') {
     calls.push({ path, body, method, options })
     return handler(path, body, method, options, calls.length)
   }
-  const jsx = (type, props) => ({ type, props })
+  const jsx = (type, props) => typeof type === 'function' ? type(props) : ({ type, props })
   const deps = {
     react: hooks,
     'react/jsx-runtime': { jsx, jsxs: jsx },
