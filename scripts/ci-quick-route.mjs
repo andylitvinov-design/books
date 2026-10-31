@@ -8,7 +8,9 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const IMAGE = /^public\/(?:[\w.-]+\/)*[\w.-]+\.(?:png|jpe?g|webp|gif|avif|ico)$/i;
 const PUBLIC_JSX = /^app\/\[locale\]\/(?:about|articles|books|events|explore|install)\/[\w.\[\]/-]+\.(?:jsx|tsx)$/;
-const SENSITIVE = /(?:^|[\/_.-])(?:auth|oauth|login|logout|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|admin|migration|crm|messenger|client|contact|email|phone|order|booking|consultation|coaching|patient|medical|health|user|account|subscription|supabase|database|api|webhook|middleware)(?:[\/_.-]|$)/i;
+const ORDINARY = /^(?:app\/\[locale\]\/|components\/|lib\/|tests\/|public\/|content\/|data\/|docs\/)/;
+const PROTECTED_ROOT = /^(?:app\/\[locale\]\/(?:app|client|admin|services|booking|consultation)\/|components\/(?:app|commerce)\/|lib\/(?:app|practitioners|assessments|ci|auth|billing|crm|payments|security|supabase|integrations)\/|docs\/(?:operations|billing|payments)\/)/i;
+const SENSITIVE = /(?:^|[\/_.-])(?:auth|oauth|login|logout|security|privacy|private|payment|payments|billing|checkout|rls|secret|token|consent|admin|migration|crm|messenger|message|messages|messaging|conversation|client|contact|email|phone|order|booking|consultation|coaching|patient|medical|health|user|account|subscription|supabase|database|api|webhook|middleware|wallet|storage|provider|practitioner|assessment|credential|receipt|refund|permission|role|salesbot|notification|inbox|profile)(?:[\/_.-]|$)/i;
 const ALLOWED_STATUS = new Set(['A','M']);
 const MAX_BYTES = 25 * 1024 * 1024, MAX_PIXELS = 90_000_000;
 
@@ -40,7 +42,9 @@ export function decideRoute(rows, classifier, sources) {
   if (!Array.isArray(rows) || !rows.length ||
       rows.some(r=>!r || typeof r.filename!=='string' || typeof r.status!=='string')) return 'FULL';
   const filenames = rows.map(r=>r.filename);
-  if (filenames.some(f=>SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
+  // Deletions/type-changes can alter release protection and never use the advisory lane.
+  if (rows.some(r=>!ALLOWED_STATUS.has(r.status))) return 'FULL';
+  if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&
       typeof classifier === 'function' && classifier(filenames) === 'FAST') return 'ASSETS';
