@@ -49,7 +49,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
   assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
   assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
-  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  assert.ok(app.includes('node --conditions=react-server --test tests/historical-interpretation-coverage.test.mjs'), 'focused historical contract remains');
   for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
     assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
   }
@@ -62,8 +62,10 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
     assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
   }
   assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
-  assert.match(opora, /browser: \[chromium, webkit\]/);
-  assert.match(opora, /cancel-in-progress: true/);
+  assert.ok(opora.includes("fromJSON(github.event_name == 'pull_request'"), 'OPORA browser matrix must route by event');
+  assert.ok(opora.includes("'[\"chromium\"]'"), 'Ready PR runs one isolated Chromium');
+  assert.ok(opora.includes("'[\"chromium\",\"webkit\"]'"), 'manual and feature-push still cover WebKit');
+  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"), 'manual jobs cannot be cancelled by unrelated PRs');
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
@@ -356,7 +358,9 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
     const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
     assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
-    assert.ok(!patterns.includes('.github/workflows/' + name), name + ' must use core/actionlint for YAML-only changes');
+    // App R1 explicitly routes its own YAML edits to cheap policy checks; other suites remain path-filtered.
+    const focusedSelfCheck = name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1');
+    assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
   }
@@ -461,7 +465,14 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
   for(const forbidden of ['package.json','package-lock.json','app/api/app','app/api/auth','supabase/migrations','AGENTS.md']) {
     const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
-    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
+    // A pinned CI-only parser may have its own nested package.json/lock;
+    // still forbid the root dependency manifests from using CI-only mode.
+    const rootManifest = forbidden === 'package.json' || forbidden === 'package-lock.json';
+    const exact = forbidden.split('.').join('\\.');
+    const unsafe = rootManifest
+      ? new RegExp('(?:^|\\n|\\|)\\s*' + exact + '(?=\\||\\))').test(classifier)
+      : classifier.includes(forbidden);
+    assert.ok(!unsafe,'Unsafe CI-only source inclusion: '+forbidden);
   }
 });
 
@@ -624,7 +635,12 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
   const app=workflow('hh-app-browser.yml');
   assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
-  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'ordinary PR must route to just one core Chromium job');
+  assert.ok(app.includes('{"include":[{"browser":"chromium","suite":"core"}]}'),
+    'ordinary PR must have exactly one browser task');
+  assert.ok(app.includes('{"browser":"webkit","suite":"extended"}'),
+    'legacy full matrix must run only when manually requested');
   assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
   const voice=workflow('andrey-voice-free-contract.yml');
   assert.doesNotMatch(voice,/^  production-build:\s*$/m);
@@ -639,13 +655,13 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
-test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+test('Mandala PR runs focused source contracts and manual dispatch owns exhaustive media engines', () => {
   const yaml = workflow('holistic-support-mandala.yml');
   const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
   assert.match(yaml, /focused-unit-types-build:/);
-  assert.match(yaml, /uses: actions\/cache@v4/);
-  assert.match(yaml, /path: \.next\/cache/);
-  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
+  assert.match(yaml, /^  workflow_dispatch:/m);
+  assert.ok(yaml.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"), 'full media browser must be manual-only');
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);

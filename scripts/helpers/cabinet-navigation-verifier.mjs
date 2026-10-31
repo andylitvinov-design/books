@@ -8,14 +8,26 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
   const profile = page.locator('[data-profile-domains][data-profile-interactive="true"]')
   await expect(profile).toBeVisible({ timeout: 30000 })
   await expect(profile.getByRole('heading', {
-    name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true,
+    name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true,
   })).toBeVisible()
 }
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
   const path = '/' + locale + '/app/tests'
-  const link = page.locator('nav a[href="' + path + '"]:visible').first()
-  await expect(link).toBeVisible()
+  // Desktop has Tests in the horizontal nav. On phones the approved five-item
+  // bottom bar omits Tests; the complete seven-item Cabinet lives in Account.
+  // Exercise the actual visible menu instead of waiting for a hidden nav link.
+  const desktop = page.locator('nav.hh-nav:visible a[href="' + path + '"]').first()
+  let link = desktop
+  if (!await desktop.isVisible()) {
+    const menu = page.locator('details.hh-account-menu')
+    await expect(menu.locator(':scope > summary')).toBeVisible()
+    if (!await menu.evaluate(node => node.open)) {
+      await menu.locator(':scope > summary').click()
+    }
+    link = menu.locator('a[href="' + path + '"]').first()
+  }
+  await expect(link).toBeVisible({ timeout: 10000 })
   await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
   await expect(link).toHaveAttribute('href', path)
   await link.click()
@@ -27,22 +39,49 @@ export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'e
   const nav = page.locator('nav.hh-nav:visible, nav.hh-mobile-app-nav:visible')
   await expect(nav).toHaveCount(1)
   await expect(nav).toBeVisible()
-  const labels = locale === 'ru' ? ['Профиль', 'Тесты', 'Отчёты', 'Курсы', 'Практика'] : ['Profile', 'Tests', 'Reports', 'Courses', 'Practice']
-  const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
   const links = nav.locator(':scope > a')
   const mobile = (await nav.getAttribute('class')).split(/\s+/).includes('hh-mobile-app-nav')
-  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
-  if (mobile) expected.push({ href: locale === 'ru' ? '/ru' : '/', label: locale === 'ru' ? 'Главная' : 'Home', current: null, ariaLabel: locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage' })
-  await expect(links).toHaveCount(mobile ? 6 : 5)
-  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label') }))), expected)
+  // Match current App Workspace: seven desktop entries, Home and four mobile entries.
+  // Practice is the canonical public /{locale}/practice, not /app/practice.
+  const root = '/' + locale + '/app'
+  const active = current === 'history' ? 'progress'
+    : ['reports','monitoring','results'].includes(current) ? 'portfolio'
+    : ['business','coaching'].includes(current) ? 'course'
+    : current === 'labs' ? 'portrait' : current
+  const item = (href, label, id, ariaLabel = null) => ({
+    href, label, current: id === active ? 'page' : null, ariaLabel,
+  })
+  const expected = mobile ? [
+    item(locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/',
+      locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home', null,
+      locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'),
+    item('/' + locale + '/practice',
+      locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', 'practice'),
+    item(root + '/messages', locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', 'messages'),
+    item(root + '/progress', locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', 'progress'),
+    item(root + '/settings', locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', 'settings'),
+  ] : [
+    item(root + '/portrait', locale === 'ru' ? 'Профиль' : 'Profile', 'portrait'),
+    item(root + '/tests', locale === 'ru' ? 'Тесты' : 'Tests', 'tests'),
+    item(root + '/portfolio', locale === 'ru' ? 'Отчёты' : 'Reports', 'portfolio'),
+    item(root + '/progress', locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', 'progress'),
+    item(root + '/course?view=courses', locale === 'ru' ? 'Курсы' : 'Courses', 'course'),
+    item('/' + locale + '/practice', locale === 'ru' ? 'Практика' : 'Practice', 'practice'),
+    item(root + '/messages', locale === 'ru' ? 'Сообщения' : 'Messages', 'messages'),
+  ]
+  await expect(links).toHaveCount(expected.length)
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({
+    href: node.getAttribute('href'), label: node.textContent.trim(),
+    current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label'),
+  }))), expected)
 }
 
 export async function openCabinetHome(page, expect, { origin, locale = 'en' }) {
-  const path = locale === 'ru' ? '/ru' : '/'
+  const path = locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'
   const home = page.locator('nav.hh-mobile-app-nav:visible > a.hh-mobile-app-nav-home')
   await expect(home).toHaveCount(1)
   await expect(home).toBeVisible()
-  await expect(home).toHaveText(locale === 'ru' ? 'Главная' : 'Home')
+  await expect(home).toHaveText(locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home')
   await expect(home).toHaveAttribute('aria-label', locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage')
   await expect(home).toHaveAttribute('href', path)
   await home.click()

@@ -52,9 +52,10 @@ const l10n = {
     prompt: "Промпт и сцены", promptHelp: "Промпт редактируется. Для бесплатного видео он выбирает только доступные сцены; новые кинематографические кадры не создаются.",
     promptPlaceholder: "Напишите пожелание выше, чтобы получить промпт.",
     refresh: "Другой вариант промпта", ai: "Улучшить с AI · бесплатно",
-    aiErrors:{quota:"Достигнут лимит бесплатного AI. Локальный вариант доступен.",config:"AI не настроен на сервере. Используйте локальный вариант.",response:"AI вернул непригодный ответ. Локальный вариант сохранён.",provider:"AI-провайдер недоступен. Попробуйте позже."},
+    aiErrors:{quota:"Достигнут лимит бесплатного AI. Локальный вариант доступен.",config:"AI не настроен на сервере. Используйте локальный вариант.",response:"AI вернул непригодный ответ. Локальный вариант сохранён.",provider:"AI-провайдер недоступен. Попробуйте позже.",timeout:"AI не ответил за 13 секунд."},
+    localFallback:"Создан другой локальный вариант, без внешнего AI.",
     aiConsent: "Разрешаю передать только мой текст пожелания внешней языковой модели. Фото, тесты и личный профиль не передаются.",
-    aiLoading: "AI готовит промпт…", aiReady: "Промпт улучшен языковой моделью",
+    aiLoading: "AI готовит промпт…", aiProgress:"Локальный промпт уже готов — пока AI подбирает улучшение.", aiReady: "Промпт улучшен языковой моделью",
     local: "Локальный режиссёр · без API", aiUnavailable: "AI сейчас недоступен — локальный промпт сохранён.",
     edit: "Можно изменить", limit: "Ограничение бесплатного видео",
     create: "Создать видео бесплатно", creating: "Генерация MP4/WebM на вашем устройстве",
@@ -79,9 +80,10 @@ const l10n = {
     prompt: "Prompt and scenes", promptHelp: "Editable prompt. In free mode it selects existing scenes; it does not generate new cinematic footage.",
     promptPlaceholder: "Write your wish above to generate a prompt.",
     refresh: "Another prompt option", ai: "Enhance with AI · free",
-    aiErrors:{quota:"Free AI quota reached. Local draft is available.",config:"AI is not configured. Use the local draft.",response:"AI sent an invalid reply. Local draft saved.",provider:"AI provider unavailable. Try again later."},
+    aiErrors:{quota:"Free AI quota reached. Local draft is available.",config:"AI is not configured. Use the local draft.",response:"AI sent an invalid reply. Local draft saved.",provider:"AI provider unavailable. Try again later.",timeout:"AI did not respond within 13 seconds."},
+    localFallback:"Made another local option, without external AI.",
     aiConsent: "I agree to send only my written wish to an external language model. My photo, tests and private profile are not shared.",
-    aiLoading: "AI is enhancing your prompt…", aiReady: "AI-enhanced prompt is ready",
+    aiLoading: "AI is enhancing your prompt…", aiProgress:"Your local draft is already ready while AI works.", aiReady: "AI-enhanced prompt is ready",
     local: "Local director · no API", aiUnavailable: "AI is unavailable now — your local prompt is preserved.",
     edit: "You can edit", limit: "Free video limitation",
     create: "Create free video", creating: "Recording MP4/WebM on your device",
@@ -106,9 +108,10 @@ const l10n = {
     prompt: "Prompt y escenas", promptHelp: "Puedes editarlo. En modo gratis solo selecciona escenas existentes, no crea tomas cinematográficas nuevas.",
     promptPlaceholder: "Escribe tu deseo arriba para crear el prompt.",
     refresh: "Otra opción de prompt", ai: "Mejorar con IA · gratis",
-    aiErrors:{quota:"Límite de IA gratuita alcanzado. Usa el borrador local.",config:"IA no configurada. Usa el borrador local.",response:"Respuesta IA incorrecta. Guardamos el borrador.",provider:"Proveedor IA no disponible. Inténtalo más tarde."},
+    aiErrors:{quota:"Límite de IA gratuita alcanzado. Usa el borrador local.",config:"IA no configurada. Usa el borrador local.",response:"Respuesta IA incorrecta. Guardamos el borrador.",provider:"Proveedor IA no disponible. Inténtalo más tarde.",timeout:"La IA no respondió en 13 segundos."},
+    localFallback:"Se creó otra opción local, sin IA externa.",
     aiConsent: "Acepto enviar solo el texto de mi deseo a un modelo externo. Mi foto, pruebas y perfil no se comparten.",
-    aiLoading: "La IA mejora el prompt…", aiReady: "Prompt mejorado por IA",
+    aiLoading: "La IA mejora el prompt…", aiProgress:"El borrador local ya está listo mientras trabaja la IA.", aiReady: "Prompt mejorado por IA",
     local: "Director local · sin API", aiUnavailable: "IA no disponible — mantenemos el prompt local.",
     edit: "Se puede editar", limit: "Límite del vídeo gratis",
     create: "Crear vídeo gratis", creating: "Grabando MP4/WebM en tu dispositivo",
@@ -138,6 +141,7 @@ export function MandalaFirstVideoStart({
   const [aiConsent, setAiConsent] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const aiRevisionRef = useRef(0);
+  const aiAbortRef = useRef<AbortController | null>(null);
   const [aiStatus, setAiStatus] = useState("");
   const draft = useMemo(() => buildFirstVideoDraft({
     locale, wish, ...prefs, variant, promptOverride: mode === "local" ? "" : promptOverride,
@@ -152,35 +156,38 @@ export function MandalaFirstVideoStart({
   }
   function changeWish(value: string) {
     const next = value.slice(0, 800);
-    aiRevisionRef.current++; setAiLoading(false);
+    aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0);
     if (next.trim()) apply(next, prefs, "", 0);
   }
   function changePreferences(patch: Partial<Preferences>) {
     const next = { ...prefs, ...patch };
-    aiRevisionRef.current++; setAiLoading(false);
+    aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0);
     if (wish.trim()) apply(wish, next, "", 0);
   }
   function changePrompt(value: string) {
     const next = value.slice(0, 1000);
-    aiRevisionRef.current++; setAiLoading(false);
+    aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     setPromptOverride(next); setMode("manual"); setAiStatus("");
     if (wish.trim()) apply(wish, prefs, next);
   }
   function resetPrompt() {
-    aiRevisionRef.current++; setAiLoading(false);
+    aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     const nextVariant=(variant+1)%100;
     setVariant(nextVariant); setMode("local"); setPromptOverride(""); setAiStatus("");
     if (wish.trim()) apply(wish, prefs, "", nextVariant);
   }
   async function enhancePrompt() {
-    if (disabled || aiLoading || !aiConsent || !wish.trim()) return;
+    if (disabled || aiLoading || !aiConsent || wish.trim().length<3) return;
     const revision=++aiRevisionRef.current;
+    const controller=new AbortController();
+    aiAbortRef.current=controller;
+    const timeout=setTimeout(()=>controller.abort(),13000);
     setAiLoading(true); setAiStatus("");
     try {
       const response = await fetch("/api/holistic-support/first-video-prompt", {
-        method: "POST", credentials: "same-origin", cache: "no-store",
+        method: "POST", credentials: "same-origin", cache: "no-store", signal:controller.signal,
         redirect: "error", referrerPolicy: "no-referrer",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
@@ -204,13 +211,28 @@ export function MandalaFirstVideoStart({
       setAiStatus(t.aiReady+" · "+provider);
       apply(wish, prefs, data.prompt);
     } catch (error) {
-      const code=error instanceof Error?error.message:"";
-      const category=code==="RATE_LIMITED"||code==="VIDEO_PROMPT_FREE_QUOTA"?"quota":
+      const code=controller.signal.aborted?"VIDEO_PROMPT_TIMEOUT":error instanceof Error?error.message:"";
+      const category=code==="VIDEO_PROMPT_TIMEOUT"?"timeout":
+        code==="RATE_LIMITED"||code==="VIDEO_PROMPT_FREE_QUOTA"?"quota":
         code==="VIDEO_PROMPT_FREE_AI_DISABLED"?"config":
         code==="VIDEO_PROMPT_INVALID_RESPONSE"?"response":"provider";
-      if(revision===aiRevisionRef.current)setAiStatus(t.aiErrors[category]);
-      // Explicitly keep the locally prepared storyboard and prompt.
-    } finally { if(revision===aiRevisionRef.current)setAiLoading(false); }
+      if(revision===aiRevisionRef.current){
+        // A failed free provider must not make this button look inert.
+        // Never overwrite a manually edited or already AI-enhanced prompt.
+        // The visible local alternative is labelled honestly, never as AI.
+        const useLocal=mode==="local"&&Boolean(wish.trim());
+        if(useLocal){
+          const nextVariant=(variant+1)%100;
+          setVariant(nextVariant);setPromptOverride("");setMode("local");
+          apply(wish,prefs,"",nextVariant);
+        }
+        setAiStatus(t.aiErrors[category]+(useLocal?" "+t.localFallback:""));
+      }
+    } finally {
+      clearTimeout(timeout);
+      if(aiAbortRef.current===controller)aiAbortRef.current=null;
+      if(revision===aiRevisionRef.current)setAiLoading(false);
+    }
   }
   return <section className={css.root} data-first-free-video
     data-first-video-hydrated={hydrated?"true":"false"} aria-labelledby="first-video-title">
@@ -301,15 +323,15 @@ export function MandalaFirstVideoStart({
         <RotateCcw size={16} aria-hidden="true"/>{t.refresh}
       </button>
       <button type="button" className={css.enhance} onClick={() => void enhancePrompt()}
-        disabled={disabled || !hydrated || aiLoading || !aiConsent || !wish.trim()}
+        disabled={disabled || !hydrated || aiLoading || !aiConsent || wish.trim().length<3}
         data-first-video-enhance>
         <WandSparkles size={16} aria-hidden="true"/>{aiLoading ? t.aiLoading : t.ai}
       </button>
     </div>
     <label className={css.consent}><input type="checkbox" data-first-video-ai-consent checked={aiConsent}
-      onChange={event => {aiRevisionRef.current++;setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled || !hydrated}/>
+      onChange={event => {aiRevisionRef.current++;aiAbortRef.current?.abort();setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled || !hydrated}/>
       <span>{t.aiConsent}</span></label>
-    {aiStatus && <p className={css.aiStatus} role="status">{aiStatus}</p>}
+    {(aiStatus||aiLoading) && <p className={css.aiStatus} role="status">{aiLoading?t.aiProgress:aiStatus}</p>}
     {draft.descriptionLimited && <p className={css.warning} role="note">
       <strong>{t.limit}:</strong> {draft.limitationNote}
     </p>}

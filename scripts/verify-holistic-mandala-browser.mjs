@@ -751,11 +751,22 @@ const runEngine = async ([engine, browserType]) => {
           throw new Error("Video therapy exit did not dismiss on first click: "+JSON.stringify(state)+" / "+String(error));
         }
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
-        await page.locator("[data-video-advanced-filters] > summary").click();
+        // This native <details> can already be open after returning from
+        // Video Therapy. Toggling blindly would close it, leaving the real
+        // select hidden (WebKit 30s selectOption timeout). Test the VISIBLE
+        // control with a real summary click only when the panel is closed.
+        const advancedFilters=page.locator("[data-video-advanced-filters]");
+        const advancedSummary=advancedFilters.locator(":scope > summary");
+        if(!(await advancedFilters.evaluate(element=>element.open)))
+          await advancedSummary.click();
+        await expect(advancedFilters).toHaveJSProperty("open",true,{timeout:10000});
+        await expect(page.locator("[data-video-advanced-aspect]")).toBeVisible({timeout:10000});
         await page.locator("[data-video-advanced-aspect]").selectOption("landscape");
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-video-advanced-aspect]").selectOption("portrait");
-        await page.locator("[data-video-advanced-filters] > summary").click();
+        // Verify the disclosure really closes before testing its external CTA.
+        await advancedSummary.click();
+        await expect(advancedFilters).toHaveJSProperty("open",false,{timeout:10000});
         await page.locator("[data-video-recommend-focus]").click();
         assert.equal(await page.locator('[data-video-theme="energy"]').getAttribute("aria-pressed"),"true");
 
@@ -763,7 +774,9 @@ const runEngine = async ([engine, browserType]) => {
         const catalog=page.locator("[data-video-catalog]");
         await catalog.waitFor({state:"visible"});
         assert.equal(await page.locator("[data-video-category]").count(),6);
-        await page.locator("[data-video-advanced-filters] > summary").click();
+        if(!(await advancedFilters.evaluate(element=>element.open)))
+          await advancedSummary.click();
+        await expect(advancedFilters).toHaveJSProperty("open",true,{timeout:10000});
         assert.equal(await page.locator("[data-video-catalog-filters] select").count(),4);
         await page.locator('[data-video-category="health"]').click();
         assert.equal(await page.locator('[data-video-category="health"]').getAttribute("aria-pressed"),"true");
