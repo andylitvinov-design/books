@@ -856,8 +856,7 @@ const runEngine = async ([engine, browserType]) => {
           assert.ok(attach && attach.height>=44,
             "attach action is touch-friendly "+engine+" "+width+": "+JSON.stringify(attach));
           mkdirSync("artifacts/mandala-audio",{recursive:true});
-          await panel.screenshot({path:"artifacts/mandala-audio/"+engine+"-ru-"+width+".png",
-            animations:"disabled",timeout:20000});
+          await captureSyntheticOverview(page,panel,"artifacts/mandala-audio/"+engine+"-ru-"+width+".png");
         }
         // Regression for the owner's real iPhone screenshot: native Safari
         // displayed "Ошибка" when five presets used generated blob: WAVs.
