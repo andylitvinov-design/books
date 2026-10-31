@@ -53,15 +53,49 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // Other independent CI harnesses, with no application runtime dependency.
+  '.github/workflows/admin-seo-dashboard.yml',
+  '.github/workflows/release-reaudit.yml',
+  'scripts/public-poster-readiness.mjs',
+  'scripts/csp-navigation-diagnostics.mjs',
+  'scripts/verify-release-reaudit.mjs',
+  'tests/ci-head-cancellation.test.mjs',
+  'tests/ci-stale-run-deduplication.test.mjs',
+  'tests/csp-public-discovery-verifier.test.mjs',
+  'tests/csp-navigation-diagnostics.test.mjs',
+  'tests/public-audit-readiness.test.mjs',
+  'tests/release-reaudit.test.mjs',
+  // Another mandatory exact-HEAD specialist owns the Ideas/Coaching workflow.
+  '.github/workflows/hh-ideas-coaching-public.yml',
 ]);
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
+// The Ideas/Coaching source owner checks these exact files. Public Services
+// must still run its real Ideas browser when the shared mobile QA harness
+// changes, but must not launch unrelated payment, Reiki or Alchemy journeys.
+const IDEAS_SCOPED_BROWSER_HARNESS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'scripts/verify-coaching-lounge-mobile.mjs',
+  'scripts/verify-holistic-support-browser.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
+// These are the only pre-reviewed NEW helper/test filenames allowed to use the
+// real Ideas focused browser gate; unknown additions still run all 13.
+const IDEAS_SCOPED_ADDITIONS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
 // One proven isolated presentation leaf: two existing suites exercise the exact
 // Alchemy screen/viewport/consent in RU/EN/ES. All JSX, forms and payments stay full.
 const PRESENTATION_CASES = new Map([
   ['components/alchemy-soul-landing.module.css',
     ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']],
+]);
+// This is a test helper, not a contact implementation. Public Services has
+// one importer; App R1 and release re-audit run in their own workflows.
+const HARNESS_CASES = new Map([
+  ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
 function full(reason) {
@@ -79,6 +113,10 @@ export function planPublicServicesChangedPaths(files) {
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
     if (sourceTests.has(file)) continue;
+    if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
+      selected.add('verify-ideas-mobile-browser.mjs');
+      continue;
+    }
     const browserCase = scriptCases.get(file);
     if (browserCase) {
       selected.add(browserCase);
@@ -86,6 +124,10 @@ export function planPublicServicesChangedPaths(files) {
     }
     if (PRESENTATION_CASES.has(file)) {
       for (const name of PRESENTATION_CASES.get(file)) selected.add(name);
+      continue;
+    }
+    if (HARNESS_CASES.has(file)) {
+      for (const name of HARNESS_CASES.get(file)) selected.add(name);
       continue;
     }
     if (file === METRIC_SCRIPT) {
@@ -147,7 +189,8 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
-      if (status !== 'M' && !(status === 'A' && TRUSTED_CI_CONTRACT_FILES.has(file)))
+      if (status !== 'M' && !(status === 'A' &&
+        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }

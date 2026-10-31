@@ -61,6 +61,23 @@ test('browser harness-only changes keep exact targeted real browsers', () => {
     ['verify-service-cart-browser.mjs', 'verify-storefront-shop-browser.mjs']);
 });
 
+test('release audit and consent test helper changes run only their Public Services owner', () => {
+  const files = [
+    '.github/workflows/admin-seo-dashboard.yml', '.github/workflows/release-reaudit.yml',
+    'scripts/helpers/contact-channel-verifier.mjs', 'scripts/public-poster-readiness.mjs', 'scripts/csp-navigation-diagnostics.mjs',
+    'scripts/verify-public-services-production.mjs', 'scripts/verify-release-reaudit.mjs',
+    'tests/ci-head-cancellation.test.mjs', 'tests/ci-stale-run-deduplication.test.mjs',
+    'tests/csp-public-discovery-verifier.test.mjs', 'tests/csp-navigation-diagnostics.test.mjs', 'tests/public-audit-readiness.test.mjs',
+    'tests/release-reaudit.test.mjs', 'tests/service-alchemy-one-screen-story.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(files);
+  assert.equal(plan.mode, 'focused');
+  assert.equal(plan.cases, 'verify-public-services-production.mjs');
+  for (const risky of ['components/contact-channel-chooser.tsx', 'app/api/service-enquiries/route.js', 'middleware.ts']) {
+    assert.equal(planPublicServicesChangedPaths([...files, risky]).mode, 'full');
+  }
+});
+
 test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelated scripts', () => {
   const file = 'components/alchemy-soul-landing.module.css';
   const plan = planPublicServicesChangedPaths([file]);
@@ -92,6 +109,60 @@ test('the exact Public Services CI+Alchemy change verifies only its two real bro
     ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']);
   const risky = [...paths, 'app/api/payments/talismans/checkout/route.js'];
   assert.equal(planPublicServicesChangedPaths(risky).mode,'full');
+});
+
+
+test('Ideas/Coaching shared browser batch dispatches only the actual Ideas acceptance, not 12 unrelated lanes', () => {
+  const files = [
+    '.github/workflows/hh-ideas-coaching-public.yml',
+    'scripts/ci-mobile-browser-batch.mjs',
+    'scripts/verify-coaching-lounge-mobile.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+    'scripts/verify-ideas-mobile-browser.mjs',
+    'tests/ci-ideas-coaching-optimization.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const result = planPublicServicesChangedPaths(files);
+  assert.deepEqual([result.mode, result.build, result.browser, result.metrics, result.cases],
+    ['focused', true, true, false, 'verify-ideas-mobile-browser.mjs']);
+  const own = pathsOf('hh-ideas-coaching-public.yml');
+  for (const f of files.slice(1, 6)) {
+    assert.ok(covers(own, f), 'separate Ideas/Coaching specialist must own ' + f);
+  }
+  for (const risky of ['app/api/payments/checkout/route.js', 'middleware.ts', 'lib/commerce/payment.js', 'scripts/unknown-mobile-batch.mjs']) {
+    assert.equal(planPublicServicesChangedPaths([...files, risky]).mode, 'full',
+      'unknown, auth and payment surfaces must never be scoped: ' + risky);
+  }
+});
+
+test('only exact reviewed added browser helper and its contract test may use focused PR lane', () => {
+  const base='a'.repeat(40), head='b'.repeat(40), z='\0';
+  const env={GITHUB_EVENT_NAME:'pull_request', HH_PUBLIC_BASE_SHA:base, HH_PUBLIC_HEAD_SHA:head};
+  const plan = rows => planPublicServicesEvent(env, (_cmd,args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head+'\n');
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('Unexpected Git command');
+  });
+  const exact = [
+    ['M','.github/workflows/hh-ideas-coaching-public.yml'],
+    ['A','scripts/ci-mobile-browser-batch.mjs'],
+    ['M','scripts/verify-coaching-lounge-mobile.mjs'],
+    ['M','scripts/verify-holistic-support-browser.mjs'],
+    ['M','scripts/verify-ideas-mobile-browser.mjs'],
+    ['A','tests/ci-ideas-coaching-optimization.test.mjs'],
+  ];
+  const verified=plan(exact);
+  assert.equal(verified.mode,'focused');
+  assert.equal(verified.cases,'verify-ideas-mobile-browser.mjs');
+  for(const unsafe of [
+    [['A','scripts/unknown-mobile-batch.mjs']],
+    [['A','lib/billing/new-helper.js']],
+    [['D','scripts/ci-mobile-browser-batch.mjs']],
+    [['T','tests/ci-ideas-coaching-optimization.test.mjs']],
+    [...exact,['M','app/api/payments/talismans/checkout/route.js']],
+  ]) assert.equal(plan(unsafe).mode,'full', 'new unreviewed and sensitive code must run full');
 });
 
 test('performance harness changes need production server but no browsers', () => {
@@ -266,7 +337,9 @@ test('direct browser and consent helpers are trigger-owned and never silently sk
     'app/api/service-enquiries/route.ts',
   ]) {
     assert.equal(covers(publicPaths,file), true, 'missing CI dispatch for ' + file);
-    if (file !== 'components/alchemy-soul-landing.module.css')
+    if (file === 'scripts/helpers/contact-channel-verifier.mjs')
+      assert.equal(planPublicServicesChangedPaths([file]).cases, 'verify-public-services-production.mjs');
+    else if (file !== 'components/alchemy-soul-landing.module.css')
       assert.equal(planPublicServicesChangedPaths([file]).mode, 'full', 'must not short-circuit ' + file);
   }
 });
