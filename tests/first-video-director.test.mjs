@@ -89,7 +89,8 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   const providers=readFileSync(new URL("../lib/mandala/first-video-free-providers.mjs",import.meta.url),"utf8");
   assert.match(providers,/FIRST_VIDEO_OPENROUTER_MODEL="openrouter\/free"/);
   assert.match(providers,/FIRST_VIDEO_GEMINI_MODEL="gemini-2.5-flash-lite"/);
-  assert.match(route,/HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED/);
+  assert.match(providers,/HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED/);
+  assert.match(providers,/HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED/);
   assert.match(route,/consumeRate\(config/);
   assert.match(route,/requireSameOrigin\(request,config\)/);
 });
