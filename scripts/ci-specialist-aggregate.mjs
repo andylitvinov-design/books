@@ -97,10 +97,19 @@ function assertSame(pr, ctx, allowBaseAdvance = false) {
 }
 
 export async function verify(api,ctx,files,options={}) {
-  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
-  // long enough for their results instead of rejecting a still-running check.
-  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
-  const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
+  // Distinguish an absent workflow from a queued run and genuine execution.
+  // Only a running specialist may use the long completion deadline.
+  const boundedMs = (value, maximum, minimum = 0) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
+    return Math.max(minimum, Math.min(maximum, n));
+  };
+  const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
+  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? delay;
   const allowBaseAdvance = Array.isArray(files.changedRows);
   const pr = await api.pr(ctx.number);
   assertSame(pr,ctx,allowBaseAdvance);
@@ -126,7 +135,10 @@ export async function verify(api,ctx,files,options={}) {
   const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
   const retired = new Set(delegated.map(item => item.retired));
   const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
-  const deadline=Date.now()+maxWait;
+  const start = now();
+  const deadline = start + maxWait;
+  const missingDeadline = start + missingGrace;
+  const queuedDeadline = start + queuedGrace;
   let state;
   for (;;) {
     const allRuns=await api.runs(ctx.head);
@@ -141,10 +153,30 @@ export async function verify(api,ctx,files,options={}) {
       }));
     }
     if (!state.missing.length && !state.pending.length) break;
-    if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
+    // GitHub may take a few seconds to register a newly triggered workflow.
+    // After the short discovery grace, absence is a configuration/dispatch
+    // failure, NOT a 35-minute running test. Never waive an expected workflow.
+    const timestamp = now();
+    if (state.missing.length && timestamp >= missingDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
+        JSON.stringify({missing:state.missing,pending:state.pending}));
     }
-    await delay(pollMs);
+    // A registered but queued/requested/waiting workflow is not an executing
+    // test. Give the GitHub runner queue a separate bounded startup window.
+    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    if (notStarted.length && timestamp >= queuedDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
+        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+    }
+    if (timestamp >= deadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
+        JSON.stringify({pending:state.pending}));
+    }
+    const nextDeadline = Math.min(deadline,
+      state.missing.length ? missingDeadline : Infinity,
+      notStarted.length ? queuedDeadline : Infinity);
+    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
