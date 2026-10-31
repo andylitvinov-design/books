@@ -308,3 +308,25 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   }
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
+
+test('required Public Services PR gate is contracts-only; expensive E2E remains manual diagnostic', () => {
+  const src = workflow('hh-public-services-production.yml');
+  assert.match(src, /^  pull_request:$/m);
+  assert.match(src, /^  workflow_dispatch:$/m);
+  // Only the dispatch path may install heavyweight browsers or rebuild Next.
+  for (const [name, output] of [
+    ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
+    ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Production build and public browser acceptance', 'build'],
+  ]) {
+    const step = src.split('      - name: ' + name + '\n')[1];
+    assert.ok(step, 'missing manual QA step: ' + name);
+    assert.ok(step.startsWith("        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs." + output + " == 'true' }}\n"),
+      'a PR must not run a second Next build or obsolete browser matrix: ' + name);
+  }
+  assert.ok(src.includes("if: github.event_name == 'pull_request'"),
+    'PR job must still record explicit required source-contract acceptance');
+  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
+  assert.doesNotMatch(src, /continue-on-error:\\s*true/);
+});
