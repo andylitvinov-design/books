@@ -69,13 +69,17 @@ export async function changedFilesViaGithub(previous, current, fetcher = fetch) 
 // branch needs a Vercel build. Ignore all Preview builds as a defense-in-depth
 // in case Git branch rules are bypassed by a branch created before this policy.
 export function shouldSkipPreviewBuild(environment = process.env) {
-  return environment.VERCEL_ENV === "preview";
+  return environment.VERCEL_ENV === "preview" && !(environment.VERCEL_PROJECT_ID === "prj_bjwATbHF61gzEhfsrNe54lEnvJZw" && environment.HH_LAB_MODE === "true" && environment.HH_DISABLE_EXTERNAL_SIDE_EFFECTS === "true");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (shouldSkipPreviewBuild()) {
     console.log("Skip Vercel Preview build; automatic production deploys remain enabled.");
     process.exit(0);
+  }
+  if (process.env.VERCEL_ENV === "preview") {
+    console.log("Explicit isolated Lab preview: run build.");
+    process.exit(1);
   }
   const previous = process.env.VERCEL_GIT_PREVIOUS_SHA;
   const current = process.env.VERCEL_GIT_COMMIT_SHA;
