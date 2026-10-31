@@ -171,16 +171,19 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     'scripts/verify-holistic-mandala-browser.mjs',
     'components/mandala-free-video-studio.tsx',
     'components/mandala-video-mobile.module.css',
+    'components/mandala-first-video-start.tsx',
+    'components/mandala-first-video-start.module.css',
+    'app/api/holistic-support/first-video-prompt/route.js',
+    'tests/first-video-director.test.mjs',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
-  // A public speech API is still protected by real Mandala browser and provider
-  // contracts, not 16 unrelated Alchemy/checkout viewport tests. Keep the
-  // shared Mandala landing and user-facing services under Public Services.
+  // Public voice API is owned by Mandala real media/provider E2E; other
+  // public-service paths retain their normal independent checks.
   const voiceRoute='app/api/holistic-support/voice/route.js';
-  assert.equal(covers(service,voiceRoute),false,'voice-only API must not enter unrelated Public Services');
-  assert.equal(covers(mandala,voiceRoute),true,'voice API must run Mandala real WAV/MP4 and consent checks');
+  assert.equal(covers(service,voiceRoute),false,'voice-only API not Public Services');
+  assert.equal(covers(mandala,voiceRoute),true,'voice-only API requires Mandala real WAV/MP4 tests');
   for(const file of [
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
@@ -188,6 +191,7 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     'scripts/verify-holistic-support-recommendations-mobile.mjs',
     'app/en/holistic-support/mandala/page.tsx',
     'tests/practitioner-remote-energy-support.test.mjs',
+    'app/api/holistic-support/checkout/route.js',
   ])assert.equal(covers(service,file),true,file+' still covered for public service changes');
 });
 
@@ -248,7 +252,9 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       if (operation === 'mixed') write(to, 'synthetic source\n');
       git('add', '--all'); git('commit', '--quiet', '--allow-empty', '-m', 'synthetic change');
       const source = workflow('hh-pr-core-release.yml');
-      const block = source.match(/        run: \|\n([\s\S]*?)^  code:/m);
+      const classifierStep = source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+      assert.ok(classifierStep);
+      const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
       assert.ok(block, 'classifier shell block is present');
       // Preserve classifier logic exactly; isolate only its fixed temporary file.
       const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'));
@@ -304,7 +310,9 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
     assert.match(git('diff','--name-only',base,'HEAD'),/app\/api\/payments\/route\.js/,
       'stale event base falsely treats production changes as PR changes');
     const source=workflow('hh-pr-core-release.yml');
-    const block=source.match(/        run: \|\n([\s\S]*?)^  code:/m);
+    const classifierStep=source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+    assert.ok(classifierStep, 'the named classifier step is present');
+    const block=classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
     assert.ok(block);
     const script=block[1].replace(/^          /gm,'')
       .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
@@ -631,4 +639,27 @@ test('Mandala focused job overlaps both real browsers without losing media cover
     'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
     'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
   ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
+});
+
+test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
+  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+  const release = source.split(/^  release-ready:/m)[1];
+  for (const [name, job] of [['scope', scope], ['code', code]]) {
+    assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
+    assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
+    assert.doesNotMatch(job, /fetch-depth:\s*2/);
+  }
+  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 2);
+  assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 1);
+  assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
+  assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
+  assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
+  assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
+  assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
+  assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(release, /timeout-minutes: 45/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });

@@ -107,6 +107,93 @@ const runEngine = async ([engine, browserType]) => {
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
 
+        // First free video: real exported moving media in both engines.
+        const firstStart=page.locator("[data-first-free-video]");
+        await firstStart.waitFor({state:"visible",timeout:12000});
+        assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-filters]").getAttribute("open"),null);
+        if(locale==="ru"&&width===390){
+          // Use ONE real visitor page instead of running two heavy Canvas/video
+          // decoders concurrently on the CI worker. Hydration must finish
+          // before user input; no synthetic dispatch or mocked media allowed.
+          const form=page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
+          await form.waitFor({state:"visible",timeout:25000});
+          const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
+          await form.locator("[data-first-video-wish]").fill(typedWish);
+          await page.waitForFunction(expected=>{
+            const wish=document.querySelector("[data-first-video-wish]");
+            const prompt=document.querySelector("[data-first-video-prompt]");
+            return wish?.value===expected && prompt?.value?.length>80;
+          },typedWish,{timeout:25000});
+          const filters=form.locator("[data-first-video-filters]");
+          await filters.locator("summary").click();
+          await expect(filters).toHaveAttribute("open","",{timeout:10000});
+          await form.locator("[data-first-video-aspect]").selectOption("portrait");
+          await expect.poll(async()=>form.locator("[data-first-video-prompt]").inputValue(),
+            {timeout:20000}).toMatch(/9:16/);
+          // The original editor must have installed the exact new four-shot
+          // plan before we allow the real record button to become clickable.
+          const create=form.locator("[data-first-video-generate]");
+          await expect(create).toBeEnabled({timeout:25000});
+          await create.click({timeout:15000});
+          const save=page.locator("[data-mandala-video-download]");
+          try{
+            await save.waitFor({state:"visible",timeout:85000});
+          }catch(error){
+            const state=await page.evaluate(()=>{
+              const get=(selector)=>document.querySelector(selector);
+              const prompt=get("[data-first-video-prompt]");
+              const generate=get("[data-first-video-generate]");
+              const progress=get("[data-first-free-video] progress");
+              const result=get("[data-video-result]");
+              const notices=Array.from(document.querySelectorAll("[role=status],[role=alert]"))
+                .map(node=>node.textContent?.trim()?.slice(0,200)).filter(Boolean);
+              return {promptLength:prompt?.value?.length,createDisabled:generate?.disabled,
+                progress:progress?.value,resultHidden:result?.hidden,notices};
+            });
+            throw new Error(engine+" free first-video export missing: "+JSON.stringify(state),{cause:error});
+          }
+          // Verify an actual decoded file on both engines. Modern browsers
+          // export the composed portrait Canvas; WebKit without captureStream
+          // gets a clearly labelled original local MP4, not a fake montage.
+          const supportsCanvasRecording=await page.evaluate(()=>
+            typeof HTMLCanvasElement.prototype.captureStream==="function"&&
+            typeof MediaRecorder!=="undefined");
+          const mode=await page.locator("[data-video-result]").getAttribute("data-video-result-mode");
+          assert.equal(mode,supportsCanvasRecording?"rendered":"catalog",
+            engine+" must explicitly classify the delivered media");
+          if(!supportsCanvasRecording){
+            await expect(page.locator("[data-video-catalog-fallback]")).toBeVisible();
+            assert.match(await page.locator("[data-video-catalog-fallback]").innerText(),
+              /исходный|original|catálogo/i);
+          }else{
+            assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
+          }
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),save.click(),
+          ]);
+          const bytes=await bufferFromStream(await download.createReadStream());
+          assert.ok(bytes.length>10000,"free first video must encode actual moving media");
+          const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
+            "-show_entries","stream=codec_type,width,height",
+            "-of","default=noprint_wrappers=1","pipe:0"],{input:bytes,maxBuffer:1024*1024});
+          assert.equal(probe.status,0,"first free video must decode");
+          const details=probe.stdout.toString();
+          assert.match(details,/codec_type=video/);
+          if(supportsCanvasRecording){
+            assert.match(details,/width=720|width=1080/);
+            assert.match(details,/height=1280|height=1920/);
+          }
+          // Restore original untouched Studio state for the existing full
+          // photo/audio/Hypno regression cases below, on this same page.
+          const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+          assert.equal(reloaded?.status(),200);
+          await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
+            .waitFor({state:"visible",timeout:25000});
+        }
+
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
         assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
@@ -210,18 +297,15 @@ const runEngine = async ([engine, browserType]) => {
         await coverOptions.locator("summary").click();
         await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
           .toHaveAttribute("open","",{timeout:10000});
-        // Select a genuinely different first-party MP4 and await React's
-        // committed selection. A click alone does not prove media updated.
+        // Fix a stable scene identity before changing its aria-pressed state;
+        // a selector filtered on [aria-pressed=false] points at another scene afterwards.
         const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
         assert.equal(await selectedScene.count(),1,"exactly one current cover scene");
-        // The "unselected" CSS condition changes after React selects it.
-        // Capture the identity once, then assert against a STABLE scene ID
-        // rather than re-querying a different unselected button.
         const unselectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="false"]').first();
         const alternateId=await unselectedScene.getAttribute("data-video-quick-scene");
         assert.match(alternateId||"",/^[a-z0-9-]+$/,"a published alternate scene ID is required");
         const alternateScene=coverOptions.locator('[data-video-quick-scene="'+alternateId+'"]');
-        assert.equal(await alternateScene.count(),1,"the selected scene ID is unique");
+        assert.equal(await alternateScene.count(),1,"the selected scene ID must be unique");
         const expectedAlternateMaster="/videos/holistic-house/film-collection-v2/"+alternateId+".mp4";
         assert.notEqual(expectedAlternateMaster,firstMaster,"test must select a different MP4 master");
         await alternateScene.click();
@@ -473,18 +557,14 @@ const runEngine = async ([engine, browserType]) => {
         const meditation=page.locator("[data-video-personal-meditation]");
         await meditation.waitFor({state:"visible",timeout:12000});
         const writeMeditation=page.locator("[data-meditation-generate]");
-        // Under simultaneous WebKit locale workers the SSR button can be
-        // clicked before React attaches its handler. Never accept a missing
-        // script, but retry one real click after the page has settled instead
-        // of timing out blind on the script locator.
         const generatedScript=page.locator("[data-meditation-script]");
         await writeMeditation.click();
         try {
           await generatedScript.waitFor({state:"visible",timeout:7000});
-        } catch (firstClickError) {
+        } catch(firstClickError) {
           const noResult=await generatedScript.count()===0;
           if(!noResult || !await writeMeditation.isEnabled())throw firstClickError;
-          console.warn(engine+" "+locale+" "+width+"px meditation first click not hydrated; retrying actual generation once");
+          console.warn(engine+" "+locale+" "+width+"px meditation first click not hydrated; retrying once");
           await writeMeditation.click();
           await generatedScript.waitFor({state:"visible",timeout:15000});
         }
