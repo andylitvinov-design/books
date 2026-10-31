@@ -223,3 +223,24 @@
 .overview .preview button svg:first-child{width:25px;height:25px}
 .overview .preview button svg:last-child{display:none}
 @media(max-width:360px){.compactOverviewLine{font-size:10.5px}.overview .preview{padding:7px;gap:5px}.overview .preview strong{font-size:14px}}
+
+
+/* Compact default video-stage summaries: original gallery remains under Edit. */
+.sceneMiniSummary{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:5px;padding:4px 7px;border:1px solid #d7e7d9;border-radius:10px;background:#f7fbf5;color:#166348;text-align:left;font-size:12px;font-weight:750;cursor:pointer}
+.sceneMiniSummary>svg{flex:none;margin-left:auto}
+.sceneMiniThumb{display:grid;place-items:center;flex:none;width:47px;height:34px;overflow:hidden;border-radius:7px;background:#deede5}
+.sceneMiniThumb img{width:100%;height:100%;object-fit:cover}
+.sceneMiniLabel{min-width:0;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sceneMiniSummary[aria-expanded="true"]>svg{transform:rotate(180deg)}
+.sceneMiniSummary:focus-visible{outline:3px solid #69c8a6;outline-offset:2px}
+.overview [data-hypno-display] .heading p,.overview [data-hypno-design] .heading p{display:none}
+.overview .metaGrid{margin-top:5px;gap:4px}
+.overview .metaGrid>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px;min-height:32px;padding:4px}
+.overview .metaGrid small{font-size:9.6px}
+.overview .metaGrid strong{font-size:11px}
+.overview .strategySummary{-webkit-line-clamp:1}
+.overview .privacy{font-size:9.7px;line-height:1.2}
+.overview .privacy span{display:inline}
+.overview .preview{min-height:86px;gap:3px;padding:8px}
+.overview .preview strong{font-size:17px}
+@media(max-width:360px){.sceneMiniSummary{padding:3px 6px;min-height:44px}.overview .metaGrid strong{font-size:10.4px}}
