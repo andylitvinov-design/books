@@ -2292,6 +2292,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
   const [quickHypnoOpen,setQuickHypnoOpen]=useState(false);
+  // Native #video-hypnosis links also work on first load and browser Back.
+  // The editor remains a single mounted instance below the six quick tabs.
+  useEffect(()=>{
+    const openHypnoHash=()=>{
+      if(window.location.hash!=="#video-hypnosis")return;
+      setQuickHypnoOpen(true);
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"auto",block:"nearest"})));
+    };
+    openHypnoHash();
+    window.addEventListener("hashchange",openHypnoHash);
+    return ()=>window.removeEventListener("hashchange",openHypnoHash);
+  },[]);
   const openQuickDetailed=(anchor:string)=>{
     if(anchor==="video-hypnosis")setQuickHypnoOpen(true);
     const token=++quickNavTokenRef.current;
@@ -2697,7 +2710,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
             locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
             "Session 1 scene is ready. Create and download the video in the editor below.");
-          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
+          // An immediate settled jump prevents a long smooth-scroll from
+          // fighting the visitor's next action (including editing phrases).
+          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"auto",block:"center"});
         }}/>
       </div> : null}
 
@@ -3029,8 +3044,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
-        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
-        <summary><SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
+        open={quickDetailedOpen}>
+        {/* React owns the disclosure state. Prevent native + onToggle races in WebKit. */}
+        <summary onClick={event=>{event.preventDefault();setQuickDetailedOpen(value=>!value);}}>
+          <SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
         <section className={videoStyles.quickSection} data-video-quick-section="3"
           aria-labelledby="quick-hypno-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3261,7 +3278,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}/>
             <span>{layout.affirmationsToggle}</span>
           </label>
-          <a className={videoStyles.previewChoiceLink} href="#video-hypnosis">
+          <a className={videoStyles.previewChoiceLink} href="#video-hypnosis"
+            onClick={event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+              event.preventDefault();openQuickDetailed("video-hypnosis");}}>
             <Sparkles size={14} aria-hidden="true"/>{layout.configureAffirmations}
           </a>
         </div>
