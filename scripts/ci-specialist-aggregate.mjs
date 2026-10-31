@@ -133,9 +133,12 @@ export async function verify(api,ctx,files,options={}) {
   const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
+  const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx);
-  const changedRows=files.changedRows ?? await api.changed(ctx.number);
+  // Loose base is never allowed for legacy/unverified live file listings.
+  // Only exact merged checkout rows can prove what was tested.
+  assertSame(pr,ctx,!pinnedChangeRows);
+  const changedRows=pinnedChangeRows ? files.changedRows : await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
@@ -143,7 +146,7 @@ export async function verify(api,ctx,files,options={}) {
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   // BASE/HEAD workflow definitions and the actual merge snapshot stay
   // immutable even when the production target moves after the check started.
-  const requireCurrentBase=requiresCurrentProductionBase(changed);
+  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
   assertSame(pr,ctx,requireCurrentBase);
   const risk=classifyReleaseRisk(changed);
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
