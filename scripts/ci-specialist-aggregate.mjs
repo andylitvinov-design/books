@@ -74,6 +74,18 @@ function assertSame(pr, ctx) {
   }
 }
 
+// These broad domain/browser diagnostics remain visible in Actions. Only a
+// proven FAST presentation change may stop waiting for an unchanged BASE copy.
+const FAST_ADVISORY_WORKFLOWS = new Set([
+  '.github/workflows/hh-public-services-production.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/opora-module-ci.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-benchmark-public-browser.yml',
+]);
+
 // Load only the BASE-pinned parser, without PR dependencies or npm scripts.
 // A failed install never waives checks: callers fall back to STRICT.
 export function loadTrustedTypescript(base) {
@@ -133,13 +145,14 @@ export async function verify(api,ctx,files,options={}) {
     };
     risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
   }
-  if (risk === 'FAST') {
-    assertSame(await api.pr(ctx.number),ctx);
-    return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
-  }
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
-  const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
+  const routed=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
+  const delegated=routed.delegated;
+  const replacements=new Set(delegated.map(item=>item.replacement));
+  const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
+    files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -149,10 +162,12 @@ export async function verify(api,ctx,files,options={}) {
   const retired = new Set(delegated.map(item => item.retired));
   const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
   const deadline=Date.now()+maxWait;
-  let state;
+  let state, fastDiagnostics=[];
   for (;;) {
     const allRuns=await api.runs(ctx.head);
-    state=inspectWorkflowRuns({expected,runs:allRuns,pr});
+    fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
+    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0])),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
@@ -177,7 +192,7 @@ export async function verify(api,ctx,files,options={}) {
   assertSame(fresh,ctx);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }

@@ -126,8 +126,8 @@ test('release verifier accepts proven text-only change without polling diagnosti
   const sha='a'.repeat(40),base='b'.repeat(40),repo='andylitvinov-design/books';
   const ctx={repo,head:sha,base,number:27};
   const pr={number:27,state:'open',draft:false,head:{sha,ref:'ui',repo:{full_name:repo}},base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}};
-  const api={pr:async()=>pr,changed:async()=>[row],runs:async()=>{throw Error('unexpected diagnostic wait');}};
-  const result=await verify(api,ctx,{}, {readSource:(rev)=>rev===base?before:after,maxWaitMs:0});
+  const api={pr:async()=>pr,changed:async()=>[row],runs:async()=>[]};
+  const result=await verify(api,ctx,{base:new Map(),current:new Map()}, {readSource:(rev)=>rev===base?before:after,maxWaitMs:0});
   assert.equal(result.risk,'FAST');
 });
 
@@ -136,9 +136,14 @@ test('release verifier routes real public JSX text using a trusted parser',async
   const path='app/[locale]/articles/page.tsx', actual=readFileSync(path,'utf8');
   const updated=actual.replace('Holistic House · Journal','Holistic House · Stories');
   const pr={number:27,state:'open',draft:false,head:{sha,ref:'ui',repo:{full_name:repo}},base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}};
-  const api={pr:async()=>pr,changed:async()=>[{filename:path,status:'modified'}],runs:async()=>{throw Error('unexpected diagnostic wait');}};
-  const result=await verify(api,{repo,head:sha,base,number:27},{},{readSource:rev=>rev===base?actual:updated,loadTypescript:()=>typescript,maxWaitMs:0});
+  const diagnostic='.github/workflows/site-video-browser.yml';
+  const workflow=readFileSync(diagnostic,'utf8');
+  const files={base:new Map([[diagnostic,workflow]]),current:new Map([[diagnostic,workflow]])};
+  const api={pr:async()=>pr,changed:async()=>[{filename:path,status:'modified'}],runs:async()=>[{path:diagnostic,head_sha:sha,status:'in_progress',conclusion:null}]};
+  const result=await verify(api,{repo,head:sha,base,number:27},files,{readSource:rev=>rev===base?actual:updated,loadTypescript:()=>typescript,maxWaitMs:0});
   assert.equal(result.risk,'FAST');
+  assert.deepEqual(result.expected,[]);
+  assert.ok(result.advisory.nonApplicable.some(item=>item.includes(diagnostic)));
 });
 
 test('missing parser or mixed authentication change cannot waive specialists',async()=>{
@@ -187,9 +192,9 @@ test('release verifier reads the exact Git base and head, not uncommitted worktr
     const sha=git('rev-parse','HEAD'),repo='andylitvinov-design/books';
     writeFileSync(filename,after.replace('<main>','<form onSubmit={send}>'));
     const pr={number:27,state:'open',draft:false,head:{sha,ref:'ui',repo:{full_name:repo}},base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}};
-    const api={pr:async()=>pr,changed:async()=>[row],runs:async()=>{throw Error('unexpected diagnostic wait');}};
+    const api={pr:async()=>pr,changed:async()=>[row],runs:async()=>[]};
     process.chdir(tmp);
-    assert.equal((await verify(api,{repo,head:sha,base,number:27},{},{maxWaitMs:0})).risk,'FAST');
+    assert.equal((await verify(api,{repo,head:sha,base,number:27},{base:new Map(),current:new Map()},{maxWaitMs:0})).risk,'FAST');
   } finally {
     process.chdir(previous);
     rmSync(tmp,{recursive:true,force:true});
@@ -219,8 +224,8 @@ test('real verifier installs the parser from Git BASE and ignores modified workt
     writeFileSync(join(tmp,'lib/ci/fast-ui-parser/package.json'),'{"dependencies":{"untrusted":"*"}}');
     process.chdir(tmp);
     const pr={number:27,state:'open',draft:false,head:{sha,ref:'ui',repo:{full_name:repo}},base:{sha:base,ref:'codex/public-book-library',repo:{full_name:repo}}};
-    const api={pr:async()=>pr,changed:async()=>[{filename:uiPath,status:'modified'}],runs:async()=>{throw Error('unexpected diagnostic wait');}};
-    assert.equal((await verify(api,{repo,head:sha,base,number:27},{},{maxWaitMs:0})).risk,'FAST');
+    const api={pr:async()=>pr,changed:async()=>[{filename:uiPath,status:'modified'}],runs:async()=>[]};
+    assert.equal((await verify(api,{repo,head:sha,base,number:27},{base:new Map(),current:new Map()},{maxWaitMs:0})).risk,'FAST');
     git('add','.');
     git('-c','user.name=CI Test','-c','user.email=ci@example.invalid','commit','-qm','untrusted');
     assert.equal(loadTrustedTypescript(git('rev-parse','HEAD')),null);

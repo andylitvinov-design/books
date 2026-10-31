@@ -263,13 +263,12 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
   assert.match(browser,/run: test "\$MATRIX_RESULT" = success/);
 });
 
-const PR_NUMBER_CANCELLATION_BROWSER_PILOT = [["hh-public-journey-wave1.yml","hh-public-wave1"],["hh-public-journey-toronto-wave2.yml","hh-toronto-wave2"]];
-test('two public journey browser suites cancel superseded PR heads without other events',()=>{
+const PR_NUMBER_CANCELLATION_BROWSER_PILOT = [["hh-public-journey-wave1.yml","hh-public-wave1"]];
+test('consolidated public journey browser cancels obsolete PR heads without other events',()=>{
   const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
   const cancel="${{ github.event_name == 'pull_request' }}";
   const required={
-    'hh-public-journey-wave1.yml':['verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs'],
-    'hh-public-journey-toronto-wave2.yml':['verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs'],
+    'hh-public-journey-wave1.yml':['verify-public-pathway-mobile.mjs','verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs','tests/public-pathway-toronto.test.mjs'],
   };
   for(const [filename,group] of PR_NUMBER_CANCELLATION_BROWSER_PILOT){
     const source=read(filename);
@@ -286,8 +285,7 @@ test('two public journey browser suites cancel superseded PR heads without other
 
 
 test('PR-number cancellation browser suites use shellchecked bounded readiness loops',()=>{
-  for(const [file,limit] of [['hh-public-journey-wave1.yml',75],
-                             ['hh-public-journey-toronto-wave2.yml',75]]){
+  for(const [file,limit] of [['hh-public-journey-wave1.yml',75]]){
     const source=read(file);
     assert.ok(source.includes('for ((i=1; i<='+limit+'; i++)); do'),
       file+' readiness loop must use the counter and remain bounded');
@@ -298,7 +296,7 @@ test('PR-number cancellation browser suites use shellchecked bounded readiness l
 
 
 
-test('Ideas & Coaching Ready validates original browsers without Draft churn or duplicate TypeScript', () => {
+test('Ideas & Coaching PR validates source contracts while manual acceptance owns unique browsers', () => {
   const source=read('hh-ideas-coaching-public.yml');
   const core=read('hh-pr-core-release.yml');
   assert.match(source,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
@@ -316,15 +314,41 @@ test('Ideas & Coaching Ready validates original browsers without Draft churn or 
     'Manual/other branch typecheck stays, production PR relies on core');
   for(const preserved of [
     'node --test tests/public-coaching-discovery.test.mjs',
-    '- name: Next.js production build\n        run: npm run build',
+    '- name: Next.js production build (manual full acceptance only)\n        if: github.event_name != \'pull_request\'\n        run: npm run build',
     'playwright install --with-deps chromium webkit',
     'node scripts/verify-coaching-lounge-mobile.mjs',
     'node scripts/verify-holistic-support-browser.mjs',
-    'node scripts/verify-ideas-mobile-browser.mjs'
-  ]) assert.ok(source.includes(preserved),'Missing original browser acceptance: '+preserved);
+    'node --check scripts/verify-ideas-mobile-browser.mjs'
+  ]) assert.ok(source.includes(preserved),'Missing source or manual acceptance: '+preserved);
+  for (const name of ['Install isolated mobile browsers', 'Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)']) {
+    assert.ok(source.includes('- name: '+name+'\n        if: github.event_name != \'pull_request\''),name+' cannot repeat on PR');
+  }
+  assert.ok(!source.includes('          node scripts/verify-ideas-mobile-browser.mjs'),
+    'Public Services already owns the Ideas browser scenario; do not run twice');
   assert.match(core,/^  release-ready:/m);
   assert.match(core,/run: npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
+
+test('Holistic Support mock screenshots run only after merge; PR retains current source contracts', () => {
+  const source = read('hh-support-mobile-mock-browser.yml');
+  const core = read('hh-pr-core-release.yml');
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  push:/m);
+  for (const name of [
+    'Install Chromium and WebKit (post-merge visual audit)',
+    'Check 320 / 390 / 430 in Chromium and WebKit'
+  ]) {
+    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'Only post-merge runs may allocate duplicated browser matrices: '+name);
+  }
+  assert.ok(source.includes("if: always() && github.event_name != 'pull_request'"),
+    'PRs must not allocate duplicate screenshot artifacts');
+  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'),
+    'PR source contracts must still execute');
+  assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'),
+    'Parity source contract must not be removed');
+  assert.match(core, /^  release-ready:/m);
 });
 
 test('Mandala Draft gating preserves complete Ready video and audio acceptance', () => {

@@ -98,8 +98,9 @@ test('PR automation policy and agent entry point require specialist safety gates
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   assert.match(docs, /sole required GitHub status is `release-ready`/);
-  assert.match(docs, /exact PR HEAD and current production BASE/);
-  assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /SUCCESS on the exact PR HEAD/);
+  assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /production advance alone does not require updating the PR branch/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -725,4 +726,11 @@ test('report-only production pushes rerun original report progress assertions wi
   assert.ok(step.includes("github.event_name == 'workflow_dispatch'"), 'Manual validation keeps a full build');
   assert.ok(step.includes("github.event.pull_request.base.ref != 'codex/public-book-library'"), 'Nonproduction PRs retain build');
   assert.match(step,/run: npm run build/);
+});
+
+test('trusted native auto-merge can use a repo-scoped token to preserve push events', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
+  assert.match(source, /pull_request_target:/);
+  assert.doesNotMatch(source, /checkout@|--admin/);
 });

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { planPublicJourneys, planFromGitDiff } from '../scripts/ci-public-journey-scope.mjs';
 
 const full = {wave1:true, wave2:true};
 const source = readFileSync(new URL('../.github/workflows/hh-public-journey-wave1.yml', import.meta.url), 'utf8');
-const wave2 = readFileSync(new URL('../.github/workflows/hh-public-journey-toronto-wave2.yml', import.meta.url), 'utf8');
+const retiredWave2 = new URL('../.github/workflows/hh-public-journey-toronto-wave2.yml', import.meta.url);
 
 test('exact change routing retains individual journeys and fails closed for shared or unknown files', () => {
   assert.deepEqual(planPublicJourneys(['app/[locale]/contact/page.tsx']), {wave1:true,wave2:false});
@@ -50,6 +50,5 @@ test('successor preserves both original real browsers with one local build and o
   assert.match(source, /draft == false/);
   assert.match(source, /workflow_dispatch:/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
-  // Old workflow stays live until the trusted-base retirement phase.
-  assert.match(wave2,/node scripts\/verify-public-pathway-toronto-mobile\.mjs/);
+  assert.equal(existsSync(retiredWave2), false, 'Retired Toronto suite is covered by the unified browser owner');
 });

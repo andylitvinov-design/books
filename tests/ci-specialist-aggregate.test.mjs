@@ -412,16 +412,16 @@ test('fast routing is limited to known public presentation assets and mixed risk
   }
 });
 
-test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+test('FAST verifies live HEAD and preserves old names in renames', async () => {
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}], runs:async()=>{throw Error('should not wait');}};
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}], runs:async()=>[]};
   const result=await verify(api,ctx,sources, {maxWaitMs:0,readSource:()=>'.card { color: red; }'});
   assert.equal(result.risk,'FAST');
   assert.equal(reads,2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
-  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}));
+  assert.equal((await verify(api,ctx,sources, {maxWaitMs:0})).risk,'STRICT');
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
   await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}),/PR_CHANGED_FILES/);
 });
@@ -500,14 +500,34 @@ test('private cabinet presentation routes stay STRICT while public styles stay F
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
 });
 
-test('public FAST CSS does not wait for broadly triggered diagnostic specialists', async () => {
+test('public FAST CSS cannot skip a broadly triggered specialist without a trusted exemption', async () => {
   const broad='.github/workflows/diagnostic.yml';
   const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
   const ctx={repo,number:27,head:SHA,base:BASE};
-  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>{throw Error('must not poll diagnostics');}};
-  const result=await verify(api,ctx,sources,{maxWaitMs:0,readSource:()=>'.card { color: red; }'});
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0,readSource:()=>'.card { color:red; }'}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('FAST public CSS ignores a known unrelated diagnostic but STRICT never does', async () => {
+  const diagnostic='.github/workflows/hh-public-services-production.yml';
+  const workflow='on: [pull_request]\n';
+  const sources={base:new Map([[diagnostic,workflow]]),current:new Map([[diagnostic,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>[run({path:diagnostic,conclusion:'failure'})]};
+  const options={maxWaitMs:0,readSource:()=>'.card { color:red; }'};
+  const result=await verify(api,ctx,sources,options);
   assert.equal(result.risk,'FAST');
   assert.deepEqual(result.expected,[]);
+  assert.ok(result.advisory.nonApplicable.some(x=>x.includes(diagnostic)));
+  const changedWorkflow={base:new Map([[diagnostic,workflow]]),current:new Map([[diagnostic,workflow+'# changed\n']])};
+  await assert.rejects(()=>verify(api,ctx,changedWorkflow,options),/SPECIALIST_FAILED/);
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const security={base:new Map([[billing,workflow]]),current:new Map([[billing,workflow]])};
+  api.runs=async()=>[run({path:billing,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,security,options),/SPECIALIST_FAILED/);
+  api.changed=async()=>[{filename:'app/api/auth/route.ts',status:'modified'}];
+  api.runs=async()=>[run({path:diagnostic,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,options),/SPECIALIST_FAILED/);
 });
 
 test('client progress owner is complete before the trusted second-phase deletion', () => {
@@ -557,11 +577,12 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
 
-test('Toronto browser owner has trusted retirement mapping before deleting old workflow', () => {
+test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
-  const old=readFileSync(oldName,'utf8');
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
+  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
   const source=readFileSync(replacement,'utf8');
   for (const expected of [
     "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
@@ -596,4 +617,13 @@ test('installation and account guidance CSS stays STRICT', async () => {
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css']),'STRICT');
   assert.equal(classifyReleaseRisk(['app/academy.css']),'STRICT');
+});
+
+test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
+  const owner = '.github/workflows/public-owner.yml';
+  const workflow = "on:\n  pull_request:\n    paths:\n      - 'app/[[]locale[]]/about/**'\n";
+  const sources = { base: new Map([[owner, workflow]]), current: new Map([[owner, workflow]]) };
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = { pr: async () => pr(), changed: async () => [{ filename: 'app/[locale]/about/page.module.css', status: 'modified' }], runs: async () => [] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, readSource:()=>'.card { color:red; }' }), /SPECIALIST_MISSING_OR_PENDING/);
 });
