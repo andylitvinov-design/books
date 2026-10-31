@@ -436,8 +436,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           className={css.shot} data-director-shot={shot.number} data-director-shot-selected={selectedShotNumber===shot.number?"true":"false"}>
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
           <div><strong>{shot.title}</strong>
-            {referencePack.shots[shot.number-1]?.conceptDescription?<p><b>{t.conceptScene}:</b> {referencePack.shots[shot.number-1].conceptDescription}</p>:null}
-            <p>{t.localScene}: {t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
+            {referencePack.shots[shot.number-1]?.conceptDescription?<p data-director-shot-concept><b>{t.conceptScene}:</b> {referencePack.shots[shot.number-1].conceptDescription}</p>:null}
+            <p data-director-shot-local-scene>{t.localScene}: {t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
             <label className={css.sceneChoice}>
               <span>{t.sceneChoice}</span>

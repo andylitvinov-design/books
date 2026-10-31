@@ -1243,7 +1243,9 @@ const runEngine = async ([engine, browserType]) => {
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
             "four connected first-party local video shots");
-          assert.match(await director.locator('[data-director-shot="1"] > div > p').innerText(),
+          assert.match(await director.locator('[data-director-shot="1"] [data-director-shot-concept]').innerText(),
+            /Волк/,"the recognized story concept remains visibly distinct from the montage source");
+          assert.match(await director.locator('[data-director-shot="1"] [data-director-shot-local-scene]').innerText(),
             /[А-Яа-яЁё]/,"Russian director shot names must use the existing localized scene catalog");
           const localizedChoices=await director.locator('[data-director-scene-choice="1"] option').allTextContents();
           assert.ok(localizedChoices.length>=2&&localizedChoices.every(s=>/[А-Яа-яЁё]/.test(s)),

@@ -232,6 +232,8 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(ui,/questionsForGroup/);
   assert.match(ui,/projectFieldsFromAnswers/);
   assert.match(ui,/data-director-shot-select/);
+  assert.match(ui,/data-director-shot-concept/);
+  assert.match(ui,/data-director-shot-local-scene/);
   assert.match(ui,/shotDirections/);
   assert.match(ui,/sceneSelected:Boolean\(selectedShotNumber\)/);
   for(const group of ['personalization','principal','advanced','pro','extra'])assert.match(ui,new RegExp(group));
