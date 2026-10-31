@@ -468,7 +468,7 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
     // A pinned CI-only parser may have its own nested package.json/lock;
     // still forbid the root dependency manifests from using CI-only mode.
     const rootManifest = forbidden === 'package.json' || forbidden === 'package-lock.json';
-    const exact = forbidden.replace(/[.*+?^${}()|[\]\\]/g, '\\    assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);');
+    const exact = forbidden.split('.').join('\\.');
     const unsafe = rootManifest
       ? new RegExp('(?:^|\\n|\\|)\\s*' + exact + '(?=\\||\\))').test(classifier)
       : classifier.includes(forbidden);
