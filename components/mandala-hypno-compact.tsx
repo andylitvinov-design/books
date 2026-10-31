@@ -228,6 +228,7 @@ export function MandalaHypnoCompact({
   const [approvalKey,setApprovalKey]=useState("");
   const [model,setModel]=useState<HypnoModel>("wave");
   const [draftState,setDraftState]=useState<HypnoDraft|null>(null);
+  const [approvedStrategy,setApprovedStrategy]=useState<{model:HypnoModel;key:string;strategy:string}|null>(null);
   const [geminiConsent,setGeminiConsent]=useState(false);
   const [strategyBusy,setStrategyBusy]=useState(false);
   const [strategyNotice,setStrategyNotice]=useState("");
@@ -238,6 +239,8 @@ export function MandalaHypnoCompact({
   const latestKey=useRef(requestKey);
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
+  const savedStrategy=approvedStrategy?.model===model&&approvedStrategy.key===requestKey
+    ?approvedStrategy.strategy:null;
   const candidates=draft?.phrases??(settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
   const chosen=draft?.selected??settings.selected;
   const currentCustom=draft?.custom??settings.custom;
@@ -251,7 +254,8 @@ export function MandalaHypnoCompact({
     fallbackPhrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation)});
   const safetyBlocked=waveNow.status==="safety_handoff";
   const summary=safetyBlocked?waveNow.strategy:
-    model==="wave"?(draft?.strategy??waveNow.strategy):(draft?.strategy??extra.aiPrompt);
+    model==="wave"?(draft?.strategy??savedStrategy??waveNow.strategy)
+      :(draft?.strategy??savedStrategy??extra.aiPrompt);
 
   function snapshotAsDraft():HypnoDraft {
     const phrases=settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme];
@@ -437,6 +441,7 @@ export function MandalaHypnoCompact({
     if(draft.phrases.length!==5)return; // legacy adapter remains five slots
     const next={...settings,...draft.display,enabled:true,presetOverride:[...draft.phrases],selected,custom};
     onChange(next); // the ONLY phrase-draft -> live-video transition
+    setApprovedStrategy({model,key:requestKey,strategy:draft.strategy});
     setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
     setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
   }
@@ -526,7 +531,7 @@ export function MandalaHypnoCompact({
       </button>
       {strategyNotice&&<p className={css.strategyNotice} data-hypno-build-feedback role="status">{strategyNotice}</p>}
 
-      <section className={css.strategyCard} data-hypno-strategy>
+      <section className={css.strategyCard} data-strategy-built={Boolean(draft||savedStrategy)} data-hypno-strategy>
         <div className={css.strategyHead}><BrainCircuit size={18} aria-hidden="true"/><h4>{extra.strategy}</h4></div>
         <div className={css.modelChoice} role="group" aria-label={extra.strategy}>
           <button type="button" data-hypno-model="wave" aria-pressed={model==="wave"}

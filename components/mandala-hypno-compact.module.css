@@ -291,6 +291,6 @@
 /* Show the full short psychological conclusion once a real draft arrives.
  * The initial preview stays one line to preserve the 320px acceptance height;
  * the visitor can read the entire strategy after the server call. */
-.overview [data-hypno-strategy]:has(.strategyHint) .strategySummary{
+.overview [data-hypno-strategy][data-strategy-built="true"] .strategySummary{
  display:block;-webkit-line-clamp:unset;max-height:none;white-space:normal;
 }

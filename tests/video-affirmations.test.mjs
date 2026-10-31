@@ -447,3 +447,13 @@ test("all 6 themes and 3 languages return client-reviewed Wave API drafts",()=>{
      " "+length+" "+round+" "+JSON.stringify(phrases));
  }
 });
+
+test("accepted psychological strategy persists visibly after phrase approval",()=>{
+  const source=read("components/mandala-hypno-compact.tsx");
+  const css=read("components/mandala-hypno-compact.module.css");
+  assert.match(source,/const \[approvedStrategy,setApprovedStrategy\]=useState/);
+  assert.match(source,/setApprovedStrategy\(\{model,key:requestKey,strategy:draft\.strategy\}\)/);
+  assert.match(source,/draft\?\.strategy\?\?savedStrategy/);
+  assert.match(source,/data-strategy-built=\{Boolean\(draft\|\|savedStrategy\)\}/);
+  assert.match(css,/\[data-strategy-built="true"\] \.strategySummary/);
+});
