@@ -476,11 +476,12 @@ async function verifyPublicServiceConversionJourneys(){
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     const preferenceSelects=form.locator(':scope > label > select')
+     await expect(preferenceSelects).toHaveCount(2)
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
+     await preferenceSelects.first().selectOption('30')
+     await preferenceSelects.nth(1).selectOption('business')
+     await expect(preferenceSelects.first()).toHaveValue('30')
      await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
