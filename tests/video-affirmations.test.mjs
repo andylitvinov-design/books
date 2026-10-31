@@ -1,4 +1,5 @@
 import test from "node:test";
+import "./hypno-wave-engine.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
@@ -15,7 +16,7 @@ const transpile = ts.transpileModule(library,{
 assert.deepEqual(transpile.diagnostics || [],[]);
 const exposed = {};
 new Function("exports",transpile.outputText)(exposed);
-const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations,compactCustomAffirmationInput,MAX_AFFIRMATION_LENGTH} = exposed;
+const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations,compactCustomAffirmationInput,MAX_AFFIRMATION_LENGTH,buildHypnoFilteredPhrases} = exposed;
 const {videoProfileFocus} = await import("../lib/mandala/video-affirmation-focus.mjs");
 
 test("three locales and all six site themes have five ready-to-select, non-clinical phrases", () => {
@@ -78,7 +79,7 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 });
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
-  assert.match(studio,/<MandalaHypnoCompact key=\{theme\} locale=\{locale\} theme=\{theme\}/);
+  assert.ok(studio.includes("<MandalaHypnoCompact locale={locale} theme={theme}"),"Hypno must remain mounted across theme changes");
   assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
@@ -249,7 +250,7 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 
@@ -288,4 +289,171 @@ test("new text size and position change the actual shared canvas renderer",()=>{
   }
   const px=fonts.map(x=>Number(x.match(/(\d+(?:\.\d+)?)px/)[1]));
   assert.ok(px[0]<px[1]&&px[1]<px[2]);
+});
+
+test("compact Hypno v5.3 shows two consented paths, editable request, five effective phrase filters",()=>{
+ const c=read("components/mandala-hypno-compact.tsx");
+ const css=read("components/mandala-hypno-compact.module.css");
+ for(const marker of ["data-hypno-accent","data-hypno-suggest-tests","data-hypno-short-request",
+  "data-hypno-update-request","data-hypno-profile-proposal","data-hypno-accept-proposal",
+  "data-hypno-filter-type","data-hypno-filter-goal","data-hypno-filter-tone",
+  "data-hypno-filter-focus","data-hypno-filter-length","data-hypno-generate-new",
+  "data-hypno-approve","data-hypno-phrase"]){
+   assert.ok(c.includes(marker),marker);
+ }
+ assert.match(c,/await appFetch\("video-affirmation-focus"\)/);
+ assert.match(c,/function acceptTestProposal\(\)/);
+ assert.match(c,/setTestProposal\(proposed\)/);
+ assert.match(css,/\.topicMiniRail\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.filtersMini\{display:grid/);
+ const compiled=ts.transpileModule(c,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
+ assert.deepEqual(compiled.diagnostics||[],[]);
+});
+test("locale-specific Hypno tone, role, focus, and length meaningfully change recommended text",()=>{
+ const themes=["energy","money","relationships","goals","life","health"];
+ const ids=["rhythm","value","boundaries","clarity","meaning","recovery"];
+ for(const locale of ["ru","en","es"]){
+   for(let i=0;i<themes.length;i++){
+     const theme=themes[i],goal=ids[i];
+     const a=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","medium",0);
+     const b=buildHypnoFilteredPhrases(locale,theme,0,goal,"balanced","support","support","medium",0);
+     const c=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","action","support","medium",0);
+     const d=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","confidence","medium",0);
+     const e=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","short",0);
+     assert.equal(a.length,5);
+     assert.ok(a.every(v=>v.length>4&&Array.from(v).length<=MAX_AFFIRMATION_LENGTH));
+     // Verify real replacement text, not a shuffle of the same five words.
+     for(const variants of [b,c,d,e]){
+       assert.ok(variants.some(word=>!a.includes(word)),
+         locale+" "+theme+" filter must introduce a new semantic phrase");
+     }
+     const regenerated=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","medium",1);
+     assert.ok(regenerated.some(word=>!a.includes(word)),
+       "Generate new options must supply a different curated text");
+     assert.notDeepEqual(a,b);
+     assert.ok(!a.some(v=>/guaranteed cure|вылеч|garantiz/i.test(v)));
+   }
+ }
+});
+
+
+test("Wave/Gemini strategy appears before phrases, uses enum privacy and approved drafts",()=>{
+ const source=read("lib/mandala/hypno-psych-strategy.ts");
+ const transpiled=ts.transpileModule(source,{compilerOptions:{
+   module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+ },reportDiagnostics:true});
+ assert.deepEqual(transpiled.diagnostics||[],[]);
+ const exported={};new Function("exports",transpiled.outputText)(exported);
+ for(const locale of ["ru","en","es"])for(const [theme,goalId] of Object.entries({
+   energy:"rhythm",money:"value",relationships:"boundaries",
+   goals:"clarity",life:"meaning",health:"recovery",
+ })){
+   const input={locale,theme,problemIndex:0,goalId,tone:"gentle",focus:"support",
+     kind:"support",length:"medium"};
+   assert.ok(exported.buildWaveStrategy(input).length>70);
+   assert.notEqual(exported.buildWaveStrategy(input),
+     exported.buildWaveStrategy({...input,problemIndex:1}));
+   assert.throws(()=>exported.validateWaveInput({...input,privateNote:"sensitive"}));
+ }
+ const draft={strategy:"Notice everyday tension while choosing a small, gentle action without pressure.",
+   phrases:["I can choose one step","I allow a pause","I value my effort",
+     "I can seek support","I make room to learn"]};
+ assert.deepEqual(exported.reviewGeminiStrategy(draft,"en","medium"),draft);
+ assert.equal(exported.reviewGeminiStrategy({...draft,phrases:[...draft.phrases.slice(0,4),"I always heal"]},"en","medium"),null);
+ const ui=read("components/mandala-hypno-compact.tsx");
+ const route=read("app/api/holistic-support/hypno-strategy/route.js");
+ assert.ok(ui.indexOf("data-hypno-strategy>")<ui.indexOf("data-hypno-phrases>"));
+ for(const label of ["data-hypno-model=\"wave\"","data-hypno-model=\"gemini\"",
+   "data-hypno-gemini-consent","data-hypno-build-strategy",
+   "data-hypno-strategy-summary","approvePhrases","externalModelOptIn:true"])
+   assert.ok(ui.includes(label),label);
+ for(const label of ["auth.verified()","requireSameOrigin(request,config)",
+   "onlyKeys(body,FIELDS)","externalModelOptIn!==true","HH_HYPNO_GEMINI_FREE_TIER_CONFIRMED",
+   "reviewGeminiStrategy","consumeRate(config","PRIVATE_HEADERS","gemini-3.5-flash-lite"])
+   assert.ok(route.includes(label),label);
+ assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|testScores|profile|custom|medicalHistory)/);
+});
+
+test("Wave draft leaves live video unchanged until explicit approval",()=>{
+  const src=read("components/mandala-hypno-compact.tsx");
+  const section=(a,b)=>src.slice(src.indexOf(a),src.indexOf(b,src.indexOf(a)+a.length));
+  for(const [a,b] of [["function filtered(","async function suggestFromTests()"],
+    ["function addCustom()","const toggle=(panel"],["const ready=()=>","  const advancedSettings:AffirmationSettings="]]){
+    assert.doesNotMatch(section(a,b),/onChange\(\{\.\.\.settings/);
+  }
+  assert.match(section("function approvePhrases()","  return ("),/onChange\(next\)/);
+  assert.match(src,/buildWaveNarrativeDraft\(\{\.\.\.waveInput,currentText:problemNote,goalText:goalNote/);
+  assert.match(src,/requestKey=JSON\.stringify\(\[waveInput,problemNote,goalNote\]\)/);
+});
+
+test("explicit high-risk Wave note disables Hypno preview, export and opt-in",()=>{
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/data-video-affirmation-preview[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-overview-enable[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
+  assert.match(compact,/data-hypno-build-strategy[\s\S]*?disabled=\{disabled\|\|safetyBlocked\|\|strategyBusy\}/);
+});
+
+
+test("one strategy CTA invokes live first-party POST for Wave and consented Gemini",()=>{
+ const source=read("components/mandala-hypno-compact.tsx");
+ const route=read("app/api/holistic-support/hypno-strategy/route.js");
+ const css=read("components/mandala-hypno-compact.module.css");
+ const callIndex=source.indexOf("data-hypno-build-strategy");
+ const strategyIndex=source.indexOf("data-hypno-strategy>");
+ assert.ok(callIndex>=0&&strategyIndex>callIndex,
+   "single strategy button must be before psychological strategy card");
+ assert.match(source,/function buildStrategy\(\)/);
+ assert.match(source,/fetch\("\/api\/holistic-support\/hypno-strategy"/);
+ assert.match(source,/model:chosenModel,round:nextRound/);
+ assert.match(source,/chosenModel==="gemini"\?\{externalModelOptIn:true\}:\{\}/);
+ assert.match(source,/onClick=\{\(\)=>\{void buildStrategy\(\);\}\}/);
+ assert.match(source,/response\.json\(\)/);
+ assert.match(source,/setDraftState\(\{/);
+ assert.doesNotMatch(source,/data-hypno-gemini-generate/,
+   "no second independent Gemini generation button");
+ assert.match(css,/\.strategyBuild\{[\s\S]*?min-height:48px/);
+ assert.match(route,/body\.model!=="wave"&&body\.model!=="gemini"/);
+ assert.match(route,/if\(body\.model==="wave"\)/);
+ assert.match(route,/provider:"holistic_wave"/);
+ assert.match(route,/buildHypnoFilteredPhrases/);
+ assert.match(route,/auth\.verified\(\)/);
+ assert.match(route,/externalModelOptIn!==true/);
+ assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|currentText|goalText|privateNote|rawResults)/);
+});
+
+test("all 6 themes and 3 languages return client-reviewed Wave API drafts",()=>{
+ const strategy=read("lib/mandala/hypno-psych-strategy.ts");
+ const tr=ts.transpileModule(strategy,{compilerOptions:{
+   module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+ },reportDiagnostics:true});
+ assert.deepEqual(tr.diagnostics||[],[]);
+ const exported={};new Function("exports",tr.outputText)(exported);
+ const themes={energy:"rhythm",money:"value",relationships:"boundaries",
+   goals:"clarity",life:"meaning",health:"recovery"};
+ for(const locale of ["en","ru","es"])
+ for(const [theme,goalId] of Object.entries(themes))
+ for(const length of ["short","medium"])
+ for(const round of [0,1,2]){
+   const params={locale,theme,problemIndex:1,goalId,tone:"gentle",
+     kind:"support",focus:"support",length};
+   const phrases=buildHypnoFilteredPhrases(locale,theme,1,goalId,
+     "gentle","support","support",length,round);
+   assert.equal(phrases.length,5,locale+" "+theme+" "+length+" "+round);
+   const strategy=exported.buildWaveStrategy(params);
+   const reviewed=exported.reviewGeminiStrategy({strategy,phrases},locale,length);
+   assert.ok(reviewed,
+     "Wave API output must pass the actual client review: "+locale+" "+theme+
+     " "+length+" "+round+" "+JSON.stringify(phrases));
+ }
+});
+
+test("accepted psychological strategy persists visibly after phrase approval",()=>{
+  const source=read("components/mandala-hypno-compact.tsx");
+  const css=read("components/mandala-hypno-compact.module.css");
+  assert.match(source,/const \[approvedStrategy,setApprovedStrategy\]=useState/);
+  assert.match(source,/setApprovedStrategy\(\{model,key:requestKey,strategy:draft\.strategy\}\)/);
+  assert.match(source,/draft\?\.strategy\?\?savedStrategy/);
+  assert.match(source,/data-strategy-built=\{Boolean\(draft\|\|savedStrategy\)\}/);
+  assert.match(css,/\[data-strategy-built="true"\] \.strategySummary/);
 });

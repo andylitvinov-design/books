@@ -855,12 +855,34 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        // New strategy is a DRAFT: client can inspect the suggestion first,
+        // while the actual Canvas/MediaRecorder words stay exactly as approved.
+        const previewBeforeApprove=await compactHypno.locator("[data-hypno-preview]").innerText();
+        assert.match(await compactHypno.locator('[data-hypno-phrase="0"]').innerText(),
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.doesNotMatch(previewBeforeApprove,
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i,
+          "A draft must not silently change the export");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i,
+          "Only explicit approval is allowed to change live video text");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        // Scene options are genuinely editable, but collapsed on the compact mobile overview.
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
+        // The compact overview presents the selected scene first; the real
+        // thumbnail gallery is still accessible through the original Edit button.
+        const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
+        assert.equal(await sceneSummary.count(),1);
+        // One Edit click above already expanded the actual scene gallery;
+        // a second click would correctly collapse it. Inspect the open state
+        // and select real footage before exercising the closing toggle.
+        assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -868,6 +890,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"false");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
