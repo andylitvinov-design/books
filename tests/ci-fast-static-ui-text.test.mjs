@@ -234,3 +234,11 @@ test('real verifier installs the parser from Git BASE and ignores modified workt
     rmSync(tmp,{recursive:true,force:true});
   }
 });
+
+test('verified merge-checkout M/A statuses route the same as GitHub modified/added',()=>{
+  assert.equal(classifyStaticUiText([{...row,status:'M'}],source,{typescript}),'FAST');
+  const css={filename:'app/[locale]/about/page.module.css',status:'M'};
+  assert.equal(scopedCssIsSafe([css],()=>'.card { color: red; }'),true);
+  assert.equal(scopedCssIsSafe([{...css,status:'A'}],()=>'.card { color: red; }'),true);
+  assert.equal(classifyStaticUiText([{...row,status:'D'}],source,{typescript}),'STRICT');
+});
