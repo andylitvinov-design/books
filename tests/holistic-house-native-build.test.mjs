@@ -79,8 +79,7 @@ test('no native build claims signing, TestFlight, store release or verified asso
   assert.match(flow,/Holistic-House-Android-Test-APK/)
   assert.match(flow,/Holistic-House-iOS-Simulator-Only/)
   assert.match(flow,/com\.holistichouse\.app/)
-  // Artifacts still upload after production build failures, but never on cheap PR delegation.
-  assert.match(flow,/if: \$\{\{ always\(\) && github\.event_name != 'pull_request' \}\}/)
+  assert.match(flow,/if: always\(\)/)
   assert.doesNotMatch(flow,/continue-on-error:\s*true|signingCertificate|upload-to-testflight/)
 })
 test('owner iPhone sideload candidate is a real unsigned arm64 iphoneos IPA, not a simulator or public web installer',()=>{

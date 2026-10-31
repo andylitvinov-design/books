@@ -66,6 +66,9 @@ jobs:
           npm run native:check
           node --test tests/holistic-house-native-build.test.mjs
           node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
+      - name: Report native contract job completion
+        if: always()
+        run: echo 'Native source contract result retained; failed tests still block merge.' >> "$GITHUB_STEP_SUMMARY"
 
   android-test-installer:
     # Full native builds run on verified production pushes or manual dispatch only.
