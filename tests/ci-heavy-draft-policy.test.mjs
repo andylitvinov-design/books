@@ -261,8 +261,12 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
       // expensive jobs only after the scope job proves a modified UI-only PR.
       assert.ok(jobs.includes('  impact:\n    name: route-expensive-app-suites\n'+gate+'\n'),
         'App R1 impact job must skip Draft');
-      assert.ok(jobs.includes('  unit-build:\n    needs: impact\n'+gate+'\n'),
-        'App R1 unit tests must run on Ready and push after exact-head scope');
+      const unit = jobs.split('  unit-build:\n')[1]?.split('  course-banner-browser:\n')[0];
+      assert.ok(unit && unit.includes('needs: impact'), 'App R1 unit must depend on exact-head impact');
+      assert.match(unit, /needs\.impact\.result == 'success'/);
+      assert.match(unit, /needs\.impact\.outputs\.profile == 'true'/);
+      assert.match(unit, /github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false/,
+        'App R1 unit must never run for Draft; CI-only edits delegate to Core');
       const gated = {
         'course-banner-browser': 'banner',
         database: 'database',
