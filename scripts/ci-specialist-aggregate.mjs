@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Read-only exact-HEAD and exact-BASE coverage of applicable specialist workflows.
 // Runs from the PR merge checkout; no third-party API and no write permissions.
-import { readFileSync, readdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
@@ -72,6 +74,39 @@ function assertSame(pr, ctx) {
   }
 }
 
+// Load only the BASE-pinned parser, without PR dependencies or npm scripts.
+// A failed install never waives checks: callers fall back to STRICT.
+export function loadTrustedTypescript(base) {
+  if (!/^[0-9a-f]{40}$/.test(base || '')) return null;
+  let dir;
+  try {
+    const read=path=>execFileSync('git',['show',base+':'+path],{encoding:'utf8',maxBuffer:100_000,stdio:['ignore','pipe','pipe']});
+    const manifest=read('lib/ci/fast-ui-parser/package.json');
+    const lock=read('lib/ci/fast-ui-parser/package-lock.json');
+    const pkg=JSON.parse(manifest), parsed=JSON.parse(lock);
+    const entry=parsed.packages?.['node_modules/typescript'];
+    if (Object.keys(pkg).sort().join(',') !== 'dependencies,name,private,version' ||
+        pkg.name !== 'hh-fast-ui-parser' || pkg.private !== true || pkg.version !== '1.0.0' ||
+        JSON.stringify(pkg.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        JSON.stringify(parsed.packages?.['']?.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        Object.keys(parsed.packages || {}).sort().join(',') !== ',node_modules/typescript' ||
+        entry?.version !== '5.9.3' || entry.resolved !== 'https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz' ||
+        entry.integrity !== 'sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==') return null;
+    dir=mkdtempSync(join(tmpdir(),'hh-ci-ui-parser-'));
+    writeFileSync(join(dir,'package.json'),manifest,{mode:0o600});
+    writeFileSync(join(dir,'package-lock.json'),lock,{mode:0o600});
+    const env={PATH:process.env.PATH || '/usr/bin:/bin',CI:'true',npm_config_userconfig:join(dir,'user.npmrc'),
+      npm_config_globalconfig:join(dir,'global.npmrc'),npm_config_cache:join(dir,'cache')};
+    execFileSync('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],
+      {cwd:dir,env,timeout:45_000,maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']});
+    return createRequire(join(dir,'package.json'))('typescript');
+  } catch {
+    console.warn('Trusted UI parser unavailable; routing this change to STRICT.');
+    return null;
+  }
+  finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
   // long enough for their results instead of rejecting a still-running check.
@@ -91,7 +126,12 @@ export async function verify(api,ctx,files,options={}) {
   const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
   if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
   if (risk !== 'FAST') {
-    risk=classifyStaticUiText(changedRows,sources);
+    let loaded=false, parser;
+    const loadTypescript=()=>{
+      if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
+      return parser;
+    };
+    risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
   }
   if (risk === 'FAST') {
     assertSame(await api.pr(ctx.number),ctx);

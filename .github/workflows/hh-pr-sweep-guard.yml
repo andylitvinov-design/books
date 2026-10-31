@@ -6,6 +6,7 @@ on:
       - 'lib/ci/pr-sweep-guard.mjs'
       - 'lib/ci/specialist-aggregate.mjs'
       - 'lib/ci/fast-static-ui-text.mjs'
+      - 'lib/ci/fast-ui-parser/**'
       - 'scripts/ci-specialist-aggregate.mjs'
       - 'scripts/ci-pr-readiness.mjs'
       - 'tests/ci-specialist-aggregate.test.mjs'
@@ -37,4 +38,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install locked parser without lifecycle scripts
+        run: npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
       - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-fast-static-ui-text.test.mjs
