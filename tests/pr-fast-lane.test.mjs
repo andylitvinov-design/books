@@ -243,8 +243,8 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       git('add', '--all'); git('commit', '--quiet', '--allow-empty', '-m', 'synthetic change');
       const source = workflow('hh-pr-core-release.yml');
       const classifierStep = source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
-       assert.ok(classifierStep, 'the named classifier step is present');
-       const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
+      assert.ok(classifierStep);
+      const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
       assert.ok(block, 'classifier shell block is present');
       // Preserve classifier logic exactly; isolate only its fixed temporary file.
       const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'));
@@ -263,6 +263,69 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 }
+
+test('PR fast lane ignores unrelated production commits in verified merge checkout', () => {
+  const dir=mkdtempSync(join(tmpdir(),'hh-pr-merge-base-'));
+  const run=(cmd,args,env={})=>{
+    const out=spawnSync(cmd,args,{cwd:dir,encoding:'utf8',timeout:10_000,maxBuffer:1024*1024,
+      env:{PATH:process.env.PATH,HOME:dir,TMPDIR:dir,GIT_CONFIG_NOSYSTEM:'1',
+        GIT_CONFIG_GLOBAL:'/dev/null',GIT_AUTHOR_NAME:'Synthetic',
+        GIT_AUTHOR_EMAIL:'synthetic@example.invalid',GIT_COMMITTER_NAME:'Synthetic',
+        GIT_COMMITTER_EMAIL:'synthetic@example.invalid',...env}});
+    assert.ifError(out.error);
+    return out;
+  };
+  const git=(...args)=>{
+    const out=run('git',['-c','core.hooksPath=/dev/null',...args]);
+    assert.equal(out.status,0,'synthetic git: '+out.stderr);
+    return out.stdout.trim();
+  };
+  const write=(path,value)=>{
+    mkdirSync(join(dir,path,'..'),{recursive:true});
+    writeFileSync(join(dir,path),value);
+  };
+  try {
+    git('init','--quiet');
+    write('.github/workflows/example.yml','original\n');
+    git('add','--all'); git('commit','--quiet','-m','base');
+    const base=git('rev-parse','HEAD');
+    git('switch','--quiet','-c','feature');
+    write('.github/workflows/example.yml','updated\n');
+    git('add','--all'); git('commit','--quiet','-m','CI-only PR');
+    const feature=git('rev-parse','HEAD');
+    git('switch','--quiet','-c','production',base);
+    write('app/api/payments/route.js','unrelated production payment change\n');
+    git('add','--all'); git('commit','--quiet','-m','other production PR');
+    git('merge','--quiet','--no-ff','feature','-m','PR merge checkout');
+    assert.match(git('diff','--name-only',base,'HEAD'),/app\/api\/payments\/route\.js/,
+      'stale event base falsely treats production changes as PR changes');
+    const source=workflow('hh-pr-core-release.yml');
+    const classifierStep=source.match(/^      - name: Classify strictly documentation-only PRs\n([\s\S]*?)(?=^      - (?:name|uses):|^  [a-z][\w-]*:)/m);
+    assert.ok(classifierStep, 'the named classifier step is present');
+    const block=classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
+    assert.ok(block);
+    const script=block[1].replace(/^          /gm,'')
+      .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
+    const output=join(dir,'output'),summary=join(dir,'summary');
+    const checked=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
+    assert.equal(checked.status,0,checked.stderr);
+    assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
+      ['docs_only=false','ci_only=true']);
+    assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
+      ['.github/workflows/example.yml']);
+    const bad=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
+    assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
+    const lint=source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+    assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
+      'changed-file lint must also exclude unrelated target-branch updates');
+  } finally {
+    rmSync(dir,{recursive:true,force:true});
+  }
+});
 
 test('policy-only YAML edits and AGENTS.md do not fan out into seven product acceptance suites', () => {
   // A workflow definition is checked by the dedicated actionlint+core policy gates.
@@ -568,16 +631,25 @@ test('Mandala focused job overlaps both real browsers without losing media cover
   ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
 });
 
-test('core release checkout pins the exact production base with bounded history in all three jobs', () => {
+test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
-  assert.doesNotMatch(source, /fetch-depth:\s*0/, 'full history/branch fetch must not reappear');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3, 'scope, code and release-ready all use bounded fetch');
-  assert.equal((source.match(/Pin exact production base for shallow checkout/g) ?? []).length, 3);
-  assert.equal((source.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 3);
-  assert.equal((source.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 6);
+  const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
+  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+  const release = source.split(/^  release-ready:/m)[1];
+  for (const [name, job] of [['scope', scope], ['code', code]]) {
+    assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
+    assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
+    assert.doesNotMatch(job, /fetch-depth:\s*2/);
+  }
+  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 2);
+  assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 1);
+  assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
+  assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
+  assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
   assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
-  assert.match(source, /git show/, 'immutable base specialist aggregate must remain');
-  assert.match(source, /scripts\/ci-specialist-aggregate\.mjs/);
-  assert.match(source, /timeout-minutes: 45/);
+  assert.match(release, /git show/, 'immutable base specialist aggregate must remain');
+  assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
