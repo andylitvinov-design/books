@@ -96,6 +96,10 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
+      # The compact 49-question Video Studio accordion shares the same
+      # mandatory Mandala Node/TS/Next/Chromium/WebKit real-encode gate.
+      # It does not edit Alchemy, checkout, practitioner services, or public API routes.
+      - '!components/mandala-video-parameters*'
 permissions:
   contents: read
   pull-requests: read
