@@ -127,7 +127,7 @@ test('Redis queue writes use atomic source-revision checks, isolated keys and no
  assert.ok(store)
  const saved=await store.enqueue(job)
  assert.equal(saved.reused,false)
- assert.equal(sent.url,'https://synthetic-redis.example/')
+ assert.equal(sent.url,'https://synthetic-redis.example')
  assert.equal(sent.command[0],'EVAL')
  assert.equal(sent.command[1].includes("source.revision ~= tonumber(ARGV[2])"),true)
  assert.equal(sent.command[1].includes("source.status ~= 'approved'"),true)
