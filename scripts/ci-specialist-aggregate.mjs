@@ -99,8 +99,8 @@ export function githubReader(repo, token, transport = fetch) {
 export function requiresCurrentProductionBase(changed) {
   if (!Array.isArray(changed) || changed.length === 0) return true;
   const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
-  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|checkout|client|consent|credential|crm|database|health|identity|login|medical|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
-  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
+  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
     typeof file !== 'string' ||
     !ordinaryRoots.test(file) ||
