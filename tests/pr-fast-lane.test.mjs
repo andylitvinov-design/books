@@ -753,6 +753,10 @@ test('Free Review PR retains both engines and all four mobile viewports', () => 
   const source = workflow('hh-free-review-live-mobile.yml');
   const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
   assert.doesNotMatch(source, /HH_FREE_REVIEW_PR_SMOKE/);
+  assert.equal((source.match(/components\/contact-channel-chooser\.\*/g)||[]).length, 2,
+    'PR and production changes to the shared contact form must run Free Review');
+  assert.equal((source.match(/components\/phone-country-input\.\*/g)||[]).length, 2,
+    'PR and production changes to the shared phone control must run Free Review');
   assert.match(script, /\[\[320, 568\], \[375, 667\], \[390, 844\], \[430, 932\]\]/);
   assert.match(script, /\[\["chromium", chromium\], \["webkit", webkit\]\]/);
 });
