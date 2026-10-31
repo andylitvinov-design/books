@@ -117,9 +117,13 @@ async function verify(engine, locale, width) {
     if (engine === webkit && locale === "en" && width === 390)
       await page.screenshot({path:output+"/business-current-direction-390.png",fullPage:false});
     await noOverflow("filtered");
+    // Keep a genuine pointer click on the actual Next Link, but do not let a
+    // fixed iPhone navigation overlay cover its initial hit target.
+    await session.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
+    const paidNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting",
+      {waitUntil:"domcontentloaded",timeout:25000});
     await session.click();
-    await page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting",
-      {timeout:25000});
+    await paidNavigation;
     await page.locator('[data-business-consulting] #business-hero-title').waitFor({state:"visible",timeout:15000});
     assert.equal(await page.locator('[data-business-offer="express"]').count(),1,
       label+": €50 express offer");

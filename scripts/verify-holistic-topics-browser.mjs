@@ -17,15 +17,22 @@ const evidence = [];
 // Wait for the exact synthetic result identities, including EUR/CAD exclusion.
 async function waitForConsultationFixtures(page, locale, ids, label) {
   const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
-  await page.waitForFunction(wanted => {
-    const results = document.querySelector("#holistic-inline-results");
-    if (!results || results.hidden) return false;
-    const articles = [...results.querySelectorAll("article")];
-    const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
-      .map(link => link.getAttribute("href")).sort();
-    return articles.length === wanted.length &&
-      links.length === wanted.length &&
-      links.every((href, index) => href === wanted[index]);
+  await page.waitForFunction(async wanted => {
+    const isExact = () => {
+      const results = document.querySelector("#holistic-inline-results");
+      if (!results || results.hidden) return false;
+      const articles = [...results.querySelectorAll("article")];
+      const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+        .map(link => link.getAttribute("href")).sort();
+      return articles.length === wanted.length &&
+        links.length === wanted.length &&
+        links.every((href, index) => href === wanted[index]);
+    };
+    if (!isExact()) return false;
+    // Reject the stale previous React commit if the async directory rerender
+    // clears articles on the following frames; never relax EUR/CAD assertions.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return isExact();
   }, expected, { timeout: 15000 });
   const actual = await page.locator("#holistic-inline-results article a[href]")
     .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());

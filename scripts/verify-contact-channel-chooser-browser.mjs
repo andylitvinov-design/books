@@ -322,6 +322,15 @@ async function runEngine(name, engine) {
             const previous = submissions.length;
             const submit = daoForm.locator('button[data-compact-channel="whatsapp"]');
             await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
+            // Do not confuse a native input fill with a committed controlled
+            // React value while the real Next.js landing is still hydrating.
+            await page.waitForFunction(() => {
+              const input = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form] input[name="contact"]');
+              const key = Object.keys(input || {}).find(k => k.startsWith("__reactProps$"));
+              return Boolean(key && input[key]?.value === "qa-browser@example.test" &&
+                input.value === "qa-browser@example.test");
+            }, null, {timeout:15000});
+            await submit.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
             await submit.click();
             assert.equal(submissions.length,previous,"Contact cannot bypass consent");
             await daoForm.locator('[role="alert"]').waitFor({state:"visible"});

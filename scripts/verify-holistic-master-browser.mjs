@@ -150,6 +150,9 @@ async function verify(engine, locale, width) {
       url => url.pathname === "/" + locale + "/services/free-consultation",
       {waitUntil: "domcontentloaded", timeout: 30000},
     );
+    // Keep real Next Link acceptance; relocate its pointer hit target above
+    // the fixed mobile tab bar rather than forcing navigation or clicks.
+    await diagnostic.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
     await diagnostic.click();
     try {
       await consultationNavigation;
