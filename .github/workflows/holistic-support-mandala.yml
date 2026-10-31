@@ -22,6 +22,12 @@ on:
       - 'public/audio/mandala/**'
       - 'public/videos/holistic-house/money-films-v1/**'
       - 'public/videos/holistic-house/film-collection-v2/**'
+      - 'public/videos/holistic-house/film-collection-v3/**'
+      - 'data/video-catalog/free-stock-scenes.json'
+      - 'data/video-catalog/dareful-verified-import-20261030.json'
+      - 'scripts/import-dareful-verified-batch.mjs'
+      - 'scripts/import-free-stock-scene.mjs'
+      - 'tests/mandala-free-stock-sources.test.mjs'
       - 'tests/real-money-film-library.test.mjs'
       - 'tests/film-collection-v2.test.mjs'
       - 'tests/holistic-mandala-meditation.test.mjs'
@@ -44,6 +50,7 @@ on:
       - 'scripts/video-ai-gpu-readiness.mjs'
       - 'tests/video-ai-gpu-readiness.test.mjs'
       - 'tests/cinematic-creative-brief.test.mjs'
+      - 'tests/video-studio-question-registry.test.mjs'
       - '.github/workflows/holistic-support-mandala.yml'
 permissions:
   contents: read
@@ -51,7 +58,7 @@ concurrency:
   group: holistic-support-mandala-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
-  # No expensive E2E on non-mergeable Draft; all 10 cases run again when Ready.
+  # No expensive E2E on non-mergeable Draft; all 12 cases run again when Ready.
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
@@ -67,13 +74,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      # Only restore same-PR Next compiler metadata for this exact lockfile.
+      # The complete production build still runs; never cache .next/server.
+      - name: Restore same-PR Next.js compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: mandala-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          restore-keys: |
+            mandala-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}-pr${{ github.event.pull_request.number }}-
       - name: Check browser acceptance script syntax before slow production build
-        run: node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
+        run: node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-ai-gpu-readiness.test.mjs
+        run: node --test tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs
       - name: Targeted lint
-        run: npx --no-install eslint lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+      # Mandatory Core checks exact-head TypeScript on production-bound PRs;
+      # retain independent full typing for any other future event/ref.
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
         run: npm run build

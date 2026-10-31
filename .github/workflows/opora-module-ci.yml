@@ -30,6 +30,7 @@ on:
       - 'package-lock.json'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: opora-modules-${{ github.ref }}
   cancel-in-progress: true
@@ -42,6 +43,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -95,6 +101,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

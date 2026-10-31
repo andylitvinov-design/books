@@ -106,3 +106,29 @@ test("sound-only covers reuse 13 real local first-party illustration files",()=>
   assert.match(styles,/\.audioChipRail button\{flex:none;min-height:42px/);
   assert.match(styles,/\.audioFavorite\{display:grid;place-items:center;width:44px;min-height:44px/);
 });
+
+
+test("approved compact audio mock has one real player/microphone and no duplicate picker",()=>{
+  const quickStart=studio.indexOf('data-video-quick-section="5"');
+  const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
+  const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
+  const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
+  const quick=studio.slice(quickStart,quickEnd);
+  const full=studio.slice(fullStart,fullEnd);
+  assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
+    "the quick summary cannot host another recorder, media player or sound catalogue");
+  assert.match(quick,/data-video-quick-attach/,"existing quick attach still works");
+  assert.match(quick,/quickAudioSilent/,"silent output remains available");
+  assert.match(full,/data-video-audio-dock/,"one shared selected-track player dock");
+  assert.match(full,/data-video-audio-play=\{track\.id\}/,"every audio row has direct playback");
+  assert.match(studio,/flushSync\(\(\)=>\{/,"same user tap can play new first-party WAV on iOS");
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1,
+    "one native audio element in the canonical video editor");
+  assert.equal((studio.match(/data-video-audio-mic\b/g)||[]).length,1,
+    "one functional mic recorder rather than duplicate voice workflows");
+  assert.match(styles,/\.audioSection \.blockHeading\{display:grid/);
+  assert.match(styles,/\.audioSection \.audioFilterRow\{grid-template-columns:/);
+  assert.match(styles,/\.audioTrackPlay\{position:absolute/);
+  assert.match(styles,/\.quickAudioCompact\{display:grid/);
+});

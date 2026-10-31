@@ -1283,3 +1283,799 @@
   .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
+
+/* Approved Holistic House mobile Video Studio, 30 Oct 2026.
+   Replace a long six-panel entrance with clear topics → truthful tier →
+   real native-video preview → cover/style → content → local export.
+   All existing detailed controls remain under the single legacy disclosure. */
+.quickBuilder{gap:12px;padding:0 0 12px}
+.quickHeader{position:relative;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,.8fr);
+  align-items:stretch;gap:0;min-height:215px;margin:0;padding:17px 16px;
+  border:1px solid #dceadd;border-radius:22px;
+  background:linear-gradient(105deg,#edf6ed 0%,#f6f7e9 57%,#dceadc 100%);
+  overflow:hidden;box-shadow:0 6px 19px #315c4020}
+.quickHeaderText{position:relative;z-index:2;min-width:0;align-self:start}
+.quickHeaderText h2{max-width:15ch;font:850 clamp(25px,3.8vw,35px)/1.08 Arial,Helvetica,sans-serif;
+  letter-spacing:-.04em;color:#123d32}
+.quickHeaderText p{max-width:34ch;margin:9px 0 0;font:500 clamp(13px,1.55vw,16px)/1.4 Arial,Helvetica,sans-serif;
+  color:#526b60}
+.quickHeaderText small{display:block;max-width:43ch;margin-top:9px;color:#65796e;
+  font:500 11.5px/1.35 Arial,Helvetica,sans-serif}
+.quickHeaderArt{position:relative;align-self:stretch;min-width:0;margin:-17px -16px -17px 0;
+  background:linear-gradient(130deg,#e6efe7a3,#c0decb55),
+  url('/videos/holistic-house/film-collection-v2/mountain-air.jpg') center/cover no-repeat}
+.quickHeaderArt::before{content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,#eef6ed 0%,transparent 45%,#ffffff18)}
+.quickHeaderArt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:center 38%;opacity:.9}
+.quickHeader>button{position:absolute;z-index:3;top:12px;right:12px;min-height:42px;
+  max-width:44%;padding:8px 11px;border:1px solid #c5e5d0;border-radius:999px;
+  background:linear-gradient(100deg,#188b6c,#0b9d77);color:#fff;
+  font-size:12.5px;font-weight:800;box-shadow:0 2px 9px #104f3b24}
+.quickBenefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
+  padding:11px 7px;border:1px solid #e4e9df;border-radius:18px;
+  background:#fffdf7;color:#405d50}
+.quickBenefits span{display:flex;align-items:center;flex-direction:column;gap:6px;
+  min-width:0;padding:2px 6px;text-align:center;
+  font:600 12px/1.25 Arial,Helvetica,sans-serif}
+.quickBenefits span+span{border-left:1px solid #e7eae2}
+.quickBenefits svg{color:#168668;flex:none}
+.quickBuilder>.quickSection{padding:17px 14px 18px;border-radius:21px;gap:12px;
+  background:#fffdf8;border-color:#e6e9df;box-shadow:0 5px 16px #184b3510}
+.quickBuilder .quickSectionHeading h3{font-size:clamp(18px,2.2vw,22px);line-height:1.25;gap:8px}
+.quickBuilder .quickSectionHeading p{font-size:13px}
+.quickBuilder .quickSectionHeading a,.quickBuilder .quickSectionHeading .quickEdit{font-size:12px}
+.quickBuilder .quickThemeRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(130px,23%);
+  max-width:100%;gap:9px;padding:4px 2px 7px;overflow-x:auto;scrollbar-width:thin}
+.quickBuilder .quickThemeRail button{position:relative;display:flex;align-items:flex-start;
+  justify-content:flex-end;flex-direction:column;gap:8px;min-width:0;max-width:none;
+  min-height:157px;padding:12px;overflow:hidden;border:2px solid transparent;
+  border-radius:17px;background:#143e36;color:#fff;text-align:left;white-space:normal;
+  box-shadow:0 2px 5px #133c3324}
+.quickBuilder .quickThemeRail button::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,#061f2105 28%,#062923df 100%);z-index:0}
+.quickBuilder .quickThemeRail button>img{position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover}
+.quickBuilder .quickThemeRail button .quickThemeIcon{position:relative;z-index:1;display:grid;
+  place-items:center;width:43px;height:43px;border-radius:50%;
+  background:#fdfbf2e8;color:#0c7a5b;box-shadow:0 2px 7px #173e2f25}
+.quickBuilder .quickThemeRail button .quickThemeName{position:relative;z-index:1;display:block;
+  font:800 14px/1.17 Arial,Helvetica,sans-serif;color:#fff;text-shadow:0 1px 4px #0419147a}
+.quickBuilder .quickThemeRail button[aria-pressed="true"]{padding:10px;
+  border:3px solid #12a87d;box-shadow:0 0 0 2px #d5f2e0,0 5px 12px #23654d27;
+  background:#103c31;color:#fff}
+.quickBuilder .quickThemeRail button[aria-pressed="true"] svg{color:#0b845f}
+.quickTiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+  min-width:0}
+.quickTiers> :is(button,div){display:flex;flex-direction:column;align-items:flex-start;
+  gap:6px;min-width:0;min-height:196px;padding:12px 10px 8px;
+  border:1px solid #e6e9e1;border-radius:17px;background:linear-gradient(160deg,#fffefa,#f6f7f1);
+  color:#1f4338;text-align:left;overflow:hidden;box-shadow:0 2px 7px #244b370f}
+.quickTiers>button{border:2px solid #129a78;padding:11px 9px 7px;
+  background:linear-gradient(135deg,#e9f8ec,#fffefa)}
+.quickTiers svg{flex:none;color:#138465}
+.quickTiers>div:nth-child(2) svg{color:#aa7a24}
+.quickTiers>div:nth-child(3) svg{color:#ad7826}
+.quickTiers strong{font:850 16px/1.15 Arial,Helvetica,sans-serif;color:#1a4539}
+.quickTiers small{flex:1;min-height:31px;font:550 12px/1.22 Arial,Helvetica,sans-serif;color:#687b71}
+.quickTiers em{display:inline-flex;align-items:center;min-height:27px;max-width:100%;
+  padding:4px 8px;border-radius:10px;background:#e0f3e5;color:#137451;
+  font:800 11px/1.18 Arial,Helvetica,sans-serif;font-style:normal;overflow-wrap:anywhere}
+.quickTiers>div[aria-disabled="true"] em{background:#f5eae8;color:#a15353}
+.quickTiers img{display:block;flex:none;width:100%;height:68px;margin-top:3px;border-radius:9px;
+  object-fit:cover}
+.quickTierNote{padding:0 2px;color:#61766a;font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.quickVideoPreview{position:relative;display:block;aspect-ratio:16/9;width:100%;
+  min-height:170px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(145deg,#144a3b,#63866d);
+  border:1px solid #cfddd3;box-shadow:0 6px 15px #133c2b20}
+.quickVideoPreview :is(video,img){display:block;position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center}
+.quickVideoPreview::after{content:"";position:absolute;inset:50% 0 0;pointer-events:none;
+  background:linear-gradient(0deg,#0a2d25a3,transparent)}
+.quickPreviewTag,.quickPreviewMeta{position:absolute;z-index:2;display:inline-flex;
+  align-items:center;gap:5px;min-height:29px;padding:5px 9px;
+  border:1px solid #ffffff66;border-radius:999px;background:#14372abf;
+  color:#fff;font:750 11.5px/1.25 Arial,Helvetica,sans-serif}
+.quickPreviewTag{top:11px;left:11px;max-width:calc(100% - 24px)}
+.quickPreviewMeta{right:11px;bottom:11px}
+.quickPreviewPlay{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:66px;height:66px;border:3px solid #fff;
+  border-radius:50%;background:#fffef3ed;color:#076c55;
+  box-shadow:0 4px 23px #122d2778}
+.quickPreviewPlay:hover{background:#e2f6e8}
+.quickBuilder .quickImageRail{grid-auto-columns:minmax(108px,130px);gap:9px;padding:3px 2px 8px}
+.quickBuilder .quickImageRail button{aspect-ratio:1.45;border-radius:13px}
+.quickBuilder .quickImageUpload span{font-size:12.5px}
+.quickBuilder .quickStyles{grid-auto-columns:minmax(118px,145px);gap:9px}
+.quickBuilder .quickStyles button span{font-size:13px;font-weight:700}
+.quickPersonalActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quickPersonalActions button{display:flex;align-items:center;justify-content:center;gap:6px;
+  flex-direction:column;min-width:0;min-height:75px;padding:10px 7px;
+  border:1px solid #d9e6dc;border-radius:14px;background:linear-gradient(140deg,#fffdf9,#ecf7ed);
+  color:#226b54;font:750 13px/1.18 Arial,Helvetica,sans-serif;text-align:center}
+.quickPersonalActions button[aria-pressed="true"]{border-color:#0b9670;background:#dcf2e6}
+.quickPersonalActions svg{color:#138664;flex:none}
+.quickBuilder .quickWish{min-height:56px;background:#f8f8f3;border-color:#d7e3db}
+.quickBuilder .quickWish input{font-size:15px}
+.quickGenerate{position:relative;z-index:1;
+  min-height:62px;margin:0 2px;border:2px solid #d0eadb;border-radius:17px;
+  background:linear-gradient(100deg,#07916e,#09aa80);
+  color:#fff;font-size:20px;box-shadow:0 5px 17px #0c624d39}
+.quickGenerate:focus-visible,.quickPreviewPlay:focus-visible{outline:3px solid #deb65e;outline-offset:3px}
+.quickBuilder .quickPrivacy{font-size:12px}
+.quickLegacy>summary{font-size:14px;min-height:52px}
+.quickLegacy>.quickSection{margin:10px 10px 0}
+@media (max-width:759px){
+  .quickBuilder{gap:10px}
+  .quickHeader{min-height:225px;padding:15px 13px}
+  .quickHeaderText h2{font-size:clamp(23px,6.4vw,29px)}
+  .quickHeaderText p{font-size:13.5px}
+  .quickHeaderText small{font-size:11px}
+  .quickHeaderArt{margin:-15px -13px -15px 0}
+  .quickHeader>button{top:10px;right:8px;max-width:47%;padding:7px 9px;font-size:11px}
+  .quickBuilder>.quickSection{padding:15px 11px}
+  .quickBuilder .quickSectionHeading h3{font-size:18px}
+  .quickBuilder .quickSectionHeading a{max-width:110px;line-height:1.2}
+  .quickTiers strong{font-size:14px}
+  .quickTiers small{font-size:11.5px}
+  .quickTiers img{height:57px}
+  .quickGenerate{font-size:18px}
+}
+@media (max-width:360px){
+  .quickHeader{grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr);min-height:280px}
+  .quickHeaderText h2{font-size:23px}
+  .quickHeaderText p{font-size:13px}
+  .quickHeader>button{font-size:10.5px}
+  .quickBenefits{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}
+  .quickBenefits span:nth-child(3){border-left:0}
+  .quickBuilder .quickThemeRail{grid-auto-columns:135px}
+  .quickTiers{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:150px;
+    gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+    padding:3px 2px 8px}
+  .quickTiers> :is(button,div){scroll-snap-align:start}
+  .quickPersonalActions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quickPersonalActions button{min-height:54px;flex-direction:row;font-size:13px}
+}
+@media (min-width:760px){
+  .quickHeader{min-height:240px}
+  .quickHeaderArt{max-height:360px}
+  .quickBuilder .quickThemeRail{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-columns:unset;
+    overflow-x:visible}
+  .quickBuilder .quickThemeRail button{min-height:175px}
+  .quickBuilder .quickImageRail{grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-columns:unset;
+    overflow-x:visible}
+}
+@media (prefers-reduced-motion:reduce){
+  .quickBuilder *{scroll-behavior:auto!important;transition:none!important}
+}
+
+
+/* 30 October owner-approved compact format accordion. One real widescreen
+   video at left; only one card opens at once. Warm gold highlights the active
+   product without implying that paid production / credit spend is enabled. */
+.quickFormatGrid{display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+  align-items:start;gap:9px;min-width:0}
+.quickFormatDemo{position:relative;display:block;align-self:start;width:100%;
+  min-width:0;aspect-ratio:16/9;overflow:hidden;border-radius:13px;
+  background:linear-gradient(140deg,#18483c,#75a396)}
+.quickFormatDemo :is(video,img){position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover;object-position:center}
+.quickFormatDemo .quickPreviewPlay{position:absolute;left:50%;top:50%;
+  display:grid;place-items:center;width:48px;height:48px;min-width:44px;min-height:44px;
+  transform:translate(-50%,-50%);padding:6px;border:2px solid #fff;
+  border-radius:50%;background:#123c37b8;color:#fff;box-shadow:0 3px 9px #091e1c50}
+.quickFormatDemo .quickPreviewPlay svg{width:22px;height:22px}
+.quickFormatDemo .quickPreviewMeta{position:absolute;right:5px;bottom:5px;
+  min-height:0;padding:2px 6px;border:0;border-radius:8px;
+  font-size:10px;background:#122e2bc9;color:#fff}
+.quickFormatStack{display:flex;flex-direction:column;gap:6px;min-width:0}
+.quickFormatCard{display:block;min-width:0;padding:0;border:1px solid #e4e7df;
+  border-radius:13px;background:linear-gradient(140deg,#fffefa,#f8faf6);
+  box-shadow:0 2px 5px #173d2910;overflow:visible}
+.quickFormatCard[data-selected="true"]{border-color:#e9b653;
+  background:linear-gradient(130deg,#fffff9,#fffbef);
+  box-shadow:0 0 0 1px #f7d98b,0 0 15px #dba74153,0 3px 8px #674b241a}
+.quickFormatTitle{display:flex;align-items:center;gap:7px;width:100%;min-width:0;
+  min-height:44px;padding:6px 8px;border:0;border-radius:12px;
+  background:transparent;text-align:left;color:#173f35;cursor:pointer}
+.quickFormatTitle>svg:first-child{flex:none;width:18px;height:18px;color:#068968}
+.quickFormatTitleLabel{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.quickFormatTitleLabel strong{font:800 clamp(11px,1.45vw,14px)/1.16 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatTitleLabel small{font:550 clamp(10px,1.25vw,12px)/1.15 Arial,Helvetica,sans-serif;
+  color:#718276}
+.quickFormatFrom{flex:none;color:#79877d;font:700 clamp(9px,1.15vw,11px)/1.2 Arial,Helvetica,sans-serif;
+  white-space:nowrap}
+.quickFormatChevron{flex:none;width:15px;height:15px;color:#82988a;transition:transform .15s ease}
+.quickFormatCard[data-selected="true"] .quickFormatChevron{transform:rotate(180deg);color:#ae812c}
+.quickFormatTitle[aria-expanded="true"] .quickFormatTitleLabel strong{color:#174e3e}
+.quickFormatTitle:focus-visible,.quickFormatQuality button:focus-visible,
+.quickFormatDemo button:focus-visible{outline:3px solid #b88525;outline-offset:2px}
+.quickFormatDetails{display:flex;flex-direction:column;gap:7px;min-width:0;
+  padding:0 9px 9px}
+.quickFormatDetails[hidden]{display:none}
+.quickFormatBenefits{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;
+  list-style:none;min-height:0}
+.quickFormatBenefits li{position:relative;margin:0;padding-left:13px;
+  color:#617569;font:500 clamp(10px,1.15vw,11.5px)/1.24 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatBenefits li::before{position:absolute;left:0;top:0;
+  content:"✓";font-weight:900;color:#078d69}
+.quickFormatControls{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:6px;min-width:0}
+.quickFormatQuality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;min-width:0}
+.quickFormatQuality button{display:grid;place-items:center;min-width:0;min-height:42px;
+  padding:3px 2px;border:1px solid #e2e9df;border-radius:8px;background:#f2f3ed;
+  color:#4d655b;font:700 clamp(9.5px,1.1vw,11px)/1.08 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;cursor:pointer}
+.quickFormatQuality button[aria-pressed="true"]{border-color:#079e77;
+  background:linear-gradient(120deg,#099673,#078967);color:#fff}
+.quickFormatQuality button:disabled{opacity:.48;cursor:not-allowed}
+.quickFormatPrice{display:flex;align-items:flex-start;justify-content:center;
+  flex-direction:column;min-width:48px;gap:2px;padding-left:7px;
+  border-left:1px solid #e7eadd}
+.quickFormatPrice strong{color:#087658;font:850 clamp(15px,1.9vw,20px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing:-.035em;white-space:nowrap}
+.quickFormatPrice small{color:#75877e;font:700 clamp(9px,1.1vw,11px)/1.15 Arial,Helvetica,sans-serif}
+.quickBuilder [data-video-quick-tier]{padding-top:12px;padding-bottom:11px;gap:9px}
+.quickBuilder [data-video-quick-tier] .quickTierNote{padding:0 2px;
+  font-size:11.5px;line-height:1.3;color:#647a70}
+@media(max-width:759px){
+  .quickFormatGrid{grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:7px}
+  .quickFormatCard{border-radius:11px}
+  .quickFormatTitle{gap:5px;min-height:44px;padding:5px 6px}
+  .quickFormatTitle>svg:first-child{width:16px;height:16px}
+  .quickFormatChevron{width:13px;height:13px}
+  .quickFormatDetails{padding:0 6px 7px;gap:5px}
+  .quickFormatBenefits{gap:2px}
+  .quickFormatBenefits li{padding-left:11px;font-size:10px;line-height:1.18}
+  .quickFormatControls{gap:4px}
+  .quickFormatQuality{gap:2px}
+  .quickFormatQuality button{min-height:40px;font-size:9.5px}
+  .quickFormatPrice{padding-left:5px;min-width:45px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(max-width:430px){
+  .quickBuilder [data-video-quick-tier]{padding-left:9px;padding-right:9px}
+  .quickFormatGrid{grid-template-columns:minmax(0,36fr) minmax(0,64fr);gap:6px}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitleLabel small{font-size:10px}
+  .quickFormatFrom{font-size:9px}
+  .quickFormatQuality button{min-height:40px;font-size:9px}
+  .quickFormatPrice strong{font-size:15px}
+  .quickFormatPrice small{font-size:9px}
+}
+@media(max-width:355px){
+  .quickFormatGrid{grid-template-columns:minmax(0,32fr) minmax(0,68fr);gap:5px}
+  .quickFormatTitle{gap:4px;padding:4px}
+  .quickFormatTitle>svg:first-child{width:14px;height:14px}
+  .quickFormatDetails{padding:0 4px 5px}
+  .quickFormatBenefits li{font-size:9.7px}
+  .quickFormatPrice{min-width:43px;padding-left:4px}
+  .quickFormatPrice strong{font-size:14px}
+  .quickFormatQuality button{min-height:40px;padding:2px 0;font-size:8.8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickFormatChevron{transition:none}
+}
+
+/* Approved visual's compact sticky price-and-create rail. No credits are
+   claimed or charged; actual cost comes only from the draft local selection. */
+.quickOrderBar{position:sticky;z-index:22;bottom:calc(76px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);align-items:stretch;
+  gap:8px;min-width:0;margin:2px 0;padding:0 2px}
+.quickOrderSummary{display:flex;flex-direction:column;justify-content:center;gap:2px;
+  min-width:0;min-height:63px;padding:8px 12px;border:1px solid #def0e5;
+  border-radius:16px;background:linear-gradient(120deg,#e9f6ed,#f7fbf5);
+  color:#214a3d;box-shadow:0 3px 12px #1b543010}
+.quickOrderSummary small{display:block;min-width:0;color:#69867a;
+  font:550 clamp(10px,1.25vw,12px)/1.22 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickOrderSummary strong{color:#0c7355;font:850 clamp(17px,2.25vw,24px)/1.12 Arial,Helvetica,sans-serif}
+.quickOrderBar .quickGenerate{position:relative;bottom:auto;display:flex;align-items:center;
+  justify-content:center;gap:8px;width:100%;min-width:0;min-height:63px;
+  margin:0;padding:9px 10px;font-size:clamp(13px,2vw,17px)}
+.quickOrderBar .quickGenerate:disabled{opacity:.7;cursor:not-allowed}
+@media(max-width:369px){
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+  .quickOrderSummary{padding:7px 8px}
+  .quickOrderBar .quickGenerate{padding:8px 5px;font-size:12.5px}
+}
+
+
+/* Optional post-render human handoff. The local video and Save actions stay primary. */
+.postVideoSupport{display:grid;gap:8px;min-width:0;margin:16px 0 0;padding:12px;
+  border:1px solid #e5d4ae;border-radius:15px;
+  background:linear-gradient(135deg,#fffcf4,#f5fbf4);color:#24493c}
+.postVideoSupport h4{margin:0;font:800 16px/1.25 Arial,Helvetica,sans-serif;color:#244a3d}
+.postVideoSupport .postVideoSupportLead{margin:0;color:#5b7266;font:500 12.5px/1.4 Arial,Helvetica,sans-serif}
+.postVideoSupportGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.postVideoSupportItem{display:flex;gap:9px;min-width:0;padding:10px;border:1px solid #dce9dd;
+  border-radius:12px;background:#fffdfa}
+.postVideoSupportIcon{display:grid;flex:none;place-items:center;width:31px;height:31px;
+  border-radius:10px;background:#eaf4e8;color:#138366}
+.postVideoSupportBody{display:grid;align-content:start;gap:5px;min-width:0;flex:1}
+.postVideoSupportBody strong{color:#214c3e;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.postVideoSupport .postVideoSupportBody p{margin:0;color:#607269;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.postVideoSupportBody a{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
+  width:fit-content;max-width:100%;min-height:44px;padding:8px 11px;margin-top:2px;
+  border:1px solid #b7d9c7;border-radius:10px;background:#edf7ee;color:#126747;
+  font:800 12px/1.2 Arial,Helvetica,sans-serif;text-decoration:none;overflow-wrap:anywhere}
+.postVideoSupportBody a:hover{border-color:#119c77;background:#e5f4e9}
+.postVideoSupportBody a:focus-visible{outline:3px solid #c09b52;outline-offset:2px}
+.postVideoSupportBody a svg{flex:none}
+.postVideoSupport .postVideoSupportPrivacy{margin:0;color:#698074;font:500 11.5px/1.4 Arial,Helvetica,sans-serif}
+@media(max-width:759px){
+  .postVideoSupport{gap:7px;padding:10px}
+  .postVideoSupportGrid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .postVideoSupportItem{padding:9px}
+  .postVideoSupportBody a{width:100%;justify-content:center}
+}
+@media(max-width:355px){
+  .postVideoSupport h4{font-size:15px}
+  .postVideoSupportItem{gap:7px;padding:8px}
+  .postVideoSupportIcon{width:29px;height:29px}
+}
+
+/* Owner's 30 Oct audio-only iPhone reference: dense pastel filter rows,
+   one first-party soundtrack picker/player/microphone, no second mini-editor.
+   Scoped overrides leave the actual MediaRecorder and consent flow intact. */
+.audioSection{padding:9px 8px 12px;border-radius:20px;background:#fffcf7}
+.audioSection .blockHeading{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,38%);
+  align-items:center;gap:9px;min-height:94px;padding:12px;border-radius:17px;
+  background:radial-gradient(ellipse at 100% 80%,#dfead1 0,transparent 54%),
+    linear-gradient(110deg,#f1f6ec,#f9f9ef);border:1px solid #e1e8d9}
+.audioHeroCopy{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.audioSection .audioHeroCopy h3{font-size:clamp(19px,5vw,27px);line-height:1.12;letter-spacing:-.035em}
+.audioSection .audioHeroCopy h3 svg{width:26px;height:26px;flex:none}
+.audioSection .audioHeroCopy p{color:#64796c;font-size:clamp(11px,2.9vw,13px);line-height:1.3}
+.audioSection .audioSmartBar{display:flex;flex-direction:column;justify-content:center;
+  align-items:stretch;gap:5px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.audioSection .audioContextText{display:flex;justify-content:center;gap:4px;min-width:0;
+  font-size:10px;line-height:1.15;text-align:center;color:#698273}
+.audioSection .audioContextText strong{font-size:10px;color:#246a4e}
+.audioSection .audioSmartBar button{display:flex;align-items:center;justify-content:center;gap:5px;
+  width:100%;max-width:none;min-height:44px;padding:7px 8px;border:1px solid #4c9779;
+  border-radius:13px;background:linear-gradient(110deg,#357d63,#74a18a);color:white;
+  font-size:clamp(10.5px,2.7vw,12px);line-height:1.15;font-weight:800;white-space:normal;
+  box-shadow:0 3px 9px #315e4430}
+.audioSection .audioSmartBar button[aria-pressed="true"]{background:#14765b}
+.audioSection .audioSmartBar button svg{flex:none}
+.audioSection .musicCard{padding:5px 1px 7px;border:0;background:transparent}
+.audioSection .audioChipFilters{margin-bottom:6px}
+.audioSection .audioFilterRow{grid-template-columns:90px minmax(0,1fr);gap:5px;
+  min-height:48px;border-bottom:1px solid #e9ede5}
+.audioSection .audioFilterRow>strong{display:flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:750;color:#38574b}
+.audioSection .audioFilterRow>strong svg{flex:none;color:#8b978b}
+.audioSection .audioChipRail{gap:5px;padding:2px 1px}
+.audioSection .audioChipRail button{min-height:42px;padding:7px 10px;
+  border-radius:999px;font:650 11.5px/1.1 Arial,Helvetica,sans-serif}
+.audioSection .audioChipRail button[aria-pressed="true"]{background:#117958;color:#fff;
+  border-color:#117958;font-weight:800}
+.audioSection .audioVoiceOption{margin:5px 0 8px;padding:5px 8px;gap:7px;
+  border-radius:12px;background:#f5f8f1}
+.audioSection .audioVoiceOption span strong{font-size:11.5px}
+.audioSection .audioVoiceOption span small{font-size:10.5px;line-height:1.2}
+.audioSection .audioSearchRow{grid-template-columns:minmax(0,1fr) minmax(102px,.51fr);
+  gap:6px;margin-bottom:5px}
+.audioSection .audioSearchInput,.audioSection .audioSort{min-height:44px;border-radius:12px;background:#fffdf9}
+.audioSection .audioSearchInput input{font-size:12.5px}
+.audioSection .audioCatalogHeading{padding:2px 2px 6px}
+.audioSection .audioCatalogHeading strong{font-size:12px}
+.audioSection .audioTrackList{display:flex;flex-direction:column;gap:6px}
+.audioSection .audioTrackRow{position:relative;grid-template-columns:minmax(0,1fr) 44px;
+  align-items:center;min-height:74px;border:1px solid #e7ece4;border-radius:14px;
+  background:#fffdfa;box-shadow:0 2px 8px #284a3111}
+.audioSection .audioTrackSelect{display:grid;grid-template-columns:54px minmax(0,1fr) auto;
+  gap:7px;align-items:center;min-height:73px;padding:6px 2px 6px 7px;
+  border:0;background:transparent;box-shadow:none}
+.audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 7px;
+  border:0;background:linear-gradient(100deg,#e9f5ec,#fffefa);
+  box-shadow:inset 3px 0 0 #148365}
+.audioSection .audioTrackList .audioTileGlyph{width:54px;height:54px;border-radius:10px}
+.audioSection .audioTrackList .audioTileText{display:flex;flex-direction:column;gap:3px;
+  justify-content:center;min-width:0}
+.audioSection .audioTrackList .audioTileText strong{font-size:13.5px;line-height:1.14;color:#1a382e}
+.audioSection .audioTrackList .audioTileText small{font-size:11px;line-height:1.15}
+.audioRowMeta{display:flex;align-items:center;gap:7px;min-width:0}
+.audioRowMeta em{display:inline-block;max-width:100%;padding:2px 6px;
+  border-radius:999px;background:#e4f1e7;color:#476857;
+  font:600 9.5px/1.1 Arial,Helvetica,sans-serif;font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.audioSection .audioWave{justify-content:flex-start;height:13px;flex:1;max-width:110px}
+.audioSection .audioWave i{flex-basis:2px}
+.audioSection .audioTrackPick{padding:0 4px 0 0;min-width:0;font-size:10px}
+.audioTrackPlay{position:absolute;z-index:2;top:50%;left:12px;transform:translateY(-50%);
+  display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffffc5;
+  border-radius:50%;background:#e5f3e3e8;color:#237252;box-shadow:0 2px 7px #23544132;
+  cursor:pointer}
+.audioTrackPlay[aria-pressed="true"]{background:#287959;color:#fff}
+.audioTrackPlay:focus-visible{outline:3px solid #d7a951;outline-offset:2px}
+.audioSection .audioFavorite{width:44px;min-height:54px}
+.audioSection .audioMore{min-height:44px;margin-top:5px}
+.audioSection .audioUpload{display:flex;gap:7px;padding:5px 0;margin:4px 0}
+.audioSection .audioUploadLabel,.audioSection .audioMicButton{flex:1 1 120px;
+  min-height:46px;border-radius:12px;padding:8px;font-size:12px}
+.audioSection .audioUpload>small{font-size:10.5px;padding:0 4px}
+.audioPlayerDock{display:grid;gap:6px;min-width:0;margin:8px 0;padding:9px;
+  border:1px solid #c9dfc8;border-radius:16px;
+  background:linear-gradient(110deg,#e5f0e1,#f1f7ec 70%,#e6eedc)}
+.audioSection .audioPlayerDock .audioNowPlaying{display:flex;align-items:center;gap:7px;
+  margin:0;padding:2px;background:transparent;border-radius:0}
+.audioSection .audioPlayerDock .audioNowPlaying span{font-size:10.5px;color:#667c6d}
+.audioSection .audioPlayerDock .audioNowPlaying strong{font-size:13px;color:#21523d}
+.audioSection .audioPlayerDock .audioNowPlaying button{min-height:35px;padding:6px 8px}
+.audioSection .audioPlayerDock .musicTools{display:grid;
+  grid-template-columns:minmax(115px,.7fr) minmax(0,1.3fr);align-items:center;
+  gap:8px;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+.audioSection .audioPlayerDock .musicTools label{font-size:11.5px}
+.audioSection .audioPlayerDock audio[data-video-audio-player]{display:block;width:100%;
+  max-width:100%;min-width:0;height:43px;min-height:43px;border-radius:10px;background:#e5f0e0}
+.audioSection .audioAttachPanel{margin-top:6px;padding:7px;border-radius:13px}
+.audioSection .audioAttachHelp{font-size:10.5px;line-height:1.3}
+.quickAudioSummary.quickSection{gap:6px;padding:10px 11px}
+.quickAudioSummary .quickSectionHeading p{font-size:11px}
+.quickAudioCompact{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;min-width:0}
+.quickAudioCurrent{display:flex;align-items:center;gap:6px;min-width:0;color:#2d6a4f}
+.quickAudioCurrent>svg{flex:none}
+.quickAudioCurrent>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.quickAudioCurrent small{font-size:10px;line-height:1.15;color:#75887b}
+.quickAudioCurrent strong{font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quickAudioAction,.quickAudioSilent{display:inline-flex;align-items:center;justify-content:center;
+  gap:4px;min-height:44px;padding:6px 9px;border:1px solid #bbd9c9;
+  border-radius:10px;background:#eff7ed;color:#1a7657;font:750 11px/1.1 Arial,Helvetica,sans-serif}
+.quickAudioAction{background:#e0f4e8;border-color:#a4d7bf}
+.quickAudioAction:disabled{opacity:.6}
+@media(max-width:375px){
+ .audioSection{padding:8px 6px}
+ .audioSection .blockHeading{grid-template-columns:minmax(0,1fr) 112px;gap:5px;padding:9px}
+ .audioSection .audioHeroCopy h3{font-size:19px}
+ .audioSection .audioHeroCopy h3 svg{width:21px;height:21px}
+ .audioSection .audioHeroCopy p{font-size:11px}
+ .audioSection .audioFilterRow{grid-template-columns:72px minmax(0,1fr);gap:4px}
+ .audioSection .audioFilterRow>strong{gap:4px;font-size:10.5px}
+ .audioSection .audioFilterRow>strong svg{width:14px;height:14px}
+ .audioSection .audioChipRail button{padding:7px 9px;font-size:11px}
+ .audioSection .audioTrackSelect{grid-template-columns:46px minmax(0,1fr) auto;gap:6px;padding:6px 2px 6px 6px}
+ .audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 6px}
+ .audioSection .audioTrackList .audioTileGlyph{width:46px;height:46px}
+ .audioTrackPlay{left:7px;width:44px;height:44px}
+ .audioSection .audioTrackList .audioTileText strong{font-size:13px}
+ .audioSection .audioTrackPick{font-size:9.5px}
+ .audioSection .audioPlayerDock .musicTools{grid-template-columns:minmax(105px,.7fr) minmax(0,1.3fr)}
+ .quickAudioAction,.quickAudioSilent{padding:6px 7px;font-size:10.5px}
+}
+@media(min-width:760px){
+ .audioSection .audioTrackList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .audioSection .blockHeading{grid-template-columns:minmax(0,1fr) 180px}
+}
+
+
+/* 30 Oct owner correction: the ONE original Canvas/MediaRecorder screen now
+   lives before the format accordion. The genuine H.264 sample stays miniature,
+   while Popular Templates and 24 compiled films form ONE shared library. */
+.quickBuilder>.previewStage{
+  display:grid;gap:10px;padding:14px;border:1px solid #badbca;border-radius:23px;
+  background:linear-gradient(150deg,#e9f6ed,#fffef9 68%);
+  box-shadow:0 9px 25px rgba(21,85,62,.08)
+}
+.previewStageHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.previewStageHeading>div{flex:1;min-width:0}
+.previewStageHeading small{display:block;color:#248568;font:800 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.07em}
+.previewStageHeading h3{margin:4px 0 5px!important;color:#174c3f;font:800 clamp(19px,3.2vw,25px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.previewStageHeading p{max-width:600px;color:#61786c;font:500 12px/1.43 Arial,Helvetica,sans-serif}
+.previewStageBadge{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:32px;max-width:36%;padding:7px 9px;border-radius:999px;
+  border:1px solid #bedac9;background:#f5fbf4;color:#147454;
+  text-align:center;font:800 10.5px/1.2 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.studio .previewStage .hero{width:100%;min-width:0;min-height:0;max-height:460px;
+  aspect-ratio:16/9;margin:0;border-radius:19px;overflow:hidden}
+.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+  min-height:0;max-height:460px;aspect-ratio:16/9}
+.previewMiniSource{display:grid;grid-template-columns:minmax(0,1fr) minmax(122px,39%);
+  align-items:center;gap:12px;min-width:0;padding:9px 11px;
+  border:1px solid #d8e8dc;border-radius:14px;background:#fffdf7}
+.previewMiniSource>div:first-child{display:grid;gap:4px;min-width:0}
+.previewMiniSource strong{color:#225441;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.previewMiniSource small{color:#6b7c72;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.previewMiniSource .quickFormatDemo{max-width:228px;justify-self:end;box-shadow:0 2px 8px rgba(6,56,40,.13)}
+.previewMiniSource .quickFormatDemo .quickPreviewPlay{width:44px;height:44px}
+.quickBuilder>.sceneLibrary{display:grid;gap:10px;padding:13px 13px 14px;border-radius:22px;
+  background:#fffdf7;border:1px solid #e8e9de;box-shadow:0 6px 20px #193e2d0e}
+.sceneLibraryHeading{display:grid;gap:4px}
+.sceneLibraryHeading h3{display:flex;align-items:center;gap:8px;
+  color:#174b3f;font:800 clamp(18px,3vw,23px)/1.2 Arial,Helvetica,sans-serif}
+.sceneLibraryHeading h3 svg{flex:none;color:#158667}
+.sceneLibraryHeading p{color:#688075;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.sceneLibrary .templates{margin:2px 0 0;padding:3px 0 11px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary [data-free-film-compilation-catalog]{margin:0;padding:3px 0 10px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary .templates .sectionHeading{margin-bottom:5px}
+.sceneLibrary .templates .sectionHeading h3,
+.sceneLibrary [data-free-film-compilation-catalog] h3{color:#205642;font-size:15px}
+.sceneLibrary .templateRail{display:grid;grid-auto-flow:column;
+  grid-auto-columns:clamp(104px,27%,153px);gap:8px;overflow-x:auto;
+  overscroll-behavior-x:contain;padding:3px 3px 10px;scroll-snap-type:x proximity}
+.sceneLibrary .templateTile{min-width:0;scroll-snap-align:start}
+.sceneLibrary .filmBadge{font-size:9px}
+.previewCoverOptions{min-width:0;border:1px solid #cfe4d6;border-radius:14px;background:#f5faf4}
+.previewCoverOptions>summary{display:flex;align-items:center;gap:9px;min-height:48px;
+  padding:10px 12px;color:#23694f;font:800 13px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.previewCoverOptions>summary::-webkit-details-marker{display:none}
+.previewCoverOptions>summary svg:last-child{margin-left:auto;transition:transform .2s ease}
+.previewCoverOptions[open]>summary svg:last-child{transform:rotate(180deg)}
+.previewCoverOptions>.quickSection{margin:0;padding:10px;border:0;border-top:1px solid #deede2;
+  border-radius:0 0 14px 14px;background:#fffef9;box-shadow:none}
+.previewCoverOptions .quickImageRail{max-width:100%;overflow-x:auto}
+.previewCoverOptions :is(summary,button,input):focus-visible{outline:3px solid #d9b56d;outline-offset:2px}
+/* The format list has its full width now; no squeezed 36/64 split. */
+.quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+.quickFormatStack{gap:9px}
+.quickFormatTitleLabel strong{font-size:clamp(13px,2.25vw,16px)}
+.quickFormatTitleLabel small{font-size:12px}
+.quickFormatBenefits li{font-size:12px;line-height:1.35}
+.quickFormatQuality button{min-height:44px;font-size:11px}
+@media(max-width:759px){
+  .quickBuilder>.previewStage,.quickBuilder>.sceneLibrary{padding:12px 10px}
+  .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:0;max-height:none;aspect-ratio:16/9}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .quickFormatTitle{gap:8px;min-height:49px;padding:9px 11px}
+  .quickFormatTitleLabel strong{font-size:14px}
+  .quickFormatTitleLabel small{font-size:11px}
+  .quickFormatBenefits li{font-size:11.5px;line-height:1.3}
+  .quickFormatQuality button{font-size:11px;min-height:44px}
+  .quickFormatPrice strong{font-size:18px}
+  /* The original sticky rail covered video cards and CTA on iPhone. */
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;margin:6px 0 2px}
+}
+@media(max-width:355px){
+  .previewStageHeading h3{font-size:18px}
+  .previewStageBadge{max-width:32%;font-size:9px;padding:6px}
+  .previewMiniSource{gap:7px;padding:7px;grid-template-columns:minmax(0,1fr) minmax(118px,45%)}
+  .previewMiniSource strong{font-size:12px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatTitleLabel strong{font-size:13px}
+  .quickFormatQuality button{font-size:10px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .previewCoverOptions>summary svg:last-child{transition:none}
+}
+
+/* Integrate #2694 compact iPhone override after #2695 big stage and live #2696 audio. */
+
+/* Owner mobile screenshot reconciliation · 2026-10-30.
+   This is the real canonical editor, not a second mobile-only renderer.
+   The bottom order stays IN FLOW on phones so it never obscures scenes,
+   while the existing desktop product format/checkout gates remain intact. */
+.quickBrandBar{display:none}
+.quickHeaderPlay{position:absolute;z-index:2;left:50%;top:55%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:48px;height:48px;border:2px solid #fff;
+  border-radius:50%;background:#183e34ba;color:#fff;box-shadow:0 3px 13px #162f2770}
+.quickHeaderPlay:disabled{opacity:.65}
+.quickHeaderPlay:focus-visible{outline:3px solid #e7bb60;outline-offset:3px}
+.quickDisclosure{margin:-4px 3px 2px!important;color:#60786c;
+  font:500 11px/1.35 Arial,Helvetica,sans-serif}
+.quickExtras{min-width:0;border:1px solid #e3eade;border-radius:14px;
+  background:#fffdf8;overflow:hidden}
+.quickExtras>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:45px;padding:9px 13px;color:#173f35;
+  font:800 15px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.quickExtras>summary::-webkit-details-marker{display:none}
+.quickExtras>summary svg{flex:none;color:#148064;transition:transform .15s ease}
+.quickExtras[open]>summary svg{transform:rotate(180deg)}
+.quickExtraActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  padding:0 9px 10px}
+.quickExtraActions button{display:flex;align-items:center;justify-content:center;gap:5px;
+  min-width:0;min-height:44px;padding:5px 7px;border:1px solid #d8e6da;
+  border-radius:10px;background:#f2f8f0;color:#17664f;
+  font:700 11px/1.18 Arial,Helvetica,sans-serif}
+.quickExtraActions button svg{flex:none}
+@media(max-width:759px){
+  .studio{padding-top:0}
+  .quickBuilder{gap:7px;padding-bottom:5px}
+  .quickBrandBar{display:flex;align-items:center;gap:9px;min-height:45px;
+    padding:3px 5px 6px;color:#123e34}
+  .quickBrandBack{display:grid;place-items:center;flex:none;width:42px;height:42px;
+    border-radius:13px;color:#185d4c;text-decoration:none}
+  .quickBrandBack svg{transform:rotate(180deg)}
+  .quickBrandBar>strong{display:flex;align-items:center;gap:6px;min-width:0;
+    flex:1;white-space:nowrap;font:850 clamp(15px,4.4vw,19px)/1 Arial,Helvetica,sans-serif;
+    letter-spacing:-.025em}
+  .quickBrandBar>strong svg{flex:none;color:#167e65}
+  .quickBrandFree{display:flex;align-items:center;gap:3px;flex:none;
+    padding:5px 7px;border-radius:999px;background:#e2f5e8;color:#117053;
+    font:800 10.5px/1.1 Arial,Helvetica,sans-serif}
+  .quickHeader{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);
+    min-height:174px;margin:0;padding:12px 12px 10px;border-radius:18px}
+  .quickHeaderText h2{max-width:16ch;font-size:clamp(22px,5.65vw,27px);
+    line-height:1.06;letter-spacing:-.035em}
+  .quickHeaderText p{max-width:29ch;margin-top:6px;font-size:clamp(11px,2.85vw,12.5px);
+    line-height:1.25}
+  .quickHeaderArt{margin:-12px -12px -10px -3px}
+  .quickHeaderArt img{object-position:50% 40%}
+  .quickHeader>button{top:8px;right:6px;max-width:70%;
+    min-height:35px;padding:5px 8px;font-size:10px}
+  .quickHeaderPlay{width:48px;height:48px;top:58%}
+  .quickBenefits{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+    padding:8px 4px;border-radius:15px}
+  .quickBenefits span{justify-content:center;gap:4px;min-height:50px;padding:0 3px;
+    font-size:clamp(9.5px,2.65vw,11px);line-height:1.16}
+  .quickBenefits span:nth-child(3){border-left:1px solid #e7eae2}
+  .quickBenefits svg{width:20px;height:20px}
+  .quickDisclosure{font-size:10px;line-height:1.3;margin:-3px 3px 0!important}
+  .quickBuilder>.quickSection{padding:10px 9px 11px;gap:8px;border-radius:16px}
+  .quickBuilder .quickSectionHeading{gap:7px}
+  .quickBuilder .quickSectionHeading h3{font-size:clamp(16px,4.2vw,19px);
+    line-height:1.18;gap:6px}
+  .quickBuilder .quickSectionHeading h3 svg{width:18px;height:18px}
+  .quickBuilder .quickSectionHeading p{font-size:11px;line-height:1.24;margin-top:2px}
+  .quickBuilder .quickSectionHeading a,.quickBuilder .quickSectionHeading .quickEdit{
+    min-height:44px;max-width:100px;padding:4px;font-size:11px;line-height:1.18}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(66px,19%,85px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity;scroll-padding-inline:2px}
+  .quickBuilder .quickThemeRail button{min-height:112px;padding:7px;
+    gap:4px;border-radius:13px;scroll-snap-align:start}
+  .quickBuilder .quickThemeRail button .quickThemeIcon{width:32px;height:32px}
+  .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:19px;height:19px}
+  .quickBuilder .quickThemeRail button .quickThemeName{font-size:clamp(9.7px,2.6vw,11px);
+    line-height:1.12;overflow-wrap:break-word}
+  .quickBuilder .quickThemeRail button[aria-pressed="true"]{padding:6px}
+  .quickBuilder [data-video-quick-tier]{padding:10px 8px 9px;gap:7px}
+  .quickFormatGrid{grid-template-columns:minmax(0,40fr) minmax(0,60fr);gap:7px}
+  .quickFormatDetails{padding:0 7px 7px}
+  .quickFormatBenefits li{font-size:10px;line-height:1.2}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitle{padding:5px 6px}
+  .quickFormatQuality button{min-height:44px}
+  .quickBuilder [data-video-quick-tier] .quickTierNote{font-size:10px;line-height:1.24}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,19%,87px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity}
+  .quickBuilder .quickStyles button{gap:3px;scroll-snap-align:start}
+  .quickBuilder .quickStyles button img{aspect-ratio:1.1;border-radius:10px}
+  .quickBuilder .quickStyles button span{min-height:16px;
+    font-size:clamp(10px,2.7vw,11.5px);line-height:1.16;font-weight:750}
+  .quickBuilder .quickHint{font-size:10px;line-height:1.26}
+  .quickBuilder .quickWish{min-height:47px}
+  .quickBuilder .quickWish input{min-height:44px;padding:8px 0;font-size:13px}
+  .quickPersonalActions{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .quickPersonalActions button{flex-direction:column;min-height:48px;padding:5px 3px;
+    gap:4px;border-radius:11px;font-size:clamp(9.5px,2.6vw,11px);line-height:1.12}
+  .quickPersonalActions svg{width:18px;height:18px}
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.13fr);
+    gap:6px;margin:2px 0 0;padding:0}
+  .quickOrderSummary{min-height:58px;padding:7px 9px;border-radius:13px}
+  .quickOrderSummary strong{font-size:clamp(16px,4.4vw,20px)}
+  .quickOrderSummary small{font-size:10px}
+  .quickOrderBar .quickGenerate{min-height:58px;margin:0;padding:7px;
+    border-radius:13px;font-size:clamp(12px,3.4vw,15px);line-height:1.15}
+  .quickOrderBar .quickGenerate svg{width:17px;height:17px;flex:none}
+  .quickExtras>summary{font-size:14px}
+  .quickExtraActions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quickExtraActions button:last-child{grid-column:1/-1}
+  .quickTherapy{min-height:44px}
+}
+@media(max-width:379px){
+  .quickHeader{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);min-height:181px}
+  .quickHeaderText h2{font-size:clamp(21px,6vw,23px)}
+  .quickHeaderText p{font-size:11px}
+  .quickBrandFree{font-size:10px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatDemo{max-height:180px}
+  .quickFormatTitleLabel strong{font-size:12px}
+  .quickFormatBenefits li{font-size:11px}
+  .quickFormatQuality button{font-size:10.5px}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(67px,24%,76px)}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,24%,81px)}
+  .quickPersonalActions button{font-size:9.6px}
+}
+@media(max-width:340px){
+  .quickBrandBar>strong{font-size:15px}
+  .quickBrandFree svg{display:none}
+  .quickHeader{min-height:192px}
+  .quickHeader>button{max-width:70%;font-size:9.5px}
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+
+/* Video Studio-only iPhone promo treatment. Keep this in the dedicated
+   Mandala editor module so unrelated service/checkout/CRM pages and their
+   Public Services CI matrix are not affected by the editor's presentation. */
+@media(max-width:640px){
+  :global([data-mandala-meditation-page]):has(.studio) :global([data-video-diagnostic-banner]){display:none}
+}
+
+
+
+/* Owner-approved 30 Oct 2026 video-first mobile quick flow. Reuses ONE Canvas/MediaRecorder,
+   one existing HTMLVideoElement decoder and the same (private) sound attachments. */
+.quickVideoNav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:8px 0 0;min-width:0}
+.quickVideoNav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-width:0;min-height:54px;padding:6px 2px;border:1px solid #e4e7db;border-radius:12px;
+  background:linear-gradient(135deg,#fffdf8,#f8f6ef);color:#183c34;
+  font:750 11px/1.14 Arial,Helvetica,sans-serif;overflow-wrap:anywhere;text-align:center}
+.quickVideoNav button:first-child{border-color:#e8bd66;background:#fff8e6;color:#71501b}
+.quickVideoNav button svg{flex:none;color:#0d6d5b}
+.quickVideoNav button:focus-visible,.quickPhrasePersonal:focus-visible,
+.quickPhraseRail button:focus-visible,.quickMusicRail button:focus-visible{
+  outline:3px solid #daa755;outline-offset:2px}
+.quickPhraseSection,.quickMusicSection{display:grid;gap:9px;min-width:0;padding:12px;
+  border:1px solid #e7e8dc;border-radius:17px;background:linear-gradient(135deg,#fffdf9,#faf9f3);
+  box-shadow:0 3px 13px rgba(32,61,46,.05);scroll-margin-top:76px}
+.quickPhraseSection .quickSectionHeading,.quickMusicSection .quickSectionHeading{display:flex;
+  align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.quickPhraseSection .quickSectionHeading h3,.quickMusicSection .quickSectionHeading h3{
+  display:flex;align-items:center;gap:6px;min-width:0;color:#133f36;
+  font:800 clamp(15px,3.7vw,20px)/1.2 Georgia,serif}
+.quickPhraseSection .quickSectionHeading h3 svg,.quickMusicSection .quickSectionHeading h3 svg{
+  color:#087a67;flex:none}
+.quickPhrasePersonal{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;
+  padding:6px 8px;border:1px solid #cde6da;border-radius:12px;background:#eef7f1;
+  color:#166b55;flex:none;max-width:45%;font:750 clamp(10px,2.8vw,12px)/1.2 Arial,sans-serif;text-align:center}
+.quickPhrasePersonal svg{flex:none}
+.quickPhraseRail,.quickMusicRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(130px,25%);
+  gap:8px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+  padding:2px 2px 8px;scrollbar-width:thin}
+.quickPhraseRail button{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-height:94px;padding:9px 11px;border:1px solid #e2e4dc;border-radius:14px;
+  background:#fffefb;color:#223e43;text-align:center;font:650 13px/1.3 Arial,sans-serif;
+  scroll-snap-align:start;overflow-wrap:anywhere}
+.quickPhraseRail button>span{font:900 26px/0.8 Georgia,serif;color:#d49f3e}
+.quickPhraseRail button[aria-pressed="true"]{border-color:#dea844;
+  background:linear-gradient(145deg,#fffaf0,#fffef9);box-shadow:0 2px 9px #e1b56942}
+.quickMusicRail{grid-auto-columns:minmax(143px,27%)}
+.quickMusicRail button{display:grid;grid-template-columns:20px 1fr 16px;grid-template-rows:auto auto;
+  align-items:center;gap:4px 5px;min-height:72px;padding:8px;border:1px solid #e0e7dc;
+  border-radius:13px;background:#fffefa;color:#255446;text-align:left;
+  scroll-snap-align:start;min-width:0}
+.quickMusicRail button>svg:first-child{grid-row:1/3;grid-column:1;color:#078b6d}
+.quickMusicRail button strong{grid-row:1;grid-column:2;min-width:0;font-size:12px}
+.quickMusicRail button small{grid-row:2;grid-column:2/4;min-width:0;font-size:10px;color:#688074;line-height:1.3}
+.quickMusicRail button>svg:last-child:not(:first-child){grid-row:1;grid-column:3;color:#087c61}
+.quickMusicRail button[aria-pressed="true"]{border-color:#039172;background:#e7f6eb}
+.studio .therapyBanner{border-color:#dfb65f;box-shadow:0 6px 17px #ad8b4630;
+  background:linear-gradient(115deg,#ffe8a4,#e7b65d 60%,#cb9030);color:#263f38}
+.studio .therapyBanner .therapyBannerCopy small{color:#68501e}
+.studio .therapyBanner .therapyBannerCopy h3{color:#223e37;font-family:Georgia,serif}
+.studio .therapyBanner .therapyBannerCopy p{color:#5b583e}
+.studio .therapyBanner button{background:linear-gradient(110deg,#086d5c,#079471);color:white;
+  box-shadow:0 4px 12px #0a6b5638}
+.studio .therapyBanner button:hover{filter:brightness(1.06)}
+@media(max-width:760px){
+  /* PreviewMiniSource houses the REAL media decoder; keep it mounted and playing
+     for Canvas paint/MediaRecorder, but do not show a second mini-player. */
+  .studio .previewStage{position:relative}
+  .studio .previewStageHeading{display:none}
+  .studio .previewMiniSource{position:absolute!important;width:1px!important;height:1px!important;
+    overflow:hidden!important;opacity:0!important;pointer-events:none!important;padding:0!important;
+    margin:0!important;inset:auto auto 0 0}
+  .studio .previewStage{padding:4px!important;gap:0}
+  .studio .previewStage .hero{margin:0!important;border-radius:16px}
+  .studio .quickBuilder>.quickSection[data-video-quick-section="1"]{margin:0;padding:10px 7px}
+  .studio .quickBuilder .quickThemeRail{grid-auto-columns:clamp(76px,25%,110px)}
+  .studio .quickBuilder .quickThemeRail button{min-height:106px}
+  .studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px 0}
+  .studio .quickVideoNav button{min-height:57px;padding:5px 1px;font-size:clamp(9px,2.4vw,11px)}
+  .studio .quickVideoNav button svg{width:17px;height:17px}
+  .studio .quickPhraseRail{grid-auto-columns:minmax(124px,40%)}
+  .studio .quickMusicRail{grid-auto-columns:minmax(145px,45%)}
+  .studio .therapyBanner{flex-direction:column;align-items:stretch;gap:8px;
+    margin:8px 0;padding:11px 12px;border-radius:16px}
+  .studio .therapyBanner .therapyBannerCopy h3{font-size:clamp(15px,4vw,19px)}
+  .studio .therapyBanner button{max-width:none;width:100%;min-height:44px}
+  .studio [data-video-quick-section="4"]{scroll-margin-top:72px}
+}
+@media(max-width:355px){
+  .studio .quickVideoNav{gap:3px}
+  .studio .quickVideoNav button{font-size:9px}
+  .studio .quickPhraseSection,.studio .quickMusicSection{padding:9px 7px}
+  .studio .quickPhrasePersonal{max-width:40%;padding:5px 4px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
+}
