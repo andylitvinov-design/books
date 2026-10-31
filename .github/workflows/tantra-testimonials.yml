@@ -103,7 +103,22 @@ jobs:
           npm run start -- --port 3123 > /tmp/tantra-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" || true' EXIT
-          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:3123/en/academy/reiki/tantra-reiki >/dev/null && break || sleep 2; done
+          # The original "curl && break || sleep" causes SC2015/SC2034
+          # and may report success even if readiness never occurs.
+          remaining=40
+          until curl --silent --fail http://127.0.0.1:3123/en/academy/reiki/tantra-reiki >/dev/null 2>&1; do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              tail -80 /tmp/tantra-server.log
+              exit 1
+            fi
+            remaining=$((remaining - 1))
+            if (( remaining <= 0 )); then
+              echo 'Tantra local browser server did not become ready' >&2
+              tail -80 /tmp/tantra-server.log
+              exit 1
+            fi
+            sleep 2
+          done
           node scripts/verify-tantra-testimonials.mjs
         env:
           TANTRA_ORIGIN: http://127.0.0.1:3123
