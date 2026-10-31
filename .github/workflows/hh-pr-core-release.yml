@@ -86,6 +86,7 @@ jobs:
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-specialist-wait.test.mjs|\
                   tests/ci-workflow-globs.test.mjs|\
                   tests/pr-sweep-guard.test.mjs|\
                   tests/ci-heavy-draft-policy.test.mjs) ;;

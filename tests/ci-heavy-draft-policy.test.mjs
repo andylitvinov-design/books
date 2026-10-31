@@ -490,12 +490,17 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, earlyLive, earlyRepo).ready, true);
   assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'blocked' }, earlyRepo).ready, true);
   assert.equal(assessPrReadiness(earlyEvent, { ...earlyLive, mergeable_state: 'unstable' }, earlyRepo).ready, true);
+  // A newer production base alone is not a reason to redo Core or browsers.
+  // The trusted release gate still pins the tested merge snapshot and enforces
+  // fresh-base matching for sensitive source changes.
+  const advanced = { ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) }, mergeable_state: 'behind' };
+  assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
 test('early readiness fails closed for stale SHA, conflicts, Draft, forks and API unknown', () => {
   const mutations = [
     [{ ...earlyLive, head: { ...earlyLive.head, sha: 'c'.repeat(40) } }, 'superseded_head'],
-    [{ ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) } }, 'superseded_base'],
+    [{ ...earlyLive, base: { ...earlyLive.base, sha: 'bad' } }, 'invalid_live_base_sha'],
     [{ ...earlyLive, mergeable: false }, 'conflict'],
     [{ ...earlyLive, mergeable_state: 'dirty' }, 'conflict'],
     [{ ...earlyLive, mergeable: null }, 'mergeability_pending'],
