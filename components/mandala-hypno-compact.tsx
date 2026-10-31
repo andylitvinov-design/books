@@ -11,6 +11,7 @@ import {
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { resolvePrivateHypnoCodes } from "@/lib/mandala/hypno-private-signals.mjs";
 import css from "./mandala-hypno-compact.module.css";
 
 type SceneOption = { id:string; label:string; symbol:string; poster:string|null };
@@ -44,7 +45,7 @@ const copy = {
     aiConsent:"I agree to send only selected generic theme, difficulty, goal and tone codes to free Google or OpenRouter AI. My notes, tests, profile and personal phrases are NOT sent. Free providers may use prompts to improve models.",
     aiRun:"Generate five AI phrases",aiBusy:"Writing phrases…",
     aiFallback:"Free AI is unavailable; showing editable local suggestions.",aiSignIn:"Sign in for free AI. Local suggestions work without an account.",
-    aiReady:"AI draft: review and edit five phrases ·",aiTone:"Tone",
+    aiReady:"AI draft: review and edit five phrases ·",aiLocalNote:"Wishes were interpreted on this device; raw text was not shared.",aiTone:"Tone",
     aiTones:["Gentle","Grounded","Encouraging"],
   },
   ru: {
@@ -66,7 +67,7 @@ const copy = {
     aiConsent:"Согласен отправить только общие коды темы, трудности, цели и тона в бесплатный AI Google или OpenRouter. Мои заметки, тесты, профиль и личные фразы НЕ передаются. Бесплатные провайдеры могут использовать запросы для улучшения моделей.",
     aiRun:"Сгенерировать 5 AI-фраз",aiBusy:"Создаём фразы…",
     aiFallback:"Бесплатный AI недоступен: показан редактируемый локальный подбор.",aiSignIn:"Войдите в кабинет для бесплатного AI. Локальный подбор работает без входа.",
-    aiReady:"AI-черновик: проверьте и измените 5 фраз ·",aiTone:"Тон",
+    aiReady:"AI-черновик: проверьте и измените 5 фраз ·",aiLocalNote:"Описание распознано на устройстве; текст не отправлялся.",aiTone:"Тон",
     aiTones:["Мягкий","Практичный","Вдохновляющий"],
   },
   es: {
@@ -88,7 +89,7 @@ const copy = {
     aiConsent:"Acepto enviar solo códigos generales de tema, dificultad, meta y tono a la IA gratuita de Google u OpenRouter. NO se envían notas, pruebas, perfil ni frases personales. Los proveedores gratuitos pueden usar solicitudes para mejorar modelos.",
     aiRun:"Generar cinco frases de IA",aiBusy:"Creando frases…",
     aiFallback:"La IA gratuita no está disponible. Se usaron sugerencias locales editables.",aiSignIn:"Inicia sesión para usar IA gratuita. Las frases locales no lo requieren.",
-    aiReady:"Borrador de IA: revisa y edita las cinco frases ·",aiTone:"Tono",
+    aiReady:"Borrador de IA: revisa y edita las cinco frases ·",aiLocalNote:"Las notas se interpretaron en el dispositivo; no se envió texto personal.",aiTone:"Tono",
     aiTones:["Suave","Práctico","Inspirador"],
   },
 } as const;
@@ -122,21 +123,29 @@ export function MandalaHypnoCompact({
   const [showHint,setShowHint]=useState(false);
 
   const toggle=(panel:Exclude<EditPanel,null>)=>setOpen(current=>current===panel?null:panel);
-  const propose=()=>{
-    const suggestions=buildHypnoRequestPhrases(locale,theme,problemIndex,goalId);
+  const applyLocal=(issueIndex:number,goal:VideoAffirmationGoal)=>{
+    const suggestions=buildHypnoRequestPhrases(locale,theme,issueIndex,goal);
     onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
     setSelectionSource("smart");setOpen(null);
   };
+  const propose=()=>applyLocal(problemIndex,goalId);
   const generateAiPhrases=async()=>{
     if(disabled||aiBusy||!aiConsent)return;
     setAiBusy(true);setAiMessage("");
     try{
+      const local=resolvePrivateHypnoCodes({
+        locale,theme,problemNote,goalNote,problemIndex,goalId,
+      });
+      if(local.privateDescriptionInterpreted){
+        setProblemIndex(local.problemIndex);
+        setGoalId(local.goalId);
+      }
       // Only selected non-identifying codes. NEVER transmit problemNote,
       // goalNote, test results, custom phrases, client profile or symptoms.
       const response=await fetch("/api/holistic-support/meditation-writer/affirmations",{
         method:"POST",cache:"no-store",credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({locale,theme,problemIndex,goalId,tone:aiTone,
+        body:JSON.stringify({locale,theme,problemIndex:local.problemIndex,goalId:local.goalId,tone:aiTone,
           focus:"agency",externalModelOptIn:true}),
       });
       const result=await response.json() as {
@@ -146,15 +155,17 @@ export function MandalaHypnoCompact({
          !Array.isArray(result.phrases) || result.phrases.length!==5 ||
          result.phrases.some(line=>typeof line!=="string"||
            Array.from(line).length>36)){
-        propose();
-        setAiMessage(response.status===401?ui.aiSignIn:ui.aiFallback);
+        applyLocal(local.problemIndex,local.goalId);
+        setAiMessage((response.status===401?ui.aiSignIn:ui.aiFallback)+
+          (local.privateDescriptionInterpreted?" "+ui.aiLocalNote:""));
         return;
       }
       onChange({...settings,enabled:true,presetOverride:result.phrases,
         selected:[0,1,2,3,4]});
       setSelectionSource("ai");
       setAiMessage(ui.aiReady+" "+(result.provider==="openrouter_free"?
-        "OpenRouter Free":"Gemini Free"));
+        "OpenRouter Free":"Gemini Free")+
+        (local.privateDescriptionInterpreted?" · "+ui.aiLocalNote:""));
     }catch{
       propose();setAiMessage(ui.aiFallback);
     }finally{setAiBusy(false);}
@@ -166,6 +177,7 @@ export function MandalaHypnoCompact({
   const changeTheme=(next:VideoTheme)=>{
     if(next===theme)return;
     onSelectTheme(next);
+    setProblemIndex(0);setGoalId(topicGoals[next][0]);
     onChange({...settings,enabled:settings.enabled,presetOverride:undefined,selected:[0,1,2]});
     setSelectionSource("ready");
     setOpen("request");
