@@ -210,9 +210,19 @@ const runEngine = async ([engine, browserType]) => {
         await coverOptions.locator("summary").click();
         await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
           .toHaveAttribute("open","",{timeout:10000});
-        await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
-        assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
-          "choosing a different scene changes the real preview video");
+        // Select a genuinely different first-party MP4 and await React's
+        // committed selection. A click alone does not prove media updated.
+        const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
+        assert.equal(await selectedScene.count(),1,"exactly one current cover scene");
+        const alternateScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="false"]').first();
+        const alternateId=await alternateScene.getAttribute("data-video-quick-scene");
+        assert.match(alternateId||"",/^[a-z0-9-]+$/,"a published alternate scene ID is required");
+        const expectedAlternateMaster="/videos/holistic-house/film-collection-v2/"+alternateId+".mp4";
+        assert.notEqual(expectedAlternateMaster,firstMaster,"test must select a different MP4 master");
+        await alternateScene.click();
+        await expect(alternateScene).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        await expect(livePreview.locator("video")).toHaveAttribute("src",expectedAlternateMaster,
+          {timeout:15000});
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
