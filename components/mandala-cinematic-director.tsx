@@ -39,7 +39,7 @@ const copy={
     visualIdeaHelp:"Optional. This stays on your device. Only known fictional visual elements appear in the safe reference pack.",
     subjectQuestion:"What should appear on screen?",subjectChoices:["An eagle","A wolf","Nature only"],
     actionQuestion:"What should happen?",actionChoices:["Fly","Transform","Travel"],
-    referenceTitle:"Style and reference plan (not generated AI footage)",
+    referenceTitle:"Style and reference plan (not generated AI footage)",conceptScene:"Story concept",localScene:"Available montage scene",
     referenceHint:"These are text descriptions of suggested keyframes, not generated pictures.",
     newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
     supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
@@ -71,7 +71,7 @@ const copy={
     visualIdeaHelp:"Необязательное поле. Текст остаётся на устройстве; в безопасный план попадают только распознанные вымышленные образы.",
     subjectQuestion:"Кто или что в кадре?",subjectChoices:["Орёл","Волк","Только природа"],
     actionQuestion:"Что происходит?",actionChoices:["Летит","Превращается","Путешествует"],
-    referenceTitle:"План стиля и референсов (не готовое AI-видео)",
+    referenceTitle:"План стиля и референсов (не готовое AI-видео)",conceptScene:"Замысел сцены",localScene:"Доступная сцена для монтажа",
     referenceHint:"Это текстовые описания начальных и конечных кадров, а не созданные AI-картинки.",
     newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
     supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
@@ -103,7 +103,7 @@ const copy={
     visualIdeaHelp:"Opcional. El texto permanece en tu dispositivo; el plan seguro solo incluye elementos ficticios reconocidos.",
     subjectQuestion:"¿Quién o qué aparece?",subjectChoices:["Un águila","Un lobo","Solo naturaleza"],
     actionQuestion:"¿Qué sucede?",actionChoices:["Vuela","Se transforma","Viaja"],
-    referenceTitle:"Plan de estilo y referencias (no vídeo IA generado)",
+    referenceTitle:"Plan de estilo y referencias (no vídeo IA generado)",conceptScene:"Idea de la escena",localScene:"Escena disponible para el montaje",
     referenceHint:"Son descripciones de fotogramas iniciales y finales, no imágenes creadas por IA.",
     newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
     supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
@@ -435,7 +435,9 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
           className={css.shot} data-director-shot={shot.number} data-director-shot-selected={selectedShotNumber===shot.number?"true":"false"}>
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
-          <div><strong>{shot.title}</strong><p>{t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
+          <div><strong>{shot.title}</strong>
+            {referencePack.shots[shot.number-1]?.conceptDescription?<p data-director-shot-concept><b>{t.conceptScene}:</b> {referencePack.shots[shot.number-1].conceptDescription}</p>:null}
+            <p data-director-shot-local-scene>{t.localScene}: {t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
             <label className={css.sceneChoice}>
               <span>{t.sceneChoice}</span>
