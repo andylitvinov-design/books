@@ -59,3 +59,17 @@ test("Alchemy/browser routes use semantic readiness with real booking and privac
  const css=read("components/alchemy-soul-landing.module.css");
  assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
 });
+
+test("Public Services real consent flow opens optional contact name disclosure before typing",()=>{
+ const chooser=read("components/contact-channel-chooser.tsx");
+ const helper=read("scripts/helpers/contact-channel-verifier.mjs");
+ assert.match(chooser,/<details className={styles.optionalName}>/);
+ assert.match(chooser,/autoComplete="name"/);
+ assert.match(helper,/const nameDisclosure = form\.locator\('details'\)\.filter\(\{ has: name \}\)/);
+ const reveal=helper.indexOf("await nameDisclosure.locator('summary').click()");
+ const input=helper.indexOf("await name.fill('Public QA Visitor')");
+ assert.ok(reveal>=0 && input>reveal,"optional contact name disclosure must open before actual browser fill");
+ assert.match(helper,/await expect\(name\)\.toBeVisible\(\)/);
+ assert.match(helper,/contactConsent,true/);
+ assert.match(helper,/submissions\.length,1/);
+});
