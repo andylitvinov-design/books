@@ -814,7 +814,19 @@ test('Native installer successor claims old native triggers before retiring dupl
   assert.match(source, /^  android-test-installer:/m);
   assert.match(source, /^  ios-simulator:/m);
   assert.ok(!source.includes('continue-on-error: true'), 'do not hide errors');
-  for (const stage of ['android-test-installer','ios-simulator']) {
-    assert.ok(source.includes('  '+stage+":\n    # Full native builds run on verified production pushes or manual dispatch only.\n    if: ${{ github.event_name != 'pull_request' }}"), stage+' must skip heavy PR builds');
+  // Specialist aggregator requires successful PR jobs; a deliberately
+  // lightweight delegation step keeps both jobs green without running builds.
+  const android=source.slice(source.indexOf('  android-test-installer:'),source.indexOf('  ios-simulator:'));
+  const ios=source.slice(source.indexOf('  ios-simulator:'));
+  for (const section of [android,ios]) {
+    assert.ok(section.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+    const entries=section.split('\n      - ').slice(1);
+    assert.ok(entries.length >= 17, 'expected full set of native steps');
+    assert.ok(entries[0].includes('Verify delegated lightweight PR native coverage'));
+    for (const entry of entries.slice(1)) {
+      assert.ok(entry.includes("if: ${{ github.event_name != 'pull_request' }}") ||
+        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}"),
+        'native build step must never execute on ordinary PR: '+entry.slice(0,110));
+    }
   }
 });
