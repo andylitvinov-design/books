@@ -344,9 +344,20 @@ try {
     await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+    // Reiki is online-only: selecting its topic intentionally switches the
+    // current Toronto mode to online instead of displaying a false empty state.
     await esShowcase.locator('[data-services-kind="reiki"]').click();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
+    // A visitor can still explicitly switch to Toronto afterward. Only that
+    // genuinely unmatched topic+mode combination should display empty state.
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
+    await expect(esShowcase.locator('[data-services-mode="toronto"]')).toHaveAttribute("aria-pressed", "true");
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeHidden();
     await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
