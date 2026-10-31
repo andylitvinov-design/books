@@ -179,3 +179,26 @@ test("twenty-four unique first-party four-shot free compilations use verified st
     /https?:\/\/|\bfetch\s*\(|\baxios\b|\bcheckout\b|\bapiKey\b/i,
     "catalogue must not load external stock, spend credits or upload client inputs");
 });
+
+
+test("approved compact iPhone hierarchy has one working hero Play, safe extras and no overlay",()=>{
+  const source=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const pageCss=read("components/mandala-meditation.module.css");
+  assert.equal((source.match(/data-video-quick-hero-play/g)||[]).length,1);
+  assert.match(source,/data-video-quick-hero-play[\s\S]*?premiumVideoRef\.current/);
+  assert.match(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/);
+  assert.match(source,/data-video-quick-extras/);
+  assert.match(source,/openQuickDetailed\("video-settings"\)/);
+  assert.match(source,/openQuickDetailed\("video-audio"\)/);
+  assert.match(css,/\.quickBrandBar\{display:none\}/);
+  assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.quickOrderBar\{position:static;/);
+  assert.match(css,/@media\(max-width:379px\)\{[\s\S]*?\.quickFormatGrid\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(css,/\.quickBuilder \.quickThemeRail button\{min-height:112px/);
+  assert.match(css,/:global\(\[data-mandala-meditation-page\]\):has\(\.studio\) :global\(\[data-video-diagnostic-banner\]\)\{display:none\}/);
+  assert.doesNotMatch(pageCss,/@media\(max-width:640px\)\{\.slimDiagnostic\{display:none\}\}/);
+  const heroSegment=source.slice(source.indexOf("data-video-quick-hero-play"),
+    source.indexOf('data-video-quick-section="1"'));
+  assert.ok(heroSegment.length>0);
+  assert.doesNotMatch(heroSegment,/new MediaRecorder|fetch\(/);
+});
