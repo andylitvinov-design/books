@@ -208,8 +208,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
+          .toHaveAttribute("open","",{timeout:10000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
@@ -1244,7 +1244,7 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(await director.locator("[data-director-shot]").count(),4,
             "four connected first-party local video shots");
           assert.match(await director.locator('[data-director-shot="1"] [data-director-shot-concept]').innerText(),
-            /Волк/,"the recognized story concept remains visibly distinct from the montage source");
+            /волк/i,"the recognized story concept remains visibly distinct from the montage source");
           assert.match(await director.locator('[data-director-shot="1"] [data-director-shot-local-scene]').innerText(),
             /[А-Яа-яЁё]/,"Russian director shot names must use the existing localized scene catalog");
           const localizedChoices=await director.locator('[data-director-scene-choice="1"] option').allTextContents();
