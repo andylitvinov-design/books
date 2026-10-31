@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildFirstVideoDraft, inferFirstVideoTheme } from "../lib/mandala/first-video-director.mjs";
+import { VIDEO_QUICK_TEMPLATES, getVideoQuickTemplateDraft } from "../lib/mandala/video-quick-templates.mjs";
 const browserSource=()=>readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
 
 test("RU/EN/ES auto classify with stable fallback", () => {
@@ -176,4 +177,58 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
   }));
   assert.equal(exhausted.error,"VIDEO_PROMPT_FREE_QUOTA");
   assert.match(readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8"),/data-first-video-refresh/);
+});
+
+test("six one-tap creative templates compile to real free RU/EN/ES video storyboards",()=>{
+  const ids=["morning-light","gentle-pause","inner-confidence",
+    "heart-connection","quiet-evening","work-possibilities"];
+  assert.deepEqual(VIDEO_QUICK_TEMPLATES.map(template=>template.id),ids);
+  assert.ok(Object.isFrozen(VIDEO_QUICK_TEMPLATES));
+  for(const template of VIDEO_QUICK_TEMPLATES){
+    for(const locale of ["ru","en","es"]){
+      assert.ok(template.title[locale].length>3);
+      assert.ok(template.hint[locale].length>3);
+      const selection=getVideoQuickTemplateDraft(template.id,locale);
+      assert.equal(selection.wish,template.wish[locale]);
+      assert.ok(selection.wish.length>25&&selection.wish.length<800);
+      const draft=buildFirstVideoDraft({locale,wish:selection.wish,...selection.preferences});
+      assert.equal(draft.theme,selection.preferences.theme);
+      assert.equal(draft.aspect,selection.preferences.aspect);
+      assert.equal(draft.mediaSource,"local_canvas");
+      assert.equal(draft.aiMediaGenerated,false);
+      assert.equal(draft.plan.localPreview,true);
+      assert.equal(draft.plan.paidRenderApproved,false);
+      assert.equal(draft.plan.shots.length,selection.preferences.durationSeconds===60?6:4);
+      assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),
+        selection.preferences.durationSeconds);
+      assert.ok(draft.plan.shots.every(shot=>shot.sceneId&&shot.durationSeconds>0));
+    }
+  }
+  const exclusions="Море, волны, темнота";
+  assert.equal(getVideoQuickTemplateDraft("inner-confidence","ru",exclusions).preferences.avoid,exclusions);
+  assert.equal(getVideoQuickTemplateDraft("no-such-template","ru"),null);
+  assert.equal(getVideoQuickTemplateDraft("gentle-pause","unknown").wish,
+    VIDEO_QUICK_TEMPLATES.find(item=>item.id==="gentle-pause").wish.en);
+  assert.equal(getVideoQuickTemplateDraft("gentle-pause","en","x".repeat(500)).preferences.avoid.length,140);
+});
+
+test("one-tap template buttons reuse the canonical preview/export, not a duplicate editor",()=>{
+  const ui=readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8");
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-first-video-start.module.css",import.meta.url),"utf8");
+  const templateSource=readFileSync(new URL("../lib/mandala/video-quick-templates.mjs",import.meta.url),"utf8");
+  assert.match(ui,/data-first-video-templates/);
+  assert.match(ui,/data-first-video-template=\{template\.id\}/);
+  assert.match(ui,/aria-pressed=\{selectedTemplateId===template\.id\}/);
+  assert.match(ui,/getVideoQuickTemplateDraft\(templateId, locale, prefs\.avoid\)/);
+  assert.match(ui,/onWishChange\(choice\.wish\)/);
+  assert.match(ui,/apply\(choice\.wish, nextPrefs, "", 0\)/);
+  assert.match(studio,/onApply=\{applyFirstVideoDraft\}/);
+  assert.match(studio,/setCinematicPlan\(draft\.plan\)/);
+  assert.match(studio,/new MediaRecorder\(/);
+  assert.match(css,/\.templateStrip\{display:flex;gap:7px;overflow-x:auto/);
+  assert.match(css,/\.templateCard\[aria-pressed="true"\]/);
+  assert.doesNotMatch(templateSource,/\bfetch\s*\(|XMLHttpRequest|navigator\.sendBeacon|localStorage|checkout|xpDebit/);
+  assert.ok(ui.indexOf("data-first-video-wish")<ui.indexOf("data-first-video-templates"));
+  assert.ok(ui.indexOf("data-first-video-templates")<ui.indexOf("data-first-video-filters"));
 });
