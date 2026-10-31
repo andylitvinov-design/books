@@ -72,10 +72,19 @@ test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
   assert.match(css, /\.panel \.apply \{/);
   assert.match(css, /\.panel \.reset \{/);
   assert.match(css, /\.panel \.sector \{/);
-  assert.match(css, /\.formatFieldset \{/);
-  assert.match(css, /\.formatChoice\[data-checked="true"\]/);
   assert.match(mainCss, /\.page:has\(\[data-support-goal-filter\]\) \.experience/);
   assert.match(editor, /data-support-goal-actions/);
+  assert.doesNotMatch(editor, /data-support-goal-formats|onSelectedFormatsChange|selectedFormats\.includes/);
+  assert.doesNotMatch(css, /\.formatFieldset|\.formatChoice|\.formatGrid/);
+  assert.match(editor, /recommendationFormats: \[\.\.\.GOAL_RECOMMENDATION_FORMATS\]/);
+  assert.match(editor, /data-support-goal-cabinet-cta/);
+  assert.match(editor, /data-support-goal-cabinet-save/);
+  assert.match(css, /\.cabinetCard \{ display: grid;/);
+  assert.match(css, /\.panel \.cabinetButton \{/);
+  assert.match(client, /onSaveToCabinet=\{saveGoalProfileToCabinet\}/);
+  const footer = editor.split('<footer className={styles.actions}')[1] ?? '';
+  assert.ok(footer.indexOf('data-support-goal-cabinet-cta') > footer.indexOf('data-support-goal-reset'));
+  assert.ok(footer.indexOf('data-support-goal-cabinet-cta') > footer.indexOf('data-support-goal-apply'));
   assert.match(css, /prefers-reduced-motion/);
   for (const sector of ["energy","money","love","meaning"]) {
     const section = editor.split("  " + sector + ": {")[1]?.split("  },")[0];
@@ -103,12 +112,6 @@ test("four goal-filter sectors merge Goals into Meaning in EN/RU/ES", () => {
   assert.match(editor, /onSave\(sector, snapshot\)/);
   assert.match(editor, /setDirty\(previous/);
   assert.match(editor, /setDrafts\(\{\}\); setAccepted\(\{\}\); setDirty\(\{\}\)/);
-  assert.match(editor, /onSelectedFormatsChange\(\[\.\.\.GOAL_RECOMMENDATION_FORMATS\]\)/);
-  assert.match(editor, /data-support-goal-formats/);
-  assert.match(editor, /GOAL_RECOMMENDATION_FORMATS\.map\(id/);
-  assert.match(editor, /checked=\{selectedFormats\.includes\(id\)\}/);
-  assert.match(css, /\.formatGrid \{ display: grid;/);
-  assert.match(css, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\); gap: 5px/);
   assert.match(editor, /currency,? \}\s*:\s*\{\}/);
 });
 test("all former Goals questions, tasks and metrics live inside the single Meaning sector", () => {
@@ -138,7 +141,6 @@ test("mobile readability: narrower categories and larger legible controls", () =
   assert.match(css, /font-size: clamp\(12px,3\.25vw,14px\)/);
   assert.match(css, /\.check \{ min-height: 47px;/);
   assert.match(css, /\.check input \{ width: 18px; height: 18px;/);
-  assert.match(css, /\.formatChoice \{ min-height: 47px;/);
   assert.match(css, /\.sharedCheckinTop strong \{ font-size: clamp\(13px,3\.55vw,15px\)/);
   // The assessment still shares one state with the goal editor.
   assert.match(editor, /data-support-goal-checkin-input value=\{currentCheckin\}/);
@@ -169,11 +171,15 @@ test("all published goal formats stay available, with recommendations gated behi
   assert.match(client, /goalSectorCheckinKey\[sector\]/);
   assert.match(client, /checkinOrder: CheckinArea\[\]/);
   assert.match(client, /onCheckinChange\(id, Number\(event\.target\.value\)\)/);
+  // These labels belonged to the owner-removed fourth checkbox step, not to
+  // the automatic nine-format catalogue. Keep the real format IDs and guide
+  // routes above, and assert only currently rendered localized CTA labels.
   for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones",
-    "Консультации и сессии", "Видео и медитации", "Видеомандалы",
-    "Consultations & sessions", "Consultas y sesiones"]) {
+    "Save your data and take tests", "Сохранить данные и пройти тесты",
+    "Guardar datos y hacer pruebas"]) {
     assert.ok(editor.includes(text),text);
   }
+  assert.doesNotMatch(editor, /formatTitle:|formatHelp:|formatLabels:|data-support-goal-formats/);
   assert.doesNotMatch(client, /92% match|Найдено 32|Found 32/);
 });
 

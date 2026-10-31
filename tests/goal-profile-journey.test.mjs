@@ -175,7 +175,7 @@ test('saved goal check-in is read only under account identity; conversion remain
   assert.match(editor,/data-goal-checkin-control=\{key\}/)
   assert.match(editor,/goalCheckin: values\.every/)
   assert.match(editor,/measuredAt: new Date\(\)\.toISOString\(\)/)
-  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'revision'\]\)/)
+  assert.match(backend,/onlyKeys\(input, \['version', 'targets', 'details', 'goalCheckin', 'supportProfile', 'revision'\]\)/)
   assert.match(backend,/openSealed/)
   assert.match(backend,/seal\(/)
   assert.match(backend,/account_id=\$1/)

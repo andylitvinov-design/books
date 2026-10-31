@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { flushSync } from "react-dom";
-import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, LockKeyhole, RotateCcw, Sparkles, UserRound, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
@@ -184,16 +184,15 @@ const ui = {
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
+    cabinetTitle: "Build your free psychological profile",
+    cabinetText: "Save your Now → Want ratings privately, then choose free self-reflection tests.",
+    cabinetButton: "Save your data and take tests",
+    cabinetButtonSub: "(Create your psychological profile for free)",
+    cabinetNote: "Google sign-in saves privately. Free tests follow; no booking or mailing list.",
+    cabinetBusy: "Opening your account…",
+    cabinetFailed: "Could not open Google sign-in. Try again; your choices are still here.",
     checkinTitle: "Overall now",
     checkinHint: "Same rating as the top-left check-in",
-    formatTitle: "4. What would you like to receive?",
-    formatHelp: "All formats are included. Uncheck anything you don't want to see.",
-    formatLabels: {
-      meditation: "Videos & meditations", consultation: "Consultations & sessions",
-      tests: "Tests", courses: "Courses & programs", talismans: "Talismans",
-      healing: "Reiki & energy support", masters: "Masters",
-      initiations: "Initiations", mandala: "Video mandalas",
-    },
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
   },
   ru: {
@@ -205,16 +204,15 @@ const ui = {
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
+    cabinetTitle: "Ваш бесплатный психологический профиль",
+    cabinetText: "Сохраним ваши оценки «Сейчас → Хочу» приватно, затем предложим бесплатные психологические тесты.",
+    cabinetButton: "Сохранить данные и пройти тесты",
+    cabinetButtonSub: "(создать свой психологический профиль бесплатно)",
+    cabinetNote: "Для приватного сохранения нужен вход через Google. Тесты бесплатны; заявка не создаётся.",
+    cabinetBusy: "Открываем кабинет…",
+    cabinetFailed: "Не удалось начать вход через Google. Повторите попытку — выбор остаётся на странице.",
     checkinTitle: "Общая оценка сейчас",
     checkinHint: "Связана с оценкой вверху слева",
-    formatTitle: "4. Что включить в рекомендации?",
-    formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
-    formatLabels: {
-      meditation: "Видео и медитации", consultation: "Консультации и сессии",
-      tests: "Тесты", courses: "Курсы и программы", talismans: "Талисманы",
-      healing: "Рейки и энергоподдержка", masters: "Мастера",
-      initiations: "Инициации", mandala: "Видеомандалы",
-    },
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
   },
   es: {
@@ -226,16 +224,15 @@ const ui = {
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
+    cabinetTitle: "Crea tu perfil psicológico gratuito",
+    cabinetText: "Guarda tus valoraciones Ahora → Quiero en privado y después elige pruebas gratuitas.",
+    cabinetButton: "Guardar datos y hacer pruebas",
+    cabinetButtonSub: "(crear gratis tu perfil psicológico)",
+    cabinetNote: "Google permite guardar los datos en privado. Pruebas gratuitas; sin solicitudes.",
+    cabinetBusy: "Abriendo tu cuenta…",
+    cabinetFailed: "No se pudo iniciar sesión con Google. Vuelve a intentarlo; tus datos siguen aquí.",
     checkinTitle: "Valoración general actual",
     checkinHint: "La misma puntuación del bloque superior izquierdo",
-    formatTitle: "4. ¿Qué quieres en las recomendaciones?",
-    formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
-    formatLabels: {
-      meditation: "Vídeos y meditaciones", consultation: "Consultas y sesiones",
-      tests: "Pruebas", courses: "Cursos y programas", talismans: "Talismanes",
-      healing: "Reiki y apoyo energético", masters: "Guías",
-      initiations: "Iniciaciones", mandala: "Mandala en vídeo",
-    },
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
   },
 } as const;
@@ -258,8 +255,8 @@ type Props = {
   initial: GoalSelection | null;
   preferredSector?: GoalSector;
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
-  selectedFormats: GoalRecommendationFormat[];
-  onSelectedFormatsChange: (formats: GoalRecommendationFormat[]) => void;
+  onSaveToCabinet: (profile: { scores: Record<GoalCheckinKey, number>;
+    savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>; activeSector: GoalSector }) => Promise<void>;
   onSave: (sector: GoalSector, value: GoalSectorSnapshot) => void;
   onApply: (value: GoalSelection) => void;
   onReset: () => void;
@@ -268,7 +265,7 @@ type Props = {
 
 export function HolisticSupportGoalFilter({
   locale, scores, onCheckinChange, initial, preferredSector, savedSectors,
-  selectedFormats, onSelectedFormatsChange, onSave, onApply, onReset, onClose,
+  onSaveToCabinet, onSave, onApply, onReset, onClose,
 }: Props) {
   const t = ui[locale];
   const initialSector = preferredSector ?? initial?.sector ?? "energy";
@@ -283,6 +280,8 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  const [cabinetBusy, setCabinetBusy] = useState(false);
+  const [cabinetError, setCabinetError] = useState(false);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
@@ -366,12 +365,23 @@ export function HolisticSupportGoalFilter({
     const all = { ...accepted, [sector]: snapshot };
     onSave(sector, snapshot);
     onApply({ ...snapshot, sector, savedSectors: all,
-      recommendationFormats: [...selectedFormats] });
+      recommendationFormats: [...GOAL_RECOMMENDATION_FORMATS] });
+  }
+  async function saveToCabinet() {
+    if (cabinetBusy) return;
+    const snapshot = snapshotCurrent();
+    const all = { ...accepted, ...drafts, [sector]: snapshot };
+    setCabinetError(false); setCabinetBusy(true);
+    try {
+      onSave(sector, snapshot);
+      await onSaveToCabinet({ scores, savedSectors: all, activeSector: sector });
+    } catch {
+      setCabinetError(true);
+    } finally { setCabinetBusy(false); }
   }
   function reset() {
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
     setDrafts({}); setAccepted({}); setDirty({});
-    onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);
     onReset();
   }
   return (
@@ -502,23 +512,6 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.next} data-support-goal-next
             onClick={nextSector}>{t.next}<ArrowRight size={18} aria-hidden="true" /></button>
         </div>
-        <fieldset className={styles.formatFieldset} data-support-goal-formats>
-          <legend>{t.formatTitle}</legend>
-          <p className={styles.formatHelp}>{t.formatHelp}</p>
-          <div className={styles.formatGrid}>
-            {GOAL_RECOMMENDATION_FORMATS.map(id => (
-              <label key={id} className={styles.formatChoice}
-                data-support-goal-format={id} data-checked={selectedFormats.includes(id)}>
-                <input type="checkbox" checked={selectedFormats.includes(id)}
-                  onChange={() => onSelectedFormatsChange(selectedFormats.includes(id)
-                    ? selectedFormats.filter(item => item !== id)
-                    : GOAL_RECOMMENDATION_FORMATS.filter(item =>
-                        item === id || selectedFormats.includes(item)))} />
-                <span>{t.formatLabels[id]}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <button type="submit" className={styles.apply} data-support-goal-apply>
           <Sparkles size={22} aria-hidden="true" /><span>{t.show}<small>{t.original}</small></span>
         </button>
@@ -527,6 +520,24 @@ export function HolisticSupportGoalFilter({
         </button>
         {Object.values(accepted).some(Boolean) ? <p className={styles.savedNote}
           role="status">{t.savedNote}</p> : null}
+        <section className={styles.cabinetCard} data-support-goal-cabinet-cta aria-label={t.cabinetTitle}>
+          <div className={styles.cabinetIcon}><UserRound size={24} aria-hidden="true" /></div>
+          <div className={styles.cabinetCopy}>
+            <h3>{t.cabinetTitle}</h3>
+            <p>{t.cabinetText}</p>
+          </div>
+          <button type="button" className={styles.cabinetButton} data-support-goal-cabinet-save
+            disabled={cabinetBusy} onClick={saveToCabinet}>
+            <LockKeyhole size={18} aria-hidden="true" />
+            <span className={styles.cabinetButtonText}>
+              <strong>{cabinetBusy ? t.cabinetBusy : t.cabinetButton}</strong>
+              {!cabinetBusy ? <small>{t.cabinetButtonSub}</small> : null}
+            </span>
+            {!cabinetBusy ? <ArrowRight size={19} aria-hidden="true" /> : null}
+          </button>
+          <small>{t.cabinetNote}</small>
+          {cabinetError ? <p className={styles.cabinetError} role="alert">{t.cabinetFailed}</p> : null}
+        </section>
       </footer>
     </form>
   );
