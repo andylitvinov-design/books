@@ -275,8 +275,8 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
 test("single Hypno phrase editor and large-type four-group effects share one mobile Studio",()=>{
  const src=read("components/mandala-free-video-studio.tsx");
  assert.equal((src.match(/<MandalaHypnoCompact /g)||[]).length,1);
- assert.equal((src.match(/<MandalaHypnocorrectionMobile/g)||[]).length,2,
-   "import and one component render");
+ assert.equal((src.match(/<MandalaHypnocorrectionMobile/g)||[]).length,1,
+   "one mobile effects panel, never a duplicate");
  assert.match(src,/onOpenPhraseEditor=\{\(\)=>openQuickDetailed\("video-hypnosis"\)\}/);
  assert.match(src,/data-video-hypnocorrection-panel/);
  assert.equal((src.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,4);
