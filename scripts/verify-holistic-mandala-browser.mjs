@@ -106,6 +106,54 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
+        // The new first-video flow is intentionally ABOVE all six quick tabs.
+        // In both real engines, export the actual movie, not just a static prompt.
+        const firstStart=page.locator("[data-first-free-video]");
+        await firstStart.waitFor({state:"visible",timeout:12000});
+        assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
+        assert.equal(await firstStart.locator("[data-first-video-filters]").getAttribute("open"),null);
+        if(locale==="ru" && width===390){
+          const firstPage=await context.newPage();
+          try{
+            const firstResponse=await firstPage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+            assert.equal(firstResponse?.status(),200);
+            const firstForm=firstPage.locator("[data-first-free-video]");
+            await firstForm.locator("[data-first-video-wish]")
+              .fill("Хочу спокойный рассвет у моря и мягкую дорогу к новой цели");
+            await firstPage.waitForFunction(()=>{
+              const prompt=document.querySelector("[data-first-video-prompt]");
+              return prompt?.value?.length > 80;
+            },undefined,{timeout:15000});
+            const safePrompt=await firstForm.locator("[data-first-video-prompt]").inputValue();
+            assert.match(safePrompt,/сцен|свет|море|пейзаж/i);
+            const filter=firstForm.locator("[data-first-video-filters]");
+            await filter.locator("summary").click();
+            await expect(filter).toHaveAttribute("open","",{timeout:10000});
+            await firstForm.locator("[data-first-video-aspect]").selectOption("portrait");
+            const renderPrompt=await firstForm.locator("[data-first-video-prompt]").inputValue();
+            assert.match(renderPrompt,/9:16/);
+            const create=firstForm.locator("[data-first-video-generate]");
+            await create.click({timeout:15000});
+            const download=firstPage.locator("[data-mandala-video-download]");
+            await download.waitFor({state:"visible",timeout:85000});
+            const [saved]=await Promise.all([
+              firstPage.waitForEvent("download",{timeout:20000}),
+              download.click(),
+            ]);
+            const bytes=await bufferFromStream(await saved.createReadStream());
+            assert.ok(bytes.length>10000,"first free video must export encoded moving media");
+            const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
+              "-show_entries","stream=codec_type,width,height",
+              "-of","default=noprint_wrappers=1","pipe:0"],
+              {input:bytes,maxBuffer:1024*1024});
+            assert.equal(probe.status,0,"first free export must decode as a real movie");
+            assert.match(probe.stdout.toString(),/codec_type=video/);
+            assert.match(probe.stdout.toString(),/width=720|width=1080/);
+            assert.match(probe.stdout.toString(),/height=1280|height=1920/);
+          }finally{await firstPage.close();}
+        }
 
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
