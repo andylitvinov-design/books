@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const TARGET = 'codex/public-book-library';
 const APP_UI = /^(?:components\/(?:profile-[\w.-]+\.(?:tsx|jsx|js|css)|my-course[\w.-]*\.(?:tsx|jsx|js|css)|academy-video-library-client\.tsx)|tests\/(?:profile-(?:four-domains|assessment-overview|compact-design|integrated-summary)|cabinet-today|personal-analysis-cabinet|free-course-banner|course-immersive-start-ui)\.test\.mjs|tests\/course-banner\/browser\.mjs)$/;
 const BANNER = /^(?:components\/(?:my-course|academy-video-library-client)|tests\/(?:my-course|free-course-banner|course-immersive-start-ui|course-banner\/browser))/;
-const CI_ONLY_CONFIG = /^(?:\.github\/workflows\/(?:hh-app-r1|hh-app-browser|hh-free-review-live-mobile|hh-pr-sweep-guard|holistic-support-mandala|ia-v2|site-video-browser)\.yml|scripts\/ci-heavy-impact\.mjs|tests\/(?:ci-heavy-impact|ci-heavy-draft-policy|pr-fast-lane)\.test\.mjs)$/;
+const CI_ONLY_CONFIG = /^(?:\.github\/workflows\/(?:hh-app-r1|hh-app-browser|hh-free-review-live-mobile|hh-pr-sweep-guard|holistic-support-mandala|opora-module-ci|ia-v2|site-video-browser)\.yml|scripts\/ci-heavy-impact\.mjs|tests\/(?:ci-heavy-impact|ci-heavy-draft-policy|pr-fast-lane)\.test\.mjs)$/;
 const FREE_REVIEW_UNIT = new Set(['tests/free-diagnosis-three-offers.test.mjs',
   'tests/personal-testimonials-prefetch.test.mjs', 'tests/private-material-handoff.test.mjs']);
 const MANDALA_UNIT = new Set([
@@ -63,8 +63,12 @@ export function decideHeavyImpact(mode, changed) {
   }
   const testsOnly = strictlyModified && changed.every(file =>
     (mode === 'free-review' ? FREE_REVIEW_UNIT.has(file.filename) : MANDALA_UNIT.has(file.filename)));
-
-  return { browser: !testsOnly };
+  // Core and actionlint own the current CI workflow policies. Do not allocate
+  // redundant full browser matrices for edits restricted to these policy files.
+  const ciOnly = Array.isArray(changed) && changed.length > 0 && changed.length <= 3000 &&
+    changed.every(file => file && ['modified', 'added'].includes(file.status) &&
+      typeof file.filename === 'string' && CI_ONLY_CONFIG.test(file.filename));
+  return { browser: !(testsOnly || ciOnly) };
 }
 
 async function requestJson(path) {

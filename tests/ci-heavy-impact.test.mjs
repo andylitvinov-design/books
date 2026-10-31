@@ -65,6 +65,27 @@ test('App Browser keeps one core Chromium PR job and makes full old matrix manua
   assert.match(yaml, /Initialize empty synthetic database/);
 });
 
+test('CI-only policy edits skip unrelated App, Mandala and Free Review browser matrices', () => {
+  const safe = [
+    one('scripts/ci-heavy-impact.mjs')[0],
+    one('.github/workflows/opora-module-ci.yml')[0],
+    one('.github/workflows/hh-pr-sweep-guard.yml')[0],
+    one('tests/ci-heavy-impact.test.mjs','added')[0],
+  ];
+  assert.deepEqual(decideHeavyImpact('app-r1',safe),
+    {full_app:false,database:false,banner:false,profile:false});
+  for(const mode of ['mandala','free-review']) {
+    assert.deepEqual(decideHeavyImpact(mode,safe),{browser:false});
+    assert.deepEqual(decideHeavyImpact(mode,[
+      ...safe,{filename:'components/mandala-free-video-studio.tsx',status:'modified'}
+    ]),{browser:true});
+    assert.deepEqual(decideHeavyImpact(mode,[
+      one('scripts/ci-heavy-impact.mjs','removed')[0]
+    ]),{browser:true});
+    assert.deepEqual(decideHeavyImpact(mode,null),{browser:true});
+  }
+});
+
 test('Mandala: test-only changes keep contracts but avoid rebuilding the same site and installing two browsers', () => {
   assert.deepEqual(decideHeavyImpact('mandala', one('tests/mandala-free-video.test.mjs')),
     { browser: false });
