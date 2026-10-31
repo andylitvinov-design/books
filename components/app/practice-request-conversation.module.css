@@ -91,3 +91,25 @@
  .chat[data-inline="true"] .compose>button{min-height:44px;width:auto}
  .chat[data-inline="true"] .timeline{max-height:45dvh}
 }
+
+/* Approved order chat: only history scrolls; genuine composer stays visible. */
+@media(max-width:700px){
+ .chat[data-inline="true"]{display:flex;flex-direction:column;flex:1;
+  min-height:0;max-height:100%;overflow:hidden;padding:0 2px 3px}
+ .chat[data-inline="true"] .initial{flex:0 1 auto;min-height:0;max-height:58px;
+  overflow-y:auto;margin:0 0 4px;padding:8px 10px}
+ .chat[data-inline="true"] .tools{flex:none;min-height:31px;margin:0 0 4px;
+  display:flex;align-items:center}
+ .chat[data-inline="true"] .timeline{flex:1 1 auto;min-height:20px;
+  max-height:none;overflow:auto;overscroll-behavior:contain;padding:6px 2px}
+ .chat[data-inline="true"] .compose{flex:0 0 auto;position:relative;z-index:1;
+  max-height:min(48dvh,220px);overflow-y:auto;overscroll-behavior:contain;
+  padding:7px 1px 3px;background:#fffdf9;gap:6px}
+ .chat[data-inline="true"] .compose>label:not(.audioPick){position:absolute;
+  width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+ .chat[data-inline="true"] .compose textarea{height:44px;min-height:44px;
+  max-height:90px;resize:vertical}
+ .chat[data-inline="true"] .audioComposer{flex:none;gap:5px;align-items:center}
+ .chat[data-inline="true"] .compose>button{min-height:44px;padding:8px 15px}
+ .chat[data-inline="true"] .audioPick{height:44px;min-height:44px}
+}

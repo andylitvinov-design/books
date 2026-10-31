@@ -1,5 +1,5 @@
 'use client'
-import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useState} from 'react'
+import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
@@ -100,6 +100,7 @@ export default function MessagesOrdersClients({locale='en',children}){
   const [clientCount,setClientCount]=useState(0)
   const [clientDetailOpen,setClientDetailOpen]=useState(false)
   const [selectedId,setSelectedId]=useState('')
+  const orderChatRef=useRef(null)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
     setSection(q.get('section')==='clients'||q.has('to')||q.has('tab')?'clients':'orders')
@@ -129,6 +130,50 @@ export default function MessagesOrdersClients({locale='en',children}){
         row.remoteBooking?.serviceTitle].some(value=>String(value||'').toLocaleLowerCase().includes(term))))
   },[orders,filter,search,locale,status])
   const selected=orders.find(order=>order.id===selectedId)||null
+  // The iPhone keyboard changes visualViewport, not always CSS dvh. Keep the
+  // real private composer within the visible area, above the fixed app dock.
+  useEffect(()=>{
+    const pane=orderChatRef.current
+    if(!pane||section!=='orders'||!selectedId)return
+    let frameId=0
+    const update=()=>{
+      if(!window.matchMedia('(max-width:700px)').matches){
+        pane.style.removeProperty('--hh-order-chat-height')
+        return
+      }
+      const viewport=window.visualViewport
+      const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const editing=pane.contains(document.activeElement)&&
+        /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
+      const navTop=nav&&!editing&&getComputedStyle(nav).display!=='none'
+        ?nav.getBoundingClientRect().top:bottom
+      const available=Math.max(205,Math.floor(Math.min(bottom,navTop)-
+        pane.getBoundingClientRect().top-7))
+      const cap=Math.max(205,Math.floor(viewport?.height||window.innerHeight))
+      pane.style.setProperty('--hh-order-chat-height',Math.min(available,cap)+'px')
+    }
+    const schedule=()=>{
+      window.cancelAnimationFrame(frameId)
+      frameId=window.requestAnimationFrame(update)
+    }
+    schedule()
+    const viewport=window.visualViewport
+    for(const event of ['resize','scroll'])window.addEventListener(event,schedule,{passive:true})
+    viewport?.addEventListener('resize',schedule)
+    viewport?.addEventListener('scroll',schedule)
+    document.addEventListener('focusin',schedule)
+    document.addEventListener('focusout',schedule)
+    return()=>{
+      window.cancelAnimationFrame(frameId)
+      for(const event of ['resize','scroll'])window.removeEventListener(event,schedule)
+      viewport?.removeEventListener('resize',schedule)
+      viewport?.removeEventListener('scroll',schedule)
+      document.removeEventListener('focusin',schedule)
+      document.removeEventListener('focusout',schedule)
+      pane.style.removeProperty('--hh-order-chat-height')
+    }
+  },[section,selectedId,ordersData?.accountId])
   function chooseSection(value){
     setSection(value)
     const url=new URL(window.location.href)
@@ -170,7 +215,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
         <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
-      <img src="/images/holistic-house/ideas-zen-landscape.svg" alt="" aria-hidden="true"
+      <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>}
     <div className={styles.sections} role="tablist" aria-label={t.title}>
@@ -235,7 +280,7 @@ export default function MessagesOrdersClients({locale='en',children}){
         <p className={styles.notice}>{locale==='ru'?'По этому запросу заказов не найдено.':
           locale==='es'?'No se encontraron pedidos.':'No matching orders.'}</p>}
       {!loading&&!error&&!selected&&visible.map(order=>
-        <button key={order.id} className={styles.order} type="button"
+        <button key={order.id} data-order-card={order.id} className={styles.order} type="button"
           onClick={()=>chooseOrder(order.id)} aria-label={t.open+': '+titleOf(order,locale)}>
           <img src={imageOf(order,locale)} alt="" width="88" height="92" loading="lazy"/>
           <span className={styles.orderText}>
@@ -275,7 +320,7 @@ export default function MessagesOrdersClients({locale='en',children}){
           <p><Clock3 size={15} aria-hidden="true"/>{dateOf(selected.createdAt,locale)}</p>
           <p className={styles.note}><Bell size={15} aria-hidden="true"/>{t.paymentInfo}</p>
         </details>
-        <div className={styles.conversation}>
+        <div className={styles.conversation} ref={orderChatRef}>
           <h3><MessageCircle size={19} aria-hidden="true"/>{t.chat}</h3>
           <PracticeRequestConversation key={selected.id} requestId={selected.id} accountId={ordersData.accountId}
             locale={locale} inline autoOpen initialMessage={selected.message||''}

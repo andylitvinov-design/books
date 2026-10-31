@@ -306,3 +306,33 @@
  border:1px solid #e7dfd5;background:#fffefa;color:#1a816c;text-decoration:none;
  border-radius:50%;box-shadow:0 3px 10px #5845330a}
 .notificationSettings:focus-visible{outline:3px solid #208468;outline-offset:3px}
+
+/* Approved phone layout: the order chat is a bounded panel above the mobile dock. */
+.root .introArt{object-fit:contain;background:transparent;opacity:1;filter:none}
+@media(max-width:700px){
+ .root[data-detail-open="true"] .head{padding:2px 2px 7px}
+ .root[data-detail-open="true"] .head h1{font-size:24px;margin:0}
+ .root[data-detail-open="true"] .head p{font-size:11px}
+ .root[data-detail-open="true"] .sections{margin-bottom:5px}
+ .root[data-detail-open="true"] .sections button{min-height:42px;padding:5px 8px;border-radius:12px}
+ .root[data-detail-open="true"] .sections button strong{font-size:12px}
+ .root[data-detail-open="true"] .detail{gap:6px}
+ .root[data-detail-open="true"] .back{min-height:31px;padding:3px 1px;font-size:12px}
+ .root[data-detail-open="true"] .detailCard{padding:8px;gap:9px;border-radius:14px}
+ .root[data-detail-open="true"] .detailCard img{width:66px;height:66px;border-radius:11px}
+ .root[data-detail-open="true"] .detailCard h2{font-size:14px}
+ .root[data-detail-open="true"] .detailCard p,.root[data-detail-open="true"] .detailCard strong{font-size:11px}
+ .root[data-detail-open="true"] .factBox summary{min-height:38px;padding:7px 11px}
+ .root[data-section="orders"][data-detail-open="true"] .conversation{
+  display:flex;flex-direction:column;min-height:0;
+  height:var(--hh-order-chat-height,clamp(260px,49dvh,520px));
+  overflow:hidden;padding:8px;border-radius:16px}
+ .root[data-section="orders"][data-detail-open="true"] .conversation>h3{
+  flex:none;font-size:13px;margin:0 0 4px}
+ .root[data-detail-open="true"] .materials{padding:10px}
+ .root[data-detail-open="true"] .detail>.note{font-size:11px;margin:3px 0}
+}
+@media(max-width:354px){
+ .root[data-detail-open="true"] .detailCard img{width:58px;height:61px}
+ .root[data-detail-open="true"] .sections button{gap:4px}
+}

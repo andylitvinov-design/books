@@ -9,6 +9,8 @@ on:
       - 'components/app/messages-hub.*'
       - 'components/app/practice-request-conversation.*'
       - 'scripts/verify-messages-wellness-browser.mjs'
+      - 'components/sitewide-antistress-banner.tsx'
+      - 'public/images/holistic-house/messenger-zen-stones.svg'
       - '.github/workflows/hh-messages-wellness-browser.yml'
 permissions:
   contents: read
@@ -18,7 +20,7 @@ concurrency:
 jobs:
   synthetic-browser:
     runs-on: ubuntu-24.04
-    timeout-minutes: 24
+    timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       HH_MESSAGES_QA_ORIGIN: http://127.0.0.1:3127
@@ -33,6 +35,8 @@ jobs:
         run: |
           node --check scripts/verify-messages-wellness-browser.mjs
           npx --no-install tsc --noEmit --pretty false
+      - name: Build production Next.js before browser tests
+        run: npm run build
       - name: Install synthetic browser engines
         run: |
           mkdir -p /tmp/hh-messages-visual-tools
@@ -41,7 +45,7 @@ jobs:
       - name: Actual iPhone-sized Orders / Clients / request conversations
         run: |
           mkdir -p artifacts/messages-wellness
-          npx next dev --hostname 127.0.0.1 --port 3127 >/tmp/hh-messages-visual-next.log 2>&1 &
+          npx next start --hostname 127.0.0.1 --port 3127 >/tmp/hh-messages-visual-next.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 120); do
@@ -53,15 +57,9 @@ jobs:
             fi
             sleep 2
           done
-          # Precompile all three public locale pages *before* Chromium/WebKit.
-          # Next dev on-demand builds can otherwise interrupt the first ES
-          # navigation and give a false missing-order timeout.
+          # Production build has no on-demand locale recompilation / HMR.
           for locale in en es; do
-            if ! curl --silent --show-error --fail --max-time 90 "http://127.0.0.1:3127/$locale/app/messages" >/dev/null; then
-              echo "Messages locale route unavailable: $locale" >&2
-              tail -80 /tmp/hh-messages-visual-next.log
-              exit 1
-            fi
+            curl --silent --show-error --fail --max-time 35 "http://127.0.0.1:3127/$locale/app/messages" >/dev/null
           done
           node scripts/verify-messages-wellness-browser.mjs
       - name: Preserve synthetic rendered screenshots only

@@ -70,36 +70,20 @@ for(const browserType of [chromium,webkit]){
     await root.waitFor({state:'visible',timeout:40000})
     const orderTab=root.getByRole('tab',{name:new RegExp(labels[locale].orders)})
     await orderTab.waitFor({state:'visible',timeout:30000})
-    const orderCard=root.locator('#hh-orders-panel > button')
-      .filter({hasText:labels[locale].name}).first()
-    try { await orderCard.waitFor({state:'visible',timeout:18000}) }
-    catch (firstError) {
-      // Next dev may recompile locale bundles and restart navigation once.
-      // Never hide a missing order: capture the true rendered state, retry
-      // exactly once, and fail with evidence if the same contract is still red.
+    const orderCard=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
+    try{await orderCard.waitFor({state:'visible',timeout:35000})}
+    catch(error){
       const snapshot=await page.evaluate(()=>({
         url:location.pathname+location.search,
-        section:document.querySelector('[data-orders-clients-hub]')?.getAttribute('data-section'),
         visible:document.querySelector('#hh-orders-panel')?.innerText?.slice(0,900),
-        tabs:[...document.querySelectorAll('[data-orders-clients-hub] [role="tab"]')]
-          .map(node=>({text:node.textContent,selected:node.getAttribute('aria-selected')})),
       })).catch(()=>({unavailable:true}))
-      console.error('MESSAGES_SYNTHETIC_ORDER_DIAGNOSTIC',key,JSON.stringify(snapshot),
-        'pageErrors',JSON.stringify(errors))
-      if(snapshot.unavailable===true){
-        // Dev locale recompilation can leave the page mid-navigation.
-        // Retry the same real route ONCE; all assertions remain mandatory.
-        const retried=await page.goto(origin+'/'+locale+'/app/messages',
-          {waitUntil:'domcontentloaded',timeout:90000})
-        assert.equal(retried?.status(),200,key+' recompilation retry route')
-        await root.waitFor({state:'visible',timeout:40000})
-        await orderTab.waitFor({state:'visible',timeout:30000})
-      } else {
-        if(snapshot.section!=='orders'||!snapshot.visible)throw firstError
-        await page.reload({waitUntil:'domcontentloaded',timeout:90000})
-      }
-      await orderCard.waitFor({state:'visible',timeout:25000})
+      console.error('MESSAGES_BROWSER_DIAGNOSTIC',key,JSON.stringify(snapshot),
+        'errors',JSON.stringify(errors))
+      await page.screenshot({path:dir+'/'+key+'-failure.png',fullPage:false}).catch(()=>{})
+      throw error
     }
+    assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,
+      key+' private Messenger must not show marketing ribbon')
     assert.equal(await orderTab.getAttribute('aria-selected'),'true',key+' order default')
     const metrics=await page.evaluate(()=>{
       const doc=document.documentElement
@@ -110,7 +94,7 @@ for(const browserType of [chromium,webkit]){
         heading:box(root.querySelector('header')),intro:box(root.querySelector('[class*="introCard"]')),
         tabs:box(root.querySelector('[role="tablist"]')),
         search:box(root.querySelector('input[type="search"]')),
-        card:box(root.querySelector('#hh-orders-panel > button'))}
+        card:box(root.querySelector('[data-order-card]'))}
     })
     assert.ok(metrics.scrollWidth<=metrics.clientWidth+3,key+' horizontal overflow '+JSON.stringify(metrics))
     assert.ok(metrics.heading.bottom<=metrics.intro.top+4&&
@@ -133,13 +117,23 @@ for(const browserType of [chromium,webkit]){
     await customer.getByRole('button',{name:/Synthetic Client/}).click()
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
-    const orderButton=root.locator('#hh-orders-panel > button').filter({hasText:labels[locale].name}).first()
+    const orderButton=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
     await orderButton.click()
     const orderChat=root.locator('[class*="conversation"]').first()
     await orderChat.waitFor({state:'visible',timeout:25000})
     await orderChat.locator('textarea').first().waitFor({state:'visible',timeout:30000})
     assert.equal(await orderChat.locator('input[type="file"]').count()>=2,true,
       key+' photo/audio/video composer')
+    const send=orderChat.locator('[class*="compose"] > button').last()
+    const geometry=await send.evaluate(element=>{
+      const r=element.getBoundingClientRect()
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const navTop=nav&&getComputedStyle(nav).display!=='none'
+        ?nav.getBoundingClientRect().top:window.innerHeight
+      return {bottom:r.bottom,navTop}
+    })
+    assert.ok(geometry.bottom<=geometry.navTop+3,
+      key+' Send stays above navigation '+JSON.stringify(geometry))
     if(width===390)await page.screenshot({path:dir+'/'+key+'-chat.png',fullPage:false})
     report.push({key,status:'pass',metrics,clientWidth})
     if(errors.length)throw Error(key+' page errors: '+JSON.stringify(errors))
