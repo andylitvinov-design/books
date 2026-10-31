@@ -595,7 +595,14 @@ const runEngine = async ([engine, browserType]) => {
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
-        assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
+        assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
+          "one prominent central Canvas Play/Pause remains");
+        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="es"?0:1,
+          "owner-approved RU film introduction is selectable on RU/EN without another editor");
+        assert.equal(await hero.locator("iframe").count(),0,
+          "no external video iframe or requests before an explicit user click");
+        assert.equal(await hero.locator("button").count(),locale==="es"?1:2,
+          "the second RU/EN button is the opt-in intro, not another editor");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
