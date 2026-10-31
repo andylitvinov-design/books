@@ -20,7 +20,7 @@ type Props={
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
   onGoalChange:(value:string)=>void;
-  onApply:(presetId:string,durationSeconds:10|20|30|60)=>void;
+  onApply:(presetId:string,durationSeconds:10|15|20|30|60)=>void;
 };
 const copy={
  ru:{
@@ -72,7 +72,7 @@ const copy={
    selectedGoal:"Objetivo elegido",
  }
 } as const;
-const allowedDurations=[10,20,30,60] as const;
+const allowedDurations=[10,15,20,30,60] as const;
 const allThemes=["energy","money","relationships","goals","life","health"] as const;
 const themeLabels={
  ru:{energy:"Энергия",money:"Работа и деньги",relationships:"Отношения",goals:"Уверенность",life:"Развитие",health:"Спокойствие"},
@@ -86,7 +86,7 @@ export function MandalaAutoVideoDirector({
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
  const [overrideId,setOverrideId]=useState<string|null>(null);
- const [seconds,setSeconds]=useState<10|20|30|60|null>(null);
+ const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
@@ -173,7 +173,7 @@ export function MandalaAutoVideoDirector({
          </div>:null}
        </details>
        <button type="button" data-auto-video-confirm className={css.confirm}
-         disabled={disabled} onClick={()=>onApply(chosen.id,length as 10|20|30|60)}>
+         disabled={disabled} onClick={()=>onApply(chosen.id,length as 10|15|20|30|60)}>
          <Check size={18} aria-hidden="true"/> {t.accept}
        </button>
        {activePresetId===chosen.id?<p className={css.notice} role="status">{t.applied}</p>:null}

@@ -19,6 +19,7 @@ import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations,
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
+import { allocateFreeFilmTimeline } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -830,26 +831,22 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
 function compileFreeFilmPreset(preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect):CinematicStoryboard {
-  // Existing safe timing model, but every shot is an actual licensed MP4.
-  // Stock edits use an independent plan version to FAIL-CLOSED paid AI prompts.
-  if(![10,20,30,60].includes(durationSeconds))throw Error("unsupported_free_film_length");
+  // Exactly four source-backed MP4 shots for every 10/15/20/30/60s free edit.
+  // Short source masters may loop; the preview must not claim new footage.
+  const timings=allocateFreeFilmTimeline(durationSeconds,preset.clips);
   const base=buildCinematicStoryboard({
-    theme:preset.theme,locale,style:"nature",aspect,
-    durationSeconds:durationSeconds===10?20:durationSeconds
+    theme:preset.theme,locale,style:"nature",aspect,durationSeconds:20
   });
-  const step=Math.floor(durationSeconds/4),remainder=durationSeconds-step*4;
-  let start=0;
+  if(base.shots.length!==4)throw Error("invalid_free_film_base_shot_count");
   const shots=base.shots.map((shot:{id:string;number:number;title:string;startSeconds:number;durationSeconds:number},i:number)=>{
-    const sceneId=preset.clips[i], shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
+    const timing=timings[i];
+    const sceneId=timing.sceneId,shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
     if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))throw Error("unavailable_free_film_clip");
-    const shotLength=step+(i<remainder?1:0);
-    const result={...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
-      startSeconds:start,durationSeconds:shotLength,
-      providerPrompt:""}; // A montage never becomes a provider prompt.
-    start+=shotLength;
-    return result;
+    return {...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
+      startSeconds:timing.startSeconds,durationSeconds:timing.durationSeconds,
+      providerPrompt:""}; // No paid video provider or personal-data upload.
   });
-  return {...base,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
+  return {...base,shotCount:4,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
     sceneChoices:shots.map((shot:{sceneId:string;theme:VideoTheme})=>({
       sceneId:shot.sceneId,theme:shot.theme,visualCue:preset.label.en
     })),
@@ -2231,7 +2228,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
-  const applyAutoFilm=(presetId:string,seconds:10|20|30|60,outputAspect:Aspect="landscape")=>{
+  const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,outputAspect:Aspect="landscape")=>{
     if(recording||preparing)return;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
     if(!preset){setNotice(ui.videoUnavailable);return;}
