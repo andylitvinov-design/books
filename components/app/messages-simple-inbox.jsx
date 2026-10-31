@@ -186,13 +186,28 @@ export default function MessagesSimpleInbox({
     const update=()=>{
       if(!window.matchMedia('(max-width:700px)').matches){
         windowElement.style.removeProperty('--hh-mobile-window-height')
+        windowElement.style.removeProperty('--hh-mobile-window-top')
+        delete windowElement.dataset.keyboardOpen
         return
       }
       const visual=window.visualViewport
-      const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
-      const top=windowElement.getBoundingClientRect().top
       const focused=windowElement.contains(document.activeElement)&&
         /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
+      // A selected conversation is a full-screen chat, not a card below
+      // the orders header. Safari's visual viewport tracks the real space
+      // left above its software keyboard (including viewport scrolling).
+      if(openDetail){
+        const height=Math.max(1,Math.floor(visual?.height||window.innerHeight))
+        const top=Math.max(0,Math.floor(visual?.offsetTop||0))
+        windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
+        windowElement.style.setProperty('--hh-mobile-window-top',top+'px')
+        windowElement.dataset.keyboardOpen=focused?'true':'false'
+        return
+      }
+      windowElement.style.removeProperty('--hh-mobile-window-top')
+      delete windowElement.dataset.keyboardOpen
+      const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
+      const top=windowElement.getBoundingClientRect().top
       const nav=document.querySelector('.hh-mobile-app-nav')
       const navVisible=nav&&window.getComputedStyle(nav).display!=='none'
       const navTop=navVisible&&!focused?nav.getBoundingClientRect().top:null
@@ -223,8 +238,10 @@ export default function MessagesSimpleInbox({
       visual?.removeEventListener('resize',requestUpdate)
       visual?.removeEventListener('scroll',requestUpdate)
       windowElement.style.removeProperty('--hh-mobile-window-height')
+      windowElement.style.removeProperty('--hh-mobile-window-top')
+      delete windowElement.dataset.keyboardOpen
     }
-  },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
+  },[openDetail]) // Switching between list and full-screen chat recalculates the visible viewport.
 
   const select=item=>{
     setSelectedKey(item.key)
