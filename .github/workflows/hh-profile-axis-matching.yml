@@ -53,6 +53,8 @@ on:
       - 'lib/holistic-support/meditation-writer/writer.mjs'
       - 'lib/holistic-support/meditation-writer/free-gemini.mjs'
       - 'lib/holistic-support/meditation-writer/eight-day-course.mjs'
+      - 'lib/holistic-support/meditation-writer/intent-codes.mjs'
+      - 'tests/meditation-writer-intent-codes.test.mjs'
       - 'lib/holistic-support/meditation-writer/free-quality.mjs'
       - 'tests/meditation-writer-course-outline.test.mjs'
       - 'tests/meditation-writer-practical-director.test.mjs'
@@ -127,7 +129,7 @@ jobs:
         with:
           node-version: '22'
       - name: Practical director and prior writer regressions
-        run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs tests/meditation-writer-small-model-skill.test.mjs tests/meditation-writer-free-providers.test.mjs tests/hypno-private-signals.test.mjs tests/meditation-writer-course-outline.test.mjs
+        run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs tests/meditation-writer-small-model-skill.test.mjs tests/meditation-writer-free-providers.test.mjs tests/hypno-private-signals.test.mjs tests/meditation-writer-course-outline.test.mjs tests/meditation-writer-intent-codes.test.mjs
       - name: Install locked dependencies for writer-only lint and types
         run: npm ci --no-audit --no-fund
       - name: Lint writer API, UI and contracts

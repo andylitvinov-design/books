@@ -6,9 +6,9 @@ import { MeditationWriterDeviceVoice } from "./meditation-writer-device-voice";
 
 type Locale = "ru" | "en" | "es";
 type ProviderPreference = "auto" | "gemini" | "openrouter";
-type Focus = "stress" | "relationships" | "self_worth" | "meaning";
+type Focus = "auto" | "stress" | "relationships" | "self_worth" | "meaning";
 type Style = "gentle_simple" | "grounded_practical" | "poetic_contained" | "contemplative";
-type Goal = "settle" | "support" | "clarity" | "boundaries" |
+type Goal = "auto" | "settle" | "support" | "clarity" | "boundaries" |
   "relationships" | "confidence" | "meaning" | "goals";
 type Motif = "gentle_nature" | "supportive_object" | "comfortable_corner" | "small_light";
 type Segment = { id:string; text:string; optionalSilenceSeconds:number };
@@ -20,6 +20,8 @@ type NextTopic = {day:number;title:string;description:string;
 type CoursePlan = {totalDays:8;goalCode:string;dayOne:{day:1;title:string};
   nextTopics:NextTopic[];additionalScriptsGenerated:false;};
 type Preview = {status:string;title:string;segments:Segment[];coursePlan?:CoursePlan;
+  intentDecision?:{focusCode:Exclude<Focus,"auto">;
+    goalCode:Exclude<Goal,"auto">;origin:string};
   plannedDurationSeconds:number;estimatedDurationSeconds?:number;
   generationMode:"template"|"llm";modelUsed:boolean;fallbackReason?:string;
   provider?:"gemini_free"|"openrouter_free";
@@ -49,9 +51,12 @@ const lang={
     template:"Текстовый шаблон · без AI-генерации",durationNote:"Плановая длительность с паузами; аудио ещё не создано.",
     signin:"Для персонального предпросмотра войдите в свой кабинет.",
     unavailable:"Предпросмотр пока недоступен или необходима помощь специалиста.",
-    pause:"Необязательная тишина",optionsFocus:["Повседневный стресс","Отношения и границы","Самооценка","Ценности и смысл"],
+    pause:"Необязательная тишина",optionsFocus:["Подобрать по описанию","Повседневный стресс","Отношения и границы","Самооценка","Ценности и смысл"],
     optionsStyle:["Мягкий","Практичный","Поэтичный","Созерцательный"],
-    optionsMotif:["Спокойная природа","Предмет опоры","Уютное место","Мягкий свет"]},
+    optionsMotif:["Спокойная природа","Предмет опоры","Уютное место","Мягкий свет"],
+    advancedSettings:"Дополнительные настройки · стиль, длительность, модель",
+    strategyChosen:"Выбрана стратегия",strategyDefault:"Общая поддерживающая тема — уточните при желании.",
+  },
   en:{title:"Personal meditation — text preview",subtitle:"A gentle optional practice: a template or an AI draft if the free model is available.",
     focus:"Focus",goal:"What would you like to practice?",style:"Writing style",
     duration:"Duration",motif:"Image",practice:"Try one small step",
@@ -76,9 +81,12 @@ const lang={
     template:"Text template · no AI generation",durationNote:"Planned length with pauses; audio has not been created.",
     signin:"Please sign in to My House for a personal preview.",
     unavailable:"Preview is unavailable or a qualified person's review is needed.",
-    pause:"Optional silence",optionsFocus:["Daily stress","Relationships and boundaries","Self-worth","Values and meaning"],
+    pause:"Optional silence",optionsFocus:["Choose from my description","Daily stress","Relationships and boundaries","Self-worth","Values and meaning"],
     optionsStyle:["Gentle","Practical","Poetic","Contemplative"],
-    optionsMotif:["Gentle nature","Supportive object","Comfortable corner","Soft light"]},
+    optionsMotif:["Gentle nature","Supportive object","Comfortable corner","Soft light"],
+    advancedSettings:"More options · style, length and model",
+    strategyChosen:"Selected approach",strategyDefault:"A general supportive topic was used. You can refine it.",
+  },
   es:{title:"Meditación personal — vista previa",subtitle:"Una práctica suave: plantilla o borrador de IA si el modelo gratuito está disponible.",
     focus:"Tema",goal:"¿Qué habilidad quieres practicar?",style:"Estilo",
     duration:"Duración",motif:"Imagen",practice:"Prueba un pequeño paso",
@@ -103,32 +111,37 @@ const lang={
     template:"Plantilla de texto · sin generación IA",durationNote:"Duración prevista con pausas; todavía no hay audio.",
     signin:"Inicia sesión en Mi Casa para la vista previa personal.",
     unavailable:"La vista previa no está disponible o requiere ayuda profesional.",
-    pause:"Silencio opcional",optionsFocus:["Estrés cotidiano","Relaciones y límites","Autoestima","Valores y sentido"],
+    pause:"Silencio opcional",optionsFocus:["Elegir según mi descripción","Estrés cotidiano","Relaciones y límites","Autoestima","Valores y sentido"],
     optionsStyle:["Suave","Práctico","Poético","Contemplativo"],
-    optionsMotif:["Naturaleza tranquila","Objeto de apoyo","Rincón acogedor","Luz suave"]},
+    optionsMotif:["Naturaleza tranquila","Objeto de apoyo","Rincón acogedor","Luz suave"],
+    advancedSettings:"Más opciones · estilo, duración y modelo",
+    strategyChosen:"Enfoque seleccionado",strategyDefault:"Se usó un tema general de apoyo. Puedes ajustarlo.",
+  },
 };
-const foci:Focus[]=["stress","relationships","self_worth","meaning"];
+const foci:Focus[]=["auto","stress","relationships","self_worth","meaning"];
 const stylistics:Style[]=["gentle_simple","grounded_practical","poetic_contained","contemplative"];
 const motifs:Motif[]=["gentle_nature","supportive_object","comfortable_corner","small_light"];
 const goalsByFocus:Record<Focus,Goal[]>={
-  stress:["settle","support","clarity"],
-  relationships:["boundaries","relationships","support"],
-  self_worth:["confidence","support","clarity"],
-  meaning:["meaning","goals","clarity"],
+  auto:["auto"],
+  stress:["auto","settle","support","clarity"],
+  relationships:["auto","boundaries","relationships","support"],
+  self_worth:["auto","confidence","support","clarity"],
+  meaning:["auto","meaning","goals","clarity"],
 };
 const defaultGoal:Record<Focus,Goal>={
+  auto:"auto",
   stress:"settle",relationships:"boundaries",self_worth:"confidence",meaning:"meaning",
 };
 const goalNames:Record<Locale,Record<Goal,string>>={
-  ru:{settle:"Вернуть устойчивость",support:"Найти опору",
+  ru:{auto:"Подобрать автоматически",settle:"Вернуть устойчивость",support:"Найти опору",
     clarity:"Увидеть ситуацию яснее",boundaries:"Личные границы",
     relationships:"Бережное общение",confidence:"Отнестись к себе мягче",
     meaning:"Прояснить ценности",goals:"Выбрать один шаг"},
-  en:{settle:"Return to the present",support:"Find support",
+  en:{auto:"Select automatically",settle:"Return to the present",support:"Find support",
     clarity:"See a situation more clearly",boundaries:"Personal boundaries",
     relationships:"Gentle communication",confidence:"Be kinder to yourself",
     meaning:"Clarify what matters",goals:"Choose a small step"},
-  es:{settle:"Volver al presente",support:"Encontrar apoyo",
+  es:{auto:"Elegir automáticamente",settle:"Volver al presente",support:"Encontrar apoyo",
     clarity:"Ver con más claridad",boundaries:"Límites personales",
     relationships:"Comunicación amable",confidence:"Tratarte con más amabilidad",
     meaning:"Clarificar valores",goals:"Elegir un paso pequeño"},
@@ -136,8 +149,8 @@ const goalNames:Record<Locale,Record<Goal,string>>={
 export function MeditationWriterPreview({locale}:{locale:string}) {
   const l:Locale=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=lang[l];
-  const [focus,setFocus]=useState<Focus>("stress");
-  const [goal,setGoal]=useState<Goal>("settle");
+  const [focus,setFocus]=useState<Focus>("auto");
+  const [goal,setGoal]=useState<Goal>("auto");
   const [style,setStyle]=useState<Style>("gentle_simple");
   const [motif,setMotif]=useState<Motif>("gentle_nature");
   const [duration,setDuration]=useState<5|10|15>(10);
@@ -208,6 +221,10 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         {goalsByFocus[focus].map(id=><option key={id} value={id}>
           {goalNames[l][id]}</option>)}
       </select></label>
+    </div>
+    <details className={styles.advanced} data-meditation-advanced>
+      <summary>{t.advancedSettings}</summary>
+      <div className={styles.controls}>
       <label>{t.style}<select value={style} onChange={e=>{
         setStyle(e.target.value as Style);setPreview(null);
       }}> 
@@ -243,6 +260,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
           <option key={choice} value={choice}>{t.providerOptions[i]}</option>)}
       </select>
     </label>}
+    </details>
     {mode==="llm"&&<label className={styles.consent}>
       <input type="checkbox" checked={externalOptIn}
         onChange={e=>setExternalOptIn(e.target.checked)}/>
@@ -260,6 +278,11 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       onClick={submit}>{loading?t.loading:t.create}</button>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {preview&&<article className={styles.preview} aria-live="polite">
+      {preview.intentDecision&&<p className={styles.caption} data-meditation-resolved-strategy>
+        {t.strategyChosen}: {t.optionsFocus[foci.indexOf(preview.intentDecision.focusCode)]}
+        {" · "}{goalNames[l][preview.intentDecision.goalCode]}.
+        {preview.intentDecision.origin==="general_default"?" "+t.strategyDefault:""}
+      </p>}
       <h3>{preview.title}</h3>
       <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft+" · "+(preview.provider==="openrouter_free"?"OpenRouter Free":"Gemini Free"):t.template}</p>
       {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}

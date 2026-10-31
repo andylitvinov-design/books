@@ -20,6 +20,7 @@ import { createAnonymousOpenRouterSegmentProvider } from "@/lib/holistic-support
 import { freeWriterProviders } from "@/lib/holistic-support/meditation-writer/free-json.mjs";
 import { buildEightDayCourseOutline } from "@/lib/holistic-support/meditation-writer/eight-day-course.mjs";
 import { reviewFreeMeditationQuality } from "@/lib/holistic-support/meditation-writer/free-quality.mjs";
+import { resolveMeditationClientIntent } from "@/lib/holistic-support/meditation-writer/intent-codes.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -61,7 +62,10 @@ export async function POST(request) {
       throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
     if(!["auto","gemini","openrouter"].includes(providerPreference))
       throw new AppError("AI_PROVIDER_INVALID",400);
-    const normalized=normalizeWriterRequest(requested);
+    let resolved;
+    try { resolved=resolveMeditationClientIntent(requested); }
+    catch { throw new AppError("WRITER_INVALID_INTENT",400); }
+    const normalized=normalizeWriterRequest(resolved.request);
     if(normalized.status!=="valid")
       throw new AppError(normalized.code,400);
     if(resourceImageryOptIn!==true)
@@ -79,7 +83,7 @@ export async function POST(request) {
       consent:{resourceImagery:true},
     });
     const outcome=prepareMeditationCreativeBrief({
-      program,consent:{resourceImagery:true},request:requested,
+      program,consent:{resourceImagery:true},request:resolved.request,
     });
     if(outcome.status!=="brief_ready"){
       const e=new AppError(outcome.status==="invalid_input"?
@@ -94,7 +98,7 @@ export async function POST(request) {
     const template=outcome.template;
     let payload={
       status:"template_ready",generationMode:"template",modelUsed:false,
-      coursePlan,
+      coursePlan,intentDecision:resolved.decision,
       disclaimer:"resource_self_guided_preview_not_clinical_treatment",
       title:template.title,locale:normalized.locale,
       plannedDurationSeconds:template.plannedDurationSeconds,

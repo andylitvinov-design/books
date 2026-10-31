@@ -84,3 +84,12 @@
 .course li{padding:7px 0;line-height:1.45}
 .course li strong,.course li span{display:block}
 .course li span{font-size:.88rem;color:#496b6b;margin-top:4px}
+
+/* One-click goal-first path; extra style and model filters stay optional. */
+.advanced{margin-top:12px;padding:0 11px 11px;border:1px solid #60889b;
+  border-radius:13px;background:rgba(244,252,253,.08)}
+.advanced summary{min-height:44px;display:flex;align-items:center;
+  cursor:pointer;font-weight:700;color:#d8f2f1}
+.advanced .controls{margin-top:9px}
+.advanced .mode{margin-top:13px}
+.advanced summary:focus-visible{outline:3px solid #ffe9a8;outline-offset:3px}
