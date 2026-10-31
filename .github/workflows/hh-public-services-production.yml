@@ -14,6 +14,17 @@ on:
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/compact-lead-capture*'
       - 'components/contact-channel-chooser*'
+      # Real public conversion/consent/booking and cart UI are NOT covered by
+      # the shallow components/*service* glob. A source change to these
+      # surfaces needs real Public Services Chromium/WebKit, not only Core.
+      - 'components/consultation-choice-capture*'
+      - 'components/public-consultation-cta*'
+      - 'components/free-diagnosis-offers*'
+      - 'components/business-website-enquiry*'
+      - 'components/phone-country-input*'
+      - 'components/free-resource-enquiry*'
+      - 'components/academy-course-capture*'
+      - 'components/commerce/**'
       - 'lib/whatsapp-enquiry.js'
       - 'lib/practitioners/enquiry-receipt.mjs'
       - 'app/api/service-enquiries/**'
