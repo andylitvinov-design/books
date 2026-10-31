@@ -5,6 +5,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'app/[locale]/holistic-support/**'
+      # Mandala owns voice endpoint provider, quotas, consent and export.
+      - 'app/api/holistic-support/voice/**'
       - 'components/mandala-meditation*'
       - 'components/mandala-free-video-studio.tsx'
       - 'components/mandala-first-video-start*'
