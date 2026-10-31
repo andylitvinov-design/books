@@ -1499,10 +1499,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  // This is an approved Russian-language introduction, NOT a generated client video.
-  // EN visibly labels its RU audio until an approved English master is available.
+  // A verified RU YouTube presentation is distinct from the user's private local film.
+  // EN must NEVER inherit a Russian soundtrack: require its own verified EN video ID.
   const [introPlaying,setIntroPlaying] = useState(false);
-  const introVideoId = locale==="es" ? null : "P9Wvo3gEY6U";
+  const introVideoId = locale==="ru" ? "P9Wvo3gEY6U" : null;
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
@@ -2568,36 +2568,53 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <iframe
                 className={videoStyles.therapyIntroFrame}
                 src={`https://www.youtube-nocookie.com/embed/${introVideoId}?autoplay=1&playsinline=1&rel=0`}
-                title={locale==="ru"?"Holistic House — о видеотерапии (русский)":
-                  "Holistic House — video therapy presentation (Russian audio)"}
+                title="Holistic House — о видеотерапии (русский)"
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
               />
               <button type="button" className={videoStyles.therapyIntroClose}
-                data-video-therapy-intro-close
-                onClick={()=>setIntroPlaying(false)}>
-                {locale==="ru"?"Вернуться к своему видео":"Back to my video"}
+                data-video-therapy-intro-close onClick={()=>setIntroPlaying(false)}>
+                Вернуться к своему видео
               </button>
               <a className={videoStyles.therapyIntroExternal}
                 href={`https://www.youtube.com/watch?v=${introVideoId}`}
+                data-video-therapy-youtube="ru"
                 target="_blank" rel="noopener noreferrer">
                 YouTube ↗
               </a>
             </div>
           ) : (
-            <button className={videoStyles.therapyIntroLaunch} type="button"
-              data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
-              disabled={recording||preparing}
-              onClick={()=>{
-                premiumVideoRef.current?.pause();
-                setPreviewPlaying(false);
-                setIntroPlaying(true);
-              }}>
-              <Play size={16} fill="currentColor" aria-hidden="true"/>
-              <span>{locale==="ru"?"О видеотерапии · 52 сек":
-                "About video therapy · Russian audio"}</span>
-            </button>
+            <>
+              <button className={videoStyles.therapyIntroLaunch} type="button"
+                data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
+                disabled={recording||preparing}
+                onClick={()=>{
+                  premiumVideoRef.current?.pause();
+                  setPreviewPlaying(false);
+                  setIntroPlaying(true);
+                }}>
+                <Play size={16} fill="currentColor" aria-hidden="true"/>
+                <span>О видеотерапии · 52 сек</span>
+              </button>
+              <a className={videoStyles.therapyIntroDirect}
+                href={`https://www.youtube.com/watch?v=${introVideoId}`}
+                data-video-therapy-youtube="ru" target="_blank"
+                rel="noopener noreferrer" aria-label="Смотреть видео о видеотерапии на русском YouTube">
+                YouTube ↗
+              </a>
+            </>
           )
+        ) : locale==="en" ? (
+          <a className={videoStyles.therapyIntroLaunch}
+            href="https://www.youtube.com/@aatapro/videos"
+            data-video-therapy-intro="english-channel"
+            data-video-therapy-youtube="en"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open English YouTube channel — video therapy presentation is not yet linked">
+            <Play size={16} fill="currentColor" aria-hidden="true"/>
+            <span><strong>English YouTube channel</strong>
+              <small>Video therapy film not yet linked</small></span>
+          </a>
         ) : null}
         {!introPlaying && <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
           data-video-preview-toggle aria-pressed={previewPlaying}
