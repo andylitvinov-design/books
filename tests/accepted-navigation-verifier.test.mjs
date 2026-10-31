@@ -139,6 +139,6 @@ test('MHC-SF exercises visible desktop Tests or real mobile Account menu without
   const section = helper.slice(helper.indexOf('export async function openCabinetMyTests'), helper.indexOf('export async function assertCabinetPrimaryNavigation'))
   for (const invariant of ["nav.hh-nav:visible a[href=", "details.hh-account-menu", ":scope > summary", "a[href=", "await link.click()", "[data-my-tests-dashboard]"])
     assert.ok(section.includes(invariant), 'Missing real visible navigation contract: ' + invariant)
-  assert.doesNotMatch(section, /page\\.locator\\('nav a\\[href="/)
-  assert.match(section, /await expect\\(page\\)\\.toHaveURL\\(origin \\+ path/)
+  assert.ok(!section.includes("page.locator(\'nav a[href="), "A hidden legacy nav shortcut cannot return")
+  assert.ok(section.includes("await expect(page).toHaveURL(origin + path"), "Verify the canonical account Tests URL")
 })
