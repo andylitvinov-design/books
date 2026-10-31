@@ -36,21 +36,28 @@ const copy = {
  * movie has NOT been assembled/published, so it must not be faked by showing
  * the Russian movie or the old short EN clip.
  *
- * Once the approved EN film is QA-cleared and published via the existing
- * Home — introduction admin slot, the English page can use that record without
- * a new component or an unreviewed fallback. Publication is an explicit gate.
+ * Once the approved EN film is QA-cleared and published through the
+ * existing admin slot, record its EXACT verified YouTube ID here in a reviewed
+ * code change. Do not allow any arbitrary owner/admin edit to become a
+ * substitute for the first full EN presentation. Publication is a separate
+ * explicit gate.
  */
+const approvedEnglishYoutubeId: string = "";
+
 function isApprovedEnglishPresentation(video: PublishedSiteVideo | undefined): video is PublishedSiteVideo {
   return Boolean(
+    approvedEnglishYoutubeId &&
     video?.language === "en" &&
-    video.youtubeId &&
+    video.youtubeId === approvedEnglishYoutubeId &&
     !video.heygenId &&
-    video.youtubeId !== "Y4K4piEwwA8" &&
     (video.durationSeconds ?? 0) >= 70,
   );
 }
 
 export async function HomePresentationVideoSection({ locale }: { locale: "en" | "ru" }) {
+  // Do not even READ an old or arbitrary admin home-intro record before
+  // the finished English film's identity has been explicitly approved.
+  if (locale === "en" && !approvedEnglishYoutubeId) return null;
   let video: PublishedSiteVideo;
   if (locale === "ru") {
     video = approvedRussianPresentation;
