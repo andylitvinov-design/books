@@ -32,7 +32,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await page.route("**/api/holistic-support/voice",async route=>{
         const req=route.request();
         if(req.method()==="GET"){
-          await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({enabled:true,publicAffirmationsEnabled:true})});
+          await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({enabled:true,publicAffirmationsEnabled:true,languages:["ru","en","es"]})});
           return;
         }
         const body=req.postDataJSON();
