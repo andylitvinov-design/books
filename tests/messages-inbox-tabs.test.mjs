@@ -11,7 +11,7 @@ test('provider leads and account-bound requests appear in the real chat without 
     {key:'crm:5',kind:'crm',lifecycle:'lead',name:'Telegram service lead'},
     {key:'direct:2',kind:'direct',name:'Member Andy'},
     {key:'business:3',kind:'business',name:'Business request'},
-    {key:'request:4',kind:'request',name:'Site consultation',item:{requestKind:'account'}},
+    {key:'request:4',kind:'request',name:'Site consultation',item:{accountRequest:true}},
     {key:'request:6',kind:'request',name:'Public guest enquiry',item:{requestKind:'public'}},
   ]
   const chats=filterInboxRows(rows,'chats')
@@ -34,6 +34,16 @@ test('provider leads and account-bound requests appear in the real chat without 
   assert.equal(normalizeMessagesTab('requests'),'requests')
   assert.deepEqual(filterInboxRows([{kind:'unknown',name:'X'}],'requests'),[])
   assert.deepEqual(filterInboxRows([{kind:'request',name:'Incomplete'}],'chats'),[])
+  // Unknown request kinds must fail closed; a guest cannot obtain a private
+  // composer merely because requestKind is absent or not exactly 'public'.
+  const unverified=[
+    {kind:'request',name:'Partial guest',item:{}},
+    {kind:'request',name:'Unverified legacy',item:{requestKind:'legacy'}},
+    {kind:'request',name:'Explicit non-account',item:{accountRequest:false}},
+    {kind:'request',name:'Inconsistent guest',item:{accountRequest:true,requestKind:'public'}},
+  ]
+  assert.deepEqual(filterInboxRows(unverified,'chats'),[])
+  assert.equal(filterInboxRows(unverified,'requests').length,unverified.length)
 })
 
 test('owner tabs are linked, accessible and URL-backed without unmounting chat state',()=>{
