@@ -17,13 +17,22 @@ const evidence = [];
 // Wait for the exact synthetic result identities, including EUR/CAD exclusion.
 async function waitForConsultationFixtures(page, locale, ids, label) {
   const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
-  await page.waitForFunction(wanted => {
-    const results = document.querySelector("#holistic-inline-results");
-    if (!results || results.hidden) return false;
-    const links = [...results.querySelectorAll("article a[href]")]
-      .map(link => link.getAttribute("href")).sort();
-    return links.length === wanted.length &&
-      links.every((href, index) => href === wanted[index]);
+  await page.waitForFunction(async wanted => {
+    const isExact = () => {
+      const results = document.querySelector("#holistic-inline-results");
+      if (!results || results.hidden) return false;
+      const articles = [...results.querySelectorAll("article")];
+      const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+        .map(link => link.getAttribute("href")).sort();
+      return articles.length === wanted.length &&
+        links.length === wanted.length &&
+        links.every((href, index) => href === wanted[index]);
+    };
+    if (!isExact()) return false;
+    // Reject the stale previous React commit if the async directory rerender
+    // clears articles on the following frames; never relax EUR/CAD assertions.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return isExact();
   }, expected, { timeout: 15000 });
   const actual = await page.locator("#holistic-inline-results article a[href]")
     .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());
@@ -132,17 +141,23 @@ for (const engine of [chromium, webkit]) {
 
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="20"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
           await finder.locator("[data-support-search]").click();
           await waitForConsultationFixtures(page, locale, ["eur20"], label + " EUR 20");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="100"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
           await finder.locator("[data-support-search]").click();
           await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
           await finder.locator('[data-support-budget="free"]').click();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
           await finder.locator("[data-support-search]").click();
           await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,

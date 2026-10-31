@@ -126,7 +126,28 @@ try {
       await contactForm.locator('input[type="tel"]').fill('416 555 1234')
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Phone without reply-only opt-in is insufficient')
-      await contactForm.locator('input[type="checkbox"][required]').check()
+      // Wait for the controlled React opt-in handler before the real click.
+      // Pre-hydration native checkbox changes can be reverted on commit.
+      await page.waitForFunction(() => {
+        const checkbox = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="checkbox"][required]');
+        const key = Object.keys(checkbox || {}).find(k => k.startsWith("__reactProps$"));
+        return Boolean(key && typeof checkbox[key]?.onChange === "function");
+      }, null, {timeout:30000});
+      const requiredConsent = contactForm.locator('input[type="checkbox"][required]')
+      // Playwright check() reads the native bit immediately after the click,
+      // which can race a controlled React checkbox commit. Exercise the same
+      // real user click, then require the committed consent AND enabled CTA.
+      // Never use force, a synthetic change event, or bypass the CRM guard.
+      await requiredConsent.click()
+      await page.waitForFunction(() => {
+        const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form]')
+        const checkbox = form?.querySelector('input[type="checkbox"][required]')
+        const submit = form?.querySelector('button[type="submit"]')
+        return checkbox instanceof HTMLInputElement && checkbox.checked === true &&
+          submit instanceof HTMLButtonElement && submit.disabled === false
+      }, null, { timeout: 10000 })
+      assert.equal(await requiredConsent.isChecked(), true,
+        'Required reply-only consent must remain selected before the mocked CRM order')
       await contactForm.locator('button[type="submit"]').click()
       await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
       await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })

@@ -137,12 +137,22 @@ async function verify(engine, locale, width) {
     await question.fill(copy[locale].intention);
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
+    // A visible Next Link may not have its hydrated React handler yet.
+    // Keep real Link navigation and the exact pathname acceptance intact.
+    await page.waitForFunction(() => {
+      const link = document.querySelector('[data-ideas-hero-actions] a[href*="/services/free-consultation"]');
+      const key = Object.keys(link || {}).find(k => k.startsWith("__reactProps$"));
+      return Boolean(key && typeof link[key]?.onClick === "function");
+    }, null, {timeout:30000});
     // Register the URL waiter before activating the real Link: Next can finish
     // this local navigation in the same interaction turn on a mobile browser.
     const consultationNavigation = page.waitForURL(
       url => url.pathname === "/" + locale + "/services/free-consultation",
       {waitUntil: "domcontentloaded", timeout: 30000},
     );
+    // Keep real Next Link acceptance; relocate its pointer hit target above
+    // the fixed mobile tab bar rather than forcing navigation or clicks.
+    await diagnostic.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
     await diagnostic.click();
     try {
       await consultationNavigation;

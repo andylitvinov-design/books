@@ -24,6 +24,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // The public practitioner showcase owns a compact five-item bottom bar.
   const hidden = /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
     || /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname)
+    || /^\/(?:ru|en|es)\/cart(?:\/|$)/.test(pathname) // Checkout's reply-only consent cannot sit under a fixed tab bar.
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
     || (clientRoute && !isPublicTestDiscoveryPath(pathname) && !/^\/es\/client(?:\/tests)?\/?$/.test(pathname));

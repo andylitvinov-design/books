@@ -120,6 +120,11 @@ on:
       - '!components/mandala-personal-meditation*'
       # The Ideas & Coaching specialist owns this exact browser harness.
       - '!scripts/verify-holistic-support-browser.mjs'
+      # Independently owned Voice Studio paths continue under Mandala real-media E2E.
+      - '!app/**/holistic-support/voice-studio/route.ts'
+      - '!components/mandala-affirmation-voice.*'
+      - '!components/mandala-cloud-voice-studio.*'
+      - '!components/mandala-meditation.module.css'
 permissions:
   contents: read
   pull-requests: read
@@ -309,7 +314,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.scope.outputs.build == 'true'
         with:
           name: public-services-production-acceptance
           path: |
