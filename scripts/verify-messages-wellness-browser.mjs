@@ -156,6 +156,8 @@ for(const browserType of [chromium,webkit]){
     await crmComposer.waitFor({state:'visible',timeout:25000})
     const salesbot=customer.getByRole('button',{name:/SalesBot/})
     await salesbot.waitFor({state:'visible',timeout:15000})
+    const salesbotIconWidth=await salesbot.locator('svg').evaluate(svg=>svg.getBoundingClientRect().width)
+    assert.ok(salesbotIconWidth>=18,key+' SalesBot icon not clipped '+salesbotIconWidth)
     assert.equal(await salesbot.getAttribute('aria-expanded'),'false',key+' SalesBot closed')
     const crmGeometry=await crmComposer.evaluate(element=>{
       const input=element.getBoundingClientRect()

@@ -35,3 +35,18 @@
 @media(max-width:430px){
  .launcherIcon+.panel{max-height:min(39dvh,275px);padding:10px}
 }
+
+/* The parent CRM .compose button rule applies large horizontal padding to
+   nested buttons. Higher specificity is required so the 20px sparkles SVG
+   cannot collapse into a 2px dot inside the 44px helper. */
+.root .launcherIcon{
+ box-sizing:border-box;display:grid;place-items:center;
+ width:44px;height:44px;min-width:44px;min-height:44px;
+ padding:0;border:1px solid #cfe4d6;border-radius:13px;
+ background:#edf7ef;color:#19795e;
+}
+.root .launcherIcon svg{
+ display:block;width:20px;height:20px;min-width:20px;flex:none;
+ stroke:currentColor;stroke-width:2;
+}
+@media(max-width:354px){.root .launcherIcon{width:42px;height:44px;min-width:42px}}
