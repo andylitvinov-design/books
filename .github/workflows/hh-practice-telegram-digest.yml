@@ -85,4 +85,6 @@ jobs:
       - name: Targeted ESLint
         run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js lib/analytics/public-page-traffic.mjs lib/analytics/public-page-traffic-report.mjs lib/analytics/public-stats-owner.js lib/analytics/public-traffic-retention.js app/api/analytics/public-page/route.js app/api/marketplace/service-event/route.js components/public-page-traffic.tsx components/analytics-consent.tsx components/service-funnel-tracking.tsx
       - name: Next.js production build and TypeScript
+        # Required Core already builds the exact proposed app once on production PRs.
+        if: github.event_name != 'pull_request'
         run: npm run build
