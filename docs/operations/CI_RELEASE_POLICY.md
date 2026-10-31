@@ -16,3 +16,21 @@ This is the authoritative current policy for CI and production delivery. GitHub 
 ## LIVE acceptance
 
 After merge, record GitHub merge SHA and verify the correct Vercel project has a READY production deployment built from that exact SHA and serving the public domain. Open the public domain and perform the relevant LIVE smoke; report CI, merge, deployment and real user/provider E2E evidence separately. A merge, READY status or HTTP response alone does not establish the intended outcome.
+
+## Four-level Core route (base-trusted rollout)
+
+Core's `classify-change` job computes the changed file set from the exact tested
+PR merge checkout (HEAD^1 BASE, HEAD^2 PR HEAD). Route execution uses the
+`scripts/ci-quick-route.mjs` script from that immutable BASE, **never** the
+candidate's copy. A missing or incompatible trusted router defaults to CORE.
+
+- **ASSETS:** only added/modified, non-sensitive `public/**` PNG/JPEG/WebP/GIF/AVIF/ICO files accepted by the BASE risk classifier. The trusted router verifies every Git blob SHA, file mode, binary container, image dimensions, and relevant structural checks. Core npm install, lint and Next build are skipped. Invalid or corrupt assets FAIL rather than being counted as clean.
+- **TEXT:** only modified, allowlisted public `app/[locale]/**` JSX/TSX pages, with no other changes, **after** PR #2777's AST-based `classifyStaticUiText` and the pinned parser are deployed on BASE. The proof compares complete BASE/HEAD sources and may only accept static public wording; unavailable parser, unexpected source or missing proven classifier falls back to CORE. CSS, new pages, mixed files and executable changes do not use this Core bypass.
+- **CORE:** normal application code, changed CSS, unknown files, and unproven presentations. One Core install/lint/build job; applicable specialists remain required by immutable-base and candidate workflow triggers. Specialist-level duplicate builds are separately retired by their named owner PRs.
+- **FULL:** any security-critical path (auth, payment, billing, privacy, consent, client/private data, database/migrations, provider APIs, CI policy, dependencies). Always runs the complete Core build, applicable specialist/security/browser suites, and release-ready.
+
+The lightweight route never waives `release-ready`, exact HEAD/base rechecks,
+GitHub protection, unresolved discussions or security checks. Specialist
+aggregation still runs on all routes using BASE-trusted logic. No reduced
+workflow is allowed to treat a missing/pending/failed mandatory security check
+as success. Before #2777 merges, safe-looking UI text still follows CORE.
