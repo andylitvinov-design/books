@@ -50,8 +50,9 @@ test('successor preserves both original real browsers with one local build and o
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
   assert.match(source, /^  push:/m, 'Post-merge audit runs full real-browser journeys');
   for(const name of ['Build exact candidate once for both real-browser suites', 'Install Chromium and WebKit once for both journeys', 'Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server']) {
-    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
-      'the production PR must not repeat an expensive E2E stage: '+name);
+    assert.ok(source.includes('- name: '+name+"\n        run:") ||
+      source.includes('- name: '+name+"\n        env:") ,
+      'applicable ready PRs must run the real browser stage: '+name);
   }
   assert.match(source, /workflow_dispatch:/, 'Manual full matrix remains available');
 });
