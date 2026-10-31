@@ -68,19 +68,30 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(landing, /guest\/runs/)
   assert.match(landing, /guest\/results/)
   assert.match(landing, /save-intents/)
-  assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
+  const discussionIntentWrite = 'window.sessionStorage.setItem(TEST_DISCUSSION_INTENT_KEY, intent.id)'
+  assert.equal(landing.split(discussionIntentWrite).length - 1, 1)
+  assert.doesNotMatch(landing.replace(discussionIntentWrite, ''), /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
   // Only reviewed session-local navigation pointers may use browser storage:
   // two report-save targets and the separate Remote Energy Support booking
   // draft (two reads and one explicit delete). None stores assessment answers.
   const sessionTargetCall = 'consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)'
   const supportDraftRead = 'readRemoteSupportDraft(window.sessionStorage, service.id)'
   const supportDraftDelete = 'window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)'
+  const talismanRead = 'readTalismanRequestDraft(window.sessionStorage, service.id)'
+  const talismanDelete = 'window.sessionStorage.removeItem(TALISMAN_REQUEST_DRAFT_KEY)'
+  const discussionRead = 'window.sessionStorage.getItem(TEST_DISCUSSION_INTENT_KEY)'
+  const discussionDelete = 'window.sessionStorage.removeItem(TEST_DISCUSSION_INTENT_KEY)'
   const assertNoAssessmentStorage = source => {
     assert.doesNotMatch(source, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY/)
     assert.equal(source.split(sessionTargetCall).length - 1, 2)
     assert.equal(source.split(supportDraftRead).length - 1, 2)
     assert.equal(source.split(supportDraftDelete).length - 1, 1)
-    assert.doesNotMatch(source.replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, ''), /sessionStorage|localStorage/)
+    assert.equal(source.split(talismanRead).length - 1, 2)
+    assert.equal(source.split(talismanDelete).length - 1, 1)
+    assert.equal(source.split(discussionRead).length - 1, 1)
+    assert.equal(source.split(discussionDelete).length - 1, 1)
+    const allowed = [sessionTargetCall,supportDraftRead,supportDraftDelete,talismanRead,talismanDelete,discussionRead,discussionDelete,'// navigation; no sensitive intention is written to sessionStorage or URLs.']
+    assert.doesNotMatch(allowed.reduce((text,call)=>text.replaceAll(call,''),source), /sessionStorage|localStorage/)
   }
   assertNoAssessmentStorage(workspace)
   for (const forbidden of [

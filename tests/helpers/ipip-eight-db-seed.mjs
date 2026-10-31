@@ -1,14 +1,17 @@
 import { IPIP_THREE_DEFINITIONS } from '../../data/assessments/ipip-three-2026.js'
 import { IPIP_FIVE_DEFINITIONS } from '../../data/assessments/ipip-five-2026.js'
+import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../../data/assessments/professional-additions-2026.js'
+import { assertAssessmentSourceIntegrity } from './legacy-source-fingerprint.mjs'
 
 // Test-only fixture: caller must initialize the guarded, empty loopback test DB.
-export async function seedEightIpipTestVersions(db) {
+async function seedVersions(db, definitions, verifySource = false) {
   if (process.env.CI !== 'true' || process.env.HH_APP_TEST_RUNTIME !== 'isolated' || process.env.VERCEL)
     throw new Error('Isolated test runtime required')
   const url = new URL(process.env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid')
   if (!['localhost', '127.0.0.1'].includes(url.hostname) || url.pathname !== '/hh_app_test')
     throw new Error('Isolated loopback test database required')
-  for (const d of [...IPIP_THREE_DEFINITIONS, ...IPIP_FIVE_DEFINITIONS]) {
+  for (const d of definitions) {
+    if (verifySource) assertAssessmentSourceIntegrity(d)
     await db.query(
       `insert into app.assessment_versions
        (id,definition_key,definition_version,instrument_locale,translation_version,
@@ -23,3 +26,6 @@ export async function seedEightIpipTestVersions(db) {
     )
   }
 }
+
+export const seedEightIpipTestVersions = db => seedVersions(db, [...IPIP_THREE_DEFINITIONS, ...IPIP_FIVE_DEFINITIONS])
+export const seedFiveLegacyTestVersions = db => seedVersions(db, ADDITIONAL_PROFESSIONAL_DEFINITIONS, true)

@@ -25,9 +25,9 @@ test('Only generic bilingual course messages are allowed',()=>{
 test('Holistic House app has its own branded install manifest, without renaming the legacy library PWA',async()=>{
   const {readFile}=await import('node:fs/promises')
   const page=await readFile(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
-  const manifest=JSON.parse(await readFile(new URL('../public/holistic-house.webmanifest',import.meta.url),'utf8'))
-  assert.match(page,/manifest: '\/holistic-house\.webmanifest'/)
+  const manifest=JSON.parse(await readFile(new URL('../public/holistic-house-app.webmanifest',import.meta.url),'utf8'))
+  assert.match(page,/\/holistic-house-app\.webmanifest/)
   assert.equal(manifest.name,'Holistic House')
-  assert.equal(manifest.start_url,'/en/app')
-  assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-app.svg'))
+  assert.equal(manifest.start_url,'/en/app/messages')
+  assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/192'))
 })

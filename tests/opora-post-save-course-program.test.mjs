@@ -41,7 +41,7 @@ async function saveAndOpenMap(f,locale){
   assert.equal(f.saved.length,0)
   await press(f.h,w.save)
   assert.equal(f.saved.length,1)
-  assert.ok(textOf(f.h.tree).includes(w.receipt))
+  assert.ok(nodes(f.h.tree).some(node=>node.props?.['data-opora-lesson-outro']==='saved'),'Only a confirmed save opens the receipt')
   assert.ok(findButton(f.h.tree,w.start),'Receipt opens the course map directly')
   await press(f.h,w.start)
   const map=nodes(f.h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')

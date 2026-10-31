@@ -11,6 +11,6 @@ test('hourly dispatch must keep secrets server-side and not use Hobby hourly Ver
  const route=readFileSync('app/api/internal/notification-dispatch/route.js','utf8')
  const vercel=JSON.parse(readFileSync('vercel.json','utf8'))
  assert.match(route,/HH_PUSH_CRON_SECRET/)
- assert.equal(vercel.crons.length,1)
- assert.equal(vercel.crons[0].schedule,'0 5 * * *')
+ assert.equal(vercel.crons.filter(cron=>cron.path==='/api/internal/notification-dispatch').length,0)
+ assert.equal(vercel.crons.find(cron=>cron.path==='/api/internal/housekeeping')?.schedule,'0 5 * * *')
 })

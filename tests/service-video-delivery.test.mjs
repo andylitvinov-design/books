@@ -87,7 +87,8 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
   assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);

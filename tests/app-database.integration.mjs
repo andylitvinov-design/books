@@ -1265,7 +1265,7 @@ test('every published monitoring test completes through the repository and retur
       definitionVersion: definition.version,
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
-    })
+    }).catch(error => { error.message += ' (' + definition.key + ':' + definition.version + ':' + definition.instrumentLocale + ')'; throw error })
     const context = syntheticTraumaContext(definition)
     let ready = run
     if (Object.keys(context).length) {
@@ -2016,16 +2016,10 @@ test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved test
 
 test('private session share grants enforce per-consultation ownership under real Postgres roles', async()=>{
   // Synthetic A/B test uses the exact deployed migration; never a production DB.
-  const {readFile}=await import('node:fs/promises')
   const db=await adminClient()
   try{
-    await db.query('create schema if not exists storage')
-    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
-    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
-    // The private PDF extension is additive and does not grant browser DB access.
-    const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
-    await db.query(pdfExtension)
+    // setup() has applied the exact delivery and private-PDF SQL before
+    // housekeeping runs; verify ownership, ACLs and private storage below.
     const permittedMime=(await db.query("select allowed_mime_types from storage.buckets where id='hh-client-private-media'")).rows[0].allowed_mime_types
     assert.ok(permittedMime.includes('application/pdf'))
     const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]

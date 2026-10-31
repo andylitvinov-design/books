@@ -63,7 +63,7 @@ if(!process.execArgv.includes('--conditions=react-server')){
     }
     assert.throws(()=>checkReviewInput({...base,serviceId:'fake'}),/INVALID_ID/)
     assert.throws(()=>checkReviewInput({...base,body:'bad'}),/INVALID_REVIEW/)
-    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
+    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for further results and details, please.'}),/REVIEW_PERSONAL_DATA/)
   })
 }
 

@@ -37,7 +37,7 @@ test('Google Cabinet opens the full canonical report via an account-verified ser
   assert.match(recommendation, /canonical-report-analysis/)
   assert.match(recommendation, /canonical-report-notes/)
   assert.match(recommendation, /canonical-progress/)
-  assert.match(recommendation, /canonical-remedy-profiles/)
+  assert.match(recommendation, /canonical-remedy-unified-disclosure/)
   assert.match(recommendation, /fullSource/)
   assert.match(recommendation, /includeDistanceHomeopathy/)
   assert.match(receipt, /embedded = false/)

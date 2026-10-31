@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
+import {oporaAs60Skills} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 
 // This directly parses production JSX without requiring a Vercel deployment,
 // whose team quota is a separate external precondition.
@@ -37,8 +39,13 @@ test('a practice phrase closes before the guided exercise and controls remain op
 
 test('typed public programme retains the description supplied by the canonical blueprint',()=>{
   const source=readFileSync(new URL('../components/public-antistress-landing.tsx',import.meta.url),'utf8')
-  const blueprint=readFileSync(new URL('../lib/inner-growth/anti-stress-blueprint.js',import.meta.url),'utf8')
   assert.match(source,/skills: \{id:string;title:string;description:string;days:\[number,number\];outcome:string\}\[\]/)
   assert.match(source,/skill\.description/)
-  assert.match(blueprint,/description:base\.description\|\|base\.result/)
+  for(const locale of ['en','ru','es']){
+    const actual=antiStressBlueprint(locale).skills
+    const canonical=oporaAs60Skills(locale)
+    assert.equal(actual.length,7)
+    assert.deepEqual(actual.map(({id,description})=>({id,description})),canonical.map(({id,description})=>({id,description})))
+    assert.ok(actual.every(skill=>typeof skill.description==='string' && skill.description.trim().length>0))
+  }
 })

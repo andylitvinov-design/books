@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {mount,nodes,account,courseA,courseView,deferred} from './helpers/course-ui-harness.mjs'
+import {mount,nodes,findPart,account,courseA,courseView,deferred} from './helpers/course-ui-harness.mjs'
 import * as programs from '../lib/inner-growth/course-programs.js'
 const weekly={key:'hh-weekly-pulse',definitionVersion:1,instrumentLocale:'en',title:'Weekly Pulse',completed:false}
 const current={...courseA,stage:2,presetId:null,focusTags:['stress','mood','energy'],testKeys:['hh-weekly-pulse']}
@@ -26,8 +26,8 @@ for(const change of ['owner','unmount'])test('fast consent captures lifetime bef
  const h=mount('my-course',{search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
   if(!body)return empty;writes.push(body);requested=body.courseId;return slow.promise
  }})
- await h.settle();const start=nodes(h.tree).find(n=>n.props?.['data-opora-fast-consent']!==undefined);assert.ok(start)
- const first=start.props.onClick(),second=start.props.onClick();await h.settle();assert.equal(writes.length,1);assert.equal(writes[0].newCourse,true)
+ await h.settle();const start=findPart(h.tree,'OporaFirstWeekInvite');assert.ok(start)
+ const first=start.props.onAccept(),second=start.props.onAccept();await h.settle();assert.equal(writes.length,1);assert.equal(writes[0].newCourse,true);assert.equal(writes[0].consent,true)
  if(change==='owner'){h.render({data:account('owner-b')});await h.settle()}else h.unmount()
  slow.resolve({...empty,course:{...courseA,id:requested,stage:1,presetId:null}});await Promise.all([first,second]);await h.settle();assert.equal(writes.length,1);h.unmount()
 })
@@ -35,8 +35,8 @@ test('fast consent preserves capacity and preset exclusions',async()=>{
  const h=mount('my-course',{search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
   assert.equal(body,null);return {course:null,courses:[],assessments:{},access:{multiCourseEnabled:true,activeCourseLimit:1,activeCourseCount:1}}
  }})
- await h.settle();const start=nodes(h.tree).find(n=>n.props?.['data-opora-fast-consent']!==undefined);assert.ok(start);assert.equal(start.props.disabled,true)
- await start.props.onClick();assert.equal(h.calls.filter(c=>c.body).length,0);h.unmount()
+ await h.settle();const start=findPart(h.tree,'OporaFirstWeekInvite');assert.ok(start);assert.equal(start.props.disabled,true)
+ await start.props.onAccept();await h.settle();assert.equal(h.calls.filter(c=>c.body).length,0);h.unmount()
 })
 test('compact plan save carries owner and cannot confirm after selection changes',async()=>{
  const slow=deferred();let active=true,confirmed=0

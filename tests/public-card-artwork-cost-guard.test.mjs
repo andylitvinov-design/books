@@ -81,6 +81,8 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
+  assert.match(config.scripts.prebuild, /(?:^|&&\s*)node scripts\/build-public-card-artwork\.mjs(?:\s*&&|$)/);
+  assert.match(config.scripts.predev, /(?:^|&&\s*)node scripts\/build-public-card-artwork\.mjs(?:\s*&&|$)/);
   const pinnedGenerator = "node scripts/build-public-card-artwork.mjs";
   for (const phase of ["prebuild", "predev"]) {
     const commands = config.scripts[phase].split(" && ").map(command => command.trim());
