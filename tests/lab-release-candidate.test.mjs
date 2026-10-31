@@ -18,7 +18,21 @@ test('release candidate requires QA, committed changes, and correct base',async(
   await writeFile(join(dir,'feature.txt'),'feature');git(dir,'add','feature.txt');git(dir,'commit','-qm','feature');
   const packet=await prepareReleaseCandidate(dir,{qaPassed:true,testEvidence:true});
   assert.equal(packet.status,'RELEASE_CANDIDATE');assert.equal(packet.pr,null);assert.deepEqual(packet.changedFiles,['feature.txt']);
+  const repeated=await prepareReleaseCandidate(dir,{qaPassed:true,testEvidence:true});
+  assert.equal(repeated.headSha,packet.headSha);
   await writeFile(join(dir,'extra.txt'),'untracked');
   await assert.rejects(prepareReleaseCandidate(dir,{qaPassed:true,testEvidence:true}),/Untracked files/);
+ }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test('never publish Lab metadata as application changes',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'hh-rc-meta-'));
+ try{
+  git(dir,'init','-q');git(dir,'config','user.email','test@example.invalid');git(dir,'config','user.name','Lab Test');
+  await writeFile(join(dir,'base.txt'),'base');git(dir,'add','base.txt');git(dir,'commit','-qm','base');
+  const base=git(dir,'rev-parse','HEAD');
+  await writeFile(join(dir,'.hh-lab-task.json'),JSON.stringify({id:'LAB-105',title:'Improve course page',owner:'agent-b',baseSha:base}));
+  git(dir,'add','.hh-lab-task.json');git(dir,'commit','-qm','accidental manifest');
+  await assert.rejects(prepareReleaseCandidate(dir,{qaPassed:true,testEvidence:true}),/metadata must never/);
  }finally{await rm(dir,{recursive:true,force:true})}
 });
