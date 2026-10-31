@@ -109,10 +109,11 @@ if (!ready) {
       assert.equal(Number(remaining.rows[0].n),0,'expired hold never freezes CAD')
       await root.query(
         "update app_private.xp_charges set status='released',updated_at=now() where operation_id=$1",[expired])
-      await root.query('SAVEPOINT immutable')
-      await assert.rejects(root.query(
-        "update app_private.xp_charges set status='completed',updated_at=now() where operation_id=$1",[expired]))
-      await root.query('ROLLBACK TO SAVEPOINT immutable')
+      // PostgreSQL RLS hides released rows from UPDATE, so a forbidden
+      // transition may return zero rows rather than throwing an exception.
+      const refused = await root.query(
+        "update app_private.xp_charges set status='completed',updated_at=now() where operation_id=$1 returning id",[expired])
+      assert.equal(refused.rowCount, 0, 'released charge cannot be completed again')
       await root.query('COMMIT')
       await root.query('BEGIN')
       await authenticate(root,b)
