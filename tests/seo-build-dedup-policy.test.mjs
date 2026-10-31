@@ -18,6 +18,6 @@ test('SEO avoids duplicate production PR build while preserving nonproduction va
   assert.match(core, /Exact proposed release production build and TypeScript check/);
   assert.match(core, /run: npm run build/);
   const nextConfig = readFileSync('next.config.ts', 'utf8');
-  assert.doesNotMatch(nextConfig, /ignoreBuildErrors\\s*:\\s*true/);
+  assert.doesNotMatch(nextConfig, /ignoreBuildErrors\s*:\s*true/);
   assert.match(seo, /node scripts\/verify-public-tests-mobile\.mjs/);
 });
