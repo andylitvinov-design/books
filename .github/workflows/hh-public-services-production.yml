@@ -4,7 +4,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-public-services-production.yml'
+      # CI-policy YAML itself is guarded by actionlint and protected Core;
+      # only source/test changes launch this specialist.
       - 'scripts/ci-public-services-plan.mjs'
       - 'tests/ci-public-services-plan.test.mjs'
       # Alchemy landing/form and consent are direct browser surfaces, not generic *service* filenames.

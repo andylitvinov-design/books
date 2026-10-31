@@ -193,10 +193,20 @@ test('only proven alternative owner suites exclude unrelated full Public Service
     'scripts/verify-ideas-mobile-browser.mjs',
     'app/api/payments/talismans/checkout/route.js',
     'tests/temple-support-hub.test.mjs',
-    '.github/workflows/hh-public-services-production.yml',
     'scripts/ci-public-services-plan.mjs',
     'tests/ci-public-services-plan.test.mjs',
   ]) assert.equal(covers(pub,file),true,'production-impact path must trigger Public Services: '+file);
+});
+
+test('workflow-only policy changes are enforced by actionlint and Core without extra Public Services E2E', () => {
+  const pub = pathsOf('hh-public-services-production.yml');
+  const syntax = workflow('hh-actionlint.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.equal(covers(pub,'.github/workflows/hh-public-services-production.yml'),false);
+  assert.ok(syntax.includes("'.github/workflows/**'"));
+  assert.ok(core.includes("'.github/workflows/*.yml'") || core.includes(".github/workflows/*.yml|"));
+  assert.equal(planPublicServicesChangedPaths(['.github/workflows/hh-public-services-production.yml']).mode,'full',
+    'unknown workflow changes must still be conservatively classified');
 });
 
 test('direct browser and consent helpers are trigger-owned and never silently skipped', () => {
