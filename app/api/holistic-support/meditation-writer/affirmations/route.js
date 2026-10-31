@@ -19,7 +19,7 @@ export const dynamic="force-dynamic";
 export const revalidate=0;
 export const maxDuration=25;
 const FIELDS=["locale","theme","problemIndex","goalId","tone","focus",
-  "externalModelOptIn"];
+  "externalModelOptIn","providerPreference"];
 const unavailable=(reason)=>({
   status:"free_unavailable",modelUsed:false,provider:null,
   phrases:[],fallbackReason:reason,requiresEditorialReview:true,
@@ -39,6 +39,9 @@ export async function POST(request) {
     onlyKeys(body,FIELDS);
     if(body.externalModelOptIn!==true)
       throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
+    const providerPreference=body.providerPreference??"auto";
+    if(!["auto","gemini","openrouter"].includes(providerPreference))
+      throw new AppError("AI_PROVIDER_INVALID",400);
     // Unknown/forged strategy, medical text and arbitrary client phrases fail
     // closed instead of being silently copied into the model prompt.
     let strategy;
@@ -73,7 +76,7 @@ export async function POST(request) {
        programme.primaryApproach!==themeApproach[expectedFocus] ||
        programme.requiresHumanReview===true)
       throw new AppError("AFFIRMATION_DIRECTOR_NOT_READY",422);
-    const providers=freeWriterProviders(process.env);
+    const providers=freeWriterProviders(process.env,providerPreference);
     let payload=unavailable("AI_FREE_NOT_CONFIGURED");
     if(providers.length){
       await consumeRate(config,{op:"affirmations-free-hour",actorId:actor.id},3,3600);

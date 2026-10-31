@@ -5,6 +5,7 @@ import styles from "./meditation-writer-preview.module.css";
 import { MeditationWriterDeviceVoice } from "./meditation-writer-device-voice";
 
 type Locale = "ru" | "en" | "es";
+type ProviderPreference = "auto" | "gemini" | "openrouter";
 type Focus = "stress" | "relationships" | "self_worth" | "meaning";
 type Style = "gentle_simple" | "grounded_practical" | "poetic_contained" | "contemplative";
 type Goal = "settle" | "support" | "clarity" | "boundaries" |
@@ -27,6 +28,7 @@ const lang={
     checkin:"По желанию: оценка до и после",checkinNone:"Не оценивать",
     checkinScore:"Личные оценки до и после — это наблюдение, а не показатель лечебного эффекта.",
     mode:"Как создать текст",templateMode:"Без внешнего AI",aiMode:"Бесплатный AI · черновик",
+    provider:"Система генерации",providerOptions:["Авто · Gemini → OpenRouter","Gemini","OpenRouter"],
     aiConsent:"Согласен передавать бесплатному AI Google или OpenRouter только общие коды цели, образа и стиля. Провайдеры могут использовать запросы для улучшения моделей. Мои личные фразы, история и данные кабинета не отправляются.",
     aiDraft:"Черновик AI · требует редакторской проверки",
     estimated:"Оценочная длительность чтения с паузами",
@@ -47,6 +49,7 @@ const lang={
     checkin:"Optional: before and after",checkinNone:"Skip rating",
     checkinScore:"These are your own observations, not evidence of a treatment effect.",
     mode:"Text generation",templateMode:"No external AI",aiMode:"Free AI · draft",
+    provider:"AI provider",providerOptions:["Auto · Gemini → OpenRouter","Gemini","OpenRouter"],
     aiConsent:"I agree to send only general goal, image and style codes to free Google or OpenRouter AI. These providers may use free-tier prompts to improve models. My personal phrases, history and account data are not sent.",
     aiDraft:"AI draft · editorial review required",
     estimated:"Estimated spoken length with pauses",
@@ -67,6 +70,7 @@ const lang={
     checkin:"Opcional: antes y después",checkinNone:"Omitir evaluación",
     checkinScore:"Estas son observaciones personales, no una medida de eficacia terapéutica.",
     mode:"Creación del texto",templateMode:"Sin IA externa",aiMode:"IA gratuita · borrador",
+    provider:"Proveedor de IA",providerOptions:["Auto · Gemini → OpenRouter","Gemini","OpenRouter"],
     aiConsent:"Acepto enviar solo códigos generales de objetivo, imagen y estilo a la IA gratuita de Google u OpenRouter. Estos servicios pueden usar solicitudes para mejorar modelos. Mis frases personales, historial y datos de mi cuenta no se envían.",
     aiDraft:"Borrador de IA · requiere revisión editorial",
     estimated:"Duración estimada de voz con pausas",
@@ -117,6 +121,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [duration,setDuration]=useState<5|10|15>(10);
   const [clientPhrase,setClientPhrase]=useState("");
   const [mode,setMode]=useState<"template"|"llm">("template");
+  const [providerPreference,setProviderPreference]=useState<ProviderPreference>("auto");
   const [externalOptIn,setExternalOptIn]=useState(false);
   const [consented,setConsented]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -134,7 +139,8 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:l,focus,intentionCode:goal,styleId:style,motifId:motif,
           durationMinutes:duration,clientPhrase,resourceImageryOptIn:true,
-          generationMode:mode,externalModelOptIn:mode==="llm"&&externalOptIn}),
+          generationMode:mode,providerPreference,
+          externalModelOptIn:mode==="llm"&&externalOptIn}),
       });
       const data=await response.json() as Preview & {error?:string};
       if(!response.ok){
@@ -190,6 +196,16 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         <option value="llm">{t.aiMode}</option>
       </select>
     </label>
+    {mode==="llm"&&<label className={styles.mode} data-meditation-ai-provider>
+      {t.provider}
+      <select value={providerPreference} onChange={e=>{
+        setProviderPreference(e.target.value as ProviderPreference);
+        setExternalOptIn(false);setPreview(null);
+      }}>
+        {(["auto","gemini","openrouter"] as const).map((choice,i)=>
+          <option key={choice} value={choice}>{t.providerOptions[i]}</option>)}
+      </select>
+    </label>}
     {mode==="llm"&&<label className={styles.consent}>
       <input type="checkbox" checked={externalOptIn}
         onChange={e=>setExternalOptIn(e.target.checked)}/>

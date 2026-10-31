@@ -90,6 +90,8 @@ test("free OpenRouter receives no personal material, and never selects paid mode
   assert.deepEqual([...result.phrases],phrases);
   assert.equal(url,"https://openrouter.ai/api/v1/chat/completions");
   assert.equal(JSON.parse(sent).model,"openrouter/free");
+  assert.equal(JSON.parse(sent).provider.data_collection,"deny");
+  assert.equal(JSON.parse(sent).response_format.type,"json_object");
   for(const term of [secret,"rawClientPhrase","profile","clientId","symptoms"])
     assert.equal(sent.includes(term),false,term);
 });
@@ -179,4 +181,40 @@ test("both real app surfaces enforce opt-in, private server flags and no raw not
   assert.ok(request);
   for(const forbidden of ["problemNote","goalNote","settings.custom","clientPhrase","profile","tests"])
     assert.equal(request.includes(forbidden),false,forbidden);
+});
+
+test("provider switch is server-enforced for meditation and affirmations",()=>{
+  const env={
+    HH_COUNCIL_GEMINI_API_KEY:"gemini_demo_valid_123456",
+    HH_COUNCIL_OPENROUTER_API_KEY:"openrouter_demo_valid_123456",
+    HH_MEDITATION_WRITER_GEMINI_FREE_ENABLED:"true",
+    HH_MEDITATION_WRITER_GEMINI_FREE_TIER_CONFIRMED:"true",
+    HH_MEDITATION_WRITER_OPENROUTER_FREE_ENABLED:"true",
+    HH_MEDITATION_WRITER_OPENROUTER_FREE_TIER_CONFIRMED:"true",
+  };
+  assert.deepEqual(freeWriterProviders(env,"auto").map(x=>x.id),[
+    "gemini_free","openrouter_free"]);
+  assert.deepEqual(freeWriterProviders(env,"openrouter").map(x=>x.id),[
+    "openrouter_free"]);
+  assert.deepEqual(freeWriterProviders(env,"gemini").map(x=>x.id),[
+    "gemini_free"]);
+  const unavailable={...env,HH_MEDITATION_WRITER_OPENROUTER_FREE_ENABLED:"false"};
+  assert.deepEqual(freeWriterProviders(unavailable,"openrouter"),[]);
+  assert.deepEqual(freeWriterProviders(unavailable,"auto").map(x=>x.id),["gemini_free"]);
+  assert.throws(()=>freeWriterProviders(env,"paid"),/FREE_WRITER_INVALID_PREFERENCE/);
+  for(const file of [
+    "app/api/holistic-support/meditation-writer/affirmations/route.js",
+    "app/api/holistic-support/meditation-writer/brief/route.js",
+  ]){
+    const route=readFileSync(new URL("../"+file,import.meta.url),"utf8");
+    assert.ok(route.includes('"providerPreference"'));
+    assert.ok(route.includes("AI_PROVIDER_INVALID"));
+    assert.ok(route.includes("freeWriterProviders(process.env,providerPreference)"));
+  }
+  const hypno=readFileSync(new URL("../components/mandala-hypno-compact.tsx",import.meta.url),"utf8");
+  const meditation=readFileSync(new URL("../components/meditation-writer-preview.tsx",import.meta.url),"utf8");
+  assert.ok(hypno.includes("data-hypno-ai-provider"));
+  assert.ok(hypno.includes("providerPreference:aiProvider"));
+  assert.ok(meditation.includes("data-meditation-ai-provider"));
+  assert.ok(meditation.includes("generationMode:mode,providerPreference"));
 });

@@ -47,6 +47,7 @@ const copy = {
     aiFallback:"Free AI is unavailable; showing editable local suggestions.",aiSignIn:"Sign in for free AI. Local suggestions work without an account.",
     aiReady:"AI draft: review and edit five phrases ·",aiLocalNote:"Wishes were interpreted on this device; raw text was not shared.",aiTone:"Tone",
     aiTones:["Gentle","Grounded","Encouraging"],
+    aiProvider:"AI provider",aiProviders:["Auto · Gemini → OpenRouter","Gemini","OpenRouter"],
   },
   ru: {
     request:"Мой запрос", requestHint:"Проблема и цель в одном месте", current:"Сейчас", desired:"Моя цель",
@@ -69,6 +70,7 @@ const copy = {
     aiFallback:"Бесплатный AI недоступен: показан редактируемый локальный подбор.",aiSignIn:"Войдите в кабинет для бесплатного AI. Локальный подбор работает без входа.",
     aiReady:"AI-черновик: проверьте и измените 5 фраз ·",aiLocalNote:"Описание распознано на устройстве; текст не отправлялся.",aiTone:"Тон",
     aiTones:["Мягкий","Практичный","Вдохновляющий"],
+    aiProvider:"Система генерации",aiProviders:["Авто · Gemini → OpenRouter","Gemini","OpenRouter"],
   },
   es: {
     request:"Mi intención", requestHint:"Dificultad y objetivo en un lugar", current:"Ahora", desired:"Mi objetivo",
@@ -91,6 +93,7 @@ const copy = {
     aiFallback:"La IA gratuita no está disponible. Se usaron sugerencias locales editables.",aiSignIn:"Inicia sesión para usar IA gratuita. Las frases locales no lo requieren.",
     aiReady:"Borrador de IA: revisa y edita las cinco frases ·",aiLocalNote:"Las notas se interpretaron en el dispositivo; no se envió texto personal.",aiTone:"Tono",
     aiTones:["Suave","Práctico","Inspirador"],
+    aiProvider:"Proveedor de IA",aiProviders:["Auto · Gemini → OpenRouter","Gemini","OpenRouter"],
   },
 } as const;
 
@@ -113,6 +116,7 @@ export function MandalaHypnoCompact({
   const [aiConsent,setAiConsent]=useState(false);
   const [aiBusy,setAiBusy]=useState(false);
   const [aiTone,setAiTone]=useState<"gentle"|"grounded"|"inspiring">("gentle");
+  const [aiProvider,setAiProvider]=useState<"auto"|"gemini"|"openrouter">("auto");
   const [aiMessage,setAiMessage]=useState("");
   const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
   const goal=affirmationGoalCatalog[locale].find(item=>item.id===goalId) || affirmationGoalCatalog[locale][0];
@@ -146,7 +150,7 @@ export function MandalaHypnoCompact({
         method:"POST",cache:"no-store",credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale,theme,problemIndex:local.problemIndex,goalId:local.goalId,tone:aiTone,
-          focus:"agency",externalModelOptIn:true}),
+          focus:"agency",providerPreference:aiProvider,externalModelOptIn:true}),
       });
       const result=await response.json() as {
         status?:string;phrases?:string[];provider?:string;
@@ -259,6 +263,15 @@ export function MandalaHypnoCompact({
                 onChange={event=>setAiTone(event.target.value as typeof aiTone)}>
                 {(["gentle","grounded","inspiring"] as const).map((tone,i)=>
                   <option key={tone} value={tone}>{ui.aiTones[i]}</option>)}
+              </select>
+            </label>
+            <label className={css.aiProvider}>{ui.aiProvider}
+              <select value={aiProvider} data-hypno-ai-provider
+                disabled={disabled||aiBusy} onChange={event=>{
+                  setAiProvider(event.target.value as typeof aiProvider);setAiMessage("");
+                }}>
+                {(["auto","gemini","openrouter"] as const).map((id,i)=>
+                  <option key={id} value={id}>{ui.aiProviders[i]}</option>)}
               </select>
             </label>
           </div>

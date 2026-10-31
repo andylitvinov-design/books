@@ -26,7 +26,7 @@ export const maxDuration=25;
 const FIELDS=["locale","focus","mode","durationMinutes","intentionCode","motifId",
   "symbolId","styleId","channel","avoidElements","noImagery","clientPhrase",
   "desiredExperience","problemFrame","resourceImageryOptIn",
-  "generationMode","externalModelOptIn"];
+  "generationMode","externalModelOptIn","providerPreference"];
 const stopped = /\b(?:stop|please stop|i feel worse|getting worse|me siento peor|no quiero continuar)\b|(?:мне стало хуже|становится хуже|хочу остановиться|хочу умереть|самоповреждение)/iu;
 const preflight = (texts,locale)=>{
   for(const text of texts){
@@ -51,12 +51,14 @@ export async function POST(request) {
     const body=await readBody(request,4000);
     onlyKeys(body,FIELDS);
     const {resourceImageryOptIn,generationMode="template",
-      externalModelOptIn=false,...requested}=body;
+      externalModelOptIn=false,providerPreference="auto",...requested}=body;
     if(!["template","llm"].includes(generationMode) ||
        typeof externalModelOptIn!=="boolean")
       throw new AppError("WRITER_INVALID_MODE",400);
     if(generationMode==="llm" && externalModelOptIn!==true)
       throw new AppError("AI_EXTERNAL_OPT_IN_REQUIRED",403);
+    if(!["auto","gemini","openrouter"].includes(providerPreference))
+      throw new AppError("AI_PROVIDER_INVALID",400);
     const normalized=normalizeWriterRequest(requested);
     if(normalized.status!=="valid")
       throw new AppError(normalized.code,400);
@@ -112,7 +114,7 @@ export async function POST(request) {
       canPauseOrSkip:true,requiresEditorialReview:true,
     };
     if(generationMode==="llm"){
-      const providers=freeWriterProviders(process.env);
+      const providers=freeWriterProviders(process.env,providerPreference);
       if(providers.length){
         await consumeRate(config,{op:"meditation-writer-free-hour",actorId:actor.id},3,3600);
         await consumeRate(config,{op:"meditation-writer-free-global-day"},30,86400);
