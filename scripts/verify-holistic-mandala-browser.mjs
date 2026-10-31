@@ -186,6 +186,19 @@ const runEngine = async ([engine, browserType]) => {
             assert.match(details,/width=720|width=1080/);
             assert.match(details,/height=1280|height=1920/);
           }
+          // Regression for the owner's iPhone screenshot: a nonempty native
+          // recording may still be undecodable. Simulate that decoder failure
+          // after validating the real file, and make sure the page hides BOTH
+          // Save and the "meditation already created" promotional section.
+          if(engine==="chromium"&&locale==="ru"&&width===390){
+            await page.locator("[data-mandala-video-preview]").evaluate(video=>
+              video.dispatchEvent(new Event("error"))); // simulated native decode failure
+            await expect(page.locator("[data-video-playback-error]")).toBeVisible();
+            assert.equal(await page.locator("[data-mandala-video-download]").count(),0,
+              "an unreadable media blob must not be offered as a downloadable video");
+            assert.equal(await page.locator("[data-video-post-generation-offers]").count(),0,
+              "do not claim a meditation is finished on broken-video playback");
+          }
           // Restore original untouched Studio state for the existing full
           // photo/audio/Hypno regression cases below, on this same page.
           const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
