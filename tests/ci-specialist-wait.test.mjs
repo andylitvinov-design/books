@@ -36,6 +36,9 @@ test('loose base reuse is limited to normal public changes; privacy and policy r
     [], ['scripts/ci-specialist-aggregate.mjs'], ['.github/workflows/hh-pr-core-release.yml'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
+    ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
+    ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],
+    ['lib/assessments/contracts.js'], ['components/direct-message-inbox.jsx'],
     ['docs/operations/CI_RELEASE_POLICY.md'], ['app/[locale]/about/page.tsx', 'lib/wallet/account.js'],
   ]) assert.equal(requiresCurrentProductionBase(files), true, files.join(','));
 });
@@ -77,6 +80,14 @@ test('sensitive changes still reject advanced bases; draft, conflicts and change
   live = { ...pr, draft: true };
   await assert.rejects(() => verify(api,ctx,{base:new Map(),current:new Map()},{maxWaitMs:0}),
     /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+});
+
+test('a verified private-message diff rejects a production advance', async () => {
+  const advanced = { ...pr, base: { ...pr.base, sha: 'c'.repeat(40) } };
+  const api = {pr: async () => advanced, changed: async () => [], runs: async () => [], jobs: async () => []};
+  const files = {base:new Map(), current:new Map(),
+    changedRows:[{filename:'lib/practitioners/direct-messages.js', status:'modified'}]};
+  await assert.rejects(() => verify(api,ctx,files,{maxWaitMs:0}), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
 });
 
 test('sensitive PR stays pinned when base advances during specialist execution', async () => {
