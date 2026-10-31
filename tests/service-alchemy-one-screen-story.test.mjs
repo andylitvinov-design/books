@@ -42,3 +42,16 @@ test("Very short iPhone keeps session descriptions and prices through progressiv
  assert.match(css,/\.heroPortrait\{height:74px\}/);
  assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
 });
+
+test("390px phone formats remain full-content and fit a real one-screen viewport", () => {
+ const css=read("components/alchemy-soul-landing.module.css");
+ const form=read("components/alchemy-soul-lead-form.tsx");
+ assert.match(css, /@media \(min-width:351px\) and \(max-width:680px\) and \(max-height:850px\)/);
+ assert.match(css, /\.optionsSection>\.panelPhoto\{height:50px;margin-bottom:6px\}/);
+ assert.match(css, /\.optionsSection \.freeOption\{margin-top:3px\}/);
+ for(const marker of ['data-alchemy-format="30"','data-alchemy-format="60"','data-alchemy-format="month"','data-alchemy-format-details','data-alchemy-booking-formats'])
+   assert.ok(form.includes(marker),marker);
+ // Descriptions and consent-gated booking remain in DOM, not deleted to pass geometry.
+ for(const marker of ['data.shortText','data.longText','data.monthText','data.monthNote','<ContactChannelChooser'])
+   assert.ok(form.includes(marker),marker);
+});

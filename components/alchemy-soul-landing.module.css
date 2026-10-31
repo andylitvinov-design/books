@@ -647,3 +647,14 @@
   .page[lang="ru"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
   .page[lang="ru"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }
+
+/* 351–680px short-phone Alchemy formats: preserve every price, description
+   and consented booking CTA, and keep the approved photograph visible.
+   Real Chromium/WebKit one-screen assertions enforce the height budget. */
+@media (min-width:351px) and (max-width:680px) and (max-height:850px){
+  .optionsSection>.panelPhoto{height:50px;margin-bottom:6px}
+  .optionsSection .sectionHeading{margin-bottom:6px}
+  .optionsSection .monthlyCard{margin-top:3px}
+  .optionsSection .formatHint{margin-top:3px}
+  .optionsSection .freeOption{margin-top:3px}
+}
