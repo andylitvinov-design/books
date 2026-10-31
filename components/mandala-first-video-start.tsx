@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { buildFirstVideoDraft } from "@/lib/mandala/first-video-director.mjs";
+import { FIRST_VIDEO_STARTER_TEMPLATES, resolveFirstVideoStarterTemplate } from "@/lib/mandala/first-video-starter-templates.mjs";
 import css from "./mandala-first-video-start.module.css";
 
 type FilmStyle = "warm" | "nature" | "dream" | "minimal";
@@ -44,6 +45,7 @@ const l10n = {
     intro: "Ваша идея → подходящие готовые сцены → видео.",
     wish: "Ваше пожелание", placeholder: "Например: Тёплый рассвет над морем, затем дорога через цветущий сад. Хочу ощущение надежды и спокойствия.",
     wishHelp: "Пока вы не разрешите использовать AI, текст остаётся в браузере.",
+    starters: "Готовые сценарии", quickResize: "Формат видео",
     filters: "Дополнительные пожелания и фильтры", filtersHelp: "Необязательно · по умолчанию подберём автоматически",
     theme: "Тема", automatic: "Автоматически", style: "Визуальный стиль",
     aspect: "Формат", length: "Продолжительность", movement: "Движение",
@@ -71,6 +73,7 @@ const l10n = {
     intro: "Your idea → matching existing scenes → video.",
     wish: "Your idea", placeholder: "For example: A warm sunrise over the sea, followed by a path through a flower garden. A gentle sense of hope.",
     wishHelp: "Your text stays in this browser unless you explicitly agree to use an AI model.",
+    starters: "Starter designs", quickResize: "Video format",
     filters: "Optional preferences and filters", filtersHelp: "Optional · automatic defaults",
     theme: "Theme", automatic: "Automatic", style: "Visual style",
     aspect: "Aspect ratio", length: "Duration", movement: "Movement",
@@ -98,6 +101,7 @@ const l10n = {
     intro: "Tu idea → escenas disponibles → vídeo.",
     wish: "Tu idea", placeholder: "Por ejemplo: Amanecer cálido sobre el mar, luego un sendero en un jardín de flores. Un sentimiento de esperanza.",
     wishHelp: "Tu texto permanece en el navegador sin consentimiento explícito para usar una IA.",
+    starters: "Diseños rápidos", quickResize: "Formato de vídeo",
     filters: "Preferencias y filtros opcionales", filtersHelp: "Opcionales · selección automática",
     theme: "Tema", automatic: "Automático", style: "Estilo visual",
     aspect: "Formato", length: "Duración", movement: "Movimiento",
@@ -133,6 +137,7 @@ export function MandalaFirstVideoStart({
   useEffect(()=>{setHydrated(true);},[]);
   const [prefs, setPrefs] = useState<Preferences>(initial);
   const [variant, setVariant] = useState(0);
+  const [selectedStarter, setSelectedStarter] = useState<string | null>(null);
   const [promptOverride, setPromptOverride] = useState("");
   const [mode, setMode] = useState<"local" | "manual" | "ai">("local");
   const [aiConsent, setAiConsent] = useState(false);
@@ -150,22 +155,35 @@ export function MandalaFirstVideoStart({
     }) as Draft;
     onApply(nextDraft, nextPrefs);
   }
+  function selectStarter(id: string) {
+    if (disabled || !hydrated || preparing || recording) return;
+    const selected = resolveFirstVideoStarterTemplate(id, locale) as
+      | { wish: string; preferences: Preferences }
+      | null;
+    if (!selected) return;
+    const nextPrefs = { ...initial, ...selected.preferences };
+    aiRevisionRef.current++;
+    setAiLoading(false); setAiStatus(""); setMode("local"); setPromptOverride("");
+    setSelectedStarter(id); setVariant(0); setPrefs(nextPrefs);
+    onWishChange(selected.wish);
+    apply(selected.wish, nextPrefs, "", 0);
+  }
   function changeWish(value: string) {
     const next = value.slice(0, 800);
     aiRevisionRef.current++; setAiLoading(false);
-    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0);
+    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0); setSelectedStarter(null);
     if (next.trim()) apply(next, prefs, "", 0);
   }
   function changePreferences(patch: Partial<Preferences>) {
     const next = { ...prefs, ...patch };
     aiRevisionRef.current++; setAiLoading(false);
-    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0);
+    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0); setSelectedStarter(null);
     if (wish.trim()) apply(wish, next, "", 0);
   }
   function changePrompt(value: string) {
     const next = value.slice(0, 1000);
     aiRevisionRef.current++; setAiLoading(false);
-    setPromptOverride(next); setMode("manual"); setAiStatus("");
+    setPromptOverride(next); setMode("manual"); setAiStatus(""); setSelectedStarter(null);
     if (wish.trim()) apply(wish, prefs, next);
   }
   function resetPrompt() {
@@ -225,6 +243,35 @@ export function MandalaFirstVideoStart({
       onChange={event => changeWish(event.currentTarget.value)}
       placeholder={t.placeholder}/>
     <p className={css.subtle}>{t.wishHelp}</p>
+
+    <div className={css.quickTools} data-first-video-quick-tools>
+      <div className={css.starterGroup} role="group" aria-label={t.starters}>
+        <small>{t.starters}</small>
+        <div className={css.starterButtons}>
+          {FIRST_VIDEO_STARTER_TEMPLATES.map(template => (
+            <button type="button" key={template.id} data-first-video-starter={template.id}
+              aria-pressed={selectedStarter === template.id}
+              disabled={disabled || !hydrated || preparing || recording}
+              onClick={() => selectStarter(template.id)}>
+              {template.labels[locale]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={css.formatGroup} role="group" aria-label={t.quickResize}>
+        <small>{t.quickResize}</small>
+        <div className={css.formatButtons}>
+          {(["landscape", "portrait", "square"] as const).map(format => (
+            <button type="button" key={format} data-first-video-quick-aspect={format}
+              aria-pressed={prefs.aspect === format}
+              disabled={disabled || !hydrated || preparing || recording}
+              onClick={() => changePreferences({aspect: format})}>
+              {format === "landscape" ? "16:9" : format === "portrait" ? "9:16" : "1:1"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
 
     <details className={css.disclosure} data-first-video-filters>
       <summary><span><SlidersHorizontal size={18} aria-hidden="true"/>

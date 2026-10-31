@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildFirstVideoDraft, inferFirstVideoTheme } from "../lib/mandala/first-video-director.mjs";
+// Execute the new localized starter-template tests in the existing focused
+// Mandala CI contract list without adding a heavyweight workflow.
+import "./mandala-first-video-starters.test.mjs";
 const browserSource=()=>readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
 
 test("RU/EN/ES auto classify with stable fallback", () => {

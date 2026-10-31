@@ -44,3 +44,16 @@
 .ready{display:flex;align-items:center;gap:7px;margin:7px 0;color:#106d50;font-size:12px;font-weight:800;text-decoration:underline}
 @media(max-width:380px){.root{padding:9px;border-radius:13px}.head h3{font-size:16px!important}.promptActions button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.disclosure>summary>svg{transition:none}}
+
+/* Compact, optional starter-design and one-tap aspect toolbar. No second editor. */
+.quickTools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;max-width:100%;margin:6px 0 8px}
+.quickTools :is(.starterGroup,.formatGroup){min-width:0}
+.quickTools small{display:block;margin:0 0 3px;color:#4a7363;font-size:10px;font-weight:750}
+.starterButtons{display:flex;align-items:center;gap:5px;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:1px 1px 3px}
+.formatButtons{display:flex;gap:3px}
+.starterButtons button,.formatButtons button{flex:none;min-height:33px;padding:5px 9px;border:1px solid #d1dfd5;border-radius:9px;background:#fff;color:#2b5849;font:750 11px/1.15 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;white-space:nowrap}
+.formatButtons button{min-width:39px;padding:5px}
+.starterButtons button[aria-pressed="true"],.formatButtons button[aria-pressed="true"]{border-color:#087e5d;background:#e4f5eb;color:#086447}
+.starterButtons button:focus-visible,.formatButtons button:focus-visible{outline:2px solid #d8ae51;outline-offset:2px}
+.starterButtons button:disabled,.formatButtons button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:380px){.quickTools{gap:5px}.starterButtons button,.formatButtons button{font-size:10px;padding:5px}.formatButtons button{min-width:36px}}
