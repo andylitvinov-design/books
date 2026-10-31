@@ -103,9 +103,7 @@ on:
       - '!app/**/holistic-support/voice-studio/route.ts'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
-      - '!components/mandala-meditation-client.tsx'
       - '!components/mandala-meditation.module.css'
-      - '!components/mandala-personal-meditation.tsx'
 permissions:
   contents: read
   pull-requests: read
