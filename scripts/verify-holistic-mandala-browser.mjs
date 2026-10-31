@@ -1413,14 +1413,10 @@ const runEngine = async ([engine, browserType]) => {
       }
     }
 };
-// CI Chromium + WebKit each run the full real browser acceptance, but do not
-// fight for one runner's MP4 decoders and MediaRecorder at the same instant.
-// Finish both (collecting failures) and never waive an unsuccessful engine.
-const engineResults = [];
-for (const engine of engines) {
-  try { await runEngine(engine); engineResults.push({status:"fulfilled"}); }
-  catch (reason) { engineResults.push({status:"rejected",reason}); }
-}
+// Both engines finish before result handling: preserve the mandatory
+// independently executed Chromium/WebKit E2E scenarios with bounded concurrency.
+// Never waive a failed browser or skip an actual encoded video.
+const engineResults = await Promise.allSettled(engines.map(runEngine));
 const rejectedEngines = engineResults.filter(result => result.status === "rejected");
 if (rejectedEngines.length) {
   throw new AggregateError(rejectedEngines.map(result => result.reason),
