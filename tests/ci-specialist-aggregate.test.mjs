@@ -471,6 +471,7 @@ test('client progress owner is complete before the trusted second-phase deletion
   const owner='.github/workflows/hh-reports-development-program.yml';
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],owner);
   const source=readFileSync(owner,'utf8');
+  assert.ok(source.includes("github.ref != 'refs/heads/codex/public-book-library'"), 'Report-only production push must avoid duplicate Next build');
   for (const required of [
     "      - 'lib/clients/session-delivery-service.js'",
     "      - 'lib/documents/report-progress.js'",
