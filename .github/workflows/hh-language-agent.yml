@@ -1,0 +1,54 @@
+name: HH Language Agent (focused)
+on:
+  pull_request:
+    paths:
+      - "lib/holistic-support/language-agent.mjs"
+      - "lib/holistic-support/language-agent.d.mts"
+      - "lib/holistic-support/local-conversation-contract.*"
+      - "lib/holistic-support/public-reiki-audio-client.*"
+      - "components/holistic-language-conversation.*"
+      - "components/holistic-support-inline-guide.*"
+      - "public/holistic-mind/**"
+      - "tests/holistic-language-agent.test.mjs"
+      - "tests/holistic-local-conversation.test.mjs"
+      - "tests/holistic-reiki-audio-language-agent.test.mjs"
+      - ".github/workflows/hh-language-agent.yml"
+  workflow_dispatch:
+concurrency:
+  group: hh-language-agent-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  language-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax
+        run: |
+          node --check lib/holistic-support/language-agent.mjs
+          node --check lib/holistic-support/local-conversation-contract.mjs
+          node --check lib/holistic-support/public-reiki-audio-client.mjs
+          node --check public/holistic-mind/webllm-worker.mjs
+      - name: Multilingual privacy and catalog contracts
+        run: node --test tests/holistic-language-agent.test.mjs tests/holistic-local-conversation.test.mjs tests/holistic-reiki-audio-language-agent.test.mjs
+
+  typed-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install pinned repository dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript check
+        run: npx tsc --noEmit
+      - name: Targeted ESLint
+        run: npx eslint components/holistic-language-conversation.tsx components/holistic-support-inline-guide.tsx
