@@ -91,6 +91,20 @@ on:
       # components still run the full Public Services suite.
       - '!components/mandala-free-video-studio.tsx'
       - '!components/mandala-video-mobile.module.css'
+      # P0 hypnocorrection implements a Video Studio-only private, consented
+      # feature. The exact route source is checked for auth/same-origin/rate
+      # limits, including Gemini opt-in, in tests/video-affirmations.test.mjs.
+      # Mandatory holistic-support-mandala.yml covers full Next/TS/lint,
+      # actual 320–430px RU/EN/ES Chromium+WebKit, MediaRecorder, audio
+      # attachment/rights and encoded output. Never exclude other service
+      # routes or public booking/commerce files from Public Services.
+      - '!components/mandala-hypno-compact*'
+      - '!components/mandala-hypnocorrection-mobile*'
+      # Studio's standalone local first-meditation course also reuses the same
+      # original composer, is fully covered by specialist browser/media, and
+      # does not edit public services, checkout or booking workflows.
+      - '!components/mandala-personal-meditation*'
+      - '!app/api/holistic-support/hypno-strategy/route.js'
       # The goal-first Auto Video Director only selects previously licensed
       # local MP4 montages. Its entire Node/TypeScript/Next.js/Chromium/WebKit
       # recorder/rights acceptance is owned by holistic-support-mandala.yml.
@@ -111,6 +125,10 @@ on:
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'
+      # The compact 49-question Video Studio accordion shares the same
+      # mandatory Mandala Node/TS/Next/Chromium/WebKit real-encode gate.
+      # It does not edit Alchemy, checkout, practitioner services, or public API routes.
+      - '!components/mandala-video-parameters*'
 permissions:
   contents: read
   pull-requests: read

@@ -83,7 +83,14 @@ const runEngine = async ([engine, browserType]) => {
         const page = await context.newPage();
         const uploaded = [];
         const errors = [];
+        const mp4Responses = [];
         page.on("pageerror", err => errors.push(err.message));
+        page.on("response", response => {
+          if(!response.url().includes("/money-films-v1/golden-rain.mp4"))return;
+          const headers=response.headers();
+          mp4Responses.push({status:response.status(),acceptRanges:headers["accept-ranges"]||null,
+            contentRange:headers["content-range"]||null,contentType:headers["content-type"]||null});
+        });
         page.on("request", request => {
           if (request.method() === "POST" && /(?:upload|photos|storage\/v1|\/media\/)/i.test(request.url())) {
             uploaded.push(request.url());
@@ -207,11 +214,110 @@ const runEngine = async ([engine, browserType]) => {
             .waitFor({state:"visible",timeout:25000});
         }
 
+        // The standalone free meditation course is a real interactive path,
+        // not a decorative button, and must not send private data or purchase.
+        await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
+          .waitFor({state:"visible",timeout:25000});
+        const courseToggle=page.locator("[data-video-meditation-course-toggle]");
+        await courseToggle.click();
+        await expect(courseToggle).toHaveAttribute("aria-expanded","true");
+        const meditationCourse=page.locator("[data-video-meditation-course-panel]");
+        await meditationCourse.waitFor({state:"visible",timeout:12000});
+        const requestText={
+          ru:"Хочу спокойнее общаться с родителями",
+          en:"I want gentle family communication",
+          es:"Quiero una comunicación amable con mi familia",
+        }[locale];
+        await meditationCourse.locator("[data-meditation-course-request]").fill(requestText);
+        await meditationCourse.locator("[data-meditation-generate]").click();
+        const courseScript=await meditationCourse.locator("[data-meditation-script]").inputValue();
+        assert.ok(courseScript.includes(requestText),
+          "day one is a real, locally generated meditation for the entered intention");
+        await expect(meditationCourse.locator("[data-meditation-course-day]")).toHaveCount(8);
+        // Carousel content must never grow the implicit Studio grid to its
+        // eight-card intrinsic width and push real controls off screen.
+        await page.waitForFunction(()=>{
+          const builder=document.querySelector("[data-video-quick-builder]");
+          const body=document.documentElement;
+          if(!builder)return false;
+          const r=builder.getBoundingClientRect();
+          return r.width<=innerWidth+2 && r.left>=-2 &&
+            body.scrollWidth<=body.clientWidth+2;
+        },undefined,{timeout:10000});
+
+        await meditationCourse.locator("[data-meditation-generate]").click();
+        const alternate=await meditationCourse.locator("[data-meditation-script]").inputValue();
+        assert.notEqual(alternate,courseScript,
+          "Generate again must produce an alternative passage while preserving the goal");
+        assert.ok(alternate.includes(requestText));
+        await expect(meditationCourse.locator("[data-meditation-course-day]")).toHaveCount(8);
+        await meditationCourse.locator("[data-meditation-course-order]").click();
+        await expect(meditationCourse.locator("[data-meditation-course-contact]")).toBeVisible();
+        const enquirySubmit=meditationCourse.locator("[data-meditation-course-submit]");
+        assert.equal(await enquirySubmit.isEnabled(),false,
+          "a course request cannot submit without one-time contact consent");
+        await meditationCourse.locator('input[type="email"]').fill("course-test@example.org");
+        await meditationCourse.locator('input[type="checkbox"]').check();
+        assert.equal(await enquirySubmit.isEnabled(),true,
+          "consented contact form is usable, but CI never submits a real enquiry");
+        await courseToggle.click();
+        await expect(courseToggle).toHaveAttribute("aria-expanded","false");
+        assert.equal(await page.locator("[data-video-meditation-course-panel]").count(),0);
+
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
         assert.equal(await quick.locator("[data-video-quick-section]").count(),4,
           "the cover/photo panel is now part of the shared scene library");
         assert.equal(await quick.locator("[data-video-quick-theme]").count(),6);
+        // Separate anonymous page prevents toggles in the new Hypnocorrection
+        // UI from altering the long-standing video/audio/codec acceptance flow.
+        // Real clicks (not mock DOM) validate the sixth quick tab in WebKit
+        // and Chromium, its large-type 1-column 3-feature cards and Wave.
+        const hypnoPage=await context.newPage();
+        try{
+          const hpResponse=await hypnoPage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+          assert.equal(hpResponse?.status(),200);
+          const sixth=hypnoPage.locator('[data-video-quick-control="extra"]');
+          await sixth.waitFor({state:"visible",timeout:15000});
+          assert.equal((await sixth.innerText()).trim(),{
+            ru:"Гипнокоррекция",en:"Hypno effects",es:"Efectos",
+          }[locale]);
+          await sixth.click();
+          const hp=hypnoPage.locator("[data-hypno-mobile]");
+          await hp.waitFor({state:"visible",timeout:15000});
+          assert.equal(await hp.locator("[data-hypno-group]").count(),4);
+          assert.equal(await hp.locator("[data-hypno-group='phrases'] [role='switch']").count(),3);
+          assert.equal(await hp.locator("[data-hypno-group='audio'] [role='switch']").count(),3);
+          assert.equal(await hp.locator("[data-hypno-group='visual'] [role='switch']").count(),2);
+          assert.equal(await hp.locator("[data-hypno-group='meditation'] button").count(),2,
+            "one meditation creation CTA plus disclosure header, not four miniature tiles");
+          const typo=await hp.locator("[data-hypno-group='phrases'] [role='switch']").first()
+            .evaluate(el=>{
+              const label=el.parentElement?.querySelector("strong");
+              return {fontSize:label?parseFloat(getComputedStyle(label).fontSize):0,
+                width:label?.getBoundingClientRect().width||0};
+            });
+          assert.ok(typo.fontSize>=17 && typo.width>=95,
+            engine+" "+locale+" "+width+"px hypno title readable "+JSON.stringify(typo));
+          const geo=await hp.evaluate(node=>({
+            width:node.getBoundingClientRect().width,
+            overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+          }));
+          assert.ok(geo.width<=width+1 && geo.overflow<=2,
+            engine+" "+locale+" "+width+"px mobile hypno overflow "+JSON.stringify(geo));
+          await hp.locator("[data-hypno-wave]").click();
+          await hp.locator("[data-hypno-light-settings]").waitFor({state:"visible",timeout:10000});
+          await expect(hp.getByRole("switch",{name:{
+            ru:"Импульс энергии и света",en:"Light and energy pulse",es:"Pulso de luz y energía",
+          }[locale]})).toHaveAttribute("data-on","true");
+          if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+            mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+            await hp.screenshot({path:process.env.HH_HYPNO_SCREENSHOT_DIR+"/"
+              +engine+"-"+locale+"-"+width+"-hypnocorrection.png",animations:"disabled"});
+          }
+          await sixth.click();
+          await expect(hp).toHaveCount(0,{timeout:10000});
+        } finally { await hypnoPage.close(); }
         assert.equal(await page.locator("[data-video-quick-legacy] [data-video-quick-section]").count(),3,
           "advanced editor retains hypno, audio and detailed format controls");
         const stage=quick.locator("[data-video-live-stage]");
@@ -238,6 +344,13 @@ const runEngine = async ([engine, browserType]) => {
           "each expandable format retains its Basic / Smart / Pro choices");
         assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
           "the original same-origin MP4 decoder remains mounted, even when its redundant mini-player is hidden");
+        const styleMore=quick.locator("[data-video-style-more]");
+        assert.equal(await styleMore.getAttribute("open"),null,
+          "extra video stories are not another visible page block");
+        assert.equal(await quick.locator('[data-video-quick-section="4"] [data-video-scene-library]').count(),1);
+        assert.equal(await quick.locator("[data-video-scene-library]").isVisible(),false);
+        await styleMore.locator(":scope > summary").click();
+        await quick.locator('[data-video-style-catalog-tab="films"]').click();
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
@@ -245,6 +358,7 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
           "All 24 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
+        await quick.locator('[data-video-style-catalog-tab="templates"]').click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
           "the existing native MP4 decoder must remain mounted within the large preview");
@@ -307,9 +421,18 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
-        await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
-          .toHaveAttribute("open","",{timeout:10000});
+        // Preserve the tested #2704 WebKit correction: move the native
+        // disclosure above the fixed mobile dock before the real user click.
+        const coverSummary=coverOptions.locator("summary");
+        await coverSummary.evaluate(element=>element.scrollIntoView({
+          behavior:"instant",block:"center",inline:"nearest",
+        }));
+        await coverSummary.click();
+        // Port #2698 HEAD (14beeb06): WebKit can re-render the native details
+        // after the real click. Assert genuine open state with bounded retry.
+        await expect(coverOptions,
+          "photo cover and user-owned image choices must open on user request")
+          .toHaveAttribute("open", "", {timeout:10000});
         // Fix a stable scene identity before changing its aria-pressed state;
         // a selector filtered on [aria-pressed=false] points at another scene afterwards.
         const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
@@ -444,31 +567,54 @@ const runEngine = async ([engine, browserType]) => {
         // Older deep features still run: the original audio attach, aspect,
         // duration and phrase tests continue under the single advanced section.
         await quick.locator('[data-video-quick-style="0"]').click();
+        // The single real Hypno editor opens directly under the top six-tab bar.
+        const hypnoTab=quick.locator('[data-video-quick-control="phrases"]');
+        const inlineHypno=quick.locator('[data-video-quick-hypno-panel]');
+        assert.equal(await hypnoTab.getAttribute("aria-expanded"),"false");
+        assert.equal(await inlineHypno.isVisible(),false);
+        await hypnoTab.click();
+        await inlineHypno.waitFor({state:"visible",timeout:10000});
+        assert.equal(await hypnoTab.getAttribute("aria-expanded"),"true");
+        assert.equal(await inlineHypno.locator("[data-hypno-overview]").count(),1);
+        assert.equal(await page.locator("[data-hypno-overview]").count(),1,
+          "one existing editor must feed the original Canvas and MediaRecorder");
+        const inlinePositions=await page.evaluate(()=>{
+          const rect=query=>document.querySelector(query)?.getBoundingClientRect();
+          return {bar:rect("[data-video-quick-controls]"),
+            pane:rect("[data-video-quick-hypno-panel]"),
+            next:rect("[data-video-mini-source]")};
+        });
+        assert.ok(inlinePositions.bar && inlinePositions.pane && inlinePositions.next &&
+          inlinePositions.pane.top>=inlinePositions.bar.bottom-8 &&
+          inlinePositions.pane.top<inlinePositions.next.top,
+          "Hypnocorrection opens beneath the button, never as another page");
+        // Previous quick tabs may have already opened this disclosure.
+        // A second summary click would close real controls and falsely fail E2E.
+        const quickDisclosure=page.locator("[data-video-quick-legacy]");
+        if(!(await quickDisclosure.evaluate(node=>node.open)))
+          await quickDisclosure.locator(":scope > summary").click();
         const detailed=page.locator("[data-video-quick-legacy]");
-        await detailed.waitFor({state:"visible",timeout:12000});
-        // React controls this native <details> via onToggle. After a busy
-        // real-media interaction, a delayed React commit can close a correctly
-        // opened disclosure. Only repeat an actual user summary click if the
-        // native open property remains false; never mutate it in the test.
-        const detailedSummary=detailed.locator(':scope > summary');
-        if(!(await detailed.evaluate(element=>element.open))){
-          await detailedSummary.click();
-        }
+        // Only an OPEN disclosure makes its real format/voice/phrase actions
+        // reachable. Waiting for <details> visibility alone is insufficient.
+        // Retry only with a second actual user click, no forced interactions.
         try {
-          await expect(detailed).toHaveJSProperty("open",true,{timeout:10000});
-        } catch(firstOpenError) {
-          if(await detailed.evaluate(element=>element.open))throw firstOpenError;
-          console.warn(engine+" "+locale+" "+width+"px advanced disclosure not committed; retrying one real summary click");
-          await detailedSummary.click();
+          await expect(detailed,"advanced parameters must expand on a real click")
+            .toHaveAttribute("open","",{timeout:12000});
+        } catch (firstOpenError) {
+          if (await detailed.evaluate(element=>element.open)) throw firstOpenError;
+          await detailed.locator(":scope > summary").click();
           await expect(detailed).toHaveJSProperty("open",true,{timeout:15000});
         }
-        await expect(detailed.locator('[data-video-quick-duration="30"]'))
-          .toBeVisible({timeout:15000});
         assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "Director adds the 15-second option while preserving 10/20/30/60");
         assert.equal(await detailed.locator('[data-video-quick-duration="15"]').count(),1);
-        await detailed.locator('[data-video-quick-duration="30"]').click();
+        // `details` itself remains visible while React applies its controlled
+        // `open` state. Wait for the retained real control, not merely the
+        // disclosure shell, before activating the 30-second option.
+        const quickThirty=detailed.locator('[data-video-quick-duration="30"]');
+        await quickThirty.waitFor({state:"visible",timeout:12000});
+        await quickThirty.click();
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
         await detailed.locator('[data-video-quick-aspect="landscape"]').click();
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
@@ -555,7 +701,6 @@ const runEngine = async ([engine, browserType]) => {
               '[data-video-quick-section="4"]',
               "[data-video-quick-phrases]",
               "[data-video-quick-audio-choices]",
-              "[data-video-scene-library]",
               "[data-video-quick-tier]",
               "[data-video-quick-personal]",
               "[data-video-order-bar]"
@@ -567,8 +712,7 @@ const runEngine = async ([engine, browserType]) => {
               "[data-video-support-layout]",
               "[data-video-category-rail]",
               "[data-video-preview-choices]",
-              "[data-video-audio-section]",
-              "[data-video-hypnosis-section]"
+              "[data-video-audio-section]"
             ].map(selector=>Boolean(document.querySelector(selector)))
           };
         });
@@ -582,7 +726,7 @@ const runEngine = async ([engine, browserType]) => {
         const supportSelectors=[
           "[data-video-daily-picks]","[data-video-support-layout]",
           "[data-video-category-rail]","[data-video-preview-choices]",
-          "[data-video-audio-section]","[data-video-hypnosis-section]"
+          "[data-video-audio-section]"
         ];
         const supportOrder=await page.evaluate(selectors=>{
           const nodes=selectors.map(selector=>document.querySelector(selector));
@@ -590,6 +734,8 @@ const runEngine = async ([engine, browserType]) => {
             Boolean(nodes[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING));
         },supportSelectors);
         assert.equal(supportOrder,true,"collapsed detailed Support editor preserves complete DOM order");
+        assert.equal(await page.locator("[data-video-hypnosis-section]").count(),1,
+          "Hypno editor moved to one inline slot and did not duplicate");
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
@@ -670,6 +816,9 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
         // Energy must play decoded Full HD MP4, not a still Canvas artwork.
         await page.locator('[data-video-category="energy"]').click();
+        if(await page.locator("[data-video-style-more]").getAttribute("open")===null)
+          await page.locator("[data-video-style-more] > summary").click();
+        await page.locator('[data-video-style-catalog-tab="templates"]').click();
         const energyTile=page.locator('[data-video-template="solar-surge"]');
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
@@ -766,10 +915,16 @@ const runEngine = async ([engine, browserType]) => {
             return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
           }, undefined, {timeout: 30000});
         } catch (error) {
-          const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
-            networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
-            width:video.videoWidth,error:video.error?.code ?? null,src:video.currentSrc}));
-          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify(state)}`, {cause:error});
+          const state = await selectedClip.evaluate(video => ({
+            readyState:video.readyState,networkState:video.networkState,paused:video.paused,
+            currentTime:video.currentTime,width:video.videoWidth,error:video.error?.code??null,
+            src:video.currentSrc,visibility:document.visibilityState,
+            buffered:Array.from({length:video.buffered.length},(_,i)=>[
+              video.buffered.start(i),video.buffered.end(i)]),
+            rect:(()=>{const r=video.getBoundingClientRect();
+              return {top:r.top,bottom:r.bottom,height:r.height};})(),
+          }));
+          throw new Error(`${engine}/${locale}/${width} selected MP4 did not advance: ${JSON.stringify({state,mp4Responses})}`, {cause:error});
         }
         const firstTime = await selectedClip.evaluate(video => video.currentTime);
         await page.waitForTimeout(760);
@@ -928,6 +1083,13 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        // Full scene gallery is behind Edit to preserve the approved compact layout.
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
+        // Preserve #2698's real gallery-accessibility assertion.
+        const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
+        assert.equal(await sceneSummary.count(),1);
+        assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -935,6 +1097,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"false");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
@@ -944,8 +1108,11 @@ const runEngine = async ([engine, browserType]) => {
           // The approved six-panel editor keeps legacy tools in a collapsed
           // disclosure. These links must reveal the actual tool, not only
           // update the URL hash while the target remains hidden.
-          await page.waitForFunction(() => document.querySelector('[data-video-quick-legacy]')?.open === true,
-            undefined,{timeout:8000});
+          await page.waitForFunction(target=>
+            target==="video-templates"
+              ? document.querySelector('[data-video-style-more]')?.open===true
+              : document.querySelector('[data-video-quick-legacy]')?.open===true,
+            id,{timeout:8000});
           try {
             await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
             await page.waitForFunction(target=>{
@@ -1255,7 +1422,67 @@ const runEngine = async ([engine, browserType]) => {
             "guided first video preserves the visitor's affirmations checkbox");
           // The compact Hypno editor intentionally unmounts its deep inputs
           // until the visitor opens Edit. Preserve real guided-course phrases.
-          await page.locator("[data-hypno-phrases-edit]").click();
+          // Reenter the live top-level phrases panel like a phone visitor,
+          // rather than asserting a fixed-window hit test during guided scroll.
+          // Playwright's real clicks retain visibility/obscuration protections.
+          const guidedHypnoTab=page.locator('[data-video-quick-control="phrases"]');
+          await guidedHypnoTab.scrollIntoViewIfNeeded({timeout:12000});
+          // Closing and reopening by genuine clicks reanchors the panel after
+          // course navigation. It must remain operable even when previously
+          // expanded; no synthetic pointer, force-click, or waived assertion.
+          if((await guidedHypnoTab.getAttribute("aria-expanded"))==="true"){
+            await guidedHypnoTab.click({timeout:15000});
+            await expect(guidedHypnoTab).toHaveAttribute("aria-expanded","false");
+          }
+          await guidedHypnoTab.click({timeout:15000});
+          await expect(guidedHypnoTab).toHaveAttribute("aria-expanded","true");
+          const guidedPhrasesEdit=page.locator("[data-hypno-phrases-edit]");
+          await expect(guidedPhrasesEdit).toBeVisible({timeout:12000});
+          await guidedPhrasesEdit.evaluate(element=>{
+            element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+          });
+          try {
+            await guidedPhrasesEdit.click({timeout:15000});
+          } catch (error) {
+            const geometry=await guidedPhrasesEdit.evaluate(element=>{
+              const rectOf=(target)=>{
+                const r=target?.getBoundingClientRect();
+                return r?{x:Math.round(r.x),y:Math.round(r.y),
+                  width:Math.round(r.width),height:Math.round(r.height),
+                  right:Math.round(r.right)}:null;
+              };
+              const r=element.getBoundingClientRect();
+              const x=r.left+r.width/2,y=r.top+r.height/2;
+              const hit=document.elementFromPoint(x,y);
+              const lineage=[];
+              for(let current=element;current&&lineage.length<14;current=current.parentElement){
+                const style=getComputedStyle(current);
+                lineage.push({
+                  tag:current.tagName.toLowerCase(),
+                  identity:current.getAttribute("data-video-quick-hypno-panel")!==null?"quick-hypno-panel":
+                    current.id||String(current.className||"").slice(0,100),
+                  rect:rectOf(current),scrollLeft:current.scrollLeft,
+                  scrollWidth:current.scrollWidth,clientWidth:current.clientWidth,
+                  overflowX:style.overflowX,position:style.position,
+                  display:style.display,transform:style.transform,
+                });
+              }
+              return {
+                rect:{top:r.top,bottom:r.bottom,left:r.left,right:r.right},
+                viewport:{width:innerWidth,height:innerHeight,scrollY,scrollX,
+                  documentScrollWidth:document.documentElement.scrollWidth,
+                  documentClientWidth:document.documentElement.clientWidth,
+                  bodyScrollWidth:document.body.scrollWidth},
+                quickNav:rectOf(document.querySelector("[data-video-quick-controls]")),
+                quickBuilder:rectOf(document.querySelector("[data-video-quick-builder]")),
+                quickPanel:rectOf(document.querySelector("[data-video-quick-hypno-panel]")),
+                hit:hit?.outerHTML.slice(0,240)||null,lineage,
+                panelOpen:document.querySelector("[data-video-quick-hypno-panel]")?.getAttribute("hidden")===null,
+              };
+            });
+            throw new Error(`${engine}/${locale}/${width} real guided edit click failed: ${JSON.stringify(geometry)}`,
+              {cause:error});
+          }
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
@@ -1339,15 +1566,22 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-photo-enabled]").uncheck();
           await page.locator("[data-video-affirmations-feature]").uncheck();
           const director=page.locator("[data-cinematic-director]");
-          const advanced=page.locator("[data-video-quick-legacy]");
-          if(!(await advanced.evaluate(el=>el.open)))
-            await advanced.locator(":scope > summary").click();
           await director.waitFor({state:"visible",timeout:12000});
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
           if(await director.getAttribute("data-director-open")!=="true")await openDirector.click();
           assert.equal(await director.getAttribute("data-director-open"),"true");
+          const params=director.locator("[data-video-parameters-accordion]");
+          assert.equal(await params.locator("[data-video-parameter-group]").count(),5,
+            "all five owner-approved accordion sections are visible");
+          assert.equal(await params.locator("[data-video-parameter-group]").first().getAttribute("data-video-parameter-group"),"principal",
+            "video parameters must be before personalization");
+          assert.equal(await params.locator("[data-video-parameter-group]").nth(1).getAttribute("data-video-parameter-group"),"personalization");
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+            "three compact video rows show before optional expansion");
+          const refinements=director.locator("[data-director-refine-tools]");
+          await refinements.locator(":scope > summary").click();
           assert.equal(await director.locator('[data-director-field="theme"],[data-director-field="difficulty"],[data-director-field="goal"],[data-director-field="profile"]').count(),4,
-            "four compact main director fields");
+             "private-profile and creative fields still exist behind their optional disclosure");
           assert.equal(await director.locator("[data-director-visual-preferences] > summary").count(),1);
           await director.locator('[data-director-field="profile"]').click();
           assert.equal(await page.locator("[data-director-profile-consent]").isChecked(),false,
@@ -1361,9 +1595,9 @@ const runEngine = async ([engine, browserType]) => {
           const newVisualIdea=director.locator('[data-director-visual-idea] textarea');
           await newVisualIdea.fill("UNSENT_TOKEN_8257: белый орёл летит над горами и превращается в созвездие");
           assert.equal(await director.locator('[data-director-category]').count(),5,
-            "the five question categories remain compact tabs, not five mandatory forms");
-          assert.ok((await director.locator('[data-director-contextual-questions] fieldset').count())<=2,
-            "a complete visual idea never expands into a 96-question form");
+             "five accordion category headers, not a 49-question mandatory form");
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+             "a complete visual intent does not force unrelated questions");
           await director.locator('[data-director-create-plan]').click();
           const reference=director.locator('[data-director-reference-pack]');
           assert.match(await reference.locator('[data-director-recognized-visuals]').innerText(),/ор[её]л/i);
@@ -1384,29 +1618,34 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(packet.creativeReferencePack.externalTransferApproved,false);
           assert.ok(!JSON.stringify(packet).includes("UNSENT_TOKEN_8257"));
           await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),2,
-            "only two contextual clarifications when subject and action are unclear");
-          const customSubject=director.locator('[data-director-contextual-questions] fieldset').first().locator('input');
+          await director.locator('[data-director-category="personalization"]').click();
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+             "personalization opens three context-aware choices");
+          const subjectRow=director.locator('[data-director-question="PERSONAL_05"]');
+          await subjectRow.locator('details > summary').click();
+          const customSubject=subjectRow.locator('input');
           await customSubject.pressSequentially('Свой герой');
           assert.equal(await customSubject.inputValue(),'Свой герой',
-            'custom answer stays mounted and editable across successive keystrokes');
+            'a custom answer remains editable across successive keystrokes');
           await customSubject.fill('');
-          await director.locator('[data-director-contextual-questions] button:has-text("Другой герой")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Животное или птица")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
-            "a chosen animal asks only for its identity before returning to the other missing details");
-          await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Путешествует")').click();
+          await subjectRow.getByRole('button',{name:'Другой герой'}).click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_06"]').count(),1,
+            "another character reveals the relevant form question");
+          await director.locator('[data-director-question="PERSONAL_06"]').getByRole('button',{name:'Животное или птица'}).click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_07"]').count(),1,
+            "an animal requires the original identity clarification");
+          await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Орёл'}).click();
+          await director.locator('[data-director-question="PERSONAL_12"]').getByRole('button',{name:'Путешествует'}).click();
           await newVisualIdea.fill("Без орла, нет другого героя");
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
-            "revised exclusion invalidates only the contradicted subject, preserving the action");
-          assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
-          await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Орёл'}).getAttribute('aria-pressed'),'false',
+            "explicit exclusion removes only the contradicted bird");
+          await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Волк'}).click();
           const savedAnimal=director.locator('[data-director-answer="PERSONAL_07"][data-director-answer-scope="global"]');
           assert.match(await savedAnimal.innerText(),/Волк/);
-          await savedAnimal.getByRole('button',{name:'Изменить'}).click();
+          await savedAnimal.getByRole('button',{name:'Дельфин'}).click();
           await savedAnimal.getByRole('button',{name:'Волк'}).click();
-          assert.match(await savedAnimal.innerText(),/Волк/,'confirmed answer remains visible after editing');
+          assert.match(await savedAnimal.innerText(),/Волк/,
+            "confirmed choices remain visible and can be corrected directly");
           await director.locator('[data-director-create-plan]').click();
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
@@ -1479,10 +1718,10 @@ const runEngine = async ([engine, browserType]) => {
             'a 60-second storyboard contains six scenes');
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
           await director.locator('[data-director-category="advanced"]').click();
-          const moreQuestions=director.getByRole('button',{name:'Показать ещё вопросы',exact:true});
+          const moreQuestions=director.getByRole('button',{name:'Показать все вопросы',exact:true});
           await moreQuestions.click();
-          assert.ok(await director.locator('[data-director-contextual-questions] fieldset').count()>4,
-            'later optional creative questions are reachable without answering earlier ones');
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),11,
+            'all eleven original advanced questions remain available on demand');
           await director.locator('[data-director-category="principal"]').click();
           const durationQuestion=director.locator('fieldset').filter({hasText:'Какой длины нужен ролик?'});
           await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();

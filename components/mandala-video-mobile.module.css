@@ -2079,3 +2079,99 @@
 @media(prefers-reduced-motion:reduce){
   .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
 }
+
+
+/* One shared Hypno editor is expanded immediately below the six Studio tabs. */
+.quickHypnoInline{min-width:0;margin:8px 0 10px;scroll-margin-top:82px}
+.quickHypnoInline[hidden]{display:none}
+.quickHypnoInline .hypnosisSection{min-width:0;margin:0;padding:10px 8px;border:1px solid #c9e3d6;border-radius:16px;background:linear-gradient(130deg,#fffefb,#f4faf3)}
+.quickVideoNav button[data-video-quick-control="phrases"]{border-color:#aedac6;color:#075d48}
+.quickVideoNav button[data-video-quick-control="phrases"][aria-expanded="true"]{border-color:#087d62;background:linear-gradient(125deg,#e4f7ed,#f7fbf3);color:#046a50;box-shadow:inset 0 0 0 1px #4fb695}
+.quickVideoNav button[data-video-quick-control="phrases"] span{font-size:clamp(8.1px,2vw,10px);line-height:1.15;overflow-wrap:anywhere;hyphens:auto}
+@media(max-width:355px){
+ .studio .quickVideoNav button[data-video-quick-control="phrases"] span{font-size:8.2px;line-height:1.1}
+ .studio .quickHypnoInline .hypnosisSection{padding:8px 6px}
+}
+
+
+
+/* Owner-approved large-type iPhone hypnocorrection: one 16:9 stage,
+   one scrolling navigation rail, and one large feature per row. */
+@media(max-width:600px){
+  .studio .quickVideoNav{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x proximity;gap:8px;padding:9px 1px 10px;scrollbar-width:thin}
+  .studio .quickVideoNav button{flex:0 0 112px;min-width:112px;min-height:56px;
+    scroll-snap-align:start;padding:7px 8px;font-size:13px;line-height:1.2}
+  .studio .quickVideoNav button[data-video-quick-control="extra"]{background:#f5eeff;
+    border:1px solid #d9c3f9;color:#443198}
+  .studio .quickVideoNav button[aria-expanded="true"]{box-shadow:inset 0 0 0 2px #8a67e0}
+  .studio .previewStage .hero{aspect-ratio:16/9!important;min-height:0!important;max-height:none!important}
+  .studio [data-video-hypnocorrection-panel]{width:100%;min-width:0;margin:2px 0 10px}
+}
+@media(max-width:600px){
+  /* Phrase and hypnocorrection labels remain legible on 320-430px phones. */
+  .studio .quickVideoNav button[data-video-quick-control="phrases"] span{font-size:13px;line-height:1.2}
+}
+
+/* Seventh action is deliberately a full-width mobile entry, not a squeezed
+   seventh video-settings tab. It uses the existing personal-meditation editor. */
+.meditationCourseEntry{box-sizing:border-box;width:100%;display:flex;align-items:center;gap:11px;min-height:61px;
+  margin:9px 0 7px;padding:10px 13px;border:1px solid #d6b76e;border-radius:15px;
+  background:linear-gradient(110deg,#fff9eb,#eef8ef);color:#24523d;text-align:left;
+  font:700 13px/1.3 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.meditationCourseEntry>svg:first-child{flex:none;color:#a46d19}
+.meditationCourseEntry>span{min-width:0;display:grid;gap:3px;flex:1}
+.meditationCourseEntry strong{font-size:clamp(15px,4.2vw,18px);font-weight:850;color:#14533b}
+.meditationCourseEntry small{font-size:clamp(11px,3vw,12px);line-height:1.4;font-weight:600;color:#657a65}
+.meditationCourseEntry>svg:last-child{flex:none;transition:transform .2s}
+.meditationCourseEntry[aria-expanded="true"]{background:linear-gradient(115deg,#fbf1d4,#e4f5e8);border-color:#9cbf9e}
+.meditationCourseEntry[aria-expanded="true"]>svg:last-child{transform:rotate(180deg)}
+.meditationCourseEntry:focus-visible{outline:3px solid #087e5e;outline-offset:3px}
+.meditationCourseEntry:disabled{opacity:.6;cursor:not-allowed}
+.meditationCourseInline{min-width:0;scroll-margin-top:78px}
+.meditationCourseInline :global([data-video-personal-meditation]){margin:7px 0 16px}
+@media(prefers-reduced-motion:reduce){.meditationCourseEntry>svg:last-child{transition:none}}
+
+/* The 8-session horizontal carousel is nested in this implicit grid.
+   An implicit auto track can otherwise take its scroll rail's min-content
+   width (~2k px), pushing the sibling phrase editor outside a 390px viewport.
+   Contain the grid track rather than hiding a real user-tap target. */
+.quickBuilder{grid-template-columns:minmax(0,1fr)}
+.quickBuilder>.therapyCourse,
+.quickBuilder>.quickHypnoInline,
+.quickBuilder>.meditationCourseInline{min-width:0;max-width:100%}
+.quickBuilder .therapyCourse [data-guided-eight-sessions]{min-width:0;max-width:100%}
+
+/* One compact Style panel; optional galleries reuse the original video renderer. */
+.quickBuilder .quickStyleMore{display:block;min-width:0;width:100%;
+  border:1px solid #d5e8db;border-radius:15px;background:#f3f8f3;overflow:hidden}
+.quickBuilder .quickStyleMore>summary{display:flex;align-items:center;justify-content:space-between;
+  gap:8px;min-height:48px;padding:10px 13px;cursor:pointer;list-style:none;
+  color:#256950;font:750 13px/1.3 Arial,Helvetica,sans-serif}
+.quickBuilder .quickStyleMore>summary::-webkit-details-marker{display:none}
+.quickBuilder .quickStyleMore>summary svg{flex:none;transition:transform .18s ease}
+.quickBuilder .quickStyleMore[open]>summary svg{transform:rotate(180deg)}
+.quickBuilder .quickStyleMore .sceneLibrary{display:grid;min-width:0;gap:10px;
+  padding:10px 9px 12px;border-top:1px solid #d5e8db;background:#fffef9}
+.quickBuilder .quickStyleMore .styleLibraryTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;min-width:0}
+.quickBuilder .quickStyleMore .styleLibraryTabs button{min-width:0;min-height:44px;
+  padding:8px 5px;border:1px solid #d6e4d9;border-radius:11px;background:#fff;
+  color:#285747;font:750 12px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.quickBuilder .quickStyleMore .styleLibraryTabs button[aria-pressed="true"]{
+  border-color:#128b70;background:#e3f5e9;box-shadow:inset 0 0 0 1px #128b70}
+.quickBuilder .quickStyleMore .sceneLibrary .templates,
+.quickBuilder .quickStyleMore .sceneLibrary [data-free-film-compilation-catalog]{
+  margin:0;padding:2px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.quickBuilder .quickStyleMore .sceneLibrary .templates .sectionHeading{margin:0 0 5px;min-height:20px;
+  justify-content:flex-end}
+.quickBuilder .quickStyleMore .sceneLibrary [data-free-film-compilation-catalog] .quickSectionHeading{
+  display:flex;align-items:center;gap:9px}
+.quickBuilder .quickStyleMore .sceneLibrary [data-free-film-compilation-catalog] .quickSectionHeading p{
+  margin:0;color:#678177;font:500 11px/1.35 Arial,Helvetica,sans-serif}
+.quickBuilder .quickStyleMore [hidden]{display:none!important}
+.quickBuilder .quickStyleMore :is(summary,button):focus-visible{outline:3px solid #d9b56d;outline-offset:2px}
+@media(max-width:379px){
+  .quickBuilder .quickStyleMore>summary{padding:10px 11px;font-size:12px}
+  .quickBuilder .quickStyleMore .styleLibraryTabs button{font-size:11px}
+}

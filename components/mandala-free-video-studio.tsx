@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
+import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
+import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
+import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
@@ -891,7 +894,38 @@ function CinematicSceneThumbnail({ scene, photo, title, playing }: {
     // decoded. Request the selected clip only; other thumbnails stay posters.
     if(video.readyState<2)video.load();
     void video.play().catch(()=>{/* onCanPlay retries only the selected visible clip. */});
-    return ()=>video.pause();
+    // Safari/WebKit may report HAVE_CURRENT_DATA and paused=false while the
+    // selected native H.264 decoder never advances beyond the first frame.
+    // Recover the ONE visible, user-selected thumbnail, never background clips.
+    let lastFrameTime=video.currentTime;
+    let stalledTicks=0;
+    let recovered=false;
+    const checkPlayback=window.setInterval(()=>{
+      if(!video.isConnected||video.paused||document.hidden)return;
+      const now=video.currentTime;
+      if(now>lastFrameTime+.04){
+        lastFrameTime=now;stalledTicks=0;return;
+      }
+      if(++stalledTicks<4||recovered)return;
+      recovered=true;
+      // A native in-buffer seek can restart a suspended WebKit decoder
+      // without fetching an unrelated clip. If nothing is buffered, reload
+      // this selected MP4 once; the real video E2E still fails if it stalls.
+      const ranges=video.buffered;
+      const end=ranges.length?ranges.end(ranges.length-1):0;
+      if(end>.45){
+        const resume=Math.min(.18,end-.1);
+        if(resume>now+.04){
+          video.currentTime=resume;
+          void video.play().catch(()=>{});
+          return;
+        }
+      }
+      video.pause();
+      video.load();
+      void video.play().catch(()=>{/* Native media failure remains visible to the E2E gate. */});
+    },800);
+    return ()=>{window.clearInterval(checkPlayback);video.pause();};
   },[playing,visible,scene]);
   return <video ref={ref} muted playsInline loop autoPlay={playing&&visible}
     preload={playing&&visible?"auto":"none"}
@@ -1486,7 +1520,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeVideoSelected = practiceType==="video" && practiceLevels.video==="basic";
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
+  const [styleLibraryTab,setStyleLibraryTab] = useState<"templates"|"films">("templates");
+  const styleLibraryRef=useRef<HTMLDetailsElement|null>(null);
+  const [hypnoPanelOpen,setHypnoPanelOpen] = useState(false);
+  const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({
+    enabled:false,cyclesPerMinute:6,opacity:.18,
+  });
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
+  // Keep the HTML <details> disclosure uncontrolled. Native browsers may
+  // toggle it while a React render is pending; a controlled "open" attribute
+  // could otherwise revert the real user's click in Chromium and WebKit.
+  const quickLegacyRef=useRef<HTMLDetailsElement|null>(null);
+  useEffect(()=>{
+    if(quickDetailedOpen && quickLegacyRef.current && !quickLegacyRef.current.open)
+      quickLegacyRef.current.open=true;
+  },[quickDetailedOpen]);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -1599,11 +1647,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
-  // For background-only video, async mandala/photo frame updates are
-  // intentionally unrelated. Do not abort an active free export when
-  // a decorative image finishes loading in a different editor panel.
+  // Background-only video ignores async unrelated portraits.
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
+    effect,aspect,duration,quality,speed,brightness,hypnoLight,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
@@ -1863,6 +1909,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
+      paintHypnoLightOverlay(ctx,0,hypnoLight);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -1875,6 +1922,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const elapsed=(now-startedAt)/1000;
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
           paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(frameSecond));
+          paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
           paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -1883,7 +1931,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan]);
 
   async function createVideo(preferWebm = false) {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -1950,6 +1998,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
+      paintHypnoLightOverlay(ctx,0,hypnoLight);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
@@ -2043,6 +2092,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(Math.min(duration,(now-start)/1000)));
+          paintHypnoLightOverlay(ctx,Math.min(duration,(now-start)/1000),hypnoLight);
           paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -2266,6 +2316,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
+    setHypnoLight({enabled:false,cyclesPerMinute:6,opacity:.18});
     setCinematicPlan(null);
     setPreviewPlaying(false);
   };
@@ -2362,7 +2413,41 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
+  const [quickHypnoOpen,setQuickHypnoOpen]=useState(false);
+  const [quickCourseOpen,setQuickCourseOpen]=useState(false);
+  // Native #video-hypnosis links also work on first load and browser Back.
+  // The editor remains a single mounted instance below the six quick tabs.
+  useEffect(()=>{
+    const openHypnoHash=()=>{
+      if(window.location.hash!=="#video-hypnosis")return;
+      setQuickHypnoOpen(true);
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"auto",block:"nearest"})));
+    };
+    openHypnoHash();
+    window.addEventListener("hashchange",openHypnoHash);
+    return ()=>window.removeEventListener("hashchange",openHypnoHash);
+  },[]);
+  useEffect(()=>{
+    const revealSceneHash=()=>{
+      if(window.location.hash!=="#video-templates")return;
+      setStyleLibraryTab("templates");
+      if(styleLibraryRef.current)styleLibraryRef.current.open=true;
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.getElementById("video-templates")?.scrollIntoView({behavior:"auto",block:"nearest"})));
+    };
+    revealSceneHash();
+    window.addEventListener("hashchange",revealSceneHash);
+    return ()=>window.removeEventListener("hashchange",revealSceneHash);
+  },[]);
   const openQuickDetailed=(anchor:string)=>{
+    // Hypno lives above the mini-preview now; do not expand the unrelated
+    // advanced format/audio disclosure just to open these two compact cards.
+    if(anchor==="video-hypnosis")setQuickHypnoOpen(true);
+    else if(anchor==="video-templates"){
+      setStyleLibraryTab("templates");
+      if(styleLibraryRef.current)styleLibraryRef.current.open=true;
+    }else setQuickDetailedOpen(true);
     const token=++quickNavTokenRef.current;
     const path=window.location.pathname+window.location.search;
     const desired="#"+anchor;
@@ -2375,7 +2460,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     setLocation(true);
     setQuickNavTarget(anchor);
-    setQuickDetailedOpen(true);
     const jump=()=>{
       if(!current())return;
       setLocation(false);
@@ -2582,16 +2666,142 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {id:"personal",label:{ru:"Персонализация",en:"Personalize",es:"Personalizar"},Icon:Sparkles},
           {id:"phrases",label:{ru:"Фразы",en:"Phrases",es:"Frases"},Icon:HandHeart},
           {id:"sound",label:{ru:"Звук",en:"Sound",es:"Sonido"},Icon:Music2},
-          {id:"extra",label:{ru:"Дополнительно",en:"More",es:"Más"},Icon:SlidersHorizontal},
+          {id:"extra",label:{ru:"Гипнокоррекция",en:"Hypno effects",es:"Efectos"},Icon:Sparkles},
         ] as const).map(item=><button type="button" key={item.id} data-video-quick-control={item.id}
+          aria-controls={item.id==="phrases"?"video-hypnosis":item.id==="extra"?"video-hypnocorrection-mobile":undefined}
+          aria-expanded={item.id==="phrases"?quickHypnoOpen:item.id==="extra"?hypnoPanelOpen:undefined}
+          aria-label={item.id==="phrases"?item.label[locale]:undefined}
           disabled={recording||preparing} onClick={()=>{
-            if(item.id==="parameters"||item.id==="extra"){openQuickDetailed("video-settings");return;}
+            if(item.id==="phrases"){
+              // Cancel any older deep-editor anchor jump. In WebKit even an
+              // "instant" delayed scroll can steal the next real edit tap.
+              ++quickNavTokenRef.current;
+              setQuickHypnoOpen(previous=>!previous);
+              // The editor expands directly below these controls: preserve
+              // native scroll anchoring instead of issuing a competing rAF.
+              return;
+            }
+            if(item.id==="extra"){
+              const open=!hypnoPanelOpen;
+              setHypnoPanelOpen(open);
+              if(open)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.getElementById("video-hypnocorrection-mobile")?.scrollIntoView({
+                  behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",
+                })));
+              return;
+            }
+            if(item.id==="parameters"){openQuickDetailed("video-settings");return;}
             const target=item.id==="style"?'[data-video-quick-section="4"]':
-              item.id==="personal"?"#quick-personal-title":
-              item.id==="phrases"?"[data-video-quick-phrases]":"[data-video-quick-audio-choices]";
+              item.id==="personal"?"#quick-personal-title":"[data-video-quick-audio-choices]";
             document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
           }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
       </nav>
+      <button type="button" className={videoStyles.meditationCourseEntry}
+        data-video-meditation-course-toggle aria-expanded={quickCourseOpen}
+        aria-controls="meditation-course-inline" disabled={recording||preparing}
+        onClick={()=>{
+          const opening=!quickCourseOpen;
+          setQuickCourseOpen(opening);
+          if(opening){
+            setStudioMode("pump");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("meditation-course-inline")?.scrollIntoView({
+                behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+                block:"start",
+              })));
+          }
+        }}>
+        <BookOpen size={23} aria-hidden="true"/>
+        <span><strong>{locale==="ru"?"Курсы медитаций":locale==="es"?"Cursos de meditación":"Meditation courses"}</strong>
+          <small>{locale==="ru"?"Создать первую медитацию бесплатно · план на 8 дней":
+            locale==="es"?"Crea la primera gratis · programa de 8 días":
+            "Create the first one free · 8-day plan"}</small>
+        </span>
+        <ChevronDown size={20} aria-hidden="true"/>
+      </button>
+      {quickCourseOpen?<div id="meditation-course-inline"
+        className={videoStyles.meditationCourseInline} data-video-meditation-course-panel>
+        <MandalaPersonalMeditation coursePreview
+          locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
+          sound={attachedAudio?.kind==="file"?attachedAudio.file.name:
+            attachedAudio?.kind==="preset"?
+            (mandalaAudioTracks.find(item=>item.id===attachedAudio.id)?.name[locale]||""):""}
+          audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+            attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):null}
+          pace={speed} brightness={brightness}
+          affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+          focus={meditationFocus} disabled={recording||preparing}/>
+      </div>:null}
+      {hypnoPanelOpen ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
+        <MandalaHypnocorrectionMobile
+          locale={locale} disabled={recording||preparing}
+          affirmations={affirmations} onAffirmationsChange={setAffirmations}
+          light={hypnoLight} onLightChange={setHypnoLight}
+          posters={{
+            phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
+            audio:"/images/holistic-house/support-reference-avatar.webp",
+            visual:getThemedRealFilm("energy",otherVideoScenes.energy[1].id)?.poster||quickCanvasPoster(otherVideoScenes.energy[1].id),
+            meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
+          }}
+          hasVoiceFile={attachedAudio?.kind==="file"&&audioRights}
+          hasPhoto={!backgroundOnly&&Boolean(photoUrl)}
+          onOpenPhraseEditor={()=>openQuickDetailed("video-hypnosis")}
+          onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
+          onOpenScenes={()=>openQuickDetailed("video-templates")}
+          onOpenMeditation={()=>{
+            setStudioMode("therapy");setQuickDetailedOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("video-hypno-meditation-editor")?.scrollIntoView({
+                behavior:"smooth",block:"start",
+              })));
+          }}
+          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
+          onRemovePhoto={()=>setBackgroundOnly(true)}
+          onPreview={openAffirmationPreview}
+          onWavePreset={()=>{
+            setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
+            setAffirmations(current=>({...current,enabled:true,
+              visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
+            setPreviewPlaying(false);
+          }}
+        />
+      </div> : null}
+      {/* One existing editor reused by the new video page; no duplicate instance or route. */}
+      <div className={videoStyles.quickHypnoInline} data-video-quick-hypno-panel hidden={!quickHypnoOpen}>
+      <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
+        <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
+          <p>{layout.hypnosisHelp}</p></div>
+      <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations}
+        onChange={setAffirmations} disabled={recording||preparing}
+        scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
+        activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
+        onSelectScene={id=>{
+          setCinematicPlan(null);
+          if(theme==="money")setMoneyScene(id as MoneySceneId);
+          else setOtherScene(id as LocalSceneId);
+          setPreviewPlaying(false);
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+      <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
+        <summary>{ui.wishTitle}</summary>
+      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
+        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
+        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
+          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
+          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
+        <p>{ui.wishHelp}</p>
+        <div className={videoStyles.wishActions}>
+          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
+            <Target size={17} aria-hidden="true"/>{ui.wishAction}
+          </button>
+          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
+            {ui.wishCaption}
+          </button>
+        </div>
+        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
+      </section>
+      </details>
+      </section>
+      </div>
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
@@ -2692,95 +2902,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>)}
           </div>
           <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
-        </section>
-
-
-
-      <section className={videoStyles.quickPhraseSection} data-video-quick-phrases aria-labelledby="quick-phrases-heading">
-        <div className={videoStyles.quickSectionHeading}>
-          <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
-          <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
-            onClick={()=>openQuickDetailed("video-hypnosis")}><Sparkles size={15} aria-hidden="true"/>
-            {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
-        </div>
-        <div className={videoStyles.quickPhraseRail} role="group" aria-label={locale==="ru"?"Фразы по теме":locale==="es"?"Frases por tema":"Phrases by theme"}>
-          {quickSupportPhrases[locale][theme].map((phrase,index)=><button type="button" key={phrase}
-            data-video-quick-affirmation={index}
-            aria-pressed={affirmations.enabled&&affirmations.custom.trim()===phrase}
-            disabled={recording||preparing} onClick={()=>{
-              setAffirmations(current=>({...current,enabled:true,selected:[],custom:phrase,visibility:["large"]}));
-              setPreviewPlaying(false);
-            }}><span aria-hidden="true">“</span>{phrase}</button>)}
-        </div>
-      </section>
-      <section className={videoStyles.quickMusicSection} data-video-quick-audio-choices aria-labelledby="quick-music-heading">
-        <div className={videoStyles.quickSectionHeading}>
-          <h3 id="quick-music-heading"><Music2 size={19} aria-hidden="true"/>{locale==="ru"?"Музыка":locale==="es"?"Música":"Music"}</h3>
-          <button type="button" className={videoStyles.quickPhrasePersonal}
-            onClick={()=>openQuickDetailed("video-audio")}><Mic size={15} aria-hidden="true"/>
-            {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</button>
-        </div>
-        <div className={videoStyles.quickMusicRail} role="group" aria-label={locale==="ru"?"Звуковые дорожки":locale==="es"?"Pistas de audio":"Audio tracks"}>
-          {audioMatches.slice(0,4).map(track=><button type="button" key={track.id}
-            data-video-quick-audio-track={track.id}
-            aria-pressed={attachedAudio?.kind==="preset"&&attachedAudio.id===track.id}
-            disabled={recording||preparing||micRecording} onClick={()=>{
-              const id=track.id as Exclude<AmbientMusic,"none">;
-              setAudioAuto(false);chooseMusic(id);setAttachedAudio({kind:"preset",id});
-            }}><Music2 size={16} aria-hidden="true"/><strong>{track.name[locale]}</strong>
-            <small>{track.detail[locale]}</small>
-            {attachedAudio?.kind==="preset"&&attachedAudio.id===track.id?<Check size={14} aria-hidden="true"/>:null}
-          </button>)}
-        </div>
-      </section>
-      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
-      <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
-        disabled={recording||preparing}
-        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
-        <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
-      </button>
-      <MandalaGuidedCourse locale={locale} theme={theme}
-        onContextChange={updateMeditationFocus}
-        selfRatings={touchedScores} disabled={recording||preparing}
-        onApplyFreeVideo={session=>{
-          // This is preparation, NOT a render or a claimed downloadable video.
-          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
-          // First video: scenic meadow-morning master, not a generic money/energy clip.
-          selectCategory(session.videoTheme);
-          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
-          // Keep the visitor's photo choice: free course setup must not turn it off.
-          if(!photoUrl)setBackgroundOnly(true);
-          setDuration(60);
-          setSpeed("slow");
-          setCaptionMode("custom");
-          setCustomCaption(session.title);
-          // Preserve the chosen personal goal on the meadow visuals with
-          // original, user-readable supportive phrases from that goal's theme.
-          setAffirmations(current=>({...defaultAffirmations,enabled:current.enabled,selected:[],
-            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
-            visibility:["large"]}));
-          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
-            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
-            "Session 1 scene is ready. Create and download the video in the editor below.");
-          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
-      </div> : null}
-
-        {/* ONE shared library: the original real full-HD look gallery and 24
-            licensed four-MP4 films. Both update the same main video stage. */}
-        <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.sceneLibrary].join(" ")}
-          data-video-scene-library aria-labelledby="video-scene-library-title">
-          <div className={videoStyles.sceneLibraryHeading}>
-            <h3 id="video-scene-library-title"><Film size={21} aria-hidden="true"/>
-              {locale==="ru"?"Видеосюжеты и шаблоны":locale==="es"?"Escenas y plantillas":"Scenes & templates"}</h3>
-            <p>{locale==="ru"?"Выберите готовый видеосюжет. Он появится на большом экране выше.":
-              locale==="es"?"Elige una escena real para verla en la pantalla superior.":
-              "Pick a ready-made scene to see it in the large screen above."}</p>
-          </div>
+          <details ref={styleLibraryRef} className={videoStyles.quickStyleMore} data-video-style-more>
+            <summary>
+              <span>{locale==="ru"?"Дополнительно · сюжеты и шаблоны":locale==="es"?"Más opciones · escenas y plantillas":"More options · scenes and templates"}</span>
+              <ChevronDown size={19} aria-hidden="true"/>
+            </summary>
+            <div className={videoStyles.sceneLibrary} data-video-scene-library>
+              <div className={videoStyles.styleLibraryTabs} role="group"
+                aria-label={locale==="ru"?"Дополнительные стили":locale==="es"?"Estilos adicionales":"Additional styles"}>
+                <button type="button" data-video-style-catalog-tab="templates"
+                  aria-pressed={styleLibraryTab==="templates"} disabled={recording||preparing}
+                  onClick={()=>setStyleLibraryTab("templates")}>
+                  {locale==="ru"?"Шаблоны Full HD":locale==="es"?"Plantillas Full HD":"Full HD templates"}
+                </button>
+                <button type="button" data-video-style-catalog-tab="films"
+                  aria-pressed={styleLibraryTab==="films"} disabled={recording||preparing}
+                  onClick={()=>setStyleLibraryTab("films")}>
+                  {locale==="ru"?"24 видеосюжета":locale==="es"?"24 escenas":"24 video stories"}
+                </button>
+              </div>
       <section className={videoStyles.templates} id="video-templates" data-mandala-money-effects
-        aria-labelledby="video-templates-heading">
+        hidden={styleLibraryTab!=="templates"} aria-label={supportUi.popular}>
         <div className={videoStyles.sectionHeading}>
-          <h3 id="video-templates-heading">{supportUi.popular}</h3>
+          <span className={videoStyles.srOnly}>{supportUi.popular}</span>
           {activeTemplates.length>4 &&
             <button type="button" data-video-all-templates disabled={recording||preparing}
               aria-expanded={showAllMoney} onClick={()=>setShowAllMoney(value=>!value)}>
@@ -2832,12 +2976,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       </section>
 
-      <section className={videoStyles.quickSection} data-free-film-compilation-catalog
-        aria-labelledby="free-film-catalog-title">
+      <section className={videoStyles.quickSection} id="video-film-stories"
+        data-free-film-compilation-catalog hidden={styleLibraryTab!=="films"}
+        aria-label={locale==="ru"?"24 видеосюжета":locale==="es"?"24 escenas":"24 video stories"}>
         <div className={videoStyles.quickSectionHeading}>
           <div>
-            <h3 id="free-film-catalog-title"><Film size={19} aria-hidden="true"/>
-              {locale==="ru"?"24 готовых видеосюжета":locale==="es"?"24 historias de vídeo":"24 ready-to-edit films"}</h3>
             <p>{locale==="ru"?"Каждый фильм — монтаж 4 разных MP4 из нашей лицензированной коллекции (32 исходника).":
               locale==="es"?"Cada montaje combina 4 MP4 distintos de 32 vídeos con licencia.":
               "Each montage combines 4 different MP4 clips from 32 licensed originals."}</p>
@@ -2949,7 +3092,84 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
           </details>
+
+            </div>
+          </details>
         </section>
+
+
+
+      <section className={videoStyles.quickPhraseSection} data-video-quick-phrases aria-labelledby="quick-phrases-heading">
+        <div className={videoStyles.quickSectionHeading}>
+          <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
+          <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
+            onClick={()=>openQuickDetailed("video-hypnosis")}><Sparkles size={15} aria-hidden="true"/>
+            {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
+        </div>
+        <div className={videoStyles.quickPhraseRail} role="group" aria-label={locale==="ru"?"Фразы по теме":locale==="es"?"Frases por tema":"Phrases by theme"}>
+          {quickSupportPhrases[locale][theme].map((phrase,index)=><button type="button" key={phrase}
+            data-video-quick-affirmation={index}
+            aria-pressed={affirmations.enabled&&affirmations.custom.trim()===phrase}
+            disabled={recording||preparing} onClick={()=>{
+              setAffirmations(current=>({...current,enabled:true,selected:[],custom:phrase,visibility:["large"]}));
+              setPreviewPlaying(false);
+            }}><span aria-hidden="true">“</span>{phrase}</button>)}
+        </div>
+      </section>
+      <section className={videoStyles.quickMusicSection} data-video-quick-audio-choices aria-labelledby="quick-music-heading">
+        <div className={videoStyles.quickSectionHeading}>
+          <h3 id="quick-music-heading"><Music2 size={19} aria-hidden="true"/>{locale==="ru"?"Музыка":locale==="es"?"Música":"Music"}</h3>
+          <button type="button" className={videoStyles.quickPhrasePersonal}
+            onClick={()=>openQuickDetailed("video-audio")}><Mic size={15} aria-hidden="true"/>
+            {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</button>
+        </div>
+        <div className={videoStyles.quickMusicRail} role="group" aria-label={locale==="ru"?"Звуковые дорожки":locale==="es"?"Pistas de audio":"Audio tracks"}>
+          {audioMatches.slice(0,4).map(track=><button type="button" key={track.id}
+            data-video-quick-audio-track={track.id}
+            aria-pressed={attachedAudio?.kind==="preset"&&attachedAudio.id===track.id}
+            disabled={recording||preparing||micRecording} onClick={()=>{
+              const id=track.id as Exclude<AmbientMusic,"none">;
+              setAudioAuto(false);chooseMusic(id);setAttachedAudio({kind:"preset",id});
+            }}><Music2 size={16} aria-hidden="true"/><strong>{track.name[locale]}</strong>
+            <small>{track.detail[locale]}</small>
+            {attachedAudio?.kind==="preset"&&attachedAudio.id===track.id?<Check size={14} aria-hidden="true"/>:null}
+          </button>)}
+        </div>
+      </section>
+      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} id="guided-video-series">
+      <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
+        disabled={recording||preparing}
+        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
+        <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
+      </button>
+      <MandalaGuidedCourse locale={locale} theme={theme}
+        onContextChange={updateMeditationFocus}
+        selfRatings={touchedScores} disabled={recording||preparing}
+        onApplyFreeVideo={session=>{
+          // This is preparation, NOT a render or a claimed downloadable video.
+          // Each session has a pre-existing, genuine symbolic film/Canvas scene.
+          // First video: scenic meadow-morning master, not a generic money/energy clip.
+          selectCategory(session.videoTheme);
+          if (session.videoTheme!=="money") setOtherScene(session.videoScene as LocalSceneId);
+          // Keep the visitor's photo choice: free course setup must not turn it off.
+          if(!photoUrl)setBackgroundOnly(true);
+          setDuration(60);
+          setSpeed("slow");
+          setCaptionMode("custom");
+          setCustomCaption(session.title);
+          // Preserve the chosen personal goal on the meadow visuals with
+          // original, user-readable supportive phrases from that goal's theme.
+          setAffirmations(current=>({...defaultAffirmations,enabled:current.enabled,selected:[],
+            custom:suggestedVideoAffirmations[locale][session.theme].slice(0,3).join("\n"),
+            visibility:["large"]}));
+          setNotice(locale==="ru"?"Сюжет №1 перенесён. Создайте и скачайте видео в редакторе ниже.":
+            locale==="es"?"Escena 1 preparada. Crea y descarga el vídeo en el editor de abajo.":
+            "Session 1 scene is ready. Create and download the video in the editor below.");
+          // An immediate settled jump prevents a long smooth-scroll from
+          // fighting the visitor's next action (including editing phrases).
+          document.querySelector("[data-mandala-video-generate]")?.scrollIntoView({behavior:"auto",block:"center"});
+        }}/>
+      </div> : null}
 
         <section className={videoStyles.quickSection} data-video-quick-tier data-video-quick-section="2" aria-labelledby="quick-tier-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3093,9 +3313,50 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
 
 
+      {/* One optional canonical 49-question panel alongside the single Hypno editor. */}
+      <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
+        onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
+        onMusicPreference={choice=>{
+          if(uploadedAudio)return;
+          setAudioAuto(false);setMusic(choice==="calm"?"meditation":choice==="energetic"?"energy":"none");
+          setMusicWarning("");
+        }}
+        onCaptionPreference={choice=>setCaptionMode(choice==="none"?"none":"theme")}
+        therapyMode={studioMode==="therapy"}
+        onInvalidateStoryboard={()=>setCinematicPlan(null)}
+        disabled={recording||preparing} onApplyStoryboard={plan=>{
+          // Four or six locally rendered shots are approved source-backed
+          // motifs; raw client wishes, profile scores and photos remain here.
+          setTheme(plan.theme);setVideoCategory(plan.theme);
+          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
+            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
+          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
+            ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
+          setAspect(plan.aspect);
+          setDuration(plan.durationSeconds as (typeof durations)[number]);
+          setCinematicPlan(plan);
+          setPreviewPlaying(false);
+          setNotice(locale==="ru"
+            ?(plan.shotCount===6?"Шесть сцен подготовлены. Нажмите «Создать видео».":"Четыре сцены подготовлены. Нажмите «Создать видео».")
+            :locale==="es"?(plan.shotCount===6?"Seis escenas listas. Pulsa Crear vídeo.":"Cuatro escenas listas. Pulsa Crear vídeo.")
+            :plan.shotCount===6?"Six shots are ready. Select Create video to render them.":"Four shots are ready. Select Create video to render them.");
+          document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
+        }}/>
+
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
-        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
-        <summary><SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
+        ref={quickLegacyRef} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
+        {/* Explicitly toggle the real native element once per actual summary
+            gesture. React does not own its open attribute; onToggle mirrors
+            state for deep navigation without a second competing toggle. */}
+        <summary onClick={event=>{
+          event.preventDefault();
+          const el=quickLegacyRef.current;
+          if(!el)return;
+          const next=!el.open;
+          el.open=next;
+          setQuickDetailedOpen(next);
+        }}>
+          <SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
         <section className={videoStyles.quickSection} data-video-quick-section="3"
           aria-labelledby="quick-hypno-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3326,7 +3587,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}/>
             <span>{layout.affirmationsToggle}</span>
           </label>
-          <a className={videoStyles.previewChoiceLink} href="#video-hypnosis">
+          <a className={videoStyles.previewChoiceLink} href="#video-hypnosis"
+            onClick={event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+              event.preventDefault();openQuickDetailed("video-hypnosis");}}>
             <Sparkles size={14} aria-hidden="true"/>{layout.configureAffirmations}
           </a>
         </div>
@@ -3722,68 +3985,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </fieldset>
       </section>
 
-      <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
-        <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
-          <p>{layout.hypnosisHelp}</p></div>
-      <MandalaHypnoCompact key={theme} locale={locale} theme={theme} settings={affirmations}
-        onChange={setAffirmations} disabled={recording||preparing}
-        scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
-        activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
-        onSelectScene={id=>{
-          setCinematicPlan(null);
-          if(theme==="money")setMoneyScene(id as MoneySceneId);
-          else setOtherScene(id as LocalSceneId);
-          setPreviewPlaying(false);
-        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
-      <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
-        <summary>{ui.wishTitle}</summary>
-      <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
-        <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
-        <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
-          value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
-        <p>{ui.wishHelp}</p>
-        <div className={videoStyles.wishActions}>
-          <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
-            <Target size={17} aria-hidden="true"/>{ui.wishAction}
-          </button>
-          <button type="button" disabled={!wish.trim()||recording||preparing} onClick={useWishAsCaption}>
-            {ui.wishCaption}
-          </button>
-        </div>
-        {suggestion && <p role="status" data-video-suggestion className={videoStyles.wishResult}>{suggestion}</p>}
-      </section>
-      </details>
-      </section>
 
-      <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
-        onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
-        onMusicPreference={choice=>{
-          if(uploadedAudio)return;
-          setAudioAuto(false);setMusic(choice==="calm"?"meditation":choice==="energetic"?"energy":"none");
-          setMusicWarning("");
-        }}
-        onCaptionPreference={choice=>setCaptionMode(choice==="none"?"none":"theme")}
-        therapyMode={studioMode==="therapy"}
-        onInvalidateStoryboard={()=>setCinematicPlan(null)}
-        disabled={recording||preparing} onApplyStoryboard={plan=>{
-          // Four or six locally rendered shots are approved source-backed
-          // motifs; raw client wishes, profile scores and photos remain here.
-          setTheme(plan.theme);setVideoCategory(plan.theme);
-          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
-            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
-          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
-            ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
-          setAspect(plan.aspect);
-          setDuration(plan.durationSeconds as (typeof durations)[number]);
-          setCinematicPlan(plan);
-          setPreviewPlaying(false);
-          setNotice(locale==="ru"
-            ?(plan.shotCount===6?"Шесть сцен подготовлены. Нажмите «Создать видео».":"Четыре сцены подготовлены. Нажмите «Создать видео».")
-            :locale==="es"?(plan.shotCount===6?"Seis escenas listas. Pulsa Crear vídeo.":"Cuatro escenas listas. Pulsa Crear vídeo.")
-            :plan.shotCount===6?"Six shots are ready. Select Create video to render them.":"Four shots are ready. Select Create video to render them.");
-          document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
 
       <details className={videoStyles.extraControls} data-video-extra-settings>
         <summary>{layout.extraSettings}</summary>
@@ -3990,7 +4192,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-      {studioMode==="therapy" ? <MandalaPersonalMeditation
+      {studioMode==="therapy" ? <div id="video-hypno-meditation-editor" aria-hidden="true"/> : null}
+      {studioMode==="therapy" && !quickCourseOpen ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?.kind==="file" ? attachedAudio.file.name :
           attachedAudio?.kind==="preset" ?

@@ -142,3 +142,34 @@
 .reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
  color:#536c5c}
 .reference li span+span{color:#788c7c;margin-top:3px}
+
+
+/* Owner-approved compact gold accordion — visible above the legacy detailed editor. */
+.root{--cin-ink:#12343d;--cin-green:#008b78;--cin-edge:#eae7df;
+  margin:14px 0;padding:clamp(12px,2.2vw,20px);
+  border-radius:23px;background:linear-gradient(155deg,#fffdf7 0%,#fdfbf6 62%,#f6faf7 100%);
+  border:1px solid #e9e4d9;box-shadow:0 6px 25px rgba(54,67,61,.055);color:#102f39}
+.hero{gap:9px;align-items:center}
+.icon{width:36px;height:36px;border:1px solid #ecd6a5;background:#fff5df;color:#ad822e}
+.heading h3{font:700 clamp(20px,3.3vw,30px)/1.16 Georgia,"Times New Roman",serif;color:#10333b}
+.heading small{color:#a17b34;letter-spacing:.07em}
+.heading p{color:#6c7b80;font-size:12px;max-width:460px}
+.open{border-color:#d9cda9;color:#83621a;background:#fffaf0}
+.body{border-color:#f0eadd}
+.refineDetails{margin:13px 0 10px;background:#fffdfa;border-radius:13px;border:1px solid #e7eae4;padding:0 10px}
+.refineDetails>summary{cursor:pointer;min-height:44px;padding:12px 2px;color:#267264;font-weight:800;font-size:12px}
+.refineDetails .ideaInput{margin-top:10px}
+.refineDetails .options{margin-bottom:12px}
+.root [data-director-create-plan]{background:linear-gradient(110deg,#eac064,#c7942b);color:#fff;
+  box-shadow:0 3px 10px rgba(180,131,28,.18);border:1px solid #e4b85a;min-height:47px;font-size:14px}
+.root [data-director-create-plan]:hover:not(:disabled){filter:brightness(1.035)}
+@media(max-width:530px){
+ .root{padding:10px;margin:12px 0;border-radius:19px}
+ .hero{flex-wrap:nowrap}
+ .heading{flex:1 1 auto}
+ .heading h3{font-size:19px}
+ .heading p{font-size:10px}
+ .heading small{font-size:8px}
+ .icon{width:30px;height:30px}
+ .open{padding:8px;min-width:57px;min-height:38px;font-size:10px}
+}
