@@ -112,7 +112,7 @@ const runEngine = async ([engine, browserType]) => {
         const firstAdvanced=quick.locator("[data-first-video-advanced]");
         assert.equal(await firstAdvanced.getAttribute("open"),null,
           "Advanced prompt stays optional below the Auto Video Director");
-        await firstAdvanced.locator("summary").click();
+        await firstAdvanced.locator(":scope > summary").click();
         await firstStart.waitFor({state:"visible",timeout:12000});
         assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
