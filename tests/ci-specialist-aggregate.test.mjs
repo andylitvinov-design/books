@@ -604,14 +604,20 @@ test('public FAST CSS cannot skip an explicitly applicable specialist', async ()
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
 });
 
-test('a production base advance does not replace the tested checkout diff or waive HEAD checks', async () => {
+test('base advances fail closed while matching tested checkout retains HEAD checks', async () => {
   const ctx = { repo, number: 27, head: SHA, base: BASE };
   const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
     changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
   const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
   const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
     runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => pr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  let reads = 0;
+  api.pr = async () => (++reads === 1 ? pr() : currentPr());
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'base may not advance during specialist aggregation');
+  api.pr = async () => currentPr();
   const legacySources = { base: sources.base, current: sources.current };
   await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
