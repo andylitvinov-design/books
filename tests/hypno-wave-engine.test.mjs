@@ -102,3 +102,24 @@ test('Intent extraction is pure and deterministic',()=>{
   assert.deepEqual(interpretWaveNotes(input),interpretWaveNotes(input));
   assert.equal(interpretWaveNotes({locale:'ru'}).status,'category_only');
 });
+
+
+test('Reduced speaking is treated as a boundary, not encouragement to perform',()=>{
+  for(const [locale,goalText] of [['ru','Хочу меньше говорить на встречах'],['en','I want to speak less'],['es','Quiero hablar menos']]){
+    const draft=request(locale,'I feel tired',goalText);
+    assert.ok(draft.goalConcepts.includes('boundaries'),locale);
+    assert.ok(!draft.goalConcepts.includes('voice'),locale);
+  }
+});
+
+test('Generic day planning is not treated as financial planning',()=>{
+  const result=request('ru','Я постоянно спешу','Хочу планировать свой день');
+  assert.ok(result.goalConcepts.includes('steps'));
+  assert.ok(!result.goalConcepts.includes('planning'));
+});
+
+test('Negated fear is not misclassified as present fear',()=>{
+  const result=interpretWaveNotes({locale:'ru',currentText:'Я не боюсь критики',goalText:'Хочу говорить уверенно'});
+  assert.ok(!result.currentKeys.includes('fear'));
+  assert.ok(result.goalKeys.includes('voice'));
+});
