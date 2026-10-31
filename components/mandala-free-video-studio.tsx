@@ -2856,13 +2856,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
           </div>
-          <label className={videoStyles.quickWish}>
-            <span className={videoStyles.srOnly}>{quick.wish}</span>
-            <Target size={18} aria-hidden="true"/>
-            <input data-video-quick-wish type="text" maxLength={160} value={wish}
-              disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
-          </label>
+          <p className={videoStyles.quickHint} data-video-goal-summary>
+            {wish.trim()?wish:(locale==="ru"?"Укажите цель в Auto Video Director выше.":
+              locale==="es"?"Indica tu objetivo en Auto Video Director.":
+              "Choose your goal in the Auto Video Director above.")}
+          </p>
           <div className={videoStyles.quickPersonalActions}>
             <button type="button" data-video-personal-affirmations disabled={recording||preparing}
               aria-pressed={affirmations.enabled}
