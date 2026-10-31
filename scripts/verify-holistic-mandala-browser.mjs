@@ -1129,22 +1129,21 @@ const runEngine = async ([engine, browserType]) => {
             "guided first video preserves the visitor's affirmations checkbox");
           // The compact Hypno editor intentionally unmounts its deep inputs
           // until the visitor opens Edit. Preserve real guided-course phrases.
+          // Reenter the live top-level phrases panel like a phone visitor,
+          // rather than asserting a fixed-window hit test during guided scroll.
+          // Playwright's real clicks retain visibility/obscuration protections.
+          const guidedHypnoTab=page.locator('[data-video-quick-control="phrases"]');
+          if((await guidedHypnoTab.getAttribute("aria-expanded"))!=="true"){
+            await guidedHypnoTab.scrollIntoViewIfNeeded({timeout:12000});
+            await guidedHypnoTab.click({timeout:15000});
+          }
           const guidedPhrasesEdit=page.locator("[data-hypno-phrases-edit]");
-          // Center the same genuine control before clicking: WebKit may keep
-          // it behind the fixed mobile dock after the guided-video jump.
+          await expect(guidedPhrasesEdit).toBeVisible({timeout:12000});
           await guidedPhrasesEdit.evaluate(element=>{
             element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
           });
-          await page.waitForFunction(()=>{
-            const el=document.querySelector("[data-hypno-phrases-edit]");
-            const dock=document.querySelector("[data-mandala-support-bottom-nav]");
-            if(!el)return false;
-            const r=el.getBoundingClientRect(), d=dock?.getBoundingClientRect();
-            const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
-            return r.top>=4 && r.bottom<=innerHeight-4 && (!d||r.bottom<=d.top-8) &&
-              (hit===el||el.contains(hit));
-          },undefined,{timeout:10000});
-          await guidedPhrasesEdit.click({timeout:15000});
+          await guidedPhrasesEdit.scrollIntoViewIfNeeded({timeout:12000});
+          await guidedPhrasesEdit.click({timeout:15000,position:{x:15,y:20}});
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);

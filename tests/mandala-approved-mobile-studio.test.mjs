@@ -256,12 +256,16 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
    "Configure affirmations navigates to the one live inline editor");
  assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else setQuickDetailedOpen\(true\)/,
    "opening Hypno must not also expand unrelated advanced settings");
- assert.match(src,/open=\{quickDetailedOpen\}/);
- assert.match(src,/open=\{quickDetailedOpen\}\s+onToggle=\{event=>setQuickDetailedOpen\(event\.currentTarget\.open\)\}/,
-   "advanced disclosure mirrors its real native toggle state into React");
+ assert.match(src,/const quickLegacyRef=useRef<HTMLDetailsElement\|null>\(null\)/);
+ assert.match(src,/if\(quickDetailedOpen && quickLegacyRef\.current && !quickLegacyRef\.current\.open\)/,
+   "programmatic advanced navigation opens the actual native disclosure");
+ assert.match(src,/ref=\{quickLegacyRef\}\s+onToggle=\{event=>setQuickDetailedOpen\(event\.currentTarget\.open\)\}/,
+   "native details disclosure is uncontrolled and mirrors its real open state");
+ assert.doesNotMatch(src,/data-video-quick-legacy\s+open=\{quickDetailedOpen\}/,
+   "do not race a native summary click with controlled React open");
  assert.doesNotMatch(src,/event\.preventDefault\(\);setQuickDetailedOpen/,
    "the summary must keep its native disclosure gesture");
  assert.match(browser,/advanced parameters must expand on a real click/);
  assert.match(browser,/photo cover and user-owned image choices must open on user request/);
- assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000\}\)/);
+ assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000,position:\{x:15,y:20\}\}\)/);
 });

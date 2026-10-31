@@ -1486,6 +1486,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
+  // Keep the HTML <details> disclosure uncontrolled. Native browsers may
+  // toggle it while a React render is pending; a controlled "open" attribute
+  // could otherwise revert the real user's click in Chromium and WebKit.
+  const quickLegacyRef=useRef<HTMLDetailsElement|null>(null);
+  useEffect(()=>{
+    if(quickDetailedOpen && quickLegacyRef.current && !quickLegacyRef.current.open)
+      quickLegacyRef.current.open=true;
+  },[quickDetailedOpen]);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -3076,7 +3084,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
-        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
+        ref={quickLegacyRef} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
         {/* Keep the native disclosure gesture and mirror its actual state into
             React. Preventing the summary default action can leave the real
             controls closed after a mobile browser rerender. */}
