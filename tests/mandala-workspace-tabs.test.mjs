@@ -31,7 +31,7 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
  assert.equal((studio.match(/id="video-hypnosis"/g)||[]).length,1);
- assert.equal((studio.match(/data-video-cover-options/g)||[]).length,1);
+ assert.equal((studio.match(/<details className=\{videoStyles\.previewCoverOptions\} data-video-cover-options/g)||[]).length,1);
  assert.equal((studio.match(/id="video-settings"/g)||[]).length,1);
  for(const name of ["deepAudioPane","deepHypnoPane","deepVideoPane","deepCharacterPhotoPane"]){
    assert.equal((studio.match(new RegExp("const "+name+" =","g"))||[]).length,1);
