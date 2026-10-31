@@ -382,6 +382,15 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
+  // Practitioner-scoped links only; no owner-only Growth Studio/CRM role
+  // escalation. The destination resolves the public offering again server-side.
+  const professionalVideoServices=services.filter(item=>
+    item.status==='published' && item.active===true && p?.slug &&
+    (!item.displayLocales || locale!=='es' || item.displayLocales.includes('es')) &&
+    /^[a-z0-9][a-z0-9-]{0,89}$/.test(item.slug||'')
+  ).slice(0,8)
+  const professionalVideoHref=(item)=>'/'+locale+'/holistic-support/mandala?pro=1&master='+
+    encodeURIComponent(p.slug)+'&service='+encodeURIComponent(item.slug)
   const openRequests=requests.filter(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
@@ -550,6 +559,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <ChevronRight aria-hidden="true"/>
         </button>
       </nav>}
+      {!activePanel&&<details className="hh-practice-v4-extra" data-practice-professional-growth>
+        <summary><Film aria-hidden="true"/><span>{ru?'Продвижение через видео':locale==='es'?'Promoción con vídeo':'Video promotion'}</span><ChevronRight aria-hidden="true"/></summary>
+        <nav className="hh-practice-community-shortcuts"
+          aria-label={ru?'Видео для моей услуги':locale==='es'?'Vídeos para mis servicios':'Videos for my services'}>
+          {professionalVideoServices.length?professionalVideoServices.map(item=>
+            <Link key={item.id} href={professionalVideoHref(item)} prefetch={false}>
+              <Film aria-hidden="true"/>
+              <span><strong>{item.copy?.[locale]?.title||item.copy?.title||item.slug}</strong>
+                <small>{ru?'Подготовить видеоролик и публикацию':locale==='es'?'Crear vídeo y publicación':'Create video and post'}</small></span>
+              <ChevronRight aria-hidden="true"/>
+            </Link>
+          ):<Link href={'/'+locale+'/holistic-support/mandala?pro=1'} prefetch={false}>
+            <Film aria-hidden="true"/>
+            <span><strong>{ru?'Образовательное видео':locale==='es'?'Vídeo educativo':'Educational video'}</strong>
+              <small>{ru?'Без ссылки на неопубликованную услугу':locale==='es'?'Sin enlace a servicios no publicados':'No links to unpublished services'}</small></span>
+            <ChevronRight aria-hidden="true"/>
+          </Link>}
+        </nav>
+      </details>}
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
