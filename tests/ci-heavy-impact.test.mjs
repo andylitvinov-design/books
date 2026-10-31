@@ -170,3 +170,28 @@ test('IA v2: public master directory edits use dedicated Public Services rather 
   assert.equal(matchesTrigger(services, [file]), true);
   assert.equal(matchesTrigger(ia, ['lib/practitioners/private-records.js']), true);
 });
+
+
+test('App R1 short delegated jobs must complete successfully for verified non-applicable changes', () => {
+  const yaml=read('hh-app-r1.yml');
+  for (const [job,scope] of [
+    ['unit-build','profile'],
+    ['course-banner-browser','banner'],
+    ['database','database'],
+  ]) {
+    const section=yaml.split('  '+job+':\n')[1]?.split(/\n  [a-z][a-z0-9-]*:\n/)[0];
+    assert.ok(section,'missing App R1 specialist job: '+job);
+    assert.ok(section.includes("needs.impact.result == 'success'"),
+      job+' cannot pass before verified impact classification');
+    assert.ok(section.includes("if: needs.impact.outputs."+scope+" != 'true'"),
+      job+' missing safe no-work scope');
+    assert.ok(section.includes("HH_ROUTED_SCOPE: ${{ needs.impact.outputs."+scope+" }}"),
+      job+' must read exact routed output');
+    assert.ok(section.includes('run: test "$HH_ROUTED_SCOPE" = false'),
+      job+' unrecognized output must fail, not silently claim success');
+    assert.ok(section.includes("if: needs.impact.outputs."+scope+" == 'true'"),
+      job+' must retain actual tests when required');
+  }
+  assert.match(read('hh-pr-core-release.yml'),/^  release-ready:/m);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
