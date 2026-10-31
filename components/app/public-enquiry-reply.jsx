@@ -10,7 +10,7 @@ const COPY={
   email:'Open email to send',whatsapp:'Open WhatsApp to send',copy:'Copy reply',copied:'Reply copied',
   manual:'The visitor did not sign in to Holistic House. This is not a live website chat. A reply is sent only when you confirm it in your email or messenger app.',
   unverified:'Contact provided by the visitor · not independently verified. Use it only to reply to this request.',
-  missing:'No reply address is available. Open the full request to record contact after the visitor writes to you.',
+  missing:'No reply address is available. You can prepare and copy a draft, but sending requires a real reply channel. See the full request.',
   copyFailed:'Copy was unavailable. Select and copy the text manually.',
  },
  ru:{
@@ -18,7 +18,7 @@ const COPY={
   email:'Открыть письмо для отправки',whatsapp:'Открыть WhatsApp для отправки',copy:'Скопировать ответ',copied:'Ответ скопирован',
   manual:'Посетитель не вошёл в кабинет Holistic House. Это пока не онлайн-чат: ответ будет отправлен только после подтверждения в почте или мессенджере.',
   unverified:'Контакт оставлен посетителем и не подтверждён отдельно. Используйте его только для ответа по этой заявке.',
-  missing:'Нет адреса для ответа. Откройте полную заявку и сохраните контакт после обращения клиента.',
+  missing:'Нет адреса для отправки. Вы можете подготовить и скопировать ответ, но для доставки нужен действующий канал связи. Откройте полную заявку.',
   copyFailed:'Копирование недоступно. Выделите и скопируйте текст вручную.',
  },
  es:{
@@ -26,7 +26,7 @@ const COPY={
   email:'Abrir correo para enviar',whatsapp:'Abrir WhatsApp para enviar',copy:'Copiar respuesta',copied:'Respuesta copiada',
   manual:'El visitante no inició sesión en Holistic House. Esto aún no es un chat en vivo. El mensaje solo se envía cuando lo confirmas en tu correo o mensajería.',
   unverified:'Contacto facilitado por el visitante, no verificado. Úsalo solo para responder esta solicitud.',
-  missing:'No hay dirección de respuesta. Abre la solicitud completa y guarda el contacto después de que el visitante escriba.',
+  missing:'No hay destinatario. Puedes redactar y copiar una respuesta, pero para enviarla hace falta un canal de contacto real. Consulta la solicitud completa.',
  },
 }
 
@@ -48,7 +48,7 @@ export default function PublicEnquiryReply({request,locale='en'}){
  return <section className={styles.composer} aria-label={t.title} data-public-enquiry-reply>
   <h3>{t.title}</h3>
   <p className={styles.notice}>{hasEmail||hasPhone?t.unverified:t.missing}</p>
-  {(hasEmail||hasPhone)&&<>
+  <>
    <label htmlFor={'hh-public-enquiry-reply-'+request.id}>{t.message}</label>
    <textarea id={'hh-public-enquiry-reply-'+request.id} value={draft}
      onChange={event=>{setDraft(event.target.value);setNotice('')}}
@@ -65,7 +65,7 @@ export default function PublicEnquiryReply({request,locale='en'}){
     <button type="button" disabled={!hasDraft} onClick={copyReply}>
       <Copy size={17} aria-hidden="true"/>{t.copy}</button>
    </div>
-  </>}
+  </>
   <p className={styles.manual}>{t.manual}</p>
   {notice&&<p role="status" className={styles.feedback}>{notice}</p>}
  </section>
