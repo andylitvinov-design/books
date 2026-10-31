@@ -132,3 +132,11 @@ test('direct messenger remains available when the optional request directory is 
  assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
  assert.match(hub,/!loading&&!unauthenticated&&!bootstrapSignInRequired/)
 })
+
+test('CSP class is identical on Spanish app routes in server and client',()=>{
+ const client=source('components/csp-navigation-boundary.tsx')
+ const edge=source('middleware.ts')
+ assert.ok(client.includes('^\\/(ru|en|es)\\/app'))
+ assert.ok(edge.includes('^\\/(ru|en|es)\\/app'))
+ assert.doesNotMatch(client,/\\/\\(ru\\|en\\)\\/app/)
+})
