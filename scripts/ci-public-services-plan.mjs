@@ -45,6 +45,15 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
   "tests/temple-insights-compact-cta.test.mjs",
   "tests/temple-support-hub.test.mjs"
 ]);
+// CI-only source policies are verified by actionlint, Core and these exact
+// contract tests. They must not cause thirteen unrelated browser journeys.
+// Runtime, privacy, auth, checkout and unknown files still fail closed.
+const TRUSTED_CI_CONTRACT_FILES = new Set([
+  '.github/workflows/hh-public-services-production.yml',
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+  'tests/ci-workflow-globs.test.mjs',
+]);
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
@@ -68,6 +77,7 @@ export function planPublicServicesChangedPaths(files) {
   const selected = new Set();
   let performance = false;
   for (const file of files) {
+    if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
     if (sourceTests.has(file)) continue;
     const browserCase = scriptCases.get(file);
     if (browserCase) {
@@ -134,8 +144,12 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       return full('MALFORMED_GIT_NAME_STATUS');
     const changed = [];
     for (let i = 0; i < rows.length; i += 2) {
-      if (rows[i] !== 'M') return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
-      changed.push(rows[i + 1]);
+      const status = rows[i], file = rows[i + 1];
+      // Only newly introduced, explicit CI policy/test contracts may be added.
+      // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      if (status !== 'M' && !(status === 'A' && TRUSTED_CI_CONTRACT_FILES.has(file)))
+        return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
+      changed.push(file);
     }
     return planPublicServicesChangedPaths(changed);
   } catch {

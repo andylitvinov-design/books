@@ -73,6 +73,27 @@ test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelate
   assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-lead-form.tsx']).mode, 'full');
 });
 
+test('the exact Public Services CI+Alchemy change verifies only its two real browser owners', () => {
+  const paths = [
+    '.github/workflows/hh-public-services-production.yml',
+    'components/alchemy-soul-landing.module.css',
+    'scripts/ci-public-services-plan.mjs',
+    'scripts/verify-alchemy-one-screen.mjs',
+    'scripts/verify-public-services-production.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-workflow-globs.test.mjs',
+    'tests/service-alchemy-one-screen-story.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(paths);
+  assert.equal(plan.mode,'focused');
+  assert.equal(plan.build,true);
+  assert.equal(plan.browser,true);
+  assert.deepEqual(plan.cases.split(',').sort(),
+    ['verify-alchemy-one-screen.mjs','verify-public-services-production.mjs']);
+  const risky = [...paths, 'app/api/payments/talismans/checkout/route.js'];
+  assert.equal(planPublicServicesChangedPaths(risky).mode,'full');
+});
+
 test('performance harness changes need production server but no browsers', () => {
   const p = planPublicServicesChangedPaths(['scripts/measure-hh-public-ttfb.mjs']);
   assert.deepEqual([p.mode, p.build, p.browser, p.metrics, p.cases],
@@ -90,8 +111,8 @@ test('all shared, auth, checkout, booking, config and unclassified changes fail 
     'app/api/payments/talismans/checkout/route.js',
     'lib/commerce/talisman-checkout.js',
     'middleware.ts', 'next.config.ts', 'package-lock.json',
-    '.github/workflows/hh-public-services-production.yml',
-    'scripts/ci-public-services-plan.mjs',
+    '.github/workflows/unknown-public-services.yml',
+    'scripts/unknown-ci-policy.mjs',
     'tests/holistic-new-browser-not-yet-listed.test.mjs',
   ]) {
     const plan = planPublicServicesChangedPaths([file]);
@@ -208,8 +229,8 @@ test('workflow-only policy changes are enforced by actionlint and Core without e
   assert.equal(covers(pub,'.github/workflows/hh-public-services-production.yml'),false);
   assert.ok(syntax.includes("'.github/workflows/**'"));
   assert.ok(core.includes("'.github/workflows/*.yml'") || core.includes(".github/workflows/*.yml|"));
-  assert.equal(planPublicServicesChangedPaths(['.github/workflows/hh-public-services-production.yml']).mode,'full',
-    'unknown workflow changes must still be conservatively classified');
+  assert.equal(planPublicServicesChangedPaths(['.github/workflows/hh-public-services-production.yml']).mode,'contracts',
+    'only explicitly reviewed workflow-policy edits rely on Core/actionlint and source contracts');
 });
 
 test('direct browser and consent helpers are trigger-owned and never silently skipped', () => {
