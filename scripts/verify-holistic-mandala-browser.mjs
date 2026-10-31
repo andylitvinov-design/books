@@ -232,7 +232,7 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -356,7 +356,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-auto-video-input]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
@@ -1377,6 +1377,27 @@ const runEngine = async ([engine, browserType]) => {
           };
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
+        // Goal-first Free Director: selected goal proposes exactly one real
+        // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
+        // Keep the full original Chromium/WebKit recorder & audio E2E intact.
+        if (locale === "ru" && width === 390) {
+          const auto=page.locator("[data-auto-video-director]");
+          await auto.waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+            "six accessible one-tap goals, no mandatory 49-question intake");
+          const planBefore=await page.locator("[data-free-film-original-masters]").count();
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "goal gives four actual source scenes");
+          assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
+            "proposal must not start rendering before user confirms");
+          await auto.locator("[data-auto-video-confirm]").click();
+          await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
+            undefined,{timeout:15000});
+          assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
+            "Auto Director reuses the only live editable video stage");
+        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",
