@@ -36,7 +36,7 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   // Real file container bytes, not Safari's unreliable declared MIME,
   // determine the saved format on the new iPhone recorder path.
   assert.match(source, /const extension=isWebm\?"webm":"mp4"/);
-  assert.match(source, /const type=isWebm\?"video\\/webm":"video\\/mp4"/);
+  assert.ok(source.includes('const type=isWebm?"video/webm":"video/mp4"'));
   assert.match(source, /isMp4=header\.length>=8/);
 });
 
