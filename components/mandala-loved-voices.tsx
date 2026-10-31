@@ -13,6 +13,7 @@ const words={
     text:"3. Текст для озвучки",textHint:"До 240 символов, не больше трёх коротких фраз. Покажите итоговый текст владельцу голоса до генерации.",
     sample:"Я рядом. Ты заслуживаешь заботы. Ты можешь идти своим путём.",
     checkbox:"Подтверждаю: владелец голоса старше 18 лет, самостоятельно записал согласие и одобрил именно эти фразы.",
+    googleConsent:"Согласен(на) отправить аудиозаписи и фразы в Google Gemini с учётом того, что бесплатный API может использовать эти данные для улучшения продуктов.",
     privacy:"Сервис использует Google Gemini. При бесплатном тарифе Google может применять переданные аудиозаписи и текст для улучшения продуктов. Исходники и временный голосовой ключ не сохраняются в Holistic House.",
     choose:"Выбрать аудио",generate:"Создать фразы голосом",creating:"Подготавливаем и синтезируем…",play:"Слушать синтетическую запись",download:"Скачать WAV",
     unavailable:"Функция пока выключена: требуется проверка условий бесплатного Voice Replication и разрешение на обработку голоса. Файлы никуда не отправляются.",
@@ -29,6 +30,7 @@ const words={
     text:"3. Phrases to speak",textHint:"Up to 240 characters, three short phrases. Show the exact text to the speaker before generating.",
     sample:"I am here. You deserve care. You can follow your path.",
     checkbox:"I confirm the voice owner is 18+, recorded the consent themselves, and approved these exact phrases.",
+    googleConsent:"I consent to sending the audio and text to Google Gemini, knowing that free-tier data may be used to improve products.",
     privacy:"Google Gemini processes the files. On its free tier, Google may use submitted audio and text to improve products. Holistic House does not persist the samples or temporary voice key.",
     choose:"Choose audio",generate:"Generate spoken phrases",creating:"Preparing and synthesizing…",play:"Play synthetic audio",download:"Download WAV",
     unavailable:"This pilot is disabled pending free-tier Voice Replication and data-processing verification. No files are sent.",
@@ -45,6 +47,7 @@ const words={
     text:"3. Frases",textHint:"Hasta 240 caracteres y tres frases cortas. Muestra el texto a la persona antes de generar.",
     sample:"Estoy aquí. Mereces cariño. Puedes seguir tu camino.",
     checkbox:"Confirmo que la persona tiene más de 18 años, grabó su consentimiento y aprobó estas frases exactas.",
+    googleConsent:"Acepto enviar el audio y el texto a Google Gemini, sabiendo que los datos del plan gratuito pueden usarse para mejorar productos.",
     privacy:"Google Gemini procesa el audio. En el plan gratuito, Google puede usarlo para mejorar sus productos. Holistic House no guarda muestras ni la clave de voz temporal.",
     choose:"Elegir audio",generate:"Generar frases",creating:"Preparando y generando…",play:"Escuchar voz sintética",download:"Descargar WAV",
     unavailable:"Función desactivada hasta verificar el plan gratuito y el procesamiento de datos. No se envían archivos.",
@@ -89,6 +92,7 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [source,setSource]=useState<File|null>(null),[consent,setConsent]=useState<File|null>(null);
   const [text,setText]=useState<string>(ui.sample),[approved,setApproved]=useState(false);
+  const [googleApproved,setGoogleApproved]=useState(false);
   const [status,setStatus]=useState(""),[url,setUrl]=useState(""),[shared,setShared]=useState(false);
   const [audioBlob,setAudioBlob]=useState<Blob|null>(null);
   useEffect(()=>{
@@ -106,13 +110,13 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
   },[]);
   useEffect(()=>()=>{if(url)URL.revokeObjectURL(url);},[url]);
   async function generate(){
-    if(busy||!available||!source||!consent||!approved||!text.trim())return;
+    if(busy||!available||!source||!consent||!approved||!googleApproved||!text.trim())return;
     setBusy(true);setStatus("");setUrl("");setAudioBlob(null);
     try{
       const [a,b]=await Promise.all([toPcmWav(source,10,30),toPcmWav(consent,2,22)]);
       const form=new FormData();
       form.set("source",a);form.set("consent",b);form.set("text",text.trim());
-      form.set("language",locale);form.set("adult","yes");form.set("permission","yes");
+      form.set("language",locale);form.set("adult","yes");form.set("permission","yes");form.set("dataConsent","yes");
       const res=await fetch("/api/holistic-support/loved-voices",{
         method:"POST",body:form,cache:"no-store",credentials:"same-origin",
       });
@@ -145,7 +149,7 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
       anchor.download=file.name;anchor.click();
     }
   }
-  const clear=()=>{setUrl("");setAudioBlob(null);setStatus("");setApproved(false);};
+  const clear=()=>{setUrl("");setAudioBlob(null);setStatus("");setApproved(false);setGoogleApproved(false);};
   return (
     <section data-loved-voice-mvp className="mx-auto max-w-3xl rounded-3xl border border-emerald-900/15 bg-white/90 p-5 shadow-lg sm:p-8">
       <h1 className="text-2xl font-bold text-emerald-950">{ui.title}</h1>
@@ -177,7 +181,11 @@ export function MandalaLovedVoices({locale}: {locale:PublicLocale}) {
         <input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)} className="mt-1 h-5 w-5"/>
         <span>{ui.checkbox}</span>
       </label>
-      <button type="button" data-loved-voice-generate disabled={!available||loading||busy||!approved||!source||!consent||!text.trim()}
+      <label className="mt-3 flex cursor-pointer items-start gap-3 text-sm leading-6">
+        <input type="checkbox" checked={googleApproved} onChange={e=>setGoogleApproved(e.target.checked)} className="mt-1 h-5 w-5"/>
+        <span>{ui.googleConsent}</span>
+      </label>
+      <button type="button" data-loved-voice-generate disabled={!available||loading||busy||!approved||!googleApproved||!source||!consent||!text.trim()}
         onClick={generate} className="mt-5 w-full rounded-xl bg-emerald-800 px-5 py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
         {busy?ui.creating:ui.generate}
       </button>

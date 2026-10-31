@@ -32,7 +32,9 @@ for(const [name,kind] of engines){
         await expect(page.locator("textarea")).toHaveValue(phrase);
         await page.locator("textarea").fill(phrase);
         const checkbox=block.getByRole("checkbox");
-        await checkbox.check();
+        assert.equal(await checkbox.count(),2);
+        await checkbox.nth(0).check();
+        await checkbox.nth(1).check();
         await expect(page.locator("[data-loved-voice-generate]")).toBeDisabled();
         const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
         assert.ok(overflow<=2,name+":"+locale+":"+width+" overflow="+overflow);

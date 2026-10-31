@@ -73,9 +73,9 @@ export async function POST(request) {
     await consumeRate(config,{op:"loved-voice-pilot-day",ip},3,86400);
     await consumeRate(config,{op:"loved-voice-pilot-global"},12,86400);
     const form=await boundedForm(request);
-    if([...form.keys()].some(k=>!["source","consent","text","language","adult","permission"].includes(k)))
+    if([...form.keys()].some(k=>!["source","consent","text","language","adult","permission","dataConsent"].includes(k)))
       throw new AppError("LOVED_VOICE_INVALID_UPLOAD",400);
-    if(form.get("adult")!=="yes" || form.get("permission")!=="yes")
+    if(form.get("adult")!=="yes" || form.get("permission")!=="yes" || form.get("dataConsent")!=="yes")
       throw new AppError("LOVED_VOICE_SPEAKER_CONSENT_REQUIRED",403);
     const language=form.get("language");
     const text=approveLovedVoiceText(form.get("text"),language);

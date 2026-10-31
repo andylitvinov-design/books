@@ -18,11 +18,12 @@ test("guest pilot has one real first-party form, no sign-in or external website 
   assert.match(ui,/window\.location\.origin\+window\.location\.pathname/);
   assert.match(ui,/#t="\+encodeURIComponent/);
   assert.match(ui,/navigator\.share\(\{files:/);
+  assert.match(ui,/setGoogleApproved/);
   assert.doesNotMatch(ui,/aistudio\.google\.com|elevenlabs\.io|window\.open|supabase\.auth\.signIn/);
 });
 test("server requires source and separate owner's recorded consent, no storage or paid calls",()=>{
   for(const s of ['requireSameOrigin(request,config)','await consumeRate(config',
-    'form.get("adult")','form.get("permission")','source.arrayBuffer()',
+    'form.get("adult")','form.get("permission")','form.get("dataConsent")','source.arrayBuffer()',
     'consent.arrayBuffer()','inspectLovedVoiceWav(sample,"source")',
     'inspectLovedVoiceWav(spokenConsent,"consent")','generateLovedVoice(',
     'PRIVATE_HEADERS','"X-HH-Synthetic-Audio":"true"']){
