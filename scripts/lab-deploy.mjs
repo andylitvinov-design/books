@@ -14,6 +14,8 @@ async function main(){
  if(process.env.HH_LAB_ISOLATED_SERVICES!=='true')block('isolated test services not certified');
  if(process.env.HH_LAB_COST_APPROVED!=='true')block('billing budget not certified');
  if(process.env.HH_LAB_CENTRAL_LEASE_VERIFIED!=='true')block('multi-agent lease not verified');
+ // These flags are NOT sufficient: the central lease and isolation must be enforced by external infrastructure.
+ block('Centralized lease and isolated test services are not yet implemented. Do not deploy.');
  if(process.env.VERCEL_PROJECT_ID!==project||process.env.VERCEL_ORG_ID!==team)block('wrong Vercel project');
  if(!process.env.VERCEL_TOKEN)block('missing Vercel token');
  const sha=command('git',['rev-parse','HEAD']);
