@@ -2341,15 +2341,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               data-video-quick-hero-play aria-label={approved.previewPlay}
               disabled={recording||preparing}
               onClick={()=>{
-                if(activeFilm){
-                  const video=premiumVideoRef.current;
-                  video?.scrollIntoView({behavior:"smooth",block:"center"});
-                  if(video){video.muted=true;void video.play().then(()=>setPreviewPlaying(true))
-                    .catch(()=>setNotice(ui.videoUnavailable));}
-                }else{
-                  setPreviewPlaying(true);
-                  openQuickDetailed("video-hero");
-                }
+                // Keep React and the ONE native MP4 player synchronized on the
+                // same actual user gesture. WebKit can leave a pending play()
+                // promise unresolved; never postpone the UI state until then.
+                openAffirmationPreview();
               }}>
               <Play size={24} fill="currentColor" aria-hidden="true"/>
             </button>
