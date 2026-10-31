@@ -23,7 +23,7 @@ for(const change of ['owner','course','unmount'])test('compact test launch rejec
 for(const change of ['owner','unmount'])test('fast consent captures lifetime before creation and cannot intake after '+change,async()=>{
  const slow=deferred(),writes=[];let requested
  const empty={course:null,courses:[],assessments:{},access:{multiCourseEnabled:true,activeCourseLimit:5,activeCourseCount:0}}
- const h=mount('my-course',{search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
+ const h=mount('my-course',{renderOporaInvite:true,search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
   if(!body)return empty;writes.push(body);requested=body.courseId;return slow.promise
  }})
  await h.settle();const start=nodes(h.tree).find(n=>n.props?.['data-opora-fast-consent']!==undefined);assert.ok(start)
@@ -32,7 +32,7 @@ for(const change of ['owner','unmount'])test('fast consent captures lifetime bef
  slow.resolve({...empty,course:{...courseA,id:requested,stage:1,presetId:null}});await Promise.all([first,second]);await h.settle();assert.equal(writes.length,1);h.unmount()
 })
 test('fast consent preserves capacity and preset exclusions',async()=>{
- const h=mount('my-course',{search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
+ const h=mount('my-course',{renderOporaInvite:true,search:'?program=stress&entry=quick',props:{data:account('owner-a')},fetcher:(_path,_options,body)=>{
   assert.equal(body,null);return {course:null,courses:[],assessments:{},access:{multiCourseEnabled:true,activeCourseLimit:1,activeCourseCount:1}}
  }})
  await h.settle();const start=nodes(h.tree).find(n=>n.props?.['data-opora-fast-consent']!==undefined);assert.ok(start);assert.equal(start.props.disabled,true)
