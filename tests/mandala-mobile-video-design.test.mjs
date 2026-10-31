@@ -309,14 +309,22 @@ test("mandala header settings oracle rejects missing-label regression", async ()
 test("one contextual therapy action keeps the single secure renderer and a visible three-column Support header", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const locations=[
-    "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
-    "data-video-category-rail","data-video-preview-choices",
-    'id="video-hero"','id="guided-video-series"',"data-video-editor-nav",
-    'id="video-templates"',"data-video-audio-section","data-video-hypnosis-section",
+  const top=[
+    "data-video-quick-builder",'data-video-quick-section="1"',
+    "data-video-live-stage",'id="video-hero"','id="guided-video-series"',
+    "data-video-scene-library",'id="video-templates"',"data-video-quick-tier",
+    'data-video-quick-section="4"',"data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
-  assert.ok(locations.every(pos=>pos>0),"every video landmark must exist");
-  for(let i=1;i<locations.length;i++)assert.ok(locations[i]>locations[i-1],"out of order: "+i);
+  const deep=[
+    "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
+    "data-video-category-rail","data-video-preview-choices","data-video-editor-nav",
+    "data-video-audio-section","data-video-hypnosis-section"
+  ].map(marker=>studio.indexOf(marker));
+  for(const [name,locations] of [["owner preview-first mobile editor",top],["retained deep Support editor",deep]]){
+    assert.ok(locations.every(pos=>pos>0),name+" must keep its original functional landmarks");
+    for(let i=1;i<locations.length;i++)
+      assert.ok(locations[i]>locations[i-1],name+" out of order: "+i);
+  }
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
@@ -356,8 +364,12 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
 test("clean smaller video player binds two independent opt-ins and opens the existing eight-session planner",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const switches=studio.slice(studio.indexOf('data-video-preview-choices'),studio.indexOf('id="video-hero"'));
-  const hero=studio.slice(studio.indexOf('id="video-hero"'),studio.indexOf('data-video-editor-nav'));
+  const switches=studio.slice(studio.indexOf('data-video-preview-choices'),studio.indexOf('data-video-catalog'));
+  const heroStart=studio.indexOf('id="video-hero"');
+  const hero=studio.slice(heroStart,studio.indexOf("</section>",heroStart));
+  assert.ok(heroStart>0,"the original central visual player remains mounted");
+  assert.ok(studio.indexOf("data-video-live-stage")<studio.indexOf('data-video-quick-tier'),
+    "single main player comes before tier, style and all advanced settings");
   assert.match(switches,/data-video-photo-enabled/);
   assert.match(switches,/data-video-affirmations-feature/);
   assert.match(switches,/checked=\{affirmations\.enabled\}/);
@@ -391,7 +403,9 @@ test("compact opt-ins and the contextual therapy action have real 44px iPhone ta
   assert.match(css,/@media\(max-width:430px\)\{[\s\S]*?\.previewChoiceLabel\{[^}]*min-height:44px/);
   assert.match(browser,/previewTouchTargets\.every\(rect=>rect\.height>=44&&rect\.width>=44\)/);
   assert.ok(studio.indexOf("data-video-category-rail") < studio.indexOf("data-video-preview-choices"));
-  assert.ok(studio.indexOf("data-video-preview-choices") < studio.indexOf("data-video-mandala-hero"));
+  assert.ok(studio.indexOf("data-video-live-stage") < studio.indexOf("data-video-mandala-hero"));
+  assert.ok(studio.indexOf("data-video-mandala-hero") < studio.indexOf("data-video-preview-choices"),
+    "the user-requested large live screen precedes secondary photo/affirmation opt-ins");
   assert.ok(studio.indexOf('id="video-templates"') < studio.indexOf("data-video-advanced-filters"));
 });
 
@@ -427,7 +441,9 @@ test("iPhone release layout has slim diagnostic bar, Picks, visible Support head
   assert.ok(studio.indexOf("data-video-daily-picks") < studio.indexOf("data-video-support-layout"));
   assert.ok(studio.indexOf("data-video-support-layout") < studio.indexOf("data-video-category-rail"));
   assert.ok(studio.indexOf("data-video-category-rail") < studio.indexOf("data-video-preview-choices"));
-  assert.ok(studio.indexOf("data-video-preview-choices") < studio.indexOf("data-video-mandala-hero"));
+  assert.ok(studio.indexOf("data-video-live-stage") < studio.indexOf("data-video-mandala-hero"));
+  assert.ok(studio.indexOf("data-video-mandala-hero") < studio.indexOf("data-video-preview-choices"),
+    "the user-requested large live screen precedes secondary photo/affirmation opt-ins");
   assert.equal((studio.match(/data-video-support-layout/g)||[]).length,1);
   assert.equal((studio.match(/data-video-therapy-toggle/g)||[]).length,1);
   assert.doesNotMatch(studio,/data-video-mode-switch|data-video-support-more/);
