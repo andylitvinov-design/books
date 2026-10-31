@@ -98,6 +98,8 @@ test('existing POST preserves origin/auth/privacy checks and caps billable backu
   assert.match(route,/auth.verified\(\)/);
   assert.match(route,/voice-studio-openrouter-paid-day/);
   assert.match(route,/voice-studio-openrouter-free-day/);
+  assert.match(route,/providers.openrouterFree/);
+  assert.match(route,/languages,/);
   assert.match(route,/buildOpenRouterFreePayload/);
   assert.match(route,/,20,86400\)/);
   assert.match(route,/X-HH-Voice-Provider/);

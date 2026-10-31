@@ -77,6 +77,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
   const [consent,setConsent]=useState(false);
   const [background,setBackground]=useState<Background>("ocean");
   const [available,setAvailable]=useState(false);
+  const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
+  const languageAvailable=available&&availableLanguages.includes(language);
   const [checking,setChecking]=useState(true);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
@@ -96,8 +98,12 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     const abort=new AbortController();
     void fetch("/api/holistic-support/voice",{signal:abort.signal,cache:"no-store"})
       .then(async result=>{if(!result.ok)throw new Error("STATUS");return result.json();})
-      .then(data=>setAvailable(data.enabled===true))
-      .catch(()=>{if(!abort.signal.aborted)setAvailable(false);})
+      .then(data=>{
+        setAvailable(data.enabled===true);
+        setAvailableLanguages(Array.isArray(data.languages)?data.languages.filter(
+          (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
+      })
+      .catch(()=>{if(!abort.signal.aborted){setAvailable(false);setAvailableLanguages([]);}})
       .finally(()=>{if(!abort.signal.aborted)setChecking(false);});
     return ()=>abort.abort();
   },[]);
@@ -129,7 +135,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
     setNotice(excerpt?t.sourceAdded:t.noText);
   }
   async function generate(){
-    if(!available||busy)return;
+    if(!languageAvailable||busy)return;
     if(mode==="custom"&&!script.trim()){setNotice(t.noText);return;}
     if(mode==="custom"&&!consent){setNotice(t.noConsent);return;}
     resetAudio();
@@ -273,11 +279,11 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
         </div>
       </div>
       {ambientSrc?<p className={css.hint}>{locale==="ru"?"В этой версии природный фон берётся из авторской библиотеки; выбранная ранее дорожка не отправляется провайдеру.":"This pilot uses the first-party nature library; existing editor audio is never uploaded to Google."}</p>:null}
-      <p role="status" className={available?css.ready:css.unavailable}>
-        {checking?t.general:available?t.ready:t.unavailable}
+      <p role="status" className={languageAvailable?css.ready:css.unavailable}>
+        {checking?t.general:languageAvailable?t.ready:t.unavailable}
       </p>
       <button type="button" className={css.primary} data-voice-studio-generate
-        disabled={!available||busy||mixing||(mode==="custom"&&(!consent||!script.trim()))}
+        disabled={!languageAvailable||busy||mixing||(mode==="custom"&&(!consent||!script.trim()))}
         onClick={()=>void generate()}>
         {busy?<LoaderCircle size={19} aria-hidden="true"/>:<Play size={19} aria-hidden="true"/>}
         {busy?t.loading:t.generate}

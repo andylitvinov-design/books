@@ -19,13 +19,17 @@ const fail = (error, auth) => {
   return auth ? auth.apply(response) : response
 }
 export async function GET() {
+  const providers=voiceStudioProviders(process.env)
   const configured = voiceStudioReady(process.env)
+  const languages=providers.gemini||providers.openrouter?['en','ru','es']:
+    providers.openrouterFree?['en']:[]
   return NextResponse.json({
     enabled:configured,
     model:VOICE_STUDIO_MODEL,
     backupModel:VOICE_STUDIO_OPENROUTER_MODEL,
     freeBackupModel:VOICE_STUDIO_OPENROUTER_FREE_MODEL,
-    providers:voiceStudioProviders(process.env),
+    providers,
+    languages,
     mode:'gemini-free-openrouter-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:configured,

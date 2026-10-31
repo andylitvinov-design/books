@@ -71,6 +71,8 @@ export function MandalaAffirmationVoice({
   const [bed,setBed]=useState<Bed>("none");
   const [consent,setConsent]=useState(false);
   const [available,setAvailable]=useState(false);
+  const [availableLanguages,setAvailableLanguages]=useState<string[]>([]);
+  const languageAvailable=available&&availableLanguages.includes(language);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
   const [audioUrl,setAudioUrl]=useState("");
@@ -87,8 +89,12 @@ export function MandalaAffirmationVoice({
     const controller=new AbortController();
     void fetch("/api/holistic-support/voice",{cache:"no-store",signal:controller.signal})
       .then(r=>r.ok?r.json():Promise.reject())
-      .then(data=>setAvailable(data.enabled===true&&data.publicAffirmationsEnabled===true))
-      .catch(()=>{if(!controller.signal.aborted)setAvailable(false);});
+      .then(data=>{
+        setAvailable(data.enabled===true&&data.publicAffirmationsEnabled===true);
+        setAvailableLanguages(Array.isArray(data.languages)?data.languages.filter(
+          (value:unknown)=>value==="ru"||value==="en"||value==="es"):[]);
+      })
+      .catch(()=>{if(!controller.signal.aborted){setAvailable(false);setAvailableLanguages([]);}});
     return ()=>controller.abort();
   },[]);
 
@@ -109,7 +115,7 @@ export function MandalaAffirmationVoice({
   },[]);
 
   async function createAudio(){
-    if(!available||disabled||busy||!speechText||!consent)return;
+    if(!languageAvailable||disabled||busy||!speechText||!consent)return;
     const job=++jobRef.current;
     const controller=new AbortController();
     controllerRef.current=controller;
@@ -192,12 +198,12 @@ export function MandalaAffirmationVoice({
       <span>{t.consent}</span>
     </label>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!available||!speechText||!consent||busy||disabled}
+      disabled={!languageAvailable||!speechText||!consent||busy||disabled}
       onClick={()=>void createAudio()}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
       {busy?mixing?t.mixing:t.busy:t.generate}
     </button>
-    {!available?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
+    {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
       <strong><Check size={16} aria-hidden="true"/>{t.finished} · {t.status}: {speechSeconds.toFixed(1)} {t.seconds}</strong>
       <audio controls preload="metadata" src={audioUrl} aria-label={t.finished}/>
