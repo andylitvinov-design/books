@@ -5,6 +5,12 @@ on:
     paths:
       - 'lib/practitioners/daily-digest.mjs'
       - 'lib/analytics/public-page-traffic.mjs'
+      - 'lib/analytics/enquiry-attribution.mjs'
+      - 'lib/analytics/enquiry-attribution.d.mts'
+      - 'lib/app/owner-enquiry-notice.mjs'
+      - 'tests/enquiry-attribution.test.mjs'
+      - 'tests/owner-enquiry-notice.test.mjs'
+      - 'tests/owner-telegram-enquiry-pilot.test.mjs'
       - 'lib/analytics/public-page-traffic-report.mjs'
       - 'lib/analytics/public-page-traffic.d.mts'
       - 'lib/analytics/public-stats-owner.js'
@@ -56,6 +62,8 @@ jobs:
           node --check lib/app/client-telegram-transport.js
           node --check app/api/app/practice-analytics-notifications/route.js
           node --check lib/analytics/public-page-traffic.mjs
+          node --check lib/analytics/enquiry-attribution.mjs
+          node --check lib/app/owner-enquiry-notice.mjs
           node --check lib/analytics/public-page-traffic-report.mjs
           node --check lib/analytics/public-stats-owner.js
           node --check lib/analytics/public-traffic-retention.js
@@ -73,6 +81,9 @@ jobs:
             tests/practitioner-analytics-subscriptions.test.mjs \
             tests/practitioner-daily-telegram.test.mjs \
             tests/public-page-traffic.test.mjs \
+            tests/enquiry-attribution.test.mjs \
+            tests/owner-enquiry-notice.test.mjs \
+            tests/owner-telegram-enquiry-pilot.test.mjs \
             tests/app-housekeeping-cron.test.mjs
       - name: Protect existing cron identities without freezing unrelated schedules
         run: |
