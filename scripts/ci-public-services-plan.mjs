@@ -65,9 +65,26 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'tests/csp-navigation-diagnostics.test.mjs',
   'tests/public-audit-readiness.test.mjs',
   'tests/release-reaudit.test.mjs',
+  // Another mandatory exact-HEAD specialist owns the Ideas/Coaching workflow.
+  '.github/workflows/hh-ideas-coaching-public.yml',
 ]);
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
+// The Ideas/Coaching source owner checks these exact files. Public Services
+// must still run its real Ideas browser when the shared mobile QA harness
+// changes, but must not launch unrelated payment, Reiki or Alchemy journeys.
+const IDEAS_SCOPED_BROWSER_HARNESS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'scripts/verify-coaching-lounge-mobile.mjs',
+  'scripts/verify-holistic-support-browser.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
+// These are the only pre-reviewed NEW helper/test filenames allowed to use the
+// real Ideas focused browser gate; unknown additions still run all 13.
+const IDEAS_SCOPED_ADDITIONS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
 // One proven isolated presentation leaf: two existing suites exercise the exact
 // Alchemy screen/viewport/consent in RU/EN/ES. All JSX, forms and payments stay full.
@@ -96,6 +113,10 @@ export function planPublicServicesChangedPaths(files) {
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
     if (sourceTests.has(file)) continue;
+    if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
+      selected.add('verify-ideas-mobile-browser.mjs');
+      continue;
+    }
     const browserCase = scriptCases.get(file);
     if (browserCase) {
       selected.add(browserCase);
@@ -168,7 +189,8 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
-      if (status !== 'M' && !(status === 'A' && TRUSTED_CI_CONTRACT_FILES.has(file)))
+      if (status !== 'M' && !(status === 'A' &&
+        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }

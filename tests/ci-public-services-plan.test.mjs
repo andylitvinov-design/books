@@ -111,6 +111,60 @@ test('the exact Public Services CI+Alchemy change verifies only its two real bro
   assert.equal(planPublicServicesChangedPaths(risky).mode,'full');
 });
 
+
+test('Ideas/Coaching shared browser batch dispatches only the actual Ideas acceptance, not 12 unrelated lanes', () => {
+  const files = [
+    '.github/workflows/hh-ideas-coaching-public.yml',
+    'scripts/ci-mobile-browser-batch.mjs',
+    'scripts/verify-coaching-lounge-mobile.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+    'scripts/verify-ideas-mobile-browser.mjs',
+    'tests/ci-ideas-coaching-optimization.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const result = planPublicServicesChangedPaths(files);
+  assert.deepEqual([result.mode, result.build, result.browser, result.metrics, result.cases],
+    ['focused', true, true, false, 'verify-ideas-mobile-browser.mjs']);
+  const own = pathsOf('hh-ideas-coaching-public.yml');
+  for (const f of files.slice(1, 6)) {
+    assert.ok(covers(own, f), 'separate Ideas/Coaching specialist must own ' + f);
+  }
+  for (const risky of ['app/api/payments/checkout/route.js', 'middleware.ts', 'lib/commerce/payment.js', 'scripts/unknown-mobile-batch.mjs']) {
+    assert.equal(planPublicServicesChangedPaths([...files, risky]).mode, 'full',
+      'unknown, auth and payment surfaces must never be scoped: ' + risky);
+  }
+});
+
+test('only exact reviewed added browser helper and its contract test may use focused PR lane', () => {
+  const base='a'.repeat(40), head='b'.repeat(40), z='\0';
+  const env={GITHUB_EVENT_NAME:'pull_request', HH_PUBLIC_BASE_SHA:base, HH_PUBLIC_HEAD_SHA:head};
+  const plan = rows => planPublicServicesEvent(env, (_cmd,args) => {
+    if (args[0] === 'rev-parse') return Buffer.from(head+'\n');
+    if (args[0] === 'merge-base') return Buffer.alloc(0);
+    if (args[0] === 'diff') return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('Unexpected Git command');
+  });
+  const exact = [
+    ['M','.github/workflows/hh-ideas-coaching-public.yml'],
+    ['A','scripts/ci-mobile-browser-batch.mjs'],
+    ['M','scripts/verify-coaching-lounge-mobile.mjs'],
+    ['M','scripts/verify-holistic-support-browser.mjs'],
+    ['M','scripts/verify-ideas-mobile-browser.mjs'],
+    ['A','tests/ci-ideas-coaching-optimization.test.mjs'],
+  ];
+  const verified=plan(exact);
+  assert.equal(verified.mode,'focused');
+  assert.equal(verified.cases,'verify-ideas-mobile-browser.mjs');
+  for(const unsafe of [
+    [['A','scripts/unknown-mobile-batch.mjs']],
+    [['A','lib/billing/new-helper.js']],
+    [['D','scripts/ci-mobile-browser-batch.mjs']],
+    [['T','tests/ci-ideas-coaching-optimization.test.mjs']],
+    [...exact,['M','app/api/payments/talismans/checkout/route.js']],
+  ]) assert.equal(plan(unsafe).mode,'full', 'new unreviewed and sensitive code must run full');
+});
+
 test('performance harness changes need production server but no browsers', () => {
   const p = planPublicServicesChangedPaths(['scripts/measure-hh-public-ttfb.mjs']);
   assert.deepEqual([p.mode, p.build, p.browser, p.metrics, p.cases],
