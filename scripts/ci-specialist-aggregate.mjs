@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters,
+  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -79,8 +79,16 @@ export async function verify(api,ctx,files,options={}) {
   const pr = await api.pr(ctx.number);
   assertSame(pr,ctx);
   const changedRows=await api.changed(ctx.number);
-  const changed=changedRows.map(row => row.filename);
+  if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
+    throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
+  }
+  const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
+  const risk=classifyReleaseRisk(changed);
+  if (risk === 'FAST') {
+    assertSame(await api.pr(ctx.number),ctx);
+    return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
+  }
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
@@ -123,7 +131,7 @@ export async function verify(api,ctx,files,options={}) {
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
   };
-  return {expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 async function main() {
@@ -134,7 +142,7 @@ async function main() {
   const files=worktreeSources(ctx.base);
   const result=await verify(api,ctx,files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
-    ' base=' + ctx.base + '\nVerified applicable workflows: ' + result.expected.length +
+    ' base=' + ctx.base + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
