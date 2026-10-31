@@ -4,7 +4,7 @@ import {resolvePrivateHypnoCodes} from "../lib/mandala/hypno-private-signals.mjs
 test("private note signal mapping in all supported languages",()=>{
   const ex=[
     {locale:"ru",theme:"relationships",problemNote:"Боюсь критики",
-      goalNote:"Хочу уметь говорить о своих границах",problemIndex:2,goalId:"dialogue",
+      goalNote:"Хочу беречь свои границы",problemIndex:2,goalId:"dialogue",
       expectedIssue:0,expectedGoal:"boundaries"},
     {locale:"en",theme:"energy",problemNote:"I am always rushing",
       goalNote:"I need to rest more",problemIndex:0,goalId:"strength",

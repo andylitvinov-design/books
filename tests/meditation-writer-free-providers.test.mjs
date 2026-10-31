@@ -175,7 +175,7 @@ test("both real app surfaces enforce opt-in, private server flags and no raw not
   assert.ok(meditation.includes("createAnonymousOpenRouterSegmentProvider"));
   assert.ok(component.includes("data-hypno-ai-generate"));
   assert.ok(component.includes("aiConsent"));
-  const request=component.match(/body:JSON.stringify\(\{locale,theme,problemIndex,goalId[\s\S]*?\}\)/u)?.[0];
+  const request=component.match(/body:JSON.stringify\(\{locale,theme,problemIndex:local\.problemIndex,goalId:local\.goalId[\s\S]*?\}\)/u)?.[0];
   assert.ok(request);
   for(const forbidden of ["problemNote","goalNote","settings.custom","clientPhrase","profile","tests"])
     assert.equal(request.includes(forbidden),false,forbidden);
