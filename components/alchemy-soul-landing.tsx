@@ -544,7 +544,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.reviewNote} data-alchemy-review-note>{t.reviewsNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" aria-labelledby="alchemy-options-title">
+        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" role="region" tabIndex={0} aria-labelledby="alchemy-options-title">
           <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.optionsKicker}</span>

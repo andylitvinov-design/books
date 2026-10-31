@@ -685,3 +685,10 @@
   .optionsSection .formatHint{margin-top:3px}
   .optionsSection .freeOption{margin-top:3px}
 }
+
+/* Port unique accessible 320px Alchemy formats fix from #2706: preserve
+   real prices, consent and booking actions without clipping the panel. */
+@media(max-width:350px) and (min-height:651px){
+  .optionsSection{max-height:calc(100svh - 80px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+  .optionsSection:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
+}
