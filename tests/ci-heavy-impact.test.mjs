@@ -57,7 +57,9 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /needs\.impact\.outputs\.full_app == 'true'/);
   assert.match(yaml, /needs\.impact\.outputs\.database == 'true'/);
   assert.match(yaml, /needs\.impact\.outputs\.banner == 'true'/);
-  assert.match(yaml, /run: npm run test:app/);
+  assert.doesNotMatch(yaml, /run: npm run test:app$/m, 'Do not add an 8k-test run to every strict PR');
+  assert.match(yaml, /if: needs\.impact\.outputs\.full_app == 'true'/);
+  assert.match(yaml, /Independent native\/PWA contracts/);
   assert.match(yaml, /run: npm run test:app:db/);
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
