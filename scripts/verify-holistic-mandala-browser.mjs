@@ -331,6 +331,13 @@ const runEngine = async ([engine, browserType]) => {
           "each expandable format retains its Basic / Smart / Pro choices");
         assert.equal(await stage.locator("[data-video-mini-source] [data-video-quick-live-preview]").count(),1,
           "the original same-origin MP4 decoder remains mounted, even when its redundant mini-player is hidden");
+        const styleMore=quick.locator("[data-video-style-more]");
+        assert.equal(await styleMore.getAttribute("open"),null,
+          "extra video stories are not another visible page block");
+        assert.equal(await quick.locator('[data-video-quick-section="4"] [data-video-scene-library]').count(),1);
+        assert.equal(await quick.locator("[data-video-scene-library]").isVisible(),false);
+        await styleMore.locator(":scope > summary").click();
+        await quick.locator('[data-video-style-catalog-tab="films"]').click();
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
@@ -338,6 +345,7 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
           "All 24 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
+        await quick.locator('[data-video-style-catalog-tab="templates"]').click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
           "the existing native MP4 decoder must remain mounted within the large preview");
@@ -646,7 +654,6 @@ const runEngine = async ([engine, browserType]) => {
               '[data-video-quick-section="4"]',
               "[data-video-quick-phrases]",
               "[data-video-quick-audio-choices]",
-              "[data-video-scene-library]",
               "[data-video-quick-tier]",
               "[data-video-quick-personal]",
               "[data-video-order-bar]"
@@ -752,6 +759,9 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
         // Energy must play decoded Full HD MP4, not a still Canvas artwork.
         await page.locator('[data-video-category="energy"]').click();
+        if(await page.locator("[data-video-style-more]").getAttribute("open")===null)
+          await page.locator("[data-video-style-more] > summary").click();
+        await page.locator('[data-video-style-catalog-tab="templates"]').click();
         const energyTile=page.locator('[data-video-template="solar-surge"]');
         await energyTile.click();
         const energyClip=energyTile.locator('[data-mandala-scene-preview="solar-surge"]');
@@ -1041,8 +1051,11 @@ const runEngine = async ([engine, browserType]) => {
           // The approved six-panel editor keeps legacy tools in a collapsed
           // disclosure. These links must reveal the actual tool, not only
           // update the URL hash while the target remains hidden.
-          await page.waitForFunction(() => document.querySelector('[data-video-quick-legacy]')?.open === true,
-            undefined,{timeout:8000});
+          await page.waitForFunction(target=>
+            target==="video-templates"
+              ? document.querySelector('[data-video-style-more]')?.open===true
+              : document.querySelector('[data-video-quick-legacy]')?.open===true,
+            id,{timeout:8000});
           try {
             await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
             await page.waitForFunction(target=>{

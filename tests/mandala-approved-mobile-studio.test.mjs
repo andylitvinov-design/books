@@ -20,10 +20,11 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
+    "data-video-style-more","data-video-scene-library",
+    'id="video-templates"',"data-free-film-compilation-catalog",
+    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
     "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
     "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
-    "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
-    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
@@ -41,6 +42,22 @@ test("the existing public editor retains one real video renderer and the new com
   assert.match(source,/data-video-quick-scene=\{scene\.id\}/);
   assert.match(source,/if\(theme==="money"\)setMoneyScene\(scene\.id as MoneySceneId\)/);
   assert.match(source,/else setOtherScene\(scene\.id as LocalSceneId\)/);
+});
+
+test("Style 3 alone holds the optional template and 24-story catalogs",()=>{
+  const source=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const part=source.slice(source.indexOf('data-video-quick-section="4"'),
+    source.indexOf("<section className={videoStyles.quickPhraseSection}"));
+  for(const item of ["data-video-style-more","data-video-scene-library",
+      'id="video-templates"',"data-free-film-compilation-catalog",
+      'data-video-style-catalog-tab="templates"','data-video-style-catalog-tab="films"'])
+    assert.ok(part.includes(item),"additional options nested inside one style block: "+item);
+  assert.match(part,/hidden=\{styleLibraryTab!=="templates"\}/);
+  assert.match(part,/hidden=\{styleLibraryTab!=="films"\}/);
+  assert.equal((source.match(/data-video-scene-library/g)||[]).length,1);
+  assert.match(css,/\.quickBuilder \.quickStyleMore>summary/);
+  assert.match(css,/\.quickBuilder \.quickStyleMore \[hidden\]\{display:none!important\}/);
 });
 
 test("shared widescreen preview and mutually exclusive format accordion keep paid formats gated",()=>{
@@ -255,7 +272,7 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
  assert.match(src,/window\.location\.hash!=="#video-hypnosis"/);
  assert.match(src,/href="#video-hypnosis"[\s\S]*?openQuickDetailed\("video-hypnosis"\)/,
    "Configure affirmations navigates to the one live inline editor");
- assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else setQuickDetailedOpen\(true\)/,
+ assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else if\(anchor==="video-templates"\)/,
    "opening Hypno must not also expand unrelated advanced settings");
  assert.match(src,/const quickLegacyRef=useRef<HTMLDetailsElement\|null>\(null\)/);
  assert.match(src,/if\(quickDetailedOpen && quickLegacyRef\.current && !quickLegacyRef\.current\.open\)/,
