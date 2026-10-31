@@ -78,6 +78,10 @@ const runEngine = async ([engine, browserType]) => {
         viewport: { width, height: 820 },
         acceptDownloads: true,
         reducedMotion: "reduce",
+        // This E2E explicitly mocks the free AI POST. Playwright cannot
+        // guarantee page.route() interception behind a registered PWA SW.
+        // Dedicated SW suites cover PWA behavior independently.
+        serviceWorkers: "block",
       });
       try {
         const page = await context.newPage();
@@ -120,6 +124,56 @@ const runEngine = async ([engine, browserType]) => {
           // before user input; no synthetic dispatch or mocked media allowed.
           const form=page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
           await form.waitFor({state:"visible",timeout:25000});
+          // Literal visual wish and alternate: real hydrated iPhone UI.
+          await form.locator("[data-first-video-wish]").fill("Горы");
+          const promptField=form.locator("[data-first-video-prompt]");
+          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
+            .toContain("горные вершины");
+          const firstVariant=await promptField.inputValue();
+          await form.locator("[data-first-video-refresh]").click();
+          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
+            .not.toBe(firstVariant);
+          assert.match(await promptField.inputValue(),/горные вершины/i);
+          // Mock only the external language model; real form + request.
+          const apiRoute="**/api/holistic-support/first-video-prompt";
+          const aiCalls=[];
+          const aiNetworkFailures=[];
+          const captureNetworkFailure=request=>{
+            if(request.url().includes("first-video-prompt"))
+              aiNetworkFailures.push(request.failure()?.errorText||"unknown");
+          };
+          page.on("requestfailed",captureNetworkFailure);
+          await page.route(apiRoute,async route=>{
+            aiCalls.push({method:route.request().method(),body:route.request().postData()});
+            await route.fulfill({status:200,contentType:"application/json",
+              headers:{"cache-control":"no-store"},
+              body:JSON.stringify({prompt:"Горные вершины и облака в мягком свете. Четыре спокойные сцены, плавное движение камеры и без людей.",
+                provider:"gemini_free",model:"gemini-2.5-flash-lite"}),
+            });
+          });
+          await form.locator("[data-first-video-ai-consent]").check();
+          await expect(form.locator("[data-first-video-enhance]")).toBeEnabled({timeout:8000});
+          await form.locator("[data-first-video-enhance]").click();
+          try{
+            await expect.poll(()=>aiCalls.length,{timeout:12000}).toBe(1);
+            const input=JSON.parse(aiCalls[0].body||"{}");
+            assert.equal(input.wish,"Горы");
+            assert.equal(input.consent,true);
+            await expect.poll(()=>promptField.inputValue(),{timeout:12000})
+              .toContain("Горные вершины и облака");
+            await expect(form).toContainText("Gemini");
+          }catch(error){
+            const state=await form.evaluate(el=>({
+              status:[...el.querySelectorAll("[role=status]")].map(n=>n.textContent?.trim()),
+              loading:el.querySelector("[data-first-video-enhance]")?.textContent?.trim(),
+              mode:el.querySelector("[data-first-video-prompt]")?.value?.slice(0,200),
+              consent:el.querySelector("[data-first-video-ai-consent]")?.checked,
+            }));
+            throw new Error("FIRST_VIDEO_AI_UI_NOT_APPLIED: "+JSON.stringify({engine,aiCalls,aiNetworkFailures,state}),{cause:error});
+          }finally{
+            page.off("requestfailed",captureNetworkFailure);
+            await page.unroute(apiRoute);
+          }
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{
@@ -308,8 +362,20 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
-          .toHaveAttribute("open","",{timeout:10000});
+        try {
+          await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
+            .toHaveAttribute("open","",{timeout:4000});
+        } catch(firstTapError) {
+          // A native <details> click can be lost during WebKit's long
+          // video decode. Retry exactly ONE real summary click when (and only
+          // when) the native open attribute is still absent; never set it
+          // programmatically or waive the photo/cover assertions below.
+          if(await coverOptions.getAttribute("open")!==null)throw firstTapError;
+          console.warn(engine+" "+locale+" "+width+"px cover details not committed; retrying one user tap");
+          await coverOptions.locator("summary").click();
+          await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
+            .toHaveAttribute("open","",{timeout:12000});
+        }
         // Fix a stable scene identity before changing its aria-pressed state;
         // a selector filtered on [aria-pressed=false] points at another scene afterwards.
         const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
@@ -529,7 +595,14 @@ const runEngine = async ([engine, browserType]) => {
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
-        assert.equal(await hero.locator("button").count(),1,"one prominent central Play/Pause");
+        assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
+          "one prominent central Canvas Play/Pause remains");
+        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="es"?0:1,
+          "owner-approved RU film introduction is selectable on RU/EN without another editor");
+        assert.equal(await hero.locator("iframe").count(),0,
+          "no external video iframe or requests before an explicit user click");
+        assert.equal(await hero.locator("button").count(),locale==="es"?1:2,
+          "the second RU/EN button is the opt-in intro, not another editor");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
