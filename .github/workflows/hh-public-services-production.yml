@@ -101,6 +101,7 @@ on:
       # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
       # acceptance in the dedicated Mandala suite, not public Services checkout.
       - '!app/**/holistic-support/voice-studio/route.ts'
+      - '!app/api/holistic-support/voice/route.js'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation-client.tsx'
