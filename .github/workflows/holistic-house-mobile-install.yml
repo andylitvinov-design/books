@@ -96,16 +96,13 @@ jobs:
       - name: Lint signed-in install prompt, global PWA registration and onboarding
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' 'app/api/native-download/android/route.js' 'app/api/native-download/ios/route.js' lib/native/public-downloads.mjs lib/public-locales.ts
       - name: Build public phone installation pages without credentials
-        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install Chromium and WebKit for real public iPhone installation QA
-        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/hh-install-browser-tools
           npm install --prefix /tmp/hh-install-browser-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-install-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Check EN/RU install pages and real PNG icons
-        if: github.event_name != 'pull_request'
         run: |
           PORT=3098 npm run start -- --port 3098 > /tmp/hh-install-next.log 2>&1 &
           child=$!
@@ -140,7 +137,7 @@ jobs:
           node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
           HH_PLAYWRIGHT_PACKAGE=/tmp/hh-install-browser-tools/node_modules/playwright node scripts/verify-hh-install-browser.mjs http://127.0.0.1:3098
       - name: Archive guest-only iPhone/Android install screenshots
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: holistic-house-install-browser

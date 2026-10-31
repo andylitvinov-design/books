@@ -88,9 +88,9 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx, allowBaseAdvance = false) {
+function assertSame(pr, ctx) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || (!allowBaseAdvance && pr.base?.sha !== ctx.base) || pr.base?.ref !== TARGET ||
+      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
       pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
@@ -101,9 +101,8 @@ export async function verify(api,ctx,files,options={}) {
   // long enough for their results instead of rejecting a still-running check.
   const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
   const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
-  const allowBaseAdvance = Array.isArray(files.changedRows);
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx,allowBaseAdvance);
+  assertSame(pr,ctx);
   const changedRows=files.changedRows ?? await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
@@ -115,7 +114,7 @@ export async function verify(api,ctx,files,options={}) {
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx,allowBaseAdvance);
+    assertSame(await api.pr(ctx.number),ctx);
     return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
   }
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
@@ -152,7 +151,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx,allowBaseAdvance);
+  assertSame(fresh,ctx);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -169,7 +168,9 @@ async function main() {
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
   if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
-  const result=await verify(api,ctx,files);
+  // The verified merge parent is the base actually tested. Reject a later
+  // production advance at both the start and end of specialist aggregation.
+  const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
