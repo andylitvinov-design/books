@@ -764,3 +764,45 @@ test('Personal Coaching keeps all private guided-session contracts while delegat
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(coaching, /continue-on-error:\s*true/);
 });
+
+test('six source-only specialist suites retain contracts, Ready transitions and protected global check reuse', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit/);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/ci-specialist-aggregate\\.mjs/);
+  const gate="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const ready="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const cases=[
+    ['hh-practice-telegram-digest.yml',['offline-contracts','production-build'],[['Next.js production build and TypeScript','npm run build']],['tests/practitioner-daily-telegram.test.mjs','tests/public-page-traffic.test.mjs','npx eslint']],
+    ['hh-client-report-coastal-v2.yml',['report-reader-build','coastal-visual'],[['Typecheck','npx --no-install tsc --noEmit'],['Production Next.js build','npm run build']],['tests/client-report-coastal-v2.test.mjs','tests/client-session-html-report.test.mjs','verify-client-report-coastal-browser.mjs','browser: [chromium, webkit]']],
+    ['hh-messages-wellness-v2.yml',['focused'],[['TypeScript check','npx --no-install tsc --noEmit']],['tests/messages-wellness-v2.test.mjs','tests/practitioner-request-multimedia.test.mjs','npx --no-install eslint']],
+    ['hh-event-referral-contract.yml',['tracked-handoff-regression'],[['Check TypeScript without publishing','npx tsc --noEmit']],['tests/organic-event-referrals.test.mjs','tests/crm-event-channel-attribution.test.mjs','tests/whatsapp-enquiries.test.mjs']],
+  ];
+  for(const [file,jobs,steps,kept] of cases) {
+    const source=workflow(file);
+    assert.match(source,/^  pull_request:\\n    types: \\[opened, synchronize, reopened, ready_for_review, converted_to_draft\\]/m,file);
+    for(const job of jobs) assert.ok(source.includes('  '+job+':\\n    '+ready+'\\n'),file+' Ready gate for '+job);
+    for(const [name,command] of steps) assert.ok(source.includes('- name: '+name+'\\n        '+gate+'\\n        run: '+command),file+' delegated '+name);
+    for(const value of kept) assert.ok(source.includes(value),file+' must retain '+value);
+    assert.doesNotMatch(source,/continue-on-error:\\s*true/,file+' must not ignore failures');
+  }
+});
+test('Home locale first-click and Gauntlet keep real journeys while skipping redundant PR-only TS/build',()=>{
+  const home=workflow('home-locale-switch.yml');
+  const gauntlet=workflow('hh-gauntlet-loop.yml');
+  const guard="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [source,job] of [[home,'core-methods'],[home,'first-click'],[gauntlet,'offline-contract']]) {
+    assert.ok(source.includes('  '+job+':\\n    if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"+'\\n'));
+  }
+  assert.ok(home.includes('- name: Build three home locales with reviewed dependencies\\n        '+guard+'\\n        run: npm run build'));
+  assert.ok(home.includes('- name: Build the real application\\n        run: npm run build'),'The separate real browser job must keep its own Next build');
+  assert.equal((home.match(/if \\[\\[ "\\$GITHUB_EVENT_NAME" != "pull_request"/g)||[]).length,2,'Both redundant TypeScript checks are conditional');
+  for(const path of ['scripts/verify-home-locale-switch.mjs','playwright install --with-deps chromium webkit','tests/home-locale-menu-state.test.mjs']) assert.ok(home.includes(path));
+  for(const path of ['tests/hh-gauntlet-loop.test.mjs','tests/free-express-mobile-consent-layout.test.mjs','npx tsc --noEmit','npx eslint']) assert.ok(gauntlet.includes(path));
+  assert.ok(gauntlet.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request"'),'Gauntlet delegates only global typechecking');
+  for(const s of [home,gauntlet]) {
+    assert.ok(s.includes("cancel-in-progress: $"+"{{ github.event_name == 'pull_request' }}"));
+    assert.doesNotMatch(s,/continue-on-error:\\s*true/);
+  }
+});

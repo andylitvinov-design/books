@@ -1,6 +1,7 @@
 name: Home language switch first-click regression
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
@@ -59,8 +60,12 @@ on:
       - '.github/workflows/home-locale-switch.yml'
 permissions:
   contents: read
+concurrency:
+  group: hh-home-locale-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   core-methods:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -80,12 +85,16 @@ jobs:
         run: |
           node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
           npx eslint components/home-featured-workspace.tsx components/personality-profiles-builder.tsx lib/profile/profile-battery.js app/'[locale]'/personality-profiles/page.tsx components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          fi
       - name: Build three home locales with reviewed dependencies
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
   first-click:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -101,7 +110,9 @@ jobs:
         run: |
           node --test tests/home-locale-menu-state.test.mjs tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
           npx eslint components/site-navigation.tsx components/holistic-house-home.tsx components/home-core-methods.tsx app/es/page.tsx
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          fi
       - name: Build the real application
         run: npm run build
         env:

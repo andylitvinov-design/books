@@ -2,6 +2,7 @@ name: Holistic House Gauntlet offline safety gate
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-gauntlet-loop.yml'
@@ -24,11 +25,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-gauntlet-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-gauntlet-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   offline-contract:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: No-model, no-provider, no-private-data Gauntlet policy
     runs-on: ubuntu-24.04
     timeout-minutes: 12
@@ -53,5 +55,7 @@ jobs:
       - name: Lint and typecheck
         run: |
           npx eslint scripts/benchmarking/hh-gauntlet-loop.mjs lib/benchmarking/hh-gauntlet-loop.mjs tests/hh-gauntlet-loop.test.mjs
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          fi
       # No OpenCode CLI, API key, live POST, migrations, deployments or paid calls in CI.
