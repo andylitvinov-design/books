@@ -12,6 +12,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { compileAnonymousAffirmationStrategy,
   createAnonymousFreeAffirmationProvider } from "@/lib/holistic-support/meditation-writer/affirmation-writer.mjs";
 import { freeWriterProviders } from "@/lib/holistic-support/meditation-writer/free-json.mjs";
+import { buildPsychologyProgram } from "@/lib/holistic-support/psychologist-mind.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -49,6 +50,29 @@ export async function POST(request) {
     }catch{
       throw new AppError("AFFIRMATION_STRATEGY_INVALID",400);
     }
+    // Psychologist Mind must independently approve the non-clinical focus.
+    // Never send full psychological programmes or personal notes to free AI.
+    const themeFocus={
+      energy:"stress",money:"self_worth",relationships:"relationships",
+      goals:"meaning",life:"meaning",health:"stress",
+    };
+    const themeApproach={
+      stress:"cbt",self_worth:"cbt",relationships:"interpersonal",meaning:"act",
+    };
+    const expectedFocus=themeFocus[strategy.themeCode];
+    const programme=buildPsychologyProgram({
+      locale:strategy.locale,
+      intent:{focus:expectedFocus},
+      safety:{status:"clear"},
+      access:{authenticated:true,ownerScoped:true},
+      consent:{resourceImagery:false,profilePersonalization:false},
+    });
+    if(!expectedFocus || programme.status!=="ready" ||
+       programme.mode!=="self_guided" ||
+       programme.focus!==expectedFocus ||
+       programme.primaryApproach!==themeApproach[expectedFocus] ||
+       programme.requiresHumanReview===true)
+      throw new AppError("AFFIRMATION_DIRECTOR_NOT_READY",422);
     const providers=freeWriterProviders(process.env);
     let payload=unavailable("AI_FREE_NOT_CONFIGURED");
     if(providers.length){
