@@ -1,7 +1,6 @@
 // Exact-merge, fail-closed fast-route planner. Run the version pinned to HEAD^1,
 // never a candidate-PR version, before deciding whether to skip Core Next.js.
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
