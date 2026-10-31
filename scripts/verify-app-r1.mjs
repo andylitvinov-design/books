@@ -439,7 +439,18 @@ async function verifyPublicServiceConversionJourneys(){
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
-    const serviceResponse=await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'domcontentloaded'})
+    // Next dev's first-time compilation can redirect the *same URL* while
+    // WebKit is waiting for DOMContentLoaded. Retry only that exact local
+    // Fast Refresh collision; all other navigations and non-200s fail closed.
+    const serviceUrl=origin+'/'+locale+'/services/'+slug
+    let serviceResponse
+    for(let attempt=0;attempt<3;attempt++){
+     try{serviceResponse=await servicePage.goto(serviceUrl,{waitUntil:'domcontentloaded'});break}
+     catch(error){
+      if(attempt===2||!String(error?.message||'').includes('interrupted by another navigation to "'+serviceUrl+'"'))throw error
+      await servicePage.waitForLoadState('domcontentloaded',{timeout:15000})
+     }
+    }
      assert.equal(serviceResponse?.status(),200,locale+'/'+slug+'/'+width+': service route HTTP 200')
     // The canonical free Wu Xing entry now uses FreeEntryLanding rather than CoreServiceDetail.
     // Check the actual page, never a historical DOM selector or synthetic placeholder.
@@ -455,6 +466,13 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
      assert.equal(await servicePage.locator('[data-alchemy-payment-disclosure]').count(),0,
       'Payment methods are absent until the practitioner confirms the session')
+     // Wait for actual CSS/fonts and the collapsed, hydrated client layout.
+     // Bounded polling does not relax the geometry limit: sustained overflow
+     // still fails, and the exact measured chapters are asserted below.
+     await servicePage.evaluate(()=>document.fonts.ready)
+     await expect.poll(async()=>servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
+      nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80}))
+       .filter(chapter=>chapter.height>chapter.max)),{timeout:12000,intervals:[250,500,1000]}).toEqual([])
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
