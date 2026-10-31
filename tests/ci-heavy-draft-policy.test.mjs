@@ -35,11 +35,7 @@ for (const name of workflows) {
     }
     assert.match(jobBlock, /if: \${\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}/);
     assert.match(source, /^concurrency:/m);
-    if (['hh-benchmark-public-browser.yml', 'assessment-range-mobile-browser.yml'].includes(name)) {
-      assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
-    } else {
-      assert.match(source, /^  cancel-in-progress: true/m);
-    }
+    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   });
 }
@@ -254,7 +250,7 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
     if(pushAudit)assert.match(source,/^  push:/m,name+' lost push verification');
     assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
     if (name === 'opora-module-ci.yml') assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
-    else assert.match(source,/^  cancel-in-progress: true/m);
+    else assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
     assert.doesNotMatch(source,/continue-on-error:\s*true/);
     const jobs=source.split(/^jobs:\s*$/m)[1];
     assert.ok(jobs,name+' has no jobs');

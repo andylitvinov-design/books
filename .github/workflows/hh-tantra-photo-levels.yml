@@ -14,8 +14,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-tantra-photo-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-tantra-photo-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   photo-cards:
     # Playwright 1.56.1 browser installer does not support Ubuntu 26.04 (ubuntu-latest).
@@ -55,7 +55,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           ready=0
-          for attempt in $(seq 1 60); do
+          for ((attempt=0; attempt<60; attempt++)); do
             if curl --silent --fail --output /dev/null http://127.0.0.1:3089/en/academy/reiki/tantra-reiki; then
               ready=1
               break
