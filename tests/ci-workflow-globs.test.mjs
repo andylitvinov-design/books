@@ -245,3 +245,21 @@ test('CI wave B preserves real E2E while outsourcing only duplicate typing to Co
     assert.doesNotMatch(src,/continue-on-error:\s*true/);
   }
 });
+
+test('CI wave C preserves Free Review, Home and client-report browser guards', () => {
+  assert.match(workflow('hh-pr-core-release.yml'),/^  release-ready:$/m);
+  const guard="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const report=workflow('hh-client-report-coastal-v2.yml');
+  assert.ok(report.includes('- name: Typecheck\n        # Mandatory protected Core owns TypeScript on Ready production PRs.\n        '+guard));
+  assert.match(report,/verify-client-report-coastal-browser\.mjs/);
+  for(const [name,contract] of [
+    ['hh-free-review-live-mobile.yml','scripts/verify-free-review-live-mobile.mjs'],
+    ['hh-home-conversation.yml','tests/home-conversation-guide.test.mjs'],
+  ]){
+    const src=workflow(name);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'));
+    assert.ok(src.includes('Protected Core owns whole-project TypeScript verification'));
+    assert.ok(src.includes(contract));
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+});

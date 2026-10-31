@@ -47,6 +47,8 @@ jobs:
             tests/client-session-video-poster.test.mjs \
             tests/consultation-recommended-tests.test.mjs
       - name: Typecheck
+        # Mandatory protected Core owns TypeScript on Ready production PRs.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
         run: npm run build
