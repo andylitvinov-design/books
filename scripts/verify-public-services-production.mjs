@@ -619,57 +619,45 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
-          const featured = main.locator("[data-featured-constellations-video]");
+          const featured = main.locator("[data-free-review-intro-video]");
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
-            "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
+            "The introduction never autoplays before opt-in");
+          const chooser = main.locator("#" + captureId + "[data-personal-express-enquiry]");
           await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
-
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
+          const reveal = chooser.locator("[data-express-reveal]");
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false");
+          await reveal.click();
+          await visible(chooser.locator("[data-express-inline-disclosure]"));
+          assert.equal(await chooser.locator('input[name="express-review-focus"]').count(), 2);
+          assert.equal(await chooser.locator('input[type="checkbox"][required]').isChecked(), false,
+            "Contact consent remains explicit and unchecked");
           assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
-
-          const writtenIntake = main.locator("[data-optional-written-review]");
-          assert.equal(await writtenIntake.evaluate(el => el.open), false);
+            "Opening the form does not create a CRM lead");
           if (width === 390) {
-            await writtenIntake.locator(":scope > summary").click();
-            const preview = writtenIntake.locator("[data-free-drawing-intake]");
-            await visible(preview);
-            await visible(preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]'));
-            assert.equal(await preview.locator("form,textarea").count(), 0,
-              "The private answers are entered only in the protected questionnaire");
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-              "Expanded information must fit the phone width");
-
             const hub = await page.context().newPage();
             await hub.setViewportSize({width, height: 844});
             await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
-              "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
+            const offers = hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]");
+            assert.equal(await offers.count(), 3,
+              "Free written situation, free Wu Xing and €50 personal session are three distinct options");
+            assert.equal(await offers.locator("img").count(), 3,
+              "Each diagnosis option has its own real photograph");
+            assert.ok(await offers.nth(1).locator("ol li").count() > 0,
+              "The Wu Xing offer explains its steps inline");
+            await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
+            const dialog = hub.locator('[data-diagnosis-order-form][role="dialog"]');
+            await visible(dialog);
+            assert.equal(await dialog.locator('input[type="checkbox"][required]').isChecked(), false);
+            assert.equal(await dialog.locator("[data-lead-saved]").count(), 0,
+              "An offer click does not create a CRM lead, booking or payment");
+            await dialog.locator('header button').click();
+            await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
+            await visible(dialog);
+            assert.equal(await dialog.locator('input[type="checkbox"][required]').isChecked(), false,
+              "Switching offers never carries consent forward");
+            assert.equal(await dialog.locator("[data-lead-saved]").count(), 0,
+              "Switching offers does not save a lead");
             await hub.close();
           }
         }
