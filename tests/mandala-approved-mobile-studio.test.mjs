@@ -15,13 +15,16 @@ test("the existing public editor retains one real video renderer and the new com
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
   const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
-    "data-video-live-stage","data-video-mandala-hero","data-video-mini-source",
-    "data-video-quick-live-preview","data-video-scene-library",
-    'id="video-templates"',"data-free-film-compilation-catalog",
+    "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
+    "data-video-mini-source","data-video-quick-live-preview",
+    "data-video-therapy-banner",
+    '<section className={videoStyles.quickSection} data-video-quick-section="4"',
+    "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
+    "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
+    "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
     "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
     "data-video-quick-tier","data-video-practice-accordion",
-    "data-video-quick-section=\"4\"",
-    "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
     "data-video-quick-section=\"6\""];
@@ -44,7 +47,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const stage=source.slice(source.indexOf('data-video-live-stage'),source.indexOf('data-video-quick-tier'));
-  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-section="4"'));
+  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal'));
   assert.match(stage,/data-video-mandala-hero/);
   assert.match(stage,/data-mandala-cinematic-canvas/);
   assert.match(stage,/data-video-quick-live-preview/);

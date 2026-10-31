@@ -94,7 +94,7 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   // Orders, not the already-approved person-by-person conversations.
   assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
-  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
