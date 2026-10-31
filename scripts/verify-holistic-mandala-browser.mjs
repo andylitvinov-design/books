@@ -214,9 +214,14 @@ const runEngine = async ([engine, browserType]) => {
         // committed selection. A click alone does not prove media updated.
         const selectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="true"]');
         assert.equal(await selectedScene.count(),1,"exactly one current cover scene");
-        const alternateScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="false"]').first();
-        const alternateId=await alternateScene.getAttribute("data-video-quick-scene");
+        // The "unselected" CSS condition changes after React selects it.
+        // Capture the identity once, then assert against a STABLE scene ID
+        // rather than re-querying a different unselected button.
+        const unselectedScene=coverOptions.locator('[data-video-quick-scene][aria-pressed="false"]').first();
+        const alternateId=await unselectedScene.getAttribute("data-video-quick-scene");
         assert.match(alternateId||"",/^[a-z0-9-]+$/,"a published alternate scene ID is required");
+        const alternateScene=coverOptions.locator('[data-video-quick-scene="'+alternateId+'"]');
+        assert.equal(await alternateScene.count(),1,"the selected scene ID is unique");
         const expectedAlternateMaster="/videos/holistic-house/film-collection-v2/"+alternateId+".mp4";
         assert.notEqual(expectedAlternateMaster,firstMaster,"test must select a different MP4 master");
         await alternateScene.click();
