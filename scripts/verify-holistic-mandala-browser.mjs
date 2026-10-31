@@ -1536,6 +1536,47 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('nav[aria-current="page"]').count(),0,
           engine+" no duplicate legacy editor dock");
 
+        // Owner's six-button request: one genuine in-place content swap per workspace,
+        // not a scroll-jump to a fragment or another duplicate video editor.
+        const workspaceNav=page.locator("[data-video-quick-controls]");
+        await workspaceNav.scrollIntoViewIfNeeded();
+        const originalHash=await page.evaluate(()=>window.location.hash);
+        for (const id of ["video","audio","characters","psychocorrection","courses","hypnotherapy"]){
+          const button=workspaceNav.locator('[data-video-quick-control="'+id+'"]');
+          assert.equal(await button.count(),1,engine+" one tab for "+id);
+          await button.click();
+          await expect(button).toHaveAttribute("aria-pressed","true");
+          await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace",id);
+          await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
+          await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
+          assert.equal(await page.evaluate(()=>window.location.hash),originalHash,
+            "workspace taps must not navigate to a legacy hash");
+          const geometry=await page.evaluate(()=>{
+            const nav=document.querySelector("[data-video-quick-controls]")?.getBoundingClientRect();
+            const pane=document.querySelector("[data-video-workspace-heading]")?.getBoundingClientRect();
+            return {navBottom:nav?.bottom,paneTop:pane?.top,width:document.documentElement.scrollWidth,
+              viewport:document.documentElement.clientWidth};
+          });
+          assert.ok(geometry.paneTop>geometry.navBottom &&
+            geometry.paneTop-geometry.navBottom<130,
+            engine+" "+locale+" "+width+" workspace immediately below video "+id+" "+JSON.stringify(geometry));
+          assert.ok(geometry.width<=geometry.viewport+2,
+            engine+" "+locale+" "+width+" workspace horizontal overflow "+id);
+        }
+        // Advanced audio/phrase/photo editors really move into their selected workspaces.
+        await workspaceNav.locator('[data-video-quick-control="audio"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-audio-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="psychocorrection"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-hypnosis-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="characters"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="video"]').click();
+        await expect(page.locator('[data-video-quick-builder] #video-settings')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="courses"]').click();
+        assert.equal(await page.locator('[data-workspace-section="courses"] a').count(),2);
+        await workspaceNav.locator('[data-video-quick-control="hypnotherapy"]').click();
+        await expect(page.locator('[data-video-quick-builder] #guided-video-series')).toBeVisible();
+
         const overflow = await page.evaluate(() => {
           const viewport = window.innerWidth;
           return {
