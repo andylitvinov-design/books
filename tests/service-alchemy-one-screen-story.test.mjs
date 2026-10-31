@@ -42,3 +42,20 @@ test("Very short iPhone keeps session descriptions and prices through progressiv
  assert.match(css,/\.heroPortrait\{height:74px\}/);
  assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
 });
+
+test("Alchemy/browser routes use semantic readiness with real booking and privacy oracles",()=>{
+ const s=read("scripts/verify-alchemy-one-screen.mjs");
+ assert.match(s,/page\.goto\([^\n]+waitUntil:"domcontentloaded",timeout:45000/);
+ assert.doesNotMatch(s,/waitUntil:"networkidle"/);
+ assert.match(s,/assert\.equal\(response\?\.status\(\), 200/);
+ assert.match(s,/data-session-booking-flow/);
+ assert.match(s,/data-booking-payment-options/);
+ assert.match(s,/booking submit enabled before phone and consent/);
+ assert.doesNotMatch(s,/data-compact-phone-trigger/);
+ const pub=read("scripts/verify-public-services-production.mjs");
+ assert.doesNotMatch(pub,/waitUntil:\s*"networkidle"/);
+ assert.ok((pub.match(/waitUntil:\s*"domcontentloaded"/g)||[]).length >= 9);
+ assert.match(pub,/data-booking-payment-options/);
+ const css=read("components/alchemy-soul-landing.module.css");
+ assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
+});

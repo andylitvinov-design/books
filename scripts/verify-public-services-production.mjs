@@ -67,7 +67,7 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "domcontentloaded" });
       const main = page.locator('main[data-core-service-detail="alchemy"]');
       await visible(main.locator("h1"));
       await expect(main).toHaveAttribute("lang", "es");
@@ -105,7 +105,7 @@ try {
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
-      await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
+      await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
       await visible(page.locator("#services-conversion-title"));
       // Free-first studio: three distinct no-payment paths, then six real
       // personal offers. No secondary marketplace repeats on the landing.
@@ -247,7 +247,7 @@ try {
       }
       // Keep the advanced matching UX available on a separate, dedicated
       // directory page, instead of duplicating it below personal offers.
-      const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "networkidle" });
+      const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "domcontentloaded" });
       assert.equal(directoryResponse?.status(), 200, "The dedicated Services catalog must load");
       const discovery = page.locator("#find-your-service");
       const searchForm = discovery.locator('form[role="search"]');
@@ -326,7 +326,7 @@ try {
   // Spanish uses its own page route but the same EN/RU/ES discovery component.
   {
     const page = await createPage(390);
-    await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
+    await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
@@ -352,7 +352,7 @@ try {
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
     await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
     await assertViewport(page, "es/services/slider-filter/390");
-    await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
+    await page.goto(origin + "/es/services/catalog", { waitUntil: "domcontentloaded" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
     await expect(freeOnly).not.toBeChecked();
@@ -370,7 +370,7 @@ try {
       const width = 390;
       const page = await createPage(width);
       const label = locale + "/" + service + "/" + width;
-      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "networkidle", timeout: 60000 });
+      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "domcontentloaded", timeout: 60000 });
       assert.equal(response?.status(), 200, "Personal landing should render: " + label);
       const main = page.locator('main[data-personal-service="' + service + '"]');
       await visible(main.locator('h1#personal-service-title'));
@@ -462,7 +462,7 @@ try {
     for (const [slug, kind] of coreServices) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
-        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
+        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "domcontentloaded" });
         const main = page.locator('main[data-core-service-detail="' + kind + '"]');
         await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
