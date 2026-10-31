@@ -290,6 +290,7 @@ export async function verify(api,ctx,files,options={}) {
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
