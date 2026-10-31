@@ -41,22 +41,23 @@ const themes: VideoTheme[] = ["energy", "money", "relationships", "goals", "life
 const l10n = {
   ru: {
     eyebrow: "ПЕРВОЕ ВИДЕО · БЕСПЛАТНО", title: "Расскажите, какое видео вы хотите",
-    intro: "Опишите идею своими словами. Режиссёр подберёт доступные движущиеся сцены и подготовит промпт. Никаких обязательных анкет.",
-    wish: "1. Ваше пожелание", placeholder: "Например: Тёплый рассвет над морем, затем дорога через цветущий сад. Хочу ощущение надежды и спокойствия.",
+    intro: "Ваша идея → подходящие готовые сцены → видео.",
+    wish: "Ваше пожелание", placeholder: "Например: Тёплый рассвет над морем, затем дорога через цветущий сад. Хочу ощущение надежды и спокойствия.",
     wishHelp: "Пока вы не разрешите использовать AI, текст остаётся в браузере.",
     filters: "Дополнительные пожелания и фильтры", filtersHelp: "Необязательно · по умолчанию подберём автоматически",
     theme: "Тема", automatic: "Автоматически", style: "Визуальный стиль",
     aspect: "Формат", length: "Продолжительность", movement: "Движение",
     music: "Музыка", caption: "Добавить короткую фразу из пожелания прямо в видео",
     avoid: "Чего не должно быть в кадре", avoidPlaceholder: "Например: море, темнота, резкие вспышки",
-    prompt: "2. Prompt для создания видео", promptHelp: "Промпт редактируется. Для бесплатного видео он выбирает только доступные сцены; новые кинематографические кадры не создаются.",
+    prompt: "Промпт и сцены", promptHelp: "Промпт редактируется. Для бесплатного видео он выбирает только доступные сцены; новые кинематографические кадры не создаются.",
     promptPlaceholder: "Напишите пожелание выше, чтобы получить промпт.",
-    refresh: "Составить промпт заново", ai: "Улучшить с помощью AI · бесплатно",
+    refresh: "Другой вариант промпта", ai: "Улучшить с AI · бесплатно",
+    aiErrors:{quota:"Достигнут лимит бесплатного AI. Локальный вариант доступен.",config:"AI не настроен на сервере. Используйте локальный вариант.",response:"AI вернул непригодный ответ. Локальный вариант сохранён.",provider:"AI-провайдер недоступен. Попробуйте позже."},
     aiConsent: "Разрешаю передать только мой текст пожелания внешней языковой модели. Фото, тесты и личный профиль не передаются.",
     aiLoading: "AI готовит промпт…", aiReady: "Промпт улучшен языковой моделью",
     local: "Локальный режиссёр · без API", aiUnavailable: "AI сейчас недоступен — локальный промпт сохранён.",
     edit: "Можно изменить", limit: "Ограничение бесплатного видео",
-    create: "3. Создать моё первое видео бесплатно", creating: "Генерация MP4/WebM на вашем устройстве",
+    create: "Создать видео бесплатно", creating: "Генерация MP4/WebM на вашем устройстве",
     cancel: "Отменить", ready: "Видео готово — открыть результат и сохранить",
     source: "4 анимированные сцены · бесплатный локальный монтаж · без XP",
     sourceLong: "Для новых людей, животных и реалистичных действий нужна отдельная AI-видеомодель. Здесь создаётся настоящее видео из существующих движущихся сцен.",
@@ -67,22 +68,23 @@ const l10n = {
   },
   en: {
     eyebrow: "FIRST VIDEO · FREE", title: "Tell us what you would like to see",
-    intro: "Describe your idea in your own words. The local director picks available moving scenes and prepares an editable prompt. No questionnaire required.",
-    wish: "1. Your wish", placeholder: "For example: A warm sunrise over the sea, followed by a path through a flower garden. A gentle sense of hope.",
+    intro: "Your idea → matching existing scenes → video.",
+    wish: "Your idea", placeholder: "For example: A warm sunrise over the sea, followed by a path through a flower garden. A gentle sense of hope.",
     wishHelp: "Your text stays in this browser unless you explicitly agree to use an AI model.",
     filters: "Optional preferences and filters", filtersHelp: "Optional · automatic defaults",
     theme: "Theme", automatic: "Automatic", style: "Visual style",
     aspect: "Aspect ratio", length: "Duration", movement: "Movement",
     music: "Soundtrack", caption: "Put a short phrase from my wish on the video",
     avoid: "Exclude these visuals", avoidPlaceholder: "For example: sea, darkness, bright flashes",
-    prompt: "2. Video prompt", promptHelp: "Editable prompt. In free mode it selects existing scenes; it does not generate new cinematic footage.",
+    prompt: "Prompt and scenes", promptHelp: "Editable prompt. In free mode it selects existing scenes; it does not generate new cinematic footage.",
     promptPlaceholder: "Write your wish above to generate a prompt.",
-    refresh: "Rebuild prompt", ai: "Enhance with AI · free",
+    refresh: "Another prompt option", ai: "Enhance with AI · free",
+    aiErrors:{quota:"Free AI quota reached. Local draft is available.",config:"AI is not configured. Use the local draft.",response:"AI sent an invalid reply. Local draft saved.",provider:"AI provider unavailable. Try again later."},
     aiConsent: "I agree to send only my written wish to an external language model. My photo, tests and private profile are not shared.",
     aiLoading: "AI is enhancing your prompt…", aiReady: "AI-enhanced prompt is ready",
     local: "Local director · no API", aiUnavailable: "AI is unavailable now — your local prompt is preserved.",
     edit: "You can edit", limit: "Free video limitation",
-    create: "3. Create my first free video", creating: "Recording MP4/WebM on your device",
+    create: "Create free video", creating: "Recording MP4/WebM on your device",
     cancel: "Cancel", ready: "Video ready — open and save it",
     source: "4 moving scenes · free local rendering · no XP",
     sourceLong: "New people, animals and photoreal actions require a separate AI video model. This tool exports real video assembled from existing moving scenes.",
@@ -93,22 +95,23 @@ const l10n = {
   },
   es: {
     eyebrow: "PRIMER VÍDEO · GRATIS", title: "Cuéntanos qué vídeo deseas",
-    intro: "Describe tu idea. El director local elige escenas animadas disponibles y crea un prompt editable, sin cuestionario obligatorio.",
-    wish: "1. Tu deseo", placeholder: "Por ejemplo: Amanecer cálido sobre el mar, luego un sendero en un jardín de flores. Un sentimiento de esperanza.",
+    intro: "Tu idea → escenas disponibles → vídeo.",
+    wish: "Tu idea", placeholder: "Por ejemplo: Amanecer cálido sobre el mar, luego un sendero en un jardín de flores. Un sentimiento de esperanza.",
     wishHelp: "Tu texto permanece en el navegador sin consentimiento explícito para usar una IA.",
     filters: "Preferencias y filtros opcionales", filtersHelp: "Opcionales · selección automática",
     theme: "Tema", automatic: "Automático", style: "Estilo visual",
     aspect: "Formato", length: "Duración", movement: "Movimiento",
     music: "Música", caption: "Añadir una frase de mi deseo al vídeo",
     avoid: "Evitar estas imágenes", avoidPlaceholder: "Por ejemplo: mar, oscuridad, destellos",
-    prompt: "2. Prompt del vídeo", promptHelp: "Puedes editarlo. En modo gratis solo selecciona escenas existentes, no crea tomas cinematográficas nuevas.",
+    prompt: "Prompt y escenas", promptHelp: "Puedes editarlo. En modo gratis solo selecciona escenas existentes, no crea tomas cinematográficas nuevas.",
     promptPlaceholder: "Escribe tu deseo arriba para crear el prompt.",
-    refresh: "Reconstruir prompt", ai: "Mejorar con IA · gratis",
+    refresh: "Otra opción de prompt", ai: "Mejorar con IA · gratis",
+    aiErrors:{quota:"Límite de IA gratuita alcanzado. Usa el borrador local.",config:"IA no configurada. Usa el borrador local.",response:"Respuesta IA incorrecta. Guardamos el borrador.",provider:"Proveedor IA no disponible. Inténtalo más tarde."},
     aiConsent: "Acepto enviar solo el texto de mi deseo a un modelo externo. Mi foto, pruebas y perfil no se comparten.",
     aiLoading: "La IA mejora el prompt…", aiReady: "Prompt mejorado por IA",
     local: "Director local · sin API", aiUnavailable: "IA no disponible — mantenemos el prompt local.",
     edit: "Se puede editar", limit: "Límite del vídeo gratis",
-    create: "3. Crear mi primer vídeo gratis", creating: "Grabando MP4/WebM en tu dispositivo",
+    create: "Crear vídeo gratis", creating: "Grabando MP4/WebM en tu dispositivo",
     cancel: "Cancelar", ready: "Vídeo listo — abrir y guardar",
     source: "4 escenas animadas · montaje local gratis · sin XP",
     sourceLong: "Personas, animales y acciones fotorrealistas nuevas necesitan otro modelo de vídeo. Este editor exporta escenas animadas existentes.",
@@ -129,6 +132,7 @@ export function MandalaFirstVideoStart({
   const [hydrated,setHydrated] = useState(false);
   useEffect(()=>{setHydrated(true);},[]);
   const [prefs, setPrefs] = useState<Preferences>(initial);
+  const [variant, setVariant] = useState(0);
   const [promptOverride, setPromptOverride] = useState("");
   const [mode, setMode] = useState<"local" | "manual" | "ai">("local");
   const [aiConsent, setAiConsent] = useState(false);
@@ -136,27 +140,27 @@ export function MandalaFirstVideoStart({
   const aiRevisionRef = useRef(0);
   const [aiStatus, setAiStatus] = useState("");
   const draft = useMemo(() => buildFirstVideoDraft({
-    locale, wish, ...prefs, promptOverride: mode === "local" ? "" : promptOverride,
-  }) as Draft, [locale, wish, prefs, promptOverride, mode]);
+    locale, wish, ...prefs, variant, promptOverride: mode === "local" ? "" : promptOverride,
+  }) as Draft, [locale, wish, prefs, variant, promptOverride, mode]);
   const shownPrompt = mode === "local" ? draft.prompt : promptOverride;
 
-  function apply(nextWish: string, nextPrefs: Preferences, nextOverride: string) {
+  function apply(nextWish: string, nextPrefs: Preferences, nextOverride: string, nextVariant = variant) {
     const nextDraft = buildFirstVideoDraft({
-      locale, wish: nextWish, ...nextPrefs, promptOverride: nextOverride,
+      locale, wish: nextWish, ...nextPrefs, variant: nextVariant, promptOverride: nextOverride,
     }) as Draft;
     onApply(nextDraft, nextPrefs);
   }
   function changeWish(value: string) {
     const next = value.slice(0, 800);
     aiRevisionRef.current++; setAiLoading(false);
-    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus("");
-    if (next.trim()) apply(next, prefs, "");
+    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0);
+    if (next.trim()) apply(next, prefs, "", 0);
   }
   function changePreferences(patch: Partial<Preferences>) {
     const next = { ...prefs, ...patch };
     aiRevisionRef.current++; setAiLoading(false);
-    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus("");
-    if (wish.trim()) apply(wish, next, "");
+    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0);
+    if (wish.trim()) apply(wish, next, "", 0);
   }
   function changePrompt(value: string) {
     const next = value.slice(0, 1000);
@@ -166,8 +170,9 @@ export function MandalaFirstVideoStart({
   }
   function resetPrompt() {
     aiRevisionRef.current++; setAiLoading(false);
-    setMode("local"); setPromptOverride(""); setAiStatus("");
-    if (wish.trim()) apply(wish, prefs, "");
+    const nextVariant=(variant+1)%100;
+    setVariant(nextVariant); setMode("local"); setPromptOverride(""); setAiStatus("");
+    if (wish.trim()) apply(wish, prefs, "", nextVariant);
   }
   async function enhancePrompt() {
     if (disabled || aiLoading || !aiConsent || !wish.trim()) return;
@@ -183,17 +188,27 @@ export function MandalaFirstVideoStart({
           aspect: prefs.aspect, durationSeconds: prefs.durationSeconds, consent: true,
         }),
       });
-      if (!response.ok) throw Error("free_ai_unavailable");
+      if (!response.ok) {
+        const failure: unknown = await response.json().catch(()=>null);
+        const code=failure && typeof failure==="object" && "error" in failure && typeof failure.error==="string"
+          ? failure.error : "VIDEO_PROMPT_PROVIDER_UNAVAILABLE";
+        throw Error(code);
+      }
       const data: unknown = await response.json();
       if (!data || typeof data !== "object" || !("prompt" in data) ||
         typeof data.prompt !== "string" || data.prompt.length < 30 ||
         data.prompt.length > 1000) throw Error("invalid_response");
       if(revision!==aiRevisionRef.current)return;
       setPromptOverride(data.prompt); setMode("ai");
-      setAiStatus(t.aiReady);
+      const provider="provider" in data && data.provider==="gemini_free"?"Gemini":"OpenRouter";
+      setAiStatus(t.aiReady+" · "+provider);
       apply(wish, prefs, data.prompt);
-    } catch {
-      if(revision===aiRevisionRef.current)setAiStatus(t.aiUnavailable);
+    } catch (error) {
+      const code=error instanceof Error?error.message:"";
+      const category=code==="RATE_LIMITED"||code==="VIDEO_PROMPT_FREE_QUOTA"?"quota":
+        code==="VIDEO_PROMPT_FREE_AI_DISABLED"?"config":
+        code==="VIDEO_PROMPT_INVALID_RESPONSE"?"response":"provider";
+      if(revision===aiRevisionRef.current)setAiStatus(t.aiErrors[category]);
       // Explicitly keep the locally prepared storyboard and prompt.
     } finally { if(revision===aiRevisionRef.current)setAiLoading(false); }
   }
@@ -206,7 +221,7 @@ export function MandalaFirstVideoStart({
     </div>
     <label className={css.label} htmlFor="first-video-wish">{t.wish}</label>
     <textarea id="first-video-wish" data-first-video-wish className={css.wish}
-      rows={3} maxLength={800} value={wish} disabled={disabled || !hydrated}
+      rows={2} maxLength={800} value={wish} disabled={disabled || !hydrated}
       onChange={event => changeWish(event.currentTarget.value)}
       placeholder={t.placeholder}/>
     <p className={css.subtle}>{t.wishHelp}</p>
@@ -276,12 +291,12 @@ export function MandalaFirstVideoStart({
       <span><Check size={14} aria-hidden="true"/>{mode === "local" ? t.local : mode === "ai" ? "AI" : t.edit}</span>
     </div>
     <textarea id="first-video-prompt" data-first-video-prompt className={css.prompt}
-      rows={6} maxLength={1000} disabled={disabled || !hydrated || !wish.trim()}
+      rows={4} maxLength={1000} disabled={disabled || !hydrated || !wish.trim()}
       placeholder={t.promptPlaceholder} value={wish.trim() ? shownPrompt : ""}
       onChange={event => changePrompt(event.currentTarget.value)}/>
     <p className={css.subtle}>{t.promptHelp}</p>
     <div className={css.promptActions}>
-      <button type="button" className={css.reset} onClick={resetPrompt}
+      <button type="button" className={css.reset} onClick={resetPrompt} data-first-video-refresh
         disabled={disabled || !hydrated || !wish.trim()}>
         <RotateCcw size={16} aria-hidden="true"/>{t.refresh}
       </button>
@@ -291,7 +306,7 @@ export function MandalaFirstVideoStart({
         <WandSparkles size={16} aria-hidden="true"/>{aiLoading ? t.aiLoading : t.ai}
       </button>
     </div>
-    <label className={css.consent}><input type="checkbox" checked={aiConsent}
+    <label className={css.consent}><input type="checkbox" data-first-video-ai-consent checked={aiConsent}
       onChange={event => {aiRevisionRef.current++;setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled || !hydrated}/>
       <span>{t.aiConsent}</span></label>
     {aiStatus && <p className={css.aiStatus} role="status">{aiStatus}</p>}

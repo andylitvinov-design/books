@@ -120,6 +120,33 @@ const runEngine = async ([engine, browserType]) => {
           // before user input; no synthetic dispatch or mocked media allowed.
           const form=page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
           await form.waitFor({state:"visible",timeout:25000});
+          // Real iPhone form: a concrete visual wish must visibly select mountains.
+          await form.locator("[data-first-video-wish]").fill("Горы");
+          const promptField=form.locator("[data-first-video-prompt]");
+          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
+            .toContain("горные вершины");
+          const firstVariant=await promptField.inputValue();
+          await form.locator("[data-first-video-refresh]").click();
+          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
+            .not.toBe(firstVariant);
+          assert.match(await promptField.inputValue(),/горные вершины/i);
+          // Mock only the external AI, not the real browser/form/event handlers.
+          const apiRoute="**/api/holistic-support/first-video-prompt";
+          await page.route(apiRoute,async route=>{
+            const input=route.request().postDataJSON();
+            assert.equal(input.wish,"Горы");
+            assert.equal(input.consent,true);
+            await route.fulfill({status:200,contentType:"application/json",
+              body:JSON.stringify({prompt:"Горные вершины и облака в мягком свете. Четыре спокойные сцены, плавное движение камеры и без людей.",
+                provider:"gemini_free",model:"gemini-2.5-flash-lite"}),
+            });
+          });
+          await form.locator("[data-first-video-ai-consent]").check();
+          await form.locator("[data-first-video-enhance]").click();
+          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
+            .toContain("Горные вершины и облака");
+          await expect(form).toContainText("Gemini");
+          await page.unroute(apiRoute);
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{

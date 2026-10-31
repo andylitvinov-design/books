@@ -2426,20 +2426,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
           <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
         </nav>
-        <MandalaFirstVideoStart locale={locale} wish={wish}
-          disabled={recording||preparing} preparing={preparing} recording={recording}
-          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
-          onWishChange={value=>{setWish(value);setSuggestion("");}}
-          onApply={applyFirstVideoDraft}
-          onCreate={()=>{
-            firstVideoRequestRef.current=canGenerate;
-            createQuickVideo();
-          }}
-          onCancel={()=>{
-            const job=jobRef.current;
-            if(job)stopJob(job,true);
-            firstVideoRequestRef.current=false;
-          }}/>
+        
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -2664,6 +2651,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
         </section>
+        {/* Compact first-video tool: below the main player, six controls and
+            the third section with video styles, not before topic selection. */}
+        <MandalaFirstVideoStart locale={locale} wish={wish}
+          disabled={recording||preparing} preparing={preparing} recording={recording}
+          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
+          onWishChange={value=>{setWish(value);setSuggestion("");}}
+          onApply={applyFirstVideoDraft}
+          onCreate={()=>{
+            firstVideoRequestRef.current=canGenerate;
+            createQuickVideo();
+          }}
+          onCancel={()=>{
+            const job=jobRef.current;
+            if(job)stopJob(job,true);
+            firstVideoRequestRef.current=false;
+          }}/>
 
 
 
