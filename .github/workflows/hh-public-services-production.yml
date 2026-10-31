@@ -82,8 +82,23 @@ on:
       # Real service/UI/auth/payment paths above still trigger the full suite.
       - '!scripts/verify-holistic-support-mock-fidelity.mjs'
       - '!tests/holistic-support-mobile-mock-parity.test.mjs'
+      # Video Studio creative/editor changes are independently covered by
+      # holistic-support-mandala.yml: exact-head Node/lint/tsc/Next build,
+      # RU/EN/ES Chromium+WebKit, real MediaRecorder output and audio rights.
+      # Do not duplicate unrelated Alchemy/checkout/browser test matrices for
+      # a change isolated to the Video Studio. Other public routes and support
+      # components still run the full Public Services suite.
+      - '!components/mandala-free-video-studio.tsx'
+      - '!components/mandala-video-mobile.module.css'
+      # The goal-first Auto Video Director only selects previously licensed
+      # local MP4 montages. Its entire Node/TypeScript/Next.js/Chromium/WebKit
+      # recorder/rights acceptance is owned by holistic-support-mandala.yml.
+      # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
+      # Main public service routes/components still match the positive globs.
+      - '!components/mandala-auto-video-director*'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: public-services-production-${{ github.ref }}
   cancel-in-progress: true
@@ -101,6 +116,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

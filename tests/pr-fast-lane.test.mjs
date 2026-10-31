@@ -147,7 +147,7 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
   }
 });
 
-test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+test('Video Studio-only changes run Mandala real-media QA, not unrelated Public Services E2E',()=>{
   const fromWorkflow=name=>{
     const source=workflow(name);
     const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
@@ -170,12 +170,13 @@ test('Director-only changes run Mandala media QA, not unrelated public services 
     'components/mandala-cinematic-director.tsx',
     'components/mandala-cinematic-director.module.css',
     'scripts/verify-holistic-mandala-browser.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
   for(const file of [
-    'components/mandala-free-video-studio.tsx',
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
     'scripts/verify-holistic-master-browser.mjs',
@@ -541,6 +542,31 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
+test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+  const yaml = workflow('holistic-support-mandala.yml');
+  const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
+  assert.match(yaml, /focused-unit-types-build:/);
+  assert.match(yaml, /uses: actions\/cache@v4/);
+  assert.match(yaml, /path: \.next\/cache/);
+  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
+    'mandatory Core owns production PR typecheck; standalone TypeScript remains');
+  assert.match(yaml, /run: npm run build/);
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(source, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
+  assert.match(source, /for \(const \{ locale, width \} of orderedViewports\)/);
+  assert.doesNotMatch(source, /viewports\.slice\(from, from \+ 2\)/, 'no extra same-engine contexts');
+  assert.match(source, /Promise\.allSettled\(engines\.map\(runEngine\)\)/);
+  assert.match(source, /if \(rejectedEngines\.length\)/);
+  assert.match(source, /assert\.equal\(passes, viewports\.length \* engines\.length/);
+  for (const contract of [
+    'locale: "ru", width: 320', 'locale: "ru", width: 390', 'locale: "ru", width: 430',
+    'locale: "en", width: 390', 'locale: "es", width: 390',
+    'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
+    'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
+  ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
+});
+
 test('Public Services and Alchemy preserve real exact-head E2E with scoped browser cache and bounded readiness', () => {
   const publicQa = workflow('hh-public-services-production.yml');
   const alchemy = workflow('hh-alchemy-mobile-acceptance.yml');
@@ -656,3 +682,4 @@ test('Alchemy optimized production build preserves all real browser cases',()=>{
   });
   assert.match(output,/production prebuild and Core coverage contract verified/);
 });
+
