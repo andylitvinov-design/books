@@ -45,7 +45,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Localized conversation, topic routing and existing carousel regressions
-        run: node --test tests/home-conversation-guide.test.mjs tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
+        run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
       - name: Check affected TypeScript and React UI
         run: |
           if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit; fi

@@ -87,6 +87,7 @@ jobs:
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-reiki-next.log 2>&1 & APP_PID=$!
           trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 110); do
+            echo "Reiki isolated server readiness attempt $i/110"
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/academy/principles-of-energywork/learn >/dev/null; then break; fi
             sleep 2
           done
