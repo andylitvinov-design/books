@@ -107,7 +107,16 @@ for (const engine of [chromium, webkit]) {
           const id = await selectedThumb.getAttribute("data-support-video");
           assert.match(id, /^[A-Za-z0-9_-]{11}$/, label + " verified selected video ID");
           await selectedThumb.click();
-          assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
+          // React may reorder gallery cards when choosing the scene, so the
+          // original dynamic ".last()" locator can point to another video.
+          // Re-find the exact verified ID and require a committed ARIA change.
+          const committedThumb = gallery.locator('[data-support-video="' + id + '"]');
+          await page.waitForFunction(videoId => Array.from(
+            document.querySelectorAll('[data-support-video]')).some(card =>
+              card.getAttribute("data-support-video") === videoId &&
+              card.getAttribute("aria-pressed") === "true"),
+            id, {timeout:10000});
+          assert.equal(await committedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
           assert.equal(await root.locator("[data-support-video-source] a[href^='https://www.youtube.com/watch']").count(),

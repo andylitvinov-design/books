@@ -53,9 +53,19 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     await form.locator('input[type="tel"]').fill("4165550123");
   } else await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
   if (withName) {
-    // Name is an explicit opt-in field, hidden until requested.
-    await form.locator('details:has(input[autocomplete="name"]) > summary').click();
-    await form.locator('input[autocomplete="name"]').fill("QA Visitor");
+    // Explicitly open the REAL optional native disclosure. The hydrated
+    // Next page may remount it after a Yggdrasil intent switch.
+    const nameDisclosure=form.locator('details:has(input[autocomplete="name"])');
+    const nameInput=nameDisclosure.locator('input[autocomplete="name"]');
+    await nameDisclosure.locator('summary').click();
+    if (!(await nameInput.isVisible())) {
+      // Reopen via a real visitor click after a transient React remount.
+      await nameDisclosure.locator('summary').click();
+    }
+    await nameInput.waitFor({state:"visible",timeout:12000});
+    await nameInput.fill("QA Visitor");
+    assert.equal(await nameDisclosure.getAttribute("open"), "",
+      "The optional name field must remain explicitly open");
   }
   // Alternate private note / no-note requests without expanding optional name.
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
