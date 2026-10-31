@@ -111,7 +111,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
         assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
       }
-      await advanced.locator(":scope > summary").click();
+      // Render/export can restore the disclosure's controlled React open state.
+      // Reopen it only if actually closed, never blindly toggle a visible panel shut.
+      if((await advanced.getAttribute("open"))===null)
+        await advanced.locator(":scope > summary").click();
       await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
