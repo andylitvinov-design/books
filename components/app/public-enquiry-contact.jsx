@@ -22,7 +22,7 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
     <p><strong>{t.source}:</strong> {request.attribution?.trafficSource||t.unknown}</p>
     {request.attribution?.landingPath&&<p><strong>{t.landing}:</strong> {request.attribution.landingPath}</p>}
     {request.attribution?.previousPath&&<p><strong>{t.previous}:</strong> {request.attribution.previousPath}</p>}
-    {request.attribution?.campaign&&<p><strong>{t.campaign}:</strong> {request.attribution.campaign}</p>
+    {request.attribution?.campaign&&<p><strong>{t.campaign}:</strong> {request.attribution.campaign}</p>}
     <p role="status">{request.contactPending?t.pending:isVisitor?t.visitor:t.manual}</p>
     {isVisitor&&<p><strong>{request.contact?.displayName||'—'}</strong>
       {request.contact?.email&&<> · {request.contact.email}</>}
