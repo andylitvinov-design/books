@@ -14,3 +14,24 @@
 .suggestion p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;font-size:12px}
 .suggestion button{justify-self:start}
 @media(max-width:430px){.panel{max-height:min(47dvh,340px);padding:10px}.launcher{min-height:44px}}
+
+
+/* Compact, explicit helper inside the real CRM reply row (not a floating
+   SalesBot sticker covering customer messages). Manual draft review remains. */
+.launcherIcon{
+ display:grid;place-items:center;width:44px;height:44px;min-width:44px;
+ border:1px solid #cfe4d6;border-radius:13px;background:#f0f8f2;
+ color:#19795e;cursor:pointer;box-shadow:0 2px 8px #32614b0c;
+}
+.launcherIcon:disabled{opacity:.45;cursor:not-allowed}
+.launcherIcon:focus-visible{outline:3px solid #238b6a;outline-offset:2px}
+.launcherIcon[aria-expanded="true"]{background:#dcefe1;border-color:#67a887}
+.launcherIcon+.panel{
+ left:0;right:auto;bottom:calc(100% + 8px);
+ width:min(338px,calc(100vw - 52px));max-height:min(45dvh,330px);
+ border-color:#d9e7da;border-radius:16px;
+ box-shadow:0 10px 30px #214e352f;
+}
+@media(max-width:430px){
+ .launcherIcon+.panel{max-height:min(39dvh,275px);padding:10px}
+}

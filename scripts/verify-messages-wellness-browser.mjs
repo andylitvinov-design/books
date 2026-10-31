@@ -12,6 +12,18 @@ await mkdir(dir,{recursive:true})
 const accountId='11111111-1111-4111-8111-111111111111'
 const orderId='22222222-2222-4222-8222-222222222222'
 const requestId='33333333-3333-4333-8333-333333333333'
+const crmThreadId='44444444-4444-4444-8444-444444444444'
+const crmThread={
+  id:crmThreadId,contactId:'55555555-5555-4555-8555-555555555555',
+  name:'Synthetic CRM Client',channel:'telegram',
+  unreadCount:2,needsReply:true,lastMessageAt:'2026-10-28T12:02:00Z',
+  lastInboundAt:'2026-10-28T12:02:00Z',lifecycle:'lead',reply:{ok:true},
+}
+const crmMessage={
+  id:'66666666-6666-4666-8666-666666666666',
+  direction:'in',status:'received',createdAt:'2026-10-28T12:02:00Z',
+  text:'Synthetic-only customer question; no real account data.',
+}
 const synthetic={
   id:orderId,status:'in_progress',createdAt:'2026-10-27T14:02:00Z',
   practitionerName:'Test Practitioner',unread:1,serviceCopy:{
@@ -26,18 +38,21 @@ const client={
 const json=(route,status,body)=>route.fulfill({status,contentType:'application/json',
   headers:{'Cache-Control':'no-store'},body:JSON.stringify(body)})
 async function intercept(page){
+ let emptyOrders=false
  await page.route('**/api/app/**',async route=>{
    const url=new URL(route.request().url()),path=url.pathname
    if(route.request().method()!=='GET')return json(route,403,{error:'SYNTHETIC_READ_ONLY'})
    if(path==='/api/app/messages/my-orders')
-     return json(route,200,{accountId,orders:[synthetic],hasPractice:true,hasMore:false})
+     return json(route,200,{accountId,orders:emptyOrders?[]:[synthetic],hasPractice:true,hasMore:false})
    if(path==='/api/app/messages/requests')
      return json(route,200,url.searchParams.get('view')==='owner'
        ?{accountId,ownerMessenger:true}
        :{accountId,ownerMessenger:true,ownerAuthorized:true,hasPractice:true,
          requests:[client],businessEnquiries:[],services:[],freeExpressV2Enabled:false})
    if(path==='/api/app/crm/messenger')
-     return json(route,200,{accountId,threads:[],messages:[],nextThreadsCursor:null,nextMessagesCursor:null})
+     return json(route,200,{accountId,threads:[crmThread],
+       messages:url.searchParams.get('thread')===crmThreadId?[crmMessage]:[],
+       accounts:[],channels:[],followups:[],nextThreadsCursor:null,nextMessagesCursor:null})
    if(path==='/api/app/direct-messages')
      return json(route,200,{accountId,threads:[]})
    if(path==='/api/app/practitioner-client-messages')
@@ -45,6 +60,7 @@ async function intercept(page){
        canReply:true,canNote:false,unseenCount:0,messages:[],nextCursor:null})
    return json(route,401,{error:'SYNTHETIC_FIXTURE_ONLY'})
  })
+ return {setEmptyOrders(value){emptyOrders=Boolean(value)}}
 }
 const report=[]
 const labels={
@@ -80,7 +96,7 @@ for(const browserType of [chromium,webkit]){
      errors.push(message)
    })
    try{
-    await intercept(page)
+    const fixture=await intercept(page)
     const result=await page.goto(origin+'/'+locale+'/app/messages',
       {waitUntil:'domcontentloaded',timeout:90000})
     assert.equal(result?.status(),200,key+' route')
@@ -134,6 +150,29 @@ for(const browserType of [chromium,webkit]){
     if(width===390)await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})
     await customer.getByRole('button',{name:/Synthetic Client/}).click()
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
+    await customer.locator('button[class*="back"]').first().click()
+    await customer.getByRole('button',{name:/Synthetic CRM Client/}).click()
+    const crmComposer=customer.locator('#crm-messenger-compose')
+    await crmComposer.waitFor({state:'visible',timeout:25000})
+    const salesbot=customer.getByRole('button',{name:/SalesBot/})
+    await salesbot.waitFor({state:'visible',timeout:15000})
+    assert.equal(await salesbot.getAttribute('aria-expanded'),'false',key+' SalesBot closed')
+    const crmGeometry=await crmComposer.evaluate(element=>{
+      const input=element.getBoundingClientRect()
+      const composer=element.closest('[class*="compose"]')
+      const send=composer?.querySelector('button[aria-label]')
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const navTop=nav&&getComputedStyle(nav).display!=='none
+        ?nav.getBoundingClientRect().top:innerHeight
+      return {inputWidth:input.width,inputBottom:input.bottom,
+        sendWidth:send?.getBoundingClientRect().width,
+        sendBottom:send?.getBoundingClientRect().bottom,navTop}
+    })
+    assert.ok(crmGeometry.inputWidth>=118&&crmGeometry.sendWidth<=60,
+      key+' CRM compact composer '+JSON.stringify(crmGeometry))
+    assert.ok(crmGeometry.sendBottom<=crmGeometry.navTop+3,
+      key+' CRM Send above navigation '+JSON.stringify(crmGeometry))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-crm-chat.png',fullPage:false})
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
     const orderButton=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
     await orderButton.click()
@@ -153,6 +192,18 @@ for(const browserType of [chromium,webkit]){
     assert.ok(geometry.bottom<=geometry.navTop+3,
       key+' Send stays above navigation '+JSON.stringify(geometry))
     if(width===390)await page.screenshot({path:dir+'/'+key+'-chat.png',fullPage:false})
+    if(width===390){
+      fixture.setEmptyOrders(true)
+      await page.goto(origin+'/'+locale+'/app/messages',{waitUntil:'domcontentloaded'})
+      await page.locator('[data-free-order-offers]').waitFor({state:'visible',timeout:30000})
+      assert.equal(await page.locator('[data-free-order-offer]').count(),2,
+        key+' exactly two real free offers in empty Orders')
+      assert.equal(await page.locator('[data-orders-clients-hub] [class*="introCard"]').count(),1,
+        key+' calm helper remains in authenticated empty Orders')
+      assert.equal(await page.locator('[data-order-card]').count(),0,
+        key+' no invented orders')
+      await page.screenshot({path:dir+'/'+key+'-empty-orders.png',fullPage:false})
+    }
     assert.equal(new URL(page.url()).pathname,'/'+locale+'/app/messages',
       key+' must remain on private Messenger route')
     report.push({key,status:'pass',metrics,clientWidth,
