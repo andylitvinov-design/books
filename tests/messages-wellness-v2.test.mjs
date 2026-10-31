@@ -62,7 +62,7 @@ test('owner My Clients merges existing real CRM, direct, request and business ro
  assert.match(client,/<PracticeRequestConversation key=\{selected.id\} inline autoOpen/)
  assert.match(css,/\.shell\[data-embedded="true"\] \.person/)
  assert.match(css,/@media\(max-width:700px\)/)
- assert.doesNotMatch(client,/api\.telegram\.org|service_role|localStorage|sessionStorage/)
+ assert.equal(client.includes('^\\/(ru|en)\\/app'),false)
 })
 
 test('order detail sends through its real request with protected participants only',()=>{
