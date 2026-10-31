@@ -351,7 +351,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
             data-meditation-course-enquiry>{t.courseRequest}</Link>
           <small>{t.courseRequestNote}</small>
         </div>
-      </section>
+      </section>}
     </article>}
   </section>;
 }
