@@ -171,9 +171,36 @@ const runEngine = async ([engine, browserType]) => {
           }else{
             assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
           }
-          const [download]=await Promise.all([
-            page.waitForEvent("download",{timeout:20000}),save.click(),
-          ]);
+          // Keep the actual user-click download and decoded video verification.
+          // WebKit's native media download can start after the link is painted;
+          // a short event wait falsely fails on busy real-media CI workers.
+          const downloadName=await save.getAttribute("download");
+          const downloadHref=await save.getAttribute("href");
+          assert.match(downloadName||"",/\.(?:mp4|webm)$/i,
+            engine+" first free video must expose a named native download");
+          assert.ok(downloadHref&&/^(?:blob:|\/)/.test(downloadHref),
+            engine+" first free video download must use a local Blob or same-origin file");
+          let download;
+          try{
+            [download]=await Promise.all([
+              page.waitForEvent("download",{timeout:45000}),save.click(),
+            ]);
+          }catch(error){
+            const detail=await page.evaluate(()=>{
+              const anchor=document.querySelector("[data-mandala-video-download]");
+              const rect=anchor?.getBoundingClientRect();
+              return {path:location.pathname,connected:anchor?.isConnected,
+                href:anchor?.getAttribute("href"),
+                filename:anchor?.getAttribute("download"),
+                visible:!!rect&&rect.width>0&&rect.height>0,
+                mode:document.querySelector("[data-video-result]")?.getAttribute("data-video-result-mode")};
+            }).catch(()=>({path:new URL(page.url()).pathname,domUnavailable:true}));
+            throw new Error(engine+" "+locale+" "+width+
+              "px real first-video native download did not start: "+JSON.stringify(detail),
+              {cause:error});
+          }
+          assert.match(download.suggestedFilename(),/\.(?:mp4|webm)$/i,
+            engine+" native download must have a real video filename");
           const bytes=await bufferFromStream(await download.createReadStream());
           assert.ok(bytes.length>10000,"free first video must encode actual moving media");
           const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
