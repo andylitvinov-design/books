@@ -10,5 +10,7 @@ for(const [input,lane,status] of [
  [{kind:'feature',risk:'auth',urgent:true},'lab-isolated','HOLD_FOR_ISOLATION'],
  [{kind:'security-hotfix'},'github-hotfix','PR_REQUIRED'],
  [{kind:'feature',risk:'critical',urgent:true},'github-hotfix','PR_REQUIRED'],
- [{kind:'feature',alreadyValidated:true,releaseApproved:true},'github-release','PR_REQUIRED']
+ [{kind:'feature',alreadyValidated:true,releaseApproved:true},'lab','LOCAL_ONLY'],
+ [{kind:'feature',alreadyValidated:true,releaseApproved:true,validationEvidence:{qaPassed:true,testsPassed:true,headSha:'a'.repeat(40),testedSha:'b'.repeat(40)}},'lab','LOCAL_ONLY'],
+ [{kind:'feature',alreadyValidated:true,releaseApproved:true,validationEvidence:{qaPassed:true,testsPassed:true,headSha:'a'.repeat(40),testedSha:'a'.repeat(40)}},'github-release','PR_REQUIRED']
 ])test(JSON.stringify(input),()=>{const r=routeFeature(input);assert.equal(r.lane,lane);assert.equal(r.status,status)});
