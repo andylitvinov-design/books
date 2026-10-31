@@ -69,7 +69,9 @@ test('Public V6 fifteen-screen preview preserves seven skill IDs and supports al
      assert.equal(d.screens.length,15)
      assert.ok(d.screens.every(s=>s.expected.length>=10))
      assert.equal(d.methodStatus,'implemented')
-     assert.equal(d.methodNames.length,3)
+     // AS-6.0 exposes all five voluntary channels before the first practice.
+     // Their presence must not turn a channel choice into a saved exercise.
+     assert.equal(d.methodNames.length,5)
    }
  }
 })
@@ -92,7 +94,7 @@ test('V5 remains version-pinned while new AS2 cycles select V6 and keep old modu
 test('V5 practice screens omit visible Skip response buttons; saved legacy routes remain supported',()=>{
  const player=read('components/app/course-slide-player.jsx')
  assert.match(player,/\{!isSkillV5&&!isDayOne&&<button type="button" className=\{styles\.welcomeSkip\}/)
- assert.match(player,/\{!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
+ assert.match(player,/\{!finished&&!isSkillV5&&!isDayOne&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
  assert.match(player,/\.\.\.\(!isSkillV5\?\[\['skip',learning\.practiceSkip\]\]:\[\]\)/)
  const feedbackGate=player.match(/\.\.\.\(!isSkillV5\?\[\['skip',words\.preferNot\]\]:\[\]\)/g)||[]
  assert.equal(feedbackGate.length,3)

@@ -5,34 +5,42 @@ import { assertCabinetPortrait, openCabinetMyTests } from '../scripts/helpers/ca
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-for (const locale of ['en', 'ru']) {
-  test(locale + ' verifier checks the exact portrait before using real My Tests navigation', async () => {
+for (const locale of ['en', 'ru']) for (const mode of ['desktop', 'mobile']) {
+  test(locale + ' ' + mode + ' follows a real visible Tests link after verified portrait', async () => {
     const origin = 'http://127.0.0.1:3100', path = '/' + locale + '/app/tests'
     const events = []
     const profile = { name: 'profile', getByRole(role, options) {
       assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
+      assert.deepEqual(options, { name: locale === 'ru' ? 'Мои отчёты' : 'My reports', level: 1, exact: true })
       return { name: 'heading' }
     } }
-    const link = { name: 'link', first() { return this }, async click() {
+    const link = { name: 'link', first() { return this }, async isVisible() { return mode === 'desktop' }, async click() {
       events.push('click'); page.url = origin + path
     } }
+    const summary = { name: 'summary', async click() { menu.open = true; events.push('menu-open') } }
+    const menu = { open: false, locator(selector) {
+      if (selector === ':scope > summary') return summary
+      assert.equal(selector, 'a[href="' + path + '"]')
+      return link
+    }, async evaluate(callback) { return callback({open: this.open}) } }
     const page = { name: 'page', url: origin + '/' + locale + '/app/portrait', locator(selector) {
       if (selector === '[data-profile-domains][data-profile-interactive="true"]') return profile
-      if (selector === 'nav a[href="' + path + '"]:visible') return link
+      if (selector === 'nav.hh-nav:visible a[href="' + path + '"]') return link
+      if (selector === 'details.hh-account-menu') return menu
       assert.equal(selector, '[data-my-tests-dashboard]')
       return { name: 'dashboard' }
     } }
     const expect = value => ({
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
-      async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
+      async toHaveText(label) { assert.equal(label, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
       async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
     })
     await assertCabinetPortrait(page, expect, { origin, locale })
     await openCabinetMyTests(page, expect, { origin, locale })
     assert.deepEqual(events, [
       'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:heading',
+      ...(mode === 'mobile' ? ['visible:summary', 'menu-open'] : []),
       'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
     ])
   })

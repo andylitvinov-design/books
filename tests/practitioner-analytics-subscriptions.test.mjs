@@ -98,7 +98,10 @@ test('all outbound sends require existing verified /start and separate master op
 })
 test('existing daily cron is reused with separate feature flag; no extra Vercel cron/billing',()=>{
  const vercel=JSON.parse(file('vercel.json'))
- assert.equal(vercel.crons.length,4)
+ // Market Intelligence is an existing independent daily cron; subscriber
+ // analytics reuses Practice Digest and never adds a sixth schedule.
+ assert.equal(vercel.crons.length,5)
+ assert.equal(vercel.crons.filter(x=>x.path==='/api/internal/market-intel-telegram' && x.schedule==='0 18,19 * * *').length,1)
  assert.equal(vercel.crons.filter(x=>x.path==='/api/internal/practice-telegram-digest').length,1)
  const cron=file('app/api/internal/practice-telegram-digest/route.js')
  assert.match(cron,/cronAuthorized\(request,process\.env\)/)

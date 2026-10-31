@@ -71,7 +71,27 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
+      # IA-specific PR evidence. The previous all-repository glob ran 8,650
+      # unrelated tests (Academy/Business/etc.) a second time in this IA job.
+      # Their owning domain workflows still run under the base-trusted release gate.
+      - name: IA PR scoped navigation, client isolation, OAuth and private-record contracts
+        if: ${{ github.event_name == 'pull_request' }}
+        run: >-
+          node --conditions=react-server --test
+          tests/ia-v2.test.mjs
+          tests/ia-v2-loopback-proxy.test.mjs
+          tests/ia-preview-verifier.test.mjs
+          tests/ia-public-navigation-diagnostics.test.mjs
+          tests/accepted-navigation-verifier.test.mjs
+          tests/app-auth-pkce.integration.mjs
+          tests/app-http-security.test.mjs
+          tests/app-migration-contract.test.mjs
+          tests/app-origin.test.mjs
+      # Full historic suite remains runnable explicitly for broad regression audits;
+      # no test files or assertions are deleted from the repository.
+      - name: Complete cross-domain unit inventory (manual audit only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: npm run test:unit
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - name: Full lint outside production PR (core release-ready owns production lint)

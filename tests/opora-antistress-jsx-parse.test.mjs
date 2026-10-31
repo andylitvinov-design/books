@@ -40,5 +40,9 @@ test('typed public programme retains the description supplied by the canonical b
   const blueprint=readFileSync(new URL('../lib/inner-growth/anti-stress-blueprint.js',import.meta.url),'utf8')
   assert.match(source,/skills: \{id:string;title:string;description:string;days:\[number,number\];outcome:string\}\[\]/)
   assert.match(source,/skill\.description/)
-  assert.match(blueprint,/description:base\.description\|\|base\.result/)
+  // Versioned AS-6.0 descriptions are sourced from the seven-skills map.
+  const skillSource=readFileSync(new URL('../lib/inner-growth/opora-as60-experiential-practices.js',import.meta.url),'utf8')
+  assert.match(blueprint,/const skills=oporaAs60Skills\(lang\)\.map/)
+  assert.match(skillSource,/description:SKILLS\[index\]\.purpose\?\.\[lang\]\|\|base\.description/)
+  assert.match(blueprint,/return Object\.freeze\(\{locale:lang,skills,days,/)
 })

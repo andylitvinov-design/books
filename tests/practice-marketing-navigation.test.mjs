@@ -24,6 +24,7 @@ test('new My Practice Marketing uses verified owner bridge instead of legacy roo
 })
 
 test('Growth Studio OAuth deep link preserves bounded destination without open redirects', () => {
+  const access = read('lib/app/practitioner-access.js')
   const studio = read('app/admin/growth-studio/page.js')
   const login = read('app/admin/login/page.js')
   const entry = read('components/practitioner-auto-entry.jsx')
@@ -32,7 +33,10 @@ test('Growth Studio OAuth deep link preserves bounded destination without open r
   assert.match(studio, /requireAdminRequest\(\)/)
   assert.match(studio, /redirect\('\/admin\/login\?destination=growth'\)/)
   assert.match(studio, /compactMarketing/)
-  assert.match(login, /\['growth', 'seo', 'acquisition', 'tools'\]\.includes\(params\?\.destination\)/)
+  assert.match(login, /\['growth', 'seo', 'acquisition', 'tools', 'youtubeConnect'\]\.includes\(params\?\.destination\) \? params\.destination : 'cabinet'/)
+  assert.match(access, /youtubeConnect: '\/api\/admin\/telegram-video\/youtube\/start'/)
+  assert.doesNotMatch(login, /redirect\(params\?\.destination\)/)
+  assert.match(login, /if \(await requireAdminRequest\(\)\) redirect\(practitionerDestination\[destination\]\)/)
   assert.match(login, /practitionerDestination\[destination\]/)
   assert.match(entry, /response\.redirectUrl !== ADMIN_DESTINATIONS\[safeDestination\]/)
   for (const name of ['growth','seo','acquisition']) {

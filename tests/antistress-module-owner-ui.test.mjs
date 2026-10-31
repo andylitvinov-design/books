@@ -73,7 +73,8 @@ for (const locale of ['en','ru','es']) test('actual '+locale+' welcome renders d
   }))}
   const h=mount('antistress-module-finder',{props:{locale,profile,onStart:selection=>writes.push(selection)}})
   await h.settle()
-  const label=({en:'Let’s go',ru:'Поехали!',es:'¡Vamos!'})[locale]
+  // Match approved real button copy in all locales, retaining the AS4 clinical guard.
+  const label=({en:'Start my first lesson',ru:'Начать первый урок',es:'Empezar mi primera lección'})[locale]
   const start=findButton(h.tree,label)
   assert.ok(start)
   assert.equal(start.props.disabled,false)

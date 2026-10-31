@@ -77,6 +77,13 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(builder,/do not send private client videos/i)
  assert.match(materials,/onOpenYoutube=\{isOwner\?onOpenYoutube:null\}/)
  assert.match(practice,/onOpenYoutube=\{\(\)=>openOwner\('youtube'\)\}/)
- assert.match(middleware,/reikiIntroAudioManager\|\|practitionerCourseEditor\) \? ' blob:'/)
+ // The owner course editor and published reader have explicitly scoped media origins.
+ // The PRIVATE lesson recorder may preview a local blob; do not widen this to guests.
+ assert.match(middleware,/const practitionerCourseEditor =/)
+ assert.match(middleware,/const practitionerCourseReader =/)
+ assert.match(middleware,/if\(!practitionerCourseEditor&&!practitionerCourseReader\)return ''/)
+ assert.match(middleware,/value\.protocol==='https:'&&value\.hostname\.endsWith\('\.supabase\.co'\)/)
+ assert.match(middleware,/\|\|reikiIntroAudioManager\|\|coachingOwnerAudioManager\|\|practitionerCourseEditor\|\|/)
+ assert.match(middleware,/"frame-ancestors 'none'"/)
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
 })

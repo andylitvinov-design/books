@@ -82,7 +82,10 @@ test('all major campaign surfaces expose the dedicated info landing without remo
   assert.match(academy, /app\/course\?program=stress/)
   assert.match(publicCourses, /courses\/antistress/)
   assert.match(publicCourses, /app\/course\?program=stress/)
-  assert.match(courseSeo, /ОПОРА Антистресс/)
+  // Legacy /courses is an Academy redirect; dedicated OPORA CTA above stays on /courses/antistress.
+  assert.match(courseSeo, /Курсы и Академия/)
+  assert.ok(courseSeo.includes('canonical: `/${locale}/academy`'), 'legacy Courses canonical must be Academy')
+  assert.ok(courseSeo.includes('permanentRedirect(`/${locale}/academy`)'), 'legacy Courses must redirect to Academy')
   assert.match(spanishSeo, /OPORA Antiestrés/)
   assert.doesNotMatch(reportBanner, /courses\/antistress/, 'screening results keep exactly one score-independent optional course link')
 })

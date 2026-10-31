@@ -16,11 +16,36 @@ async function setup() {
 }
 const errorCode = code => error => error.code === code
 
-test('extended primary navigation and precise active families', () => {
+test('current EN/RU/ES primary journeys keep distinct accessible routes and legacy aliases', () => {
+  const ids = ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'pro', 'temple', 'cabinet']
+  const routes = {
+    energy: 'explore/energy',
+    love: 'explore/love',
+    business: 'explore/business',
+    library: 'library',
+    events: 'events',
+    courses: 'academy',
+    pro: 'pro',
+    temple: 'holistic-support',
+    cabinet: 'client',
+  }
   for (const locale of ['en', 'ru', 'es']) {
-    assert.deepEqual(getSiteNavigation(locale).map(x => x.id), ['home','library','services','events','business','relationships','academy','courses','cabinet'])
-    for (const suffix of ['library', 'books', 'homeopathy', 'homeopathy/remedies/aconitum']) assert.equal(activeNavigationId(`/${locale}/${suffix}`), 'library')
+    const items = getSiteNavigation(locale)
+    assert.deepEqual(items.map(item => item.id), ids)
+    assert.equal(new Set(items.map(item => item.href)).size, ids.length, 'navigation must not duplicate destinations')
+    for (const item of items) {
+      const href = item.id === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + routes[item.id]
+      assert.equal(item.href, href, locale + ': ' + item.id)
+      assert.equal(item.external, false)
+      assert.ok(item.label && item.ariaLabel, 'navigation must preserve accessible localized labels')
+      assert.equal(activeNavigationId(href), item.id, locale + ': ' + href)
+    }
+    for (const suffix of ['library', 'books', 'homeopathy', 'homeopathy/remedies/aconitum']) {
+      assert.equal(activeNavigationId(`/${locale}/${suffix}`), 'library')
+    }
     assert.equal(activeNavigationId(`/${locale}/client/opaque`), 'cabinet')
+    assert.equal(activeNavigationId(`/${locale}/relationships`), 'love')
+    assert.equal(activeNavigationId(`/${locale}/services`), 'services', 'existing service deep links remain supported')
   }
   assert.equal(activeNavigationId('/books/a/chapter'), 'library')
   assert.equal(activeNavigationId('/admin/clients'), undefined)
@@ -29,7 +54,6 @@ test('extended primary navigation and precise active families', () => {
   assert.equal(activeNavigationId('/ru/courses'), 'courses')
   assert.equal(activeNavigationId('/ru/events'), 'events')
   assert.equal(activeNavigationId('/ru/explore/business'), 'business')
-  assert.equal(activeNavigationId('/ru/relationships'), 'relationships')
 })
 
 test('strict source input validation without invented interpretation', () => {

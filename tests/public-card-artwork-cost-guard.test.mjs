@@ -81,13 +81,23 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  const pinnedGenerator = "node scripts/build-public-card-artwork.mjs";
-  for (const phase of ["prebuild", "predev"]) {
-    const commands = config.scripts[phase].split(" && ").map(command => command.trim());
-    assert.equal(commands.filter(command => command === pinnedGenerator).length, 1,
-      phase + " must generate exactly one set of reviewed hashed artwork");
+  // Additional safe preparation jobs now precede artwork generation. Both npm
+  // lifecycle hooks must still execute the pinned generator exactly once.
+  const artworkCommand = "node scripts/build-public-card-artwork.mjs";
+  for (const hook of ["prebuild", "predev"]) {
+    const script = String(config.scripts[hook] || "");
+    assert.doesNotMatch(script, /[\r\n]/, hook + " must not hide separate shell commands on new lines");
+    const commands = script.split(/[ \t]*&&[ \t]*/).map(command => command.trim());
+    assert.ok(commands.every(command => /^[A-Za-z0-9_./:-]+(?:[ \t]+[A-Za-z0-9_./:-]+)*$/.test(command)),
+      hook + " must use a reviewed plain-command && pipeline, without shell control or comments");
+    assert.equal(commands.flatMap(command => command.split(/[ \t]+/))
+      .filter(word => /(?:^|\/)build-public-card-artwork\.mjs$/.test(word)).length, 1,
+      hook + " must name the artwork generator exactly once");
+    assert.equal(commands.filter(command => command === artworkCommand).length, 1,
+      hook + " must generate immutable art exactly once");
+    assert.doesNotMatch(config.scripts[hook], /\|\|\s*true/, hook + " cannot mask a failed art build");
   }
-  assert.equal(config.scripts["build:static-artwork"], pinnedGenerator,
+  assert.equal(config.scripts["build:static-artwork"], artworkCommand,
     "fast image acceptance must use the same pinned, full WebP generator as Next prebuild");
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });

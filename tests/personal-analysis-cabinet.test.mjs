@@ -19,8 +19,10 @@ test('both authorized cabinets now keep analysis reports in Profile; legacy link
   assert.match(route, /redirect\('\/' \+ locale \+ '\/app\/portrait#personal-reports'\)/)
   assert.doesNotMatch(google, /\['analysis', locale === 'ru'/)
   assert.match(google, /<ProfileDomains locale=\{locale\} mode="account"/)
-  assert.match(google, /reportsContent=\{<PersonalAnalysisPanel key=\{data\.account\.id\}/)
-  assert.match(google, /embedded \/>\}/)
+  // Profile now groups the authenticated analysis timeline with the account-scoped
+  // express-report card.  Keep both components inside the same Profile slot: the
+  // latter must not replace the private report list or lose the account boundary.
+  assert.match(google, /reportsContent=\{<><PersonalAnalysisPanel key=\{data\.account\.id\}[\s\S]*?embedded \/><ClientExpressReports locale=\{locale\} accountId=\{data\.account\.id\}\/><\/>}/)
   assert.match(profile, /id="personal-reports"/)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(legacy, /\['profile','analysis'\]\.includes\(view\)/)

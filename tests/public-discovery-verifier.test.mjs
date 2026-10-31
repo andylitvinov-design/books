@@ -40,8 +40,13 @@ function compile(source, react, modules = {}, browser = {}) {
       if (name === '../discovery-section-tabs') return compile(read('components/discovery-section-tabs.tsx'), react, modules, browser)
       if (name === './simple-test-picker') return { SimpleTestPicker: 'SimpleTestPicker' }
       if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
+      if (name === './goal-profile-panel') return { GoalProfilePanel: 'GoalProfilePanel' }
       if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }
       if (name === './test-scale-guide') return { TestScaleGuide: 'TestScaleGuide' }
+      // The real optional ResearchDirectory renders only when the visitor explicitly
+      // selects the full catalog. This guest/simple picker harness deliberately
+      // cannot launch external research questionnaires.
+      if (name === './research-directory') return { ResearchDirectory: 'ResearchDirectory' }
       throw new Error('Unexpected dependency: ' + name)
     },
   })
@@ -87,7 +92,7 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   render()
   const collections = availableTestCollections(pickerProps.catalogEntries)
   assert.deepEqual(collectionCards().map(node => node.props['data-test-collection']), collections.map(item => item.id))
-  const title = locale === 'ru' ? 'Подборки тестов по темам' : locale === 'es' ? 'Colecciones de pruebas por tema' : 'Test collections by topic'
+  const title = locale === 'ru' ? 'Подборки тестов по темам (необязательно)' : locale === 'es' ? 'Colecciones de pruebas por tema (opcional)' : 'Test collections by topic (optional)'
   assert.ok(nodes(tree).some(node => node.type === 'h2' && accessibleText(node) === title))
   const more = () => nodes(tree).find(node => node.props['aria-controls'] === 'hh-test-curated-grid')
   assert.equal(more().props['aria-expanded'], false)
@@ -339,7 +344,7 @@ function collectionChipHarness(locale, fault = null, width = 390) {
     heading = nodes(root).find(node => node.type === 'h2')
     const cards = nodes(root).filter(node => node.props['data-test-collection'])
     const expanded = root.props['data-expanded'] === 'true'
-    const collapsedCount = width <= 760 ? 4 : 8
+    const collapsedCount = 2
     // Match accepted CSS: display:none removes a card and its descendants from
     // the accessibility tree; the offscreen heading remains accessible.
     for (const [index, card] of cards.entries()) for (const node of nodes(card)) node.cssHidden = !expanded && index >= collapsedCount
@@ -398,9 +403,10 @@ function collectionChipHarness(locale, fault = null, width = 390) {
   })
   return { root: locator(() => [render()]), expect, collections, width, heading: () => { render(); return heading }, clicks: () => clicks }
 }
-for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 1280]) test(locale + ' collection disclosure preserves every source chip and verifies visible accessibility at ' + width + 'px', async () => {
+// Two representative viewports per locale; real browser owns responsive boundary checks.
+for (const locale of ['en', 'ru', 'es']) for (const width of [390, 1280]) test(locale + ' collection disclosure preserves every source chip and verifies visible accessibility at ' + width + 'px', async () => {
   const h = collectionChipHarness(locale, null, width)
-  const hidden = h.root.locator('[data-test-collection]').nth(width <= 760 ? 4 : 8)
+  const hidden = h.root.locator('[data-test-collection]').nth(2)
   await assert.rejects(h.expect(hidden).toHaveAccessibleName('A CSS-hidden chip cannot expose its aria-label'))
   await h.expect(hidden).toHaveAccessibleName('')
   await assertPublicCollectionChips(h.root, h.expect, locale, h.collections, h.width)
@@ -418,9 +424,24 @@ test('collection heading stays accessible offscreen; visible chip rows and real 
   assert.ok(rule)
   for (const declaration of [/position:\s*absolute/, /width:\s*1px/, /height:\s*1px/, /clip:\s*rect\(0, 0, 0, 0\)/]) assert.match(rule, declaration)
   assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
+  // The intentionally compact current picker shows two source-backed chips,
+  // with further collections only after the actual user expands the section.
+  assert.match(css, /\.curatedCard:nth-child\(n\+3\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curated\[data-expanded="true"\] \.curatedCard\s*\{\s*display:\s*flex/)
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
   assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'assert.deepEqual(shown,expected', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
 })
+
+
+test('the optional scientific reference directory cannot silently start questionnaires',()=>{
+ const explorer=read('components/app/test-explorer.jsx');
+ const directory=read('components/app/research-directory.jsx');
+ assert.match(explorer,/availability === 'full' && <ResearchDirectory locale={locale} search={query} \/>/);
+ assert.match(directory,/export function ResearchDirectory\(/);
+ assert.match(directory,/data-research-directory/);
+ assert.match(directory,/These entries are not cleared for online administration/);
+ assert.match(directory,/target="_blank" rel="noopener noreferrer"/);
+ assert.match(directory,/read only|research-only|Research-only|Reference records indexed|Science|Scientific test reference library/i);
+ assert.doesNotMatch(directory,/data-test-action|onStart\(|createAssessment\(|startQuestionnaire\(/);
+});

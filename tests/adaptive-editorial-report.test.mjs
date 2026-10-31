@@ -51,10 +51,12 @@ test('remedy cover thumbnails are sourced only from a selected approved library 
   const withLibrary = source(buildPrescriptionPdf({
     ...base, items: [{ remedySlug: 'colchicum-autumnale', displayName: 'Colchicum autumnale', itemType: 'homeopathy' }],
   }, 'en', origin))
-  assert.match(withLibrary, /\/RemedyPhoto1 Do Q/, 'approved source appears on cover and in appendix')
-  assert.match(withLibrary, /\(SELECTED REMEDY\)/)
+  assert.equal((withLibrary.match(/\/RemedyPhoto1 Do Q/g) ?? []).length, 2, 'approved source appears on cover and in appendix')
+  assert.match(withLibrary, /\(SELECTED REMEDIES\)/)
+  assert.match(withLibrary, /\(1\. Colchicum autumnale\)/)
   const withoutLibrary = source(buildPrescriptionPdf(base, 'en', origin))
-  assert.doesNotMatch(withoutLibrary, /SELECTED REMEDY/)
+  assert.doesNotMatch(withoutLibrary, /\/RemedyPhoto\d+ Do Q/)
+  assert.doesNotMatch(withoutLibrary, /Colchicum autumnale/)
 })
 
 test('invoices remain on their approved template, never using recommendation rings', () => {
@@ -70,11 +72,16 @@ test('invoices remain on their approved template, never using recommendation rin
 test('mobile report and print use adaptive layouts without static page counts', () => {
   const view = readFileSync('components/prescription-document.jsx','utf8')
   const styles = readFileSync('components/consultation-report.css','utf8')
-  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-card-photo']) {
+  for (const marker of ['canonical-report-hero','canonical-progress-dial','canonical-remedy-unified-summary']) {
     assert.ok(view.includes(marker), marker+' is rendered from client data')
     assert.ok(styles.includes(marker), marker+' has responsive styling')
   }
   assert.match(styles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/)
+  const thumbnail = readFileSync('components/remedy-report-thumbnail.jsx','utf8')
+  assert.match(view, /<RemedyReportThumbnail src=\{remedy\?\.primary_image\} number=\{number\} \/>/)
+  assert.match(thumbnail, /canonical-remedy-unified-thumb/)
+  assert.match(thumbnail, /<img src=\{source\}/)
+  assert.match(styles, /canonical-remedy-unified-thumb/)
   assert.match(styles, /@media print/)
   assert.match(styles, /break-inside:avoid/)
   assert.match(view, /<DocumentSignature date=\{document\.dateIssued\} locale=\{locale\} compact/)

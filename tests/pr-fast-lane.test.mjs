@@ -381,6 +381,22 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
     assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
   }
   assert.match(ia, /run: npm run test:unit/);
+  assert.ok(ia.includes("      - name: Complete cross-domain unit inventory (manual audit only)\n        if: ${{ github.event_name == 'workflow_dispatch' }}\n        run: npm run test:unit"), 'whole historic suite must remain available for manual audits');
+  assert.ok(ia.includes("      - name: IA PR scoped navigation, client isolation, OAuth and private-record contracts\n        if: ${{ github.event_name == 'pull_request' }}"), 'production IA PR must execute a focused, non-skipped unit suite');
+  const focusedIA = ia.slice(ia.indexOf('      - name: IA PR scoped navigation'), ia.indexOf('      # Full historic suite remains runnable'));
+  assert.match(focusedIA, /node --conditions=react-server --test/);
+  assert.ok(focusedIA.includes('tests/ia-v2.test.mjs'), 'IA PR must execute tests/ia-v2.test.mjs');
+  assert.ok(focusedIA.includes('tests/ia-v2-loopback-proxy.test.mjs'), 'IA PR must execute tests/ia-v2-loopback-proxy.test.mjs');
+  assert.ok(focusedIA.includes('tests/ia-preview-verifier.test.mjs'), 'IA PR must execute tests/ia-preview-verifier.test.mjs');
+  assert.ok(focusedIA.includes('tests/ia-public-navigation-diagnostics.test.mjs'), 'IA PR must execute tests/ia-public-navigation-diagnostics.test.mjs');
+  assert.ok(focusedIA.includes('tests/accepted-navigation-verifier.test.mjs'), 'IA PR must execute tests/accepted-navigation-verifier.test.mjs');
+  assert.ok(focusedIA.includes('tests/app-auth-pkce.integration.mjs'), 'IA PR must execute tests/app-auth-pkce.integration.mjs');
+  assert.ok(focusedIA.includes('tests/app-http-security.test.mjs'), 'IA PR must execute tests/app-http-security.test.mjs');
+  assert.ok(focusedIA.includes('tests/app-migration-contract.test.mjs'), 'IA PR must execute tests/app-migration-contract.test.mjs');
+  assert.ok(focusedIA.includes('tests/app-origin.test.mjs'), 'IA PR must execute tests/app-origin.test.mjs');
+  assert.doesNotMatch(focusedIA, /continue-on-error|npm run test:unit/, 'focused PR lane must remain strict and fast');
+  assert.match(ia, /run: npm run native:check && npm run pwa:check/);
+  assert.match(ia, /playwright install --with-deps chromium webkit/);
   assert.match(ia, /run: npm run build/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });

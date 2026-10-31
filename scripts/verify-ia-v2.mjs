@@ -82,14 +82,17 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
 }
 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
-  const cabinetHref = '/' + (locale === 'es' ? 'en' : locale) + '/app'
   const freeReviewHref = '/' + locale + '/services/free-situation-review'
   const directions = expected.filter(item => ['energy','love','business'].includes(item.id))
-  // Home has a dialog trigger for My Space; other pages retain a direct Cabinet link.
-  const isHome = surface === 'home'
-  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: isHome ? null : cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', ...(isHome ? [] : [cabinetHref])], label + ': exact direct header destinations')
+  // The new My Space entry is the same consent-aware dialog button on every
+  // public route; the actual Cabinet link is inside that dialog.
+  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: null }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about'], label + ': exact direct header destinations')
   assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+  const cabinet = nav.locator(':scope > button[data-nav-item="cabinet"]')
+  await expect(cabinet).toHaveCount(1)
+  await expect(cabinet).toHaveAttribute('aria-haspopup', 'dialog')
+  await expect(cabinet).toHaveAttribute('aria-controls', 'home-personal-space-dialog')
   const current = nav.locator(':scope > a[aria-current="page"]')
   await expect(current).toHaveCount(directions.some(item => item.id === surface) ? 1 : 0)
   if (directions.some(item => item.id === surface)) await expect(current).toHaveAttribute('href', directions.find(item => item.id === surface).href)
