@@ -40,7 +40,7 @@ test('Mandala: test-only changes keep contracts but avoid rebuilding the same si
   assert.deepEqual(decideHeavyImpact('mandala', one('tests/first-video-director.test.mjs')),
     { browser: false });
   for (const files of [
-    null, [], one('components/mandala-free-video-studio.tsx'),
+    null, [], one('tests/mandala-unknown-contract.test.mjs'), one('components/mandala-free-video-studio.tsx'),
     one('lib/mandala/first-video-director.mjs'), one('app/api/holistic-support/voice/route.js'),
     one('tests/mandala-export.test.mjs', 'added'),
     one('data/video-catalog/free-stock-scenes.json'),
