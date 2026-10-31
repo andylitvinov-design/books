@@ -610,7 +610,7 @@ const runEngine = async ([engine, browserType]) => {
           await page.waitForFunction(() => {
             const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
             return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
-          }, undefined, {timeout: 30000});
+          }, undefined, {timeout: 45000});
         } catch (error) {
           const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
             networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
@@ -978,7 +978,28 @@ const runEngine = async ([engine, browserType]) => {
           // MediaRecorder session, not just the legacy Generate control.
           await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
-          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          try {
+            await videoLink.waitFor({ state: "visible", timeout: 45000 });
+          } catch (error) {
+            // Preserve the real end-to-end requirement, but report the exact
+            // stopped state (consent, renderer, or audio) instead of a blind
+            // selector timeout. Never substitute a synthetic download.
+            const state=await page.evaluate(()=>{
+              const control=document.querySelector("[data-mandala-video-generate]");
+              const compact=document.querySelector("[data-hypno-create-video]");
+              const master=document.querySelector("[data-mandala-master-mp4]");
+              return {
+                controlPresent:Boolean(control),controlDisabled:control?.disabled,
+                compactDisabled:compact?.disabled,
+                consent:document.querySelector("[data-video-photo-consent]")?.checked,
+                downloadPresent:Boolean(document.querySelector("[data-mandala-video-download]")),
+                status:[...document.querySelectorAll("[role=status]")].map(x=>x.textContent?.trim()).filter(Boolean).slice(-6),
+                player:{readyState:master?.readyState,paused:master?.paused,error:master?.error?.code??null},
+                recorderSupported:typeof MediaRecorder==="function",
+              };
+            });
+            throw new Error("Chromium 390px actual video export did not finish: "+JSON.stringify(state),{cause:error});
+          }
           const filename = await videoLink.getAttribute("download");
           assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
           const encoded=page.locator("[data-mandala-video-preview]");
@@ -1392,8 +1413,14 @@ const runEngine = async ([engine, browserType]) => {
       }
     }
 };
-// Both engines finish before result handling; never waive a failed browser.
-const engineResults = await Promise.allSettled(engines.map(runEngine));
+// CI Chromium + WebKit each run the full real browser acceptance, but do not
+// fight for one runner's MP4 decoders and MediaRecorder at the same instant.
+// Finish both (collecting failures) and never waive an unsuccessful engine.
+const engineResults = [];
+for (const engine of engines) {
+  try { await runEngine(engine); engineResults.push({status:"fulfilled"}); }
+  catch (reason) { engineResults.push({status:"rejected",reason}); }
+}
 const rejectedEngines = engineResults.filter(result => result.status === "rejected");
 if (rejectedEngines.length) {
   throw new AggregateError(rejectedEngines.map(result => result.reason),
