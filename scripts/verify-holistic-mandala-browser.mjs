@@ -425,15 +425,27 @@ const runEngine = async ([engine, browserType]) => {
               "[data-video-preview-choices]",
               "[data-video-audio-section]",
               "[data-video-hypnosis-section]"
-            ].map(top)
+            ].map(selector=>Boolean(document.querySelector(selector)))
           };
         });
-        for(const [group,landmarks] of Object.entries(hierarchy)){
-          assert.ok(landmarks.every(Number.isFinite),
-            engine+" "+locale+" "+width+"px "+group+" contains all real sections");
-          for(let i=1;i<landmarks.length;i++)assert.ok(landmarks[i]>landmarks[i-1],
-            engine+" "+locale+" "+width+"px "+group+" hierarchy "+i+": "+landmarks);
-        }
+        assert.ok(hierarchy.preview.every(Number.isFinite),
+          engine+" "+locale+" "+width+"px approved quick flow contains all visible sections");
+        for(let i=1;i<hierarchy.preview.length;i++)assert.ok(hierarchy.preview[i]>hierarchy.preview[i-1],
+          engine+" "+locale+" "+width+"px visible quick flow order "+i+": "+hierarchy.preview);
+        // Detailed Support editor is intentionally inside a CLOSED <details>.
+        // Its bounding boxes are 0px, so validate DOM structure, not invisible
+        // visual geometry, without opening it or skipping any functionality.
+        const supportSelectors=[
+          "[data-video-daily-picks]","[data-video-support-layout]",
+          "[data-video-category-rail]","[data-video-preview-choices]",
+          "[data-video-audio-section]","[data-video-hypnosis-section]"
+        ];
+        const supportOrder=await page.evaluate(selectors=>{
+          const nodes=selectors.map(selector=>document.querySelector(selector));
+          return nodes.every(Boolean) && nodes.slice(1).every((node,i)=>
+            Boolean(nodes[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING));
+        },supportSelectors);
+        assert.equal(supportOrder,true,"collapsed detailed Support editor preserves complete DOM order");
         // Banner must activate the actual existing 8-session planner without
         // rendering, downloading, buying or contacting third-party providers.
         await page.locator("[data-video-therapy-start]").click();
