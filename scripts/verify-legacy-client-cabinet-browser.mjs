@@ -30,8 +30,15 @@ const css=stylesheet.css+'\n'+modernCss
 
 const Icon=({size=18})=>React.createElement('svg',{'aria-hidden':'true',width:size,height:size,viewBox:'0 0 20 20'},
   React.createElement('circle',{cx:10,cy:10,r:6,stroke:'currentColor',fill:'none'}))
-const Link=({href,children,prefetch,...props})=>React.createElement('a',{href,...props},children)
-const placeholder=(label,attribute)=>()=>React.createElement('section',{[attribute]:true},label)
+function Link({href,children,...props}) {
+  delete props.prefetch
+  return React.createElement('a',{href,...props},children)
+}
+function placeholder(label,attribute) {
+  return function SyntheticPlaceholder() {
+    return React.createElement('section',{[attribute]:true},label)
+  }
+}
 const imports={
   react:React,'react/jsx-runtime':jsx,
   'lucide-react':{FileText:Icon,ReceiptText:Icon,Sparkles:Icon,UserRound:Icon},
