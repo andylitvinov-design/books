@@ -33,6 +33,31 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
   return {base,current,basePackage,currentPackage};
 }
 
+// Use the exact tested merge checkout, including both sides of renames, rather
+// than a live PR file listing that can change when production advances.
+export function checkoutChangedRows(baseSha, cwd = process.cwd()) {
+  const raw = execFileSync('git', ['diff','--no-renames','--name-status','-z',baseSha,'HEAD'],
+    {cwd, encoding:'utf8', maxBuffer:5e6}).split('\0');
+  if (raw.at(-1) === '') raw.pop();
+  if (!raw.length || raw.length % 2 || raw.length / 2 >= 3000) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+  const rows = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    if (!/^[AMDT]$/.test(raw[i]) || !raw[i + 1]) throw Error('CHECKOUT_CHANGED_FILES_INVALID');
+    rows.push({ status: raw[i], filename: raw[i + 1] });
+  }
+  return rows;
+}
+
+export function verifiedCheckoutBase(env, ctx, cwd = process.cwd()) {
+  if (!env.HH_TRUSTED_BASE_SHA) return null; // Compatibility with existing in-flight workflows.
+  const git = (...args) => execFileSync('git', args, {cwd,encoding:'utf8'}).trim();
+  if (!/^[0-9a-f]{40}$/.test(env.HH_TRUSTED_BASE_SHA) ||
+      git('rev-parse','HEAD') !== env.GITHUB_SHA ||
+      git('rev-parse','HEAD^1') !== env.HH_TRUSTED_BASE_SHA ||
+      git('rev-parse','HEAD^2') !== ctx.head) throw Error('UNVERIFIED_MERGE_CHECKOUT');
+  return env.HH_TRUSTED_BASE_SHA;
+}
+
 export function githubReader(repo, token, transport = fetch) {
   const root = 'https://api.github.com/repos/' + repo;
   const headers = {
@@ -66,10 +91,33 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx) {
+// Loose BASE is permitted only for recognizable, non-sensitive source paths.
+// A surprising path, CI/policy change, credential-related name, private-data
+// surface, API, or billing/security feature retains fresh production-base
+// matching. This is deliberately independent of FAST UI routing: normal
+// application code still requires Core and all applicable specialist checks.
+export function requiresCurrentProductionBase(changed) {
+  if (!Array.isArray(changed) || changed.length === 0) return true;
+  const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|checkout|client|consent|credential|crm|database|health|identity|login|medical|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
+  return changed.some(file =>
+    typeof file !== 'string' ||
+    !ordinaryRoots.test(file) ||
+    file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
+    sensitiveName.test(file) ||
+    sensitiveRoots.test(file)
+  );
+}
+
+function assertSame(pr, ctx, requireCurrentBase = false) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
-      pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
+      pr.head?.sha !== ctx.head ||
+      !/^[0-9a-f]{40}$/i.test(pr.base?.sha || '') ||
+      (requireCurrentBase && pr.base.sha !== ctx.base) ||
+      pr.base?.ref !== TARGET || pr.base?.repo?.full_name !== ctx.repo ||
+      pr.head?.repo?.full_name !== ctx.repo || pr.mergeable === false ||
+      pr.mergeable_state === 'dirty') {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
 }
@@ -120,18 +168,34 @@ export function loadTrustedTypescript(base) {
 }
 
 export async function verify(api,ctx,files,options={}) {
-  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
-  // long enough for their results instead of rejecting a still-running check.
-  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
-  const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
+  // Distinguish an absent workflow from a queued run and genuine execution.
+  // Only a running specialist may use the long completion deadline.
+  const boundedMs = (value, maximum, minimum = 0) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
+    return Math.max(minimum, Math.min(maximum, n));
+  };
+  const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
+  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? delay;
+  const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx);
-  const changedRows=await api.changed(ctx.number);
+  // Loose base is never allowed for legacy/unverified live file listings.
+  // Only exact merged checkout rows can prove what was tested.
+  assertSame(pr,ctx,!pinnedChangeRows);
+  const changedRows=pinnedChangeRows ? files.changedRows : await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
+  // BASE/HEAD workflow definitions and the actual merge snapshot stay
+  // immutable even when the production target moves after the check started.
+  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  assertSame(pr,ctx,requireCurrentBase);
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -161,7 +225,10 @@ export async function verify(api,ctx,files,options={}) {
   const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
   const retired = new Set(delegated.map(item => item.retired));
   const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
-  const deadline=Date.now()+maxWait;
+  const start = now();
+  const deadline = start + maxWait;
+  const missingDeadline = start + missingGrace;
+  const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
   for (;;) {
     const allRuns=await api.runs(ctx.head);
@@ -178,10 +245,30 @@ export async function verify(api,ctx,files,options={}) {
       }));
     }
     if (!state.missing.length && !state.pending.length) break;
-    if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
+    // GitHub may take a few seconds to register a newly triggered workflow.
+    // After the short discovery grace, absence is a configuration/dispatch
+    // failure, NOT a 35-minute running test. Never waive an expected workflow.
+    const timestamp = now();
+    if (state.missing.length && timestamp >= missingDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
+        JSON.stringify({missing:state.missing,pending:state.pending}));
     }
-    await delay(pollMs);
+    // A registered but queued/requested/waiting workflow is not an executing
+    // test. Give the GitHub runner queue a separate bounded startup window.
+    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    if (notStarted.length && timestamp >= queuedDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
+        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+    }
+    if (timestamp >= deadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
+        JSON.stringify({pending:state.pending}));
+    }
+    const nextDeadline = Math.min(deadline,
+      state.missing.length ? missingDeadline : Infinity,
+      notStarted.length ? queuedDeadline : Infinity);
+    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
@@ -189,7 +276,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx);
+  assertSame(fresh,ctx,requireCurrentBase);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
@@ -202,10 +289,16 @@ async function main() {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
   const ctx=validateParameters(env);
   const api=githubReader(ctx.repo,ctx.token);
-  const files=worktreeSources(ctx.base);
-  const result=await verify(api,ctx,files);
+  const verifiedBase = verifiedCheckoutBase(env, ctx);
+  const testedBase = verifiedBase || ctx.base;
+  const files=worktreeSources(testedBase);
+  if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
+  // The verified merge parent is always the trusted tested BASE. Only
+  // non-sensitive ordinary paths permit a newer live production BASE; security,
+  // payment, privacy, auth, policy and unknown paths still require freshness.
+  const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
-    ' base=' + ctx.base + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
+    ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
