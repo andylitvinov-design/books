@@ -229,7 +229,8 @@ test("phrases and hypnocorrection button expands one shared editor below six vid
  const src=read("components/mandala-free-video-studio.tsx");
  const css=read("components/mandala-video-mobile.module.css");
  const hypno=read("components/mandala-hypno-compact.tsx");
- assert.match(src,/id:"phrases",label:\{ru:"Фразы и гипнокоррекция"/);
+ assert.match(src,/id:"phrases",label:\{ru:"Фразы"/);
+ assert.match(src,/id:"extra",label:\{ru:"Гипнокоррекция"/);
  assert.match(src,/aria-expanded=\{item.id==="phrases"\?quickHypnoOpen:undefined\}/);
  assert.match(src,/if\(item.id==="phrases"\)\{[\s\S]*?setQuickHypnoOpen/);
  assert.ok(src.indexOf("data-video-quick-controls")<src.indexOf("data-video-quick-hypno-panel"));
@@ -268,4 +269,15 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
  assert.match(browser,/advanced parameters must expand on a real click/);
  assert.match(browser,/photo cover and user-owned image choices must open on user request/);
  assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000,position:\{x:15,y:20\}\}\)/);
+});
+
+// #2704's four-group panel shares the approved #2702 phrases and renderer.
+test("single Hypno phrase editor and large-type four-group effects share one mobile Studio",()=>{
+ const src=read("components/mandala-free-video-studio.tsx");
+ assert.equal((src.match(/<MandalaHypnoCompact /g)||[]).length,1);
+ assert.equal((src.match(/<MandalaHypnocorrectionMobile/g)||[]).length,2,
+   "import and one component render");
+ assert.match(src,/onOpenPhraseEditor=\{\(\)=>openQuickDetailed\("video-hypnosis"\)\}/);
+ assert.match(src,/data-video-hypnocorrection-panel/);
+ assert.equal((src.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,4);
 });
