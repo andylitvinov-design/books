@@ -378,7 +378,7 @@ test("Wave draft leaves live video unchanged until explicit approval",()=>{
   const src=read("components/mandala-hypno-compact.tsx");
   const section=(a,b)=>src.slice(src.indexOf(a),src.indexOf(b,src.indexOf(a)+a.length));
   for(const [a,b] of [["function filtered(","async function suggestFromTests()"],
-    ["function addCustom()","const toggle=(panel"],["const ready=()=>","async function generateGemini()"]]){
+    ["function addCustom()","const toggle=(panel"],["const ready=()=>","  const advancedSettings:AffirmationSettings="]]){
     assert.doesNotMatch(section(a,b),/onChange\(\{\.\.\.settings/);
   }
   assert.match(section("function approvePhrases()","  return ("),/onChange\(next\)/);
@@ -391,7 +391,7 @@ test("explicit high-risk Wave note disables Hypno preview, export and opt-in",()
   assert.match(compact,/data-video-affirmation-preview[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
   assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|safetyBlocked\|\|!settings\.enabled\}/);
   assert.match(compact,/data-hypno-overview-enable[^>]*disabled=\{disabled\|\|safetyBlocked\}/);
-  assert.match(compact,/data-hypno-gemini-generate disabled=\{disabled\|\|safetyBlocked/);
+  assert.match(compact,/data-hypno-build-strategy[\s\S]*?disabled=\{disabled\|\|safetyBlocked\|\|strategyBusy\}/);
 });
 
 
