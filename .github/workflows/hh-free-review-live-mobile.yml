@@ -103,7 +103,7 @@ jobs:
             fi
             sleep 2
           done
-          HH_FREE_REVIEW_PR_SMOKE=1 HH_LIVE_ORIGIN=http://127.0.0.1:3100 node scripts/verify-free-review-live-mobile.mjs
+          HH_LIVE_ORIGIN=http://127.0.0.1:3100 node scripts/verify-free-review-live-mobile.mjs
       - name: Record separate legacy Services testimonial regression
         if: github.event_name == 'pull_request' && always()
         run: |

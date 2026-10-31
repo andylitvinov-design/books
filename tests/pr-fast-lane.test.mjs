@@ -720,22 +720,18 @@ test('all 14 Public Services browser suites use semantic readiness rather than n
 });
 
 
-test('Public Services PR keeps five current commerce cases and routes nine legacy checks to manual QA',()=>{
+test('Public Services PR retains all browser suites without manual-only gates', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.match(source, /^  workflow_dispatch:/m);
-  const manualGuard = "if [[ \"$GITHUB_EVENT_NAME\" == 'workflow_dispatch' ]]; then";
-  assert.equal(source.split(manualGuard).length - 1, 9,
-    'nine old mobile/layout acceptance cases must not repeat in ordinary PRs');
-  for (const script of [
-    'verify-public-services-production.mjs',
-    'verify-service-cart-browser.mjs',
-    'verify-reiki-mobile-order-browser.mjs',
-    'verify-talisman-google-checkout-browser.mjs',
-    'verify-storefront-shop-browser.mjs',
-  ]) {
-    assert.ok(source.includes('run_case "' + script + '" node scripts/' + script),
-      'real checkout/service flow missing from current PR: ' + script);
-  }
+  assert.doesNotMatch(source, /if \[\[ "\$GITHUB_EVENT_NAME" == 'workflow_dispatch' \]\]; then/);
+});
+
+test('Free Review PR retains both engines and all four mobile viewports', () => {
+  const source = workflow('hh-free-review-live-mobile.yml');
+  const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
+  assert.doesNotMatch(source, /HH_FREE_REVIEW_PR_SMOKE/);
+  assert.match(script, /\[\[320, 568\], \[375, 667\], \[390, 844\], \[430, 932\]\]/);
+  assert.match(script, /\[\["chromium", chromium\], \["webkit", webkit\]\]/);
 });
 
 test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
@@ -873,18 +869,4 @@ test('trusted native auto-merge can use a repo-scoped token to preserve push eve
   assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.match(source, /pull_request_target:/);
   assert.doesNotMatch(source, /checkout@|--admin/);
-});
-
-
-test('Free Review: PR runs only current localized Chromium smoke; post-merge retains all 24 full visual scenarios', () => {
-  const workflowSource = workflow('hh-free-review-live-mobile.yml');
-  const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
-  assert.ok(workflowSource.includes('HH_FREE_REVIEW_PR_SMOKE=1 HH_LIVE_ORIGIN=http://127.0.0.1:3100'),
-    'PR must use three representative real localized screenshots without repeating 24 layouts');
-  assert.ok(workflowSource.includes('run: node scripts/verify-free-review-live-mobile.mjs'),
-    'post-merge production audit must remain exhaustive');
-  assert.ok(script.includes('prSmoke ? [[390, 844]] : [[320, 568], [375, 667], [390, 844], [430, 932]]'),
-    'all four existing viewport shapes must remain available for manual and push verification');
-  assert.ok(script.includes('prSmoke ? [["chromium", chromium]] : [["chromium", chromium], ["webkit", webkit]]'),
-    'do not reintroduce WebKit matrix to the PR smoke');
 });

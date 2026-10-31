@@ -313,8 +313,8 @@ jobs:
             exit 1
           fi
           status=0
-          # PR: five current checkout/service acceptance scenarios; manual dispatch:
-          # all 14 extended legacy/mobile scenarios. One Next server,
+          # Keep the original 14 real acceptance suites, including payment,
+          # consent, browser engines and RU/EN/ES viewports. One Next server,
           # two bounded independent lanes, never extra jobs or required checks.
           # Each suite writes its own diagnostics; both lanes MUST be awaited.
           run_case() {
@@ -338,39 +338,21 @@ jobs:
           lane_a() {
             local failed=0
             # Alchemy covers 320–430px, three languages and booking consent.
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
-            fi
+            run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
             run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
             run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
-            fi
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
+            run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
             return "$failed"
           }
           lane_b() {
             local failed=0
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
-            fi
-            if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-              run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
-            fi
+            run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs || failed=1
+            run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
+            run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
             run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
             run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
             run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
