@@ -350,7 +350,13 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
+        // Preserve the tested #2704 WebKit correction: move the native
+        // disclosure above the fixed mobile dock before the real user click.
+        const coverSummary=coverOptions.locator("summary");
+        await coverSummary.evaluate(element=>element.scrollIntoView({
+          behavior:"instant",block:"center",inline:"nearest",
+        }));
+        await coverSummary.click();
         // Port #2698 HEAD (14beeb06): WebKit can re-render the native details
         // after the real click. Assert genuine open state with bounded retry.
         await expect(coverOptions,
@@ -963,6 +969,10 @@ const runEngine = async ([engine, browserType]) => {
         // Full scene gallery is behind Edit to preserve the approved compact layout.
         await compactHypno.locator("[data-hypno-design-edit]").click();
         assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
+        // Preserve #2698's real gallery-accessibility assertion.
+        const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
+        assert.equal(await sceneSummary.count(),1);
+        assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
