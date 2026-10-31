@@ -240,3 +240,50 @@
 @media(max-width:760px){
   .panel .compose textarea{font-size:16px;resize:none}
 }
+
+/* Private mobile CRM chat: the AI assistant belongs inside the input toolbar,
+   never floating over the last client message. It expands inline only on tap. */
+@media(max-width:700px){
+ .detailConversation .chatHeader{min-height:0;padding:3px 10px;border-bottom:1px solid #e9e0d7}
+ .detailConversation .chatHeader .plainButton{
+  min-height:30px;padding:4px 10px;border-radius:999px;
+  font:700 11px/1.25 system-ui,sans-serif
+ }
+ .detailConversation .compose{
+  display:grid;grid-template-columns:36px minmax(0,1fr) minmax(70px,max-content);
+  align-items:center;gap:6px;margin-top:auto;padding:7px 8px
+ }
+ .detailConversation .compose textarea{
+  grid-column:2;grid-row:1;min-width:0;min-height:44px;height:44px;
+  max-height:92px;font-size:16px
+ }
+ .detailConversation .compose>button:last-of-type{
+  grid-column:3;grid-row:1;min-width:70px;min-height:44px;padding:7px 9px
+ }
+ .detailConversation .compose .salesbotAssistSlot{
+  position:relative;inset:auto;bottom:auto;left:auto;right:auto;
+  z-index:3;grid-column:1;grid-row:1;min-width:0;align-self:center
+ }
+ .detailConversation .compose .salesbotAssistSlot button[aria-expanded]{
+  box-sizing:border-box;min-width:36px;width:36px;min-height:44px;height:44px;
+  padding:0;overflow:hidden;font-size:0;border-radius:10px;box-shadow:none;
+  background:#edf6ef;color:#176a54
+ }
+ .detailConversation .compose .salesbotAssistSlot button[aria-expanded]::after{
+  content:"AI";font:750 12px/1 system-ui,sans-serif
+ }
+ .detailConversation .compose:has(.salesbotAssistSlot button[aria-expanded="true"]) .salesbotAssistSlot{
+  grid-column:1/-1;grid-row:2;align-self:stretch
+ }
+ .detailConversation .compose .salesbotAssistSlot [data-salesbot-operator-mode]{
+  display:flex;align-items:flex-start;gap:7px;min-width:0;max-width:100%
+ }
+ .detailConversation .compose .salesbotAssistSlot [role="region"]{
+  position:static;right:auto;bottom:auto;z-index:auto;flex:1;
+  box-sizing:border-box;width:auto;min-width:0;max-width:100%;
+  max-height:min(30dvh,235px);overflow-y:auto;box-shadow:none
+ }
+}
+@media(max-width:700px) and (max-height:550px){
+ .detailConversation .compose .salesbotAssistSlot [role="region"]{max-height:125px}
+}
