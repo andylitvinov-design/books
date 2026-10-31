@@ -45,6 +45,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Install locked application dependencies
         run: npm ci --no-audit --no-fund
       - name: Focused auth, layout and regression source tests

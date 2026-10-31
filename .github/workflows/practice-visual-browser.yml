@@ -59,6 +59,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Install existing project dependencies
         run: npm ci --no-audit --no-fund
       - name: Check screenshot comparator, source flow and browser script

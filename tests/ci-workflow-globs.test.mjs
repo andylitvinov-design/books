@@ -263,3 +263,13 @@ test('CI wave C preserves Free Review, Home and client-report browser guards', (
     assert.doesNotMatch(src,/continue-on-error:\s*true/);
   }
 });
+
+test('hot billing and mobile suites reuse only locked npm tarballs, not unsafe node_modules',()=>{
+  for(const name of ['hh-billing-isolated.yml','practice-google-browser.yml','practice-visual-browser.yml','hh-free-review-live-mobile.yml']){
+    const src=workflow(name);
+    assert.match(src,/uses: actions\/setup-node@v4/);
+    assert.match(src,/cache: npm/);
+    assert.match(src,/npm ci/);
+    assert.doesNotMatch(src,/path: node_modules|continue-on-error:\s*true/);
+  }
+});
