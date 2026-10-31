@@ -41,7 +41,7 @@ jobs:
           npm run build > artifacts/ga4-safety-hold/build.log 2>&1
           npm run start -- --hostname 127.0.0.1 --port 3218 > artifacts/ga4-safety-hold/server.log 2>&1 & SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 90); do
+          for ((attempt=0; attempt<90; attempt++)); do
             if curl --silent --fail http://127.0.0.1:3218/privacy >/dev/null; then break; fi
             sleep 2
           done
