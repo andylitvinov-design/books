@@ -8,7 +8,7 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
-import { paintHypnoLightOverlay } from "@/lib/mandala/hypno-visual-overlay.mjs";
+import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
@@ -2530,7 +2530,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onRemovePhoto={()=>setBackgroundOnly(true)}
           onPreview={openAffirmationPreview}
           onWavePreset={()=>{
-            setHypnoLight({enabled:true,cyclesPerMinute:6,opacity:.18});
+            setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
             setAffirmations(current=>({...current,enabled:true,
               visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
             setPreviewPlaying(false);

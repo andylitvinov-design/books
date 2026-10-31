@@ -1,8 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { hypnoWavePhase, paintHypnoLightOverlay } from "../lib/mandala/hypno-visual-overlay.mjs";
+import { hypnoWavePhase, paintHypnoLightOverlay, recommendHypnoLight } from "../lib/mandala/hypno-visual-overlay.mjs";
 
+test("Wave selects different calm or focused effects from local goal and theme",()=>{
+  const active=recommendHypnoLight("energy","more vitality");
+  const calm=recommendHypnoLight("energy","хочу спокойствия");
+  const work=recommendHypnoLight("money","prepare for an interview");
+  assert.equal(active.cyclesPerMinute,8);
+  assert.equal(calm.cyclesPerMinute,6);
+  assert.equal(calm.opacity,.14);
+  assert.equal(work.cyclesPerMinute,7);
+  assert.notDeepEqual(active,calm);
+});
 test("hypnocorrection's smooth six-cycle wave is deterministic and never flashes",()=>{
   assert.equal(hypnoWavePhase(0,6),0);
   assert.ok(hypnoWavePhase(5,6)>.9999);
