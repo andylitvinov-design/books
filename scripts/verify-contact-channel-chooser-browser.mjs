@@ -183,7 +183,10 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   assert.doesNotMatch(waDraft,/PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/,"Never put visitor notes in external messenger URL");
   const viewportWidth = page.viewportSize().width;
   for (const channel of [wa,tg]) {
-    await channel.scrollIntoViewIfNeeded();
+    // After a consented CRM response, React may replace the saved link while
+    // a separate scroll action is waiting for layout stability. Preserve the
+    // live bounding-box and non-navigating trial-click hit-target assertions;
+    // the trial click performs its own guarded scroll/re-resolution.
     const b=await channel.boundingBox();
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");

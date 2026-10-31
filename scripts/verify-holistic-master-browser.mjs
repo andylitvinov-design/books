@@ -153,7 +153,10 @@ async function verify(engine, locale, width) {
     // Keep real Next Link acceptance; relocate its pointer hit target above
     // the fixed mobile tab bar rather than forcing navigation or clicks.
     await diagnostic.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
-    await diagnostic.click();
+    // This browser context is a real touch viewport (isMobile + hasTouch).
+    // Verify the actual mobile tap, not a synthetic desktop mouse click;
+    // the exact destination/consent/privacy assertions below stay mandatory.
+    await diagnostic.tap();
     try {
       await consultationNavigation;
     } catch (error) {
