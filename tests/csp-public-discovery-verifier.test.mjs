@@ -41,7 +41,7 @@ test('real CSP journey uses public Tests while retaining media, private absence 
   assert.equal(source.split("toHaveURL(origin + '/en/client/tests')").length - 1, 2, 'initial entry and history return');
   assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="profile"\]'\)\)\.toHaveAttribute\('aria-current', 'page'\)/);
   assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="profile"\]'\)\)\.toHaveAttribute\('href', '\/en\/personality-profiles'\)/);
-  assert.match(source, /const privatePage = await cspContext\.newPage\(\);[\s\S]*?await assertAnonymousPrivateNavigation\(privatePage\);[\s\S]*?finally \{ await privatePage\.close\(\); \}/);
+  assert.match(source, /const privateContext = await cspBrowser\.newContext\([\s\S]*?serviceWorkers: 'block'[\s\S]*?const privatePage = await privateContext\.newPage\(\);[\s\S]*?await assertAnonymousPrivateNavigation\(privatePage\);[\s\S]*?finally \{ await privateContext\.close\(\); \}/);
   assert.match(source, /privatePage\.on\('pageerror', error => cspErrors\.push/);
   assert.match(source, /const privateWordmark = cspPage\.locator\('\.house-header--services \.house-wordmark'\);\s+await expect\(privateWordmark\)\.toHaveCount\(1\)/);
   assert.match(source, /window\.__cspViolations\.includes\('frame-src'\)/);

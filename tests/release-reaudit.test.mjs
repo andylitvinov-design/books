@@ -251,6 +251,7 @@ test('release audit scopes service choices and forbids messenger links in the fr
   assert.ok(verifier.includes('const serviceChoices = capture.locator(\'[data-choice-layout="service"] > button\')'));
   assert.ok(verifier.includes('assert.equal(await capture.locator(\'[data-contact-channel="telegram"]\').count(), 0)'));
   assert.match(verifier, /await expect\(capture\.locator\('form'\)\)\.toBeHidden\(\)/);
+  assert.ok(verifier.includes('capture.locator(\'[data-contact-channel-chooser] a[data-contact-channel]\')'));
   assert.match(verifier, /openRegisteredContactChannelChooser\(capture, expect, paidPage\)/);
   assert.match(verifier, /if \(!local\) \{[\s\S]*?liveConsentSubmitted:false/);
   assert.match(verifier, /check\('paid-imagery-synthetic-receipt'/);

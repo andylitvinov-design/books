@@ -385,13 +385,16 @@ async function exercise(engine, browserType, width) {
         const serviceChoices = capture.locator('[data-choice-layout="service"] > button');
         await expect(serviceChoices).toHaveCount(3);
         await expect(capture.locator('form')).toBeHidden();
-        await expect(capture.locator('[data-contact-channel]')).toHaveCount(0);
+        await expect(capture.locator('[data-contact-channel-chooser] a[data-contact-channel]')).toHaveCount(0);
         if (!local) {
           await expect(serviceChoices.nth(0)).toContainText('€100');
           await expect(serviceChoices.nth(1)).toContainText('€50');
           await serviceChoices.nth(2).click();
-          await expect(capture.locator('[data-consultation-action]')).toHaveAttribute('data-consultation-action', 'free');
-          await expect(capture.locator('[data-contact-channel]')).toHaveCount(0);
+          const freeAction = capture.locator('[data-consultation-action]');
+          await expect(freeAction).toHaveAttribute('data-consultation-action', 'free');
+          assert.equal(new URL(await freeAction.getAttribute('href'), origin).href, origin + `/${locale}/services/free-situation-review`);
+          assert.equal(await freeAction.getAttribute('target'), null);
+          await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
           return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
         }
         let chooser = await openRegisteredContactChannelChooser(capture, expect, paidPage);
@@ -601,11 +604,13 @@ async function exercise(engine, browserType, width) {
           await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
           await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
           await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/personality-profiles');
-          const privatePage = await cspContext.newPage();
+          const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
+          await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+          const privatePage = await privateContext.newPage();
           privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
           try {
             await assertAnonymousPrivateNavigation(privatePage);
-          } finally { await privatePage.close(); }
+          } finally { await privateContext.close(); }
           // Leave discovery through its visible header wordmark, then use the
           // public About content link to preserve the cross-policy history test.
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
