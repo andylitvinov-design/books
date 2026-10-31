@@ -25,6 +25,11 @@ on:
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
+      # Exact voice API and browser harness must trigger the owning specialist.
+      - 'app/api/holistic-support/voice/route.js'
+      - 'scripts/verify-affirmation-voice-browser.mjs'
+      - 'tests/affirmation-voice*.test.mjs'
+      - 'tests/voice-studio*.test.mjs'
       - 'scripts/verify-holistic-mandala-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
