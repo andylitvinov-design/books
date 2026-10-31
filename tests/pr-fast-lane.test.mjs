@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join,matchesGlob as requireGlob } from 'node:path';
 import test from 'node:test';
@@ -16,6 +17,11 @@ const scoped = [
   'ia-v2.yml',
   'opora-module-ci.yml',
 ];
+
+test('Public Services retains real cross-locale consent and private handoff browser coverage',()=>{
+  const source=workflow('hh-public-services-production.yml');
+  assert.match(source,/node scripts\/verify-contact-channel-chooser-browser\.mjs/);
+});
 
 test('seven formerly unconditional PR workflows run only on relevant paths', () => {
   for (const filename of scoped) {
@@ -662,6 +668,141 @@ test('Mandala focused job overlaps both real browsers without losing media cover
     'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
     'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
   ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
+});
+
+test('Public Services and Alchemy preserve real exact-head E2E with scoped browser cache and bounded readiness', () => {
+  const publicQa = workflow('hh-public-services-production.yml');
+  const alchemy = workflow('hh-alchemy-mobile-acceptance.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /name: core-lint-types-build/);
+  assert.doesNotMatch(readFileSync(join(root, 'next.config.ts'), 'utf8'), /ignoreBuildErrors/);
+  assert.match(core, /run: npm run build/);
+  // Both specialists retain real, cached browser acceptance for applicable changes.
+  for (const [name, source] of [['public services', publicQa], ['alchemy', alchemy]]) {
+    assert.match(source, /npm run build > artifacts\//, name + ': production build remains available');
+    assert.match(source, /playwright install --with-deps chromium webkit/, name + ': real browser engines remain');
+    assert.match(source, /actions\/cache@v4/, name + ': browser cache remains');
+    assert.match(source, /path: ~\/\.cache\/ms-playwright/, name + ': scoped browser cache');
+    assert.match(source, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/,
+      name + ': no cross-PR or cross-version browser binaries');
+    assert.match(source, /if ! kill -0 "\$SERVER_PID"/, name + ': detect an exited server');
+    assert.match(source, /--max-time 3/, name + ': bounded readiness probe');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/, name + ': failures remain blocking');
+  }
+  assert.match(publicQa, /actions\/cache@v4/);
+  assert.match(publicQa, /path: ~\/\.cache\/ms-playwright/);
+  assert.match(publicQa, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
+  assert.match(publicQa, /if ! kill -0 "\$SERVER_PID"/);
+  assert.match(publicQa, /--max-time 3/);
+  assert.ok(publicQa.includes('if [[ "$ready" != "1" ]]'));
+  assert.match(alchemy, /node scripts\/ci-alchemy-impact\.mjs/,
+    'Alchemy must route CI-only edits without full recompilation');
+  assert.doesNotThrow(() => execFileSync(process.execPath,
+    [join(root, 'scripts/ci-alchemy-build.mjs'), '--verify-only'], {timeout:5000, stdio:'pipe'}),
+    'Alchemy asset helper must exist and match the actual production prebuild contract');
+  const assetHelper = readFileSync(join(root, 'scripts/ci-alchemy-build.mjs'), 'utf8');
+  assert.match(assetHelper, /GITHUB_EVENT_NAME==='pull_request'/);
+  assert.match(assetHelper, /GITHUB_BASE_REF==='codex\/public-book-library'/);
+  assert.match(assetHelper, /if\(protectedPr && delegated\.has\(command\)\)/,
+    'Manual and nonproduction runs must execute all production prebuild checks');
+  assert.match(alchemy, /if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/,
+    'Alchemy runs real browser on applicable runtime edits');
+  assert.match(alchemy, /HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/,
+    'WebKit verification remains required for applicable changes');
+  assert.doesNotMatch(alchemy, /if \[\[ "\$GITHUB_EVENT_NAME" != 'pull_request' \]\]; then\s*HH_ALCHEMY_BROWSER=webkit/,
+    'WebKit must not be deferred until after merge');
+  assert.match(publicQa, /timeout-minutes: 20/);
+  for (const browser of [
+    'verify-alchemy-one-screen', 'verify-business-quiz-mobile', 'verify-ideas-mobile-browser',
+    'verify-holistic-master-browser', 'verify-reiki-mobile-order-browser',
+    'verify-holistic-support-recommendations-mobile', 'verify-talisman-google-checkout-browser',
+    'verify-holistic-topics-browser', 'verify-direction-focus-mobile',
+    'verify-public-services-production', 'verify-home-consultation-first-screen',
+    'verify-contact-channel-chooser-browser', 'verify-service-cart-browser',
+    'verify-storefront-shop-browser',
+  ]) assert.ok(publicQa.includes('node scripts/' + browser + '.mjs'), browser + ': no browser suite deleted');
+  assert.match(publicQa, /timings\.csv/, 'runner costs measured per browser suite');
+});
+
+
+test('all 14 Public Services browser suites use semantic readiness rather than networkidle', () => {
+  const source = workflow('hh-public-services-production.yml');
+  const scripts = [...source.matchAll(/node (scripts\/verify-[\w-]+\.mjs)/g)].map(match => match[1]);
+  const unique = [...new Set(scripts)];
+  assert.equal(unique.length, 14, 'existing full browser acceptance list must be retained');
+  for (const script of unique) {
+    const file = readFileSync(join(root, script), 'utf8');
+    // Fail cheaply in Core before downloading browsers/building a Next server.
+    assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', join(root, script)],
+      {timeout: 5000, stdio: 'pipe'}), script + ': script must parse before heavy E2E');
+    assert.doesNotMatch(file, /waitUntil\s*:\s*['"]networkidle['"]/,
+      script + ': navigation must use semantic DOM readiness');
+    assert.doesNotMatch(file, /waitForLoadState\(\s*['"]networkidle['"]/,
+      script + ': do not suppress networkidle timeouts');
+  }
+});
+
+
+test('Public Services PR retains all browser suites without manual-only gates', () => {
+  const source = workflow('hh-public-services-production.yml');
+  assert.match(source, /^  workflow_dispatch:/m);
+  assert.doesNotMatch(source, /if \[\[ "\$GITHUB_EVENT_NAME" == 'workflow_dispatch' \]\]; then/);
+});
+
+test('Free Review PR retains both engines and all four mobile viewports', () => {
+  const source = workflow('hh-free-review-live-mobile.yml');
+  const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
+  assert.doesNotMatch(source, /HH_FREE_REVIEW_PR_SMOKE/);
+  assert.equal((source.match(/components\/contact-channel-chooser\.\*/g)||[]).length, 2,
+    'PR and production changes to the shared contact form must run Free Review');
+  assert.equal((source.match(/components\/phone-country-input\.\*/g)||[]).length, 2,
+    'PR and production changes to the shared phone control must run Free Review');
+  assert.match(script, /\[\[320, 568\], \[375, 667\], \[390, 844\], \[430, 932\]\]/);
+  assert.match(script, /\[\["chromium", chromium\], \["webkit", webkit\]\]/);
+});
+
+test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
+  const source = workflow('hh-public-services-production.yml');
+  const required = [
+    'verify-alchemy-one-screen.mjs',
+    'verify-business-quiz-mobile.mjs',
+    'verify-ideas-mobile-browser.mjs',
+    'verify-holistic-master-browser.mjs',
+    'verify-reiki-mobile-order-browser.mjs',
+    'verify-holistic-support-recommendations-mobile.mjs',
+    'verify-talisman-google-checkout-browser.mjs',
+    'verify-holistic-topics-browser.mjs',
+    'verify-direction-focus-mobile.mjs',
+    'verify-public-services-production.mjs',
+    'verify-home-consultation-first-screen.mjs',
+    'verify-contact-channel-chooser-browser.mjs',
+    'verify-service-cart-browser.mjs',
+    'verify-storefront-shop-browser.mjs',
+  ];
+  const cases = [...source.matchAll(/run_case "([^"]+\.mjs)" node scripts\/([a-z0-9-]+\.mjs)/g)];
+  assert.deepEqual(
+    cases.map((match) => {
+      assert.equal(match[1], match[2], 'script must retain its exact reporting label');
+      return match[1];
+    }).sort(),
+    [...required].sort(),
+    'every original real Chromium/WebKit, payment, consent and localized browser script must still run exactly once',
+  );
+  assert.match(source, /lane_a\(\) \{/);
+  assert.match(source, /lane_b\(\) \{/);
+  assert.match(source, /lane_a &\s*\n\s*lane_a_pid=\$!/);
+  assert.match(source, /lane_b &\s*\n\s*lane_b_pid=\$!/);
+  assert.match(source, /wait "\$lane_a_pid" \|\| \{[^}]*status=1;/);
+  assert.match(source, /wait "\$lane_b_pid" \|\| \{[^}]*status=1;/);
+  assert.match(source, /return "\$failed"/);
+  assert.match(source, /return "\$code"/);
+  assert.match(source, /printf 'case,status,seconds\\n'/);
+  assert.match(source, /next-production-build/);
+  assert.match(source, /home-rsc-local\.json/);
+  assert.match(source, /TTFB_SAMPLES=3 node scripts\/measure-hh-public-ttfb\.mjs/);
+  assert.match(source, /exit "\$status"/);
+  assert.match(source, /timeout-minutes: 20/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search, Send, X } from 'lucide-react'
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -474,6 +474,8 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   journey: Journey
   suggestions: Record<string, SuggestedTest[]>
 }) {
+  const [interactive, setInteractive] = useState(false)
+  useEffect(() => setInteractive(true), [])
   const [topicId, setTopicId] = useState('')
   const [intent, setIntent] = useState<ActionIntent | null>(null)
   const [question, setQuestion] = useState('')
@@ -662,21 +664,21 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         <p className={styles.intro}>{ui.question}</p>
         <div className={styles.wishForm} role="search" data-direction-wish-form>
           <label className={styles.srOnly} htmlFor="hh-direction-wish">{ui.question}</label>
-          <input id="hh-direction-wish" type="search" maxLength={160}
+          <input id="hh-direction-wish" type="search" maxLength={160} disabled={!interactive}
             value={question} onChange={event=>setQuestion(event.target.value)}
             onKeyDown={(event: KeyboardEvent<HTMLInputElement>)=>{
               if(event.key==='Enter'){event.preventDefault();submitWish()}
             }}
             placeholder={ui.placeholder} autoComplete="off" enterKeyHint="search" />
-          <button type="button" onClick={submitWish} data-direction-wish-submit>{ui.submit}<Search size={17} aria-hidden="true"/></button>
+          <button type="button" disabled={!interactive} onClick={submitWish} data-direction-wish-submit>{ui.submit}<Search size={17} aria-hidden="true"/></button>
         </div>
       </div>
       <div className={styles.slideControls} role="group" aria-label={ui.image}>
-        <button type="button" onClick={()=>setSlideIndex(index=>(index+2)%3)} aria-label={ui.previous}><ChevronLeft size={17} aria-hidden="true"/></button>
-        {[0,1,2].map(index=><button type="button" key={index}
+        <button type="button" disabled={!interactive} onClick={()=>setSlideIndex(index=>(index+2)%3)} aria-label={ui.previous}><ChevronLeft size={17} aria-hidden="true"/></button>
+        {[0,1,2].map(index=><button type="button" disabled={!interactive} key={index}
           className={styles.dot} aria-label={ui.image+' '+(index+1)}
           aria-pressed={slideIndex===index} onClick={()=>setSlideIndex(index)}><span/></button>)}
-        <button type="button" onClick={()=>setSlideIndex(index=>(index+1)%3)} aria-label={ui.next}><ChevronRight size={17} aria-hidden="true"/></button>
+        <button type="button" disabled={!interactive} onClick={()=>setSlideIndex(index=>(index+1)%3)} aria-label={ui.next}><ChevronRight size={17} aria-hidden="true"/></button>
       </div>
     </section>
 
@@ -743,14 +745,14 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     {!dialogUrgent && <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
         <h2 id="hh-direction-focus-label">{c.pick}</h2>
-        <button type="button" className={styles.reset} data-direction-filter="all"
+        <button type="button" disabled={!interactive} className={styles.reset} data-direction-filter="all"
           aria-pressed={!topicId} aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           onClick={()=>selectTopic('')}>{c.all}</button>
       </div>
       <p id="hh-direction-focus-hint" className={styles.srOnly}>{ui.filterLead}</p>
       <div className={styles.topicChips} role="group"
         aria-labelledby="hh-direction-focus-label" aria-describedby="hh-direction-focus-hint">
-        {journey.topics.map(topic=><button type="button" className={styles.chip} key={topic.id}
+        {journey.topics.map(topic=><button type="button" disabled={!interactive} className={styles.chip} key={topic.id}
           data-direction-filter={topic.id} aria-label={topic.title[locale]}
           aria-controls="hh-direction-test hh-direction-course hh-direction-session"
           aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>
@@ -769,7 +771,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
       <div className={styles.actionChips} role="group" aria-labelledby="hh-direction-action-label">
         {actionIds.map(id => {
           const Icon = actionIcons[id]
-          return <button type="button" key={id} className={styles.actionChip}
+          return <button type="button" disabled={!interactive} key={id} className={styles.actionChip}
             data-direction-intent={id} aria-label={action.buttons[id]} aria-pressed={intent===id}
             aria-controls="hh-direction-sections"
             onClick={()=>selectAction(intent===id ? null : id)}>
@@ -822,7 +824,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
             )}
           </div>
           <div className={styles.groupActions}>
-            <button type="button" className={styles.moreButton}
+            <button type="button" disabled={!interactive} className={styles.moreButton}
               aria-controls={'hh-direction-offers-'+kind} aria-expanded={showAll}
               data-direction-show-more={kind}
               onClick={()=>setExpanded(prev=>({...prev,[kind]:!prev[kind]}))}>

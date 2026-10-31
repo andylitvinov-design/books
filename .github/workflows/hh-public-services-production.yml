@@ -111,6 +111,7 @@ on:
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'
+  workflow_dispatch:
 permissions:
   contents: read
   pull-requests: read
@@ -120,13 +121,23 @@ concurrency:
 jobs:
   public-services:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       CI: 'true'
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
-      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+      HH_PUBLIC_QA_ORIGIN: http://localhost:3100
       HH_PLAYWRIGHT_PACKAGE: /tmp/hh-public-services-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +148,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with:
+          node-version: '22'
+          cache: npm
       - name: Select full browser suite only for actual public-service changes
         id: scope
         env:
@@ -221,6 +234,13 @@ jobs:
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
+      # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
+      - name: Cache exact Playwright Chromium and WebKit browsers
+        if: steps.scope.outputs.full_acceptance == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
         if: steps.scope.outputs.full_acceptance == 'true'
         run: |
@@ -229,39 +249,137 @@ jobs:
           /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
+      - name: Initialize isolated synthetic database for real public reads
+        if: steps.scope.outputs.full_acceptance == 'true'
+        env:
+          HH_APP_TEST_RUNTIME: isolated
+          HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+        run: |
+          node --conditions=react-server tests/helpers/app-db-setup.mjs
+          node --conditions=react-server --input-type=module <<'JS'
+          import { readFile } from 'node:fs/promises';
+          import { adminClient } from './tests/helpers/app-db-setup.mjs';
+          const db = await adminClient();
+          try {
+            for (const file of ['20261017170000_hh_service_reviews.sql', '20261028143352_hh_catalog_star_ratings_20261028.sql']) {
+              await db.query(await readFile('supabase/migrations/' + file, 'utf8'));
+            }
+          } finally { await db.end(); }
+          JS
       - name: Production build and public browser acceptance
         if: steps.scope.outputs.full_acceptance == 'true'
         run: |
+          set -euo pipefail
           mkdir -p artifacts/public-services-production
-          npm run build > artifacts/public-services-production/build.log 2>&1
-          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
+          printf 'case,status,seconds\n' > artifacts/public-services-production/timings.csv
+          acceptance_started=$SECONDS
+          build_started=$SECONDS
+          build_code=0
+          npm run build > artifacts/public-services-production/build.log 2>&1 || build_code=$?
+          if (( build_code != 0 )); then
+            printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+            echo "::error::Public Services production build failed (exit $build_code)"
+            tail -n 100 artifacts/public-services-production/build.log
+            exit 1
+          fi
+          printf 'next-production-build,PASS,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+          # The production-built app runs against a loopback-only synthetic DB.
+          # NODE_ENV=test enables the existing guarded isolated runtime; Vercel
+          # and non-loopback databases are explicitly rejected by that runtime.
+          NODE_ENV=test HH_APP_TEST_RUNTIME=isolated HH_APP_ENABLED=true \
+            HH_APP_SUPABASE_URL=http://localhost:54329 HH_APP_SUPABASE_PUBLISHABLE_KEY=synthetic-publishable-key \
+            HH_APP_DATABASE_URL=postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test \
+            HH_APP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            HH_APP_ALLOWED_ORIGINS=http://localhost:3100 \
+            npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 &
+          SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 90); do
-            echo "Public services readiness attempt ${i}/90"
-            if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
+          ready=0
+          for ((i=1; i<=30; i++)); do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Public Services server exited before readiness" >&2
+              break
+            fi
+            if curl --fail --silent --max-time 3 --output /dev/null http://127.0.0.1:3100/en/services; then
+              ready=1
+              break
+            fi
+            echo "Public services readiness attempt ${i}/30" >&2
             sleep 2
           done
+          if [[ "$ready" != "1" ]]; then
+            echo "::error::Public Services server not ready; browser suites were not run" >&2
+            tail -n 120 /tmp/hh-public-services-next.log || true
+            exit 1
+          fi
           status=0
-          # Alchemy chapter geometry, 320-430px EN/RU/ES, including 320x568.
-          node scripts/verify-alchemy-one-screen.mjs || status=$?
-          node scripts/verify-business-quiz-mobile.mjs || status=$?
-          node scripts/verify-ideas-mobile-browser.mjs || status=$?
-          node scripts/verify-holistic-master-browser.mjs || status=$?
-          node scripts/verify-reiki-mobile-order-browser.mjs || status=$?
-          node scripts/verify-holistic-support-recommendations-mobile.mjs || status=$?
-          node scripts/verify-talisman-google-checkout-browser.mjs || status=$?
-          node scripts/verify-holistic-topics-browser.mjs || status=$?
-          node scripts/verify-direction-focus-mobile.mjs || status=$?
-          node scripts/verify-public-services-production.mjs || status=$?
-          node scripts/verify-home-consultation-first-screen.mjs || status=$?
-          # Capture safe aggregate HTML / Flight metrics from THIS PR's local
-          # production build; the separate public audit reads old live alias.
-          # Never upload Flight contents or private routes.
-          TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json || status=$?
-          node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
-          node scripts/verify-service-cart-browser.mjs || status=$?
-          node scripts/verify-storefront-shop-browser.mjs || status=$?
-          {
+          # Keep the original 14 real acceptance suites, including payment,
+          # consent, browser engines and RU/EN/ES viewports. One Next server,
+          # two bounded independent lanes, never extra jobs or required checks.
+          # Each suite writes its own diagnostics; both lanes MUST be awaited.
+          run_case() {
+            local label="$1"; shift
+            local started=$SECONDS
+            local code=0
+            local outcome=PASS
+            local log="artifacts/public-services-production/$label.log"
+            "$@" > "$log" 2>&1 || code=$?
+            if (( code != 0 )); then
+              outcome=FAIL
+              echo "::error::Public Services browser case $label failed (exit $code)"
+              tail -n 100 "$log" || true
+            else
+              echo "$label: PASS in $((SECONDS-started))s"
+              tail -n 3 "$log" || true
+            fi
+            printf '%s,%s,%s\n' "$label" "$outcome" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
+            return "$code"
+          }
+          lane_a() {
+            local failed=0
+            # Alchemy covers 320–430px, three languages and booking consent.
+            run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
+            run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
+            run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
+            run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
+            return "$failed"
+          }
+          lane_b() {
+            local failed=0
+            run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-contact-channel-chooser-browser.mjs" node scripts/verify-contact-channel-chooser-browser.mjs || failed=1
+            run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
+            run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
+            run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
+            run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
+            run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
+            return "$failed"
+          }
+          lane_a &
+          lane_a_pid=$!
+          lane_b &
+          lane_b_pid=$!
+          trap 'kill "$lane_a_pid" "$lane_b_pid" "$SERVER_PID" 2>/dev/null || true' EXIT
+          wait "$lane_a_pid" || { echo "::error::Public Services acceptance lane A failed"; status=1; }
+          wait "$lane_b_pid" || { echo "::error::Public Services acceptance lane B failed"; status=1; }
+          # Measure unladen production TTFB *after* browsers finish, never under
+          # concurrent test load; do not save HTML, Flight bodies or private data.
+          metrics_started=$SECONDS
+          if TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json 2> artifacts/public-services-production/ttfb-stderr.log; then
+            printf 'home-rsc-local,PASS,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+          else
+            echo "::error::Public Services local performance measurement failed"
+            tail -n 40 artifacts/public-services-production/ttfb-stderr.log || true
+            printf 'home-rsc-local,FAIL,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+            status=1
+          fi
+          printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
+          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
+          cat artifacts/public-services-production/timings.csv
+                    {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
             grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true
           } > artifacts/public-services-production/server-diagnostics.txt

@@ -42,3 +42,52 @@ test("Very short iPhone keeps session descriptions and prices through progressiv
  assert.match(css,/\.heroPortrait\{height:74px\}/);
  assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
 });
+
+// This browser contract avoids per-viewport 45s network-idle timeouts on healthy
+// streaming pages, but does not turn a route or geometry failure into a pass.
+test("Alchemy browser waits for semantic DOM readiness, preserving every release assertion",()=>{
+ const source=read("scripts/verify-alchemy-one-screen.mjs");
+ assert.match(source,/page\.goto\([^\n]+waitUntil:"domcontentloaded",timeout:45000/);
+ assert.doesNotMatch(source,/waitUntil:"networkidle"/);
+ assert.match(source,/assert\.equal\(response\?\.status\(\), 200/);
+ assert.match(source,/root\.locator\('h1'\)\.waitFor/);
+ assert.match(source,/data\.panels\.length !== chapters\.length/);
+ assert.match(source,/data\.documentWidth > width \+ 1/);
+ assert.match(source,/assert\.deepEqual\(failures, \[\]/);
+ assert.match(source,/data-session-booking-flow/);
+ assert.match(source,/data-booking-sku="personal-session-60"/);
+ assert.match(source,/data-booking-step="contact"/);
+ assert.match(source,/booking reply-only opt-in consent missing/);
+ assert.match(source,/payment opened without confirmed booking/);
+ assert.match(source,/booking submit enabled before phone and consent/);
+ assert.doesNotMatch(source,/data-compact-phone-trigger/);
+ const css=read("components/alchemy-soul-landing.module.css");
+ assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
+});
+
+
+test("public services browser uses DOM readiness while preserving every real privacy, media and booking gate",()=>{
+ const source=read("scripts/verify-public-services-production.mjs");
+ assert.equal((source.match(/waitUntil:\s*["']domcontentloaded["']/g)||[]).length,10);
+ assert.doesNotMatch(source,/waitUntil:\s*["']networkidle["']/);
+ for(const contract of [
+   "Public acceptance may run only against an isolated loopback server",
+   "assert.equal(directoryResponse?.status(), 200",
+   'await visible(main.locator("h1"))',
+   'await visible(page.locator("#services-conversion-title"))',
+   "data-business-consulting",
+   "data-alchemy-lead-form",
+   "data-booking-payment-options",
+   "data-alchemy-panel",
+   "The dedicated Services catalog must load",
+   "The free consultation hub reuses the same three offers",
+   "assertNoDevIssueOverlay",
+   "assertViewport",
+ ]) assert.ok(source.includes(contract),"Required real acceptance was lost: "+contract);
+ for(const image of ["photo","portrait"])assert.ok(
+   source.includes('await expect('+image+').toHaveJSProperty("complete", true, { timeout: 15000 })'),
+   image+" must load before genuine naturalWidth is checked");
+ assert.match(source,/naturalWidth > 100/);
+ assert.match(source,/naturalWidth > 20/);
+ assert.doesNotMatch(source,/continue-on-error/);
+});
