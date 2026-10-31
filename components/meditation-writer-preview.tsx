@@ -17,6 +17,7 @@ type PracticalStep = {methodId:string;title:string;steps:string[];
 type Preview = {status:string;title:string;segments:Segment[];
   plannedDurationSeconds:number;estimatedDurationSeconds?:number;
   generationMode:"template"|"llm";modelUsed:boolean;fallbackReason?:string;
+  provider?:"gemini_free"|"openrouter_free";
   goalCode?:Goal;practice?:PracticalStep|null;};
 const lang={
   ru:{title:"Личная медитация — текстовый предпросмотр",subtitle:"Мягкая ресурсная практика: шаблон или бесплатный AI-черновик при доступной модели.",
@@ -26,8 +27,8 @@ const lang={
     checkin:"По желанию: оценка до и после",checkinNone:"Не оценивать",
     checkinScore:"Личные оценки до и после — это наблюдение, а не показатель лечебного эффекта.",
     mode:"Как создать текст",templateMode:"Без внешнего AI",aiMode:"Бесплатный AI · черновик",
-    aiConsent:"Согласен на отправку Google только обезличенных настроек темы, образа и стиля. Google может использовать запросы бесплатного API для улучшения моделей. Мои личные фразы и данные кабинета не передаются и не используются AI-черновиком.",
-    aiDraft:"Черновик Gemini · требует редакторской проверки",
+    aiConsent:"Согласен передавать бесплатному AI Google или OpenRouter только общие коды цели, образа и стиля. Провайдеры могут использовать запросы для улучшения моделей. Мои личные фразы, история и данные кабинета не отправляются.",
+    aiDraft:"Черновик AI · требует редакторской проверки",
     estimated:"Оценочная длительность чтения с паузами",
     aiFallback:"AI сейчас недоступен или текст не прошёл проверку: показан шаблон.",
     phrase:"Необязательная личная фраза",phraseHelp:"Можно оставить пустым",
@@ -46,8 +47,8 @@ const lang={
     checkin:"Optional: before and after",checkinNone:"Skip rating",
     checkinScore:"These are your own observations, not evidence of a treatment effect.",
     mode:"Text generation",templateMode:"No external AI",aiMode:"Free AI · draft",
-    aiConsent:"I agree to send Google only anonymous topic, image and style settings. Google may use free-tier prompts to improve its models. My personal phrases and account data are not sent or used to write the AI draft.",
-    aiDraft:"Gemini draft · editorial review required",
+    aiConsent:"I agree to send only general goal, image and style codes to free Google or OpenRouter AI. These providers may use free-tier prompts to improve models. My personal phrases, history and account data are not sent.",
+    aiDraft:"AI draft · editorial review required",
     estimated:"Estimated spoken length with pauses",
     aiFallback:"AI is unavailable or the draft failed review; showing the template instead.",
     phrase:"Optional personal phrase",phraseHelp:"You can leave this empty",
@@ -66,8 +67,8 @@ const lang={
     checkin:"Opcional: antes y después",checkinNone:"Omitir evaluación",
     checkinScore:"Estas son observaciones personales, no una medida de eficacia terapéutica.",
     mode:"Creación del texto",templateMode:"Sin IA externa",aiMode:"IA gratuita · borrador",
-    aiConsent:"Acepto enviar a Google solo ajustes anónimos de tema, imagen y estilo. Google puede usar solicitudes gratuitas para mejorar sus modelos. Las frases personales y los datos de mi cuenta no se envían ni se usan para crear el borrador de IA.",
-    aiDraft:"Borrador Gemini · requiere revisión editorial",
+    aiConsent:"Acepto enviar solo códigos generales de objetivo, imagen y estilo a la IA gratuita de Google u OpenRouter. Estos servicios pueden usar solicitudes para mejorar modelos. Mis frases personales, historial y datos de mi cuenta no se envían.",
+    aiDraft:"Borrador de IA · requiere revisión editorial",
     estimated:"Duración estimada de voz con pausas",
     aiFallback:"La IA no está disponible o el borrador no pasó la revisión; se muestra la plantilla.",
     phrase:"Frase personal opcional",phraseHelp:"Puedes dejarla vacía",
@@ -207,7 +208,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {preview&&<article className={styles.preview} aria-live="polite">
       <h3>{preview.title}</h3>
-      <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft:t.template}</p>
+      <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft+" · "+(preview.provider==="openrouter_free"?"OpenRouter Free":"Gemini Free"):t.template}</p>
       {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}
       {preview.practice&&<section className={styles.practice} aria-label={t.practice}>
         <h4>{t.practice}: {preview.practice.title}</h4>

@@ -23,7 +23,7 @@ const strategy=()=>compileAnonymousAffirmationStrategy({
 });
 test("providers are disabled without independent free-tier attestations",()=>{
   const env={HH_COUNCIL_GEMINI_API_KEY:"gemini_demo_valid_123456",
-    HH_FREE_OPENROUTER_API_KEY:"openrouter_demo_valid_123456",
+    HH_COUNCIL_OPENROUTER_API_KEY:"openrouter_demo_valid_123456",
     HH_MEDITATION_WRITER_GEMINI_FREE_ENABLED:"true",
     HH_MEDITATION_WRITER_OPENROUTER_FREE_ENABLED:"true"};
   assert.deepEqual(freeWriterProviders(env),[]);
@@ -37,6 +37,9 @@ test("Psychologist Mind's public goal + issue codes form a bounded strategy",()=
   const value=strategy();
   assert.equal(value.issueCode,"fear_of_rejection");
   assert.equal(value.goalCode,"connection");
+  assert.equal(value.psychologicalFocusCode,"relationships");
+  assert.equal(value.approvedSkillId,"boundary_rehearsal");
+  assert.equal(value.approvedApproachId,"interpersonal");
   for(const bad of [
     {locale:"ru",theme:"relationships",problemIndex:0,goalId:"connection",
       personalThought:"private",tone:"gentle"},
