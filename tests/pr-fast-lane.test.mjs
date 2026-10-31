@@ -727,6 +727,13 @@ test('report-only production pushes rerun original report progress assertions wi
   assert.match(step,/run: npm run build/);
 });
 
+test('trusted native auto-merge can use a repo-scoped token to preserve push events', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
+  assert.match(source, /pull_request_target:/);
+  assert.doesNotMatch(source, /checkout@|--admin/);
+});
+
 test('five other specialists delegate TypeScript/build while Public Journey single-owner consolidation remains intact', () => {
   const core = workflow('hh-pr-core-release.yml');
   assert.match(core, /name: Exact proposed release production build and TypeScript check/);
