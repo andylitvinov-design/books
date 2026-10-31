@@ -151,7 +151,7 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.doesNotMatch(client,/URL\.createObjectURL\(createAmbientPreviewWav/);
   assert.match(client,/audioPlaybackError/);
   assert.match(client,/data-video-audio-direct/);
-  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
+  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true\}\)/);
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }

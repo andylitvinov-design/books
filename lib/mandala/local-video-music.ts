@@ -223,7 +223,7 @@ export function startPresetAudio(
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
 export async function startUploadedAudio(
-  file: File, volume = 80,
+  file: File, volume = 80, options: { loop?: boolean } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -251,7 +251,7 @@ export async function startUploadedAudio(
     master.connect(destination);
     source = context.createBufferSource();
     source.buffer = buffer;
-    source.loop = true;
+    source.loop = options.loop !== false;
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No decoded audio output track");
