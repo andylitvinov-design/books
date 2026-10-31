@@ -121,12 +121,13 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala: unit tests always run while real browser + build remain required for runtime edits', () => {
+test('Mandala PR keeps current unit contracts; full legacy browser/build only by manual request', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
+  assert.match(yaml, /^  workflow_dispatch:/m);
   assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
-  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'/);
+  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {

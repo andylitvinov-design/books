@@ -374,7 +374,7 @@ test('Holistic Support mock screenshots run only after merge; PR retains current
   assert.match(core, /^  release-ready:/m);
 });
 
-test('Mandala Draft gating preserves complete Ready video and audio acceptance', () => {
+test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
   const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
@@ -384,6 +384,8 @@ test('Mandala Draft gating preserves complete Ready video and audio acceptance',
   assert.ok(source.includes('  focused-unit-types-build:\n' + gate + '\n'), 'heavy job only on Ready');
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
+  assert.match(source, /^  workflow_dispatch:/m);
+  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));

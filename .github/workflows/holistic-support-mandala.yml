@@ -59,14 +59,15 @@ on:
       - '.github/workflows/holistic-support-mandala.yml'
       - 'scripts/ci-heavy-impact.mjs'
       - 'tests/ci-heavy-impact.test.mjs'
+  workflow_dispatch:
 permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: holistic-support-mandala-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  # No expensive E2E on non-mergeable Draft; all 12 cases run again when Ready.
+  # Short domain contracts run on Ready; heavy legacy media/browser matrix is manual-only.
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
@@ -89,15 +90,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      # Only restore same-PR Next compiler metadata for this exact lockfile.
-      # The complete production build still runs; never cache .next/server.
-      - name: Restore same-PR Next.js compiler cache
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: mandala-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          restore-keys: |
-            mandala-next-v1-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}-pr${{ github.event.pull_request.number }}-
       - name: Check browser acceptance script syntax before slow production build
         run: node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
       - name: Mandala and mobile support contracts
@@ -110,18 +102,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: steps.impact.outputs.browser == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: steps.impact.outputs.browser == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: steps.impact.outputs.browser == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -130,7 +122,7 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: steps.impact.outputs.browser == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -147,7 +139,7 @@ jobs:
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
           node scripts/verify-holistic-mandala-browser.mjs
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && steps.impact.outputs.browser == 'true'
+        if: always() && github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
@@ -155,7 +147,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Publish synthetic mobile Hypno screenshots
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots
