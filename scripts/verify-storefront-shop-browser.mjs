@@ -134,7 +134,18 @@ try {
         return Boolean(key && typeof checkbox[key]?.onChange === "function");
       }, null, {timeout:30000});
       const requiredConsent = contactForm.locator('input[type="checkbox"][required]')
-      await requiredConsent.check()
+      // Playwright check() reads the native bit immediately after the click,
+      // which can race a controlled React checkbox commit. Exercise the same
+      // real user click, then require the committed consent AND enabled CTA.
+      // Never use force, a synthetic change event, or bypass the CRM guard.
+      await requiredConsent.click()
+      await page.waitForFunction(() => {
+        const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form]')
+        const checkbox = form?.querySelector('input[type="checkbox"][required]')
+        const submit = form?.querySelector('button[type="submit"]')
+        return checkbox instanceof HTMLInputElement && checkbox.checked === true &&
+          submit instanceof HTMLButtonElement && submit.disabled === false
+      }, null, { timeout: 10000 })
       assert.equal(await requiredConsent.isChecked(), true,
         'Required reply-only consent must remain selected before the mocked CRM order')
       await contactForm.locator('button[type="submit"]').click()
