@@ -3852,8 +3852,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
       </details>
-      <section className={videoStyles.result} id="personal-video-result" data-video-result
-        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"} hidden={!result}>
+      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
+        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}>
         <h3>{ui.videoPreview}</h3>
         {result ? (
           <>
