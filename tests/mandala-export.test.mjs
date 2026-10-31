@@ -84,6 +84,8 @@ test('synthetic Mandala screenshots retain the full public page without animatio
   assert.match(browser, /page\.screenshot\(\{path,fullPage:true,animations:"disabled",timeout:30000\}\)/);
   assert.match(browser, /captureSyntheticOverview\(page, compactHypno/);
   assert.match(browser, /captureSyntheticOverview\(page, page\.locator/);
+  assert.match(browser, /captureSyntheticOverview\(page,panel,"artifacts\/mandala-audio\//);
   assert.match(browser, /Mandala browser E2E:/);
   assert.doesNotMatch(browser, /compactHypno\.screenshot\(/);
+  assert.doesNotMatch(browser, /panel\.screenshot\(/);
 });

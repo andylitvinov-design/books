@@ -7,8 +7,8 @@ import {
   VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS,VIDEO_STUDIO_CONTEXTUAL_QUESTION_DEFINITIONS,VIDEO_STUDIO_SCALE_REGISTRY,
   videoStudioContextQuestions,compileCinematicReferencePack,listCreativeVideoCapabilities,
 } from '../lib/mandala/cinematic-creative-brief.mjs';
-const project=({locale='ru',theme='energy'}={})=>
-  buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
+const project=({locale='ru',theme='energy',durationSeconds=20}={})=>
+  buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds});
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('a one-minute plan compiles all six shot prompts without changing their timeline',()=>{
@@ -29,6 +29,25 @@ test('fictional purple phoenix and glass temple survive in the art-only plan',()
   assert.equal(packet.newAiVideoAvailable,false);
 });
 
+test('recognized eagle story has distinct localized visible scene descriptions without private text',()=>{
+  for(const [locale,idea,subject] of [
+    ['ru','Личное SECRET_912: белый орёл летит над горами на рассвете','орёл'],
+    ['en','Private SECRET_912: white eagle flies over mountains at sunrise','eagle'],
+    ['es','Privado SECRET_912: águila blanca vuela sobre montañas al amanecer','águila'],
+  ]){
+    for(const durationSeconds of [30,60]){
+      const p=compileCinematicReferencePack({plan:project({locale,durationSeconds}),visualIdea:idea});
+      assert.equal(p.shots.reduce((total,shot)=>total+shot.seconds,0),durationSeconds);
+      assert.equal(p.shots.length,durationSeconds===60?6:4);
+      assert.ok(p.shots.every(shot=>shot.conceptDescription));
+      assert.equal(new Set(p.shots.map(shot=>shot.conceptDescription)).size,p.shots.length);
+      assert.match(p.shots.map(shot=>shot.conceptDescription).join(' '),new RegExp(subject,'i'));
+      assert.equal(p.recognized.timeOfDay,'sunrise');
+      assert.doesNotMatch(JSON.stringify(p),/SECRET_912/);
+      assert.equal(p.newAiVideoAvailable,false);
+    }
+  }
+});
 test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+3 named internal scales',()=>{
   assert.equal(VIDEO_STUDIO_BRIEF_SCHEMA,'hh-video-brief-v1.4');
   assert.deepEqual(VIDEO_STUDIO_QUESTION_COUNTS,{PERSONAL:16,BASIC:12,ADV:18,PRO:34,EXTRA:16});
@@ -215,6 +234,8 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(ui,/questionsForGroup/);
   assert.match(ui,/projectFieldsFromAnswers/);
   assert.match(ui,/data-director-shot-select/);
+  assert.match(ui,/data-director-shot-concept/);
+  assert.match(ui,/data-director-shot-local-scene/);
   assert.match(ui,/shotDirections/);
   assert.match(ui,/sceneSelected:Boolean\(selectedShotNumber\)/);
   for(const group of ['personalization','principal','advanced','pro','extra'])assert.match(ui,new RegExp(group));
