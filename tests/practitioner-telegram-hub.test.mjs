@@ -69,15 +69,12 @@ test('only authentic bot-authored public GitHub evidence is forwarded',async()=>
 })
 test('scheduler and private read/write boundaries retain existing cron jobs',()=>{
   const cfg=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
-  assert.ok(Array.isArray(cfg.crons))
-  for(const expected of [
+  assert.deepEqual(cfg.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
-  ]){
-    assert.deepEqual(cfg.crons.filter(x=>x.path===expected.path),[expected])
-  }
+  ])
   const route=readFileSync(new URL('../app/api/internal/council-archive-telegram/route.js',import.meta.url),'utf8')
   const hub=readFileSync(new URL('../app/api/internal/telegram-hub/route.js',import.meta.url),'utf8')
   const core=readFileSync(new URL('../lib/practitioners/council-telegram-delivery.js',import.meta.url),'utf8')
