@@ -158,7 +158,8 @@ test('production workflow directory can be parsed without silently ignoring unkn
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
-    'holistic-house-native.yml', 'native-ci.yml'];
+    'holistic-house-native.yml'];
+  assert.ok(!names.includes('native-ci.yml'), 'Retired duplicate Native CI must not return');
   for(const critical of protectedChecks) assert.ok(names.includes(critical), 'Missing critical workflow: '+critical);
   for(const name of names) {
     const file='.github/workflows/'+name;
@@ -829,4 +830,25 @@ test('Native installer successor claims old native triggers before retiring dupl
         'native build step must never execute on ordinary PR: '+entry.slice(0,110));
     }
   }
+});
+
+
+test('stage 2 retiring duplicate native CI routes to the immutable-base successor',()=>{
+  const retired='.github/workflows/native-ci.yml';
+  const successor='.github/workflows/holistic-house-native.yml';
+  assert.ok(!readdirSync('.github/workflows').includes('native-ci.yml'),
+    'the duplicate native macOS/Android workflow is gone');
+  const original="on:\n  pull_request:\n    paths:\n      - '.github/workflows/native-ci.yml'\n";
+  const currentSource=readFileSync(successor,'utf8');
+  // Simulate a trusted production BASE that still has native-ci.yml and
+  // the identical already-shipped Holistic House Native successor.
+  const base=new Map([[retired,original],[successor,currentSource]]);
+  const current=new Map([[successor,currentSource]]);
+  const changed=[retired];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[successor,retired].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[successor],
+    delegated:[{retired,replacement:successor}],
+  });
 });
