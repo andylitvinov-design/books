@@ -704,3 +704,9 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.equal(pkg.scripts.build,'next build');
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
+
+test('core cancels only when a synchronize event changes the PR head', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.match(source, /group: hh-pr-core-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
+});
