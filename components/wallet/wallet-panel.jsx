@@ -4,6 +4,7 @@ import { CreditCard, Gift, RefreshCw, ShieldCheck, Wallet } from 'lucide-react'
 import { WALLET_PRESETS_MINOR, walletSafePaymentUrl } from '@/lib/wallet/model'
 import styles from './wallet-panel.module.css'
 import WalletConfirmation from './wallet-confirmation'
+import XpPanel from '@/components/xp/xp-panel'
 
 const COPY = {
   ru: {
@@ -181,6 +182,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
   }
   const confirmationOrder = state?.topups?.find(order => order.id === confirmationId)
   return <section className={styles.shell} data-wallet-account={accountId}>
+    <XpPanel accountId={accountId} locale={locale} />
     <div className={styles.heading}><div>
       <p className={styles.eyebrow}><Wallet size={17}/> {t.eyebrow}</p>
       <h1>{t.title}</h1><p>{t.intro}</p>
@@ -193,7 +195,7 @@ export default function WalletPanel({ accountId, locale = 'en' }) {
     {success && <p className={styles.success} role="status">{success}</p>}
     {state && !state.enabled && <p className={styles.notice}>{t.unavailable}</p>}
     {state?.enabled && <>
-      <div className={styles.card}>
+      <div className={styles.card} id="wallet-topup">
         <div className={styles.sectionHeading}><Gift size={22}/><div>
           <h2>{t.amount}</h2><p>{t.currency}</p>
         </div></div>
