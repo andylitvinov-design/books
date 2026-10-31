@@ -100,7 +100,9 @@ on:
       # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
       # acceptance in the dedicated Mandala suite, not public Services checkout.
       - '!app/**/holistic-support/voice-studio/route.ts'
-      - '!app/api/holistic-support/voice/route.js'
+      # The immutable production BASE still routes the voice API endpoint to
+      # Public Services: keep this security/route acceptance required here.
+      # It may be delegated only by a separately reviewed production policy.
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'
