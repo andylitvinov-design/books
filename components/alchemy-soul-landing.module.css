@@ -653,19 +653,26 @@
    Keep the three prices and real booking action visible; the native,
    keyboard-accessible disclosure preserves every format description. */
 @media(max-width:350px) and (min-height:651px){
-  .optionsSection{padding:10px 11px 12px}
-  .optionsSection>.panelPhoto{height:48px;margin-bottom:5px}
+  .optionsSection{padding:8px 9px 10px}
+  .optionsSection>.panelPhoto{height:44px;margin-bottom:4px}
   .optionsSection .sectionHeading{margin-bottom:5px}
-  .optionsSection .sectionHeading .eyebrow{margin-bottom:3px}
+  .optionsSection .sectionHeading .eyebrow{margin-bottom:2px;font-size:9px}
+  .optionsSection .sectionHeading h2{font-size:21px}
   .optionsSection .optionGrid{gap:6px}
-  .optionsSection .optionCard{padding:8px}
+  .optionsSection .optionCard{padding:7px 6px}
+  .optionsSection .optionTime{font-size:10px}
+  .optionsSection .optionCard strong{font-size:23px;margin-top:3px}
+  .optionsSection .optionName{font-size:15px;margin-top:3px;line-height:1.1}
   .optionsSection .optionDescription{display:none}
   .optionsSection .monthlyText,.optionsSection .monthlyCard small{display:none}
-  .optionsSection .monthlyCard{min-height:48px;margin-top:5px;padding:9px}
+  .optionsSection .monthlyCard{min-height:48px;margin-top:5px;padding:7px 8px}
+  .optionsSection .monthlyName{font-size:16px}
   .optionsSection .formatMore{display:block}
-  .optionsSection .formatMore summary{display:flex;min-height:40px}
-  .optionsSection .formatHint{margin-top:4px}
-  .optionsSection .freeOption{margin-top:5px}
+  .optionsSection .formatMore summary{display:flex;min-height:32px;padding-block:4px}
+  .optionsSection .formatHint{display:none}
+  .optionsSection .optionsOrder{margin-top:4px}
+  .optionsSection .paymentDisclosure{margin-top:4px}
+  .optionsSection .freeOption{margin-top:4px;font-size:10px;line-height:1.2}
 }
 
 /* 351–680px short-phone Alchemy formats: preserve every price, description

@@ -55,3 +55,18 @@ test("390px phone formats remain full-content and fit a real one-screen viewport
  for(const marker of ['data.shortText','data.longText','data.monthText','data.monthNote','<ContactChannelChooser'])
    assert.ok(form.includes(marker),marker);
 });
+
+test("320px phones taller than the short-screen breakpoint retain the compact booking controls", () => {
+ const css=read("components/alchemy-soul-landing.module.css");
+ const form=read("components/alchemy-soul-lead-form.tsx");
+ assert.match(css, /@media\(max-width:350px\) and \(min-height:651px\)/);
+ assert.match(css, /\.optionsSection>\.panelPhoto\{height:44px;margin-bottom:4px\}/);
+ assert.match(css, /\.optionsSection \.optionCard\{padding:7px 6px\}/);
+ assert.match(css, /\.optionsSection \.optionCard strong\{font-size:23px;margin-top:3px\}/);
+ assert.match(css, /\.optionsSection \.formatMore summary\{display:flex;min-height:32px;padding-block:4px\}/);
+ assert.match(css, /\.optionsSection \.optionsOrder\{margin-top:4px\}/);
+ for(const marker of ['data-alchemy-format="30"','data-alchemy-format="60"','data-alchemy-format="month"','data-alchemy-format-details','data-alchemy-booking'])
+   assert.ok(form.includes(marker),marker);
+ assert.match(css, /\.optionsOrder :global\(\[data-contact-order\]\),\.formOrder :global\(\[data-contact-order\]\)\{min-height:46px/);
+ assert.match(css, /\.paymentDisclosure summary\{[^}]*min-height:44px/);
+});
