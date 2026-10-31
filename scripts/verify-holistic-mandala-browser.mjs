@@ -780,7 +780,6 @@ const runEngine = async ([engine, browserType]) => {
         // thumbnail gallery is still accessible through the original Edit button.
         const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
         assert.equal(await sceneSummary.count(),1);
-        await compactHypno.locator("[data-hypno-design-edit]").click();
         assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
