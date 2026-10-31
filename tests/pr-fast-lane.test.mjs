@@ -700,6 +700,11 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
   assert.doesNotThrow(() => execFileSync(process.execPath,
     [join(root, 'scripts/ci-alchemy-build.mjs'), '--verify-only'], {timeout:5000, stdio:'pipe'}),
     'Alchemy asset helper must exist and match the actual production prebuild contract');
+  const assetHelper = readFileSync(join(root, 'scripts/ci-alchemy-build.mjs'), 'utf8');
+  assert.match(assetHelper, /GITHUB_EVENT_NAME==='pull_request'/);
+  assert.match(assetHelper, /GITHUB_BASE_REF==='codex\/public-book-library'/);
+  assert.match(assetHelper, /if\(protectedPr && delegated\.has\(command\)\)/,
+    'Manual and nonproduction runs must execute all production prebuild checks');
   assert.match(alchemy, /if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/,
     'Alchemy runs real browser on applicable runtime edits');
   assert.match(alchemy, /HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/,

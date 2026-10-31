@@ -22,6 +22,10 @@ const delegated=new Set([
   'node --test tests/public-coaching-discovery.test.mjs',
   'node --test tests/tests-coaching-switchboard.test.mjs',
 ]);
+// Only the protected production PR has an independently required Core build.
+// Manual, push and other-branch runs must execute the full prebuild themselves.
+const protectedPr=process.env.GITHUB_EVENT_NAME==='pull_request' &&
+  process.env.GITHUB_BASE_REF==='codex/public-book-library';
 assert.equal(pkg.scripts?.prebuild,canonical.join(' && '),'Prebuild drift: do not skip newly required production steps');
 assert.equal(pkg.scripts?.build,'next build','Production build command drift');
 assert.match(core,/run: npm run build/,'Core must execute full production prebuild');
@@ -32,7 +36,7 @@ if(verifyOnly){
   console.log('Alchemy production prebuild and Core coverage contract verified');
 }else{
   for(const command of canonical){
-    if(delegated.has(command)){
+    if(protectedPr && delegated.has(command)){
       console.log('[alchemy-ci] Unrelated coaching test remains in mandatory Core:',command);
       continue;
     }
