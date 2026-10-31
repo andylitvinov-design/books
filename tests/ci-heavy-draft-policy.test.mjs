@@ -259,7 +259,8 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
     if (name === 'hh-app-r1.yml') {
       // Exact-head impact routing retains non-PR exhaustive checks and skips
       // expensive jobs only after the scope job proves a modified UI-only PR.
-      assert.ok(jobs.includes('  impact:\n'+gate+'\n'), 'App R1 impact job must skip Draft');
+      assert.ok(jobs.includes('  impact:\n    name: route-expensive-app-suites\n'+gate+'\n'),
+        'App R1 impact job must skip Draft');
       assert.ok(jobs.includes('  unit-build:\n    needs: impact\n'+gate+'\n'),
         'App R1 unit tests must run on Ready and push after exact-head scope');
       const gated = {
