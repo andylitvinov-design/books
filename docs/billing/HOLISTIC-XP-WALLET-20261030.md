@@ -92,3 +92,22 @@ or checkout. EN/RU/ES. Keep free Basic recording/export accessible.
 Introduce an authoritative paid/delivered service event for consultation +20 XP
 and a first-party renderer/server-verified deliverable. Add abuse dashboard,
 reward clawback audit and product-level unit economics before broad rollout.
+
+## 2026-10-31 follow-up: ledger and UX safeguards
+- The existing My Path growth score is **GP (Growth Points / Баллы развития)**.
+  It is a read-only milestone indicator. It is never exchangeable for Creative XP,
+  and existing 540-point achievements are not silently credited to a spending wallet.
+- The xpAmounts model separates earned promotional XP from CAD-backed spendable
+  credits. Paid credits are computed only when approved, but a disputed/refunded
+  CAD balance remains visible as debtMinor even with payment redemption disabled.
+  New priced XP reservations are blocked while this debt exists. Repayment and
+  chargeback administration require authentic provider evidence.
+- Available CAD and XP ignore held charges whose 30-minute expiry has passed,
+  regardless of whether cleanup has executed. Completed charges remain
+  irrevocable except through explicit evidence-backed adjustment workflows.
+- Verified top-up credit and reversal take the same app.accounts row mutex as
+  XP reservations to serialize concurrent provider events and purchases.
+- Synthetic PostgreSQL RLS and two-connection locking tests must be green before
+  accepting the migration. Source regex checks alone are insufficient.
+- Cash funding remains OFF until provider permission and refund/consumer
+  disclosures are reviewed. Source deployment is not proof of live checkout.

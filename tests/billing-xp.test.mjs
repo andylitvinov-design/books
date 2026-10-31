@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { XP_PRICES, XP_CAD_MINOR_PER_POINT, XP_REFERRAL_POINTS,
-  XP_ASSESSMENT_POINTS, xpSettings, xpQuote, xpCatalog,
+  XP_ASSESSMENT_POINTS, xpSettings, xpQuote, xpCatalog, xpAmounts,
 } from '../lib/xp/model.js'
 
 const src = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -98,4 +98,38 @@ test('video charges only for real enabled hypno content and releases failed expo
   assert.match(video,/if\(reservedXpId && !jobRef\.current\)/)
   assert.match(video,/recorder\.start\(500\)/)
   assert.doesNotMatch(video,/NEXT_PUBLIC_.*SECRET|\/api\/payments\/stripe/i)
+})
+
+
+test('refund/chargeback debt is visible and cannot mint new spendable XP', () => {
+  const earned = xpAmounts({ rewardsXp:15, promoSpentXp:5,
+    creditedMinor:200, chargedMinor:100, walletRedemption:true })
+  assert.deepEqual(earned, {earnedXp:10, paidXp:10, balanceXp:20,
+    debtMinor:0, walletAvailable:true})
+  const dispute = xpAmounts({ rewardsXp:15, promoSpentXp:5,
+    creditedMinor:-100, chargedMinor:100, walletRedemption:true })
+  assert.equal(dispute.balanceXp,10)
+  assert.equal(dispute.paidXp,0)
+  assert.equal(dispute.debtMinor,200)
+  const disabled = xpAmounts({ rewardsXp:15, promoSpentXp:5,
+    creditedMinor:200, chargedMinor:100, walletRedemption:false })
+  assert.equal(disabled.balanceXp,10)
+  assert.equal(disabled.debtMinor,0)
+  assert.throws(() => xpAmounts({ rewardsXp:0, promoSpentXp:0,
+    creditedMinor:Number.MIN_SAFE_INTEGER,chargedMinor:1,walletRedemption:true }))
+  for(const invalid of [-1,1.5,Number.NaN,Number.POSITIVE_INFINITY]) {
+    assert.throws(() => xpAmounts({ rewardsXp:invalid,promoSpentXp:0,
+      creditedMinor:0,chargedMinor:0,walletRedemption:false }))
+  }
+})
+
+test('wallet refunds, expired holds and concurrent spend share a safe ledger contract', () => {
+  const xp = src('lib/xp/service.js')
+  const wallet = src('lib/wallet/service.js')
+  assert.match(xp, /XP_PAYMENT_DISPUTE/)
+  assert.match(xp, /debtMinor>0/)
+  assert.match(xp, /xpAmounts\(/)
+  assert.match(xp, /expires_at>now\(\)/)
+  assert.match(wallet, /expires_at>now\(\)/)
+  assert.match(wallet, /select id from app\.accounts where id=\$1 for update/)
 })
