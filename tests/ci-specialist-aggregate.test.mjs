@@ -406,7 +406,7 @@ test('Video Studio-only edits run dedicated Mandala real-media acceptance withou
 
 test('fast routing is limited to known public presentation assets and mixed risk is strict', async () => {
   const { classifyReleaseRisk } = await import('../lib/ci/specialist-aggregate.mjs');
-  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/globals.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/[locale]/about/page.module.css']), 'FAST');
   for (const changed of [[], ['app/globals.css', 'supabase/migrations/001.sql'], ['app/api/payment/route.ts'], ['.github/workflows/hh-pr-core-release.yml'], ['lib/unknown.js'], ['app/auth/login.css']]) {
     assert.equal(classifyReleaseRisk(changed), 'STRICT');
   }
@@ -416,7 +416,7 @@ test('FAST bypasses specialist wait but verifies live HEAD and old names in rena
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css'}], runs:async()=>{throw Error('should not wait');}};
   const result=await verify(api,ctx,sources, {maxWaitMs:0});
   assert.equal(result.risk,'FAST');
   assert.equal(reads,2);
@@ -458,6 +458,17 @@ test('service and checkout presentation changes keep consent and payment checks'
     'app/[locale]/holistic-support/holistic-support.module.css',
   ]) assert.equal(classifyReleaseRisk([file]),'STRICT',file);
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+});
+
+test('global CSS affecting the privacy consent banner is strict', async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  assert.match(readFileSync('app/globals.css','utf8'),/\.analytics-consent/);
+  assert.equal(classifyReleaseRisk(['app/globals.css']),'STRICT');
+  const security='.github/workflows/release-reaudit.yml';
+  const workflow=readFileSync(security,'utf8');
+  const sources={base:new Map([[security,workflow]]),current:new Map([[security,workflow]])};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/globals.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,{repo,number:27,head:SHA,base:BASE},sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
 test('checkout CSS blocks on missing billing workflow even when the filename is presentation-only',async()=>{
