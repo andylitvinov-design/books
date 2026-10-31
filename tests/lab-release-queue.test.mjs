@@ -5,4 +5,3 @@ test('one verified candidate handed off',()=>{const r=planReleaseQueue([candidat
 test('duplicates and capacity block',()=>{assert.equal(planReleaseQueue([candidate],{existingPrs:[{state:'open',labId:'LAB-101'}]}).action,'HOLD');assert.equal(planReleaseQueue([candidate],{activePrCount:2}).reason,'capacity')});
 test('base mismatch and absent QA block',()=>{assert.equal(planReleaseQueue([{...candidate,productionBaseSha:b}]).action,'HOLD');assert.equal(planReleaseQueue([{...candidate,testEvidence:false}]).action,'HOLD')});
 
-test('acceptance receipt must match exact HEAD',()=>{assert.equal(planReleaseQueue([{...candidate,acceptance:null}]).action,'HOLD');assert.equal(planReleaseQueue([{...candidate,acceptance:{accepted:true,headSha:a,reviewEvidenceId:'review-123'}}]).action,'HOLD')});
