@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 
+// Synthetic submissions must never target a deployed service, even if browser
+// interception fails or a service worker takes over a request.
+export function assertSyntheticLoopback(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error('SYNTHETIC_LOOPBACK_REQUIRED'); }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+    throw new Error('SYNTHETIC_LOOPBACK_REQUIRED');
+  }
+}
+
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
   await expect(chooser).toHaveCount(1);
@@ -55,6 +66,7 @@ export async function openContactChannelChooser(scope, expect) {
  * A messenger link cannot exist until an explicitly consented enquiry is saved.
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -77,8 +89,8 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(submit).toBeDisabled();
   // Name is optional and lives in a collapsed disclosure on current mobile UI.
   // Exercise the real disclosure before typing; never force-fill a hidden input.
-  const name = form.locator('input[autocomplete="name"]');
-  const nameDisclosure = form.locator('details').filter({ has: name });
+  const nameDisclosure = form.locator('details:has(input[autocomplete="name"])');
+  const name = nameDisclosure.locator('input[autocomplete="name"]');
   await expect(nameDisclosure).toHaveCount(1);
   await expect(nameDisclosure).not.toHaveAttribute('open', '');
   await nameDisclosure.locator('summary').click();
@@ -112,6 +124,7 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
  * in-memory route; no production CRM write or external WhatsApp/Telegram call.
  */
 export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
   const chooser = scope.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');

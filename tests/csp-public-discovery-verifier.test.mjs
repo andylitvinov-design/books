@@ -35,11 +35,12 @@ test('actual separate private-account verifier requires signed-out entry and hid
 for (const fault of ['failed response', 'wrong route', 'public CSP', 'wrong exit', 'missing anonymous entry', 'public bar on private account', 'authenticated records']) test('private-account verifier rejects ' + fault, () => assert.rejects(scenario(fault)));
 
 test('real CSP journey uses public Tests while retaining media, private absence and history assertions', () => {
-  assert.match(source, /mobile-bottom-navigation a\[href="\/en\/client\/tests"\]/);
+  assert.match(source, /mobile-bottom-navigation \[data-nav-item="profile"\]/);
+  assert.match(source, /\[data-profile-direct-tests\]/);
   assert.doesNotMatch(source, /mobile-bottom-navigation a\[href="\/en\/client"\]/);
   assert.equal(source.split("toHaveURL(origin + '/en/client/tests')").length - 1, 2, 'initial entry and history return');
-  assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="tests"\]'\)\)\.toHaveAttribute\('aria-current', 'page'\)/);
-  assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="house"\]'\)\)\.toHaveAttribute\('href', '\/en\/app'\)/);
+  assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="profile"\]'\)\)\.toHaveAttribute\('aria-current', 'page'\)/);
+  assert.match(source, /discoveryBottom\.locator\('\[data-nav-item="profile"\]'\)\)\.toHaveAttribute\('href', '\/en\/personality-profiles'\)/);
   assert.match(source, /const privatePage = await cspContext\.newPage\(\);[\s\S]*?await assertAnonymousPrivateNavigation\(privatePage\);[\s\S]*?finally \{ await privatePage\.close\(\); \}/);
   assert.match(source, /privatePage\.on\('pageerror', error => cspErrors\.push/);
   assert.match(source, /const privateWordmark = cspPage\.locator\('\.house-header--services \.house-wordmark'\);\s+await expect\(privateWordmark\)\.toHaveCount\(1\)/);

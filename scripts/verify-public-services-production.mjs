@@ -19,7 +19,11 @@ const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  // Page-level synthetic mocks may fulfill requests; all unmocked API writes
+  // fail closed rather than reaching any configured provider or database.
+  await context.route('**/api/**', route =>
+    ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);

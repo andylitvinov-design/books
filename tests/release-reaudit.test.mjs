@@ -244,6 +244,22 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
+test('release audit scopes service choices and forbids messenger links in the free flow', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const capture = read('components/consultation-choice-capture.tsx');
+  assert.match(capture, /data-choice-layout=\{isService \? "service" : "topic"\}/);
+  assert.ok(verifier.includes('const serviceChoices = capture.locator(\'[data-choice-layout="service"] > button\')'));
+  assert.ok(verifier.includes('assert.equal(await capture.locator(\'[data-contact-channel="telegram"]\').count(), 0)'));
+  assert.match(verifier, /await expect\(capture\.locator\('form'\)\)\.toBeHidden\(\)/);
+  assert.match(verifier, /openRegisteredContactChannelChooser\(capture, expect, paidPage\)/);
+  assert.match(verifier, /if \(!local\) \{[\s\S]*?liveConsentSubmitted:false/);
+  assert.match(verifier, /check\('paid-imagery-synthetic-receipt'/);
+  assert.match(verifier, /assertSyntheticLoopback\(receiptPage\.url\(\)\)/);
+  assert.match(verifier, /contactConsent, true/);
+  assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);
+  assert.match(verifier, /assertPaidUrl\('questions', '30', '€50'\)/);
+});
+
 test('initial navigation effect and identical replay preserve preopened native menus', () => {
   const { menus, context, cleanup } = navigationHarness();
   navigationEffect(['pathname', 'activeLocale'], context);
