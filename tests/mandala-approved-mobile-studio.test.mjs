@@ -201,8 +201,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   const css=read("components/mandala-video-mobile.module.css");
   const pageCss=read("components/mandala-meditation.module.css");
   assert.equal((source.match(/data-video-quick-hero-play/g)||[]).length,1);
-  assert.match(source,/data-video-quick-hero-play[\s\S]*?premiumVideoRef\.current/);
-  assert.match(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/);
+  assert.match(source,/data-video-quick-hero-play[\s\S]*?onClick=\{\(\)=>\{[\s\S]*?openAffirmationPreview\(\)/,
+    "header Play must use the same real player callback as the main canvas");
+  assert.match(source,/const openAffirmationPreview = \(\) => \{[\s\S]*?setPreviewPlaying\(true\);[\s\S]*?const film = premiumVideoRef\.current/,
+    "one gesture begins the original Canvas + same-origin MP4 playback");
+  assert.doesNotMatch(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/,
+    "WebKit cannot defer playback UI state until a media promise resolves");
   assert.match(source,/data-video-quick-extras/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
