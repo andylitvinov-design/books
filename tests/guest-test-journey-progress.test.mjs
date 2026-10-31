@@ -34,7 +34,9 @@ test('guest flow renders an accessible compact progress header from the existing
   assert.match(header, /aria-valuenow=\{metrics.percent\}/)
   assert.match(header, /aria-current=\{current \? 'step'/)
   assert.match(header, /COPY = \{[\s\S]*en:[\s\S]*ru:[\s\S]*es:/)
-  assert.match(styles, /position: sticky/)
+  // The approved compact progress card scrolls away on iPhone, so it never occludes the first question.
+  assert.match(styles, /position: relative/)
+  assert.doesNotMatch(styles, /position:\s*sticky/)
   assert.match(styles, /@media \(max-width: 350px\)/)
   assert.match(styles, /prefers-reduced-motion/)
   assert.doesNotMatch(header, /localStorage|sessionStorage|analytics|fetch\(/)

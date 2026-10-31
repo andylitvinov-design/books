@@ -100,6 +100,9 @@ jobs:
           npm install --prefix /tmp/hh-app-browser-tools --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-app-browser-tools/node_modules/@playwright node_modules/@playwright
           /tmp/hh-app-browser-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Unified test question card source and behavior contracts
+        if: matrix.suite == 'extended'
+        run: node --test tests/test-runner-card-template.test.mjs
       - name: Offline assessment React lifecycle and source disclosure
         if: matrix.suite == 'extended'
         run: node scripts/verify-assessment-primary-browser.mjs
@@ -114,6 +117,15 @@ jobs:
           for i in $(seq 1 100); do
             echo "App browser readiness attempt ${i}/100"
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
+            if ! kill -0 "$PROVIDER_PID" 2>/dev/null || ! kill -0 "$APP_PID" 2>/dev/null; then
+              tail -80 /tmp/hh-app-provider.log /tmp/hh-app-next.log
+              exit 1
+            fi
+            if (( i == 100 )); then
+              echo "Timed out waiting for the local browser test services." >&2
+              tail -80 /tmp/hh-app-provider.log /tmp/hh-app-next.log
+              exit 1
+            fi
             sleep 2
           done
           # Each suite has its own database, app, provider and unchanged quota windows.
