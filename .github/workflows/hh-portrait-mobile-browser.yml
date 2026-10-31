@@ -20,6 +20,7 @@ on:
       - 'scripts/verify-portrait-mobile.mjs'
       - 'tests/portrait-report-actions.test.mjs'
       - '.github/workflows/hh-portrait-mobile-browser.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -33,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 23
     services:

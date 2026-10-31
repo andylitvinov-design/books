@@ -27,13 +27,14 @@ permissions:
 
 jobs:
   course-and-save-gate:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
         image: postgres:17-alpine

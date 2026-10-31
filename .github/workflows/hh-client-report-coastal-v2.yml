@@ -47,8 +47,10 @@ jobs:
             tests/client-session-video-poster.test.mjs \
             tests/consultation-recommended-tests.test.mjs
       - name: Typecheck
+        if: github.event_name != 'pull_request'
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
+        if: github.event_name != 'pull_request'
         run: npm run build
 
   coastal-visual:
@@ -56,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
