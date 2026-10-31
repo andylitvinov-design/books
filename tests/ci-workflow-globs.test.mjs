@@ -165,15 +165,15 @@ test('lighter specialist CI preserves contract tests, Ready rechecks, and protec
     const source = workflow(file);
     assert.ok(source.includes(readyEvents), file + ': Draft must rerun automatically on Ready');
     assert.match(source, /node --test/, file + ': focused domain contracts must remain');
-    assert.doesNotMatch(source, /continue-on-error:\\s*true/, file + ': no weakened failures');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/, file + ': no weakened failures');
     for (const job of jobs) {
-      assert.ok(source.includes('  ' + job + ':\\n    ' + draftGuard),
+      assert.ok(source.includes('  ' + job + ':\n    ' + draftGuard),
         file + ': expensive work must skip Draft, not Ready');
     }
     for (const step of steps) {
-      const start = source.indexOf('      - name: ' + step + '\\n');
+      const start = source.indexOf('      - name: ' + step + '\n');
       assert.ok(start >= 0, file + ': original compile step must be retained: ' + step);
-      const next = source.indexOf('\\n      - ', start + 1);
+      const next = source.indexOf('\n      - ', start + 1);
       const body = source.slice(start, next < 0 ? undefined : next);
       assert.ok(body.includes(compileGuard), file + ': Core must own production PR compile: ' + step);
     }
@@ -185,7 +185,7 @@ test('lighter specialist CI preserves contract tests, Ready rechecks, and protec
   assert.match(workflow('hh-event-referral-contract.yml'), /^  push:/m, 'production push still verifies TypeScript');
   const gauntlet = workflow('hh-gauntlet-loop.yml');
   assert.ok(gauntlet.includes(readyEvents));
-  assert.ok(gauntlet.includes('  offline-contract:\\n    ' + draftGuard));
+  assert.ok(gauntlet.includes('  offline-contract:\n    ' + draftGuard));
   assert.match(gauntlet, /node --test tests\/hh-gauntlet-loop\.test\.mjs/);
   assert.match(gauntlet, /HH_TARGET_BASE:.*github\.event\.pull_request\.base\.ref/);
   assert.ok(gauntlet.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$HH_TARGET_BASE" != codex/public-book-library ]]; then'));
