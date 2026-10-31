@@ -109,11 +109,7 @@ jobs:
         timeout-minutes: 12
         run: |
           npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
-            /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium
-          else
-            /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
-          fi
+          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Verify PR's local production build, not old live alias
         if: github.event_name == 'pull_request' && steps.impact.outputs.browser == 'true'
         timeout-minutes: 10
@@ -129,7 +125,7 @@ jobs:
             fi
             sleep 2
           done
-          HH_FREE_REVIEW_PR_SMOKE=1 HH_LIVE_ORIGIN=http://127.0.0.1:3100 node scripts/verify-free-review-live-mobile.mjs
+          HH_LIVE_ORIGIN=http://127.0.0.1:3100 node scripts/verify-free-review-live-mobile.mjs
       - name: Record separate legacy Services testimonial regression
         if: github.event_name == 'pull_request' && always()
         run: |

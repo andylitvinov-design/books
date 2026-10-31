@@ -196,14 +196,3 @@ test('App R1 short delegated jobs must complete successfully for verified non-ap
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
-
-test('Free Review uses 3 localized Chromium PR browser checks, retains 24 on production push and manual QA',()=>{
-  const src=read('hh-free-review-live-mobile.yml');
-  const script=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8');
-  assert.match(src,/HH_FREE_REVIEW_PR_SMOKE=1 HH_LIVE_ORIGIN=http:\/\/127\.0\.0\.1:3100/);
-  assert.match(src,/playwright install --with-deps chromium webkit/);
-  assert.match(src,/run: node scripts\/verify-free-review-live-mobile\.mjs/);
-  assert.match(script,/prSmoke \? \[\[390, 844\]\]/);
-  assert.match(script,/prSmoke \? \[\["chromium", chromium\]\]/);
-  assert.match(script,/TOTAL " \+ results\.length/);
-});
