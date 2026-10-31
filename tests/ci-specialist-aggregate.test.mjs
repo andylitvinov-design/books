@@ -448,6 +448,27 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
 });
 
+test('service and checkout presentation changes keep consent and payment checks', async () => {
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  for (const file of [
+    'components/commerce/service-cart.module.css',
+    'components/taoist-talisman-cart.module.css',
+    'components/holistic-support-mobile.module.css',
+    'app/[locale]/services/free-situation-review/review.module.css',
+    'app/[locale]/holistic-support/holistic-support.module.css',
+  ]) assert.equal(classifyReleaseRisk([file]),'STRICT',file);
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+});
+
+test('checkout CSS blocks on missing billing workflow even when the filename is presentation-only',async()=>{
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const workflow=readFileSync(billing,'utf8');
+  const sources={base:new Map([[billing,workflow]]),current:new Map([[billing,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/commerce/service-cart.module.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+});
+
 test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
   const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
   assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
