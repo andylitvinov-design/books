@@ -35,7 +35,7 @@ type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
 type Aspect = "square" | "portrait" | "landscape";
 type Quality = "hd" | "fullhd";
-type Result = { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string };
+type Result = { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: "catalog" };
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
@@ -1597,7 +1597,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
-  const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
+  // For background-only video, async mandala/photo frame updates are
+  // intentionally unrelated. Do not abort an active free export when
+  // a decorative image finishes loading in a different editor panel.
+  const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
@@ -1895,7 +1898,42 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
       if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
-        setNotice(t.unsupported);
+        // Linux Playwright WebKit and some Safari releases cannot capture
+        // Canvas frames. Offer a REAL, approved source MP4 rather than a fake
+        // downloaded film, a silent paid request or an endless spinner.
+        // The source clip is not the promised 4-shot composition. Disclose
+        // that exclusions, captions, custom duration and music are NOT baked
+        // into this fallback. Never silently discard attached personal audio.
+        const first=cinematicPlan?.shots[0];
+        const film=first&&cinematicPlan?.version==="hh-cinematic-storyboard-v1"
+          ?firstPartyFilmFor(first.theme,first.sceneId):null;
+        if(!backgroundOnly||attachedAudio||caption||affirmations.enabled||
+          !film?.src.startsWith("/videos/holistic-house/")){
+          setNotice(t.unsupported);
+          return;
+        }
+        const response=await fetch(film.src,{
+          method:"GET",cache:"force-cache",credentials:"same-origin",redirect:"error",
+          referrerPolicy:"no-referrer",
+        });
+        const length=Number(response.headers.get("content-length")||0);
+        const mime=response.headers.get("content-type")||"";
+        if(!response.ok||!mime.startsWith("video/mp4")||
+          (Number.isFinite(length)&&length>60_000_000))
+          throw new Error("Approved source MP4 unavailable");
+        const blob=await response.blob();
+        if(blob.size<10_000||blob.size>60_000_000||
+          sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        setResult({
+          url:URL.createObjectURL(blob),extension:"mp4",bytes:blob.size,
+          blob,mime:"video/mp4",mode:"catalog",
+        });
+        setProgress(100);
+        setNotice(locale==="ru"
+          ?"Браузер не поддерживает запись Canvas. Можно сохранить исходный MP4 выбранной сцены. Формат, продолжительность, музыка и надписи из настроек в него не включены."
+          :locale==="es"
+          ?"El navegador no puede grabar Canvas. Puedes guardar el MP4 original de la escena, sin tus ajustes de duración, formato, música o texto."
+          :"Canvas recording is unavailable here. Save the selected original scene MP4; your custom aspect, duration, music and caption are not included.");
         return;
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
@@ -3820,10 +3858,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
       </details>
-      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}>
+      <section className={videoStyles.result} id="personal-video-result" data-video-result
+        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"} hidden={!result}>
         <h3>{ui.videoPreview}</h3>
         {result ? (
           <>
+            {result.mode==="catalog"?<p className={videoStyles.warning}
+              data-video-catalog-fallback role="note">
+              {locale==="ru"
+                ?"Это исходный готовый MP4 из каталога, а не персонально смонтированное видео. Воспользуйтесь браузером с записью Canvas, чтобы создать свой ролик с выбранными параметрами."
+                :locale==="es"
+                ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
+                :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
+            </p>:null}
             <video src={result.url} controls playsInline preload="metadata"
               data-mandala-video-preview/>
             <div className={videoStyles.resultActions}>

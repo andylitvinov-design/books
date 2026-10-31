@@ -155,19 +155,37 @@ const runEngine = async ([engine, browserType]) => {
             });
             throw new Error(engine+" free first-video export missing: "+JSON.stringify(state),{cause:error});
           }
+          // Verify an actual decoded file on both engines. Modern browsers
+          // export the composed portrait Canvas; WebKit without captureStream
+          // gets a clearly labelled original local MP4, not a fake montage.
+          const supportsCanvasRecording=await page.evaluate(()=>
+            typeof HTMLCanvasElement.prototype.captureStream==="function"&&
+            typeof MediaRecorder!=="undefined");
+          const mode=await page.locator("[data-video-result]").getAttribute("data-video-result-mode");
+          assert.equal(mode,supportsCanvasRecording?"rendered":"catalog",
+            engine+" must explicitly classify the delivered media");
+          if(!supportsCanvasRecording){
+            await expect(page.locator("[data-video-catalog-fallback]")).toBeVisible();
+            assert.match(await page.locator("[data-video-catalog-fallback]").innerText(),
+              /исходный|original|catálogo/i);
+          }else{
+            assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
+          }
           const [download]=await Promise.all([
             page.waitForEvent("download",{timeout:20000}),save.click(),
           ]);
           const bytes=await bufferFromStream(await download.createReadStream());
-          assert.ok(bytes.length>10000,"free first video encodes moving media, not a text-only placeholder");
+          assert.ok(bytes.length>10000,"free first video must encode actual moving media");
           const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
             "-show_entries","stream=codec_type,width,height",
             "-of","default=noprint_wrappers=1","pipe:0"],{input:bytes,maxBuffer:1024*1024});
           assert.equal(probe.status,0,"first free video must decode");
           const details=probe.stdout.toString();
           assert.match(details,/codec_type=video/);
-          assert.match(details,/width=720|width=1080/);
-          assert.match(details,/height=1280|height=1920/);
+          if(supportsCanvasRecording){
+            assert.match(details,/width=720|width=1080/);
+            assert.match(details,/height=1280|height=1920/);
+          }
           // Restore original untouched Studio state for the existing full
           // photo/audio/Hypno regression cases below, on this same page.
           const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});

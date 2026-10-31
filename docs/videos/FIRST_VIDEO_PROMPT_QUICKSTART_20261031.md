@@ -27,3 +27,9 @@ Existing server key HH_COUNCIL_OPENROUTER_API_KEY must be available and confirme
 
 ## Release coordination
 This is an INDEPENDENT production-target first-video improvement, extracted from the blocked parent #2702 to ship without its unrelated WebKit/hypno E2E blockers. Parent #2702 must rebase/merge with this change later; preserve the new first-video UI, original Canvas, and the parent's 49-question additions. Production = codex/public-book-library, NOT GitHub default codex/bootstrap-books. Source committed does not equal live.
+
+## Actual browser fallback
+
+When the browser lacks Canvas capture (observed in the Linux WebKit acceptance), the first-video button downloads a verified, same-origin first-party MP4 source scene without external processing. The result is visibly tagged **catalog source**, not falsely represented as the multi-shot personalized output. Custom format, requested duration, soundtrack, captions and montage are NOT encoded in this fallback; a user with attached audio/caption/affirmations does not silently receive a different soundless file. Chromium/compatible browsers continue exporting the full custom multi-shot film. Both paths must produce a real ffprobe-decodable video asset, and all original sound and privacy checks still run.
+
+Background-only recording ignores asynchronous frameUrl/photoUrl changes from the separate portrait/mandala editor, so loading a decorative image cannot abort a real active recorder job.

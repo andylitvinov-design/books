@@ -73,6 +73,11 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(ui,/data-first-video-hydrated/);
   assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !wish\.trim\(\)\}/);
   assert.match(src,/useLayoutEffect\(\(\) => \{\s*const job=jobRef\.current;/);
+  assert.match(src,/backgroundOnly\?null:frameUrl/);
+  assert.match(src,/data-video-result-mode/);
+  assert.match(src,/data-video-catalog-fallback/);
+  assert.match(src,/firstPartyFilmFor\(first\.theme,first\.sceneId\)/);
+  assert.match(browserSource(),/supportsCanvasRecording/);
   assert.match(browserSource(),/free first-video export missing/);
   assert.match(ui,/setAiConsent\(event\.currentTarget\.checked\)/);
   assert.match(route,/MODEL = "openrouter\/free"/);
