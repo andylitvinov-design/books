@@ -2516,8 +2516,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={recording||preparing} onClick={()=>{
             if(item.id==="phrases"){
               setQuickHypnoOpen(previous=>!previous);
+              // No delayed smooth scroll after a user opens phrases: on iOS
+              // this competes with the following real edit-button tap.
               if(!quickHypnoOpen)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+                document.getElementById("video-hypnosis")?.scrollIntoView({behavior:"instant",block:"start"})));
               return;
             }
             if(item.id==="extra"){
@@ -3177,10 +3179,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
         ref={quickLegacyRef} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
-        {/* Keep the native disclosure gesture and mirror its actual state into
-            React. Preventing the summary default action can leave the real
-            controls closed after a mobile browser rerender. */}
-        <summary>
+        {/* Explicitly toggle the real native element once per actual summary
+            gesture. React does not own its open attribute; onToggle mirrors
+            state for deep navigation without a second competing toggle. */}
+        <summary onClick={event=>{
+          event.preventDefault();
+          const el=quickLegacyRef.current;
+          if(!el)return;
+          const next=!el.open;
+          el.open=next;
+          setQuickDetailedOpen(next);
+        }}>
           <SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
         <section className={videoStyles.quickSection} data-video-quick-section="3"
           aria-labelledby="quick-hypno-title">

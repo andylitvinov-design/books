@@ -264,11 +264,12 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
    "native details disclosure is uncontrolled and mirrors its real open state");
  assert.doesNotMatch(src,/data-video-quick-legacy\s+open=\{quickDetailedOpen\}/,
    "do not race a native summary click with controlled React open");
- assert.doesNotMatch(src,/event\.preventDefault\(\);setQuickDetailedOpen/,
-   "the summary must keep its native disclosure gesture");
+ assert.match(src,/event\.preventDefault\(\);[\s\S]*?const next=!el\.open;[\s\S]*?el\.open=next;[\s\S]*?setQuickDetailedOpen\(next\);/,
+   "one user summary gesture must toggle the real native element exactly once");
  assert.match(browser,/advanced parameters must expand on a real click/);
  assert.match(browser,/photo cover and user-owned image choices must open on user request/);
- assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000,position:\{x:15,y:20\}\}\)/);
+ assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000\}\)/);
+ assert.match(browser,/await guidedHypnoTab\.click\(\{timeout:15000\}\)/);
 });
 
 // #2704's four-group panel shares the approved #2702 phrases and renderer.

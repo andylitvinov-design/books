@@ -1182,17 +1182,22 @@ const runEngine = async ([engine, browserType]) => {
           // rather than asserting a fixed-window hit test during guided scroll.
           // Playwright's real clicks retain visibility/obscuration protections.
           const guidedHypnoTab=page.locator('[data-video-quick-control="phrases"]');
-          if((await guidedHypnoTab.getAttribute("aria-expanded"))!=="true"){
-            await guidedHypnoTab.scrollIntoViewIfNeeded({timeout:12000});
+          await guidedHypnoTab.scrollIntoViewIfNeeded({timeout:12000});
+          // Closing and reopening by genuine clicks reanchors the panel after
+          // course navigation. It must remain operable even when previously
+          // expanded; no synthetic pointer, force-click, or waived assertion.
+          if((await guidedHypnoTab.getAttribute("aria-expanded"))==="true"){
             await guidedHypnoTab.click({timeout:15000});
+            await expect(guidedHypnoTab).toHaveAttribute("aria-expanded","false");
           }
+          await guidedHypnoTab.click({timeout:15000});
+          await expect(guidedHypnoTab).toHaveAttribute("aria-expanded","true");
           const guidedPhrasesEdit=page.locator("[data-hypno-phrases-edit]");
           await expect(guidedPhrasesEdit).toBeVisible({timeout:12000});
           await guidedPhrasesEdit.evaluate(element=>{
             element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
           });
-          await guidedPhrasesEdit.scrollIntoViewIfNeeded({timeout:12000});
-          await guidedPhrasesEdit.click({timeout:15000,position:{x:15,y:20}});
+          await guidedPhrasesEdit.click({timeout:15000});
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
