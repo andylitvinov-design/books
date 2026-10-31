@@ -523,3 +523,41 @@ test('existing heavy jobs preflight before dependency install; core release gate
   assert.match(core, /run: npm run build/);
   assert.ok(read('hh-pr-sweep-guard.yml').includes("'scripts/ci-pr-readiness.mjs'"));
 });
+
+test('wave 4: Core owns duplicate global TypeScript on production PRs; specialist runtime checks stay', () => {
+  const core=read('hh-pr-core-release.yml');
+  assert.match(core,/npx --no-install tsc --noEmit/);
+  assert.match(core,/run: npm run build/);
+  const guard="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [name,label] of [
+    ['hh-owner-telegram-video.yml','TypeScript'],
+    ['hh-messenger-mobile-release.yml','Type-check real production application'],
+  ]) {
+    const yaml=read(name);
+    const step=yaml.split('      - name: '+label+'\n')[1]?.split(/\n      - /)[0];
+    assert.ok(step?.includes(guard),name+' delegates production-PR typecheck only');
+    assert.match(yaml,/run: npm run build/,name+' retains independent build needed by real acceptance');
+  }
+  for(const [name,required] of [
+    ['hh-live-audio-ci.yml','node --test tests/live-audio-pilot.test.mjs'],
+    ['hh-free-express-wizard-v2.yml','node scripts/verify-free-express-wizard-v2.mjs'],
+  ]) {
+    const yaml=read(name);
+    assert.ok(yaml.includes('HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}'),name+' must have target');
+    assert.ok(yaml.includes('GITHUB_EVENT_NAME'),name+' must retain manual/other-base typecheck');
+    assert.ok(yaml.includes('npx tsc --noEmit'),name+' retains standalone TypeScript');
+    assert.ok(yaml.includes(required),name+' preserves original negative/browser checks');
+    assert.match(yaml,/npm run build/,name+' retains local production build');
+  }
+  const crm=read('hh-crm-source-check.yml');
+  const commands=crm.split('\n').filter(x=>/^\s+run: node --test /.test(x));
+  for(const testFile of [
+    'tests/crm-telegram-diagnostic.test.mjs',
+    'tests/crm-public-registration.test.mjs',
+    'tests/public-service-enquiries.test.mjs',
+  ]) assert.equal(commands.filter(x=>x.includes(testFile)).length,1,testFile+' must execute once');
+  for(const testFile of ['tests/crm-security-contract.test.mjs','tests/crm-consent.test.mjs','tests/free-express-google-claim.test.mjs']) {
+    assert.ok(crm.includes(testFile),testFile+' security contract remains mandatory');
+  }
+  assert.match(crm,/github.event_name == 'workflow_dispatch'/);
+});
