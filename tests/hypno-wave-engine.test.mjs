@@ -140,3 +140,12 @@ test('Active tone, kind and focus controls change Wave text, not only labels',()
     }
   }
 });
+
+test('Wave distinguishes fearful «мне страшно» from literal «не страшно» and does not infer rushing from «успешен»',()=>{
+  const confident=interpretWaveNotes({locale:'ru',currentText:'Мне кажется, что я недостаточно успешен',goalText:'Хочу планировать дела'});
+  assert.ok(!confident.currentKeys.includes('rushing'));
+  const nervous=interpretWaveNotes({locale:'ru',currentText:'Мне страшно выступать на совещании',goalText:'Хочу говорить спокойнее'});
+  assert.ok(nervous.currentKeys.includes('fear'));
+  const tired=interpretWaveNotes({locale:'ru',currentText:'После встреч я устаю',goalText:'Хочу беречь силы'});
+  assert.ok(tired.currentKeys.includes('exhaustion'));
+});
