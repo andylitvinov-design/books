@@ -34,7 +34,7 @@ test('owner tabs are linked, accessible and URL-backed without unmounting chat s
   const css=read('components/app/messages-simple-inbox.module.css')
   assert.match(source,/role="tablist" aria-label=\{t.tabs\}/)
   assert.match(source,/lifecycle:item\.lifecycle/)
-  assert.match(source,/hidden=\{Boolean\(selected\)&&!inMessagesTab\(selected,tab\)\}/)
+  assert.match(source,/hidden=\{Boolean\(selected\)&&!embedded&&!inMessagesTab\(selected,tab\)\}/)
   assert.match(css,/\.detail\[hidden\]\{display:none!important\}/)
   assert.match(source,/aria-selected=\{tab===id\}/)
   assert.match(source,/role="tabpanel"/)

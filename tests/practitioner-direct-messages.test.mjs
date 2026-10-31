@@ -11,16 +11,19 @@ const media=src('app/api/app/direct-messages/media/[assetId]/route.js')
 const published=src('app/api/masters/[slug]/shared-audio/[assetId]/route.js')
 const ux=src('components/app/direct-message-inbox.jsx')
 
-test('file contract accepts supported image/audio and bounds uploads',()=>{
+test('file contract accepts supported image/audio/video and bounds uploads',()=>{
   assert.equal(DIRECT_MEDIA_BUCKET,'hh-member-direct-media')
   for(const mime of ['image/jpeg','image/png','image/webp'])assert.equal(directMediaSpec(mime,2000).kind,'image')
   for(const mime of ['audio/mpeg','audio/mp4','audio/webm','audio/ogg','audio/wav'])
     assert.equal(directMediaSpec(mime,2000).kind,'audio')
-  for(const mime of ['application/pdf','text/html','image/svg+xml','video/mp4','audio/x-ms-wma']){
+  for(const mime of ['video/mp4','video/webm','video/quicktime'])
+    assert.equal(directMediaSpec(mime,2000).kind,'video')
+  for(const mime of ['application/pdf','text/html','image/svg+xml','video/x-msvideo','audio/x-ms-wma']){
     assert.throws(()=>directMediaSpec(mime,2000),/MEDIA_TYPE_NOT_ALLOWED/)
   }
   assert.throws(()=>directMediaSpec('image/jpeg',6_000_000),/MEDIA_SIZE_NOT_ALLOWED/)
   assert.throws(()=>directMediaSpec('audio/mpeg',20_000_001),/MEDIA_SIZE_NOT_ALLOWED/)
+  assert.throws(()=>directMediaSpec('video/mp4',20_000_001),/MEDIA_SIZE_NOT_ALLOWED/)
   assert.throws(()=>directMediaSpec('audio/mpeg',0),/MEDIA_SIZE_NOT_ALLOWED/)
 })
 test('text is bounded and public audio titles are non-empty',()=>{
