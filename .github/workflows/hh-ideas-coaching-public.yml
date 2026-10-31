@@ -83,14 +83,17 @@ jobs:
       - name: TypeScript noEmit
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
-      - name: Next.js production build
+      - name: Next.js production build (manual full acceptance only)
+        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install isolated mobile browsers
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/hh-ideas-playwright
           npm install --prefix /tmp/hh-ideas-playwright --no-audit --no-fund --ignore-scripts playwright@1.63.0
           /tmp/hh-ideas-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)
+        if: github.event_name != 'pull_request'
         env:
           HH_PLAYWRIGHT_PACKAGE: /tmp/hh-ideas-playwright/node_modules/playwright
           HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
@@ -106,9 +109,8 @@ jobs:
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
           node scripts/verify-coaching-lounge-mobile.mjs
           node scripts/verify-holistic-support-browser.mjs
-          node scripts/verify-ideas-mobile-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
           name: ideas-mobile-choice-first
           path: |

@@ -23,7 +23,7 @@ export function eligible(run, pr, ctx) {
       run.head_repository?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo ||
       run.head_branch !== pr.head?.ref || run.pull_requests[0]?.head?.ref !== run.head_branch ||
       !run.head_sha || !pr.head?.sha) return false;
-  return pr.state === 'closed' || (pr.state === 'open' && run.head_sha !== pr.head.sha);
+  return pr.state === 'open' && run.head_sha !== pr.head.sha;
 }
 
 export async function prune(api, ctx, { limit = 20, dryRun = false } = {}) {

@@ -11,7 +11,7 @@ permissions:
   pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   scope:
     name: classify-change
@@ -150,10 +150,7 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
-      - name: Full TypeScript check
-        if: needs.scope.outputs.ci_only != 'true'
-        run: npx --no-install tsc --noEmit --pretty false
-      - name: Exact proposed release production build
+      - name: Exact proposed release production build and TypeScript check
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
   release-ready:

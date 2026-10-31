@@ -122,6 +122,5 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
   assert.match(core, /^  release-ready:/m);
   assert.match(core, /run: npm run build/);
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
