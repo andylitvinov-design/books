@@ -169,7 +169,7 @@ for(const browserType of [chromium,webkit]){
     await crmDraft.waitFor({state:'visible',timeout:15000})
     await crmDraft.fill('Synthetic unsent draft')
     const crmToolbar=customer.locator('[class*="detailConversation"] [class*="compose"]').first()
-    const crmSend=crmToolbar.locator('> button').last()
+    const crmSend=crmToolbar.locator(':scope > button').last()
     const chatGeometry=await crmSend.evaluate(el=>{
       const send=el.getBoundingClientRect()
       const frame=el.closest('[class*="window"]')?.getBoundingClientRect()
