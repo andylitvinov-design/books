@@ -339,6 +339,7 @@ export function MandalaHypnoCompact({
     }else setApprovalKey(signature);
   }
 
+  const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
       <section className={css.card} data-hypno-request>
@@ -560,7 +561,18 @@ export function MandalaHypnoCompact({
             onClick={()=>toggle("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
         {open==="design"?<>
-        <div className={css.sceneRail} aria-label={ui.scenery}>
+
+        <button type="button" className={css.sceneMiniSummary} data-hypno-scene-summary
+          disabled={disabled} aria-expanded={open==="design"} aria-controls="hypno-design-options"
+          onClick={()=>toggle("design")}>
+          <span className={css.sceneMiniThumb}>
+            {selectedScene?.poster?<Image src={selectedScene.poster} width={46} height={34} unoptimized alt=""/>:
+              <span aria-hidden="true">{selectedScene?.symbol||"✦"}</span>}
+          </span>
+          <span className={css.sceneMiniLabel}>{selectedScene?.label||ui.scenery}</span>
+          <ChevronDown size={16} aria-hidden="true"/>
+        </button>
+        {open==="design"&&<div className={css.sceneRail} aria-label={ui.scenery}>
           {scenes.map(scene=><button type="button" key={scene.id} disabled={disabled}
             aria-pressed={activeScene===scene.id} data-hypno-scene={scene.id}
             onClick={()=>onSelectScene(scene.id)}>
@@ -570,13 +582,10 @@ export function MandalaHypnoCompact({
             </span>
             <span className={css.sceneLabel}>{scene.label}</span>
           </button>)}
-        </div>
-        <div className={css.designFoot}>
+        </div>}
+        {open==="design"&&<div className={css.designFoot}>
           <a href="#video-templates">{ui.moreScenes}<ChevronRight size={14}/></a>
           <a href="#video-audio">{ui.sound} · {ui.adjustAudio}<ChevronRight size={14}/></a>
-        </div>
-        </>:<div className={css.compactOverviewLine} data-hypno-design-summary>
-          <Film size={14} aria-hidden="true"/>{scenes.find(scene=>scene.id===activeScene)?.label||ui.scenery} · {ui.sound}
         </div>}
         {open==="design"&&<div className={css.editPane} id="hypno-design-options">
           <p className={css.contextNote}>{ui.scenery}</p>
