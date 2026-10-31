@@ -18,7 +18,8 @@ test("six optional starter designs are unique, localized and can be edited", () 
       assert.ok(resolved.wish.length >= 25 && resolved.wish.length <= 800);
       assert.ok(resolved.label.length >= 3);
       assert.notEqual(resolved.label, "undefined");
-      assert.notEqual(resolved.wish, preset.wishes.en === resolved.wish && locale !== "en" ? "" : null);
+      assert.equal(resolved.wish, preset.wishes[locale]);
+      assert.equal(resolved.label, preset.labels[locale]);
       assert.ok(["landscape", "portrait", "square"].includes(resolved.preferences.aspect));
       assert.ok([20, 30, 60].includes(resolved.preferences.durationSeconds));
       assert.ok(["slow", "dynamic"].includes(resolved.preferences.motion));
