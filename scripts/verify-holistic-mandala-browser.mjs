@@ -224,8 +224,12 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // A real user click must open the native disclosure. React/Next may
+        // render a fresh scene tree after WebKit resolves the click, so poll
+        // the genuine DOM state without a synthetic click or force-open.
+        await expect(coverOptions,
+          "photo cover and user-owned image choices must open on user request")
+          .toHaveAttribute("open", "", {timeout:10000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
