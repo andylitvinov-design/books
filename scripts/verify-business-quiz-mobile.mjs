@@ -96,11 +96,18 @@ async function verify(engine, locale, width) {
       label+": private wish absent from referral URL");
     await guide.locator("[data-dialog-close]").click();
     assert.equal(await root.locator("[data-direction-dialogue]").count(),0,label+": guide can close");
-    await root.locator('[data-direction-intent="session"]').click();
+    const sessionIntent = root.locator('[data-direction-intent="session"]');
+    // The preceding natural-language wish may already select "session".
+    // Tapping an already-pressed toggle would deselect the intended offer.
+    if (await sessionIntent.getAttribute("aria-pressed") !== "true") {
+      await sessionIntent.click();
+    }
     // Wait for a committed React state rather than a transient pre-update DOM.
     await page.waitForFunction(() => [...document.querySelectorAll('[data-direction-offers="business"] [data-direction-section]')]
       .map(node => node.getAttribute("data-direction-section")).join(",") === "session",
       null, {timeout:10000});
+    assert.equal(await sessionIntent.getAttribute("aria-pressed"), "true",
+      label + ": business session intent remains selected");
     assert.deepEqual(await root.locator("[data-direction-section]").evaluateAll(nodes =>
       nodes.map(node=>node.getAttribute("data-direction-section"))),["session"],
       label+": session focus leaves one visible section");

@@ -301,9 +301,18 @@ async function runEngine(name, engine) {
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
             const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
             await daoForm.waitFor({state:"visible",timeout:25000});
+            // SSR input metadata alone does not prove the actual channel
+            // action has a React click handler yet. Preserve the no-CRM guard.
             await page.waitForFunction(() => {
-              const input = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form] input[name="contact"]');
-              return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
+              const form = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
+              const input = form?.querySelector('input[name="contact"]');
+              const channel = form?.querySelector('button[data-compact-channel="whatsapp"]');
+              const reactProps = node => {
+                const key = Object.keys(node || {}).find(k => k.startsWith("__reactProps$"));
+                return key ? node[key] : null;
+              };
+              return typeof reactProps(input)?.onChange === "function" &&
+                typeof reactProps(channel)?.onClick === "function";
             }, null, {timeout:30000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
@@ -316,6 +325,8 @@ async function runEngine(name, engine) {
             await submit.click();
             assert.equal(submissions.length,previous,"Contact cannot bypass consent");
             await daoForm.locator('[role="alert"]').waitFor({state:"visible"});
+            assert.equal(await daoForm.locator('input[name="contact"]').getAttribute("aria-invalid"), "true",
+              "No-consent WhatsApp action must expose validation without saving a CRM request");
             await consent.check();
             const [popup] = await Promise.all([
               page.waitForEvent("popup",{timeout:10000}), submit.click(),
