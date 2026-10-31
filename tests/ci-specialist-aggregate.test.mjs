@@ -796,3 +796,37 @@ test('installation guidance and consent surfaces cannot be FAST CSS',async()=>{
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css']),'STRICT');
 });
+
+test('Native installer successor claims old native triggers before retiring duplicate macOS/Android CI', () => {
+  const old='.github/workflows/native-ci.yml';
+  const replacement='.github/workflows/holistic-house-native.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old], replacement);
+  const source=readFileSync(replacement,'utf8');
+  for(const required of ["'capacitor.config.json'","'components/native-**'",
+    "'package.json'","'package-lock.json'","'.github/workflows/native-ci.yml'",
+    'node --test tests/holistic-house-native-build.test.mjs',
+    'npm run native:check',
+    'tests/native-private-message-push.test.mjs',
+    'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
+    assert.ok(source.includes(required), 'native successor missing coverage '+required);
+  }
+  assert.ok(source.includes("  native-current-contracts:"), 'source contracts owner missing');
+  assert.match(source, /^  android-test-installer:/m);
+  assert.match(source, /^  ios-simulator:/m);
+  assert.ok(!source.includes('continue-on-error: true'), 'do not hide errors');
+  // Specialist aggregator requires successful PR jobs; a deliberately
+  // lightweight delegation step keeps both jobs green without running builds.
+  const android=source.slice(source.indexOf('  android-test-installer:'),source.indexOf('  ios-simulator:'));
+  const ios=source.slice(source.indexOf('  ios-simulator:'));
+  for (const section of [android,ios]) {
+    assert.ok(section.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+    const entries=section.split('\n      - ').slice(1);
+    assert.ok(entries.length >= 17, 'expected full set of native steps');
+    assert.ok(entries[0].includes('Verify delegated lightweight PR native coverage'));
+    for (const entry of entries.slice(1)) {
+      assert.ok(entry.includes("if: ${{ github.event_name != 'pull_request' }}") ||
+        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}"),
+        'native build step must never execute on ordinary PR: '+entry.slice(0,110));
+    }
+  }
+});
