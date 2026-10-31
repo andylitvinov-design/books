@@ -181,7 +181,7 @@ jobs:
             echo 'No changed JS/TS files to lint'
           fi
       - name: Exact proposed release production build and TypeScript check
-        if: needs.scope.outputs.ci_only != 'true'
+        if: needs.scope.outputs.ci_only != 'true' || needs.scope.outputs.route == 'FULL'
         run: npm run build
   release-ready:
     name: release-ready
