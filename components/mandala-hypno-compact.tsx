@@ -38,9 +38,14 @@ const copy = {
     additional:"Other display controls (density, visibility and experimental short frame)",
     design:"Video design", designHint:"Scene, atmosphere and original sound", sound:"Audio", adjustAudio:"Choose sound",
     scenery:"Choose a scene", moreScenes:"All video scenes", preview:"Preview", previewHint:"Preview only — no export or account save",
-    previewButton:"Preview real video", create:"Create video", use:"In video", privacy:"Your words stay in this browser. No AI/CRM upload.",
+    previewButton:"Preview real video", create:"Create video", use:"In video", privacy:"Your own notes and phrases remain in this browser. Only selected generic codes go to free AI with your consent; no CRM upload.",
     themeNames:{energy:"Energy",money:"Money",relationships:"Love",goals:"Goals",life:"Life",health:"Wellbeing"},
     enabledNote:"Switch on to include the chosen phrases in the video",
+    aiConsent:"I agree to send only selected generic theme, difficulty, goal and tone codes to free Google or OpenRouter AI. My notes, tests, profile and personal phrases are NOT sent. Free providers may use prompts to improve models.",
+    aiRun:"Generate five AI phrases",aiBusy:"Writing phrases…",
+    aiFallback:"Free AI is unavailable; showing editable local suggestions.",aiSignIn:"Sign in for free AI. Local suggestions work without an account.",
+    aiReady:"AI draft: review and edit five phrases ·",aiTone:"Tone",
+    aiTones:["Gentle","Grounded","Encouraging"],
   },
   ru: {
     request:"Мой запрос", requestHint:"Проблема и цель в одном месте", current:"Сейчас", desired:"Моя цель",
@@ -55,9 +60,14 @@ const copy = {
     additional:"Другие настройки: плотность, видимость и экспериментальный короткий кадр",
     design:"Дизайн видео", designHint:"Сцена, атмосфера и оригинальные звуки", sound:"Звук", adjustAudio:"Выбрать звук",
     scenery:"Выберите сцену", moreScenes:"Все видеосцены", preview:"Предпросмотр", previewHint:"Только просмотр, без сохранения и рендера",
-    previewButton:"Просмотреть видео", create:"Создать видео", use:"В видео", privacy:"Ваши фразы остаются в браузере. Без отправки в AI и CRM.",
+    previewButton:"Просмотреть видео", create:"Создать видео", use:"В видео", privacy:"Ваши заметки и фразы остаются в браузере. Только с согласием общие коды идут в бесплатный AI; в CRM не отправляются.",
     themeNames:{energy:"Энергия",money:"Деньги",relationships:"Отношения",goals:"Цели",life:"Жизнь",health:"Самочувствие"},
     enabledNote:"Включите, чтобы выбранные фразы вошли в видео",
+    aiConsent:"Согласен отправить только общие коды темы, трудности, цели и тона в бесплатный AI Google или OpenRouter. Мои заметки, тесты, профиль и личные фразы НЕ передаются. Бесплатные провайдеры могут использовать запросы для улучшения моделей.",
+    aiRun:"Сгенерировать 5 AI-фраз",aiBusy:"Создаём фразы…",
+    aiFallback:"Бесплатный AI недоступен: показан редактируемый локальный подбор.",aiSignIn:"Войдите в кабинет для бесплатного AI. Локальный подбор работает без входа.",
+    aiReady:"AI-черновик: проверьте и измените 5 фраз ·",aiTone:"Тон",
+    aiTones:["Мягкий","Практичный","Вдохновляющий"],
   },
   es: {
     request:"Mi intención", requestHint:"Dificultad y objetivo en un lugar", current:"Ahora", desired:"Mi objetivo",
@@ -72,9 +82,14 @@ const copy = {
     additional:"Más ajustes: densidad, visibilidad y fotograma breve experimental",
     design:"Diseño de vídeo", designHint:"Escena, ambiente y sonidos originales", sound:"Audio", adjustAudio:"Elegir audio",
     scenery:"Elige una escena", moreScenes:"Todas las escenas", preview:"Vista previa", previewHint:"Solo vista previa, sin exportar",
-    previewButton:"Ver vídeo real", create:"Crear vídeo", use:"En vídeo", privacy:"Tus frases permanecen en este navegador. Sin envío a IA ni CRM.",
+    previewButton:"Ver vídeo real", create:"Crear vídeo", use:"En vídeo", privacy:"Tus notas y frases se quedan en el navegador. Solo con permiso se envían códigos generales a la IA gratuita; nunca a CRM.",
     themeNames:{energy:"Energía",money:"Dinero",relationships:"Relaciones",goals:"Metas",life:"Vida",health:"Bienestar"},
     enabledNote:"Activa para incluir las frases seleccionadas en tu vídeo",
+    aiConsent:"Acepto enviar solo códigos generales de tema, dificultad, meta y tono a la IA gratuita de Google u OpenRouter. NO se envían notas, pruebas, perfil ni frases personales. Los proveedores gratuitos pueden usar solicitudes para mejorar modelos.",
+    aiRun:"Generar cinco frases de IA",aiBusy:"Creando frases…",
+    aiFallback:"La IA gratuita no está disponible. Se usaron sugerencias locales editables.",aiSignIn:"Inicia sesión para usar IA gratuita. Las frases locales no lo requieren.",
+    aiReady:"Borrador de IA: revisa y edita las cinco frases ·",aiTone:"Tono",
+    aiTones:["Suave","Práctico","Inspirador"],
   },
 } as const;
 
@@ -93,7 +108,11 @@ export function MandalaHypnoCompact({
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
   const [problemNote,setProblemNote]=useState("");
   const [goalNote,setGoalNote]=useState("");
-  const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests">("ready");
+  const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"ai">("ready");
+  const [aiConsent,setAiConsent]=useState(false);
+  const [aiBusy,setAiBusy]=useState(false);
+  const [aiTone,setAiTone]=useState<"gentle"|"grounded"|"inspiring">("gentle");
+  const [aiMessage,setAiMessage]=useState("");
   const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
   const goal=affirmationGoalCatalog[locale].find(item=>item.id===goalId) || affirmationGoalCatalog[locale][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
@@ -107,6 +126,38 @@ export function MandalaHypnoCompact({
     const suggestions=buildHypnoRequestPhrases(locale,theme,problemIndex,goalId);
     onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
     setSelectionSource("smart");setOpen(null);
+  };
+  const generateAiPhrases=async()=>{
+    if(disabled||aiBusy||!aiConsent)return;
+    setAiBusy(true);setAiMessage("");
+    try{
+      // Only selected non-identifying codes. NEVER transmit problemNote,
+      // goalNote, test results, custom phrases, client profile or symptoms.
+      const response=await fetch("/api/holistic-support/meditation-writer/affirmations",{
+        method:"POST",cache:"no-store",credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({locale,theme,problemIndex,goalId,tone:aiTone,
+          focus:"agency",externalModelOptIn:true}),
+      });
+      const result=await response.json() as {
+        status?:string;phrases?:string[];provider?:string;
+      };
+      if(!response.ok || result.status!=="draft_review_required" ||
+         !Array.isArray(result.phrases) || result.phrases.length!==5 ||
+         result.phrases.some(line=>typeof line!=="string"||
+           Array.from(line).length>36)){
+        propose();
+        setAiMessage(response.status===401?ui.aiSignIn:ui.aiFallback);
+        return;
+      }
+      onChange({...settings,enabled:true,presetOverride:result.phrases,
+        selected:[0,1,2,3,4]});
+      setSelectionSource("ai");
+      setAiMessage(ui.aiReady+" "+(result.provider==="openrouter_free"?
+        "OpenRouter Free":"Gemini Free"));
+    }catch{
+      propose();setAiMessage(ui.aiFallback);
+    }finally{setAiBusy(false);}
   };
   const ready=()=>{
     onChange({...settings,enabled:true,presetOverride:undefined,selected:[0,1,2]});
@@ -184,7 +235,31 @@ export function MandalaHypnoCompact({
           <button type="button" data-hypno-tests disabled={disabled}
             aria-pressed={selectionSource==="tests"} onClick={()=>{setOpen("phrases");setShowHint(true);}}>{ui.tests}</button>
         </div>
-        <div className={css.phraseCounter}>{selectedCount}/5 {ui.selected}<span>{selectionSource==="smart"?ui.byRequest:""}</span></div>
+        <div className={css.aiWriter} data-hypno-ai-writer>
+          <div className={css.aiWriterRow}>
+            <label className={css.aiConsent}>
+              <input type="checkbox" checked={aiConsent} disabled={disabled||aiBusy}
+                onChange={event=>setAiConsent(event.target.checked)}/>
+              <span>{ui.aiConsent}</span>
+            </label>
+            <label className={css.aiTone}>{ui.aiTone}
+              <select value={aiTone} disabled={disabled||aiBusy}
+                onChange={event=>setAiTone(event.target.value as typeof aiTone)}>
+                {(["gentle","grounded","inspiring"] as const).map((tone,i)=>
+                  <option key={tone} value={tone}>{ui.aiTones[i]}</option>)}
+              </select>
+            </label>
+          </div>
+          <button type="button" className={css.aiRun} data-hypno-ai-generate
+            disabled={disabled||aiBusy||!aiConsent}
+            onClick={()=>{void generateAiPhrases();}}>
+            <Sparkles size={16} aria-hidden="true"/>
+            {aiBusy?ui.aiBusy:ui.aiRun}
+          </button>
+          {aiMessage&&<p className={css.aiMessage} role="status"
+            data-hypno-ai-feedback>{aiMessage}</p>}
+        </div>
+        <div className={css.phraseCounter}>{selectedCount}/5 {ui.selected}<span>{selectionSource==="smart"||selectionSource==="ai"?ui.byRequest:""}</span></div>
         <div className={css.selectedPhrases}>
           {lines.slice(0,3).map((sentence,i)=><span key={i}><Check size={14} aria-hidden="true"/>{sentence}</span>)}
         </div>

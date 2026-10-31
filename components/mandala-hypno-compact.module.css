@@ -84,3 +84,15 @@
 
 /* Small iPhones retain readable labels; key actions stay at least 44px tall. */
 @media(max-width:360px){.requestPreview strong{font-size:13px}.modeRail button{font-size:11.7px}.selectedPhrases span{font-size:12.3px}.metaGrid strong{font-size:12px}.sceneLabel{font-size:11.4px}}
+
+/* Optional free AI without replacing local recommendations or enlarging the editor. */
+.aiWriter{display:grid;gap:7px;margin-top:9px;padding:9px;border:1px solid #c7ddce;border-radius:12px;background:#f2f9f1}
+.aiWriterRow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.aiConsent{display:flex;align-items:flex-start;gap:8px;flex:1 1 235px;color:#466d58;font-size:11px;line-height:1.38}
+.aiConsent input{flex:none;width:18px;height:18px;accent-color:#058467;margin:1px 0 0}
+.aiTone{display:grid;flex:0 0 auto;gap:3px;color:#38634e;font-size:11px;font-weight:750}
+.aiTone select{width:135px;min-height:38px;border:1px solid #bcd9c7;border-radius:9px;background:#fff;color:#225b45;padding:5px;font-size:12px}
+.aiRun{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;width:100%;padding:9px;border:0;border-radius:10px;background:linear-gradient(110deg,#007c61,#219773);color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.aiRun:disabled{opacity:.55;cursor:not-allowed}
+.aiMessage{margin:0;color:#335c46;font-size:11.5px;line-height:1.35}
+.aiRun:focus-visible,.aiConsent input:focus-visible,.aiTone select:focus-visible{outline:3px solid #6fc9a6;outline-offset:2px}

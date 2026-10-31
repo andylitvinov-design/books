@@ -12,7 +12,8 @@ test("writer preview API is private, session-verified, per-request opt-in and di
     assert.ok(route.includes(x),x);
   assert.ok(!route.includes("generateOwnedOllama"));
   assert.ok(route.includes("createAnonymousGeminiSegmentProvider"));
-  assert.ok(route.includes("freeGeminiWriterReady"));
+  assert.ok(route.includes("freeWriterProviders"));
+  assert.ok(route.includes("createAnonymousOpenRouterSegmentProvider"));
   assert.ok(route.includes('externalModelOptIn!==true'));
   assert.ok(route.includes("AI_FREE_NOT_CONFIGURED"));
 });
