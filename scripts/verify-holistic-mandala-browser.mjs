@@ -223,9 +223,29 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // WebKit may still be finishing the preceding native-video scroll
+        // when its first summary tap arrives. Put the ACTUAL customer-facing
+        // native <summary> clear of the fixed iPhone dock, then require its
+        // first real click to open the original <details>. Never force open
+        // through script or re-click on failure: a broken tap still fails CI.
+        const coverSummary=coverOptions.locator(":scope > summary");
+        await coverSummary.evaluate(el=>{
+          el.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+        });
+        await page.waitForFunction(()=>{
+          const el=document.querySelector("[data-video-cover-options] > summary");
+          if(!el)return false;
+          const r=el.getBoundingClientRect();
+          const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+          const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+          return r.top>=4&&r.bottom<=innerHeight-4&&
+            (!dock||r.bottom<=dock.getBoundingClientRect().top-8)&&
+            (hit===el||el.contains(hit));
+        },undefined,{timeout:10000});
+        await coverSummary.click();
+        await expect(coverOptions).toHaveAttribute("open","",{timeout:10000});
+        assert.equal(await coverOptions.locator("[data-video-quick-scene]").nth(1).isVisible(),true,
+          "the first native tap must reveal the actual selectable cover scenes");
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
