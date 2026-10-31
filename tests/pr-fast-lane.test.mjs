@@ -713,6 +713,14 @@ test('core cancels only when a synchronize event changes the PR head', () => {
   assert.match(source, /group: hh-pr-core-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
 });
 
+test('central CI utilities isolate non-PR runs and cancel only for a new PR head', () => {
+  for (const [file, prefix] of [['hh-actionlint.yml', 'hh-workflow-lint'], ['hh-pr-sweep-guard.yml', 'hh-pr-sweep-guard']]) {
+    const source = workflow(file);
+    assert.ok(source.includes("group: " + prefix + "-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
+    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), file);
+  }
+});
+
 test('report-only production pushes rerun original report progress assertions without repeating Next build', () => {
   const src=workflow('hh-reports-development-program.yml');
   const isolated=src.split('  isolated-unit-lint-build:')[1];
