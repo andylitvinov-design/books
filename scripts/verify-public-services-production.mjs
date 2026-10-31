@@ -60,6 +60,15 @@ try {
   const createPage = async (width) => {
     const page = await context.newPage();
     attachDiagnostics(page);
+    // The draft-link assertions exercise the private-browsing fallback. The
+    // regular receipt redirect has a separate synthetic release-audit case.
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'hh-service-enquiry-receipt:v1') throw new DOMException('blocked', 'SecurityError');
+        return set.call(this, key, value);
+      };
+    });
     await page.setViewportSize({ width, height: 844 });
     return page;
   };
@@ -414,7 +423,7 @@ try {
       await visible(target);
       assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
         "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] button');
+      const choices = target.locator('[data-choice-layout="service"] > button');
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");

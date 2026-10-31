@@ -61,6 +61,23 @@ test('browser harness-only changes keep exact targeted real browsers', () => {
     ['verify-service-cart-browser.mjs', 'verify-storefront-shop-browser.mjs']);
 });
 
+test('release audit and consent test helper changes run only their Public Services owner', () => {
+  const files = [
+    '.github/workflows/admin-seo-dashboard.yml', '.github/workflows/release-reaudit.yml',
+    'scripts/helpers/contact-channel-verifier.mjs', 'scripts/public-poster-readiness.mjs',
+    'scripts/verify-public-services-production.mjs', 'scripts/verify-release-reaudit.mjs',
+    'tests/ci-head-cancellation.test.mjs', 'tests/ci-stale-run-deduplication.test.mjs',
+    'tests/csp-public-discovery-verifier.test.mjs', 'tests/public-audit-readiness.test.mjs',
+    'tests/release-reaudit.test.mjs', 'tests/service-alchemy-one-screen-story.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(files);
+  assert.equal(plan.mode, 'focused');
+  assert.equal(plan.cases, 'verify-public-services-production.mjs');
+  for (const risky of ['components/contact-channel-chooser.tsx', 'app/api/service-enquiries/route.js', 'middleware.ts']) {
+    assert.equal(planPublicServicesChangedPaths([...files, risky]).mode, 'full');
+  }
+});
+
 test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelated scripts', () => {
   const file = 'components/alchemy-soul-landing.module.css';
   const plan = planPublicServicesChangedPaths([file]);
@@ -266,7 +283,9 @@ test('direct browser and consent helpers are trigger-owned and never silently sk
     'app/api/service-enquiries/route.ts',
   ]) {
     assert.equal(covers(publicPaths,file), true, 'missing CI dispatch for ' + file);
-    if (file !== 'components/alchemy-soul-landing.module.css')
+    if (file === 'scripts/helpers/contact-channel-verifier.mjs')
+      assert.equal(planPublicServicesChangedPaths([file]).cases, 'verify-public-services-production.mjs');
+    else if (file !== 'components/alchemy-soul-landing.module.css')
       assert.equal(planPublicServicesChangedPaths([file]).mode, 'full', 'must not short-circuit ' + file);
   }
 });
