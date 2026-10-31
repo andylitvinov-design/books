@@ -26,6 +26,7 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
+import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -990,7 +991,7 @@ function ThemedFilmThumbnail({film,scene,photo,title,playing}: {
 // A video-only codec string can silently drop the selected audio track on
 // Safari. Prefer codecs that explicitly include AAC/Opus, then let the
 // actual MediaRecorder constructor validate each candidate with this stream.
-function recordingMimes(withAudio: boolean, preferWebm = false): string[] {
+function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry = false): string[] {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return [];
   const mp4 = withAudio ? [
     'video/mp4;codecs="avc1.42E01E,mp4a.40.2"', "video/mp4",
@@ -998,7 +999,14 @@ function recordingMimes(withAudio: boolean, preferWebm = false): string[] {
   const webm = withAudio ? [
     'video/webm;codecs="vp8,opus"', "video/webm",
   ] : ["video/webm;codecs=vp8", "video/webm"];
-  const candidates = preferWebm ? webm : [...mp4,...webm];
+  // iOS 26 Safari can advertise valid H264 MP4 support yet emit an
+  // unplayable MP4. Prefer genuine VP8/Opus WebM on Apple mobile WebKit
+  // when supported, while retaining MP4 on unsupported/other browsers.
+  const candidates = orderRecordingMimes({
+    mp4, webm, preferWebm, forceMp4:forceMp4ForRetry,
+    userAgent:typeof navigator==="undefined"?"":navigator.userAgent,
+    maxTouchPoints:typeof navigator==="undefined"?0:navigator.maxTouchPoints,
+  });
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
@@ -1204,9 +1212,14 @@ function stopJob(job: Job, cancelled: boolean) {
   job.cancelled = cancelled;
   window.cancelAnimationFrame(job.animation);
   window.clearTimeout(job.timeout);
-  if (job.recorder.state !== "inactive") job.recorder.stop();
-  else job.stream.getTracks().forEach(track => track.stop());
-  job.musicSession?.close();
+  if (job.recorder.state !== "inactive") {
+    // Safari needs its audio/video tracks alive until the MP4/WebM muxer has
+    // emitted its final dataavailable event. onstop owns final cleanup.
+    job.recorder.stop();
+  } else {
+    job.stream.getTracks().forEach(track => track.stop());
+    job.musicSession?.close();
+  }
 }
 
 
@@ -1924,7 +1937,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
 
-  async function createVideo(preferWebm = false) {
+  async function createVideo(preferWebm = false, forceMp4ForRetry = false) {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
     stopSoundPreview();
     const snapshot=source;
@@ -2006,7 +2019,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
 
-      const mimeTypes = recordingMimes(Boolean(musicSession), preferWebm);
+      const mimeTypes = recordingMimes(Boolean(musicSession), preferWebm, forceMp4ForRetry);
       let mimeType = "";
       let recorder: MediaRecorder | null = null;
       for (const candidate of mimeTypes) {
@@ -2041,7 +2054,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         stopJob(job,true);
         if (aliveRef.current) setNotice(t.failed);
       };
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
+        // Do not stop the source or the audio session before the recorder has
+        // dispatched its final dataavailable event.
         job.stream.getTracks().forEach(track => track.stop());
         job.musicSession?.close();
         if (jobRef.current !== job || !aliveRef.current) return;
@@ -2049,25 +2064,37 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         setRecording(false);
         if(job.cancelled) return;
         setProgress(100);
-        const type=recorder.mimeType || mimeType;
-        const blob = new Blob(chunks, { type });
-        if (!blob.size) {
-          setNotice(t.failed);
+        const rawType=recorder.mimeType || mimeType;
+        const encoded = new Blob(chunks,{type:rawType});
+        if(!encoded.size){setNotice(t.failed);return;}
+        // Check actual container bytes. iOS can report a MIME that does not
+        // match the encoded stream; never label a bogus MP4/WebM as complete.
+        let isMp4=false, isWebm=false;
+        try {
+          const header=new Uint8Array(await encoded.slice(0,12).arrayBuffer());
+          isMp4=header.length>=8&&header[4]===0x66&&header[5]===0x74&&header[6]===0x79&&header[7]===0x70;
+          isWebm=header.length>=4&&header[0]===0x1a&&header[1]===0x45&&header[2]===0xdf&&header[3]===0xa3;
+        } catch { /* Treat unreadable header as invalid media. */ }
+        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        const extension=isWebm?"webm":"mp4";
+        const type=isWebm?"video/webm":"video/mp4";
+        const blob=new Blob(chunks,{type});
+        setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type});
+        if(!isMp4&&!isWebm){
+          setPlaybackStatus("failed");
+          setNotice(locale==="ru"
+            ?"Safari не завершил запись видео: в файле нет корректного заголовка MP4/WebM. Выберите другой формат."
+            :locale==="es"
+            ?"Safari no finalizó la grabación: el archivo no tiene una cabecera MP4/WebM válida."
+            :"Safari did not finalize recording: the file has no valid MP4/WebM header.");
           return;
         }
-        setResult({
-          url: URL.createObjectURL(blob),
-          extension: type.includes("mp4") ? "mp4" : "webm",
-          bytes: blob.size,blob,mime:type,
-        });
-        // Wait for the native player to decode an actual video frame.
-        // Safari may return a substantial but unreadable MP4.
         setPlaybackStatus("checking");
         setNotice(locale==="ru"
-          ?"Проверяем готовое видео. При необходимости нажмите ▶ в проигрывателе."
+          ?"Проверяем готовое "+extension.toUpperCase()+". При необходимости нажмите ▶."
           :locale==="es"
-          ?"Comprobando el vídeo. Si es necesario, pulsa ▶ para verificar."
-          :"Verifying video playback. Tap ▶ in the player if needed.");
+          ?"Verificando "+extension.toUpperCase()+". Si es necesario, pulsa ▶."
+          :"Verifying "+extension.toUpperCase()+". Tap ▶ in the player if needed.");
       };
 
       // This user-triggered browser recorder never contacts a backend.
@@ -4007,7 +4034,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       </details>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
-        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}>
+        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
+        data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
         <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
         {result ? (
           <>
@@ -4024,13 +4052,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={()=>{
+              onError={event=>{
+                const errorCode=event.currentTarget.error?.code||0;
                 setPlaybackStatus("failed");
                 setNotice(locale==="ru"
-                  ?"Файл не воспроизводится на этом устройстве. Не сохраняйте его как готовое видео."
+                  ?"Safari не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Попробуйте другой формат ниже."
                   :locale==="es"
-                  ?"El archivo no se reproduce en este dispositivo. No lo guardes como vídeo terminado."
-                  :"This file cannot be played on this device. It is not a finished video.");
+                  ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
+                  :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
             {playbackStatus==="checking"?<p role="status" data-video-playback-check>
               {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
@@ -4043,19 +4072,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :locale==="es"
                 ?"El archivo no pasó la comprobación de reproducción."
                 :"This video failed playback verification."}</p>
-              {recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))
-                ?<button type="button" data-video-retry-compatible
+              {result.extension==="mp4"&&recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))
+                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
                   disabled={!canGenerate||recording||preparing}
                   onClick={()=>void createVideo(true)}>
-                  {locale==="ru"?"Создать заново в формате WebM"
-                    :locale==="es"?"Volver a crear en formato WebM"
-                    :"Try again as WebM"}
+                  {locale==="ru"?"Создать заново в Safari-совместимом WebM"
+                    :locale==="es"?"Volver a crear en WebM compatible con Safari"
+                    :"Retry with Safari-compatible WebM"}
+                </button>
+                :result.extension==="webm"&&recordingMimes(Boolean(attachedAudio),false,true).some(mime=>mime.startsWith("video/mp4"))
+                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
+                  disabled={!canGenerate||recording||preparing}
+                  onClick={()=>void createVideo(false,true)}>
+                  {locale==="ru"?"Повторить с MP4 вместо WebM"
+                    :locale==="es"?"Reintentar con MP4 en lugar de WebM"
+                    :"Retry with MP4 instead of WebM"}
                 </button>
                 :<p>{locale==="ru"
-                    ?"Попробуйте обновить Safari или создать видео на компьютере."
+                    ?"Доступный кодировщик на этом устройстве не работает. Попробуйте обновить Safari или создать видео на компьютере."
                     :locale==="es"
-                    ?"Actualiza Safari o crea el vídeo en un ordenador."
-                    :"Update Safari or create the video on a desktop browser."}</p>}
+                    ?"El codificador no funciona aquí. Actualiza Safari o crea el vídeo en un ordenador."
+                    :"The available recorder codec is failing. Update Safari or try a desktop browser."}</p>}
             </div>:null}
             {playbackStatus==="ready" ? <>
             <div className={videoStyles.resultActions}>
