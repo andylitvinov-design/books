@@ -78,7 +78,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /docs\/\*\.md\|README\.md/);
   assert.match(source, /npm ci --no-audit --no-fund/);
   assert.match(source, /eslint/);
-  assert.match(source, /tsc --noEmit/);
+  assert.match(source, /run: npm run build/);
   assert.match(source, /npm run build/);
   assert.match(source, /ci-specialist-aggregate\.mjs/);
   assert.match(source, /git show/);
@@ -364,8 +364,6 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
 
 test('App R1 and IA retain specialist tests but avoid duplicate global validation on production PRs', () => {
   const core = workflow('hh-pr-core-release.yml');
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /tsc --noEmit/);
   assert.match(core, /eslint/);
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const app = workflow('hh-app-r1.yml');
@@ -430,8 +428,6 @@ test('public installer changes use their dedicated real mobile gate, not unrelat
 test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const core = workflow('hh-pr-core-release.yml');
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /tsc --noEmit/);
   const specs=[
     ['hh-public-test-collections.yml',[['Verify Next.js production build','npm run build']],['tests/public-test-topic-collections.test.mjs','tests/profile-construct-axes.test.mjs']],
     ['hh-kling-video.yml',[['TypeScript','npx tsc --noEmit'],['Next.js build','npm run build']],['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
@@ -460,7 +456,6 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
   assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
   assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
-  assert.match(core,/npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
@@ -596,9 +591,7 @@ test('mobile-mock-only QA does not fan out into unrelated 20-minute public-servi
 test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
   const core = workflow('hh-pr-core-release.yml');
   const reports = workflow('hh-reports-development-program.yml');
-  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /npx --no-install tsc --noEmit/);
+  const gate = "if: $" + "{{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref != 'refs/heads/codex/public-book-library') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'codex/public-book-library') }}";
   assert.match(core, /^  release-ready:/m);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.match(reports, /^  pull_request:/m);
@@ -707,4 +700,43 @@ test('native auto-merge is requested from trusted base for ready same-repository
   assert.match(source, /draft == false/);
   assert.match(source, /gh pr merge .*--auto --squash/);
   assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
+});
+
+test('core production build is the single TypeScript gate and cannot ignore errors', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const config=readFileSync(join(root,'next.config.ts'),'utf8');
+  const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
+  assert.doesNotMatch(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.equal(pkg.scripts.build,'next build');
+  assert.doesNotMatch(config,/ignoreBuildErrors/);
+});
+
+test('core cancels only when a synchronize event changes the PR head', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.match(source, /group: hh-pr-core-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
+});
+
+test('report-only production pushes rerun original report progress assertions without repeating Next build', () => {
+  const src=workflow('hh-reports-development-program.yml');
+  const isolated=src.split('  isolated-unit-lint-build:')[1];
+  assert.ok(isolated, 'Retained reports workflow must keep real tests');
+  assert.ok(src.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge production verification must remain');
+  for(const command of ['tests/report-progress-before-after.test.mjs','tests/client-report-before-after-rings.test.mjs','tests/session-publication-review.test.mjs']) {
+    assert.ok(isolated.includes(command),'Original report test missing: '+command);
+  }
+  const step=isolated.split('      - name: Verify production Next.js build without preview deployment')[1]?.split('      - ')[0] || isolated.split('      - name: Verify production Next.js build without preview deployment')[1];
+  assert.ok(step, 'Standalone build fallback must remain');
+  assert.ok(step.includes("github.ref != 'refs/heads/codex/public-book-library'"), 'No redundant prod-push Next build');
+  assert.ok(step.includes("github.event_name == 'workflow_dispatch'"), 'Manual validation keeps a full build');
+  assert.ok(step.includes("github.event.pull_request.base.ref != 'codex/public-book-library'"), 'Nonproduction PRs retain build');
+  assert.match(step,/run: npm run build/);
+});
+
+test('trusted native auto-merge can use a repo-scoped token to preserve push events', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
+  assert.match(source, /pull_request_target:/);
+  assert.doesNotMatch(source, /checkout@|--admin/);
 });
