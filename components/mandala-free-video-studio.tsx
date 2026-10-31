@@ -2052,14 +2052,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(reservedXpId){
           // Do not expose the download until the authenticated server confirms
           // the charge; rejected/expired holds leave the result unavailable.
-          void videoXpRequest("complete",{operationId:reservedXpId,bytes:blob.size})
+          const operationId=reservedXpId;
+          void videoXpRequest("complete",{operationId,bytes:blob.size})
             .then(result=>{
               if(result.status!=="completed")throw new Error("XP_CONFIRMATION_FAILED");
-              if(xpHoldRef.current===reservedXpId)xpHoldRef.current=null;
+              if(xpHoldRef.current===operationId)xpHoldRef.current=null;
               presentResult();
             })
             .catch(()=>{
-              void releaseVideoXp(reservedXpId);
+              void releaseVideoXp(operationId);
               if(aliveRef.current)setNotice(
                 locale==="ru"?"Не удалось подтвердить XP. Повторите создание видео.":
                 locale==="es"?"No se confirmó el pago en XP. Vuelve a crear el vídeo.":

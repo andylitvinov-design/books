@@ -58,11 +58,11 @@ test('private XP schema has owner-scoped RLS, bounded referrals, immutable evide
 })
 test('transaction path enforces account identity, verified email, fraud caps and idempotency',()=>{
   const service=src('lib/xp/service.js')
-  for(const item of ['requireActor','actor.emailConfirmed','app_private.account_active',
+  for(const item of ['requireActor','actor.emailConfirmed','app.accounts',
     'pg_advisory_xact_lock','count(*)','count>=10','on conflict(invitee_id) do nothing',
     "kind,reference_id,points", "kind='assessment'",'for update','XP_INSUFFICIENT',
     'XP_IDEMPOTENCY_CONFLICT','XP_ARTIFACT_INVALID','xp_charges','wallet_entries',
-    'XP_RESERVATION_EXPIRED'])assert.ok(service.includes(item),item)
+    "status='released'"])assert.ok(service.includes(item),item)
   assert.doesNotMatch(service,/service_role|raw_user_meta_data|localStorage|STRIPE_/)
   assert.match(service,/status==='held'/)
   const api=src('app/api/app/xp/[action]/route.js')
