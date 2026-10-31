@@ -104,7 +104,7 @@ test('daily sessions are bilingual and distinguish 14-day practice from later in
   assert.equal(courseDay('2026-10-10T12:00:00Z', 14, Date.parse('2027-01-01T00:00:00Z')), 14)
 })
 
-test('one private six-milestone route reuses tests, insights and keeps mobile bottom navigation', () => {
+test('private course milestones retain tests, insights and current five-tab mobile navigation', () => {
   const page = read('app/[locale]/app/[[...path]]/page.jsx')
   const shell = read('components/app/app-workspace.jsx')
   const ui = read('components/app/my-course.jsx')
@@ -113,7 +113,7 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /<MyCourse data=\{data\} locale=\{locale\}/)
   assert.match(shell, /root \+ '\/course'/)
   assert.match(shell, /hh-mobile-app-nav/)
-  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
+  assert.match(css, /\.hh-mobile-app-nav[\s\S]*?repeat\(5,minmax\(0,1fr\)\)/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
   const completion=read('components/app/course-completion-review.jsx')
