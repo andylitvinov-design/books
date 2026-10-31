@@ -99,7 +99,7 @@ Separate states: draft → approved → queued_internal → claimed → sending 
 7. Pause/kill switch per provider/account and globally; drain/no new jobs on rollback. Alert owner to unknown, expired, failed-final, too many retries and overdue posts; never announce success from cron HTTP 200 alone.
 8. Cron/worker choice MUST reflect actual verified Vercel project tier. Vercel Hobby minimum once/day with imprecise scheduling; Pro per-minute cron is possible, but cron may overlap/skip retry, hence DB queue and idempotency required. Do not add an unsupported frequent cron or paid plan automatically.
 
-**Service requirements:** tracked p95 schedule drift; no duplicate externally confirmed posts within test window; no unexpected publishing; UTC data, Europe/Toronto? **Use America/Toronto** as display timezone, explicit DST transition resolution; retry/lease/expiry tests across midnight and daylight-saving changes.
+**Service requirements:** tracked p95 schedule drift; no duplicate externally confirmed posts within test window; no unexpected publishing; UTC persistence with **America/Toronto** display timezone and explicit DST transition resolution; retry/lease/expiry tests across midnight and daylight-saving changes.
 
 ## 6. API, server actions and contracts
 
