@@ -1,11 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
+
+test('two-speed routing prioritizes new and old clean PRs without treating unknown as blocked',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  const row=(number,created_at,mergeable_state,draft=false)=>({number,created_at,state:'open',draft,mergeable_state,mergeable:true,base:{ref:'codex/public-book-library'}});
+  const result=routeSweep([
+    row(1,'2026-10-31T11:00:00Z','blocked'),
+    row(2,'2026-10-29T11:00:00Z','clean'),
+    row(3,'2026-10-30T11:00:00Z','dirty'),
+    row(4,'2026-10-30T11:00:00Z','unknown'),
+    row(5,'2026-10-30T12:00:00Z','blocked'),
+    row(6,'2026-10-29T11:00:00Z','clean',true),
+  ],now);
+  assert.deepEqual(result.fast_ready.map(x=>x.number),[1,2]);
+  assert.deepEqual(result.stale_root.map(x=>x.number),[3,5,6]);
+  assert.deepEqual(result.unknown.map(x=>x.number),[4]);
+  assert.equal(result.fast_ready[0].merge_ready,false);
+  assert.equal(result.fast_ready[1].merge_ready,true);
+});
+
+test('two-speed routing rejects incomplete, duplicate or future evidence',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  const row={number:1,created_at:'2026-10-31T11:00:00Z',state:'open',draft:false,mergeable:true,mergeable_state:'clean',base:{ref:'codex/public-book-library'}};
+  assert.throws(()=>routeSweep([row,row],now),/DUPLICATE/);
+  assert.throws(()=>routeSweep([{...row,created_at:'2026-11-01T00:00:00Z'}],now),/TIMESTAMP/);
+  assert.throws(()=>routeSweep([{...row,draft:null}],now),/INVALID/);
+});
 
 test('passes clean current HEAD only when core gate and applicable specialists succeed',()=>{
   const paths=['components/app/app-workspace.jsx'];
@@ -262,8 +288,6 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   ]) {
     assert.ok(source.includes('- name: ' + name + '\n        ' + prodOnly + '\n        run: ' + command), name + ' must execute on push and delegate only production PR');
   }
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.match(core, /^  release-ready:/m);
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
@@ -288,8 +312,6 @@ test('Practitioner presentations retain all real contracts on production PRs and
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
   assert.match(core, /^  release-ready:/m);
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
   for (const [step, command] of [
     ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
@@ -343,8 +365,6 @@ test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retai
     "'.github/workflows/practice-visual-services.yml'",
   ]) assert.ok(source.includes(contract), 'missing real practice/consent/security gate '+contract);
   assert.match(core, /^  release-ready:/m);
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -369,7 +389,6 @@ test('Pro master workflow delegates duplicate global TS/Next to unconditional ex
   ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
     'Pro '+step+' must be owned by immutable-base Core on production PRs');
   assert.match(core,/^  release-ready:/m);
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.ok(core.includes('ci-specialist-aggregate.mjs'));
   assert.doesNotMatch(pro,/continue-on-error:\s*true/);

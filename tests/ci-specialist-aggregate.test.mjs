@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -153,11 +153,8 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  // The immutable production catalog contains 93 registered workflows as of
-  // 2026-10-31. Freeze growth at that verified baseline (previous cap of 90
-  // incorrectly made every CI guard run red); future additions still require
-  // a reviewed consolidation or explicit architecture budget change.
-  assert.ok(names.length <= 93, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // One additional metadata-only trusted workflow enables native auto-merge.
+  assert.ok(names.length <= 94, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
@@ -405,4 +402,100 @@ test('Video Studio-only edits run dedicated Mandala real-media acceptance withou
     'actual support/service features still require Public Services');
   assert.equal(matchesTrigger(publicTrigger,['components/mandala-free-video-studio.tsx','components/holistic-support-mobile.tsx']),true,
     'mixed public-service changes never evade the service gate');
+});
+
+test('fast routing is limited to known public presentation assets and mixed risk is strict', async () => {
+  const { classifyReleaseRisk } = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/globals.css']), 'FAST');
+  for (const changed of [[], ['app/globals.css', 'supabase/migrations/001.sql'], ['app/api/payment/route.ts'], ['.github/workflows/hh-pr-core-release.yml'], ['lib/unknown.js'], ['app/auth/login.css']]) {
+    assert.equal(classifyReleaseRisk(changed), 'STRICT');
+  }
+});
+
+test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const sources={base:new Map(),current:new Map()};
+  let reads=0;
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
+  const result=await verify(api,ctx,sources, {maxWaitMs:0});
+  assert.equal(result.risk,'FAST');
+  assert.equal(reads,2);
+  api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}));
+  api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
+  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}),/PR_CHANGED_FILES/);
+});
+
+test('presentation changes cannot bypass an applicable private app browser workflow', async () => {
+  const browser='.github/workflows/hh-app-browser.yml';
+  const workflow=readFileSync(browser,'utf8');
+  const sources={base:new Map([[browser,workflow]]),current:new Map([[browser,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'components/app/my-progress.module.css'}],runs:async()=>[],jobs:async()=>[{name:'browser',status:'completed',conclusion:'success'}]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+  api.runs=async()=>[run({path:browser,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+  api.runs=async()=>[run({path:browser})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[browser]);
+});
+
+test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
+});
+
+test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/app/messages/messages-page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/client/client-teal.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+});
+
+test('public FAST CSS does not wait for broadly triggered diagnostic specialists', async () => {
+  const broad='.github/workflows/diagnostic.yml';
+  const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>{throw Error('must not poll diagnostics');}};
+  const result=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.equal(result.risk,'FAST');
+  assert.deepEqual(result.expected,[]);
+});
+
+test('client progress owner is complete before the trusted second-phase deletion', () => {
+  const old='.github/workflows/hh-client-report-progress.yml';
+  const owner='.github/workflows/hh-reports-development-program.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],owner);
+  const source=readFileSync(owner,'utf8');
+  for (const required of [
+    "      - 'lib/clients/session-delivery-service.js'",
+    "      - 'lib/documents/report-progress.js'",
+    "      - 'components/prescription-document.jsx'",
+    "      - 'components/admin-session-studio.jsx'",
+    "      - 'tests/client-report-before-after-rings.test.mjs'",
+    "      - 'tests/report-progress-before-after.test.mjs'",
+    "      - 'tests/session-publication-review.test.mjs'",
+    "      - '.github/workflows/hh-client-report-progress.yml'",
+    'tests/report-progress-before-after.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs',
+    'node --conditions=react-server --test',
+    'npm run build',
+    '  workflow_dispatch:',
+  ]) assert.ok(source.includes(required), 'Replacement lost original evidence or trigger: ' + required);
+  assert.ok(source.includes("branches: ['codex/reports-development-program-20261017', 'codex/public-book-library']"), 'Post-merge report verification remains');
+  const oldSource="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-client-report-progress.yml'\n";
+  const base=new Map([[old,oldSource],[owner,source]]);
+  const current=new Map([[owner,source]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[old,owner]);
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[owner],delegated:[{retired:old,replacement:owner}],
+  });
+  assert.throws(()=>resolveExpectedSpecialists({
+    base,current:new Map([[owner,source+'\n# untrusted owner update']]),changed,expected,
+  }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });

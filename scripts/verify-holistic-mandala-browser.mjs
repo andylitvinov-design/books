@@ -132,21 +132,44 @@ const runEngine = async ([engine, browserType]) => {
           assert.match(await promptField.inputValue(),/горные вершины/i);
           // Mock only the external language model; real form + request.
           const apiRoute="**/api/holistic-support/first-video-prompt";
+          const aiCalls=[];
+          const aiNetworkFailures=[];
+          const captureNetworkFailure=request=>{
+            if(request.url().includes("first-video-prompt"))
+              aiNetworkFailures.push(request.failure()?.errorText||"unknown");
+          };
+          page.on("requestfailed",captureNetworkFailure);
           await page.route(apiRoute,async route=>{
-            const input=route.request().postDataJSON();
-            assert.equal(input.wish,"Горы");
-            assert.equal(input.consent,true);
+            aiCalls.push({method:route.request().method(),body:route.request().postData()});
             await route.fulfill({status:200,contentType:"application/json",
+              headers:{"cache-control":"no-store"},
               body:JSON.stringify({prompt:"Горные вершины и облака в мягком свете. Четыре спокойные сцены, плавное движение камеры и без людей.",
                 provider:"gemini_free",model:"gemini-2.5-flash-lite"}),
             });
           });
           await form.locator("[data-first-video-ai-consent]").check();
+          await expect(form.locator("[data-first-video-enhance]")).toBeEnabled({timeout:8000});
           await form.locator("[data-first-video-enhance]").click();
-          await expect.poll(()=>promptField.inputValue(),{timeout:20000})
-            .toContain("Горные вершины и облака");
-          await expect(form).toContainText("Gemini");
-          await page.unroute(apiRoute);
+          try{
+            await expect.poll(()=>aiCalls.length,{timeout:12000}).toBe(1);
+            const input=JSON.parse(aiCalls[0].body||"{}");
+            assert.equal(input.wish,"Горы");
+            assert.equal(input.consent,true);
+            await expect.poll(()=>promptField.inputValue(),{timeout:12000})
+              .toContain("Горные вершины и облака");
+            await expect(form).toContainText("Gemini");
+          }catch(error){
+            const state=await form.evaluate(el=>({
+              status:[...el.querySelectorAll("[role=status]")].map(n=>n.textContent?.trim()),
+              loading:el.querySelector("[data-first-video-enhance]")?.textContent?.trim(),
+              mode:el.querySelector("[data-first-video-prompt]")?.value?.slice(0,200),
+              consent:el.querySelector("[data-first-video-ai-consent]")?.checked,
+            }));
+            throw new Error("FIRST_VIDEO_AI_UI_NOT_APPLIED: "+JSON.stringify({engine,aiCalls,aiNetworkFailures,state}),{cause:error});
+          }finally{
+            page.off("requestfailed",captureNetworkFailure);
+            await page.unroute(apiRoute);
+          }
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{

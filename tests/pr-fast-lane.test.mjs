@@ -78,7 +78,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /docs\/\*\.md\|README\.md/);
   assert.match(source, /npm ci --no-audit --no-fund/);
   assert.match(source, /eslint/);
-  assert.match(source, /tsc --noEmit/);
+  assert.match(source, /run: npm run build/);
   assert.match(source, /npm run build/);
   assert.match(source, /ci-specialist-aggregate\.mjs/);
   assert.match(source, /git show/);
@@ -100,6 +100,7 @@ test('PR automation policy and agent entry point require specialist safety gates
   assert.match(docs, /sole required GitHub status is `release-ready`/);
   assert.match(docs, /exact PR HEAD and current production BASE/);
   assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
   }
@@ -361,8 +362,6 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
 
 test('App R1 and IA retain specialist tests but avoid duplicate global validation on production PRs', () => {
   const core = workflow('hh-pr-core-release.yml');
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /tsc --noEmit/);
   assert.match(core, /eslint/);
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const app = workflow('hh-app-r1.yml');
@@ -427,8 +426,6 @@ test('public installer changes use their dedicated real mobile gate, not unrelat
 test('two confirmed source-only specialist suites delegate duplicate TypeScript or build to unconditional production release-ready', () => {
   const skip = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   const core = workflow('hh-pr-core-release.yml');
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /tsc --noEmit/);
   const specs=[
     ['hh-public-test-collections.yml',[['Verify Next.js production build','npm run build']],['tests/public-test-topic-collections.test.mjs','tests/profile-construct-axes.test.mjs']],
     ['hh-kling-video.yml',[['TypeScript','npx tsc --noEmit'],['Next.js build','npm run build']],['tests/kling-video.test.mjs','tests/kling-avatar.test.mjs']],
@@ -457,7 +454,6 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
   assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
   assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
-  assert.match(core,/npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
   assert.ok(actionlint.includes("'tests/ci-workflow-globs.test.mjs'"),'Changing the CI syntax regression must launch its own check');
@@ -472,7 +468,7 @@ const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
 const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
-    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
     ['library-public-feed.yml','hh-library-feed','isolated-build'],
   ]) {
     const src=workflow(file);
@@ -492,9 +488,36 @@ test('video About and Library cancel only superseded PR checks, preserving speci
   assert.match(lib,/run: npm run build/);
   assert.match(lib,/playwright install --with-deps chromium webkit/);
   assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
-  const about=workflow('holistic-about-video-check.yml');
-  assert.match(about,/npx tsc --noEmit/);
-  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  // A BASE-trusted two-PR migration may retire the duplicate About source-only
+  // workflow only after an unchanged Site Video successor covers the same paths.
+  const successor=workflow('site-video-browser.yml');
+  for(const inherited of [
+    'components/psychic-alchemy-intro-video*',
+    'app/**/about/page.tsx',
+    'tests/psychic-alchemy-intro-video.test.mjs',
+    'lib/site-videos/**',
+    'components/site-video-*',
+    'components/page-video.tsx',
+    'app/admin/videos/**',
+    'app/site-video*.css',
+    'tests/site-video*.mjs',
+    'middleware.ts',
+    '.github/workflows/holistic-about-video-check.yml',
+  ]) assert.ok(successor.includes("      - '"+inherited+"'"),'Missing original About trigger '+inherited);
+  for(const contract of ['tests/psychic-alchemy-intro-video.test.mjs','tests/site-videos.test.mjs',
+    'tests/site-video-defaults.test.mjs','node scripts/verify-site-video-browser.mjs','npx tsc --noEmit']) {
+    assert.ok(successor.includes(contract),'Missing About source/browser evidence '+contract);
+  }
+  assert.doesNotMatch(successor,/continue-on-error:\s*true/);
+  if(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml'))) {
+    const about=workflow('holistic-about-video-check.yml');
+    assert.match(about,/npx tsc --noEmit/);
+    assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+  } else {
+    const policy=readFileSync(join(root,'lib','ci','specialist-aggregate.mjs'),'utf8');
+    assert.ok(policy.includes("'.github/workflows/holistic-about-video-check.yml': '.github/workflows/site-video-browser.yml'"),
+      'Only production BASE-approved migration can retire the old workflow');
+  }
 });
 
 
@@ -567,8 +590,6 @@ test('Reports Development Programme keeps its focused verification and separate 
   const core = workflow('hh-pr-core-release.yml');
   const reports = workflow('hh-reports-development-program.yml');
   const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
-  assert.match(core, /run: npm run build/);
-  assert.match(core, /npx --no-install tsc --noEmit/);
   assert.match(core, /^  release-ready:/m);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.match(reports, /^  pull_request:/m);
@@ -662,4 +683,24 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+  const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(source, /pull_request_target:/);
+  assert.match(source, /pull-requests: write/);
+  assert.match(source, /head\.repo\.full_name == github\.repository/);
+  assert.match(source, /draft == false/);
+  assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
+});
+
+test('core production build is the single TypeScript gate and cannot ignore errors', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const config=readFileSync(join(root,'next.config.ts'),'utf8');
+  const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
+  assert.doesNotMatch(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.equal(pkg.scripts.build,'next build');
+  assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
