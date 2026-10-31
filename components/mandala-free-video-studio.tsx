@@ -35,7 +35,9 @@ type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
 type Aspect = "square" | "portrait" | "landscape";
 type Quality = "hd" | "fullhd";
-type Result = { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: "catalog" };
+type Result =
+  | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: never }
+  | { url: string; extension: "mp4"; bytes: 0; mime: "video/mp4"; mode: "catalog" };
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
@@ -1672,7 +1674,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, []);
 
   useEffect(() => () => {
-    if (result?.url) URL.revokeObjectURL(result.url);
+    if (result?.url && result.mode!=="catalog") URL.revokeObjectURL(result.url);
   }, [result]);
   // A completed local recording lives in the existing result pane.
   // Reveal that pane before scrolling; a collapsed result is not delivery.
@@ -1912,28 +1914,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setNotice(t.unsupported);
           return;
         }
-        const response=await fetch(film.src,{
-          method:"GET",cache:"force-cache",credentials:"same-origin",redirect:"error",
-          referrerPolicy:"no-referrer",
-        });
-        const length=Number(response.headers.get("content-length")||0);
-        const mime=response.headers.get("content-type")||"";
-        if(!response.ok||!mime.startsWith("video/mp4")||
-          (Number.isFinite(length)&&length>60_000_000))
-          throw new Error("Approved source MP4 unavailable");
-        const blob=await response.blob();
-        if(blob.size<10_000||blob.size>60_000_000||
-          sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        // No programmatic network access in the private local video editor.
+        // A same-origin approved static MP4 is served by the ordinary anchor
+        // and native video player; no JS upload/fetch, paid call or hidden mix.
         setResult({
-          url:URL.createObjectURL(blob),extension:"mp4",bytes:blob.size,
-          blob,mime:"video/mp4",mode:"catalog",
+          url:film.src,extension:"mp4",bytes:0,
+          mime:"video/mp4",mode:"catalog",
         });
         setProgress(100);
         setNotice(locale==="ru"
-          ?"Браузер не поддерживает запись Canvas. Можно сохранить исходный MP4 выбранной сцены. Формат, продолжительность, музыка и надписи из настроек в него не включены."
+          ?"Браузер не поддерживает запись Canvas. Можно скачать исходный MP4 выбранной сцены. Настройки формата, длительности, звука и надписей к нему не применены."
           :locale==="es"
-          ?"El navegador no puede grabar Canvas. Puedes guardar el MP4 original de la escena, sin tus ajustes de duración, formato, música o texto."
-          :"Canvas recording is unavailable here. Save the selected original scene MP4; your custom aspect, duration, music and caption are not included.");
+          ?"El navegador no puede grabar Canvas. Puedes descargar el MP4 original sin los ajustes de formato, duración, música ni texto."
+          :"Canvas recording is unavailable. Download the selected original MP4, without custom aspect, duration, music or captions.");
         return;
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
@@ -2188,7 +2182,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
   }
   async function shareVideo(){
-    if(!result)return;
+    if(!result||result.mode==="catalog")return;
     const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
     if(typeof navigator.share!=="function" ||
       (typeof navigator.canShare==="function" && !navigator.canShare({files:[file]}))){
@@ -3877,11 +3871,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 data-mandala-video-download>
-                <Download size={18} aria-hidden="true"/>{ui.save} · {Math.max(1,Math.round(result.bytes/1024))} KB
+                <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
+                  ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
+                  :" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
               </a>
-              <button type="button" onClick={shareVideo} data-video-share>
+              {result.mode!=="catalog" ? <button type="button"
+                onClick={shareVideo} data-video-share>
                 <Share2 size={18} aria-hidden="true"/>{ui.share}
-              </button>
+              </button> : null}
             </div>
             <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
               aria-labelledby="video-post-support-title">

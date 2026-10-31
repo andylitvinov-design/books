@@ -33,3 +33,7 @@ This is an INDEPENDENT production-target first-video improvement, extracted from
 When the browser lacks Canvas capture (observed in the Linux WebKit acceptance), the first-video button downloads a verified, same-origin first-party MP4 source scene without external processing. The result is visibly tagged **catalog source**, not falsely represented as the multi-shot personalized output. Custom format, requested duration, soundtrack, captions and montage are NOT encoded in this fallback; a user with attached audio/caption/affirmations does not silently receive a different soundless file. Chromium/compatible browsers continue exporting the full custom multi-shot film. Both paths must produce a real ffprobe-decodable video asset, and all original sound and privacy checks still run.
 
 Background-only recording ignores asynchronous frameUrl/photoUrl changes from the separate portrait/mandala editor, so loading a decorative image cannot abort a real active recorder job.
+
+## Network isolation guarantee — refined fallback
+
+The catalog fallback is a **normal same-origin static MP4 link**, not a JS `fetch()` or a copied Blob. This preserves established audio/privacy and money-library contracts which intentionally ban arbitrary network requests from the original Canvas editor. Unlike a real four-shot render, catalog source cannot be shared as a freshly recorded personal media blob and is labelled accordingly.

@@ -77,6 +77,10 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(src,/data-video-result-mode/);
   assert.match(src,/data-video-catalog-fallback/);
   assert.match(src,/firstPartyFilmFor\(first\.theme,first\.sceneId\)/);
+  assert.match(src,/url:film\.src,extension:"mp4"/);
+  assert.match(src,/result\.mode!=="catalog"/);
+  // Private Canvas editor cannot add network fetch just for the fallback.
+  assert.doesNotMatch(src,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon/);
   assert.match(browserSource(),/supportsCanvasRecording/);
   assert.match(browserSource(),/free first-video export missing/);
   assert.match(ui,/setAiConsent\(event\.currentTarget\.checked\)/);
