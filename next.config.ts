@@ -24,8 +24,6 @@ const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"]
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // The required production build owns the single full TypeScript check.
-  typescript: { ignoreBuildErrors: false },
   // ffmpeg-static uses __dirname to locate its downloaded native executable.
   // Keep the package external to Next webpack so its binary path remains valid.
   serverExternalPackages: ["ffmpeg-static"],

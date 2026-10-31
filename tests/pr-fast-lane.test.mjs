@@ -702,5 +702,5 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.equal(pkg.scripts.build,'next build');
-  assert.match(config,/typescript:\s*\{\s*ignoreBuildErrors:\s*false\s*\}/);
+  assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
