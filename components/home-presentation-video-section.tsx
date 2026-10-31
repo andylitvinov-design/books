@@ -51,11 +51,14 @@ function isApprovedEnglishPresentation(video: PublishedSiteVideo | undefined): v
 }
 
 export async function HomePresentationVideoSection({ locale }: { locale: "en" | "ru" }) {
-  const video = locale === "ru"
-    ? approvedRussianPresentation
-    : await getPublishedSiteVideo(videoKey("home-intro", "en"));
-
-  if (locale === "en" && !isApprovedEnglishPresentation(video)) return null;
+  let video: PublishedSiteVideo;
+  if (locale === "ru") {
+    video = approvedRussianPresentation;
+  } else {
+    const published = await getPublishedSiteVideo(videoKey("home-intro", "en"));
+    if (!isApprovedEnglishPresentation(published)) return null;
+    video = published;
+  }
 
   const text = copy[locale];
   return (
