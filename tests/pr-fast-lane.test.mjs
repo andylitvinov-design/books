@@ -565,3 +565,17 @@ test('Mandala focused job overlaps both real browsers without losing media cover
     'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
   ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
 });
+
+test('core release checkout pins the exact production base with bounded history in all three jobs', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  assert.doesNotMatch(source, /fetch-depth:\s*0/, 'full history/branch fetch must not reappear');
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3, 'scope, code and release-ready all use bounded fetch');
+  assert.equal((source.match(/Pin exact production base for shallow checkout/g) ?? []).length, 3);
+  assert.equal((source.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 3);
+  assert.equal((source.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 6);
+  assert.match(source, /git diff --no-renames --name-only -z/, 'scope must still diff actual base');
+  assert.match(source, /git show/, 'immutable base specialist aggregate must remain');
+  assert.match(source, /scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(source, /timeout-minutes: 45/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
