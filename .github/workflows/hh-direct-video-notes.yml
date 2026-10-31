@@ -14,12 +14,13 @@ on:
       - 'tests/direct-message-media-transport.test.mjs'
       - 'tests/direct-message-video-notes.test.mjs'
       - 'tests/messages-private-media-pagination.test.mjs'
+      - 'tests/ci-head-cancellation.test.mjs'
       - '.github/workflows/hh-direct-video-notes.yml'
 permissions:
   contents: read
 concurrency:
-  group: hh-direct-media-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-direct-media-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   media-contract:
     runs-on: ubuntu-latest
@@ -34,6 +35,6 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Existing photo/voice, private media and video-note contracts
-        run: node --conditions=react-server --test tests/direct-message-media-transport.test.mjs tests/direct-message-video-notes.test.mjs tests/messages-private-media-pagination.test.mjs
+        run: node --conditions=react-server --test tests/direct-message-media-transport.test.mjs tests/direct-message-video-notes.test.mjs tests/messages-private-media-pagination.test.mjs tests/ci-head-cancellation.test.mjs
       - name: Scope lint
         run: npx --no-install eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-video-recorder.jsx tests/direct-message-video-notes.test.mjs tests/direct-message-media-transport.test.mjs
