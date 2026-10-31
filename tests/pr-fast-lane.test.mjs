@@ -663,3 +663,15 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
+
+test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+  const source = workflow('hh-pr-sweep-guard.yml');
+  assert.match(source, /pull_request_target:\s*\n\s+types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.match(source, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+  assert.match(source, /github\.event\.pull_request\.draft == false/);
+  const job = source.split(/^  enable-auto-merge:\s*$/m)[1];
+  assert.ok(job);
+  assert.doesNotMatch(job, /actions\/checkout|pull_request\.head\.(ref|sha).*run:/);
+  assert.match(job, /gh pr merge "\$PR_NUMBER" --repo "\$GITHUB_REPOSITORY" --auto --squash/);
+  assert.match(source, /github\.event_name.*github\.event\.pull_request\.number/);
+});
