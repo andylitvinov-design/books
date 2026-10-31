@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -12,6 +12,58 @@ const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',
 const path='.github/workflows/messenger.yml';
 const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'lib/crm/**'\n      - '!lib/crm/private/**'\n      - 'lib/crm/private/approved.mjs'\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
 const run=(overrides={})=>({id:151,workflow_id:30,path,head_sha:SHA,head_branch:'feat/test',event:'pull_request',status:'completed',conclusion:'success',run_attempt:1,head_repository:{full_name:repo},pull_requests:[{number:27,head:{sha:SHA},base:{ref:TARGET}}],...overrides});
+
+test('only verified concurrency-only edits can avoid unrelated specialists',()=>{
+ const file='.github/workflows/example.yml';
+ const old="on:\n  pull_request:\n    paths: ['.github/workflows/example.yml', 'app/api/**']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',
+  "  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const base=new Map([[file,old]]), current=new Map([[file,next]]);
+ const call=(changedRows,head=current)=>concurrencyOnlyAdvisory({base,current:head,changedRows,expected:[file]});
+ assert.deepEqual([...call([{filename:file,status:'M'}])],[file]);
+ assert.deepEqual([...call([{filename:file,status:'modified'},{filename:'tests/ci-head-cancellation.test.mjs',status:'modified'}])],[file]);
+ for(const extra of ['app/api/payments/route.js','app/page.tsx','scripts/unknown.mjs','tests/unknown.test.mjs'])
+  assert.deepEqual([...call([{filename:file,status:'M'},{filename:extra,status:'M'}])],[]);
+ for(const status of ['A','D','T','renamed']) assert.deepEqual([...call([{filename:file,status}])],[]);
+ for(const unsafe of [next.replace('runs-on: ubuntu-latest','runs-on: self-hosted'),next.replace('github.event.before != github.event.after','true'),next.replace('example-${{','other-${{'),next+'concurrency:\n'])
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,unsafe]]))],[]);
+ const collision=new Map([[file,next],['.github/workflows/other.yml',old]]);
+ assert.deepEqual([...call([{filename:file,status:'M'}],collision)],[]);
+ const relevantOld=old.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
+  changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
+});
+
+test('concurrency advisory never hides push, orphan, wrong-head or unrelated runs',()=>{
+ const paths=new Set([path]);
+ assert.equal(isConcurrencyAdvisoryRun(run(),pr(),paths),true);
+ for(const variant of [run({event:'push'}),run({head_sha:'c'.repeat(40)}),run({head_repository:{full_name:'other/repo'}}),run({pull_requests:[]}),run({path:'.github/workflows/other.yml'})])
+  assert.equal(isConcurrencyAdvisoryRun(variant,pr(),paths),false);
+});
+
+test('trusted exact-merge concurrency scope ignores only its associated PR run',async()=>{
+ const file='.github/workflows/example.yml';
+ const syntax='.github/workflows/hh-actionlint.yml';
+ const old="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const syntaxYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/**']\njobs:\n  syntax:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',"  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const files={base:new Map([[file,old],[syntax,syntaxYaml]]),current:new Map([[file,next],[syntax,syntaxYaml]]),changedRows:[{filename:file,status:'M'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const failed=run({path:file,conclusion:'failure'});
+ const syntaxRun=run({id:153,path:syntax});
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ assert.deepEqual((await verify(api,ctx,files,{maxWaitMs:0})).expected,[syntax]);
+ api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
+ api.runs=async()=>[failed,syntaxRun];
+ await assert.rejects(()=>verify(api,ctx,modifiedSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
 
 test('scope reads GitHub path filters and ordered negative/reincluded patterns',()=>{
   const trigger=parsePrTrigger(yaml,path);
