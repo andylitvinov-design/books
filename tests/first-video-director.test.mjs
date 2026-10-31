@@ -202,6 +202,7 @@ test("iPhone encoder recovery preserves real media, truthful playback state and 
   assert.match(src,/isWebm=header\.length>=4/);
   assert.match(src,/job\.recorder\.stop\(\)/);
   assert.match(src,/data-video-recording-format/);
+  assert.match(src,/data-video-save-direct/,"direct download must remain available when iPhone share sheet fails");
   assert.match(src,/onClick=\{\(\)=>void createVideo\(false,true\)\}/);
   assert.match(src,/resultReady=\{Boolean\(result\)&&playbackStatus==="ready"\}/);
   assert.doesNotMatch(src,/recorder\.start\(500\)/);
