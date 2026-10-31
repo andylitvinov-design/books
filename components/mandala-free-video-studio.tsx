@@ -1499,7 +1499,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  // This is a published Russian-language introduction, NOT a generated client video.
+  // This is an approved Russian-language introduction, NOT a generated client video.
   // EN visibly labels its RU audio until an approved English master is available.
   const [introPlaying,setIntroPlaying] = useState(false);
   const introVideoId = locale==="es" ? null : "P9Wvo3gEY6U";
