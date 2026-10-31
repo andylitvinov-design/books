@@ -415,7 +415,7 @@ try {
   for (const locale of ["en", "ru", "es"]) {
     const page = await createPage(390);
     const label = locale + "/business-consulting/390";
-    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"networkidle",timeout:60000});
+    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"domcontentloaded",timeout:60000});
     assert.equal(response?.status(), 200, "Business service must render: " + label);
     const main = page.locator("main[data-business-consulting]");
     await visible(main.locator('h1#business-hero-title'));
