@@ -19,7 +19,6 @@ on:
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
       - 'scripts/ci-public-journey-scope.mjs'
       - 'tests/ci-public-journey-consolidation.test.mjs'
-      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
       - '.github/workflows/hh-public-journey-wave1.yml'
   push:
     branches: ['codex/public-book-library']
@@ -37,7 +36,6 @@ on:
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
       - 'scripts/ci-public-journey-scope.mjs'
       - 'tests/ci-public-journey-consolidation.test.mjs'
-      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
       - '.github/workflows/hh-public-journey-wave1.yml'
   workflow_dispatch:
 
