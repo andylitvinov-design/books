@@ -126,6 +126,8 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
+      - '!components/mandala-first-video-start*'
+      - '!app/api/holistic-support/first-video-prompt/route.js'
       # These isolated editor modules run the dedicated Mandala real-media E2E.
       - '!components/mandala-hypno-compact*'
       - '!components/mandala-personal-meditation*'
@@ -133,6 +135,7 @@ on:
       - '!scripts/verify-holistic-support-browser.mjs'
       # Independently owned Voice Studio paths continue under Mandala real-media E2E.
       - '!app/**/holistic-support/voice-studio/route.ts'
+      - '!app/api/holistic-support/voice/**'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'
