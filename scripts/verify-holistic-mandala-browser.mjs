@@ -201,6 +201,56 @@ const runEngine = async ([engine, browserType]) => {
             .waitFor({state:"visible",timeout:25000});
         }
 
+        // The standalone free meditation course is a real interactive path,
+        // not a decorative button, and must not send private data or purchase.
+        await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
+          .waitFor({state:"visible",timeout:25000});
+        const courseToggle=page.locator("[data-video-meditation-course-toggle]");
+        await courseToggle.click();
+        await expect(courseToggle).toHaveAttribute("aria-expanded","true");
+        const meditationCourse=page.locator("[data-video-meditation-course-panel]");
+        await meditationCourse.waitFor({state:"visible",timeout:12000});
+        const requestText={
+          ru:"Хочу спокойнее общаться с родителями",
+          en:"I want gentle family communication",
+          es:"Quiero una comunicación amable con mi familia",
+        }[locale];
+        await meditationCourse.locator("[data-meditation-course-request]").fill(requestText);
+        await meditationCourse.locator("[data-meditation-generate]").click();
+        const courseScript=await meditationCourse.locator("[data-meditation-script]").inputValue();
+        assert.ok(courseScript.includes(requestText),
+          "day one is a real, locally generated meditation for the entered intention");
+        await expect(meditationCourse.locator("[data-meditation-course-day]")).toHaveCount(8);
+        // Carousel content must never grow the implicit Studio grid to its
+        // eight-card intrinsic width and push real controls off screen.
+        await page.waitForFunction(()=>{
+          const builder=document.querySelector("[data-video-quick-builder]");
+          const body=document.documentElement;
+          if(!builder)return false;
+          const r=builder.getBoundingClientRect();
+          return r.width<=innerWidth+2 && r.left>=-2 &&
+            body.scrollWidth<=body.clientWidth+2;
+        },undefined,{timeout:10000});
+
+        await meditationCourse.locator("[data-meditation-generate]").click();
+        const alternate=await meditationCourse.locator("[data-meditation-script]").inputValue();
+        assert.notEqual(alternate,courseScript,
+          "Generate again must produce an alternative passage while preserving the goal");
+        assert.ok(alternate.includes(requestText));
+        await expect(meditationCourse.locator("[data-meditation-course-day]")).toHaveCount(8);
+        await meditationCourse.locator("[data-meditation-course-order]").click();
+        await expect(meditationCourse.locator("[data-meditation-course-contact]")).toBeVisible();
+        const enquirySubmit=meditationCourse.locator("[data-meditation-course-submit]");
+        assert.equal(await enquirySubmit.isEnabled(),false,
+          "a course request cannot submit without one-time contact consent");
+        await meditationCourse.locator('input[type="email"]').fill("course-test@example.org");
+        await meditationCourse.locator('input[type="checkbox"]').check();
+        assert.equal(await enquirySubmit.isEnabled(),true,
+          "consented contact form is usable, but CI never submits a real enquiry");
+        await courseToggle.click();
+        await expect(courseToggle).toHaveAttribute("aria-expanded","false");
+        assert.equal(await page.locator("[data-video-meditation-course-panel]").count(),0);
+
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
         assert.equal(await quick.locator("[data-video-quick-section]").count(),4,

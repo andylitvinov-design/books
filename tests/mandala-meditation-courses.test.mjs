@@ -31,15 +31,23 @@ test("standalone meditation-course button opens the existing working composer be
 test("one generated meditation unlocks exactly eight topic previews and an honest service inquiry",()=>{
   const src=read("components/mandala-personal-meditation.tsx");
   const css=read("components/mandala-personal-meditation.module.css");
-  assert.match(src,/buildPersonalImageryCourse\(\{/);
+  assert.match(src,/buildAdaptiveMeditationOutline\(\{/);
+  assert.match(src,/variantIndex:nextVariant/);
+  assert.match(src,/setCourseDays\(plan.days.map/);
   assert.match(src,/coursePreview&&!safetyResponse/);
   assert.match(src,/coursePreview&&script&&!stale&&courseDays.length===8/);
   assert.match(src,/data-meditation-eight-day-plan/);
   assert.match(src,/courseDays\.map\(\(day,index\)/);
   assert.match(src,/data-meditation-course-day=\{day.number\}/);
   assert.match(src,/data-meditation-eight-day-offer/);
-  assert.match(src,/href=\{"\/"\+locale\+"\/services\/imagery-therapy"\}/);
-  assert.match(src,/data-meditation-course-order/);
+  assert.match(src,/<MeditationCourseEnquiry key=\{signature\} locale=\{locale\} focus=\{courseFocus\|\|actualTheme\}/);
+  const enquiry=read("components/meditation-course-enquiry.tsx");
+  assert.match(enquiry,/data-meditation-course-order/);
+  assert.match(enquiry,/data-meditation-course-submit/);
+  assert.match(enquiry,/contactConsent:true/);
+  assert.match(enquiry,/sourcePath:"\/"\+locale\+"\/services\/imagery-therapy"/);
+  assert.doesNotMatch(enquiry,/wish|clientPhrase|testScores|profileData/,
+    "the first-party enquiry must not transmit raw meditation or test content");
   assert.match(src,/не проводят? оплату|не проводит оплату/);
   assert.match(css,/\.courseDays\{/);
   assert.match(css,/\.courseOffer\{/);

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
 import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { buildPersonalMeditationScript, isMeditationSafetyResponse } from "@/lib/mandala/personal-meditation-script.mjs";
-import { buildPersonalImageryCourse } from "@/lib/mandala/personal-guided-course.mjs";
+import { buildAdaptiveMeditationOutline } from "@/lib/mandala/adaptive-meditation-course.mjs";
 import { findLocalMeditationVoices, meditationNarrationEstimate, playMeditationNarration } from "@/lib/mandala/meditation-narration.mjs";
 import css from "./mandala-personal-meditation.module.css";
 
@@ -154,6 +154,7 @@ export function MandalaPersonalMeditation({
   const course=courseCopy[locale];
   const [courseRequest,setCourseRequest]=useState(wish);
   const [courseDays,setCourseDays]=useState<CourseDay[]>([]);
+  const [courseFocus,setCourseFocus]=useState<VideoTheme|null>(null);
   const effectiveWish=coursePreview?courseRequest:wish;
   const [selected,setSelected]=useState<Accent[]>([]);
   const [image,setImage]=useState<ImageKey>("video");
@@ -175,6 +176,7 @@ export function MandalaPersonalMeditation({
   const ambientRef=useRef<HTMLAudioElement>(null);
   const [extra,setExtra]=useState("");
   const [script,setScript]=useState("");
+  const [variantIndex,setVariantIndex]=useState(0);
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
   const actualTheme=meditationTheme==="inherit"?theme:meditationTheme;
@@ -263,23 +265,28 @@ export function MandalaPersonalMeditation({
   const generate=()=>{
     if(disabled)return;
     stopNarration();
+    const plan=coursePreview?buildAdaptiveMeditationOutline({
+      locale,theme:actualTheme,explicitTheme:meditationTheme!=="inherit",
+      request:effectiveWish||focus.goal,difficulty:focus.difficulty,details:focus.details,
+    }):null;
+    // A deliberate second press rotates among curated, meaningful local passages.
+    // Neither the requested topic nor the selected filters are changed.
+    const nextVariant=script?(variantIndex+1)%3:variantIndex;
     const next=buildPersonalMeditationScript({
-      locale,theme:actualTheme,wish:effectiveWish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment
+      locale,theme:plan?.focusTheme||actualTheme,wish:effectiveWish,
+      scene:coursePreview&&plan?plan.days[0].motif:scene,
+      sound,caption,pace,brightness,affirmationsEnabled,affirmations,
+      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
+      variantIndex:nextVariant,
     });
     const safetyResponse=isMeditationSafetyResponse(next,locale);
+    setVariantIndex(nextVariant);
     setScript(next);setGeneratedFor(signature);setNotice(safetyResponse?"":t.creating);
-    if(coursePreview&&!safetyResponse){
-      const plan=buildPersonalImageryCourse({
-        locale,theme:actualTheme,
-        goals:[actualTheme,...focus.goals.filter(goal=>goal!==actualTheme)].slice(0,3),
-        keyDifficulty:focus.difficulty,
-        keyGoal:effectiveWish||focus.goal,
-        detailGoals:focus.details,
-      });
-      setCourseDays((plan.sessions as CourseDay[]).map(({id,number,title,motif})=>({id,number,title,motif})));
+    if(coursePreview&&!safetyResponse&&plan){
+      setCourseFocus(plan.focusTheme as VideoTheme);
+      setCourseDays(plan.days.map(({id,number,title,motif})=>({id,number,title,motif})));
     }else if(coursePreview){
-      setCourseDays([]);
+      setCourseDays([]);setCourseFocus(null);
     }
   };
   async function copyScript(){
@@ -315,7 +322,7 @@ export function MandalaPersonalMeditation({
       <div className={css.context} data-meditation-context aria-label={t.filters}>
         <small>{t.filters}</small>
         <div className={css.chips}>
-          <span>{t.theme}: {themeLabels[locale][actualTheme]}</span>
+          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
           <span>{t.scene}: {scene}</span>
           <span>{t.sound}: {sound||t.quiet}</span>
           <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
@@ -486,8 +493,7 @@ export function MandalaPersonalMeditation({
           <div className={css.courseOffer} data-meditation-eight-day-offer>
             <h4>{course.offerTitle}</h4>
             <p>{course.offerText}</p>
-            <Link href={"/"+locale+"/services/imagery-therapy"} prefetch={false}
-              data-meditation-course-order>{course.order}</Link>
+            <MeditationCourseEnquiry key={signature} locale={locale} focus={courseFocus||actualTheme}/>
             <small>{course.orderNote}</small>
           </div>
         </section>:null}

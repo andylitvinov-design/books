@@ -2131,3 +2131,13 @@
 .meditationCourseInline{min-width:0;scroll-margin-top:78px}
 .meditationCourseInline :global([data-video-personal-meditation]){margin:7px 0 16px}
 @media(prefers-reduced-motion:reduce){.meditationCourseEntry>svg:last-child{transition:none}}
+
+/* The 8-session horizontal carousel is nested in this implicit grid.
+   An implicit auto track can otherwise take its scroll rail's min-content
+   width (~2k px), pushing the sibling phrase editor outside a 390px viewport.
+   Contain the grid track rather than hiding a real user-tap target. */
+.quickBuilder{grid-template-columns:minmax(0,1fr)}
+.quickBuilder>.therapyCourse,
+.quickBuilder>.quickHypnoInline,
+.quickBuilder>.meditationCourseInline{min-width:0;max-width:100%}
+.quickBuilder .therapyCourse [data-guided-eight-sessions]{min-width:0;max-width:100%}
