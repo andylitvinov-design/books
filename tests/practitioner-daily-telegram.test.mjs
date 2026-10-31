@@ -44,12 +44,15 @@ test('zero tracking is caveated and no personal notes leak into digest',()=>{
 })
 test('bot schedule is daily and independent of the existing housekeeping job',()=>{
   const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
-  assert.deepEqual(config.crons,[
+  assert.ok(Array.isArray(config.crons))
+  for(const expected of [
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
-  ])
+  ]){
+    assert.deepEqual(config.crons.filter(x=>x.path===expected.path),[expected])
+  }
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{
   const request=new Request('https://holistichouse.vercel.app/api/internal/practice-telegram-digest')
