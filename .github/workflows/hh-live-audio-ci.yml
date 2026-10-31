@@ -80,6 +80,7 @@ jobs:
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 75); do
+            printf 'Live Audio local readiness attempt %s/75\n' "$i"
             if curl -fsS http://127.0.0.1:3100/api/live-audio/status > /tmp/hh-live-audio-status.json; then ready=1; break; fi
             sleep 2
           done
