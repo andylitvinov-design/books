@@ -2306,7 +2306,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return ()=>window.removeEventListener("hashchange",openHypnoHash);
   },[]);
   const openQuickDetailed=(anchor:string)=>{
+    // Hypno lives above the mini-preview now; do not expand the unrelated
+    // advanced format/audio disclosure just to open these two compact cards.
     if(anchor==="video-hypnosis")setQuickHypnoOpen(true);
+    else setQuickDetailedOpen(true);
     const token=++quickNavTokenRef.current;
     const path=window.location.pathname+window.location.search;
     const desired="#"+anchor;
@@ -2319,7 +2322,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     setLocation(true);
     setQuickNavTarget(anchor);
-    setQuickDetailedOpen(true);
     const jump=()=>{
       if(!current())return;
       setLocation(false);
