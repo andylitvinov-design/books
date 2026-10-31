@@ -24,6 +24,8 @@ test('App R1: cross-feature, API, dependency, security, migrations, mixed and no
     null, [], one('app/api/app/login/route.ts'), one('lib/security/rls.ts'),
     one('supabase/migrations/20261031_more.sql'), one('package-lock.json'),
     one('components/app/owner-cabinet.jsx'), one('tests/app-database.integration.mjs'),
+    one('tests/my-course-quest.test.mjs'), one('tests/checkin-scoring-analysis-quality.test.mjs'),
+    one('tests/historical-interpretation-coverage.test.mjs'),
     one('components/profile-compact-design.tsx', 'added'),
     one('components/my-course-dashboard.tsx', 'removed'),
     [{ filename: 'components/profile-compact-design.tsx', status: 'modified' },
