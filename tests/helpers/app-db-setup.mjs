@@ -16,6 +16,7 @@ export async function setup(){const db=await adminClient();try{
  // Restore production messaging and opt-in push schema in empty isolated CI DB.
  await db.query(await readFile(new URL('../../supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019174312_hh_practitioner_request_read_state_20261019.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261019152000_hh_public_service_enquiries_secure.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261019180000_hh_client_message_push_optin.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261025181000_hh_practitioner_public_aliases.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261016231500_hh_practitioner_articles_and_discovery.sql',import.meta.url),'utf8'))
