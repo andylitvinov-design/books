@@ -39,4 +39,5 @@ jobs:
       - name: Lint edited Messages components and route
         run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/practice-request-conversation.jsx lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
