@@ -142,7 +142,7 @@ jobs:
             echo 'Whole-project TypeScript delegated to mandatory Core release gate'
           fi
       - name: Original About video and default-stream contracts
-        run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
+        run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs tests/ru-about-video-presentation.test.mjs tests/page-video-release.test.mjs
       - name: Original About video source lint
         run: npx --no-install eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
       - name: Install isolated browser test dependencies without changing the app lockfile
@@ -169,24 +169,6 @@ jobs:
         env:
           NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
           NEXT_TELEMETRY_DISABLED: '1'
-      - name: Check minimal RU introduction in Chromium and WebKit
-        run: |
-          node --test tests/ru-about-video-presentation.test.mjs
-          node scripts/verify-ru-about-video.mjs
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
-      - name: Check complete Spanish About page in Chromium and WebKit
-        run: node scripts/verify-es-about.mjs
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
-      - name: Check all Spanish public destinations and remedy routes
-        run: node scripts/verify-es-public-site.mjs
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
-      - name: Check eight page previews and hydration-safe first clicks
-        run: |
-          node --test tests/page-video-release.test.mjs
-          node scripts/verify-page-video-release.mjs
       - name: Check production read-only after release
         if: github.event_name == 'push'
         run: node scripts/verify-site-video-browser.mjs --live
