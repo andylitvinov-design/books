@@ -66,3 +66,9 @@ test('elevated GitHub token only used for trusted production checkout, not PR HE
   assert.match(yaml, /if: github\.event_name == 'pull_request'/);
   assert.match(yaml, /github\.event_name == 'push'/);
 });
+
+test('cleanup concurrency isolates PRs and never cancels production push runs', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  assert.ok(yaml.includes("group: hh-ci-prune-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(yaml.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+});
