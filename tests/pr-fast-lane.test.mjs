@@ -676,19 +676,26 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
   assert.match(core, /name: core-lint-types-build/);
   assert.doesNotMatch(readFileSync(join(root, 'next.config.ts'), 'utf8'), /ignoreBuildErrors/);
   assert.match(core, /run: npm run build/);
+  // Both specialists must retain real browser acceptance for applicable changes.
+  // Public Services owns its cached full-browser runner; Alchemy now uses the
+  // production-trusted scoped owner without redundantly downloading a cache.
   for (const [name, source] of [['public services', publicQa], ['alchemy', alchemy]]) {
-    assert.match(source, /npm run build > artifacts\//, name + ': independent exact-head production build remains');
-    assert.match(source, /playwright install --with-deps chromium webkit/, name + ': real browsers remain');
-    assert.match(source, /actions\/cache@v4/, name + ': real browser cache');
-    assert.match(source, /path: ~\/\.cache\/ms-playwright/, name + ': browser binaries only');
-    assert.match(source, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/,
-      name + ': no cross-PR or cross-version binaries');
-    assert.match(source, /if ! kill -0 "\$SERVER_PID"/, name + ': detect a dead server');
-    assert.match(source, /--max-time 3/, name + ': bounded readiness HTTP probe');
-    assert.ok(source.includes('if [[ "$ready" != "1" ]]') || source.includes('if [ "$ready" != 1 ]'),
-      name + ': no success on a missing server');
-    assert.doesNotMatch(source, /continue-on-error:\s*true/, name + ': never weaken required tests');
+    assert.match(source, /npm run build > artifacts\//, name + ': production build remains available');
+    assert.match(source, /playwright install --with-deps chromium webkit/, name + ': real browser engines remain');
+    assert.doesNotMatch(source, /continue-on-error:\s*true/, name + ': failures remain blocking');
   }
+  assert.match(publicQa, /actions\/cache@v4/);
+  assert.match(publicQa, /path: ~\/\.cache\/ms-playwright/);
+  assert.match(publicQa, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/);
+  assert.match(publicQa, /if ! kill -0 "\$SERVER_PID"/);
+  assert.match(publicQa, /--max-time 3/);
+  assert.ok(publicQa.includes('if [[ "$ready" != "1" ]]'));
+  assert.match(alchemy, /node scripts\/ci-alchemy-impact\.mjs/,
+    'Alchemy must route CI-only edits without full recompilation');
+  assert.match(alchemy, /if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/,
+    'Alchemy runs real browser on applicable runtime edits');
+  assert.match(alchemy, /HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/,
+    'manual WebKit verification remains available');
   assert.match(publicQa, /timeout-minutes: 20/);
   for (const browser of [
     'verify-alchemy-one-screen', 'verify-business-quiz-mobile', 'verify-ideas-mobile-browser',
