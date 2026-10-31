@@ -24,4 +24,17 @@ jobs:
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
             echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
           fi
-          gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD"
+          for ((attempt=1; attempt<=3; attempt++)); do
+            if gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/auto-merge-error" >&2
+            if [[ "$(gh pr view "$PR_NUMBER" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest != null' 2>/dev/null)" == true ]]; then
+              exit 0
+            fi
+            if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
+              exit 1
+            fi
+            if ((attempt < 3)); then sleep "$attempt"; fi
+          done
+          exit 1
