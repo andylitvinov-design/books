@@ -20,7 +20,6 @@ on:
       - 'scripts/ci-public-journey-scope.mjs'
       - 'tests/ci-public-journey-consolidation.test.mjs'
       - '.github/workflows/hh-public-journey-wave1.yml'
-      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
