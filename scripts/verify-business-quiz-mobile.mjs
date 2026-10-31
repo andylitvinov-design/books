@@ -168,6 +168,13 @@ async function verify(engine, locale, width) {
     assert.deepEqual(externalPosts,[],label+": navigation never sends lead, payment or analytics POST");
     assert.deepEqual(pageErrors,[],label+": no unhandled page errors");
     return label;
+  } catch (error) {
+    const state = await page.locator('[data-direction-offers="business"]').evaluate(root => ({
+      expanded: root.querySelector('[data-direction-show-more="session"]')?.getAttribute('aria-expanded'),
+      offers: root.querySelectorAll('[data-offer-action="session"]').length,
+    })).catch(() => null);
+    error.message = label + ': ' + error.message + '; session state=' + JSON.stringify(state);
+    throw error;
   } finally {
     await context.close();
     await browser.close();

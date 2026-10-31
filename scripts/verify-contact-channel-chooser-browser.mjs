@@ -57,9 +57,7 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     // Next page may remount it after a Yggdrasil intent switch.
     const nameDisclosure=form.locator('details:has(input[autocomplete="name"])');
     const nameInput=nameDisclosure.locator('input[autocomplete="name"]');
-    await nameDisclosure.locator('summary').click();
-    if (!(await nameInput.isVisible())) {
-      // Reopen via a real visitor click after a transient React remount.
+    if (await nameDisclosure.getAttribute('open') === null) {
       await nameDisclosure.locator('summary').click();
     }
     await nameInput.waitFor({state:"visible",timeout:12000});
@@ -71,8 +69,13 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
-    await form.locator('details:has(textarea) > summary').click();
-    await form.locator('textarea').fill(privateNote);
+    const noteDisclosure = form.locator('details:has(textarea)');
+    if (await noteDisclosure.getAttribute('open') === null) {
+      await noteDisclosure.locator('summary').click();
+    }
+    assert.equal(await noteDisclosure.getAttribute('open'), '',
+      'The optional private note must be explicitly open');
+    await noteDisclosure.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
   await form.locator('input[type="checkbox"]').check();
