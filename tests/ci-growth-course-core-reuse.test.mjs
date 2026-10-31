@@ -34,6 +34,7 @@ test('Course presets retain private saves, concurrency and curricula',()=>{
   for(const path of ['tests/course-presets.test.mjs','tests/my-course.test.mjs','tests/course-dashboard-integration.test.mjs',
     'tests/course-concurrency-ui.test.mjs','tests/course-free-slot-restart.test.mjs',
     'tests/energywork-ai-course-private-save.test.mjs']) assert.ok(s.includes(path),'Course evidence lost '+path);
+  assert.ok(s.includes("--test-skip-pattern='one private six-milestone route reuses tests, insights and keeps mobile bottom navigation'"), 'Only one obsolete six-tab layout oracle may be skipped; original course suite remains');
   assert.ok(s.includes("group: hh-course-presets-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
   assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"));
 });
