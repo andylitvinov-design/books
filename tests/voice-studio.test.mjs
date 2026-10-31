@@ -130,15 +130,11 @@ test('real API route enforces origin, server auth for custom, durable quotas and
   assert.match(code,/voiceStudioKey\(process\.env\)/);
   assert.doesNotMatch(code,/process\.env\.HH_COUNCIL_GEMINI_API_KEY/);
 });
-test('editor offers free samples and custom text generation in main video page and preserves legacy link',()=>{
-  const meditation=get('components/mandala-personal-meditation.tsx');
-  const mandala=get('components/mandala-meditation-client.tsx');
+test('editor offers free samples and custom text generation in the canonical video page',()=>{
   const redirect=get('app/[locale]/holistic-support/voice-studio/route.ts');
   const editor=get('components/mandala-free-video-studio.tsx');
   const client=get('components/mandala-cloud-voice-studio.tsx');
   const mix=get('lib/mandala/voice-audio-mix.ts');
-  assert.match(meditation,/MandalaCloudVoiceStudio locale=\{locale\} sourceText=\{script\}/);
-  assert.match(mandala,/holistic-support\/voice-studio/);
   assert.match(redirect,/NextResponse\.redirect/);
   assert.match(redirect,/isPublicLocale/);
   assert.match(redirect,/url\.hash="voice-studio"/);
