@@ -22,37 +22,37 @@ const copy={
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
     voice:"Голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
-    consent:"Разрешаю отправить только эти фразы в Google Gemini или, при его недоступности, через OpenRouter к xAI. Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
+    consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
     generate:"Создать аудиодорожку",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
-    unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит бесплатных запросов исчерпан. Платная генерация не запускается.",
+    unavailable:"Бесплатный генератор ещё не активирован.",quota:"Лимит запросов исчерпан. Платёж с посетителя не взимается.",
     error:"Не удалось получить звук. Выберите другой голос или повторите позже.",tooLong:"Аудио длиннее 60 секунд: сократите количество аффирмаций.",
     download:"Скачать WAV",tip:"Вы сможете прослушать, скачать WAV или нажать «Создать видео» — голос уже добавлен. При изменении фраз понадобится новая озвучка.",
     limit:"До 3 бесплатных попыток в час с одного подключения; без регистрации.",review:"Проверьте текст перед отправкой.",
-    finished:"Голос в видео",status:"Длительность речи",seconds:"сек.",backupUsed:" · OpenRouter/xAI"
+    finished:"Голос в видео",status:"Длительность речи",seconds:"сек.",backupUsed:" · OpenRouter/xAI",freeUsed:" · бесплатный OpenRouter/Deepgram"
   },
   en:{
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
     voice:"Voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
-    consent:"I agree to send only the displayed phrases to Google Gemini or, if unavailable, to xAI through OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
+    consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
     generate:"Generate voice track",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
-    unavailable:"Free voice generation has not been enabled yet.",quota:"Free usage limit reached. Paid generation will not be started.",
+    unavailable:"Free voice generation has not been enabled yet.",quota:"Audio request limit reached. No visitor charges.",
     error:"Audio could not be generated. Try another voice or again later.",tooLong:"Speech is longer than 60 seconds; shorten the affirmations.",
     download:"Download WAV",tip:"Listen, download WAV, or select Create video — your voice is already attached. Changed phrases require new narration.",
     limit:"Up to 3 free requests per hour per connection; no sign-in.",review:"Review this text before sending.",
-    finished:"Voice in video",status:"Speech duration",seconds:"sec",backupUsed:" · OpenRouter/xAI"
+    finished:"Voice in video",status:"Speech duration",seconds:"sec",backupUsed:" · OpenRouter/xAI",freeUsed:" · free OpenRouter/Deepgram"
   },
   es:{
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
     voice:"Voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
-    consent:"Autorizo enviar solo estas frases a Google Gemini o, si falla, a xAI mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
+    consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
     generate:"Generar pista de voz",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
-    unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota gratuita agotada; no se usará un servicio de pago.",
+    unavailable:"La generación gratuita todavía no está activa.",quota:"Cuota agotada; no hay cobros al visitante.",
     error:"No se pudo generar el sonido. Elige otra voz.",tooLong:"La voz dura más de 60 segundos; reduce las afirmaciones.",
     download:"Descargar WAV",tip:"Escucha, descarga el WAV o pulsa Crear vídeo. Si cambias las frases, genera la voz de nuevo.",
     limit:"Hasta 3 solicitudes gratuitas por hora y conexión, sin registro.",review:"Revisa el texto antes de enviarlo.",
-    finished:"Voz en el vídeo",status:"Duración",seconds:"s",backupUsed:" · OpenRouter/xAI"
+    finished:"Voz en el vídeo",status:"Duración",seconds:"s",backupUsed:" · OpenRouter/xAI",freeUsed:" · OpenRouter/Deepgram gratis"
   }
 } as const;
 
@@ -146,7 +146,8 @@ export function MandalaAffirmationVoice({
       if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(seconds);
       onAttach({file,spokenText:speechText,voiceId,language,speechSeconds:seconds,mixSeconds,bed});
-      setMessage(t.ready+(reply.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:""));
+      setMessage(t.ready+(reply.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:
+        reply.headers.get("X-HH-Voice-Provider")==="openrouter-free"?t.freeUsed:""));
     } catch(e) {
       if(job!==jobRef.current)return;
       const code=e instanceof Error?e.message:"";

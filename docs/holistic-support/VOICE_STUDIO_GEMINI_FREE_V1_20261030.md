@@ -115,3 +115,49 @@ Next TypeScript, eslint, сборка, реальный WebKit/Chromium Audio Ex
 Источники: https://openrouter.ai/docs/guides/overview/multimodal/tts ;
 https://openrouter.ai/x-ai/grok-voice-tts-1.0 ;
 https://developers.cloudflare.com/workers-ai/platform/pricing/ .
+
+
+## 30.10.2026 · Новая БЕСПЛАТНАЯ TTS-ступень OpenRouter/Deepgram
+
+OpenRouter предоставляет настоящий zero-cost TTS `deepgram/flux-tts:free`
+(модель **не** `openrouter/free`, которая выбирает преимущественно текстовые модели).
+Она ограничена бесплатной квотой OpenRouter и в текущей проверенной интеграции
+**используется исключительно для английского языка**; RU/ES продолжают опираться
+на бесплатный Gemini и, если отдельно разрешено, платный резерв.
+Голоса Free по шести профилям: `flux-cliff-en`, `flux-miles-en`,
+`flux-kit-en`, `flux-sienna-en`, `flux-haley-en`, `flux-hannah-en`.
+Эти IDs опубликованы Deepgram; реальное присутствие в OpenRouter и качество
+нужно проверить на настоящем вызове. Строго `response_format:pcm` и контроль
+частоты 24000 Hz, mono, 16-bit; неизвестный формат не выдаётся в видеоплеер.
+
+Флаги бесплатного резерва (все нужны):
+- `HH_VOICE_STUDIO_ENABLED=true`
+- `HH_VOICE_STUDIO_OPENROUTER_FREE_ENABLED=true`
+- `HH_VOICE_STUDIO_OPENROUTER_FREE_TIER_CONFIRMED=true`
+- серверный `HH_VOICE_STUDIO_OPENROUTER_FREE_API_KEY` либо существующий
+  `HH_COUNCIL_OPENROUTER_API_KEY` с явным
+  `HH_VOICE_STUDIO_USE_EXISTING_OPENROUTER_KEY=true`.
+
+Очередь на бэкенде: Gemini (20 s) → OpenRouter Deepgram Flux :free (12 s, EN)
+→ **только при особом отдельном платном одобрении** OpenRouter xAI (12 s).
+Помимо гостевых лимитов, на бесплатный резерв отдельный потолок 30 запросов/
+сутки, с учётом глобального лимита бесплатного OpenRouter аккаунта.
+Платный xAI не активируется через флаг бесплатного режима и не вызывается
+автоматически без `HH_VOICE_STUDIO_PAID_BACKUP_APPROVED=true`.
+
+Обновлены UI-согласия RU/EN/ES: указывается Google, бесплатный Deepgram и
+опциональный xAI, независимо от того, какая ступень сработала.
+GET endpoint сообщает только готовность трёх путей без ключей. В заголовке
+ответа `X-HH-Voice-Provider: openrouter-free` бесплатный путь отличим от
+`gemini` и платного `openrouter`.
+
+Дополнительно изучены бесплатные Fish Audio S2.1 Pro Free (RU/ES потенциально
+подходит, но его ожидаемый MP3 нужно конвертировать в WAV и подтвердить
+поддержку PCM до добавления в реальное видео), HeyGen Voice Turbo Free
+(срок окончания 30 ноября 2026) и Cloudflare Workers AI MeloTTS
+(обычно MP3); **ни один из этих трёх пока не включён как рабочий маршрут**.
+
+Источник: https://openrouter.ai/deepgram/flux-tts:free ;
+https://developers.deepgram.com/docs/flux-tts/voices ;
+https://openrouter.ai/fish-audio/s2.1-pro-free:free ;
+https://openrouter.ai/collections/free-models .

@@ -20,15 +20,15 @@ const text = {
     language:"Язык",male:"Мужские голоса",female:"Женские голоса",low:"Низкий",medium:"Средний",high:"Высокий",
     sample:"Образец без личных данных",custom:"Мой текст",personal:"Взять текст из моей медитации",
     customLabel:"Текст озвучки (до 650 знаков)",customPlaceholder:"Напишите небольшой спокойный отрывок…",
-    consent:"Разрешаю отправить этот текст в Google Gemini или, если Google недоступен, через OpenRouter к xAI. Не отправляю личные и медицинские сведения. У провайдеров разные правила обработки данных; бесплатные запросы Google могут использоваться для улучшения сервисов.",
+    consent:"Разрешаю отправить этот текст в Google Gemini или через OpenRouter к Deepgram (бесплатный резерв, английский язык) либо xAI (если разрешён платный резерв). Не отправляю личные и медицинские сведения. У провайдеров разные правила обработки данных; бесплатные запросы Google могут использоваться для улучшения сервисов.",
     register:"Для озвучки персональной медитации необходим вход в личный кабинет. Бесплатные образцы можно слушать без входа.",guestText:"Короткий собственный текст доступен без входа: до 3 попыток в час с одного подключения. Не вводите личные или медицинские сведения.",
     background:"Природный фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     generate:"Создать голос по API",loading:"Генерация аудио…",voice:"Только голос · WAV",mixed:"Скачать WAV с природой",prepareMix:"Подготовить WAV с природой",mixing:"Смешиваем дорожки…",
     unavailable:"Генерация сейчас недоступна. Проверьте подключение Gemini и бесплатный тариф проекта.",
-    ready:"Озвучка настроена. Создайте короткий образец, чтобы проверить доступность.",error:"Не удалось создать запись. Попробуйте другой голос.",quota:"Бесплатная квота исчерпана. Платный рендер не запускается.",signIn:"Для своего текста войдите в кабинет.",privacy:"Превью образца не отправляет личные данные. Свой текст передаётся Google только после отдельного согласия и нажатия кнопки.",
+    ready:"Озвучка настроена. Создайте короткий образец, чтобы проверить доступность.",error:"Не удалось создать запись. Попробуйте другой голос.",quota:"Квота аудио исчерпана. С посетителя плата не списывается.",signIn:"Для своего текста войдите в кабинет.",privacy:"Образец не содержит личных данных. Свой текст отправляется Gemini либо разрешённому OpenRouter-провайдеру только после согласия.",
     mixedError:"Невозможно создать звуковую смесь в этом браузере. Скачайте голос отдельно.",audio:"Прослушивание с выбранным фоном",notice:"Голоса — выбранные профили; итоговое звучание требует прослушивания на обоих языках.",
     noText:"Напишите текст или выберите фрагмент из медитации.",noConsent:"Для передачи своего текста требуется согласие.",general:"API временно недоступен.",
-    sourceAdded:"Добавлен короткий фрагмент медитации. Проверьте текст перед отправкой.",backupUsed:"Использован резерв OpenRouter/xAI."
+    sourceAdded:"Добавлен короткий фрагмент медитации. Проверьте текст перед отправкой.",backupUsed:"Использован резерв OpenRouter/xAI.",freeUsed:"Аудио создано через бесплатный OpenRouter/Deepgram."
   },
   en:{
     title:"Voices for your meditation",eyebrow:"VOICE STUDIO · FREE PILOT",
@@ -36,15 +36,15 @@ const text = {
     language:"Language",male:"Male voices",female:"Female voices",low:"Low",medium:"Medium",high:"High",
     sample:"Public sample, no personal text",custom:"My own script",personal:"Use my meditation text",
     customLabel:"Narration text (up to 650 characters)",customPlaceholder:"Write a short, gentle passage…",
-    consent:"I agree to send this text to Google Gemini or, if unavailable, to xAI through OpenRouter. I will not include medical or identifying details. Provider privacy policies apply; free Google inputs may be used to improve services.",
+    consent:"I agree to send this text to Google Gemini or to Deepgram (free English backup) or xAI (approved paid backup) through OpenRouter. I will not include medical or identifying details. Provider privacy policies apply; free Google inputs may be used to improve services.",
     register:"Sign in to generate a personal meditation excerpt. Public samples require no account.",guestText:"Short original text works without sign-in, up to 3 requests per connection per hour. Do not include identifying or medical information.",
     background:"Nature background",none:"No background",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     generate:"Generate voice via API",loading:"Generating audio…",voice:"Download voice · WAV",mixed:"Download nature WAV",prepareMix:"Prepare nature WAV",mixing:"Mixing audio…",
     unavailable:"Cloud generation is unavailable. Check the Gemini connection and free-tier settings.",
-    ready:"Voice generation is configured. Generate a short sample to check availability.",error:"Could not generate audio. Please try another voice.",quota:"Free quota is exhausted. No paid rendering will be used.",signIn:"Sign in to generate your own script.",privacy:"Public samples never transmit personal text. Your script is sent to Google only after separate consent and a button click.",
+    ready:"Voice generation is configured. Generate a short sample to check availability.",error:"Could not generate audio. Please try another voice.",quota:"Audio quota exhausted. Visitors will not be charged.",signIn:"Sign in to generate your own script.",privacy:"Public samples contain no personal data. Your script goes only to Gemini or an enabled OpenRouter provider after consent.",
     mixedError:"Could not mix audio in this browser. You can still download voice-only WAV.",audio:"Preview with selected background",notice:"Voices are curated profiles, pending real listening checks in both languages.",
     noText:"Enter your text or use a meditation excerpt.",noConsent:"Your explicit consent is required before transmitting text.",general:"API is temporarily unavailable.",
-    sourceAdded:"A short excerpt was copied from your meditation. Review it before sending.",backupUsed:"OpenRouter/xAI backup was used."
+    sourceAdded:"A short excerpt was copied from your meditation. Review it before sending.",backupUsed:"OpenRouter/xAI backup was used.",freeUsed:"Audio generated via free OpenRouter/Deepgram."
   },
   es:{
     title:"Voces para tu meditación",eyebrow:"VOICE STUDIO · PILOTO GRATUITO",
@@ -52,15 +52,15 @@ const text = {
     language:"Idioma",male:"Voces masculinas",female:"Voces femeninas",low:"Grave",medium:"Media",high:"Aguda",
     sample:"Prueba pública sin datos privados",custom:"Mi propio texto",personal:"Usar el texto de mi meditación",
     customLabel:"Texto narrado (máximo 650 caracteres)",customPlaceholder:"Escribe un pasaje breve y tranquilo…",
-    consent:"Autorizo enviar este texto a Google Gemini o, si falla, a xAI mediante OpenRouter. No incluyo datos médicos ni privados. Se aplican las políticas de los proveedores; Google puede usar los datos gratuitos para mejorar servicios.",
+    consent:"Autorizo enviar este texto a Google Gemini o a Deepgram (respaldo gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No incluyo datos médicos ni privados. Se aplican las políticas de los proveedores; Google puede usar los datos gratuitos para mejorar servicios.",
     register:"Inicia sesión para generar un fragmento de tu meditación personal.",guestText:"Un texto breve funciona sin registro, hasta 3 intentos por hora por conexión. No incluyas datos personales ni médicos.",
     background:"Sonido natural",none:"Sin sonido",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     generate:"Generar voz por API",loading:"Generando audio…",voice:"Descargar voz · WAV",mixed:"Descargar WAV con naturaleza",prepareMix:"Preparar WAV con naturaleza",mixing:"Mezclando audio…",
     unavailable:"La generación aún no está habilitada; hace falta una clave independiente de Google AI Studio sin facturación.",
-    ready:"La generación de voz está configurada. Crea una muestra para comprobar su disponibilidad.",error:"No se pudo generar audio. Prueba otra voz.",quota:"Cuota gratuita agotada. No se ejecutarán renders de pago.",signIn:"Inicia sesión para usar texto propio.",privacy:"Las muestras públicas no envían datos personales. Tu texto solo se envía con consentimiento explícito.",
+    ready:"La generación de voz está configurada. Crea una muestra para comprobar su disponibilidad.",error:"No se pudo generar audio. Prueba otra voz.",quota:"Cuota agotada; el visitante no paga.",signIn:"Inicia sesión para usar texto propio.",privacy:"Las muestras públicas no envían datos personales. Tu texto solo se envía con consentimiento explícito.",
     mixedError:"No se pudo mezclar en este navegador. Descarga la voz por separado.",audio:"Escuchar con sonido natural",notice:"Los perfiles deben verificarse auditivamente en ambos idiomas.",
     noText:"Escribe un texto o usa tu meditación.",noConsent:"Necesitas dar consentimiento explícito.",general:"El API no está disponible.",
-    sourceAdded:"Se copió un fragmento de tu meditación. Revísalo antes de enviar.",backupUsed:"Se usó el respaldo OpenRouter/xAI."
+    sourceAdded:"Se copió un fragmento de tu meditación. Revísalo antes de enviar.",backupUsed:"Se usó el respaldo OpenRouter/xAI.",freeUsed:"Audio generado mediante OpenRouter/Deepgram gratis."
   }
 } as const;
 
@@ -158,7 +158,8 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null}:{
       if(token!==latestRef.current)return;
       const next=URL.createObjectURL(blob);
       urlRef.current=next;setWav(blob);setAudioUrl(next);
-      setNotice(response.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:"");
+      setNotice(response.headers.get("X-HH-Voice-Provider")==="openrouter"?t.backupUsed:
+        response.headers.get("X-HH-Voice-Provider")==="openrouter-free"?t.freeUsed:"");
     }catch(error){
       if(token!==latestRef.current)return;
       const code=error instanceof Error?error.message:"";

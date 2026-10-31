@@ -4,7 +4,7 @@ import { getAppConfig, requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { consumeRate } from '@/lib/app/database'
 import { readBody, PRIVATE_HEADERS, safeError } from '@/lib/app/http'
-import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, voiceStudioReady, voiceStudioKey, voiceStudioOpenRouterKey, voiceStudioProviders, validateStudioRequest, buildStudioPayload, buildOpenRouterStudioPayload } from '@/lib/mandala/voice-studio.mjs'
+import { VOICE_STUDIO_MODEL, VOICE_STUDIO_OPENROUTER_MODEL, VOICE_STUDIO_OPENROUTER_FREE_MODEL, voiceStudioReady, voiceStudioKey, voiceStudioOpenRouterKey, voiceStudioOpenRouterFreeKey, voiceStudioProviders, validateStudioRequest, buildStudioPayload, buildOpenRouterStudioPayload, buildOpenRouterFreePayload } from '@/lib/mandala/voice-studio.mjs'
 import { requestStudioAudio } from '@/lib/mandala/voice-studio-provider.mjs'
 import { requestOpenRouterStudioAudio } from '@/lib/mandala/voice-studio-openrouter-provider.mjs'
 
@@ -24,8 +24,9 @@ export async function GET() {
     enabled:configured,
     model:VOICE_STUDIO_MODEL,
     backupModel:VOICE_STUDIO_OPENROUTER_MODEL,
+    freeBackupModel:VOICE_STUDIO_OPENROUTER_FREE_MODEL,
     providers:voiceStudioProviders(process.env),
-    mode:'free-primary-optional-operator-funded-backup',
+    mode:'gemini-free-openrouter-free-optional-paid',
     customRequiresSignIn:true,
     publicAffirmationsEnabled:configured,
   },{headers:PRIVATE_HEADERS})
@@ -62,14 +63,27 @@ export async function POST(request) {
     }
     await consumeRate(config,{op:'voice-studio-free-global'},120,3600)
     const primaryKey=voiceStudioKey(process.env)
+    const freeKey=voiceStudioOpenRouterFreeKey(process.env)
     const backupKey=voiceStudioOpenRouterKey(process.env)
-    let wav,provider,primaryFailure
+    let wav,provider,primaryFailure,freeFailure
     if(primaryKey) {
       try{
         wav=await requestStudioAudio({key:primaryKey,payload:buildStudioPayload(validated),
-          signal:AbortSignal.timeout(30000)})
+          signal:AbortSignal.timeout(20000)})
         provider='gemini'
       }catch(error){primaryFailure=error}
+    }
+    if(!wav && freeKey && validated.language==='en') {
+      // Only the exact :free model is permitted, never `openrouter/free` or a paid model.
+      // Keep under OpenRouter's typical 50/day account-wide free allocation.
+      await consumeRate(config,{op:'voice-studio-openrouter-free-day'},30,86400)
+      try{
+        wav=await requestOpenRouterStudioAudio({
+          key:freeKey,payload:buildOpenRouterFreePayload(validated),
+          signal:AbortSignal.timeout(12000),
+        })
+        provider='openrouter-free'
+      }catch(error){freeFailure=error}
     }
     if(!wav && backupKey) {
       // Hard daily cap: 20 requests x 650 chars x $15/M chars ~ $0.20/day.
@@ -78,15 +92,17 @@ export async function POST(request) {
       try{
         wav=await requestOpenRouterStudioAudio({
           key:backupKey,payload:buildOpenRouterStudioPayload(validated),
-          signal:AbortSignal.timeout(15000),
+          signal:AbortSignal.timeout(12000),
         })
         provider='openrouter'
       }catch(error){
         throw new AppError(error.code||'TTS_BACKUP_UNAVAILABLE',error.status||503)
       }
     }
-    if(!wav)throw new AppError(primaryFailure?.code||'TTS_PROVIDER_UNAVAILABLE',
-      primaryFailure?.status||503)
+    if(!wav) {
+      const failure=freeFailure||primaryFailure
+      throw new AppError(failure?.code||'TTS_PROVIDER_UNAVAILABLE',failure?.status||503)
+    }
     const response = new NextResponse(wav,{
       headers:{
         ...PRIVATE_HEADERS,
