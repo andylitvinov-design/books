@@ -22,6 +22,28 @@ const page = await context.newPage()
 const problems = []
 const bootstrapStatuses = []
 let verifiedAccountLanding = false
+// Follow only the initial authenticated profile data loads, not Next.js dev
+// HMR/EventSource/long-polling traffic. All request failures stay observable.
+const profileReads = new Set()
+let profileReadActivity = Date.now()
+const isProfileRead = request => {
+  try {
+    const url = new URL(request.url())
+    return url.origin === origin && [
+      '/api/app/journey', '/api/app/express-reports',
+      '/api/app/development-goals', '/api/free-express/claim',
+      '/api/app/bootstrap',
+    ].includes(url.pathname)
+  } catch { return false }
+}
+page.on('request', request => {
+  if (isProfileRead(request)) { profileReads.add(request); profileReadActivity = Date.now() }
+})
+for (const event of ['requestfinished', 'requestfailed']) {
+  page.on(event, request => {
+    if (profileReads.delete(request)) profileReadActivity = Date.now()
+  })
+}
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
 // Confirm a successful same-origin protected bootstrap, not only visible UI.
 // WebKit may abort an older fetch when an authenticated page navigates away.
@@ -143,10 +165,16 @@ try {
   // The current signed-in Profile is ProfileDomains (not the older
   // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
   await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
-  // Wait for the authenticated landing's own requests before intentional navigation.
-  // This avoids WebKit cancelling in-flight profile reads as spurious CORS errors;
-  // actual authenticated endpoint failures are still captured and fail the gate.
-  await page.waitForLoadState('networkidle', {timeout:30000})
+  // Wait for the *profile* requests to settle, not global networkidle: the
+  // Next dev server may keep HMR connections alive indefinitely. Never navigate
+  // with profile reads in flight or silently ignore their real failures.
+  const settleDeadline = Date.now() + 30000
+  while (profileReads.size || Date.now() - profileReadActivity < 1600) {
+    if (Date.now() > settleDeadline) throw new Error(
+      'Authenticated profile reads did not settle: ' +
+      [...profileReads].map(req => new URL(req.url()).pathname).join(', '))
+    await page.waitForTimeout(250)
+  }
   verifiedAccountLanding = true
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
