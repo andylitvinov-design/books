@@ -14,8 +14,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-tantra-photo-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-tantra-photo-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   photo-cards:
     # Playwright 1.56.1 browser installer does not support Ubuntu 26.04 (ubuntu-latest).
