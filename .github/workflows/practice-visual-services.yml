@@ -1,6 +1,7 @@
 name: Practitioner visual service editor
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/simple-service-editor.*'
@@ -38,10 +39,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: practice-visual-services-${{ github.ref }}
-  cancel-in-progress: true
+  group: practice-visual-services-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   service-editor:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -52,7 +54,9 @@ jobs:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with:
+          node-version: 22
+          cache: npm
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Auth, service editor, quota, media and workflow contracts
         run: node --test tests/practice-google-return-and-services-v5.test.mjs tests/practice-public-private-unified.test.mjs tests/home-master-path.test.mjs tests/profi-hub.test.mjs tests/practice-inner-mock-parity.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/practice-reiki-offer-parity.test.mjs tests/practice-service-mobile-one-screen.test.mjs tests/practice-service-visual-blocks.test.mjs tests/practice-service-editor-simplified.test.mjs tests/practice-hobby-service-quota.test.mjs tests/practice-photo-upload.test.mjs tests/practitioner-presentation-video.test.mjs tests/practice-services-search.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-materials-action-first.test.mjs tests/practitioner-preview-auth.test.mjs
@@ -61,6 +65,8 @@ jobs:
       - name: Lint all changed components
         run: npx --no-install eslint components/app/simple-service-editor.jsx components/app/my-services-dashboard.jsx components/app/practice-workspace.jsx lib/practitioners/service-editor-steps.mjs components/practice-showcase.jsx 'app/[locale]/practice/page.jsx'
       - name: TypeScript
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

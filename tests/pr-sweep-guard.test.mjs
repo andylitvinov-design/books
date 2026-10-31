@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks } from '../lib/ci/pr-sweep-guard.mjs';
+import { readFileSync } from 'node:fs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -248,4 +249,171 @@ test('high-fanout CRM pass requires both source and build; wrong or failed job n
     const out=analyzeCI({...input,checks:[check('release-ready'),check('crm'),broken]});
     assert.equal(out.ci_ready,false);
   }
+});
+
+test('Private Audio reuses unconditional production Core TS/build while keeping real audio and push acceptance', () => {
+  const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('hh-private-audio-e2e.yml');
+  const core = read('hh-pr-core-release.yml');
+  const prodOnly = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for (const [name, command] of [
+    ['Full TypeScript (core owns production PR typing)', 'npx --no-install tsc --noEmit --incremental false'],
+    ['Production build with app flags absent', 'npm run build'],
+  ]) {
+    assert.ok(source.includes('- name: ' + name + '\n        ' + prodOnly + '\n        run: ' + command), name + ' must execute on push and delegate only production PR');
+  }
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  push:/m);
+  assert.ok(source.includes("github.event.pull_request.draft == false"));
+  for (const required of [
+    'Expiring admin sessions and pinned SDK refresh regressions',
+    'Actual synthetic AAC bytes through owner intent/upload/finalization/guest Range playback and privacy',
+    'tests/session-delivery-security.test.mjs',
+    'tests/client-session-recorder-auth.test.mjs',
+    'tests/session-media-sdk.test.mjs',
+    'Fixture lint and private media tests',
+  ]) assert.ok(source.includes(required), 'private-owner/media gate removed: ' + required);
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('Practitioner presentations retain all real contracts on production PRs and full TS/build on feature push', () => {
+  const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('practitioner-presentations.yml');
+  const core = read('hh-pr-core-release.yml');
+  const rule = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(source, /^  pull_request:/m);
+  assert.match(source, /^  push:/m);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
+  for (const [step, command] of [
+    ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
+    ['Full Next build (Core owns production PR)', 'npm run build'],
+  ]) {
+    assert.ok(source.includes('- name: '+step+'\n        '+rule+'\n        run: '+command),
+      step+' must retain independent feature push and reuse only Core on production PR');
+  }
+  for (const item of [
+    'tests/practitioner-presentation-video.test.mjs',
+    'tests/practitioner-video-materials.test.mjs',
+    'tests/practitioner-articles-v4.test.mjs',
+    'tests/practitioner-articles-folders.test.mjs',
+    'tests/master-network-r2.test.mjs',
+    'tests/practice-public-alias.test.mjs',
+  ]) assert.ok(source.includes(item), 'Missing actual practitioner contract: '+item);
+  assert.ok(source.includes("github.event.pull_request.draft == false"));
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retains owner-safe contracts', () => {
+  const read = file => readFileSync(new URL('../.github/workflows/' + file, import.meta.url), 'utf8');
+  const source = read('practice-visual-services.yml');
+  const core = read('hh-pr-core-release.yml');
+  const dollar = String.fromCharCode(36);
+  const expectedEvents = 'types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const prGroup = 'group: practice-visual-services-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const prCancel = 'cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}";
+  const draftGate = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const coreReuse = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(source.includes(expectedEvents), 'Draft→Ready must trigger the full real practice suite');
+  assert.match(source, /^    branches: \['codex\/public-book-library'\]/m);
+  assert.ok(source.includes(prGroup), 'cancel only superseded commits of the same PR');
+  assert.ok(source.includes(prCancel), 'do not cancel unrelated release/manual runs');
+  assert.ok(source.includes('  service-editor:\n    '+draftGate+'\n'), 'Draft must not run expensive editor QA');
+  assert.ok(source.includes('node-version: 22\n          cache: npm'), 'reuse npm package cache, not node_modules or PHI');
+  for (const [step, command] of [
+    ['TypeScript', 'npx --no-install tsc --noEmit'],
+    ['Production build', 'npm run build'],
+  ]) assert.ok(source.includes('- name: '+step+'\n        '+coreReuse+'\n        run: '+command),
+    step+' must run outside production-targeted PRs; Core validates exact-HEAD globally');
+  for (const contract of [
+    'tests/practice-google-return-and-services-v5.test.mjs',
+    'tests/practice-public-private-unified.test.mjs',
+    'tests/practice-photo-upload.test.mjs',
+    'tests/practitioner-preview-auth.test.mjs',
+    'tests/remote-support-privacy-contract.test.mjs',
+    'tests/remote-energy-support-booking.test.mjs',
+    'npx --no-install eslint components/app/simple-service-editor.jsx',
+    "'.github/workflows/practice-visual-services.yml'",
+  ]) assert.ok(source.includes(contract), 'missing real practice/consent/security gate '+contract);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+
+test('Pro master workflow delegates duplicate global TS/Next to unconditional exact-head Core', () => {
+  const pro = readFileSync(new URL('../.github/workflows/pro-reiki-master-paths.yml', import.meta.url), 'utf8');
+  const core = readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml', import.meta.url), 'utf8');
+  const reuse = 'if: '+String.fromCharCode(36)+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.ok(pro.includes('name: Pro Reiki master learning paths'));
+  assert.ok(pro.includes("    branches: ['codex/public-book-library']"));
+  assert.ok(pro.includes("- 'tests/profi-hub.test.mjs'"));
+  assert.ok(pro.includes("- 'tests/pro-master-search-placement.test.mjs'"));
+  assert.ok(pro.includes("- '.github/workflows/pro-reiki-master-paths.yml'"));
+  assert.ok(pro.includes('node --test tests/profi-hub.test.mjs tests/pro-master-search-placement.test.mjs tests/temple-support-hub.test.mjs'));
+  assert.ok(pro.includes('npx --no-install eslint'));
+  assert.ok(pro.includes('components/profi-hub.tsx'));
+  assert.ok(pro.includes('components/master-network-explorer.tsx'));
+  for (const [step,command] of [
+    ['Type-check the application','npx --no-install tsc --noEmit'],
+    ['Validate the Next.js production build','npm run build'],
+  ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
+    'Pro '+step+' must be owned by immutable-base Core on production PRs');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core,/run: npm run build/);
+  assert.ok(core.includes('ci-specialist-aggregate.mjs'));
+  assert.doesNotMatch(pro,/continue-on-error:\s*true/);
+});
+
+test('created-PR cohort uses Toronto day boundaries and separates merge from LIVE',()=>{
+  const rows=[
+    {number:10,state:'closed',created_at:'2026-10-30T04:00:00Z',
+      merged_at:'2026-10-30T04:20:00Z',base:{ref:'codex/public-book-library'},title:'ci: scoped fix'},
+    {number:11,state:'open',draft:true,created_at:'2026-10-31T03:59:59Z',
+      merged_at:null,base:{ref:'codex/public-book-library'},title:'feat: pending'},
+    {number:12,state:'closed',created_at:'2026-10-30T12:00:00Z',
+      merged_at:null,base:{ref:'codex/public-book-library'},title:'feat: closed'},
+    {number:13,state:'closed',created_at:'2026-10-30T16:00:00Z',
+      merged_at:'2026-10-30T17:00:00Z',base:{ref:'feat/stack'},title:'feat: staged'},
+    {number:14,state:'closed',created_at:'2026-10-30T03:59:59Z',
+      merged_at:'2026-10-30T04:01:00Z',base:{ref:'codex/public-book-library'},title:'ci: previous day'},
+  ];
+  assert.equal(torontoPrDate('2026-10-30T03:59:59Z'),'2026-10-29');
+  assert.equal(torontoPrDate('2026-10-31T03:59:59Z'),'2026-10-30');
+  const out=summarizePrCohort(rows,'2026-10-30');
+  assert.deepEqual([out.created,out.merged,out.open,out.closed_without_merge],[4,2,1,1]);
+  assert.deepEqual([out.merged_into_production,out.merged_into_intermediate_branch,out.ci_titled_merges],[1,1,1]);
+  assert.equal(out.median_created_to_merge_minutes,40);
+  assert.equal(out.draft_open,1);
+  assert.equal(out.merge_rate_percent,50);
+  assert.equal(out.live_verified_count,null);
+  assert.equal(out.green_to_merge_minutes,null);
+  assert.equal(out.agent_attribution,'UNVERIFIED_SHARED_GITHUB_ACCOUNT');
+  assert.deepEqual(out.open_sample.map(x=>x.number),[11]);
+});
+
+test('cohort report rejects fabricated dates, duplicate PRs and false merge receipts',()=>{
+  for(const bad of ['2026-02-30','2026-10-32','2026-1-30','tomorrow']) {
+    assert.throws(()=>checkCohortDate(bad),/INVALID_COHORT_DATE/);
+  }
+  const pr={number:7,state:'open',created_at:'2026-10-30T10:00:00Z',title:'test'};
+  assert.throws(()=>summarizePrCohort([pr,pr],'2026-10-30'),/DUPLICATE_PR_COHORT_ROW/);
+  assert.throws(()=>summarizePrCohort([{...pr,merged_at:'2026-10-30T11:00:00Z'}],'2026-10-30'),/INVALID_PR_MERGE_EVIDENCE/);
+  assert.throws(()=>summarizePrCohort([{}],'2026-10-30'),/INVALID_PR_COHORT_ROW/);
+  assert.throws(()=>summarizePrCohort([],'2026-10-30'),/PR_COHORT_SOURCE_MISSING/);
+  const script=readFileSync(new URL('../scripts/pr-sweep-guard.mjs',import.meta.url),'utf8');
+  assert.match(script,/operation === 'daily'/);
+  assert.match(script,/PR_COHORT_INCOMPLETE_PAGINATION/);
+  assert.match(script,/state=all&sort=created&direction=desc/);
+  assert.match(script,/completeness:'PR_CREATED_DAY_EXHAUSTIVE'/);
 });

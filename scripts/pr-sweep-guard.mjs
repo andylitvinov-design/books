@@ -4,13 +4,61 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
+
+// Daily CLI reuses this EXISTING script and makes no GitHub writes.
+// The created-PR cohort is exact to Toronto calendar boundaries; it never
+// equates closing a PR, committing code or passing CI with delivery/LIVE.
+async function reportDailyPrCohort(repo, day, token) {
+  const root='https://api.github.com/repos/'+repo;
+  const headers={Accept:'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28',
+    ...(token?{Authorization:'Bearer '+token}:{})};
+  const selected=[];
+  let complete=false;
+  for(let page=1;page<=25;page++) {
+    const url=root+'/pulls?state=all&sort=created&direction=desc&per_page=100&page='+page;
+    const response=await fetch(url,{headers,signal:AbortSignal.timeout(12000)});
+    if(!response.ok)throw Error('PR_COHORT_GITHUB_HTTP_'+response.status);
+    const rows=await response.json();
+    if(!Array.isArray(rows))throw Error('INVALID_COHORT_API_PAGE');
+    for(const row of rows) {
+      if(typeof row.created_at!=='string')throw Error('INVALID_COHORT_CREATED_AT');
+      const observedDay=torontoPrDate(row.created_at);
+      if(observedDay<day) complete=true;
+      if(observedDay===day)selected.push(row);
+    }
+    if(complete||rows.length<100){complete=true;break;}
+  }
+  if(!complete)throw Error('PR_COHORT_INCOMPLETE_PAGINATION');
+  const result=selected.length?summarizePrCohort(selected,day):{
+    date:day,time_zone:'America/Toronto',created:0,merged:0,open:0,
+    closed_without_merge:0,merged_into_production:0,
+    agent_attribution:'UNVERIFIED_SHARED_GITHUB_ACCOUNT',
+    live_verified_count:null,green_to_merge_minutes:null,root_pr_blockers_removed:null,
+  };
+  console.log(JSON.stringify({repo,observed_at:new Date().toISOString(),
+    completeness:'PR_CREATED_DAY_EXHAUSTIVE',...result},null,2));
+}
 
 const [operation = 'inspect', repo = '', numberStr = '', owner = ''] = process.argv.slice(2);
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 const now = Date.now();
 const prNumber = Number(numberStr);
-if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) ||
+if (operation === 'daily') {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    console.error('usage: node scripts/pr-sweep-guard.mjs daily owner/repo YYYY-MM-DD');
+    process.exitCode=2;
+  } else {
+    try {
+      const day=checkCohortDate(numberStr||torontoPrDate(Date.now()-86400000));
+      await reportDailyPrCohort(repo,day,token);
+    } catch(error) {
+      console.error(String(error?.message||error));
+      process.exitCode=2;
+    }
+  }
+} else if (!['inspect', 'claim', 'heartbeat', 'record', 'release'].includes(operation) ||
   !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !Number.isSafeInteger(prNumber) || prNumber < 1 ||
   (operation !== 'inspect' && !/^[A-Za-z0-9_.-]{2,80}$/.test(owner))) {
   console.error('usage: node scripts/pr-sweep-guard.mjs inspect|claim|heartbeat|record|release owner/repo PR_NUMBER [AGENT_OWNER]');

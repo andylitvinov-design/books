@@ -3,6 +3,7 @@ on:
   push:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/verify-eight-v2-registry-proposal.mjs'
@@ -56,18 +57,25 @@ on:
       - 'package-lock.json'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: app-r1-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   unit-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
       - name: Check-in evidence, scoring and report-priority regressions
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
@@ -96,6 +104,7 @@ jobs:
         run: npx --no-install tsc --noEmit
       - run: npm run pwa:check && npm run native:check
   course-banner-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,8 +116,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
       - name: Isolated synthetic browser tools
         run: |
@@ -125,6 +139,7 @@ jobs:
           path: artifacts/course-banner/
           retention-days: 7
   database:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -154,8 +169,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db

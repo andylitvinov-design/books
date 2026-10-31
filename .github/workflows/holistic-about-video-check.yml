@@ -1,6 +1,7 @@
 name: Holistic website video checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'components/psychic-alchemy-intro-video*'
       - 'app/**/about/page.tsx'
@@ -15,8 +16,13 @@ on:
       - '.github/workflows/holistic-about-video-check.yml'
 permissions:
   contents: read
+# Cancel outdated PR-head checks; never cancel unrelated PRs or manual checks.
+concurrency:
+  group: hh-about-video-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   check:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -29,4 +35,6 @@ jobs:
       - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
       - run: npm ci --no-audit --no-fund
       - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
-      - run: npx tsc --noEmit
+      - name: TypeScript (shared core for production PR)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx tsc --noEmit

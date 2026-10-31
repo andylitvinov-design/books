@@ -31,6 +31,7 @@ on:
       - 'components/app/goal-profile-panel.jsx'
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
+      - '.github/workflows/hh-reports-development-program.yml'
 permissions:
   contents: read
 concurrency:
@@ -54,4 +55,5 @@ jobs:
       - name: Lint newly created feature files
         run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js lib/profile/goal-profile.js components/app/goal-profile-panel.jsx tests/profile-portrait-test-suggestions.test.mjs tests/goal-profile-journey.test.mjs
       - name: Verify production Next.js build without preview deployment
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
