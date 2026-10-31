@@ -45,11 +45,13 @@ test('normal exact-HEAD workflow evidence survives an unrelated production advan
   let reads = 0;
   const api = {
     pr: async () => (++reads === 1 ? pr : advanced),
-    changed: async () => [{ filename: 'components/public-faq.js' }],
+    changed: async () => { throw Error('live changed list must not replace trusted checkout'); },
     runs: async () => [],
     jobs: async () => [],
   };
-  const result = await verify(api,ctx,{base:new Map(),current:new Map()},{maxWaitMs:0});
+  const verified = {base:new Map(),current:new Map(),
+    changedRows:[{ filename: 'components/public-faq.js', status: 'modified' }] };
+  const result = await verify(api,ctx,verified,{maxWaitMs:0});
   assert.equal(reads,2);
   assert.deepEqual(result.expected,[]);
   assert.equal(result.head,head);
