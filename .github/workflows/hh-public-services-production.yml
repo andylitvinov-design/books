@@ -106,6 +106,8 @@ on:
       # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
       # acceptance in the dedicated Mandala suite, not public Services checkout.
       - '!app/**/holistic-support/voice-studio/route.ts'
+      # Dedicated Mandala provider + WAV/MP4 E2E owns this voice-only API.
+      - '!app/api/holistic-support/voice/**'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'
