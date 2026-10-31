@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { safePublicPagePath, sourceFromPublicEntry } from "@/lib/analytics/public-page-traffic.mjs";
+import { ENQUIRY_ATTRIBUTION_COOKIE, ENQUIRY_ATTRIBUTION_TTL, advanceEnquiryAttribution } from "@/lib/analytics/enquiry-attribution.mjs";
 
+const readCookie = (name: string) => document.cookie.split("; ").find(part => part.startsWith(name + "="))?.slice(name.length + 1) || "";
 const hasCookie = (name: string, value: string) =>
   document.cookie.split("; ").some(part => part === name + "=" + value);
 
@@ -44,6 +46,16 @@ export function PublicPageTraffic() {
       if (!optedIn() || lastPath.current === path) return;
       if (originalSource.current === null)
         originalSource.current = sourceFromPublicEntry(window.location.href, document.referrer);
+      // First-touch source and last public page are kept only with opt-in.
+      // No cookie is used as an identifier or sent to a third-party pixel.
+      const nextCookie = advanceEnquiryAttribution(readCookie(ENQUIRY_ATTRIBUTION_COOKIE), {
+        path, href: window.location.href, referrer: document.referrer,
+      });
+      if (nextCookie) {
+        document.cookie = ENQUIRY_ATTRIBUTION_COOKIE + "=" + nextCookie +
+          "; Path=/; SameSite=Lax; Max-Age=" + ENQUIRY_ATTRIBUTION_TTL +
+          (window.location.protocol === "https:" ? "; Secure" : "");
+      }
       sendPublicStat(path, originalSource.current, lastPath.current === null ? "landing" : "view");
       lastPath.current = path;
     };
