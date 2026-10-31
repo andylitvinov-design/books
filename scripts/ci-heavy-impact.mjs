@@ -9,10 +9,12 @@ import { fileURLToPath } from 'node:url';
 const TARGET = 'codex/public-book-library';
 const APP_UI = /^(?:components\/(?:profile-[\w.-]+\.(?:tsx|jsx|js|css)|my-course[\w.-]*\.(?:tsx|jsx|js|css)|academy-video-library-client\.tsx)|tests\/(?:profile-[\w.-]+|checkin-[\w.-]+|author-score-clusters|cabinet-today|free-course-banner|my-course[\w.-]*|course-immersive-start-ui|historical-interpretation-coverage|psi-monitoring|full-assessment-library-quality)\.test\.mjs|tests\/course-banner\/browser\.mjs)$/;
 const BANNER = /^(?:components\/(?:my-course|academy-video-library-client)|tests\/(?:my-course|free-course-banner|course-immersive-start-ui|course-banner\/browser))/;
+const FREE_REVIEW_UNIT = new Set(['tests/free-diagnosis-three-offers.test.mjs',
+  'tests/personal-testimonials-prefetch.test.mjs', 'tests/private-material-handoff.test.mjs']);
 const MANDALA_UNIT = /^tests\/(?:mandala-[\w.-]+|holistic-mandala-[\w.-]+|first-video-director|personal-video-intent|video-affirmations|personal-guided-course|meditation-(?:filters|narration)|personal-meditation-script|cinematic-[\w.-]+|real-money-film-library|film-collection-v2|video-studio-question-registry|video-ai-gpu-readiness)\.test\.mjs$/;
 
 export function decideHeavyImpact(mode, changed) {
-  if (mode !== 'app-r1' && mode !== 'mandala') throw Error('UNKNOWN_SUITE:' + mode);
+  if (!['app-r1', 'mandala', 'free-review'].includes(mode)) throw Error('UNKNOWN_SUITE:' + mode);
   const strictlyModified = Array.isArray(changed) && changed.length > 0 &&
     changed.length <= 3000 && changed.every(file => file && file.status === 'modified' &&
       typeof file.filename === 'string' && /^[\w./[\]-]+$/.test(file.filename) &&
@@ -25,7 +27,9 @@ export function decideHeavyImpact(mode, changed) {
       banner: !uiOnly || changed.some(file => BANNER.test(file.filename)),
     };
   }
-  const testsOnly = strictlyModified && changed.every(file => MANDALA_UNIT.test(file.filename));
+  const testsOnly = strictlyModified && changed.every(file =>
+    (mode === 'free-review' ? FREE_REVIEW_UNIT.has(file.filename) : MANDALA_UNIT.test(file.filename)));
+
   return { browser: !testsOnly };
 }
 
@@ -76,7 +80,7 @@ async function getExactPullRequestChanges() {
 
 async function main() {
   const mode = process.argv[2];
-  if (mode !== 'app-r1' && mode !== 'mandala') throw Error('UNKNOWN_SUITE');
+  if (!['app-r1', 'mandala', 'free-review'].includes(mode)) throw Error('UNKNOWN_SUITE');
   let files = null;
   let reason = 'NON_PR_FULL_COVERAGE';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
