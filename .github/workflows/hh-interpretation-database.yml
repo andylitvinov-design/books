@@ -17,7 +17,6 @@ on:
       - 'lib/interpretation/**'
       - 'data/assessments/**'
       - 'tests/interpretation-*.mjs'
-      - '.github/workflows/hh-interpretation-database.yml'
       - 'tests/ci-expensive-draft-ready-policy.test.mjs'
       - 'tests/assessment-interpretation*.mjs'
       - 'scripts/verify-interpretation*.mjs'
