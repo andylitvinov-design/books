@@ -2,8 +2,8 @@ import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
-import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
+import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
+import { sendTelegramDiagnosticPrompt,sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -72,6 +72,19 @@ export async function POST(request,{params}){
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
               approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+          }
+          continue
+        }
+      }
+      if(provider==='whatsapp'&&event.type==='incoming'){
+        const intake=await processWhatsAppDiagnostic(event,config)
+        if(intake.handled){
+          if(intake.reply){
+            // Never retry an ambiguous provider send. Consent and CRM intake
+            // were committed before this single Cloud API attempt.
+            try{await sendWhatsAppDiagnosticPrompt({
+              to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale,
+            })}catch{ /* owner can follow up in the same CRM Messages thread */ }
           }
           continue
         }

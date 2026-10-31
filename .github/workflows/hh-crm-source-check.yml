@@ -130,6 +130,8 @@ jobs:
           cache: npm
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
+      - name: WhatsApp consent, replay receipt and isolated-runner guards
+        run: node --test tests/crm-whatsapp-guided-intake.test.mjs tests/crm-whatsapp-replay-receipts.test.mjs tests/crm-whatsapp-receipt-isolation.test.mjs
       - name: SalesBot strict flow simulator and owner API contract
         run: node --test tests/crm-salesbot-flow.test.mjs
       - name: SalesBot owner-only operator draft suggestions (no automatic dispatch)
