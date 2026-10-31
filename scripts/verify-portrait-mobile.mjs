@@ -26,13 +26,14 @@ let verifiedAccountLanding = false
 // HMR/EventSource/long-polling traffic. All request failures stay observable.
 const profileReads = new Set()
 let profileReadActivity = Date.now()
+// A separate optional free-enquiry GET can long-poll in the isolated dev
+// harness; its behavior is checked by independent owner-scoped service tests.
 const isProfileRead = request => {
   try {
     const url = new URL(request.url())
     return url.origin === origin && [
       '/api/app/journey', '/api/app/express-reports',
-      '/api/app/development-goals', '/api/free-express/claim',
-      '/api/app/bootstrap',
+      '/api/app/development-goals', '/api/app/bootstrap',
     ].includes(url.pathname)
   } catch { return false }
 }
