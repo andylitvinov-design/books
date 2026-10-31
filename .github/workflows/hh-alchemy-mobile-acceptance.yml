@@ -83,7 +83,7 @@ jobs:
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 90); do
-            if curl --silent --fail http://127.0.0.1:3100/en/services/alchemy-of-soul >/dev/null; then ready=1; break; fi
+            if curl --silent --fail http://127.0.0.1:3100/en/services/alchemy-of-soul >/dev/null; then echo "Alchemy server ready on attempt $i"; ready=1; break; fi
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
