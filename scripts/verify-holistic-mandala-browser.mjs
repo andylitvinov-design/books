@@ -60,7 +60,11 @@ let passes = 0;
 // Run both real engines concurrently, but cap resource use at one isolated
 // context per engine (two total); preserve all six viewports per engine.
 const engines = [["webkit", webkit], ["chromium", chromium]];
+// Avoid simultaneous RU390 video encoding in Chromium and WebKit.
+let releaseWebkitRu390;
+const webkitRu390Finished=new Promise(resolve=>{releaseWebkitRu390=resolve;});
 const runEngine = async ([engine, browserType]) => {
+  try {
     // Keep genuine Chromium + WebKit checks and all locale/viewport cases.
     // A fresh browser process per case prevents WebKit's decoded H264 state
     // leaking between closed contexts across repeated iPhone dimensions.
@@ -72,6 +76,7 @@ const runEngine = async ([engine, browserType]) => {
         ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
       : viewports;
     for (const { locale, width } of orderedViewports) {
+      if(engine==="chromium"&&locale==="ru"&&width===390)await webkitRu390Finished;
       const caseStartedAt = performance.now();
       const browser = await browserType.launch({ headless: true });
       const context = await browser.newContext({
@@ -225,9 +230,35 @@ const runEngine = async ([engine, browserType]) => {
           }else{
             assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
           }
-          const [download]=await Promise.all([
-            page.waitForEvent("download",{timeout:20000}),save.click(),
-          ]);
+          const requestRealDownload=async()=>{
+            const [file]=await Promise.all([
+              page.waitForEvent("download",{timeout:20000}),
+              save.click(),
+            ]);
+            return file;
+          };
+          let download;
+          try{
+            download=await requestRealDownload();
+          }catch(firstError){
+            if(engine!=="webkit")throw firstError;
+            const anchor=await save.evaluate(node=>({
+              href:node.getAttribute("href")?.slice(0,90)||null,
+              file:node.getAttribute("download"),
+              connected:node.isConnected,
+            }));
+            if(!anchor.connected||!anchor.href){
+              throw new Error("WEBKIT_DOWNLOAD_LINK_MISSING: "+JSON.stringify(anchor),{cause:firstError});
+            }
+            // A second genuine user tap only when WebKit lost the first gesture.
+            // Never waive the file download, ffprobe or real encoded video.
+            console.warn("WEBKIT_RETRY_REAL_SAVE_TAP",locale,width,JSON.stringify(anchor));
+            try{
+              download=await requestRealDownload();
+            }catch(secondError){
+              throw new Error("WEBKIT_REAL_DOWNLOAD_FAILED_AFTER_TWO_TAPS: "+JSON.stringify(anchor),{cause:secondError});
+            }
+          }
           const bytes=await bufferFromStream(await download.createReadStream());
           assert.ok(bytes.length>10000,"free first video must encode actual moving media");
           const probe=spawnSync("ffprobe",["-v","error","-select_streams","v:0",
@@ -1639,6 +1670,47 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('nav[aria-current="page"]').count(),0,
           engine+" no duplicate legacy editor dock");
 
+        // Owner's six-button request: one genuine in-place content swap per workspace,
+        // not a scroll-jump to a fragment or another duplicate video editor.
+        const workspaceNav=page.locator("[data-video-quick-controls]");
+        await workspaceNav.scrollIntoViewIfNeeded();
+        const originalHash=await page.evaluate(()=>window.location.hash);
+        for (const id of ["video","audio","characters","psychocorrection","courses","hypnotherapy"]){
+          const button=workspaceNav.locator('[data-video-quick-control="'+id+'"]');
+          assert.equal(await button.count(),1,engine+" one tab for "+id);
+          await button.click();
+          await expect(button).toHaveAttribute("aria-pressed","true");
+          await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace",id);
+          await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
+          await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
+          assert.equal(await page.evaluate(()=>window.location.hash),originalHash,
+            "workspace taps must not navigate to a legacy hash");
+          const geometry=await page.evaluate(()=>{
+            const nav=document.querySelector("[data-video-quick-controls]")?.getBoundingClientRect();
+            const pane=document.querySelector("[data-video-workspace-heading]")?.getBoundingClientRect();
+            return {navBottom:nav?.bottom,paneTop:pane?.top,width:document.documentElement.scrollWidth,
+              viewport:document.documentElement.clientWidth};
+          });
+          assert.ok(geometry.paneTop>geometry.navBottom &&
+            geometry.paneTop-geometry.navBottom<130,
+            engine+" "+locale+" "+width+" workspace immediately below video "+id+" "+JSON.stringify(geometry));
+          assert.ok(geometry.width<=geometry.viewport+2,
+            engine+" "+locale+" "+width+" workspace horizontal overflow "+id);
+        }
+        // Advanced audio/phrase/photo editors really move into their selected workspaces.
+        await workspaceNav.locator('[data-video-quick-control="audio"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-audio-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="psychocorrection"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-hypnosis-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="characters"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="video"]').click();
+        await expect(page.locator('[data-video-quick-builder] #video-settings')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="courses"]').click();
+        assert.equal(await page.locator('[data-workspace-section="courses"] a').count(),2);
+        await workspaceNav.locator('[data-video-quick-control="hypnotherapy"]').click();
+        await expect(page.locator('[data-video-quick-builder] #guided-video-series')).toBeVisible();
+
         const overflow = await page.evaluate(() => {
           const viewport = window.innerWidth;
           return {
@@ -1660,8 +1732,13 @@ const runEngine = async ([engine, browserType]) => {
       } finally {
         await context.close();
         await browser.close();
+        if(engine==="webkit"&&locale==="ru"&&width===390)releaseWebkitRu390();
       }
     }
+  } finally {
+    // If WebKit fails before RU390, release Chromium to report all failures.
+    if(engine==="webkit")releaseWebkitRu390();
+  }
 };
 // Both engines finish before result handling: preserve the mandatory
 // independently executed Chromium/WebKit E2E scenarios with bounded concurrency.
