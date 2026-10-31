@@ -11,7 +11,34 @@ const APP_UI = /^(?:components\/(?:profile-[\w.-]+\.(?:tsx|jsx|js|css)|my-course
 const BANNER = /^(?:components\/(?:my-course|academy-video-library-client)|tests\/(?:my-course|free-course-banner|course-immersive-start-ui|course-banner\/browser))/;
 const FREE_REVIEW_UNIT = new Set(['tests/free-diagnosis-three-offers.test.mjs',
   'tests/personal-testimonials-prefetch.test.mjs', 'tests/private-material-handoff.test.mjs']);
-const MANDALA_UNIT = /^tests\/(?:mandala-[\w.-]+|holistic-mandala-[\w.-]+|first-video-director|personal-video-intent|video-affirmations|personal-guided-course|meditation-(?:filters|narration)|personal-meditation-script|cinematic-[\w.-]+|real-money-film-library|film-collection-v2|video-studio-question-registry|video-ai-gpu-readiness)\.test\.mjs$/;
+const MANDALA_UNIT = new Set([
+  'tests/first-video-director.test.mjs',
+  'tests/mandala-free-stock-sources.test.mjs',
+  'tests/real-money-film-library.test.mjs',
+  'tests/film-collection-v2.test.mjs',
+  'tests/holistic-mandala-meditation.test.mjs',
+  'tests/mandala-export.test.mjs',
+  'tests/mandala-free-video.test.mjs',
+  'tests/mandala-mobile-video-design.test.mjs',
+  'tests/mandala-approved-mobile-studio.test.mjs',
+  'tests/personal-video-intent.test.mjs',
+  'tests/mandala-sound.test.mjs',
+  'tests/mandala-native-audio-files.test.mjs',
+  'tests/mandala-smart-audio.test.mjs',
+  'tests/mandala-audio-attach.test.mjs',
+  'tests/video-affirmations.test.mjs',
+  'tests/personal-guided-course.test.mjs',
+  'tests/mandala-video-therapy-focus.test.mjs',
+  'tests/holistic-support-meditations.test.mjs',
+  'tests/holistic-support-mobile-alternative.test.mjs',
+  'tests/meditation-filters.test.mjs',
+  'tests/meditation-narration.test.mjs',
+  'tests/personal-meditation-script.test.mjs',
+  'tests/cinematic-studio.test.mjs',
+  'tests/cinematic-creative-brief.test.mjs',
+  'tests/video-studio-question-registry.test.mjs',
+  'tests/video-ai-gpu-readiness.test.mjs',
+]);
 
 export function decideHeavyImpact(mode, changed) {
   if (!['app-r1', 'mandala', 'free-review'].includes(mode)) throw Error('UNKNOWN_SUITE:' + mode);
@@ -28,7 +55,7 @@ export function decideHeavyImpact(mode, changed) {
     };
   }
   const testsOnly = strictlyModified && changed.every(file =>
-    (mode === 'free-review' ? FREE_REVIEW_UNIT.has(file.filename) : MANDALA_UNIT.test(file.filename)));
+    (mode === 'free-review' ? FREE_REVIEW_UNIT.has(file.filename) : MANDALA_UNIT.has(file.filename)));
 
   return { browser: !testsOnly };
 }
