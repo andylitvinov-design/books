@@ -66,8 +66,14 @@ for(const browserType of [chromium,webkit]){
      // can report an access-control message while the protected Messenger and
      // its tests remain healthy. Record only this exact external-to-Messages
      // route warning separately, never ignore Messenger/hydration errors.
-     if(browserType.name()==='webkit'&&
-       message.includes('/localhost:3127/'+locale+'/practice due to access control checks.')){
+     // WebKit can warn about a speculative, cross-CSP request for the
+     // *public* Practice destination under localhost while this isolated
+     // browser uses 127.0.0.1. The Spanish navigation may point to the
+     // English fallback. Accept only these three exact harmless warnings,
+     // never suppress private Messages failures or arbitrary JS errors.
+     const harmlessPracticePrefetch=['en','ru','es'].some(lang=>
+       message==='/localhost:3127/'+lang+'/practice due to access control checks.')
+     if(browserType.name()==='webkit'&&harmlessPracticePrefetch){
        incidentalPrefetch.push(message)
        return
      }
