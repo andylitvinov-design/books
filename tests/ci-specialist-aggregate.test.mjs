@@ -563,7 +563,6 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
   const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
   const source=readFileSync(replacement,'utf8');
   for (const expected of [
-    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
     'node scripts/verify-public-pathway-mobile.mjs',
     'node scripts/verify-public-pathway-toronto-mobile.mjs',
     'tests/public-pathway-migration.test.mjs',
@@ -574,16 +573,25 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
     'HH_RUN_WAVE1',
     'HH_RUN_WAVE2',
   ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
-  const base=new Map([[oldName,old],[replacement,source]]);
+  // Production no longer routes deletions for an already retired YAML file.
+  // Reconstruct the historical trusted successor only for the synthetic
+  // BASE-migration proof; never require that obsolete trigger in live CI.
+  assert.ok(!source.includes("'.github/workflows/hh-public-journey-toronto-wave2.yml'"));
+  const historicalSource = source.replace(
+    "      - '.github/workflows/hh-public-journey-wave1.yml'",
+    "      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n      - '.github/workflows/hh-public-journey-wave1.yml'",
+  );
+  assert.notEqual(historicalSource,source);
+  const base=new Map([[oldName,old],[replacement,historicalSource]]);
   const changed=[oldName];
-  const current=new Map([[replacement,source]]);
+  const current=new Map([[replacement,historicalSource]]);
   const expected=expectedWorkflows({base,current,changed});
   assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
   assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
   assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
     {retired:oldName,replacement},
   ]);
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,historicalSource+'\\n# tampered']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
 });
 
@@ -594,4 +602,20 @@ test('public FAST CSS cannot skip an explicitly applicable specialist', async ()
   const ctx = { repo, number: 27, head: SHA, base: BASE };
   const api = { pr: async () => pr(), changed: async () => [{ filename: 'app/[locale]/about/page.module.css' }], runs: async () => [] };
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
+});
+
+test('a production base advance does not replace the tested checkout diff or waive HEAD checks', async () => {
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const sources = { base: new Map([[path, yaml]]), current: new Map([[path, yaml]]),
+    changedRows: [{ filename: 'lib/crm/a.js', status: 'modified' }] };
+  const currentPr = () => ({ ...pr(), base: { ...pr().base, sha: 'c'.repeat(40) } });
+  const api = { pr: async () => currentPr(), changed: async () => { throw Error('live diff must not replace tested checkout'); },
+    runs: async () => [run()], jobs: async () => [{ name: 'specialist', status: 'completed', conclusion: 'success' }] };
+  assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
+  const legacySources = { base: sources.base, current: sources.current };
+  await assert.rejects(() => verify(api, ctx, legacySources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), head: { ...currentPr().head, sha: 'd'.repeat(40) } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
+  api.pr = async () => ({ ...currentPr(), base: { ...currentPr().base, ref: 'other' } });
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
 });
