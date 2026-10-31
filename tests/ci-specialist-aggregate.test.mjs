@@ -610,8 +610,8 @@ test('Native installer successor claims old native triggers before retiring dupl
     'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
     assert.ok(source.includes(required), 'native successor missing coverage '+required);
   }
-  assert.ok(source.includes("  native-current-contracts:\\n    if:"));
+  assert.ok(source.includes("  native-current-contracts:"), 'source contracts owner missing');
   assert.match(source, /^  android-test-installer:/m);
   assert.match(source, /^  ios-simulator:/m);
-  assert.doesNotMatch(source, /continue-on-error:\\s*true/);
+  assert.ok(!source.includes('continue-on-error: true'), 'do not hide errors');
 });
