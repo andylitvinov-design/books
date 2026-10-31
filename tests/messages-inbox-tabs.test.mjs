@@ -1,3 +1,10 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {filterInboxRows,normalizeMessagesTab} from '../lib/app/messages-inbox-tabs.mjs'
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
 test('provider leads and account-bound requests appear in the real chat without duplicating rows',()=>{
   const rows=[
     {key:'crm:1',kind:'crm',lifecycle:'client',name:'Telegram Andy'},
