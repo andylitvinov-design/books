@@ -2112,3 +2112,22 @@
   /* Phrase and hypnocorrection labels remain legible on 320-430px phones. */
   .studio .quickVideoNav button[data-video-quick-control="phrases"] span{font-size:13px;line-height:1.2}
 }
+
+/* Seventh action is deliberately a full-width mobile entry, not a squeezed
+   seventh video-settings tab. It uses the existing personal-meditation editor. */
+.meditationCourseEntry{box-sizing:border-box;width:100%;display:flex;align-items:center;gap:11px;min-height:61px;
+  margin:9px 0 7px;padding:10px 13px;border:1px solid #d6b76e;border-radius:15px;
+  background:linear-gradient(110deg,#fff9eb,#eef8ef);color:#24523d;text-align:left;
+  font:700 13px/1.3 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.meditationCourseEntry>svg:first-child{flex:none;color:#a46d19}
+.meditationCourseEntry>span{min-width:0;display:grid;gap:3px;flex:1}
+.meditationCourseEntry strong{font-size:clamp(15px,4.2vw,18px);font-weight:850;color:#14533b}
+.meditationCourseEntry small{font-size:clamp(11px,3vw,12px);line-height:1.4;font-weight:600;color:#657a65}
+.meditationCourseEntry>svg:last-child{flex:none;transition:transform .2s}
+.meditationCourseEntry[aria-expanded="true"]{background:linear-gradient(115deg,#fbf1d4,#e4f5e8);border-color:#9cbf9e}
+.meditationCourseEntry[aria-expanded="true"]>svg:last-child{transform:rotate(180deg)}
+.meditationCourseEntry:focus-visible{outline:3px solid #087e5e;outline-offset:3px}
+.meditationCourseEntry:disabled{opacity:.6;cursor:not-allowed}
+.meditationCourseInline{min-width:0;scroll-margin-top:78px}
+.meditationCourseInline :global([data-video-personal-meditation]){margin:7px 0 16px}
+@media(prefers-reduced-motion:reduce){.meditationCourseEntry>svg:last-child{transition:none}}
