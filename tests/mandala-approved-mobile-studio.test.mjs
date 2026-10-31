@@ -231,7 +231,7 @@ test("phrases and hypnocorrection button expands one shared editor below six vid
  const hypno=read("components/mandala-hypno-compact.tsx");
  assert.match(src,/id:"phrases",label:\{ru:"Фразы"/);
  assert.match(src,/id:"extra",label:\{ru:"Гипнокоррекция"/);
- assert.match(src,/aria-expanded=\{item.id==="phrases"\?quickHypnoOpen:undefined\}/);
+ assert.match(src,/aria-expanded=\{item.id==="phrases"\?quickHypnoOpen:item.id==="extra"\?hypnoPanelOpen:undefined\}/);
  assert.match(src,/if\(item.id==="phrases"\)\{[\s\S]*?setQuickHypnoOpen/);
  assert.ok(src.indexOf("data-video-quick-controls")<src.indexOf("data-video-quick-hypno-panel"));
  assert.ok(src.indexOf("data-video-quick-hypno-panel")<src.indexOf("data-video-mini-source"));
