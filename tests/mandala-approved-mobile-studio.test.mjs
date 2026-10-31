@@ -91,7 +91,13 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(s,/data-video-goal-summary/);
-  assert.match(s,/maxLength=\{160\} value=\{wish\}/);
+  const auto=read("components/mandala-auto-video-director.tsx");
+  assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
+    "approved goal comes from the single local wish state");
+  assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
+    "the same personal goal retains its strict 160-character browser limit");
+  assert.match(auto,/onGoalChange\(event\.currentTarget\.value\)/,
+    "typing updates the same local state without remote upload");
   assert.match(s,/data-video-personal-affirmations/);
   assert.match(s,/enabled:!current\.enabled/);
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
