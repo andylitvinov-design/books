@@ -187,7 +187,7 @@ jobs:
           else
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
-          echo 'Core checks passed; exact-head specialist aggregation still required on PR events.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Core checks passed; exact-head risk-routed specialist validation follows on PR events.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -207,7 +207,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Fail closed on all applicable exact-head specialist workflows
+      - name: Validate exact-head risk and required specialist workflows
         if: github.event_name == 'pull_request'
         shell: bash
         env:
