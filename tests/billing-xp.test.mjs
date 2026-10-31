@@ -60,14 +60,14 @@ test('transaction path enforces account identity, verified email, fraud caps and
   const service=src('lib/xp/service.js')
   for(const item of ['requireActor','actor.emailConfirmed','app.accounts',
     'pg_advisory_xact_lock','count(*)','count>=10','on conflict(invitee_id) do nothing',
-    "kind,reference_id,points", "kind='assessment'",'for update','XP_INSUFFICIENT',
+    "kind,reference_id,points", 'assessment_results','for update','XP_INSUFFICIENT',
     'XP_IDEMPOTENCY_CONFLICT','XP_ARTIFACT_INVALID','xp_charges','wallet_entries',
     "status='released'"])assert.ok(service.includes(item),item)
   assert.doesNotMatch(service,/service_role|raw_user_meta_data|localStorage|STRIPE_/)
   assert.match(service,/status==='held'/)
   const api=src('app/api/app/xp/[action]/route.js')
   for(const item of ['requireSameOrigin','auth.verified()','consumeRate','PRIVATE_HEADERS',
-    "action==='hold'","action==='sync'", "action==='complete'", "action==='release'",
+    "action==='hold'","action==='sync'", "action==='complete'", "['complete','release']",
     'readBody','x-hh-account-id'])assert.ok(api.includes(item),item)
 })
 test('XP consumes the real CAD wallet only once and cannot make a second checkout',()=>{
