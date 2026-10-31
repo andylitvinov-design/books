@@ -10,7 +10,7 @@ test('one full-width EN/RU/ES Messages page provides just two accessible tabs',(
   const css=read('components/app/messages-hub.module.css')
   const pageCss=read('app/[locale]/app/messages/messages-page.css')
   assert.match(page,/if\(!\['en','ru','es'\]\.includes\(locale\)\)notFound\(\)/)
-  assert.match(page,/<MessagesHub locale=\{locale\}\/>/)
+  assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
   assert.doesNotMatch(page,/<DirectMessageInbox locale=\{locale\}\/>/)
   assert.match(hub,/const VALID_TABS=new Set\(\['chats','requests'\]\)/)
   assert.match(hub,/role="tablist"/)
@@ -71,10 +71,9 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
-  // Desktop Account navigation retains My Progress and now adds Wallet.
+  // Desktop Account navigation gained the approved My Progress destination.
   // The iPhone dock still has four links plus its separate Home anchor.
-  assert.equal((nav.match(/id: '/g)||[]).length,8)
-  assert.match(nav,/id: 'wallet'/)
+  assert.equal((nav.match(/id: '/g)||[]).length,7)
   assert.match(nav,/id: 'progress'/)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
@@ -82,7 +81,6 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   assert.match(workspace,/const mobileNav = \[/)
   const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
   assert.equal((mobile.match(/id: '/g)||[]).length,4)
-  assert.doesNotMatch(mobile,/id: 'wallet'/)
   assert.match(mobile,/id: 'progress'/)
   assert.match(mobile,/id: 'settings'/)
   assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
