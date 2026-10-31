@@ -7,8 +7,8 @@ import {
   VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS,VIDEO_STUDIO_CONTEXTUAL_QUESTION_DEFINITIONS,VIDEO_STUDIO_SCALE_REGISTRY,
   videoStudioContextQuestions,compileCinematicReferencePack,listCreativeVideoCapabilities,
 } from '../lib/mandala/cinematic-creative-brief.mjs';
-const project=({locale='ru',theme='energy'}={})=>
-  buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
+const project=({locale='ru',theme='energy',durationSeconds=20}={})=>
+  buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds});
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('a one-minute plan compiles all six shot prompts without changing their timeline',()=>{
@@ -37,6 +37,8 @@ test('recognized eagle story has distinct localized visible scene descriptions w
   ]){
     for(const durationSeconds of [30,60]){
       const p=compileCinematicReferencePack({plan:project({locale,durationSeconds}),visualIdea:idea});
+      assert.equal(p.shots.reduce((total,shot)=>total+shot.seconds,0),durationSeconds);
+      assert.equal(p.shots.length,durationSeconds===60?6:4);
       assert.ok(p.shots.every(shot=>shot.conceptDescription));
       assert.equal(new Set(p.shots.map(shot=>shot.conceptDescription)).size,p.shots.length);
       assert.match(p.shots.map(shot=>shot.conceptDescription).join(' '),new RegExp(subject,'i'));
