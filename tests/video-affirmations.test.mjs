@@ -84,7 +84,7 @@ test("existing video preview and export use identical overlays; frame mode reque
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
   assert.match(studio,/caption,affirmations,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\)\]\)/);
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\),appliedStory\]\)/);
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
