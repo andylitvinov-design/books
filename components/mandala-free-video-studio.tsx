@@ -1806,7 +1806,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, [signature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
-  useEffect(()=>setIntroPlaying(false),[theme,studioMode]);
+  useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
 
   // Switch actual HTMLVideoElement decoders on the identical storyboard clock
