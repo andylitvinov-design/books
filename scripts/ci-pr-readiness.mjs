@@ -26,8 +26,13 @@ export function assessPrReadiness(event, live, repository) {
   if (live.head?.sha !== pr.head.sha) {
     return fail('superseded_head', 'Newer PR HEAD exists; do not build old commit');
   }
-  if (live.base?.sha !== pr.base.sha) {
-    return fail('superseded_base', 'Production base moved since event; refresh PR');
+  // GitHub loose required checks permit production to advance after the
+  // proposed merge snapshot was tested. This advisory preflight must not
+  // invalidate a healthy unchanged HEAD solely because BASE advanced.
+  // The required release-ready gate separately verifies the tested merge
+  // checkout and enforces current-base freshness for sensitive changes.
+  if (!SHA.test(live.base?.sha ?? '')) {
+    return fail('invalid_live_base_sha', 'Cannot verify the current production commit');
   }
   if (pr.draft || live.draft) {
     return fail('draft', 'PR is Draft: finish edits before expensive acceptance');
@@ -42,7 +47,7 @@ export function assessPrReadiness(event, live, repository) {
     return fail('mergeability_pending', 'GitHub has not confirmed mergeability');
   }
   // Blocked/unstable may be caused by pending CI or reviews: never deadlock CI.
-  return { ready: true, code: 'ready', message: 'Exact HEAD/base current and mergeable' };
+  return { ready: true, code: 'ready', message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
 async function readLivePr(repository, number, token) {
