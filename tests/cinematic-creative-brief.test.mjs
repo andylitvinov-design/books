@@ -204,25 +204,30 @@ test('free local capabilities stay truthful and all novel video compute routes f
   assert.equal(routes.find(r=>r.id==='local_canvas')?.producesNovelAiPixels,false);
   assert.ok(routes.filter(r=>r.id!=='local_canvas').every(r=>r.ready===false&&r.chargeMinor===null));
 });
-test('existing director exposes one free visual prompt and actual local montage, not fake paid render',()=>{
+test('existing director and compact 49-question panel preserve a free local montage, not fake paid rendering',()=>{
   const ui=read('components/mandala-cinematic-director.tsx');
+  const params=read('components/mandala-video-parameters.tsx');
+  const registry=read('lib/mandala/video-studio-question-registry.mjs');
   const css=read('components/mandala-cinematic-director.module.css');
   assert.match(ui,/data-director-visual-idea/);
-  assert.match(ui,/data-director-contextual-questions/);
+  assert.match(ui,/<MandalaVideoParameters/);
+  assert.match(params,/data-director-contextual-questions/);
+  assert.match(params,/data-director-category/);
+  assert.match(params,/questionsForDraft/);
+  assert.match(registry,/export function questionsForGroup/);
+  assert.match(ui,/projectFieldsFromAnswers/);
   assert.match(ui,/data-director-reference-pack/);
   assert.match(ui,/data-director-new-ai-status/);
-  assert.match(ui,/data-director-category/);
-  assert.match(ui,/questionsForGroup/);
-  assert.match(ui,/projectFieldsFromAnswers/);
   assert.match(ui,/data-director-shot-select/);
   assert.match(ui,/shotDirections/);
-  assert.match(ui,/sceneSelected:Boolean\(selectedShotNumber\)/);
-  for(const group of ['personalization','principal','advanced','pro','extra'])assert.match(ui,new RegExp(group));
+  assert.match(params,/selectedShotNumber===null/);
+  for(const group of ['personalization','principal','advanced','pro','extra'])
+    assert.match(params,new RegExp(group));
   assert.match(ui,/creativeReferencePack:referencePack/);
   assert.match(ui,/newAiVideoAvailable/);
   assert.match(ui,/data-director-apply-montage/);
   assert.match(css,/\.ideaInput textarea/);
   assert.match(css,/\.reference/);
   assert.match(css,/:focus-visible/);
-  assert.doesNotMatch(ui,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
+  assert.doesNotMatch(ui+params,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
 });
