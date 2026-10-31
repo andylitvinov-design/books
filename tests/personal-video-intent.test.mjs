@@ -51,18 +51,27 @@ test("wish and caption lengths count Unicode graphemes; original text not echoed
   const choice=suggest("energy","очень личный секрет, не передавать в CRM",energy);
   assert.doesNotMatch(JSON.stringify(choice),/секрет/);
 });
+test("keeps a Video Studio long-form brief within its explicit 2,000-grapheme limit",()=>{
+  const brief="🦅".repeat(2_001);
+  assert.equal([...new Intl.Segmenter(undefined,{granularity:"grapheme"}).segment(graphemeTrim(brief,2_000))].length,2_000);
+});
 test("pure local engine never posts, persists, processes photos or sends private health/identity data",()=>{
   const src=readFileSync(new URL("../lib/mandala/personal-video-intent.mjs",import.meta.url),"utf8");
   assert.doesNotMatch(src,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage|postMessage|api\.kling|supabase|google-analytics/i);
 });
 test("existing Mandala editor remains the sole renderer; UI wires independent wish and user override",()=>{
   const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const director=readFileSync(new URL("../components/mandala-cinematic-director.tsx",import.meta.url),"utf8");
   assert.match(ui,/suggestPersonalVideoScene\(/);
-  assert.match(ui,/data-video-wish/);
+  assert.match(ui,/data-video-wish-disclosure/);
   assert.match(ui,/data-video-suggest/);
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
-  assert.match(ui,/maxLength=\{160\}/);
+  assert.match(ui,/intentText=\{wish\}/);
+  // #2691's approved short-form wish remains; it and Director use one wish state.
+  assert.match(ui,/data-video-quick-wish/);
+  assert.match(ui,/onIntentTextChange=\{value=>\{setWish\(value\)/);
+  assert.match(director,/maxLength=\{2000\}/);
   assert.match(ui,/id="personal-video-result"/);
 });
 
@@ -76,7 +85,6 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);
   assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true\}\)/);
-  // The export uses an explicitly attached preset, never the merely previewed selection.
   assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume\)/);
   assert.match(ui,/!audioNeedsAttachment &&/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);

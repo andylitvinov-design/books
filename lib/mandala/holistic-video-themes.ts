@@ -3,6 +3,7 @@
  * Each preview and exported video uses this identical renderer.
  * No stock portrait, AI upload, health inference, client storage, or cost.
  */
+import extraFreeFilms from "../../data/video-catalog/free-stock-scenes.json";
 export type VideoTheme = "money" | "energy" | "life" | "health" | "relationships" | "goals";
 export type OtherTheme = Exclude<VideoTheme, "money">;
 export type LocalSceneId =
@@ -11,7 +12,7 @@ export type LocalSceneId =
   | "light-path" | "open-door" | "guiding-stars" | "meaning-tree"
   | "solar-surge" | "ocean-pulse" | "sunbeam-flow" | "river-power" | "desert-light" | "mountain-air"
   | "wildflower-dance" | "fern-awakening" | "coastal-freedom" | "lone-tree" | "meadow-morning"
-  | "calm-sea" | "morning-dew" | "mossy-stream" | "gentle-falls" | "sea-breeze";
+  | "calm-sea" | "morning-dew" | "mossy-stream" | "gentle-falls" | "sea-breeze" | (string & {});
 export type VideoLocale = "en" | "ru" | "es";
 
 type LocalScene = {
@@ -19,6 +20,10 @@ type LocalScene = {
   label: Record<VideoLocale, string>;
   symbol: string;
 };
+type StockExtra = {id:string;theme:OtherTheme;status:"approved";symbol:string;label:Record<VideoLocale,string>};
+const stockExtras=extraFreeFilms as unknown as StockExtra[];
+const scenesFor=(theme:OtherTheme):LocalScene[]=>stockExtras.filter(s=>s.status==="approved"&&s.theme===theme)
+  .map(s=>({id:s.id,symbol:s.symbol,label:s.label}));
 export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
   energy: [
     { id:"solar-surge", symbol:"☀", label:{en:"Solar vitality",ru:"Солнечная энергия",es:"Vitalidad solar"} },
@@ -31,6 +36,7 @@ export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
     { id:"green-vortex", symbol:"✺", label:{en:"Energy spiral",ru:"Спираль энергии",es:"Espiral de energía"} },
     { id:"light-waterfall", symbol:"≋", label:{en:"Light waterfall",ru:"Водопад света",es:"Cascada de luz"} },
     { id:"gentle-shield", symbol:"◉", label:{en:"Gentle protection",ru:"Мягкая защита",es:"Protección suave"} },
+    ...scenesFor("energy"),
   ],
   life: [
     { id:"wildflower-dance", symbol:"✿", label:{en:"Dance of flowers",ru:"Танец цветов",es:"Danza de flores"} },
@@ -38,6 +44,7 @@ export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
     { id:"coastal-freedom", symbol:"≋", label:{en:"Freedom and space",ru:"Свобода и простор",es:"Libertad y espacio"} },
     { id:"lone-tree", symbol:"♧", label:{en:"Roots of life",ru:"Корни жизни",es:"Raíces de vida"} },
     { id:"meadow-morning", symbol:"☼", label:{en:"Fresh morning",ru:"Новое утро",es:"Mañana nueva"} },
+    ...scenesFor("life"),
   ],
   health: [
     { id:"calm-sea", symbol:"≋", label:{en:"Calm sea",ru:"Спокойное море",es:"Mar tranquilo"} },
@@ -45,18 +52,21 @@ export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
     { id:"mossy-stream", symbol:"♧", label:{en:"Quiet stream",ru:"Тихий ручей",es:"Arroyo tranquilo"} },
     { id:"gentle-falls", symbol:"〰", label:{en:"Gentle waterfall",ru:"Мягкий водопад",es:"Cascada suave"} },
     { id:"sea-breeze", symbol:"❋", label:{en:"Sea breeze",ru:"Морской бриз",es:"Brisa marina"} },
+    ...scenesFor("health"),
   ],
   relationships: [
     { id:"heart-light", symbol:"♡", label:{en:"Heart of light",ru:"Сияние сердца",es:"Corazón de luz"} },
     { id:"warm-connection", symbol:"∞", label:{en:"Warm connection",ru:"Тёплая связь",es:"Conexión cálida"} },
     { id:"blossom-garden", symbol:"✿", label:{en:"Garden of acceptance",ru:"Сад принятия",es:"Jardín de aceptación"} },
     { id:"two-circles", symbol:"◌", label:{en:"Meeting in harmony",ru:"Встреча в гармонии",es:"Encuentro en armonía"} },
+    ...scenesFor("relationships"),
   ],
   goals: [
     { id:"light-path", symbol:"➤", label:{en:"Path to a goal",ru:"Путь к цели",es:"Camino a la meta"} },
     { id:"open-door", symbol:"⌂", label:{en:"Golden doorway",ru:"Золотой портал",es:"Portal dorado"} },
     { id:"guiding-stars", symbol:"✧", label:{en:"Stars of meaning",ru:"Звёзды смысла",es:"Estrellas del sentido"} },
     { id:"meaning-tree", symbol:"♧", label:{en:"Tree of purpose",ru:"Древо предназначения",es:"Árbol del propósito"} },
+    ...scenesFor("goals"),
   ],
 };
 

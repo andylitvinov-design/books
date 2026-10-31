@@ -1,0 +1,39 @@
+name: Holistic House private Messenger media verification
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/practitioners/direct-message-policy.mjs'
+      - 'lib/practitioners/direct-messages.js'
+      - 'components/app/direct-message-inbox.*'
+      - 'components/app/direct-video-recorder.*'
+      - 'components/app/direct-voice-recorder.*'
+      - 'components/app/private-chat-photo.*'
+      - 'app/api/app/direct-messages/**'
+      - 'supabase/migrations/*direct_video_notes.sql'
+      - 'tests/direct-message-media-transport.test.mjs'
+      - 'tests/direct-message-video-notes.test.mjs'
+      - 'tests/messages-private-media-pagination.test.mjs'
+      - '.github/workflows/hh-direct-video-notes.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-direct-media-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  media-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Existing photo/voice, private media and video-note contracts
+        run: node --conditions=react-server --test tests/direct-message-media-transport.test.mjs tests/direct-message-video-notes.test.mjs tests/messages-private-media-pagination.test.mjs
+      - name: Scope lint
+        run: npx --no-install eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-video-recorder.jsx tests/direct-message-video-notes.test.mjs tests/direct-message-media-transport.test.mjs

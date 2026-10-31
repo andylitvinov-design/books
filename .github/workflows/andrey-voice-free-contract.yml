@@ -18,12 +18,13 @@ permissions:
 jobs:
   protocol:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Check JavaScript syntax
         run: |
           node --check lib/clients/local-narration-queue.mjs
@@ -49,6 +50,15 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_andrey_voice_local_engine.py' -v
 
 
+      # Source privacy contracts + isolated Redis are required on every PR.
+      # Only standalone manual or non-production-base PRs need another full Next build.
+      - name: Install dependencies for independent bundle verification
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm ci --no-audit --no-fund
+      - name: Independent Next.js production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm run build
+
   redis-atomic:
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -64,17 +74,3 @@ jobs:
       - name: Remove test Redis
         if: always()
         run: docker rm -f andrey-voice-redis-ci || true
-
-  production-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 18
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install project dependencies without invoking any speech providers
-        run: npm ci --no-audit --no-fund
-      - name: Next.js production build
-        run: npm run build

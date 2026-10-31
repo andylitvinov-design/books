@@ -4,12 +4,30 @@ import {readFileSync} from 'node:fs';
 import {buildCinematicStoryboard,customizeCinematicShot} from '../lib/mandala/cinematic-director.mjs';
 import {
   VIDEO_STUDIO_BRIEF_SCHEMA,VIDEO_STUDIO_QUESTION_COUNTS,VIDEO_STUDIO_QUESTION_REGISTRY,
-  VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS,VIDEO_STUDIO_SCALE_REGISTRY,
+  VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS,VIDEO_STUDIO_CONTEXTUAL_QUESTION_DEFINITIONS,VIDEO_STUDIO_SCALE_REGISTRY,
   videoStudioContextQuestions,compileCinematicReferencePack,listCreativeVideoCapabilities,
 } from '../lib/mandala/cinematic-creative-brief.mjs';
 const project=({locale='ru',theme='energy'}={})=>
   buildCinematicStoryboard({locale,theme,style:'dream',durationSeconds:20});
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+
+test('a one-minute plan compiles all six shot prompts without changing their timeline',()=>{
+  const plan=buildCinematicStoryboard({locale:'ru',theme:'energy',style:'dream',durationSeconds:60});
+  const packet=compileCinematicReferencePack({plan,visualIdea:'Белый орёл летит над горами'});
+  assert.equal(packet.shots.length,6);
+  assert.equal(packet.shots.reduce((sum,shot)=>sum+shot.seconds,0),60);
+  assert.ok(packet.shots.every(shot=>shot.artOnlyPrompt));
+});
+
+test('fictional purple phoenix and glass temple survive in the art-only plan',()=>{
+  const visualIdea='Личная заметка SECRET_912: фиолетовый феникс летит внутри стеклянного храма';
+  const packet=compileCinematicReferencePack({plan:project(),visualIdea});
+  assert.equal(packet.recognized.color,'purple');
+  assert.equal(packet.recognized.setting,'glass_temple');
+  assert.match(packet.shots[0].artOnlyPrompt,/purple.*phoenix.*glass temple/i);
+  assert.doesNotMatch(JSON.stringify(packet),/SECRET_912/);
+  assert.equal(packet.newAiVideoAvailable,false);
+});
 
 test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+3 named internal scales',()=>{
   assert.equal(VIDEO_STUDIO_BRIEF_SCHEMA,'hh-video-brief-v1.4');
@@ -17,6 +35,8 @@ test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+
   assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.length,96);
   assert.equal(new Set(VIDEO_STUDIO_QUESTION_REGISTRY.map(x=>x.id)).size,96);
   assert.equal(VIDEO_STUDIO_CONTEXTUAL_QUESTION_IDS.length,49);
+  assert.equal(VIDEO_STUDIO_CONTEXTUAL_QUESTION_DEFINITIONS.length,49);
+  assert.ok(VIDEO_STUDIO_CONTEXTUAL_QUESTION_DEFINITIONS.every(question=>question.options.length===3));
   assert.equal(VIDEO_STUDIO_QUESTION_REGISTRY.filter(x=>x.active).length,49);
   assert.equal(VIDEO_STUDIO_SCALE_REGISTRY.length,33);
   assert.equal(new Set(VIDEO_STUDIO_SCALE_REGISTRY.map(x=>x.id)).size,33);
@@ -83,6 +103,14 @@ test('a revised brief exclusion overrides a previously confirmed subject without
     }
   }
 });
+test('unrecognized descriptions are never presented as a verified local match',()=>{
+  for(const idea of ['A silver dragon in a floating library','Серебряный дракон в парящей библиотеке','Un dragón plateado en una biblioteca flotante']){
+    const p=compileCinematicReferencePack({plan:project(),visualIdea:idea});
+    assert.equal(p.localMatchVerified,false);
+    assert.equal(p.outputStatus,'local_match_unverified');
+    assert.equal(p.newAiVideoAvailable,false);
+  }
+});
 test('new fictional eagle metamorphosis produces safe text-only keyframes but no fake AI frames',()=>{
   for(const [locale,idea] of [
     ['ru','Моя тайна 74829: Белый орёл летит над горами и превращается в созвездие'],
@@ -132,6 +160,14 @@ test('unknown and sensitive client content cannot silently become provider instr
   assert.ok(!JSON.stringify(inferred).includes('clinic'));
   assert.ok(!JSON.stringify(inferred).includes('99999'));
 });
+test('a permitted fictional detail near the end of a 2,000-grapheme brief still informs the local plan',()=>{
+  const detail='A white eagle flies over mountains';
+  const p=compileCinematicReferencePack({visualIdea:'x'.repeat(1_850)+' '+detail,plan:project({locale:'en'})});
+  assert.equal(p.recognized.subject,'eagle');
+  assert.equal(p.recognized.action,'flight');
+  assert.equal(p.recognized.setting,'mountains');
+  assert.ok(!JSON.stringify(p).includes('x'.repeat(40)));
+});
 test('style bible and shot references follow actual edited storyboard but never produce image references',()=>{
   const base=project({theme:'money'});
   const edited=customizeCinematicShot(base,1,base.shots[3].sceneId);
@@ -142,9 +178,24 @@ test('style bible and shot references follow actual edited storyboard but never 
   assert.equal(p.styleBible.keyframes,'text_descriptions_only');
   assert.equal(p.styleBible.actualGeneratedImages,false);
   assert.ok(p.shots.every((s,i)=>s.localSceneId===edited.shots[i].sceneId&&s.startSeconds===edited.shots[i].startSeconds));
+  assert.ok(p.shots.every(shot=>typeof shot.artOnlyPrompt==='string'&&shot.artOnlyPrompt.includes('fictional only')));
+  assert.ok(p.shots.every(shot=>!shot.artOnlyPrompt.includes('Анимация про орла')));
   const forged=structuredClone(edited);
   forged.shots[0].providerPrompt='My patient says I am sick';
   assert.throws(()=>compileCinematicReferencePack({plan:forged,visualIdea:'eagle flies'}),/invalid_cinematic_shot/);
+});
+test('safe Pro shot directions affect only their selected technical prompt',()=>{
+  const plan=project({locale:'en'});
+  const p=compileCinematicReferencePack({
+    plan,visualIdea:'A white eagle flies over mountains',
+    shotDirections:[{shotId:plan.shots[0].id,answers:{
+      PRO_09:{selectedOptionId:'close',confirmed:true},
+      PRO_16:{selectedOptionId:'follow',confirmed:true},
+      PRO_19:{selectedOptionId:'back',confirmed:true},
+    }}],
+  });
+  assert.match(p.shots[0].artOnlyPrompt,/close-up view, following the character, back light/i);
+  assert.doesNotMatch(p.shots[1].artOnlyPrompt,/close-up view, following the character, back light/i);
 });
 test('free local capabilities stay truthful and all novel video compute routes fail closed',()=>{
   const routes=listCreativeVideoCapabilities();
@@ -160,6 +211,13 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(ui,/data-director-contextual-questions/);
   assert.match(ui,/data-director-reference-pack/);
   assert.match(ui,/data-director-new-ai-status/);
+  assert.match(ui,/data-director-category/);
+  assert.match(ui,/questionsForGroup/);
+  assert.match(ui,/projectFieldsFromAnswers/);
+  assert.match(ui,/data-director-shot-select/);
+  assert.match(ui,/shotDirections/);
+  assert.match(ui,/sceneSelected:Boolean\(selectedShotNumber\)/);
+  for(const group of ['personalization','principal','advanced','pro','extra'])assert.match(ui,new RegExp(group));
   assert.match(ui,/creativeReferencePack:referencePack/);
   assert.match(ui,/newAiVideoAvailable/);
   assert.match(ui,/data-director-apply-montage/);
@@ -168,4 +226,3 @@ test('existing director exposes one free visual prompt and actual local montage,
   assert.match(css,/:focus-visible/);
   assert.doesNotMatch(ui,/fetch\(["']https?:\/\/|sendBeacon|localStorage|sessionStorage/);
 });
-

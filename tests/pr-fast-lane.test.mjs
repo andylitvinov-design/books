@@ -32,6 +32,41 @@ test('seven formerly unconditional PR workflows run only on relevant paths', () 
   }
 });
 
+test('OPORA My Courses test-only routing is exact; App R1 still verifies the full app suite', () => {
+  const opora = workflow('opora-module-ci.yml');
+  const app = workflow('hh-app-r1.yml');
+  const pathsOf = src => {
+    const block = src.match(/^  pull_request:\s*\n([\s\S]*?)(?=^permissions:|^concurrency:|^jobs:)/m);
+    assert.ok(block, 'production-targeted PR trigger required');
+    return [...block[1].matchAll(/^      - '([^']+)'$/gm)].map(x => x[1]);
+  };
+  const oporaPaths = pathsOf(opora), appPaths = pathsOf(app);
+  const covers = (paths, filename) => paths.some(pattern => requireGlob(filename, pattern));
+  for (const filename of ['tests/my-course-moment-trends.test.mjs', 'tests/my-course-programs.test.mjs']) {
+    assert.ok(oporaPaths.includes(filename), 'OPORA must run its directly invoked test ' + filename);
+    assert.equal(covers(oporaPaths, filename), true);
+  }
+  assert.ok(!oporaPaths.includes('tests/my-course*.mjs'), 'unrelated My Courses test-only edits must not launch full OPORA browser matrix');
+  assert.equal(covers(oporaPaths, 'tests/my-course.test.mjs'), false);
+  assert.equal(covers(appPaths, 'tests/my-course.test.mjs'), true, 'full App R1 suite still runs this test');
+  assert.ok(app.includes('npm run test:app tests/historical-interpretation-coverage.test.mjs'));
+  for (const source of ['components/my-course-progress.jsx', 'lib/course/course-recommendations.js', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(oporaPaths, source), true, 'OPORA source/safety test must remain covered: ' + source);
+  }
+  const moduleTests = opora.split(/^  module-routing:\s*$/m)[1]?.split(/^  as56-mobile-browser:\s*$/m)[0];
+  assert.ok(moduleTests, 'OPORA unit suite must be retained');
+  const executed = [...moduleTests.matchAll(/tests\/[a-z0-9.-]+\.test\.mjs/g)].map(x => x[0]);
+  assert.equal(executed.length, new Set(executed).size, 'run each distinct OPORA source test once per unit job');
+  assert.ok(executed.length >= 47, 'retain all 47 proven OPORA cases as the suite grows');
+  for (const crucial of ['tests/opora-day-one-interactive.test.mjs', 'tests/opora-as57-calm-morning.test.mjs', 'tests/course-compact-owner-ui.test.mjs']) {
+    assert.ok(executed.includes(crucial), 'missing original real consent or mobile regression: ' + crucial);
+  }
+  assert.match(opora, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.match(opora, /browser: \[chromium, webkit\]/);
+  assert.match(opora, /cancel-in-progress: true/);
+  assert.doesNotMatch(opora, /continue-on-error:\s*true/);
+});
+
 test('one unconditional fail-closed release-ready gate protects core code validation', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
@@ -53,7 +88,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /HH_BASE_SHA/);
   assert.match(source, /actions: read/);
   assert.match(source, /pull-requests: read/);
-  assert.match(source, /timeout-minutes: 20/);
+  assert.match(source, /timeout-minutes: 45/);
   assert.match(source, /\[\[ "\$SCOPE_RESULT" == success \]\]/);
   assert.match(source, /\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -111,7 +146,7 @@ test('specialist PR filters retain proven direct harness dependencies', () => {
   }
 });
 
-test('Director-only changes run Mandala media QA, not unrelated public services E2E',()=>{
+test('Video Studio-only changes run Mandala real-media QA, not unrelated Public Services E2E',()=>{
   const fromWorkflow=name=>{
     const source=workflow(name);
     const pr=source.split('  pull_request:')[1]?.split(/^  [a-z_]+:|^permissions:/m)[0]??'';
@@ -134,12 +169,13 @@ test('Director-only changes run Mandala media QA, not unrelated public services 
     'components/mandala-cinematic-director.tsx',
     'components/mandala-cinematic-director.module.css',
     'scripts/verify-holistic-mandala-browser.mjs',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
   for(const file of [
-    'components/mandala-free-video-studio.tsx',
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
     'scripts/verify-holistic-master-browser.mjs',
@@ -354,4 +390,178 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
     const classifier=core.split('case "$f" in').slice(-1)[0].split('*) ci_only=false')[0];
     assert.ok(!classifier.includes(forbidden),'Unsafe CI-only source inclusion: '+forbidden);
   }
+});
+
+
+const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
+  for (const [file,prefix,job] of [
+    ['holistic-about-video-check.yml','hh-about-video','check'],
+    ['library-public-feed.yml','hh-library-feed','isolated-build'],
+  ]) {
+    const src=workflow(file);
+    assert.match(src,/types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+    assert.match(src,new RegExp('^  '+job+':\\n    if:','m'));
+    assert.ok(src.includes("github.event_name != 'pull_request' || github.event.pull_request.draft == false"));
+    assert.equal((src.match(/^concurrency:/gm)||[]).length,1);
+    assert.ok(src.includes('group: '+prefix+'-'+prGroupSuffix));
+    assert.ok(src.includes('cancel-in-progress: '+prOnlyCancel));
+    assert.ok(src.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"));
+    assert.match(src,/node (?:--conditions=react-server )?--test/);
+    assert.match(src,/eslint/);
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+  const lib=workflow('library-public-feed.yml');
+  assert.match(lib,/^  workflow_dispatch:/m);
+  assert.match(lib,/run: npm run build/);
+  assert.match(lib,/playwright install --with-deps chromium webkit/);
+  assert.match(lib,/node scripts\/verify-ideas-mobile-browser\.mjs/);
+  const about=workflow('holistic-about-video-check.yml');
+  assert.match(about,/npx tsc --noEmit/);
+  assert.match(about,/node --test tests\/psychic-alchemy-intro-video\.test\.mjs/);
+});
+
+
+test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
+  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+  const guard="${{ github.event_name == 'pull_request' }}";
+  const specs=[
+    ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
+    ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
+    ['hh-owner-telegram-video.yml','hh-owner-telegram-video',['Telegram and audio regression tests','Real 1080p MP4 with H264 AAC via ffmpeg-static','Verify shipped FFmpeg in owner Dot webhook function trace']],
+  ];
+  for(const [filename,group,contracts] of specs){
+    const s=workflow(filename);
+    assert.match(s,/^  pull_request:/m,filename+' must still validate PR changes');
+    assert.match(s,/^  push:/m,filename+' must preserve trusted production release audit');
+    assert.match(s,/^    paths:/m,filename+' must retain relevant path filters');
+    assert.equal((s.match(/^concurrency:/gm)||[]).length,1,filename+' requires exactly one concurrency block');
+    assert.ok(s.includes('group: '+group+'-'+suffix),filename+' must only group the same PR');
+    assert.ok(s.includes('cancel-in-progress: '+guard),filename+' must never cancel manual/PUSH runs');
+    assert.match(s,/^permissions:\s*\n  contents: read/m,filename+' must stay read only');
+    assert.doesNotMatch(s,/continue-on-error:\s*true/,filename+' must never hide E2E failures');
+    for(const marker of contracts)assert.ok(s.includes(marker),filename+' lost '+marker);
+  }
+  assert.match(workflow('hh-live-seo-audit.yml'),/^  workflow_dispatch:/m);
+  assert.match(workflow('hh-public-performance-audit.yml'),/^  workflow_dispatch:/m);
+});
+
+// Preserve #2652's already merged, independent path-scope regression.
+test('mobile-mock-only QA does not fan out into unrelated 20-minute public-service and Ideas workflows', () => {
+  const prPaths = name => {
+    const trigger = workflow(name).split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
+    return [...trigger.matchAll(/^      - '([^']+)'$/gm)].map(item=>item[1]);
+  };
+  const covers = (patterns, file) => {
+    let included = false;
+    for (const pattern of patterns) {
+      const negative = pattern.startsWith('!');
+      if (requireGlob(file, negative ? pattern.slice(1) : pattern)) included = !negative;
+    }
+    return included;
+  };
+  const publicServices = prPaths('hh-public-services-production.yml');
+  const ideas = prPaths('hh-ideas-coaching-public.yml');
+  const mock = prPaths('hh-support-mobile-mock-browser.yml');
+  for (const file of [
+    'scripts/verify-holistic-support-mock-fidelity.mjs',
+    'tests/holistic-support-mobile-mock-parity.test.mjs',
+  ]) {
+    assert.equal(covers(mock,file),true,file+' must still run real Chromium/WebKit mock QA');
+    assert.equal(covers(publicServices,file),false,file+' must not trigger unrelated services acceptance');
+  }
+  assert.equal(covers(ideas,'tests/holistic-support-mobile-mock-parity.test.mjs'),false);
+  for (const file of [
+    'components/holistic-support-mobile.tsx',
+    'tests/holistic-support-mobile-alternative.test.mjs',
+    'scripts/verify-holistic-master-browser.mjs',
+    'app/ru/holistic-support/page.tsx',
+    'app/api/payments/some-service/route.ts',
+    'tests/temple-support-hub.test.mjs',
+  ]) assert.equal(covers(publicServices,file),true,file+' must still enforce full services acceptance');
+  for (const file of [
+    'components/ideas-discovery.tsx',
+    'tests/holistic-support-first-screen.test.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+  ]) assert.equal(covers(ideas,file),true,file+' must still exercise real Ideas/Coaching routes');
+  assert.ok(workflow('hh-support-mobile-mock-browser.yml').includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+});
+
+test('Reports Development Programme keeps its focused verification and separate Core production build', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const reports = workflow('hh-reports-development-program.yml');
+  const gate = "if: $" + "{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /npx --no-install tsc --noEmit/);
+  assert.match(core, /^  release-ready:/m);
+  assert.match(core, /ci-specialist-aggregate\.mjs/);
+  assert.match(reports, /^  pull_request:/m);
+  assert.match(reports, /^  push:/m);
+  assert.ok(reports.includes('.github/workflows/hh-reports-development-program.yml'));
+  assert.ok(reports.includes('- name: Verify production Next.js build without preview deployment\n        '+gate+'\n        run: npm run build'));
+  assert.ok(reports.includes('tests/reports-development-program.test.mjs'));
+  assert.ok(reports.includes('tests/goal-profile-journey.test.mjs'));
+  assert.match(reports, /node --conditions=react-server --test/);
+  assert.match(reports, /npx --no-install eslint/);
+  assert.doesNotMatch(reports,/continue-on-error:\s*true/);
+});
+
+ 
+test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()=>{
+  const guarded="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [file,step,contract] of [
+    ['dao-iching-library.yml','Build exact app (without Vercel paid preview)','tests/dao-hexagrams.test.mjs'],
+    ['admin-seo-dashboard.yml','Production build','tests/admin-seo-dashboard.test.mjs'],
+    ['compact-lead-capture-ci.yml','TypeScript and production build with unchanged payment gates','tests/compact-lead-channel-handoff.test.mjs'],
+  ]){
+    const source=workflow(file);
+    assert.ok(source.includes('- name: '+step+'\n        '+guarded+'\n'),file+' global build must be delegated to protected Core');
+    assert.ok(source.includes(contract),file+' original specialist contracts still mandatory');
+  }
+  const crm=workflow('hh-crm-source-check.yml');
+  assert.match(crm,/^  crm:\s*$/m);
+  assert.doesNotMatch(crm,/^  build:\s*$/m);
+  assert.ok(crm.includes('tests/crm-security-contract.test.mjs'));
+  assert.ok(crm.includes("if: ${{ always() && github.event_name == 'workflow_dispatch' }}"));
+  const app=workflow('hh-app-browser.yml');
+  assert.equal((app.match(/^      matrix:/gm)||[]).length,1);
+  assert.ok(app.includes('browser: [chromium, webkit]')&&app.includes('suite: [core, extended]'));
+  assert.ok(app.includes('run: test "$MATRIX_RESULT" = success'));
+  const voice=workflow('andrey-voice-free-contract.yml');
+  assert.doesNotMatch(voice,/^  production-build:\s*$/m);
+  assert.match(voice,/^  redis-atomic:\s*$/m);
+  assert.ok(voice.includes('test_andrey_voice_local_engine.py'));
+  assert.ok(voice.includes('Independent Next.js production build'));
+  const perf=workflow('hh-public-performance-audit.yml');
+  assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
+  assert.match(perf,/^  push:\s*$/m);
+  const services=workflow('hh-public-services-production.yml');
+  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  assert.ok(!services.includes('npx tsc --noEmit'));
+});
+
+test('Mandala focused job overlaps both real browsers without losing media coverage or full production build', () => {
+  const yaml = workflow('holistic-support-mandala.yml');
+  const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
+  assert.match(yaml, /focused-unit-types-build:/);
+  assert.match(yaml, /uses: actions\/cache@v4/);
+  assert.match(yaml, /path: \.next\/cache/);
+  assert.match(yaml, /mandala-next-v1-.*package-lock\.json.*pull_request\.number/);
+  assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
+    'mandatory Core owns production PR typecheck; standalone TypeScript remains');
+  assert.match(yaml, /run: npm run build/);
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(source, /const engines = \[\["webkit", webkit\], \["chromium", chromium\]\]/);
+  assert.match(source, /for \(const \{ locale, width \} of orderedViewports\)/);
+  assert.doesNotMatch(source, /viewports\.slice\(from, from \+ 2\)/, 'no extra same-engine contexts');
+  assert.match(source, /Promise\.allSettled\(engines\.map\(runEngine\)\)/);
+  assert.match(source, /if \(rejectedEngines\.length\)/);
+  assert.match(source, /assert\.equal\(passes, viewports\.length \* engines\.length/);
+  for (const contract of [
+    'locale: "ru", width: 320', 'locale: "ru", width: 390', 'locale: "ru", width: 430',
+    'locale: "en", width: 390', 'locale: "es", width: 390',
+    'ffprobe', 'ffmpeg', 'data-mandala-video-download', 'data-video-audio-player',
+    'data-video-photo-consent', 'assert.deepEqual(uploaded,', 'pageerror',
+  ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
 });
