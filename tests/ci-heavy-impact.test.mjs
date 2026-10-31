@@ -47,6 +47,29 @@ test('Mandala: test-only changes keep contracts but avoid rebuilding the same si
   ]) assert.deepEqual(decideHeavyImpact('mandala', files), { browser: true });
 });
 
+test('Free Review: existing modified unit tests skip duplicate build/browser, runtime and unknown edits never do', () => {
+  assert.deepEqual(decideHeavyImpact('free-review', one('tests/free-diagnosis-three-offers.test.mjs')), { browser: false });
+  assert.deepEqual(decideHeavyImpact('free-review', one('tests/personal-testimonials-prefetch.test.mjs')), { browser: false });
+  assert.deepEqual(decideHeavyImpact('free-review', one('tests/private-material-handoff.test.mjs')), { browser: false });
+  for (const files of [null, [], one('components/compact-lead-capture.tsx'),
+    one('tests/free-diagnosis-three-offers.test.mjs', 'added'),
+    [{ filename: 'tests/free-diagnosis-three-offers.test.mjs', status: 'modified' },
+     { filename: 'components/personal-testimonials.tsx', status: 'modified' }]]) {
+    assert.deepEqual(decideHeavyImpact('free-review', files), { browser: true });
+  }
+});
+
+test('Free Review workflow preserves post-merge real browser, functional build and focused unit tests', () => {
+  const yaml = read('hh-free-review-live-mobile.yml');
+  assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs free-review/);
+  assert.match(yaml, /node scripts\/ci-pr-readiness\.mjs/);
+  assert.match(yaml, /node --test tests\/retired-situation-promo-sitewide\.test\.mjs/);
+  assert.match(yaml, /if: github\.event_name == 'pull_request' && steps\.impact\.outputs\.browser == 'true'/);
+  assert.match(yaml, /if: github\.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/);
+  assert.match(yaml, /if: github\.event_name == 'push'/);
+  assert.match(yaml, /npm run build/);
+  assert.doesNotMatch(yaml, /npx tsc --noEmit/);
+});
 test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fail-closed and marked as a dependency', () => {
   const yaml = read('hh-app-r1.yml');
   assert.match(yaml, /^  impact:\n/m);
