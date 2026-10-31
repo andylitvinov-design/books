@@ -4,7 +4,46 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep } from '../lib/ci/pr-sweep-guard.mjs';
+
+async function reportRoutes(repo, token) {
+  if (!token) throw Error('GH_TOKEN or GITHUB_TOKEN required for route');
+  const [owner,name]=repo.split('/');
+  const query=`query($owner:String!,$name:String!,$cursor:String) {
+    repository(owner:$owner,name:$name) {
+      pullRequests(first:100,after:$cursor,states:OPEN,baseRefName:"codex/public-book-library",orderBy:{field:CREATED_AT,direction:DESC}) {
+        totalCount pageInfo { hasNextPage endCursor }
+        nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName }
+      }
+    }
+  }`;
+  const rows=[];
+  let cursor=null, total=null;
+  for (let page=0;page<25;page++) {
+    const response=await fetch('https://api.github.com/graphql',{method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({query,variables:{owner,name,cursor}}),signal:AbortSignal.timeout(20000)});
+    if (!response.ok) throw Error('SWEEP_GRAPHQL_HTTP_'+response.status);
+    const body=await response.json();
+    const prs=body.data?.repository?.pullRequests;
+    if (body.errors?.length || !prs || !Array.isArray(prs.nodes)) throw Error('SWEEP_GRAPHQL_INCOMPLETE');
+    if (total !== null && total !== prs.totalCount) throw Error('SWEEP_CHANGED_DURING_READ');
+    total=prs.totalCount;
+    rows.push(...prs.nodes.map(pr=>({number:pr.number,created_at:pr.createdAt,state:'open',draft:pr.isDraft,
+      mergeable:pr.mergeable==='MERGEABLE' ? true : pr.mergeable==='CONFLICTING' ? false : null,
+      mergeable_state:pr.mergeStateStatus?.toLowerCase(),base:{ref:pr.baseRefName}})));
+    if (!prs.pageInfo.hasNextPage) {
+      if (rows.length!==total) throw Error('SWEEP_CHANGED_DURING_READ');
+      const observed=Date.now();
+      console.log(JSON.stringify({repo,observed_at:new Date(observed).toISOString(),total,...routeSweep(rows,observed),
+        merge_authorized:false,reason:'Routing is a snapshot, not exact-head CI or merge authorization'},null,2));
+      return;
+    }
+    if (!prs.pageInfo.endCursor || prs.pageInfo.endCursor===cursor) throw Error('SWEEP_CURSOR_INVALID');
+    cursor=prs.pageInfo.endCursor;
+  }
+  throw Error('SWEEP_PAGINATION_LIMIT');
+}
 
 // Daily CLI reuses this EXISTING script and makes no GitHub writes.
 // The created-PR cohort is exact to Toronto calendar boundaries; it never
@@ -45,7 +84,15 @@ const [operation = 'inspect', repo = '', numberStr = '', owner = ''] = process.a
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 const now = Date.now();
 const prNumber = Number(numberStr);
-if (operation === 'daily') {
+if (operation === 'route') {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
+    console.error('usage: node scripts/pr-sweep-guard.mjs route owner/repo');
+    process.exitCode=2;
+  } else {
+    try { await reportRoutes(repo,token); }
+    catch(error) { console.error(String(error?.message || error)); process.exitCode=2; }
+  }
+} else if (operation === 'daily') {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
     console.error('usage: node scripts/pr-sweep-guard.mjs daily owner/repo YYYY-MM-DD');
     process.exitCode=2;
