@@ -55,6 +55,9 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/ci-heavy-impact.mjs'
+      - 'tests/ci-heavy-impact.test.mjs'
+      - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
   pull-requests: read
@@ -62,7 +65,29 @@ concurrency:
   group: app-r1-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  impact:
+    name: route-expensive-app-suites
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      full_app: ${{ steps.choose.outputs.full_app }}
+      database: ${{ steps.choose.outputs.database }}
+      banner: ${{ steps.choose.outputs.banner }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Classify exact-head changes, otherwise run all original jobs
+        id: choose
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-heavy-impact.mjs app-r1
   unit-build:
+    needs: impact
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -79,7 +104,11 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Check-in evidence, scoring and report-priority regressions
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
-      - run: npm run test:app tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs tests/full-assessment-library-quality.test.mjs
+      - name: Entire App suite for server, authorization, dependency or unknown edits
+        if: needs.impact.outputs.full_app == 'true'
+        run: npm run test:app
+      - name: Historical interpretation and monitoring regressions
+        run: node --conditions=react-server --test tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs
       - name: Profile four domains, truthful scales and compact responsive UI
         run: node --conditions=react-server --test tests/profile-four-domains.test.mjs tests/profile-assessment-overview.test.mjs tests/profile-compact-design.test.mjs tests/profile-integrated-summary.test.mjs tests/cabinet-today.test.mjs tests/personal-analysis-cabinet.test.mjs
       - name: Optional free-course banner render contracts
@@ -104,7 +133,8 @@ jobs:
         run: npx --no-install tsc --noEmit
       - run: npm run pwa:check && npm run native:check
   course-banner-browser:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    needs: impact
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' && needs.impact.outputs.banner == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -139,7 +169,8 @@ jobs:
           path: artifacts/course-banner/
           retention-days: 7
   database:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    needs: impact
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' && needs.impact.outputs.database == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:

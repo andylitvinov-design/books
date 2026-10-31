@@ -1,0 +1,91 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { decideHeavyImpact } from '../scripts/ci-heavy-impact.mjs';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
+
+const one = (filename, status = 'modified') => [{ filename, status }];
+const read = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
+
+test('App R1: only modified client presentation permits avoiding duplicated full App, DB and banner matrix', () => {
+  assert.deepEqual(decideHeavyImpact('app-r1', one('components/profile-compact-design.tsx')),
+    { full_app: false, database: false, banner: false });
+  assert.deepEqual(decideHeavyImpact('app-r1', one('components/my-course-dashboard.tsx')),
+    { full_app: false, database: false, banner: true });
+  assert.deepEqual(decideHeavyImpact('app-r1', one('tests/free-course-banner.test.mjs')),
+    { full_app: false, database: false, banner: true });
+  assert.deepEqual(decideHeavyImpact('app-r1', one('tests/profile-compact-design.test.mjs')),
+    { full_app: false, database: false, banner: false });
+});
+
+test('App R1: cross-feature, API, dependency, security, migrations, mixed and nonmodified changes keep ALL jobs', () => {
+  const strict = { full_app: true, database: true, banner: true };
+  for (const changes of [
+    null, [], one('app/api/app/login/route.ts'), one('lib/security/rls.ts'),
+    one('supabase/migrations/20261031_more.sql'), one('package-lock.json'),
+    one('components/app/owner-cabinet.jsx'), one('tests/app-database.integration.mjs'),
+    one('components/profile-compact-design.tsx', 'added'),
+    one('components/my-course-dashboard.tsx', 'removed'),
+    [{ filename: 'components/profile-compact-design.tsx', status: 'modified' },
+     { filename: 'lib/app/sessions.js', status: 'modified' }],
+  ]) assert.deepEqual(decideHeavyImpact('app-r1', changes), strict);
+  assert.throws(() => decideHeavyImpact('unknown', []), /UNKNOWN_SUITE/);
+});
+
+test('Mandala: test-only changes keep contracts but avoid rebuilding the same site and installing two browsers', () => {
+  assert.deepEqual(decideHeavyImpact('mandala', one('tests/mandala-free-video.test.mjs')),
+    { browser: false });
+  assert.deepEqual(decideHeavyImpact('mandala', one('tests/first-video-director.test.mjs')),
+    { browser: false });
+  for (const files of [
+    null, [], one('components/mandala-free-video-studio.tsx'),
+    one('lib/mandala/first-video-director.mjs'), one('app/api/holistic-support/voice/route.js'),
+    one('tests/mandala-export.test.mjs', 'added'),
+    one('data/video-catalog/free-stock-scenes.json'),
+    [{ filename: 'tests/mandala-export.test.mjs', status: 'modified' },
+     { filename: 'components/mandala-hypno-compact.tsx', status: 'modified' }],
+  ]) assert.deepEqual(decideHeavyImpact('mandala', files), { browser: true });
+});
+
+test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fail-closed and marked as a dependency', () => {
+  const yaml = read('hh-app-r1.yml');
+  assert.match(yaml, /^  impact:\n/m);
+  assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs app-r1/);
+  assert.match(yaml, /^  unit-build:\n    needs: impact\n/m);
+  assert.match(yaml, /^  course-banner-browser:\n    needs: impact\n/m);
+  assert.match(yaml, /^  database:\n    needs: impact\n/m);
+  assert.match(yaml, /needs\.impact\.outputs\.full_app == 'true'/);
+  assert.match(yaml, /needs\.impact\.outputs\.database == 'true'/);
+  assert.match(yaml, /needs\.impact\.outputs\.banner == 'true'/);
+  assert.match(yaml, /run: npm run test:app/);
+  assert.match(yaml, /run: npm run test:app:db/);
+  assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
+});
+
+test('Mandala: unit tests always run while real browser + build remain required for runtime edits', () => {
+  const yaml = read('holistic-support-mandala.yml');
+  assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
+  assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
+  assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'/);
+});
+
+test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
+  const yaml = read('site-video-browser.yml');
+  const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
+  assert.equal(trigger.branches.includes('codex/public-book-library'), true);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/app/page.tsx']), false);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/services/alchemy-of-soul/page.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['app/[locale]/about/page.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['components/site-video-player.tsx']), true);
+  assert.equal(matchesTrigger(trigger, ['app/page.tsx']), true);
+});
+
+test('IA v2: public master directory edits use dedicated Public Services rather than unrelated encrypted-client browser', () => {
+  const ia = parsePrTrigger(read('ia-v2.yml'), 'ia-v2.yml');
+  const services = parsePrTrigger(read('hh-public-services-production.yml'), 'hh-public-services-production.yml');
+  const file = 'lib/practitioners/public-remote-support-masters.ts';
+  assert.equal(matchesTrigger(ia, [file]), false);
+  assert.equal(matchesTrigger(services, [file]), true);
+  assert.equal(matchesTrigger(ia, ['lib/practitioners/private-records.js']), true);
+});

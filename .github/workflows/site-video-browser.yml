@@ -2,6 +2,7 @@ name: Website video browser verification
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches: ['codex/public-book-library']
     paths:
       - 'lib/app/session.js'
       - 'app/api/app/**'
@@ -30,7 +31,13 @@ on:
       - 'app/reader-responsive.css'
       - 'app/layout.tsx'
       - 'app/sitemap.ts'
-      - 'app/**/page.tsx'
+      # Run the costly production build/browser suite only for its actual
+      # video, public content, services and locale paths, not every app page.
+      - 'app/**/services/**'
+      - 'app/**/about/**'
+      - 'app/**/homeopathy/**'
+      - 'app/**/books/**'
+      - 'app/es/**'
       - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
