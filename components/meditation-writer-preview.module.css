@@ -93,3 +93,15 @@
 .advanced .controls{margin-top:9px}
 .advanced .mode{margin-top:13px}
 .advanced summary:focus-visible{outline:3px solid #ffe9a8;outline-offset:3px}
+
+/* Human-reviewed full-course enquiry; no checkout or hidden client data. */
+.courseOrder{display:grid;gap:8px;margin-top:16px;padding-top:14px;
+  border-top:1px solid #c2d6d5}
+.courseOrder a{display:inline-flex;align-items:center;justify-content:center;
+  width:fit-content;max-width:100%;min-height:44px;padding:10px 15px;
+  border-radius:12px;background:#087e5e;color:#fff;font-weight:750;
+  text-decoration:none;text-align:center;line-height:1.4}
+.courseOrder a:hover{background:#08684e}
+.courseOrder a:focus-visible{outline:3px solid #b87519;outline-offset:3px}
+.courseOrder small{font-size:.84rem;line-height:1.45;color:#496b6b}
+@media (max-width:600px){.courseOrder a{width:100%;box-sizing:border-box}}

@@ -84,6 +84,8 @@ export async function POST(request) {
     });
     const outcome=prepareMeditationCreativeBrief({
       program,consent:{resourceImagery:true},request:resolved.request,
+      // Day one may use only the approved skill of the FIRST session.
+      sessionNumber:1,
     });
     if(outcome.status!=="brief_ready"){
       const e=new AppError(outcome.status==="invalid_input"?

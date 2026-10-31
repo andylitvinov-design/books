@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import styles from "./meditation-writer-preview.module.css";
 import { MeditationWriterDeviceVoice } from "./meditation-writer-device-voice";
 
@@ -46,6 +47,8 @@ const lang={
     courseTitle:"Ваш план: восемь дней медитаций",
     courseExplanation:"Медитация первого дня подготовлена. Вот семь тем для продолжения.",
     firstCreated:"Текст первого дня подготовлен",courseNote:"Дни 2–8 — пока только темы, не готовые аудиозаписи или оплаченный курс.",
+    courseRequest:"Обсудить заказ курса из 8 медитаций",
+    courseRequestNote:"Это переход к заявке специалисту, не автоматическая покупка или списание.",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
     create:"Сгенерировать медитацию и 7 тем",loading:"Пишем медитацию и подбираем темы…",
     template:"Текстовый шаблон · без AI-генерации",durationNote:"Плановая длительность с паузами; аудио ещё не создано.",
@@ -76,6 +79,8 @@ const lang={
     courseTitle:"Your eight-day meditation path",
     courseExplanation:"Your first meditation is prepared. Here are seven topics to continue.",
     firstCreated:"First-day text prepared",courseNote:"Days 2–8 are topics only, not finished audio or a purchased course.",
+    courseRequest:"Discuss ordering the eight-meditation course",
+    courseRequestNote:"This opens a practitioner enquiry, not a purchase or automatic charge.",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
     create:"Generate meditation and 7 topics",loading:"Writing meditation and selecting topics…",
     template:"Text template · no AI generation",durationNote:"Planned length with pauses; audio has not been created.",
@@ -106,6 +111,8 @@ const lang={
     courseTitle:"Tu programa de ocho días",
     courseExplanation:"La primera meditación está preparada. Estos son los siete temas siguientes.",
     firstCreated:"Texto del primer día preparado",courseNote:"Los días 2–8 son solo temas, no audios terminados ni un curso comprado.",
+    courseRequest:"Consultar el pedido del curso de ocho meditaciones",
+    courseRequestNote:"Abre una consulta con un profesional, no una compra ni un cobro automático.",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
     create:"Generar meditación y 7 temas",loading:"Generando la meditación y siete temas…",
     template:"Plantilla de texto · sin generación IA",durationNote:"Duración prevista con pausas; todavía no hay audio.",
@@ -191,7 +198,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
     }catch{setError(t.unavailable);}
     finally{setLoading(false);}
   }
-  return <section className={styles.shell} aria-label={t.title}>
+  return <section id="meditation-courses" className={styles.shell} aria-label={t.title}>
     <div className={styles.intro}>
       <h2>{t.title}</h2><p>{t.subtitle}</p>
     </div>
@@ -339,6 +346,11 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
             </li>)}
         </ol>
         <p className={styles.caption}>{t.courseNote}</p>
+        <div className={styles.courseOrder}>
+          <Link href={"/"+l+"/services/imagery-therapy"} prefetch={false}
+            data-meditation-course-enquiry>{t.courseRequest}</Link>
+          <small>{t.courseRequestNote}</small>
+        </div>
       </section>
     </article>}
   </section>;

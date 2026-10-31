@@ -11,9 +11,11 @@ const prepare=(locale,focus)=>{
    access:{authenticated:true,ownerScoped:true},consent:{resourceImagery:true}});
  const prepared=prepareMeditationCreativeBrief({program,consent:{resourceImagery:true},
    request:{locale,focus,intentionCode:GOALS[focus],durationMinutes:10,
-     motifId:"comfortable_corner",styleId:"gentle_simple",clientPhrase:"PRIVATE_NAME"}});
+     motifId:"comfortable_corner",styleId:"gentle_simple",clientPhrase:"PRIVATE_NAME"},sessionNumber:1});
  assert.equal(program.status,"ready");
  assert.equal(prepared.status,"brief_ready");
+ assert.equal(prepared.brief.sessionNumber,1);
+ assert.ok(program.sessions[0].methodIds.includes(prepared.brief.practice.methodId));
  return {program,prepared};
 };
 test("Eight-day plan contains exactly seven NEXT topics from Psychologist Mind in RU/EN/ES",()=>{
@@ -22,6 +24,7 @@ test("Eight-day plan contains exactly seven NEXT topics from Psychologist Mind i
    const plan=buildEightDayCourseOutline({program,prepared});
    assert.equal(plan.status,"ready",locale+" "+focus);
    assert.equal(plan.totalDays,8);
+   assert.equal(plan.dayOne.approvedSkillId,prepared.brief.practice.methodId);
    assert.equal(plan.nextTopics.length,7);
    assert.deepEqual(plan.nextTopics.map(t=>t.day),[2,3,4,5,6,7,8]);
    assert.deepEqual(plan.nextTopics.map(t=>t.title),
@@ -44,6 +47,14 @@ test("Clinical/short/forged eight-session plans are rejected",()=>{
    assert.equal(buildEightDayCourseOutline({
      program:{...program,...override},prepared}).status,"unavailable");
 });
+test("A future-session method must never masquerade as the generated first day",()=>{
+ const {program,prepared}=prepare("ru","relationships");
+ assert.equal(buildEightDayCourseOutline({program,prepared:{...prepared,
+   brief:{...prepared.brief,sessionNumber:4}}}).status,"unavailable");
+ assert.equal(buildEightDayCourseOutline({program,prepared:{...prepared,
+   brief:{...prepared.brief,practice:{...prepared.brief.practice,
+     methodId:"boundary_rehearsal"}}}}).status,"unavailable");
+});
 test("Incomplete, repetitive or too-short free-model text is never accepted",()=>{
  const draft={status:"draft_review_required",generationMode:"llm",modelUsed:true,
    segments:Array.from({length:7},()=>({text:"Original safe meditation section."})),
@@ -63,10 +74,13 @@ test("One API call returns one meditation and seven future topics, no extra bill
  const ui=readFileSync(new URL("../components/meditation-writer-preview.tsx",import.meta.url),"utf8");
  for(const item of ["buildEightDayCourseOutline","reviewFreeMeditationQuality",
    "coursePlan","problemFrame","desiredExperience","auth.verified()",
-   "externalModelOptIn!==true","PRIVATE_HEADERS"])
+   "externalModelOptIn!==true","PRIVATE_HEADERS","sessionNumber:1"])
    assert.ok(api.includes(item),item);
  assert.ok(ui.includes('useState<"template"|"llm">("llm")'));
  assert.ok(ui.includes("problemFrame,desiredExperience"));
  assert.ok(ui.includes("data-meditation-course-topics"));
  assert.ok(ui.includes("preview.coursePlan?.nextTopics.map"));
+ assert.ok(ui.includes("data-meditation-course-enquiry"));
+ assert.ok(ui.includes("/services/imagery-therapy"));
+ assert.ok(ui.includes("id=\"meditation-courses\""));
 });
