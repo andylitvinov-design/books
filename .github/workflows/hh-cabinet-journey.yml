@@ -48,5 +48,4 @@ jobs:
       - name: TypeScript
         # Source-only specialist: one required global tsc in production Core.
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
