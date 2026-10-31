@@ -118,7 +118,7 @@ test('synthetic GitHub merge checkout scopes only the exact PR delta, not later 
     calls.push(args);
     if (args[0] === 'rev-parse') {
       const refs = { HEAD: checkout, 'HEAD^1': first, 'HEAD^2': head };
-      return Buffer.from(refs[args[1]] + '\\n');
+      return Buffer.from(refs[args[1]] + String.fromCharCode(10));
     }
     if (args[0] === 'merge-base') return Buffer.alloc(0);
     if (args[0] === 'diff') return Buffer.from(changed);
@@ -140,13 +140,13 @@ test('mismatched synthetic merge identity or invalid ancestry always executes fu
   const env = {GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
   const wrongHead = (_cmd,args) => {
     if (args[0] === 'rev-parse') {
-      return Buffer.from(({HEAD:'d'.repeat(40),'HEAD^1':'c'.repeat(40),'HEAD^2':'e'.repeat(40)})[args[1]] + '\\n');
+      return Buffer.from(({HEAD:'d'.repeat(40),'HEAD^1':'c'.repeat(40),'HEAD^2':'e'.repeat(40)})[args[1]] + String.fromCharCode(10));
     }
     throw Error('Forbidden git execution');
   };
   assert.equal(planPublicServicesEvent(env, wrongHead).mode, 'full');
   const untrusted = (_cmd,args) => {
-    if (args[0] === 'rev-parse') return Buffer.from(head + '\\n');
+    if (args[0] === 'rev-parse') return Buffer.from(head + String.fromCharCode(10));
     if (args[0] === 'merge-base') throw Error('Event base not an ancestor');
     throw Error('Changed files must not be evaluated');
   };
@@ -157,7 +157,7 @@ test('mismatched synthetic merge identity or invalid ancestry always executes fu
 test('direct exact-head PR checkout retains focused test-only lane', () => {
   const base = 'a'.repeat(40), head = 'b'.repeat(40);
   const git = (_cmd,args) => {
-    if (args[0] === 'rev-parse') return Buffer.from(head + '\\n');
+    if (args[0] === 'rev-parse') return Buffer.from(head + String.fromCharCode(10));
     if (args[0] === 'merge-base') return Buffer.alloc(0);
     if (args[0] === 'diff') {
       assert.equal(args[4], base);
