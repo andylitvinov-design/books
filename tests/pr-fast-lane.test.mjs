@@ -179,6 +179,11 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
+  // Public voice API is owned by Mandala real media/provider E2E; other
+  // public-service paths retain their normal independent checks.
+  const voiceRoute='app/api/holistic-support/voice/route.js';
+  assert.equal(covers(service,voiceRoute),false,'voice-only API not Public Services');
+  assert.equal(covers(mandala,voiceRoute),true,'voice-only API requires Mandala real WAV/MP4 tests');
   for(const file of [
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
