@@ -487,3 +487,14 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(css,/\.quickMusicRail\{/);
   assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
 });
+
+test("video therapy exit does not unmount the clicked button during pointerup", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const marker=studio.indexOf("data-video-therapy-exit");
+  assert.ok(marker>0,"the actual in-view exit button must remain");
+  const opening=studio.slice(studio.lastIndexOf("<button",marker),studio.indexOf("</button>",marker));
+  assert.match(opening,/disabled=\{recording\|\|preparing\}/,"retain active render lock");
+  assert.doesNotMatch(opening,/onPointer(?:Down|Up)=/,"a pointer handler must not unmount the button before its native click");
+  assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setCinematicPlan\(null\);/,"one click dismisses therapy and invalidates stale storyboard");
+  assert.match(opening,/setTherapyJumpRequested\(false\);setNotice\(""\);/,"exit clears pending scroll and notice");
+});
