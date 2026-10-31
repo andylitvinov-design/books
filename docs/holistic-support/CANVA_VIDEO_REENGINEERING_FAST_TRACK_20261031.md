@@ -25,7 +25,7 @@ Do not conflate Canva Magic Design (template composition) with text-to-video gen
 
 **Existing editor only:** Compact horizontal accessible strip immediately after the goal input, before optional advanced filters. Selecting a template populates user-editable text, resets any stale AI/manual prompt, preserves user visual exclusions and immediately calls the original `onApply` pipeline, so preview and recording use the same plan. No Canva integration, new renderer, new dependency, data upload, paid provider call or XP debit.
 
-**Focused tests:** `tests/video-quick-templates.test.mjs` verifies six unique templates, all three locales, full scene plans and timeline totals, low-cost/local-only semantics, exclusion preservation, accessibility markers and reuse of existing recorder.
+**Focused tests:** `tests/first-video-director.test.mjs` (existing Mandala CI suite) verifies six unique templates, all three locales, full scene plans and timeline totals, low-cost/local-only semantics, exclusion preservation, accessibility markers and reuse of existing recorder.
 
 ## Next work, ranked by value and delivery risk
 ### P0 · Deliver and stabilize existing media
