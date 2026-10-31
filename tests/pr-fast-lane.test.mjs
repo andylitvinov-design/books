@@ -100,6 +100,7 @@ test('PR automation policy and agent entry point require specialist safety gates
   assert.match(docs, /sole required GitHub status is `release-ready`/);
   assert.match(docs, /exact PR HEAD and current production BASE/);
   assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
   }
@@ -662,4 +663,14 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.match(release, /scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(release, /timeout-minutes: 45/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
+});
+
+test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+  const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(source, /pull_request_target:/);
+  assert.match(source, /pull-requests: write/);
+  assert.match(source, /head\.repo\.full_name == github\.repository/);
+  assert.match(source, /draft == false/);
+  assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });
