@@ -70,7 +70,7 @@ test("RU archive reuses photo-left course cards and preserved native destination
   assert.match(discovery, /isSearching \|\| showAllLegacy/);
   assert.match(discovery, /aria-expanded=\{showAllLegacy\}/);
   assert.match(discovery, /href="#academy-psimaster-courses"/);
-  assert.match(css, /@media \(max-width: 620px\)\s*\{\s*\.quickPaths\s*\{ grid-template-columns: repeat\(2/);
+  assert.match(css, /@media \(max-width: 700px\) \{\s*\.journeyHero \{[\s\S]*?\.quickPaths \{ grid-template-columns: minmax\(0,1fr\); gap: 7px; \}\s*\.pathCard \{ display: grid; grid-template-columns: 82px minmax\(0,1fr\) 19px; align-items: center; gap: 10px; min-height: 98px/);
   assert.match(route, /const record = findAcademyRecord\(key, locale\)/);
   assert.match(route, /return <AcademyRecordPage locale=\{locale\} record=\{record\}/);
   assert.doesNotMatch(discovery, /psimaster\.net/);
@@ -91,7 +91,7 @@ test("EN and ES public catalogues never market the Russian-only PsiMaster course
   assert.match(videos, /if \(locale === "ru"\) groups.push\(\{ language: "ru"/);
   assert.match(videos, /language: "en"/);
   assert.match(discovery, /matchedLegacyCourses.length > 0 \|\| matchedLegacyVideos.length > 0/);
-  assert.match(discovery, /legacyCourses.length \|\| legacyVideos.length \? <a href="#academy-psimaster-courses"/);
+  assert.match(discovery, /\{legacyCourses\.length \|\| legacyVideos\.length \? \(\s*<a className=\{styles\.archiveLink\} href="#academy-psimaster-courses">[\s\S]*?<\/a>\s*\) : null\}/);
   assert.match(sitemap, /preferredAcademyRecords\(locale\)/);
   assert.match(sitemap, /locale === "ru" \|\| suffix !== "\/egyptian-priesthood"/);
   // Keep all original route data for RU and old bookmarks; no destructive deletion.
