@@ -99,7 +99,7 @@ test('client card is available in the owner one-screen chat and existing full CR
   assert.match(simple,/setShowCard\(value=>!value\)/)
   assert.match(simple,/contactId:item\.contactId/)
   assert.match(simple,/showCard&&selected&&<MessagesContactCard/)
-  assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='crm'\}/)
+  assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='crm'\|\|!crmEnabled\}/)
   assert.match(simple,/hidden=\{showCard\|\|selected\?\.kind!=='direct'\}/)
   assert.match(legacy,/showContactCard&&!conversationOnly/)
   assert.match(legacy,/onBack=\{\(\)=>setShowContactCard\(false\)\}/)
