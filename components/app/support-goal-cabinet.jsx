@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronDown, LockKeyhole, RotateCcw, Target } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, LockKeyhole, RotateCcw, Target } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
 import {
   readStagedSupportGoalProfile, clearStagedSupportGoalProfile,
@@ -17,6 +17,8 @@ const COPY = {
     failed: "Your goal profile was not confirmed as saved. Reconnect and try again.",
     retry: "Try saving again", open: "Open the goal filter", expand: "View saved ratings",
     now: "Now", want: "Want", checkin: "Overall now",
+    testNext: "Your ratings are saved. Choose free tests to build your personal profile.",
+    startProfile: "Choose free tests for my profile", directTests: "Go straight to free tests",
   },
   ru: {
     title: "Мои цели и самооценки", subtitle: "Мой профиль фильтра целей · только для меня",
@@ -24,6 +26,8 @@ const COPY = {
     failed: "Сохранение профиля целей не подтверждено. Повторите попытку.",
     retry: "Повторить сохранение", open: "Открыть фильтр целей", expand: "Посмотреть сохранённые оценки",
     now: "Сейчас", want: "Хочу", checkin: "Общая оценка",
+    testNext: "Оценки сохранены. Пройдите бесплатные тесты, чтобы дополнить психологический профиль.",
+    startProfile: "Подобрать тесты для профиля", directTests: "Сразу перейти к бесплатным тестам",
   },
   es: {
     title: "Mis metas y valoraciones", subtitle: "Mi perfil del filtro · privado en mi cuenta",
@@ -31,6 +35,8 @@ const COPY = {
     failed: "No se confirmó el guardado. Vuelve a intentarlo.",
     retry: "Reintentar", open: "Abrir el filtro de metas", expand: "Ver valoraciones guardadas",
     now: "Ahora", want: "Quiero", checkin: "Valoración general",
+    testNext: "Tus valoraciones están guardadas. Elige pruebas gratuitas para completar tu perfil.",
+    startProfile: "Elegir pruebas para mi perfil", directTests: "Ir directamente a pruebas gratuitas",
   },
 };
 const SECTORS = {
@@ -133,6 +139,15 @@ export default function SupportGoalCabinet({ accountId, locale = "en" }) {
         <CheckCircle2 className={styles.check} size={21} aria-label={t.saved} />
       </div>
       {result.justSaved ? <p className={styles.confirmed} role="status">{t.saved}</p> : null}
+      <div className={styles.nextStep} data-support-goal-test-continuation>
+        <p>{t.testNext}</p>
+        <Link className={styles.startProfile} href={"/" + lang + "/personality-profiles"}
+          prefetch={false} data-support-goal-start-profile>
+          {t.startProfile}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <Link className={styles.directTests} href={"/" + lang + "/client/tests"}
+          prefetch={false} data-support-goal-direct-tests>{t.directTests}</Link>
+      </div>
       <details>
         <summary>{t.expand}<ChevronDown size={18} aria-hidden="true" /></summary>
         <div className={styles.sectors}>

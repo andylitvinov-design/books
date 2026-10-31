@@ -5,7 +5,7 @@
 
 - Owner source: components/holistic-support-goal-filter.tsx + .module.css, rendered by components/holistic-support-mobile.tsx on /{en,ru,es}/holistic-support/mobile.
 - User-provided screenshot: mobile RU, goal editor scrolled to lower part of "Now → Want" (Energy) and fourth "What to include in recommendations?" checkbox fieldset. Screenshot is conversation-private and is deliberately **not** copied into the repository.
-- Target: **remove entire fourth fieldset** and opt-out checkboxes, leave "Save" (local acceptance), "Next category", "Show recommendations" (all published formats) and "Reset". The **last** on-page card becomes the separate free private Cabinet/Google action, after Reset.
+- Target: **remove entire fourth fieldset** and opt-out checkboxes, leave "Save" (local acceptance), "Next category", "Show recommendations" (all published formats) and "Reset". The **last** on-page card becomes the separate free private Cabinet/Google action, after Reset. Owner's revised last-button copy: **«Сохранить данные и пройти тесты» (создать свой психологический профиль бесплатно)** in a two-line 320–430px-safe button; EN/RU/ES equivalent.
 - Page identity: source route derived from actual React owner and screenshot content; browser screenshot identity gate **PENDING** until a viewport matched run.
 - iPhone safe area: normal document flow, no sticky/fixed CTA; existing five-tab dock belongs to page shell. Check 320/354/390/430 CSS px and desktop 768/1440; no overlap, no horizontal scrolling, focus visible, reduced-motion.
 - UI tone: existing beige paper surface, forest green dark text, emerald gradients for CTA, modest icon, short privacy message, EN base plus RU/ES.
@@ -18,6 +18,7 @@
 | Show recommendations | Existing local selected-goal guide, with all nine verified content formats available | Same | No implied lead, booking or payment |
 | Bottom "Continue with Google & save" | Stages bounded validated selections in **same-tab sessionStorage** only on explicit click → POST /api/app/auth/start {locale, continueTo:cabinet} → existing Google PKCE callback → onboarding/consent when required → /{locale}/app/portrait | GET /api/app/auth/contact-profile confirms signed-in session → /{locale}/app/portrait | Once active, GET /api/app/development-goals → bounded POST with revision, preserving other goals → GET readback equality required → discard transient stage |
 | Cabinet reopen | Protected Cabinet page displays selected sectors and saved "Now → Want" values | Same | Existing app_private.development_goals, owner scope, encrypted via seal/openSealed |
+| Verified Cabinet save → free tests | Only after confirmed account-owned GET readback does the existing Cabinet portrait show **Choose tests for profile** → `/{locale}/personality-profiles` plus **Direct free tests** → `/{locale}/client/tests`. User chooses when to proceed; no false automatic test completion | EN/RU/ES | No new profile table or new tests engine; handles interrupted Google/DB flows without showing success |
 
 Privacy:
 - No values, personal goals, amounts, photos or health markers in URLs, OAuth state, pixels, messages, Telegram, CRM or external providers. Google receives only standard OAuth scopes.
@@ -27,8 +28,9 @@ Privacy:
 
 ## Acceptance evidence (do not mark without proof)
 
-- [ ] Existing form shows 3 numbered steps, no fourth checkbox fieldset; Save/Next/Recommendations/Reset continue working.
-- [ ] Cabinet CTA is physically last; no bottom dock overlay, keyboard and iPhone 320–430 checks.
+- [ ] Existing form shows 3 numbered steps, no fourth checkbox fieldset; Save/Next/Recommendations/Reset continue working. The existing Chromium/WebKit browser suite must no longer assert the removed nine checkboxes or opt-out state; instead check absence, locale labels and last CTA geometry.
+- [ ] Cabinet CTA is physically last; 2-line button legible without horizontal overflow, no bottom dock overlay, keyboard and iPhone 320–430 checks.
+- [ ] After real readback, exact EN/RU/ES existing routes for profile-building and direct tests navigate from the authenticated Cabinet; before readback, no continuation/success is exposed.
 - [ ] EN/RU/ES strings render and Google returns to the selected language, including ES.
 - [ ] Guest Google OAuth, first-account consent, secure write, readback and account reopen with synthetic data verified on a real browser/device.
 - [ ] Already-signed-in path, canceled OAuth, third-party cookie/storage disabled, 409 conflict retry, network readback failure, wrong account and expired handoff tested.

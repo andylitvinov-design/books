@@ -302,14 +302,18 @@ for (const browserType of [chromium, webkit]) {
             label+" saving again accepts updated top rating");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
-          const formats=filter.locator('[data-support-goal-format]');
-          assert.equal(await formats.count(),9,label+" nine real recommendation formats");
-          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
-            label+" all formats are checked by default");
-          await filter.locator('[data-support-goal-format="consultation"] input').uncheck();
-          await filter.locator('[data-support-goal-format="initiations"] input').uncheck();
-          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
-            label+" visitor can remove unwanted consultation and initiation formats");
+          assert.equal(await filter.locator('[data-support-goal-format]').count(),0,
+            label+" obsolete nine-format checklist must not render");
+          const cabinet=filter.locator('[data-support-goal-cabinet-cta]');
+          await cabinet.waitFor({state:"visible",timeout:8000});
+          const cabinetSave=cabinet.locator('[data-support-goal-cabinet-save]');
+          assert.equal(await cabinetSave.count(),1,label+" one real save-and-test action");
+          const expectedSaveLabel={
+            en:"Save your data and take tests",ru:"Сохранить данные и пройти тесты",
+            es:"Guardar datos y hacer pruebas",
+          }[locale];
+          assert.ok((await cabinetSave.innerText()).includes(expectedSaveLabel),
+            label+" localized save-and-test CTA is not truncated or missing");
           // The third measure must finish BEFORE the buttons begin: no
           // sticky overlay, no oversized reset card, no squeezed primary CTA.
           const layout=await filter.evaluate(el=>{
@@ -360,6 +364,18 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(!layout.applyClipped && !layout.resetClipped && !layout.saveClipped &&
               !layout.nextClipped,
             label+" full action labels must remain visible: "+JSON.stringify(layout));
+          const privateCtaLayout=await cabinet.evaluate(el=>{
+            const action=el.querySelector('[data-support-goal-cabinet-save]');
+            const reset=el.closest('[data-support-goal-actions]').querySelector('[data-support-goal-reset]');
+            const box=el.getBoundingClientRect(),button=action.getBoundingClientRect();
+            return {afterReset:box.top>=reset.getBoundingClientRect().bottom-2,
+              buttonHeight:button.height,buttonWidth:button.width,
+              boxWidth:box.width,clipped:el.scrollWidth>el.clientWidth+2 ||
+                action.scrollWidth>action.clientWidth+2};
+          });
+          assert.ok(privateCtaLayout.afterReset && privateCtaLayout.buttonHeight>=60 &&
+              privateCtaLayout.buttonWidth>=privateCtaLayout.boxWidth*.8 && !privateCtaLayout.clipped,
+            label+" last save-and-test card fits 320-430px without clipping: "+JSON.stringify(privateCtaLayout));
           const readability=await filter.evaluate(el=>{
             const rail=el.querySelector('[data-support-goal-sectors]');
             const details=el.querySelector('[data-support-goal-details]');
@@ -419,8 +435,8 @@ for (const browserType of [chromium, webkit]) {
             label+" user confirms personal path after conversation");
           assert.equal(await results.locator('[data-support-guide-program]').count(),1,
             label+" optional path proposed only after consent");
-          assert.equal(await results.locator('[data-support-guide-alternative="consultation"]').count(),0,
-            label+" opted-out consultation excluded from final alternatives");
+          assert.equal(await filter.locator('[data-support-goal-format]').count(),0,
+            label+" recommendation formats remain automatic after applying");
           assert.equal(await results.locator('[data-support-guide-alternative]').count()<=2,true,
             label+" no more than two alternative formats");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
@@ -527,8 +543,10 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-goal-filter-trigger]').click();
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
             label+" two Accepted sector badges persist after closing/reopening the editor");
-          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),7,
-            label+" opt-out preference persists after closing and reopening");
+          assert.equal(await filter.locator('[data-support-goal-format]').count(),0,
+            label+" obsolete format options cannot reappear after reopening");
+          assert.equal(await filter.locator('[data-support-goal-cabinet-save]').count(),1,
+            label+" save-and-test CTA remains available after reopening");
           assert.equal(await filter.locator('[data-goal-currency]').inputValue(),"EUR",
             label+" chosen currency preserved when editing");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
@@ -539,21 +557,14 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="current"]').inputValue(),"1",
             label+" reserve months remain unaffected by currency");
           if(width===390) {
-            // Empty selection must NOT silently show an unrequested meditation.
-            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
-              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
-            }
-            await filter.locator('[data-support-goal-apply]').click();
-            await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
-            await root.locator('[data-support-goal-no-inline]').waitFor({state:"visible",timeout:8000});
-            assert.equal(await root.locator('[data-support-player]').count(),0,
-              label+" no default video when all formats opted out");
-            await root.locator('[data-support-goal-no-inline] button').click();
-            await filter.waitFor({state:"visible",timeout:8000});
+            assert.equal(await filter.locator('[data-support-goal-cabinet-cta]').count(),1,
+              label+" private profile CTA stays last in the restored filter");
           }
           await filter.locator('[data-support-goal-reset]').click();
-          assert.equal(await filter.locator('[data-support-goal-format] input:checked').count(),9,
-            label+" Reset restores all formats checked");
+          assert.equal(await filter.locator('[data-support-goal-format]').count(),0,
+            label+" Reset never resurrects removed step four");
+          assert.equal(await filter.locator('[data-support-goal-cabinet-save]').count(),1,
+            label+" Reset keeps the private save-and-test choice visible");
           assert.equal(await root.locator('[data-goal-sector="energy"][aria-pressed="true"]').count(),1,
             label+" reset restores sector");
           assert.equal(await root.locator('[data-goal-axis]').count(),3,

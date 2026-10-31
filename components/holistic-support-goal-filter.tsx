@@ -184,22 +184,15 @@ const ui = {
     clear: "Reset filter", close: "Close filter",
     save: "Save", next: "Next category", accepted: "Accepted",
     savedNote: "Saved on this page only",
-    cabinetTitle: "Open your free private Cabinet",
-    cabinetText: "Keep your chosen goals and Now → Want ratings in your Holistic House account.",
-    cabinetButton: "Continue with Google & save",
-    cabinetNote: "Private to your account. No booking, CRM contact or messages will be created.",
+    cabinetTitle: "Build your free psychological profile",
+    cabinetText: "Save your Now → Want ratings privately, then choose free self-reflection tests.",
+    cabinetButton: "Save your data and take tests",
+    cabinetButtonSub: "(Create your psychological profile for free)",
+    cabinetNote: "Google sign-in saves privately. Free tests follow; no booking or mailing list.",
     cabinetBusy: "Opening your account…",
     cabinetFailed: "Could not open Google sign-in. Try again; your choices are still here.",
     checkinTitle: "Overall now",
     checkinHint: "Same rating as the top-left check-in",
-    formatTitle: "4. What would you like to receive?",
-    formatHelp: "All formats are included. Uncheck anything you don't want to see.",
-    formatLabels: {
-      meditation: "Videos & meditations", consultation: "Consultations & sessions",
-      tests: "Tests", courses: "Courses & programs", talismans: "Talismans",
-      healing: "Reiki & energy support", masters: "Masters",
-      initiations: "Initiations", mandala: "Video mandalas",
-    },
     labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
   },
   ru: {
@@ -211,22 +204,15 @@ const ui = {
     clear: "Сбросить фильтр", close: "Закрыть фильтр",
     save: "Сохранить", next: "Следующая категория", accepted: "Принято",
     savedNote: "Сохранено только на этой странице",
-    cabinetTitle: "Бесплатно откройте личный кабинет",
-    cabinetText: "Сохраните цели и оценки «Сейчас → Хочу» в личном кабинете Holistic House.",
-    cabinetButton: "Войти через Google и сохранить",
-    cabinetNote: "Данные только в вашем кабинете. Заявка и рассылка не создаются.",
+    cabinetTitle: "Ваш бесплатный психологический профиль",
+    cabinetText: "Сохраним ваши оценки «Сейчас → Хочу» приватно, затем предложим бесплатные психологические тесты.",
+    cabinetButton: "Сохранить данные и пройти тесты",
+    cabinetButtonSub: "(создать свой психологический профиль бесплатно)",
+    cabinetNote: "Для приватного сохранения нужен вход через Google. Тесты бесплатны; заявка не создаётся.",
     cabinetBusy: "Открываем кабинет…",
     cabinetFailed: "Не удалось начать вход через Google. Повторите попытку — выбор остаётся на странице.",
     checkinTitle: "Общая оценка сейчас",
     checkinHint: "Связана с оценкой вверху слева",
-    formatTitle: "4. Что включить в рекомендации?",
-    formatHelp: "Все форматы отмечены. Снимите галочки с ненужных.",
-    formatLabels: {
-      meditation: "Видео и медитации", consultation: "Консультации и сессии",
-      tests: "Тесты", courses: "Курсы и программы", talismans: "Талисманы",
-      healing: "Рейки и энергоподдержка", masters: "Мастера",
-      initiations: "Инициации", mandala: "Видеомандалы",
-    },
     labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
   },
   es: {
@@ -238,22 +224,15 @@ const ui = {
     clear: "Restablecer filtro", close: "Cerrar filtro",
     save: "Guardar", next: "Siguiente categoría", accepted: "Aceptado",
     savedNote: "Guardado solo en esta página",
-    cabinetTitle: "Abre tu cuenta privada gratis",
-    cabinetText: "Guarda tus metas y valoraciones Ahora → Quiero en Holistic House.",
-    cabinetButton: "Continuar con Google y guardar",
-    cabinetNote: "Solo en tu cuenta privada. Sin solicitudes ni mensajes.",
+    cabinetTitle: "Crea tu perfil psicológico gratuito",
+    cabinetText: "Guarda tus valoraciones Ahora → Quiero en privado y después elige pruebas gratuitas.",
+    cabinetButton: "Guardar datos y hacer pruebas",
+    cabinetButtonSub: "(crear gratis tu perfil psicológico)",
+    cabinetNote: "Google permite guardar los datos en privado. Pruebas gratuitas; sin solicitudes.",
     cabinetBusy: "Abriendo tu cuenta…",
     cabinetFailed: "No se pudo iniciar sesión con Google. Vuelve a intentarlo; tus datos siguen aquí.",
     checkinTitle: "Valoración general actual",
     checkinHint: "La misma puntuación del bloque superior izquierdo",
-    formatTitle: "4. ¿Qué quieres en las recomendaciones?",
-    formatHelp: "Todos los formatos están seleccionados. Desmarca los que no quieras.",
-    formatLabels: {
-      meditation: "Vídeos y meditaciones", consultation: "Consultas y sesiones",
-      tests: "Pruebas", courses: "Cursos y programas", talismans: "Talismanes",
-      healing: "Reiki y apoyo energético", masters: "Guías",
-      initiations: "Iniciaciones", mandala: "Mandala en vídeo",
-    },
     labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
   },
 } as const;
@@ -550,7 +529,10 @@ export function HolisticSupportGoalFilter({
           <button type="button" className={styles.cabinetButton} data-support-goal-cabinet-save
             disabled={cabinetBusy} onClick={saveToCabinet}>
             <LockKeyhole size={18} aria-hidden="true" />
-            {cabinetBusy ? t.cabinetBusy : t.cabinetButton}
+            <span className={styles.cabinetButtonText}>
+              <strong>{cabinetBusy ? t.cabinetBusy : t.cabinetButton}</strong>
+              {!cabinetBusy ? <small>{t.cabinetButtonSub}</small> : null}
+            </span>
             {!cabinetBusy ? <ArrowRight size={19} aria-hidden="true" /> : null}
           </button>
           <small>{t.cabinetNote}</small>

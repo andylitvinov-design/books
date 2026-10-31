@@ -77,7 +77,7 @@ test("only an explicit stage writes transient same-tab data; expires and clears 
   assert.equal(readStagedSupportGoalProfile(store, time), null);
 });
 
-test("UI removes the obsolete step #4; the last card begins secured Google-to-Cabinet save", () => {
+test("UI removes obsolete step #4; the last card saves privately then offers actual free tests", () => {
   const editor = read("components/holistic-support-goal-filter.tsx");
   const mobile = read("components/holistic-support-mobile.tsx");
   const privateCabinet = read("components/app/support-goal-cabinet.jsx");
@@ -85,8 +85,9 @@ test("UI removes the obsolete step #4; the last card begins secured Google-to-Ca
   const route = read("app/api/app/[...path]/route.js");
   const goals = read("lib/app/development-goals.js");
   const layout = read("components/holistic-support-goal-filter.module.css");
-  for (const text of ["Бесплатно откройте личный кабинет", "Войти через Google и сохранить",
-    "Open your free private Cabinet", "Continuar con Google y guardar"]) {
+  for (const text of ["Ваш бесплатный психологический профиль", "Сохранить данные и пройти тесты",
+    "(создать свой психологический профиль бесплатно)", "Save your data and take tests",
+    "Guardar datos y hacer pruebas"]) {
     assert.ok(editor.includes(text), text);
   }
   assert.doesNotMatch(editor, /data-support-goal-formats/);
@@ -107,6 +108,13 @@ test("UI removes the obsolete step #4; the last card begins secured Google-to-Ca
   assert.match(privateCabinet, /appFetch\("development-goals"/);
   assert.match(privateCabinet, /clearStagedSupportGoalProfile\(\)/);
   assert.match(privateCabinet, /GOALS_SAVE_UNCONFIRMED/);
+  const verifiedCabinetUI = privateCabinet.split("if (!profile) return null;")[1] ?? "";
+  assert.match(verifiedCabinetUI, /data-support-goal-test-continuation/);
+  assert.match(verifiedCabinetUI, /data-support-goal-start-profile/);
+  assert.match(verifiedCabinetUI, /data-support-goal-direct-tests/);
+  assert.match(verifiedCabinetUI, /\/personality-profiles/);
+  assert.match(verifiedCabinetUI, /\/client\/tests/);
+  assert.match(verifiedCabinetUI, /"\/" \+ lang/);
   assert.doesNotMatch(mobile, /sessionStorage|localStorage|URLSearchParams/);
   assert.doesNotMatch(privateCabinet, /createRequest\(|sendMessage\(|analytics|pixel|utm_/);
 });

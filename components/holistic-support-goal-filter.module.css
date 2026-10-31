@@ -129,13 +129,17 @@
 .cabinetCopy h3 { margin: 0 0 4px; color: #1c4435; font-size: clamp(17px,2vw,21px); line-height: 1.2; }
 .cabinetCopy p { margin: 0; color: #526d5c; font-size: 13px; line-height: 1.4; }
 .panel .cabinetButton { grid-column: 1/-1; display: flex; align-items: center; justify-content: center;
-  gap: 8px; min-width: 0; width: 100%; min-height: 54px; padding: 11px;
+  gap: 8px; min-width: 0; width: 100%; min-height: 66px; padding: 11px;
   border: 1px solid #078563; border-radius: 13px;
   background: linear-gradient(115deg,#087e62,#0bad80); color: #fff;
   font-size: clamp(14px,3.7vw,17px); font-weight: 790; line-height: 1.18; text-align: center; }
 .cabinetButton:disabled { opacity: .65; cursor: progress; }
 .cabinetButton svg { flex: none; }
-.cabinetCard small { grid-column: 1/-1; color: #557265; font-size: 11px; line-height: 1.35; }
+.cabinetButtonText { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center;
+  justify-content: center; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.cabinetButtonText strong { font-size: clamp(14px,3.7vw,17px); font-weight: 800; line-height: 1.2; }
+.cabinetButtonText small { font-size: 11px; font-weight: 550; line-height: 1.25; opacity: .95; }
+.cabinetCard > small { grid-column: 1/-1; color: #557265; font-size: 11px; line-height: 1.35; }
 .cabinetError { grid-column: 1/-1; color: #973c2e; margin: 0; font-size: 12px; }
 .panel :is(button,input,select):focus-visible { outline: 3px solid #eeae36; outline-offset: 2px; }
 @media (max-width: 640px) {
@@ -193,7 +197,7 @@
   .cabinetCard { margin-top: 12px; padding: 13px 11px; gap: 8px; }
   .cabinetCopy h3 { font-size: 16px; }
   .cabinetCopy p { font-size: 12px; }
-  .panel .cabinetButton { min-height: 52px; }
+  .panel .cabinetButton { min-height: 66px; }
   .panel .reset { align-self: center; width: min(100%,240px); min-height: 44px;
     padding: 7px 12px; border-color: #d5e2d6; background: transparent;
     font-size: 13.5px; line-height: 1.2; font-weight: 650; }
