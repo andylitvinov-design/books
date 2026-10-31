@@ -94,3 +94,25 @@ test('five canonical immutable forms are populated in isolated database only',()
  assert.match(source,/HH_PROFESSIONAL_FIXTURE_READBACK_MISMATCH/);
  assert.doesNotMatch(source,/on conflict[\s\S]{0,70}do update/i);
 });
+
+test('isolated browser fixture includes original service review and catalog-star migrations in order with real RLS', () => {
+  const review = '20261017170000_hh_service_reviews.sql';
+  const rating = '20261028143352_hh_catalog_star_ratings_20261028.sql';
+  const statement = (name) => "await db.query(await readFile(new URL('../../supabase/migrations/" + name;
+  const reviewPos = fixture.indexOf(statement(review));
+  const ratingPos = fixture.indexOf(statement(rating));
+  assert.ok(reviewPos > 0, 'Missing original service-reviews migration');
+  assert.ok(ratingPos > reviewPos, 'Original catalog-star migration must follow service reviews');
+  assert.ok(ratingPos < fixture.indexOf('create role hh_app_ci_login'), 'Apply only in the isolated fixture');
+  for (const name of [review, rating]) {
+    const start = fixture.indexOf(statement(name));
+    assert.equal(fixture.indexOf(statement(name), start + 1), -1, 'Duplicate migration: ' + name);
+  }
+  assert.match(migration(review), /create table if not exists app\.service_reviews/i);
+  assert.match(migration(review), /force row level security/i);
+  assert.match(migration(review), /create policy service_reviews_create/i);
+  assert.match(migration(rating), /create table if not exists app\.catalog_star_ratings/i);
+  assert.match(migration(rating), /force row level security/i);
+  assert.match(migration(rating), /create policy catalog_stars_insert/i);
+  assert.match(migration(rating), /from app\.service_reviews where status='published'/i);
+});
