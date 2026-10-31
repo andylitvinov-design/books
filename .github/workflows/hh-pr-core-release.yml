@@ -82,6 +82,8 @@ jobs:
                   docs/operations/PR_FAST_LANE_20261029.md|\
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/pr-sweep-guard.mjs|\
+                  scripts/ci-quick-route.mjs|\
+                  tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
                   scripts/pr-sweep-guard.mjs|\
