@@ -63,6 +63,8 @@ jobs:
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
+                  scripts/ci-public-services-plan.mjs|\
+                  tests/ci-public-services-plan.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\

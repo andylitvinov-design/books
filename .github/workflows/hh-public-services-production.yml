@@ -4,6 +4,9 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      - '.github/workflows/hh-public-services-production.yml'
+      - 'scripts/ci-public-services-plan.mjs'
+      - 'tests/ci-public-services-plan.test.mjs'
       - 'components/academy-course-video-playlist.tsx'
       - 'lib/practitioners/taoist-talisman-cart.js'
       - 'scripts/fixtures/holistic-support-directory.mjs'
@@ -96,6 +99,11 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
+      # These isolated editor modules run the dedicated Mandala real-media E2E.
+      - '!components/mandala-hypno-compact*'
+      - '!components/mandala-personal-meditation*'
+      # The Ideas & Coaching specialist owns this exact browser harness.
+      - '!scripts/verify-holistic-support-browser.mjs'
 permissions:
   contents: read
   pull-requests: read
@@ -115,7 +123,9 @@ jobs:
       HH_PLAYWRIGHT_PACKAGE: /tmp/hh-public-services-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@v4
-        with: {persist-credentials: false}
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -125,6 +135,13 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Select exact-head Public Services impact
+        id: scope
+        env:
+          HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ci-public-services-plan.mjs
+      - name: Verify fail-closed Public Services routing
+        run: node --test tests/ci-public-services-plan.test.mjs
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
@@ -140,11 +157,13 @@ jobs:
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
       - name: Cache exact Playwright Chromium and WebKit browsers
+        if: ${{ steps.scope.outputs.browser == 'true' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
+        if: ${{ steps.scope.outputs.browser == 'true' }}
         run: |
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
@@ -152,6 +171,10 @@ jobs:
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       - name: Production build and public browser acceptance
+        if: ${{ steps.scope.outputs.build == 'true' }}
+        env:
+          HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
+          HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -195,6 +218,10 @@ jobs:
           # Each suite writes its own diagnostics; both lanes MUST be awaited.
           run_case() {
             local label="$1"; shift
+            if [[ "$HH_PUBLIC_CASES" != all && ",${HH_PUBLIC_CASES}," != *",${label},"* ]]; then
+              printf '%s,NOT_APPLICABLE,0\n' "$label" >> artifacts/public-services-production/timings.csv
+              return 0
+            fi
             local started=$SECONDS
             local code=0
             local outcome=PASS
@@ -243,14 +270,18 @@ jobs:
           wait "$lane_b_pid" || { echo "::error::Public Services acceptance lane B failed"; status=1; }
           # Measure unladen production TTFB *after* browsers finish, never under
           # concurrent test load; do not save HTML, Flight bodies or private data.
-          metrics_started=$SECONDS
-          if TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json 2> artifacts/public-services-production/ttfb-stderr.log; then
-            printf 'home-rsc-local,PASS,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+          if [[ "$HH_PUBLIC_METRICS" == true ]]; then
+            metrics_started=$SECONDS
+            if TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json 2> artifacts/public-services-production/ttfb-stderr.log; then
+              printf 'home-rsc-local,PASS,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+            else
+              echo "::error::Public Services local performance measurement failed"
+              tail -n 40 artifacts/public-services-production/ttfb-stderr.log || true
+              printf 'home-rsc-local,FAIL,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+              status=1
+            fi
           else
-            echo "::error::Public Services local performance measurement failed"
-            tail -n 40 artifacts/public-services-production/ttfb-stderr.log || true
-            printf 'home-rsc-local,FAIL,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
-            status=1
+            printf 'home-rsc-local,NOT_APPLICABLE,0\n' >> artifacts/public-services-production/timings.csv
           fi
           printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
           echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
