@@ -104,8 +104,9 @@ test('PR automation policy and agent entry point require specialist safety gates
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   assert.match(docs, /sole required GitHub status is `release-ready`/);
-  assert.match(docs, /exact PR HEAD and current production BASE/);
-  assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /SUCCESS on the exact PR HEAD/);
+  assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /production advance alone does not require updating the PR branch/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -869,4 +870,61 @@ test('trusted native auto-merge can use a repo-scoped token to preserve push eve
   assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.match(source, /pull_request_target:/);
   assert.doesNotMatch(source, /checkout@|--admin/);
+});
+
+test('five other specialists delegate TypeScript/build while Public Journey single-owner consolidation remains intact', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /name: Exact proposed release production build and TypeScript check/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /^  release-ready:/m);
+  const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for (const [file, name, command] of [
+    ['hh-growth-studio.yml','Next.js build','npm run build'],
+    ['hh-messages-wellness-v2.yml','TypeScript check','npx --no-install tsc --noEmit'],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('- name: ' + name + '\n        ' + gate + '\n        run: ' + command), file + ' must preserve nonproduction check');
+  }
+  // This owner was consolidated independently in production; do not restore its retired jobs.
+  const journey = workflow('hh-public-journey-wave1.yml');
+  for (const evidence of ['node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Whole-project TypeScript outside protected production PRs',
+    'Build exact candidate once for both real-browser suites']) {
+    assert.ok(journey.includes(evidence), 'consolidated Public Journey owner lost '+evidence);
+  }
+  for (const [file, evidence] of [
+    ['practice-google-browser.yml',['node scripts/verify-practice-post-google-browser.mjs','tests/practice-google-return-and-services-v5.test.mjs']],
+    ['practice-visual-browser.yml',['node scripts/verify-practice-visual-browser.mjs','tests/compare-ui-screenshots.test.mjs']],
+    ['hh-alchemy-mobile-acceptance.yml',['node scripts/verify-alchemy-one-screen.mjs','npm run build','tests/alchemy-soul-mobile-landing.test.mjs']],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'), file + ' nonproduction TypeScript must remain');
+    assert.ok(src.includes('npx --no-install tsc --noEmit'), file + ' must keep nonproduction TypeScript');
+    assert.ok(src.includes("Full TypeScript delegated to required Core release-ready"), file + ' must delegate production typing');
+    for (const item of evidence) assert.ok(src.includes(item), file + ' must preserve ' + item);
+    assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  }
+});
+
+
+test('Practice visual PR does not repeat Google-auth browser or old Chromium/WebKit overlays', () => {
+  const source = workflow('practice-visual-browser.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(source, /^  pull_request:/m, 'retain fast source tests on PR');
+  assert.match(source, /^  push:/m, 'retain post-merge real browser visuals');
+  for (const name of [
+    'Install Chromium and WebKit for synthetic UI verification',
+    'Render and verify real Practice page at 320, 354, 390 and 430 pixels',
+    'Generate reproducible Chromium-vs-WebKit visual overlays',
+  ]) {
+    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'duplicate browser work must not run for ordinary PR: '+name);
+  }
+  assert.match(source, /node --test tests\/compare-ui-screenshots\.test\.mjs/,
+    'current visual tooling source contracts must still run');
+  assert.ok(!source.includes('tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs'),
+    'Google auth source tests have a distinct owner');
+  assert.match(core, /^  release-ready:/m);
 });
