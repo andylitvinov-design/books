@@ -6,7 +6,7 @@ import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
-import { buildPersonalMeditationScript } from "@/lib/mandala/personal-meditation-script.mjs";
+import { buildPersonalMeditationScript, isMeditationSafetyResponse } from "@/lib/mandala/personal-meditation-script.mjs";
 import { buildPersonalImageryCourse } from "@/lib/mandala/personal-guided-course.mjs";
 import { findLocalMeditationVoices, meditationNarrationEstimate, playMeditationNarration } from "@/lib/mandala/meditation-narration.mjs";
 import css from "./mandala-personal-meditation.module.css";
@@ -267,8 +267,9 @@ export function MandalaPersonalMeditation({
       locale,theme:actualTheme,wish:effectiveWish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
       focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment
     });
-    setScript(next);setGeneratedFor(signature);setNotice(t.creating);
-    if(coursePreview){
+    const safetyResponse=isMeditationSafetyResponse(next,locale);
+    setScript(next);setGeneratedFor(signature);setNotice(safetyResponse?"":t.creating);
+    if(coursePreview&&!safetyResponse){
       const plan=buildPersonalImageryCourse({
         locale,theme:actualTheme,
         goals:[actualTheme,...focus.goals.filter(goal=>goal!==actualTheme)].slice(0,3),
@@ -277,6 +278,8 @@ export function MandalaPersonalMeditation({
         detailGoals:focus.details,
       });
       setCourseDays((plan.sessions as CourseDay[]).map(({id,number,title,motif})=>({id,number,title,motif})));
+    }else if(coursePreview){
+      setCourseDays([]);
     }
   };
   async function copyScript(){
