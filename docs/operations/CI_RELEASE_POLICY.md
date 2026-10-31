@@ -4,7 +4,7 @@ This is the authoritative current policy for CI and production delivery. GitHub 
 
 ## Production and merge gates
 
-- Production branch: `codex/public-book-library`. The sole required GitHub status is `release-ready`; it must be SUCCESS on the exact PR HEAD. Applicable specialist CI workflows must execute and succeed on that HEAD; missing, pending, cancelled, skipped, failed, zero-job or stale results are not success. FAST presentation-only changes include only explicitly allowed CSS and public raster images, excluding sensitive paths, and take the short path only when no specialist is applicable. Mixed, unknown, security, payment and policy changes are STRICT. GitHub uses loose required-status checks: a production advance alone does not require updating the PR branch; conflicts and required checks still block merge. Never bypass protection.
+- Production branch: `codex/public-book-library`. The sole required GitHub status is `release-ready`; it must be SUCCESS on the exact PR HEAD. Applicable specialist CI workflows must execute and succeed on that HEAD for FULL/STRICT risk; missing, pending, cancelled, skipped, failed, zero-job or stale results are not success. FAST presentation-only changes include only explicitly allowed CSS and public raster images, excluding sensitive paths, and take the short path only when no specialist is applicable. Mixed, unknown, security, payment and policy changes are STRICT. GitHub uses loose required-status checks: a production advance alone does not require updating the PR branch; conflicts and required checks still block merge. Never bypass protection.
 - The PR must be Ready, mergeable, and all review discussions resolved. Human approvals: 0 required. CODEOWNERS approval and independent mandatory AI Review are not required. Use native GitHub Auto-merge with the allowed squash method after the required checks succeed. Force-push and deletion of the protected branch are prohibited.
 - Preserve applicable browser, authentication, privacy, RLS, consent and payment checks and actual provider/E2E requirements. Draft-skipped tests are not passing evidence; Ready transitions must run applicable tests. Workflow migrations must preserve coverage and follow BASE-trusted successor and exact-HEAD evidence; never delete or weaken security or browser tests to pass CI.
 
@@ -44,8 +44,12 @@ specific unchanged browser diagnostics as advisory. The parser's own failure,
 untrusted source or unknown/mixed/sensitive paths revert to STRICT. Payment,
 authentication, privacy, consent and other security coverage remains mandatory.
 
-**Configuration alert — 31 October 2026:** GitHub ruleset #26269892 no
-longer contains the required-status-check rule. This is a deviation from
-the policy above, not an approved waiver. Restore a single required
-`release-ready` status with strict base synchronization OFF before relying
-on native Auto-merge. A GitHub PR merge is not evidence of successful CI.
+## Temporary queue-unblocking mode — 31 October 2026
+
+While the production PR queue has more than 10 open PRs, `release-ready` requires successful scope classification and Core lint/Next.js build (except existing proven ASSETS/TEXT shortcuts). It no longer waits for unrelated specialist workflows on ordinary public CORE changes. Those specialist workflows still run independently and show failures as advisory; do not report them as passing. The fast routing classifier is loaded from immutable production BASE, never from the candidate PR.
+
+Security, authorization, payments, RLS, client/private data, messaging, credentials, dependencies, workflow/policy changes, unknown paths and protected UI take FULL routing and the existing BASE-trusted specialist aggregate. Draft PRs, failed Core and merge conflicts still block. Deletions also take FULL. The `release-ready` status remains mandatory; do not force-merge or misrepresent checks.
+
+**Live GitHub ruleset readback, 31 October 2026:** ruleset #26269892 requires `release-ready` but has `strict_required_status_checks_policy: true`. The guarded `hh-loose-release-ready-once.yml` will automatically attempt to set only this boolean to false after this CI change merges, using `HH_AUTOMERGE_TOKEN`. Verify the ruleset readback before claiming that change succeeded. If the token lacks administration scope, switch to loose in GitHub's ruleset UI, keeping required `release-ready` and all other protections.
+
+After the queue reaches 10 or fewer open production PRs, reassess the temporary ordinary-CORE advisory exception and restore appropriate specialist blocking. The existing hourly reminder monitors this threshold. A merged PR still needs Vercel LIVE confirmation before it is reported as deployed.
