@@ -412,13 +412,22 @@ test('fast routing is limited to known public presentation assets and mixed risk
   }
 });
 
-test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+test('presentation changes still require applicable exact-head specialists', async () => {
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const cssYaml="on:\n  pull_request:\n    paths:\n      - 'app/**'\n";
+  const sources={base:new Map([[path,cssYaml]]),current:new Map([[path,cssYaml]])};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/globals.css'}],
+    runs:async()=>[run({conclusion:'failure'})],jobs:async()=>[{name:'browser',status:'completed',conclusion:'failure'}]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
+test('presentation routing verifies live HEAD and old names in renames', async () => {
   const ctx={repo,number:27,head:SHA,base:BASE};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
-  const result=await verify(api,ctx,{}, {maxWaitMs:0});
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>[]};
+  const result=await verify(api,ctx,{base:new Map(),current:new Map()}, {maxWaitMs:0});
   assert.equal(result.risk,'FAST');
-  assert.equal(reads,2);
+  assert.ok(reads>=2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
   await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}));
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
