@@ -309,24 +309,29 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('required Public Services PR gate is contracts-only; expensive E2E remains manual diagnostic', () => {
+test('required Public Services PR gate follows exact-head risk without suppressing browser QA', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
-  // Only the dispatch path may install heavyweight browsers or rebuild Next.
   for (const [name, output] of [
     ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
     ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
-    assert.ok(step, 'missing manual QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs." + output + " == 'true' }}\n"),
-      'a PR must not run a second Next build or obsolete browser matrix: ' + name);
+    assert.ok(step, 'missing risk-scoped QA step: ' + name);
+    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' }}\n"),
+      'risk-scoped PR acceptance must run when planner selects it: ' + name);
   }
-  assert.ok(src.includes("if: github.event_name == 'pull_request'"),
-    'PR job must still record explicit required source-contract acceptance');
+  assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
+  for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
+    const plan = planPublicServicesChangedPaths([risky]);
+    assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
+      ['full', true, true, 'all'], 'runtime/checkout risk cannot skip browsers: ' + risky);
+  }
+  assert.equal(planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']).browser, false);
+  assert.ok(src.includes("if: github.event_name == 'pull_request'"));
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
-  assert.doesNotMatch(src, /continue-on-error:\\s*true/);
+  assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });

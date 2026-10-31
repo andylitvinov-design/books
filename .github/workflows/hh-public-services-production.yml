@@ -1,6 +1,6 @@
 name: Holistic House public services production acceptance
-# PRs run fast source/security contracts. The obsolete multi-page browser matrix
-# is diagnostic-only, started manually from the production branch, never a merge gate.
+# Exact PR impact controls costly verification: contracts-only changes skip browsers;
+# sensitive/runtime changes fail closed to all 13 real browser scenarios before merge.
 on:
   workflow_dispatch:
   pull_request:
@@ -197,18 +197,17 @@ jobs:
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
-      # Browser binary installation + a second Next build cost minutes and ran
-      # obsolete selectors unrelated to the changed PR. PR Core already builds
-      # the exact merge candidate; Alchemy/Billing have independent protected
-      # owners. Keep E2E available explicitly via workflow_dispatch for QA.
+      # Install the isolated browser suite only when the exact-head planner
+      # selects focused/full acceptance. Contracts-only PRs use Core's build;
+      # sensitive payments/auth/checkout changes retain required real E2E.
       - name: Cache exact Playwright Chromium and WebKit browsers
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' }}
         run: |
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
@@ -218,9 +217,9 @@ jobs:
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR gate: source/security contracts passed. Full browser matrix is manual-only (workflow_dispatch), not blocking release-ready. The required Core gate owns the exact-head Next build; independent Alchemy/Billing checks remain unchanged.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} cases=${{ steps.scope.outputs.cases }}. Sensitive/runtime changes must pass selected real-browser acceptance; contracts-only changes rely on focused source checks and required Core.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.build == 'true' }}
+        if: ${{ steps.scope.outputs.build == 'true' }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
@@ -261,9 +260,9 @@ jobs:
             exit 1
           fi
           status=0
-          # Diagnostic-only 13-case E2E for manually dispatched QA, including payment,
+          # Real 13-case risk-scoped E2E on PR and full manual QA, including payment,
           # consent, browser engines and RU/EN/ES viewports. One Next server,
-          # two bounded independent lanes, never extra jobs or required checks.
+          # two bounded independent lanes with checked exit statuses.
           # Each suite writes its own diagnostics; both lanes MUST be awaited.
           run_case() {
             local label="$1"; shift
