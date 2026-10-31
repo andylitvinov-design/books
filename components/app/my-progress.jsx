@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -12,6 +12,8 @@ import {
 import { appFetch } from '@/lib/app/client-fetch'
 import { buildMyProgress } from '@/lib/app/my-progress.mjs'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
+import { monitoringCatalogItem } from '@/data/assessments/catalog'
+import { freeMeditationVideos } from '@/data/academy/holistic-support-meditations'
 import styles from './my-progress.module.css'
 
 const COPY = {
@@ -34,7 +36,7 @@ const COPY = {
     saved:'Saved', completed:'Completed', watched:'Marked watched',
     mastered:'Marked as mastered', in_progress:'In progress',
     active:'In progress', paused:'Paused', draft:'Draft', closed:'Closed', archived:'Archived',
-    logged:'Recorded', requested:'Request sent, not booked', contacted:'Contacted',
+    logged:'Recorded', requested:'Awaiting practitioner', contacted:'Discussing details', confirmed:'Practitioner confirmed', reschedule_proposed:'Time change proposed', declined:'Declined', booked:'Booked by practitioner',
     cancelled:'Cancelled', unavailable:'Unavailable', pending:'Pending',
     open:'Open', more:'Show more', empty:'No saved records in this section yet.',
     partial:'Some sources could not be loaded. This history is incomplete. Refresh to retry.',
@@ -46,6 +48,12 @@ const COPY = {
     foot:'Participation and test scores are not a promise of health improvement.',
     masteredCount:'mastered', markHelp:'Watch and mark videos in the Academy',
     itemCount:'items', noProfileName:'My House',
+    topicsHeader:'Topics', allTopics:'All topics', energy:'Energy', money:'Money & work',
+    relationships:'Relationships', meaning:'Goals & meaning', topicHint:'Only activities with a verified editorial topic appear in a selected topic.',
+    sectionsHistory:'My history by section', viewSection:'Open section', noTopicHistory:'No saved records in this topic yet.',
+    rubric:{courses:'My courses',tests:'My tests',practices:'My practices',services:'My orders',reports:'My reports',notes:'My notes',labs:'My lab reports',development:'My Development Path'},
+    profileShortcut:'My profile', ordersShortcut:'My orders', servicesShortcut:'My services', messagesShortcut:'Messages', labsShortcut:'My lab reports', developmentShortcut:'My Development Path', labs:'Lab reports', development:'Development Path',
+    expandHistory:'Show all dated entries', collapseHistory:'Hide dated entries', recentByTopic:'Newest first · swipe for earlier records',
     noSavedVideos:'Nothing saved yet. Explore the Academy or create your first video.',
   },
   ru: {
@@ -67,7 +75,7 @@ const COPY = {
     saved:'Сохранено', completed:'Завершено', watched:'Отмечено просмотренным',
     mastered:'Отмечено освоенным', in_progress:'В процессе',
     active:'В процессе', paused:'Приостановлено', draft:'Черновик', closed:'Закрыто', archived:'В архиве',
-    logged:'Записано', requested:'Заявка, ещё не запись', contacted:'Связались',
+    logged:'Записано', requested:'Ожидается ответ мастера', contacted:'Уточняем детали', confirmed:'Мастер подтвердил', reschedule_proposed:'Предложен перенос', declined:'Отказано', booked:'Мастер подтвердил запись',
     cancelled:'Отменено', unavailable:'Недоступно', pending:'Ожидает',
     open:'Открыть', more:'Показать ещё', empty:'В этом разделе пока нет сохранённых записей.',
     partial:'Часть источников недоступна. История неполная. Обновите данные и попробуйте снова.',
@@ -79,6 +87,12 @@ const COPY = {
     foot:'Пройденные занятия и результаты тестов не означают гарантированного улучшения состояния.',
     masteredCount:'освоено', markHelp:'Смотреть и отмечать видео в Академии',
     itemCount:'записей', noProfileName:'Мой дом',
+    topicsHeader:'Темы', allTopics:'Все темы', energy:'Энергия', money:'Деньги и работа',
+    relationships:'Отношения', meaning:'Цели и смыслы', topicHint:'Фильтр показывает только записи с подтверждённой тематикой в каталоге.',
+    sectionsHistory:'История по разделам', viewSection:'Открыть раздел', noTopicHistory:'В этой теме ещё нет сохранённых материалов.',
+    rubric:{courses:'Мои курсы',tests:'Мои тесты',practices:'Мои практики',services:'Мои заказы',reports:'Мои отчёты',notes:'Мои заметки',labs:'Мои анализы',development:'Мой путь развития'},
+    profileShortcut:'Мой профиль', ordersShortcut:'Мои заказы', servicesShortcut:'Мои услуги', messagesShortcut:'Сообщения', labsShortcut:'Мои анализы', developmentShortcut:'Мой путь развития', labs:'Анализы', development:'Путь развития',
+    expandHistory:'Показать всю историю по датам', collapseHistory:'Скрыть список по датам', recentByTopic:'Новые слева · листайте вправо к прошлому',
     noSavedVideos:'Пока ничего не сохранено. Откройте Академию или создайте первое видео.',
   },
   es: {
@@ -100,7 +114,7 @@ const COPY = {
     saved:'Guardado', completed:'Completado', watched:'Marcado visto',
     mastered:'Marcado aprendido', in_progress:'En curso',
     active:'En curso', paused:'Pausado', draft:'Borrador', closed:'Cerrado', archived:'Archivado',
-    logged:'Registrado', requested:'Solicitud, no reserva', contacted:'Contactado',
+    logged:'Registrado', requested:'Esperando respuesta', contacted:'Aclarando detalles', confirmed:'Confirmado por profesional', reschedule_proposed:'Cambio de horario', declined:'Rechazado', booked:'Reserva confirmada por profesional',
     cancelled:'Cancelado', unavailable:'No disponible', pending:'Pendiente',
     open:'Abrir', more:'Mostrar más', empty:'Aún no hay registros guardados en esta sección.',
     partial:'Algunas fuentes no están disponibles. El historial está incompleto. Actualiza e inténtalo de nuevo.',
@@ -112,12 +126,31 @@ const COPY = {
     foot:'La participación y las puntuaciones no garantizan mejoras de bienestar.',
     masteredCount:'aprendidos', markHelp:'Ver y marcar vídeos en Academia',
     itemCount:'registros', noProfileName:'Mi casa',
+    topicsHeader:'Temas', allTopics:'Todos', energy:'Energía', money:'Dinero y trabajo',
+    relationships:'Relaciones', meaning:'Objetivos y sentido', topicHint:'Solo aparecen registros con temas editoriales confirmados.',
+    sectionsHistory:'Mi historial por sección', viewSection:'Abrir sección', noTopicHistory:'Aún no hay registros guardados de este tema.',
+    rubric:{courses:'Mis cursos',tests:'Mis tests',practices:'Mis prácticas',services:'Mis pedidos',reports:'Mis informes',notes:'Mis notas',labs:'Mis análisis',development:'Mi ruta de desarrollo'},
+    profileShortcut:'Mi perfil', ordersShortcut:'Mis pedidos', servicesShortcut:'Mis servicios', messagesShortcut:'Mensajes', labsShortcut:'Mis análisis', developmentShortcut:'Mi ruta de desarrollo', labs:'Análisis', development:'Desarrollo',
+    expandHistory:'Ver todo por fecha', collapseHistory:'Ocultar lista por fecha', recentByTopic:'Más nuevos primero · desliza para ver los anteriores',
     noSavedVideos:'Aún no has guardado nada. Explora Academia o crea tu primer vídeo.',
   },
 }
 
 const DATE_LOCALES = { en:'en-US', ru:'ru-RU', es:'es-ES' }
-const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes']
+const TOPIC_IDS=['all','energy','money','relationships','meaning']
+// A mounted account view can survive a user switch for one render before effects run.
+// No previously loaded account data or private playback URL may cross that boundary.
+const EMPTY_SOURCES=Object.freeze({accountId:null,growth:null,energywork:null,videos:null,videoProgress:null,orders:null,extras:null,loading:true,failed:0,videosDisabled:false})
+const EMPTY_PLAYER=Object.freeze({accountId:null,id:null,url:null,loading:false,error:false})
+const SECTION_HREF=(id,lang)=>({
+  videos:'/'+lang+'/academy/videos',courses:'/'+lang+'/app/course?view=courses',
+  tests:'/'+lang+'/app/tests',mandalas:'/'+lang+'/app/videos',
+  practices:'/'+lang+'/holistic-support/mobile',
+  reports:'/'+lang+'/app/portrait#personal-reports',
+  services:'/'+lang+'/app/messages?section=orders',notes:'/'+lang+'/app/history',
+  labs:'/'+lang+'/app/labs',development:'/'+lang+'/app/portfolio',
+})[id] || '/'+lang+'/app/progress'
+const FILTERS = ['all','videos','courses','tests','practices','mandalas','reports','services','notes','labs','development']
 const LIBRARY = [
   { id:'videos', Icon:PlaySquare, tone:'video' },
   { id:'courses', Icon:BookOpen, tone:'course' },
@@ -127,6 +160,8 @@ const LIBRARY = [
   { id:'reports', Icon:FileText, tone:'report' },
   { id:'services', Icon:CalendarDays, tone:'service' },
   { id:'notes', Icon:NotebookPen, tone:'note' },
+  { id:'labs', Icon:ClipboardCheck, tone:'report' },
+  { id:'development', Icon:Leaf, tone:'course' },
 ]
 const ICONS = Object.fromEntries(LIBRARY.map(({id,Icon})=>[id,Icon]))
 
@@ -177,6 +212,21 @@ function MandalaCard({entry,lang,t,player,onToggle}) {
     {active?.error && <p role="alert" className={styles.mandalaError}>{t.mandalaError}</p>}
   </article>
 }
+function RubricCard({entry,lang,t}) {
+  const Icon=ICONS[entry.category] || Activity
+  return <article className={styles.rubricCard} data-progress-rubric-card={entry.category}>
+    <Link href={entry.href||SECTION_HREF(entry.category,lang)} prefetch={false}
+      aria-label={t.open+' · '+entry.title}>
+      <div className={styles.rubricCover} data-category={entry.category}>
+        <Icon size={30} strokeWidth={1.6} aria-hidden="true"/>
+        <span className={styles.rubricOpen}><ChevronRight size={19}/></span>
+      </div>
+      <strong>{entry.title}</strong>
+      <small><Clock3 size={12} aria-hidden="true"/>{dateLabel(entry.at,lang)}</small>
+      <Status status={entry.status} t={t}/>
+    </Link>
+  </article>
+}
 function ActivityRow({entry,lang,t}) {
   const Icon=ICONS[entry.category] || Activity
   return <li className={styles.entry} data-category={entry.category}>
@@ -203,27 +253,34 @@ export default function MyProgress({ data, locale='en' }) {
     ? data.account.displayName.trim().slice(0,70) : ''
   const accountInitial=accountName ? accountName.slice(0,1).toLocaleUpperCase(lang) : null
   const root='/'+lang+'/app'
-  const [sources,setSources]=useState({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
+  const [loadedSources,setSources]=useState(EMPTY_SOURCES)
+  const sources=loadedSources.accountId===accountId?loadedSources:EMPTY_SOURCES
   const [reloadKey,setReloadKey]=useState(0)
   const [filter,setFilter]=useState('all')
   const [shown,setShown]=useState(24)
+  const [selectedTopic,setSelectedTopic]=useState('all')
+  const [historyExpanded,setHistoryExpanded]=useState(false)
   const mandalaEpoch=useRef(0)
-  const [mandalaPlayer,setMandalaPlayer]=useState({id:null,url:null,loading:false,error:false})
+  const [mandalaPlayer,setMandalaPlayer]=useState(EMPTY_PLAYER)
+  const safeMandalaPlayer=mandalaPlayer.accountId===accountId?mandalaPlayer:EMPTY_PLAYER
 
   useEffect(()=>{
     if(!accountId) return
     let active=true
-    setSources({growth:null,energywork:null,videos:null,videoProgress:null,loading:true,failed:0,videosDisabled:false})
-    const endpoints=['course','academy-energywork','personal-videos','video-progress']
+    setSources({...EMPTY_SOURCES,accountId})
+    const endpoints=['course','academy-energywork','personal-videos','video-progress','messages/my-orders','progress-extras']
     Promise.allSettled(endpoints.map(endpoint=>appFetch(endpoint,undefined,'GET',{accountId})))
       .then(results=>{
         if(!active) return
         const values=results.map(result=>result.status==='fulfilled'?result.value:null)
         setSources({
-          growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],loading:false,
+          accountId,growth:values[0],energywork:values[1],videos:values[2],videoProgress:values[3],
+          orders:values[4]?.accountId===accountId&&Array.isArray(values[4]?.orders)?values[4]:null,
+          extras:values[5]?.accountId===accountId?values[5]:null,loading:false,
           videosDisabled:results[2].status==='rejected'&&results[2].reason?.code==='FEATURE_UNAVAILABLE',
           failed:results.filter((item,index)=>item.status==='rejected' &&
-            !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length,
+            !(index===2&&item.reason?.code==='FEATURE_UNAVAILABLE')).length+
+            (values[5]?.partial===true?1:0),
         })
       })
     return ()=>{active=false}
@@ -232,16 +289,27 @@ export default function MyProgress({ data, locale='en' }) {
   const progress=useMemo(()=>buildMyProgress({
     bootstrap:data||{},growth:sources.growth,energywork:sources.energywork,
     videos:sources.videos,videoProgress:sources.videoProgress,
-    titleOfTest:assessmentHistoryTitle,locale:lang,
+    titleOfTest:assessmentHistoryTitle,
+    topicsOfTest:entry=>monitoringCatalogItem(entry.definitionKey)?.topics||[],
+    videoTopics:Object.fromEntries(freeMeditationVideos(lang).map(video=>[video.id,video.topics])),
+    orders:sources.orders,extras:sources.extras,locale:lang,
   }),[data,sources,lang])
-  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'),[progress])
-  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'),[progress])
+  const matchesTopic=useCallback(entry=>selectedTopic==='all'||entry.topics?.includes(selectedTopic),[selectedTopic])
+  const videos=useMemo(()=>progress.entries.filter(entry=>entry.category==='videos'&&matchesTopic(entry)),[progress,matchesTopic])
+  const mandalas=useMemo(()=>progress.entries.filter(entry=>entry.category==='mandalas'&&matchesTopic(entry)),[progress,matchesTopic])
+  const rubrics=useMemo(()=>LIBRARY.filter(({id})=>id!=='videos'&&id!=='mandalas')
+    .map(({id,Icon})=>({id,Icon,items:progress.entries.filter(entry=>
+      entry.category===id&&(selectedTopic==='all'||entry.topics?.includes(selectedTopic)))
+    })).filter(group=>group.items.length>0),[progress,selectedTopic])
   const lastActivity=useMemo(()=>progress.entries.filter(entry=>
-    (entry.category==='tests'&&entry.status==='in_progress')
-    || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status))
-  )[0], [progress])
-  const filtered=useMemo(()=>filter==='all' ? progress.entries
-    : progress.entries.filter(entry=>entry.category===filter),[progress,filter])
+    ((entry.category==='tests'&&entry.status==='in_progress')
+    || (entry.category==='courses'&&['active','paused','draft'].includes(entry.status)))
+    && (selectedTopic==='all'||entry.topics?.includes(selectedTopic))
+  )[0], [progress,selectedTopic])
+  const filtered=useMemo(()=>progress.entries.filter(entry=>
+    (filter==='all'||entry.category===filter)
+    &&(selectedTopic==='all'||entry.topics?.includes(selectedTopic))
+  ),[progress,filter,selectedTopic])
   const mastered=videos.filter(entry=>entry.status==='mastered').length
   const overview=[
     {id:'tests',number:progress.totals.tests,caption:t.countTests,Icon:ClipboardCheck},
@@ -252,28 +320,39 @@ export default function MyProgress({ data, locale='en' }) {
   async function toggleMandala(entry) {
     const id=entry.id.startsWith('mandalas:')?entry.id.slice(9):''
     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-      setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+      setMandalaPlayer({accountId,id:entry.id,url:null,loading:false,error:true})
       return
     }
     const epoch=++mandalaEpoch.current
-    if(mandalaPlayer.id===entry.id) {
-      setMandalaPlayer({id:null,url:null,loading:false,error:false})
+    if(safeMandalaPlayer.id===entry.id) {
+      setMandalaPlayer({...EMPTY_PLAYER,accountId})
       return
     }
-    setMandalaPlayer({id:entry.id,url:null,loading:true,error:false})
+    setMandalaPlayer({accountId,id:entry.id,url:null,loading:true,error:false})
     try {
       const result=await appFetch('personal-videos/'+id,undefined,'GET',{accountId})
       if(epoch!==mandalaEpoch.current)return
       if(typeof result?.url!=='string'||!result.url.startsWith('https://'))throw new Error('INVALID_PRIVATE_URL')
-      setMandalaPlayer({id:entry.id,url:result.url,loading:false,error:false})
+      setMandalaPlayer({accountId,id:entry.id,url:result.url,loading:false,error:false})
     } catch {
-      if(epoch===mandalaEpoch.current)setMandalaPlayer({id:entry.id,url:null,loading:false,error:true})
+      if(epoch===mandalaEpoch.current)setMandalaPlayer({accountId,id:entry.id,url:null,loading:false,error:true})
     }
   }
   // Invalidate outstanding signed-URL requests on account switch / unmount.
   useEffect(()=>()=>{mandalaEpoch.current+=1},[accountId])
   const countFor=id=>progress.entries.filter(entry=>entry.category===id).length
-  const jumpTo=id=>{setFilter(id);setShown(24)}
+  const visibleCountFor=id=>progress.entries.filter(entry=>entry.category===id && matchesTopic(entry)).length
+  const jumpTo=id=>{setFilter(id);setShown(24);setHistoryExpanded(true)}
+  const topicChange=id=>{setSelectedTopic(id);setFilter('all');setShown(24)}
+  const practitioner=Boolean(data?.practitioner||data?.practice)
+  const quickDestinations=[
+    {id:'profile',title:t.profileShortcut,href:root+'/portrait',Icon:UserRound},
+    {id:'orders',title:t.ordersShortcut,href:root+'/messages?section=orders',Icon:CalendarDays},
+    {id:'messages',title:t.messagesShortcut,href:root+'/messages',Icon:Activity},
+    {id:'development',title:t.developmentShortcut,href:root+'/portfolio',Icon:Leaf},
+    {id:'labs',title:t.labsShortcut,href:root+'/labs',Icon:ClipboardCheck},
+    ...(practitioner?[{id:'services',title:t.servicesShortcut,href:root+'/practice?panel=services',Icon:Leaf}]:[]),
+  ]
   return <section className={styles.page} data-my-progress data-account-progress-loaded={!sources.loading}>
     <header className={styles.hero}>
       <div className={styles.heroEyebrow}><Leaf size={14} aria-hidden="true"/>{t.eyebrow}</div>
@@ -296,6 +375,17 @@ export default function MyProgress({ data, locale='en' }) {
           <span>{t[id]}</span>
           <small>{caption}</small>
         </button>)}
+      </div>
+      <nav className={styles.topicNav} aria-label={t.topicsHeader} data-progress-topic-filters>
+        <span>{t.topicsHeader}</span>
+        {TOPIC_IDS.map(id=><button type="button" key={id} aria-pressed={selectedTopic===id}
+          onClick={()=>topicChange(id)}>{id==='all'?t.allTopics:t[id]}</button>)}
+      </nav>
+      {selectedTopic!=='all' && <p className={styles.topicExplanation}>{t.topicHint}</p>}
+      <div className={styles.quickLinks} aria-label={t.library} data-progress-existing-function-links>
+        {quickDestinations.map(({id,title,href,Icon})=><Link href={href} key={id} prefetch={false}>
+          <Icon size={17} aria-hidden="true"/><span>{title}</span><ChevronRight size={15} aria-hidden="true"/>
+        </Link>)}
       </div>
     </header>
 
@@ -320,7 +410,8 @@ export default function MyProgress({ data, locale='en' }) {
           {videos.length} {t.countVideos} · {mastered} {t.masteredCount}. {t.videoNote}</p>
       </> : <div className={styles.videoEmpty}>
         <span className={styles.emptyIcon}><Play size={25} fill="currentColor" aria-hidden="true"/></span>
-        <div><strong>{t.noVideos}</strong><p>{t.noVideosHelp}</p>
+        <div><strong>{selectedTopic==='all'?t.noVideos:t.noTopicHistory}</strong>
+          <p>{selectedTopic==='all'?t.noVideosHelp:t.topicHint}</p>
           <Link href={'/'+lang+'/academy/videos'} prefetch={false}>{t.exploreVideos}<ArrowRight size={16}/></Link>
         </div>
       </div>}
@@ -332,15 +423,41 @@ export default function MyProgress({ data, locale='en' }) {
           <h2 id="hh-progress-library-title">{t.library}</h2></div>
       </div>
       <div className={styles.library}>
-        {LIBRARY.map(({id,Icon,tone})=><a key={id} href="#hh-progress-activity"
+        {LIBRARY.map(({id,Icon,tone})=><a key={id} href={visibleCountFor(id)
+          ? '#'+(id==='videos'?'hh-progress-watch-title':id==='mandalas'?'hh-progress-mandalas-title':'hh-progress-rail-'+id)
+          : SECTION_HREF(id,lang)}
           className={styles.libraryTile} data-tone={tone}
-          onClick={()=>jumpTo(id)} aria-label={t[id]+': '+countFor(id)}>
+          onClick={()=>{setFilter(id);setShown(24)}} aria-label={t[id]+': '+countFor(id)}>
           <span className={styles.libraryIcon}><Icon size={25} strokeWidth={1.8} aria-hidden="true"/></span>
           <span className={styles.libraryCopy}><strong>{t[id]}</strong>
-            <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':countFor(id)} {t.itemCount}</small></span>
+            <small>{sources.loading&&['videos','courses','mandalas','practices'].includes(id)?'—':visibleCountFor(id)} {t.itemCount}</small></span>
           <ChevronRight className={styles.libraryArrow} size={18} aria-hidden="true"/>
         </a>)}
       </div>
+    </section>
+
+    <section className={styles.rubricCollection} data-progress-horizontal-history aria-label={t.sectionsHistory}>
+      <div className={styles.rubricCollectionHead}>
+        <h2>{t.sectionsHistory}</h2>
+        <small>{t.recentByTopic}</small>
+      </div>
+      {rubrics.length ? rubrics.map(({id,items})=>
+        <section className={styles.rubricSection} key={id} id={'hh-progress-rail-'+id}
+          aria-labelledby={'hh-progress-rail-heading-'+id}>
+          <div className={styles.sectionHead}>
+            <h3 id={'hh-progress-rail-heading-'+id}>{t.rubric?.[id]||t[id]} <small>({items.length})</small></h3>
+            <Link href={SECTION_HREF(id,lang)} prefetch={false} className={styles.sectionLink}>
+              {t.viewSection}<ArrowRight size={17}/>
+            </Link>
+          </div>
+          <div className={styles.rubricRail} role="list" aria-label={t[id]}>
+            {items.slice(0,14).map(entry=><div role="listitem" key={entry.id}>
+              <RubricCard entry={entry} lang={lang} t={t}/>
+            </div>)}
+          </div>
+        </section>
+      ) : !sources.loading && selectedTopic!=='all'
+        ? <p className={styles.topicEmpty}>{t.noTopicHistory}</p> : null}
     </section>
 
     <section className={styles.section} aria-labelledby="hh-progress-resume-title">
@@ -370,15 +487,20 @@ export default function MyProgress({ data, locale='en' }) {
       </div>
       {sources.loading?<div className={styles.skeletonRail} aria-hidden="true"><span/><span/></div>:mandalas.length?<div className={styles.mandalaRail}>
         {mandalas.slice(0,8).map(mandala=><MandalaCard key={mandala.id} entry={mandala} lang={lang} t={t}
-          player={mandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
+          player={safeMandalaPlayer} onToggle={()=>void toggleMandala(mandala)}/>)}
       </div>:<div className={styles.mandalaEmpty}>
         <Sparkles size={23} aria-hidden="true"/>
-        <span>{sources.videosDisabled?t.storageDisabled:t.noMandalas}</span>
+        <span>{sources.videosDisabled?t.storageDisabled:selectedTopic!=='all'?t.noTopicHistory:t.noMandalas}</span>
         <Link href={'/'+lang+'/holistic-support/mandala'} prefetch={false}>{t.mandalaCreate}<ArrowRight size={15}/></Link>
       </div>}
     </section>
 
-    <section className={styles.section} id="hh-progress-activity" aria-labelledby="hh-progress-activity-title">
+    <section className={styles.section} id="hh-progress-activity" aria-label={t.recentActivity}>
+      <button type="button" className={styles.fullHistoryToggle}
+        aria-expanded={historyExpanded} onClick={()=>setHistoryExpanded(value=>!value)}>
+        {historyExpanded?t.collapseHistory:t.expandHistory}<ChevronRight size={18} aria-hidden="true"/>
+      </button>
+      {historyExpanded && <>
       <div className={styles.sectionHead}>
         <div><span className={styles.sectionEyebrow}>{t.activityEyebrow}</span>
           <h2 id="hh-progress-activity-title">{t.recentActivity}</h2></div>
@@ -404,6 +526,7 @@ export default function MyProgress({ data, locale='en' }) {
       </div>}
       {filtered.length>shown&&<button type="button" className={styles.more}
         onClick={()=>setShown(count=>count+24)}>{t.more}<ChevronRight size={16}/></button>}
+      </>}
     </section>
     <footer className={styles.footer}>
       <ShieldCheck size={17} aria-hidden="true"/>
