@@ -47,6 +47,16 @@ test('deep triage obtains a pinned release-ready app from effective branch rules
   assert.throws(()=>requiredGateApp([rule([{context:'release-ready',integration_id:1},{context:'release-ready',integration_id:2}])]),/REQUIRED_GATE/);
 });
 
+test('an explicitly released lease cannot block a new owner until its old expiry',()=>{
+  const now=Date.parse('2026-10-31T19:01:00Z');
+  const lease=makeLease({owner:'agent-a',head_sha:sha('a'),base_sha:sha('b'),now});
+  const comment=(state)=>({id:11,created_at:'2026-10-31T19:01:00Z',body:renderLease({...lease,...state})});
+  assert.ok(activeLease([comment({state:'active'})],now));
+  assert.equal(activeLease([comment({state:'released_after_atomic_commit',last_action:'release'})],now),null);
+  assert.equal(activeLease([comment({last_action:'release'})],now),null);
+  assert.ok(activeLease([comment({state:'released_after_atomic_commit',last_action:'heartbeat'})],now));
+});
+
 test('route-deep rechecks live heads and never attributes an old failure to a changed PR',()=>{
   const dir=mkdtempSync(join(tmpdir(),'hh-sweep-deep-'));
   try {
