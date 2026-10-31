@@ -40,14 +40,17 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
-test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+test('Portrait runs one isolated Chromium on Ready PR, full Chromium/WebKit only on manual QA',()=>{
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
   assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
   assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'PR routing must not allocate two private DB/browser runners');
+  assert.ok(s.includes("'[\"chromium\",\"webkit\"]'"), 'manual full matrix remains available');
+  assert.ok(s.includes("'[\"chromium\"]'"), 'normal PR executes one Chromium core check');
   assert.match(s,/postgres:17-alpine/);
   assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
   assert.match(s,/verify-portrait-mobile\.mjs/);
