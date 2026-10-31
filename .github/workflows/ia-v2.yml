@@ -30,6 +30,10 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Public practitioner directory/checkout use Public Services acceptance,
+      # not synthetic encrypted owner/client IA with Redis and two browsers.
+      - '!lib/practitioners/public-*'
+      - '!lib/practitioners/taoist-talisman-cart.js'
   workflow_dispatch:
 permissions:
   contents: read

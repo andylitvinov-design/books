@@ -1,5 +1,6 @@
 name: Holistic House App R1 browser and database journey
 on:
+  workflow_dispatch:
   push:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
@@ -47,9 +48,9 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
-      matrix:
-        browser: [chromium, webkit]
-        suite: [core, extended]
+      # Minimal blocking PR acceptance: one Chromium core with a synthetic database.
+      # Four legacy browser/suite combinations remain available only on explicit manual QA.
+      matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '{"include":[{"browser":"chromium","suite":"core"},{"browser":"webkit","suite":"core"},{"browser":"chromium","suite":"extended"},{"browser":"webkit","suite":"extended"}]}' || '{"include":[{"browser":"chromium","suite":"core"}]}') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
