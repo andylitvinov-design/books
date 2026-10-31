@@ -37,3 +37,7 @@ Background-only recording ignores asynchronous frameUrl/photoUrl changes from th
 ## Network isolation guarantee — refined fallback
 
 The catalog fallback is a **normal same-origin static MP4 link**, not a JS `fetch()` or a copied Blob. This preserves established audio/privacy and money-library contracts which intentionally ban arbitrary network requests from the original Canvas editor. Unlike a real four-shot render, catalog source cannot be shared as a freshly recorded personal media blob and is labelled accordingly.
+
+## CI owner and production fast-lane release
+
+Production CI routing for the first-video entry and consent-only prompt API was merged as [#2716](https://github.com/andylitvinov-design/books/pull/2716) before this feature's final exact-HEAD check. `components/mandala-first-video-start*`, `app/api/holistic-support/first-video-prompt/route.js` and `tests/first-video-director.test.mjs` belong to the existing Mandala specialist. It executes browser media acceptance, real encoded-file validation, unit tests, targeted lint and production build; the immutable-base Core `release-ready` gate still verifies all applicable workflows. Unrelated public service checkout/payment/booking changes retain their Public Services checks. This is a narrow specialist ownership change, not a global CI skip. Merge only after the new #2713 head passes every applicable check and Vercel confirms a READY production deployment with the exact post-merge commit and official alias.
