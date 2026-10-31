@@ -67,6 +67,14 @@ export default async function MandalaMeditationPage({ params }: Props) {
         </Link>
       </aside>
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+      <aside data-loved-voices-entry className="mx-auto my-6 max-w-3xl rounded-2xl border border-emerald-800/20 bg-emerald-50 p-4 text-center">
+        <Link href={"/"+locale+"/holistic-support/loved-voices"} prefetch={false}
+          className="font-semibold text-emerald-900 underline">
+          {locale==="ru"?"Голоса близких · озвучить фразы":
+            locale==="es"?"Voces de seres queridos · crear audio":
+            "Loved Ones Voices · create a voice"}
+        </Link>
+      </aside>
       <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
