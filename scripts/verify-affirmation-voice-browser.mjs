@@ -41,6 +41,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       });
       await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
       await page.locator("[data-video-quick-builder]").waitFor({state:"visible",timeout:25000});
+      // The approved compact mobile UI moves advanced voice and duration settings
+      // into an initially collapsed disclosure. Verify the actual user path.
+      const advanced=page.locator("[data-video-quick-legacy]");
+      assert.equal(await advanced.getAttribute("open"),null);
+      await advanced.locator(":scope > summary").click();
+      await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator('[data-video-quick-duration="10"]').click();
@@ -65,11 +71,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(payloads[0].consent,true);
       assert.equal(payloads[0].language,locale);
       const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
-      // These filename panels belong to the advanced editor. Open its real
-      // disclosure before checking the filenames as visible UI evidence.
-      const advanced=page.locator("[data-video-quick-legacy]");
-      assert.equal(await advanced.getAttribute("open"),null);
-      await advanced.locator(":scope > summary").click();
+      // The voice attachment and downloaded filename must be visible within
+      // the disclosure opened by the user before generating the narration.
+      assert.notEqual(await advanced.getAttribute("open"),null);
       const selectedFile=page.locator("[data-video-audio-selected] strong");
       const attachedFile=page.locator("[data-video-audio-attached] strong");
       await selectedFile.waitFor({state:"visible"});
@@ -107,6 +111,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
         assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
       }
+      await advanced.locator(":scope > summary").click();
+      await page.locator('[data-video-quick-phrases="ready"]').waitFor({state:"visible"});
       await page.locator('[data-video-quick-phrases="ready"]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
