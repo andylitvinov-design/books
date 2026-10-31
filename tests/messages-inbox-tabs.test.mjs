@@ -1,32 +1,32 @@
-import test from 'node:test'
-import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
-import {filterInboxRows,normalizeMessagesTab} from '../lib/app/messages-inbox-tabs.mjs'
-
-const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-
-test('the owner inbox separates Telegram/private conversations and website/client enquiries without copying rows',()=>{
+test('provider leads and account-bound requests appear in the real chat without duplicating rows',()=>{
   const rows=[
     {key:'crm:1',kind:'crm',lifecycle:'client',name:'Telegram Andy'},
-    {key:'crm:5',kind:'crm',lifecycle:'lead',name:'Telegram business lead'},
+    {key:'crm:5',kind:'crm',lifecycle:'lead',name:'Telegram service lead'},
     {key:'direct:2',kind:'direct',name:'Member Andy'},
     {key:'business:3',kind:'business',name:'Business request'},
-    {key:'request:4',kind:'request',name:'Site consultation'},
+    {key:'request:4',kind:'request',name:'Site consultation',item:{requestKind:'account'}},
+    {key:'request:6',kind:'request',name:'Public guest enquiry',item:{requestKind:'public'}},
   ]
-  assert.deepEqual(filterInboxRows(rows,'chats').map(x=>x.key),['crm:1','direct:2'])
-  assert.deepEqual(filterInboxRows(rows,'requests').map(x=>x.key),['crm:5','business:3','request:4'])
-  assert.equal(filterInboxRows(rows,'chats').length+filterInboxRows(rows,'requests').length,rows.length)
-  assert.strictEqual(filterInboxRows(rows,'requests')[0],rows[1])
-  assert.deepEqual(filterInboxRows(rows,'requests',' business request ').map(x=>x.key),['business:3'])
+  const chats=filterInboxRows(rows,'chats')
+  const requests=filterInboxRows(rows,'requests')
+  assert.deepEqual(chats.map(x=>x.key),['crm:1','crm:5','direct:2','request:4'])
+  assert.deepEqual(requests.map(x=>x.key),['crm:5','business:3','request:4','request:6'])
+  assert.equal(new Set(chats.map(x=>x.key)).size,chats.length)
+  assert.equal(new Set(requests.map(x=>x.key)).size,requests.length)
+  assert.strictEqual(chats[1],requests[0],'one CRM thread, not a copied lead')
+  assert.strictEqual(chats[3],requests[2],'one account-bound conversation, not a copied request')
+  assert.deepEqual(filterInboxRows(rows,'chats','public guest'),[])
+  assert.deepEqual(filterInboxRows(rows,'requests','business request').map(x=>x.key),['business:3'])
   assert.deepEqual(filterInboxRows(rows,'chats','andy').map(x=>x.key),['crm:1','direct:2'])
+  assert.deepEqual(filterInboxRows(rows,'chats','telegram').map(x=>x.key),['crm:1','crm:5'])
   assert.deepEqual(filterInboxRows(rows,'requests','telegram').map(x=>x.key),['crm:5'])
-  // An incoming Telegram service enquiry is a lead, not a duplicate chat row.
   assert.deepEqual(filterInboxRows(rows,'chats','no-match'),[])
   assert.deepEqual(filterInboxRows([], 'requests'),[])
   assert.deepEqual(filterInboxRows(null,'requests'),[])
   assert.equal(normalizeMessagesTab('unknown'),'chats')
   assert.equal(normalizeMessagesTab('requests'),'requests')
   assert.deepEqual(filterInboxRows([{kind:'unknown',name:'X'}],'requests'),[])
+  assert.deepEqual(filterInboxRows([{kind:'request',name:'Incomplete'}],'chats'),[])
 })
 
 test('owner tabs are linked, accessible and URL-backed without unmounting chat state',()=>{
