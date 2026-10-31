@@ -8,7 +8,9 @@ import { profileCompletionRecommendations } from '../lib/profile/summary.js'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-function completedState(id = 'test-result', date = '2026-10-16T14:00:00.000Z') {
+const daysAgoISO = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+
+function completedState(id = 'test-result', date = daysAgoISO(1)) {
   const definition = getAssessmentDefinition('hh-current-state', 'v2', 'en')
   const answers = Object.fromEntries(definition.questions.map(q => [q.id, 5]))
   return { id, measurementAt: date, ...scoreAssessment(definition, answers) }
@@ -33,12 +35,17 @@ test('portrait suggestions only use verified saved measurements, never missing o
   // 60/45 thresholds were editorial display rules, not psychometric standards.
   assert.deepEqual(measured.strengths, [])
   assert.deepEqual(measured.growth, [])
+
+  // The approved Current State portrait source expires after 14 days. Never
+  // turn a historical observation into a currently measured ray.
+  const expired = buildPortraitRecommendations([completedState('expired', daysAgoISO(15))], 'en')
+  assert.equal(expired.measuredCount, 0)
 })
 
 test('unverified later results cannot be used as current portrait strengths or weaknesses', () => {
-  const old = completedState('old', '2026-10-14T14:00:00.000Z')
+  const old = completedState('old', daysAgoISO(2))
   const tampered = {
-    ...completedState('invalid-latest', '2026-10-17T14:00:00.000Z'),
+    ...completedState('invalid-latest', daysAgoISO(1)),
     contentHash: 'invalid-identity',
   }
   const model = buildPortraitRecommendations([old, tampered], 'en')
