@@ -42,4 +42,8 @@ begin
  return query select true,'reserved'::text,v_id;
 end $$;
 revoke all on function hh_lab_ops.reserve_preview(text) from public, anon, authenticated;
+-- Dedicated least-privilege scheduler role must be created in isolated DB.
+-- Grant only USAGE on hh_lab_ops, SELECT/INSERT on preview_requests,
+-- USAGE on preview_requests_id_seq, and EXECUTE on reserve_preview(text).
+-- Reserve operations must be run by that role, not an application anon key.
 -- Only a dedicated scheduler DB role with explicit grants may call this function.
