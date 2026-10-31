@@ -433,3 +433,11 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
 });
+
+test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/app/messages/messages-page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/client/client-teal.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+});
