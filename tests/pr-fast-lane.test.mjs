@@ -705,6 +705,12 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
 
+test('core cancels only when a synchronize event changes the PR head', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.match(source, /group: hh-pr-core-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
+});
+
 test('report-only production pushes rerun original report progress assertions without repeating Next build', () => {
   const src=workflow('hh-reports-development-program.yml');
   const isolated=src.split('  isolated-unit-lint-build:')[1];
