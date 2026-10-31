@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
@@ -110,6 +110,9 @@ export function CompactLeadCapture({
   const t = copy[locale];
   const pathname = usePathname();
   const [localAddress, setLocalAddress] = useState("");
+  const formRef = useRef<HTMLFormElement | null>(null);
+  // The server renders this form before its client-side event handlers exist.
+  useEffect(() => { formRef.current?.setAttribute("data-compact-hydrated", "true"); }, []);
   const address = contactValue ?? localAddress;
   const [internalFormat, setInternalFormat] = useState(formatOptions?.[0]?.value || "");
   const selectedFormat = selectedFormatValue ?? internalFormat;
@@ -244,7 +247,7 @@ export function CompactLeadCapture({
           </div>
         </div>
       ) : (
-        <form className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
+        <form ref={formRef} className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
           {variant !== "diagnosis" && formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>

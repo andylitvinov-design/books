@@ -516,6 +516,9 @@ async function verifyPublicServiceConversionJourneys(){
       if(request.method()==='POST'&&new URL(request.url()).pathname==='/api/service-enquiries')
        unconsentedPosts++
      })
+     // A visible SSR form can be non-interactive before React hydration.
+     // This waits for the real client mount and retains the invalid-contact assertion.
+     await expect(form).toHaveAttribute('data-compact-hydrated','true',{timeout:15000})
      await form.locator('button[data-compact-channel="whatsapp"]').click()
      await expect(form.locator('input[name="contact"]')).toHaveAttribute('aria-invalid','true')
      await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)

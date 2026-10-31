@@ -70,8 +70,11 @@
 .videoMedia :global(.site-video-player){max-width:100%}
 .videoNote{grid-column:1/-1;margin:0;color:#c9eee7;font-size:11px;line-height:1.5}
 
-/* One full-width testimonial row per person, stacked vertically. */
-.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px}
+/* One full-width testimonial row per person, stacked vertically. Preserve all 12
+   source-backed videos but bound this chapter to one screen, with an accessible
+   internal scroll rather than a 4,000px mobile page section. */
+.reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px;max-height:clamp(280px,48svh,520px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.reviewStack:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
 .reviewCard{display:grid;grid-template-columns:minmax(132px,160px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
 .reviewVideo{min-width:0;position:relative;border-radius:11px;overflow:hidden;align-self:center;background:#e7f4f1}
 .reviewVideo :global(.site-video-player){width:100%;min-width:0;margin:0}

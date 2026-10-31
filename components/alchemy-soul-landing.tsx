@@ -511,7 +511,8 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
-          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list>
+          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list
+            role="region" aria-label={t.reviewsTitle} tabIndex={0}>
             {reviews.map((review) => (
               <article className={styles.reviewCard} key={review.id}
                 data-testimonial-video-id={review.id} data-testimonial-original-audio={review.language}>

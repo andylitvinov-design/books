@@ -48,6 +48,9 @@ export async function setup(){const db=await adminClient();try{
  // order, after public enquiries and practitioner/request fixtures are present.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017181000_hh_academy_energywork_progress.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261018142000_hh_academy_reiki_unified_five_lessons.sql',import.meta.url),'utf8'))
+ // Restore the published course-builder schema and owner-scoped RLS in the
+ // loopback-only fixture; don't create a table shim or modify production.
+ await db.query(await readFile(new URL('../../supabase/migrations/20261021162000_hh_practitioner_course_builder.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261025173000_hh_practitioner_express_reports.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',import.meta.url),'utf8'))
