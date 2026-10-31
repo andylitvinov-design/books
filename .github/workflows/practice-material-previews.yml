@@ -1,6 +1,7 @@
 name: Practitioner material previews isolated build
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/practice-material-preview.jsx'
@@ -37,6 +38,7 @@ on:
       - 'tests/practice-course-materials-navigation.test.mjs'
       - 'tests/practitioner-approved-v4-ui.test.mjs'
       - '.github/workflows/practice-material-previews.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -44,6 +46,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   unit-types-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -62,6 +65,10 @@ jobs:
       - name: ESLint of changed interactive panels
         run: npx --no-install eslint components/app/practice-workspace.jsx components/app/practice-materials.jsx components/app/practitioner-course-builder.jsx components/public-practitioner-course-player.jsx lib/practitioners/course-contracts.js lib/practitioners/course-repository.js
       - name: TypeScript regression
+        # Exact production PR TypeScript/Next compilation is owned by the protected Core gate.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build
+        # Exact production PR TypeScript/Next compilation is owned by the protected Core gate.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

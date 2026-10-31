@@ -2,6 +2,7 @@ name: Holistic House public event referral contract
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'lib/organic-event-referrals.js'
       - 'components/contact-channel-chooser.tsx'
@@ -52,6 +53,7 @@ concurrency:
 
 jobs:
   tracked-handoff-regression:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -69,4 +71,6 @@ jobs:
       - name: Event-source CRM and owner analytics regressions
         run: node --test tests/crm-event-channel-attribution.test.mjs tests/crm-marketing.test.mjs tests/gbp-v3-toronto.test.mjs
       - name: Check TypeScript without publishing
+        # Exact production PR TypeScript/Next compilation is owned by the protected Core gate.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit

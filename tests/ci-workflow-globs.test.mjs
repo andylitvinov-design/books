@@ -144,3 +144,51 @@ test('Public Services exact-head impact routing preserves all source and browser
   }
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
 });
+
+test('lighter specialist CI preserves contract tests, Ready rechecks, and protected Core compilation', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /name: release-ready/);
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /Full TypeScript check/);
+  assert.match(core, /Exact proposed release production build/);
+  const compileGuard = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  const draftGuard = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
+  const readyEvents = 'types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const suites = [
+    ['hh-practice-telegram-digest.yml', ['offline-contracts', 'production-build'], ['Next.js production build and TypeScript']],
+    ['practice-material-previews.yml', ['unit-types-build'], ['TypeScript regression', 'Production Next.js build']],
+    ['hh-messages-wellness-v2.yml', ['focused'], ['TypeScript check']],
+    ['reiki-enquiry-capture-ci.yml', ['reiki-capture'], ['Type-check Next app']],
+    ['hh-event-referral-contract.yml', ['tracked-handoff-regression'], ['Check TypeScript without publishing']],
+  ];
+  for (const [file, jobs, steps] of suites) {
+    const source = workflow(file);
+    assert.ok(source.includes(readyEvents), file + ': Draft must rerun automatically on Ready');
+    assert.match(source, /node --test/, file + ': focused domain contracts must remain');
+    assert.doesNotMatch(source, /continue-on-error:\\s*true/, file + ': no weakened failures');
+    for (const job of jobs) {
+      assert.ok(source.includes('  ' + job + ':\\n    ' + draftGuard),
+        file + ': expensive work must skip Draft, not Ready');
+    }
+    for (const step of steps) {
+      const start = source.indexOf('      - name: ' + step + '\\n');
+      assert.ok(start >= 0, file + ': original compile step must be retained: ' + step);
+      const next = source.indexOf('\\n      - ', start + 1);
+      const body = source.slice(start, next < 0 ? undefined : next);
+      assert.ok(body.includes(compileGuard), file + ': Core must own production PR compile: ' + step);
+    }
+  }
+  for (const file of [
+    'hh-practice-telegram-digest.yml', 'practice-material-previews.yml',
+    'hh-messages-wellness-v2.yml', 'reiki-enquiry-capture-ci.yml',
+  ]) assert.match(workflow(file), /^  workflow_dispatch:/m, file + ': manual full verification preserved');
+  assert.match(workflow('hh-event-referral-contract.yml'), /^  push:/m, 'production push still verifies TypeScript');
+  const gauntlet = workflow('hh-gauntlet-loop.yml');
+  assert.ok(gauntlet.includes(readyEvents));
+  assert.ok(gauntlet.includes('  offline-contract:\\n    ' + draftGuard));
+  assert.match(gauntlet, /node --test tests\/hh-gauntlet-loop\.test\.mjs/);
+  assert.match(gauntlet, /HH_TARGET_BASE:.*github\.event\.pull_request\.base\.ref/);
+  assert.ok(gauntlet.includes('if [[ "$GITHUB_EVENT_NAME" != pull_request || "$HH_TARGET_BASE" != codex/public-book-library ]]; then'));
+  assert.match(gauntlet, /^  push:/m);
+  assert.match(gauntlet, /^  workflow_dispatch:/m);
+});

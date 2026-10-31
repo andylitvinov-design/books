@@ -2,6 +2,7 @@ name: Reiki enquiry capture verification
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - "components/academy-course-capture.tsx"
@@ -27,6 +28,7 @@ on:
       - "tests/reiki-unified-order-capture.test.mjs"
       - ".github/workflows/reiki-enquiry-capture-ci.yml"
 
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -36,6 +38,7 @@ concurrency:
 
 jobs:
   reiki-capture:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -62,6 +65,8 @@ jobs:
           tests/energywork-kundalini-ygg-study.test.mjs
           tests/holistic-support-consultation-tests-separation.test.mjs
       - name: Type-check Next app
+        # Exact production PR TypeScript/Next compilation is owned by the protected Core gate.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Lint changed components
         run: >-
