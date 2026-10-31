@@ -95,15 +95,15 @@ test('one unconditional fail-closed release-ready gate protects core code valida
 });
 
 test('PR automation policy and agent entry point require specialist safety gates', () => {
-  const docs = readFileSync(join(root, 'docs', 'operations', 'PR_FAST_LANE_20261029.md'), 'utf8');
+  const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-  assert.match(docs, /necessary but not sufficient/);
+  assert.match(docs, /sole required GitHub status is `release-ready`/);
+  assert.match(docs, /exact PR HEAD and current production BASE/);
+  assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
   }
-  assert.match(docs, /GitHub administrator setup|administrator setup/i);
-  assert.match(agents, /PR_FAST_LANE_20261029\.md/);
-  assert.match(agents, /release-ready/);
+  assert.match(agents, /CI_RELEASE_POLICY\.md/);
 });
 
 // Exercise only the classifier shell block in a disposable synthetic Git repository.
@@ -179,6 +179,11 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
+  // Public voice API is owned by Mandala real media/provider E2E; other
+  // public-service paths retain their normal independent checks.
+  const voiceRoute='app/api/holistic-support/voice/route.js';
+  assert.equal(covers(service,voiceRoute),false,'voice-only API not Public Services');
+  assert.equal(covers(mandala,voiceRoute),true,'voice-only API requires Mandala real WAV/MP4 tests');
   for(const file of [
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',

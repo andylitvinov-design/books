@@ -23,10 +23,8 @@ if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft =
 - Production `push` and `workflow_dispatch` remain unchanged and execute the full job.
 - The PR Sweep Guard workflow retains its short regression tests and validates this policy.
 
-## Mandatory safety
-A skipped job is NOT evidence of a tested change. GitHub may show a skipped job as successful; therefore **never use draft-skippable browser jobs as a sole global release gate**. Merge authorization must also require a Ready (non-Draft) PR, exact current HEAD/base, successful applicable *executed* specialist CI and required independent review for security, billing, private user data or migrations. Do not enable native GitHub Auto-merge until a complete enforced specialist aggregate and branch protection exist.
-
-Do not disable browser coverage in Ready PRs, weaken assertions, change runtime application behavior or bypass RLS/auth/privacy checks. This change is not a substitute for existing Fast Lane PR #2526 or the baseline CI repair #2535.
+## Safety and current policy
+A skipped job is not evidence that a browser test ran. Browser coverage and assertions remain intact for Ready PRs and production/manual events. For release requirements see [CI_RELEASE_POLICY.md](CI_RELEASE_POLICY.md).
 
 ## Measurement and next waves
-After merge compare seven-day counts and medians: queued workflows, draft browser runner minutes, Ready CI time, cancellation ratio, repeat CI per head, green-to-merge latency and post-merge regressions. Expand the same policy to other browser workflows only after confirming this first wave produces no missing Ready checks or unsafe skipped release tests. Keep one PR owner and do not re-run unchanged failed checks.
+After merge compare seven-day counts and medians: queued workflows, draft browser runner minutes, Ready CI time, cancellation ratio, repeat CI per head, green-to-merge latency and post-merge regressions. Expand the same policy to other browser workflows only after confirming this first wave produces no missing Ready checks or unsafe skipped release tests.

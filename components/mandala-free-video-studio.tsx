@@ -8,6 +8,7 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -38,7 +39,9 @@ type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
 type Aspect = "square" | "portrait" | "landscape";
 type Quality = "hd" | "fullhd";
-type Result = { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string };
+type Result =
+  | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: never }
+  | { url: string; extension: "mp4"; bytes: 0; mime: "video/mp4"; mode: "catalog" };
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
@@ -1580,6 +1583,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? moneyScenes.slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getRealMoneyFilm(item.id).poster}))
     : otherVideoScenes[theme].slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getThemedRealFilm(theme,item.id)?.poster||null}));
   const jobRef = useRef<Job | null>(null);
+  const firstVideoRequestRef=useRef(false);
+  useEffect(()=>{
+    if(!result||!firstVideoRequestRef.current)return;
+    firstVideoRequestRef.current=false;
+    window.requestAnimationFrame(()=>document.getElementById("personal-video-result")?.scrollIntoView({
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",
+    }));
+  },[result]);
   const aliveRef = useRef(false);
   const preparingRef = useRef(false);
   const source = backgroundOnly ? BACKGROUND_CLIP : photoUrl || frameUrl || BACKGROUND_CLIP;
@@ -1599,7 +1610,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
-  const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
+  // For background-only video, async mandala/photo frame updates are
+  // intentionally unrelated. Do not abort an active free export when
+  // a decorative image finishes loading in a different editor panel.
+  const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
@@ -1671,7 +1685,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, []);
 
   useEffect(() => () => {
-    if (result?.url) URL.revokeObjectURL(result.url);
+    if (result?.url && result.mode!=="catalog") URL.revokeObjectURL(result.url);
   }, [result]);
   // A completed local recording lives in the existing result pane.
   // Reveal that pane before scrolling; a collapsed result is not delivery.
@@ -1774,9 +1788,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
   },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 
-  // Invalidate stale exports, but DO NOT cancel a new clip the visitor just
-  // tapped: selection itself is the explicit playback gesture.
-  useEffect(() => {
+  // A freshly edited storyboard invalidates only an OLD recording. Run the
+  // invalidation before paint/click so a delayed passive effect cannot cancel
+  // the visitor's new MediaRecorder session on the next animation frame.
+  useLayoutEffect(() => {
     const job=jobRef.current;
     if (job) stopJob(job, true);
     setResult(null);
@@ -1896,7 +1911,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
       if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
-        setNotice(t.unsupported);
+        // Linux Playwright WebKit and some Safari releases cannot capture
+        // Canvas frames. Offer a REAL, approved source MP4 rather than a fake
+        // downloaded film, a silent paid request or an endless spinner.
+        // The source clip is not the promised 4-shot composition. Disclose
+        // that exclusions, captions, custom duration and music are NOT baked
+        // into this fallback. Never silently discard attached personal audio.
+        const first=cinematicPlan?.shots[0];
+        const film=first&&cinematicPlan?.version==="hh-cinematic-storyboard-v1"
+          ?firstPartyFilmFor(first.theme,first.sceneId):null;
+        if(!backgroundOnly||attachedAudio||caption||affirmations.enabled||
+          !film?.src.startsWith("/videos/holistic-house/")){
+          setNotice(t.unsupported);
+          return;
+        }
+        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        // No programmatic network access in the private local video editor.
+        // A same-origin approved static MP4 is served by the ordinary anchor
+        // and native video player; no JS upload/fetch, paid call or hidden mix.
+        setResult({
+          url:film.src,extension:"mp4",bytes:0,
+          mime:"video/mp4",mode:"catalog",
+        });
+        setProgress(100);
+        setNotice(locale==="ru"
+          ?"Браузер не поддерживает запись Canvas. Можно скачать исходный MP4 выбранной сцены. Настройки формата, длительности, звука и надписей к нему не применены."
+          :locale==="es"
+          ?"El navegador no puede grabar Canvas. Puedes descargar el MP4 original sin los ajustes de formato, duración, música ni texto."
+          :"Canvas recording is unavailable. Download the selected original MP4, without custom aspect, duration, music or captions.");
         return;
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
@@ -2166,7 +2208,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
   }
   async function shareVideo(){
-    if(!result)return;
+    if(!result||result.mode==="catalog")return;
     const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
     if(typeof navigator.share!=="function" ||
       (typeof navigator.canShare==="function" && !navigator.canShare({files:[file]}))){
@@ -2340,6 +2382,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
     window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
+  const applyFirstVideoDraft=(
+    draft:{plan:CinematicStoryboard;wish:string;theme:VideoTheme;aspect:Aspect;durationSeconds:20|30|60},
+    prefs:{motion:Speed;music:"none"|"harmony"|"meditation";caption:boolean},
+  )=>{
+    if(recording||preparing)return;
+    clearUploadedAudio();
+    setTheme(draft.theme);setVideoCategory(draft.theme);
+    const first=draft.plan.shots[0];
+    if(draft.theme==="money")setMoneyScene(first?.theme==="money"
+      ?first.sceneId as MoneySceneId:"golden-rain");
+    else{
+      setMoneyScene(null);
+      setOtherScene(first?.theme===draft.theme
+        ?first.sceneId as LocalSceneId:otherVideoScenes[draft.theme][0].id);
+    }
+    setBackgroundOnly(true);
+    setAspect(draft.aspect);
+    setDuration(draft.durationSeconds as (typeof durations)[number]);
+    setSpeed(prefs.motion);
+    setCinematicPlan(draft.plan);
+    setMusic(prefs.music);
+    setAttachedAudio(prefs.music==="none"?null:{kind:"preset",id:prefs.music});
+    setAudioAuto(false);setAudioDurationInvalid(false);setMusicWarning("");
+    setCaptionMode(prefs.caption?"custom":"none");
+    if(prefs.caption)setCustomCaption(captionFromWish(draft.wish));
+    setPreviewPlaying(false);setSuggestion("");
+  };
   const createQuickVideo = () => {
     if(narrationInvalid){
       setNotice(locale==="ru"?"Аффирмации или длительность изменились. Создайте голос заново.":
@@ -2390,6 +2459,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
           <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
         </nav>
+        <MandalaFirstVideoStart locale={locale} wish={wish}
+          disabled={recording||preparing} preparing={preparing} recording={recording}
+          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
+          onWishChange={value=>{setWish(value);setSuggestion("");}}
+          onApply={applyFirstVideoDraft}
+          onCreate={()=>{
+            firstVideoRequestRef.current=canGenerate;
+            createQuickVideo();
+          }}
+          onCancel={()=>{
+            const job=jobRef.current;
+            if(job)stopJob(job,true);
+            firstVideoRequestRef.current=false;
+          }}/>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
             <h2 id="video-quick-heading">{approved.introTitle}</h2>
@@ -3818,21 +3901,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
       </details>
-      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}>
+      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
+        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}>
         <h3>{ui.videoPreview}</h3>
         {result ? (
           <>
+            {result.mode==="catalog"?<p className={videoStyles.warning}
+              data-video-catalog-fallback role="note">
+              {locale==="ru"
+                ?"Это исходный готовый MP4 из каталога, а не персонально смонтированное видео. Воспользуйтесь браузером с записью Canvas, чтобы создать свой ролик с выбранными параметрами."
+                :locale==="es"
+                ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
+                :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
+            </p>:null}
             <video src={result.url} controls playsInline preload="metadata"
               data-mandala-video-preview/>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 data-mandala-video-download>
-                <Download size={18} aria-hidden="true"/>{ui.save} · {Math.max(1,Math.round(result.bytes/1024))} KB
+                <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
+                  ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
+                  :" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
               </a>
-              <button type="button" onClick={shareVideo} data-video-share>
+              {result.mode!=="catalog" ? <button type="button"
+                onClick={shareVideo} data-video-share>
                 <Share2 size={18} aria-hidden="true"/>{ui.share}
-              </button>
+              </button> : null}
             </div>
             <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
               aria-labelledby="video-post-support-title">
