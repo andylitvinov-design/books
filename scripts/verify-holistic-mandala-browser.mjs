@@ -1170,15 +1170,22 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-photo-enabled]").uncheck();
           await page.locator("[data-video-affirmations-feature]").uncheck();
           const director=page.locator("[data-cinematic-director]");
-          const advanced=page.locator("[data-video-quick-legacy]");
-          if(!(await advanced.evaluate(el=>el.open)))
-            await advanced.locator(":scope > summary").click();
           await director.waitFor({state:"visible",timeout:12000});
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
           if(await director.getAttribute("data-director-open")!=="true")await openDirector.click();
           assert.equal(await director.getAttribute("data-director-open"),"true");
+          const params=director.locator("[data-video-parameters-accordion]");
+          assert.equal(await params.locator("[data-video-parameter-group]").count(),5,
+            "all five owner-approved accordion sections are visible");
+          assert.equal(await params.locator("[data-video-parameter-group]").first().getAttribute("data-video-parameter-group"),"principal",
+            "video parameters must be before personalization");
+          assert.equal(await params.locator("[data-video-parameter-group]").nth(1).getAttribute("data-video-parameter-group"),"personalization");
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+            "three compact video rows show before optional expansion");
+          const refinements=director.locator("[data-director-refine-tools]");
+          await refinements.locator(":scope > summary").click();
           assert.equal(await director.locator('[data-director-field="theme"],[data-director-field="difficulty"],[data-director-field="goal"],[data-director-field="profile"]').count(),4,
-            "four compact main director fields");
+             "private-profile and creative fields still exist behind their optional disclosure");
           assert.equal(await director.locator("[data-director-visual-preferences] > summary").count(),1);
           await director.locator('[data-director-field="profile"]').click();
           assert.equal(await page.locator("[data-director-profile-consent]").isChecked(),false,
@@ -1192,9 +1199,9 @@ const runEngine = async ([engine, browserType]) => {
           const newVisualIdea=director.locator('[data-director-visual-idea] textarea');
           await newVisualIdea.fill("UNSENT_TOKEN_8257: белый орёл летит над горами и превращается в созвездие");
           assert.equal(await director.locator('[data-director-category]').count(),5,
-            "the five question categories remain compact tabs, not five mandatory forms");
-          assert.ok((await director.locator('[data-director-contextual-questions] fieldset').count())<=2,
-            "a complete visual idea never expands into a 96-question form");
+             "five accordion category headers, not a 49-question mandatory form");
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+             "a complete visual intent does not force unrelated questions");
           await director.locator('[data-director-create-plan]').click();
           const reference=director.locator('[data-director-reference-pack]');
           assert.match(await reference.locator('[data-director-recognized-visuals]').innerText(),/ор[её]л/i);
@@ -1213,29 +1220,34 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(packet.creativeReferencePack.externalTransferApproved,false);
           assert.ok(!JSON.stringify(packet).includes("UNSENT_TOKEN_8257"));
           await newVisualIdea.fill("UNSENT_TOKEN_8257: красивая история");
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),2,
-            "only two contextual clarifications when subject and action are unclear");
-          const customSubject=director.locator('[data-director-contextual-questions] fieldset').first().locator('input');
+          await director.locator('[data-director-category="personalization"]').click();
+          assert.equal(await params.locator("[data-director-question]").count(),3,
+             "personalization opens three context-aware choices");
+          const subjectRow=director.locator('[data-director-question="PERSONAL_05"]');
+          await subjectRow.locator('details > summary').click();
+          const customSubject=subjectRow.locator('input');
           await customSubject.pressSequentially('Свой герой');
           assert.equal(await customSubject.inputValue(),'Свой герой',
-            'custom answer stays mounted and editable across successive keystrokes');
+            'a custom answer remains editable across successive keystrokes');
           await customSubject.fill('');
-          await director.locator('[data-director-contextual-questions] button:has-text("Другой герой")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Животное или птица")').click();
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
-            "a chosen animal asks only for its identity before returning to the other missing details");
-          await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').click();
-          await director.locator('[data-director-contextual-questions] button:has-text("Путешествует")').click();
+          await subjectRow.getByRole('button',{name:'Другой герой'}).click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_06"]').count(),1,
+            "another character reveals the relevant form question");
+          await director.locator('[data-director-question="PERSONAL_06"]').getByRole('button',{name:'Животное или птица'}).click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_07"]').count(),1,
+            "an animal requires the original identity clarification");
+          await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Орёл'}).click();
+          await director.locator('[data-director-question="PERSONAL_12"]').getByRole('button',{name:'Путешествует'}).click();
           await newVisualIdea.fill("Без орла, нет другого героя");
-          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),1,
-            "revised exclusion invalidates only the contradicted subject, preserving the action");
-          assert.equal(await director.locator('[data-director-contextual-questions] button:has-text("Орёл")').getAttribute('aria-pressed'),'false');
-          await director.locator('[data-director-contextual-questions] button:has-text("Волк")').click();
+          assert.equal(await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Орёл'}).getAttribute('aria-pressed'),'false',
+            "explicit exclusion removes only the contradicted bird");
+          await director.locator('[data-director-question="PERSONAL_07"]').getByRole('button',{name:'Волк'}).click();
           const savedAnimal=director.locator('[data-director-answer="PERSONAL_07"][data-director-answer-scope="global"]');
           assert.match(await savedAnimal.innerText(),/Волк/);
-          await savedAnimal.getByRole('button',{name:'Изменить'}).click();
+          await savedAnimal.getByRole('button',{name:'Дельфин'}).click();
           await savedAnimal.getByRole('button',{name:'Волк'}).click();
-          assert.match(await savedAnimal.innerText(),/Волк/,'confirmed answer remains visible after editing');
+          assert.match(await savedAnimal.innerText(),/Волк/,
+            "confirmed choices remain visible and can be corrected directly");
           await director.locator('[data-director-create-plan]').click();
           assert.match(await director.locator('[data-director-recognized-visuals]').innerText(),/волк/i);
           assert.equal(await director.locator("[data-director-shot]").count(),4,
@@ -1306,10 +1318,10 @@ const runEngine = async ([engine, browserType]) => {
             'a 60-second storyboard contains six scenes');
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/60 сек/);
           await director.locator('[data-director-category="advanced"]').click();
-          const moreQuestions=director.getByRole('button',{name:'Показать ещё вопросы',exact:true});
+          const moreQuestions=director.getByRole('button',{name:'Показать все вопросы',exact:true});
           await moreQuestions.click();
-          assert.ok(await director.locator('[data-director-contextual-questions] fieldset').count()>4,
-            'later optional creative questions are reachable without answering earlier ones');
+          assert.equal(await director.locator('[data-director-contextual-questions] fieldset').count(),11,
+            'all eleven original advanced questions remain available on demand');
           await director.locator('[data-director-category="principal"]').click();
           const durationQuestion=director.locator('fieldset').filter({hasText:'Какой длины нужен ролик?'});
           await durationQuestion.getByRole('button',{name:'30 секунд',exact:true}).click();

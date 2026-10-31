@@ -2883,6 +2883,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
 
 
+      {/* Approved 49-question compact five-section panel remains visible without the legacy editor. */}
+      <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
+        onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
+        onMusicPreference={choice=>{
+          if(uploadedAudio)return;
+          setAudioAuto(false);setMusic(choice==="calm"?"meditation":choice==="energetic"?"energy":"none");
+          setMusicWarning("");
+        }}
+        onCaptionPreference={choice=>setCaptionMode(choice==="none"?"none":"theme")}
+        therapyMode={studioMode==="therapy"}
+        onInvalidateStoryboard={()=>setCinematicPlan(null)}
+        disabled={recording||preparing} onApplyStoryboard={plan=>{
+          // Four or six locally rendered shots are approved source-backed
+          // motifs; raw client wishes, profile scores and photos remain here.
+          setTheme(plan.theme);setVideoCategory(plan.theme);
+          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
+            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
+          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
+            ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
+          setAspect(plan.aspect);
+          setDuration(plan.durationSeconds as (typeof durations)[number]);
+          setCinematicPlan(plan);
+          setPreviewPlaying(false);
+          setNotice(locale==="ru"
+            ?(plan.shotCount===6?"Шесть сцен подготовлены. Нажмите «Создать видео».":"Четыре сцены подготовлены. Нажмите «Создать видео».")
+            :locale==="es"?(plan.shotCount===6?"Seis escenas listas. Pulsa Crear vídeo.":"Cuatro escenas listas. Pulsa Crear vídeo.")
+            :plan.shotCount===6?"Six shots are ready. Select Create video to render them.":"Four shots are ready. Select Create video to render them.");
+          document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
+        }}/>
+
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
         open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
         <summary><SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
@@ -3557,34 +3587,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </details>
       </section>
 
-      <MandalaCinematicDirector locale={locale} theme={theme} intentText={wish}
-        onIntentTextChange={value=>{setWish(value);setSuggestion("");setCinematicPlan(null);}}
-        onMusicPreference={choice=>{
-          if(uploadedAudio)return;
-          setAudioAuto(false);setMusic(choice==="calm"?"meditation":choice==="energetic"?"energy":"none");
-          setMusicWarning("");
-        }}
-        onCaptionPreference={choice=>setCaptionMode(choice==="none"?"none":"theme")}
-        therapyMode={studioMode==="therapy"}
-        onInvalidateStoryboard={()=>setCinematicPlan(null)}
-        disabled={recording||preparing} onApplyStoryboard={plan=>{
-          // Four or six locally rendered shots are approved source-backed
-          // motifs; raw client wishes, profile scores and photos remain here.
-          setTheme(plan.theme);setVideoCategory(plan.theme);
-          if(plan.theme==="money")setMoneyScene(plan.shots[0].theme==="money"
-            ? plan.shots[0].sceneId as MoneySceneId:"golden-rain");
-          else{setMoneyScene(null);setOtherScene(plan.shots[0].theme===plan.theme
-            ? plan.shots[0].sceneId as LocalSceneId:otherVideoScenes[plan.theme][0].id);}
-          setAspect(plan.aspect);
-          setDuration(plan.durationSeconds as (typeof durations)[number]);
-          setCinematicPlan(plan);
-          setPreviewPlaying(false);
-          setNotice(locale==="ru"
-            ?(plan.shotCount===6?"Шесть сцен подготовлены. Нажмите «Создать видео».":"Четыре сцены подготовлены. Нажмите «Создать видео».")
-            :locale==="es"?(plan.shotCount===6?"Seis escenas listas. Pulsa Crear vídeo.":"Cuatro escenas listas. Pulsa Crear vídeo.")
-            :plan.shotCount===6?"Six shots are ready. Select Create video to render them.":"Four shots are ready. Select Create video to render them.");
-          document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"});
-        }}/>
+
 
       <details className={videoStyles.extraControls} data-video-extra-settings>
         <summary>{layout.extraSettings}</summary>
