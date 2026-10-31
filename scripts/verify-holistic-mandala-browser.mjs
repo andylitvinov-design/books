@@ -767,7 +767,18 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        // New strategy is a DRAFT: client can inspect the suggestion first,
+        // while the actual Canvas/MediaRecorder words stay exactly as approved.
+        const previewBeforeApprove=await compactHypno.locator("[data-hypno-preview]").innerText();
+        assert.match(await compactHypno.locator('[data-hypno-phrase="0"]').innerText(),
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.doesNotMatch(previewBeforeApprove,
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i,
+          "A draft must not silently change the export");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),
+          /I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i,
+          "Only explicit approval is allowed to change live video text");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
