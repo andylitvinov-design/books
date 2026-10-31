@@ -433,12 +433,24 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-style="0"]').click();
         const detailed=page.locator("[data-video-quick-legacy]");
         await detailed.waitFor({state:"visible",timeout:12000});
-        // Earlier visitor steps can leave the native disclosure open already.
-        // A blind summary click then closes it and hides the duration controls.
+        // React controls this native <details> via onToggle. After a busy
+        // real-media interaction, a delayed React commit can close a correctly
+        // opened disclosure. Only repeat an actual user summary click if the
+        // native open property remains false; never mutate it in the test.
+        const detailedSummary=detailed.locator(':scope > summary');
         if(!(await detailed.evaluate(element=>element.open))){
-          await detailed.locator(':scope > summary').click();
+          await detailedSummary.click();
         }
-        await expect(detailed).toHaveAttribute("open","",{timeout:10000});
+        try {
+          await expect(detailed).toHaveJSProperty("open",true,{timeout:10000});
+        } catch(firstOpenError) {
+          if(await detailed.evaluate(element=>element.open))throw firstOpenError;
+          console.warn(engine+" "+locale+" "+width+"px advanced disclosure not committed; retrying one real summary click");
+          await detailedSummary.click();
+          await expect(detailed).toHaveJSProperty("open",true,{timeout:15000});
+        }
+        await expect(detailed.locator('[data-video-quick-duration="30"]'))
+          .toBeVisible({timeout:15000});
         assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "Director adds the 15-second option while preserving 10/20/30/60");
