@@ -381,6 +381,42 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
     changed,packageImpact:impact}),/PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
 });
 
+test('pinned parser manifests are CI-scoped but all other dependency changes remain full-scope',()=>{
+  const read=(filePaths)=>"on:\n  pull_request:\n    paths:\n"+filePaths.map(path=>"      - '"+path+"'\n").join('');
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const app='.github/workflows/hh-app-r1.yml';
+  const guard='.github/workflows/hh-pr-sweep-guard.yml';
+  const source=new Map([
+    [billing,read(['package.json','package-lock.json','lib/billing/**'])],
+    [app,read(['package.json','package-lock.json','lib/app/**'])],
+    [guard,read(['lib/ci/fast-ui-parser/**','lib/ci/specialist-aggregate.mjs'])],
+  ]);
+  const pinned=[
+    'lib/ci/fast-ui-parser/package.json',
+    'lib/ci/fast-ui-parser/package-lock.json',
+  ];
+  const impact=classifyPackageImpact({changed:pinned,basePackage:'{}',currentPackage:'{}'});
+  assert.deepEqual(impact,{mode:'none',reason:'ISOLATED_CI_PARSER_MANIFESTS',workflows:[]});
+  assert.deepEqual(expectedWorkflows({base:source,current:source,changed:pinned,packageImpact:impact}),
+    [guard], 'isolated static CI parser must not require unrelated DB, billing or App R1');
+  const mixed=[...pinned,'lib/billing/checkout.js'];
+  assert.deepEqual(expectedWorkflows({base:source,current:source,changed:mixed,
+    packageImpact:classifyPackageImpact({changed:mixed})}),[billing,guard],
+    'a real billing source must still require billing acceptance');
+  for(const unsafe of [
+    ['package-lock.json',...pinned],
+    ['package.json',...pinned],
+    ['lib/other/package-lock.json',...pinned],
+    ['lib/other/package.json',...pinned],
+  ]) {
+    const outcome=classifyPackageImpact({changed:unsafe,basePackage:'{}',currentPackage:'{}'});
+    assert.equal(outcome.mode,'full','unknown and root dependencies must stay full scope: '+unsafe.join(','));
+    const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
+    assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
+      'root/unknown manifest change must retain application specialists');
+  }
+});
+
 test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
   const services='.github/workflows/hh-public-services-production.yml';
   const mandala='.github/workflows/holistic-support-mandala.yml';
