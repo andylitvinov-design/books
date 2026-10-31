@@ -47,6 +47,10 @@ test('website leads keep private relay contact isolated and use explicit externa
  assert.match(inbox,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}/)
  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
  assert.match(reply,/publicEnquiryReplyHandoffs\(/)
+ // The composer must remain available for contactless enquiries as a copyable draft.
+ assert.match(reply,/<textarea /)
+ assert.match(reply,/disabled=\{!hasDraft\}/)
+ assert.doesNotMatch(reply,/\{\(hasEmail\|\|hasPhone\)\&\&<>/)
  assert.match(reply,/mailto|emailUrl/)
  assert.match(reply,/whatsAppUrl/)
  assert.doesNotMatch(reply,/fetch\(|action:'send'|setSent\(/)
