@@ -1499,6 +1499,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  // This is a published Russian-language introduction, NOT a generated client video.
+  // EN visibly labels its RU audio until an approved English master is available.
+  const [introPlaying,setIntroPlaying] = useState(false);
+  const introVideoId = locale==="es" ? null : "P9Wvo3gEY6U";
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
@@ -1801,6 +1805,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setNotice("");
   }, [signature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
+  // Changing the film goal or editor mode returns to the real local composer.
+  useEffect(()=>setIntroPlaying(false),[theme,studioMode]);
 
 
   // Switch actual HTMLVideoElement decoders on the identical storyboard clock
@@ -2246,7 +2252,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   const selectCategory=(next:VideoCategory)=>{
-    setCinematicPlan(null);
+    setCinematicPlan(null);setIntroPlaying(false);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
     // A visitor-picked quick affirmation follows their selected video topic;
     // arbitrary private custom lines are never overwritten by changing a topic.
@@ -2288,6 +2294,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const startFromHero=()=>{
     if(recording||preparing)return;
+    setIntroPlaying(false);
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
@@ -2344,7 +2351,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const quickPickStyle = (index:number) => {
     if(recording||preparing)return;
-    setCinematicPlan(null);
+    setCinematicPlan(null);setIntroPlaying(false);
     setQuickStyleIndex(index);
     setBrightness(index===1||index===5?"bright":"soft");
     setSpeed(index===2||index===5?"dynamic":"slow");
@@ -2391,6 +2398,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   )=>{
     if(recording||preparing)return;
     clearUploadedAudio();
+    setIntroPlaying(false);
     setTheme(draft.theme);setVideoCategory(draft.theme);
     const first=draft.plan.shots[0];
     if(draft.theme==="money")setMoneyScene(first?.theme==="money"
@@ -2564,8 +2572,47 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             height={formatDimensions(aspect,"hd")[1]} data-mandala-cinematic-canvas
             aria-label={layout.previewTitle}/>
         </div>
+
         <div className={videoStyles.heroShade} aria-hidden="true"/>
-        <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
+        {introVideoId ? (
+          introPlaying ? (
+            <div className={videoStyles.therapyIntroOverlay} data-video-therapy-intro="playing"
+              data-intro-spoken-locale="ru">
+              <iframe
+                className={videoStyles.therapyIntroFrame}
+                src={`https://www.youtube-nocookie.com/embed/${introVideoId}?autoplay=1&playsinline=1&rel=0`}
+                title={locale==="ru"?"Holistic House — о видеотерапии (русский)":
+                  "Holistic House — video therapy presentation (Russian audio)"}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
+              />
+              <button type="button" className={videoStyles.therapyIntroClose}
+                data-video-therapy-intro-close
+                onClick={()=>setIntroPlaying(false)}>
+                {locale==="ru"?"Вернуться к своему видео":"Back to my video"}
+              </button>
+              <a className={videoStyles.therapyIntroExternal}
+                href={`https://www.youtube.com/watch?v=${introVideoId}`}
+                target="_blank" rel="noopener noreferrer">
+                YouTube ↗
+              </a>
+            </div>
+          ) : (
+            <button className={videoStyles.therapyIntroLaunch} type="button"
+              data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
+              disabled={recording||preparing}
+              onClick={()=>{
+                premiumVideoRef.current?.pause();
+                setPreviewPlaying(false);
+                setIntroPlaying(true);
+              }}>
+              <Play size={16} fill="currentColor" aria-hidden="true"/>
+              <span>{locale==="ru"?"О видеотерапии · 52 сек":
+                "About video therapy · Russian audio"}</span>
+            </button>
+          )
+        ) : null}
+        {!introPlaying && <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
           data-video-preview-toggle aria-pressed={previewPlaying}
           aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
           title={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
@@ -2573,7 +2620,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onClick={()=>{if(previewPlaying)setPreviewPlaying(false);else openAffirmationPreview();}}>
           {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
-        </button>
+        </button>}
       </section>
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls aria-label={locale==="ru"?"Настройки видео":locale==="es"?"Ajustes del vídeo":"Video controls"}>
         {([
