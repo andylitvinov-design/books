@@ -48,7 +48,16 @@ test('missing, malformed, outside-range scores and dates do not produce fabricat
       section('ok', { value: 0 }),
     ],
   }, { measurementAt: 'bad-date' })
-  assert.deepEqual(overview.preview.map(item => item.score), [null, null, null])
+  // A valid measured zero is ranked before invalid rows, not fabricated.
+  assert.deepEqual(overview.preview.map(item => item.key), ['ok', 'bad', 'outside'])
+  assert.deepEqual(overview.preview.map(item => item.score), ['0 / 0–10', null, null])
+  // Preserve the separate guarantee that every malformed value stays absent.
+  const invalidOnly = assessmentResultOverview({ sections: [
+    section('bad', { value: null }),
+    section('outside', { value: 12 }),
+    section('non-numeric', { value: 'high' }),
+  ] }, { measurementAt: 'bad-date' })
+  assert.deepEqual(invalidOnly.preview.map(item => item.score), [null, null, null])
   assert.equal(overview.additionalCount, 1)
   assert.equal(overview.measurementDateLabel, null)
   assert.match(overview.purpose, /compatible data/)
