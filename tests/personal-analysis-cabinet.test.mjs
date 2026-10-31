@@ -19,7 +19,7 @@ test('both authorized cabinets now keep analysis reports in Profile; legacy link
   assert.match(route, /redirect\('\/' \+ locale \+ '\/app\/portrait#personal-reports'\)/)
   assert.doesNotMatch(google, /\['analysis', locale === 'ru'/)
   assert.match(google, /<ProfileDomains locale=\{locale\} mode="account"/)
-  assert.match(google, /reportsContent=\{<PersonalAnalysisPanel key=\{data\.account\.id\}/)
+  assert.match(google, /reportsContent=\{<><PersonalAnalysisPanel key=\{data\.account\.id\}/)
   assert.match(google, /embedded \/>\}/)
   assert.match(profile, /id="personal-reports"/)
   assert.match(profile, /\{reportsContent\}/)
