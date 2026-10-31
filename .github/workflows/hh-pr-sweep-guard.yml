@@ -47,5 +47,5 @@ jobs:
         with:
           node-version: '22'
       - name: Install locked parser without lifecycle scripts
-        run: npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
+        run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
       - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs

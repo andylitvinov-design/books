@@ -142,7 +142,7 @@ export function loadTrustedTypescript(base) {
   try {
     const read=path=>execFileSync('git',['show',base+':'+path],{encoding:'utf8',maxBuffer:100_000,stdio:['ignore','pipe','pipe']});
     const manifest=read('lib/ci/fast-ui-parser/package.json');
-    const lock=read('lib/ci/fast-ui-parser/package-lock.json');
+    const lock=read('lib/ci/fast-ui-parser/parser-lock.json');
     const pkg=JSON.parse(manifest), parsed=JSON.parse(lock);
     const entry=parsed.packages?.['node_modules/typescript'];
     if (Object.keys(pkg).sort().join(',') !== 'dependencies,name,private,version' ||

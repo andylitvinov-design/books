@@ -83,7 +83,7 @@ jobs:
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/fast-static-ui-text.mjs|\
                   lib/ci/fast-ui-parser/package.json|\
-                  lib/ci/fast-ui-parser/package-lock.json|\
+                  lib/ci/fast-ui-parser/parser-lock.json|\
                   tests/ci-fast-static-ui-text.test.mjs|\
                   docs/operations/CI_RELEASE_POLICY.md|\
                   lib/ci/pr-sweep-guard.mjs|\

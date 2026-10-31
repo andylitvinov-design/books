@@ -207,7 +207,7 @@ test('real verifier installs the parser from Git BASE and ignores modified workt
   try {
     git('init','-q');
     mkdirSync(join(tmp,'lib/ci/fast-ui-parser'),{recursive:true});
-    for (const name of ['package.json','package-lock.json']) {
+    for (const name of ['package.json','parser-lock.json']) {
       copyFileSync(join(previous,'lib/ci/fast-ui-parser',name),join(tmp,'lib/ci/fast-ui-parser',name));
     }
     const uiPath='app/[locale]/articles/page.tsx';
