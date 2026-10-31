@@ -1596,7 +1596,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
   const signature = JSON.stringify([source,frameUrl,photoUrl,theme,moneyScene,otherScene,backgroundOnly,
-    effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,hypnoLight,
+    effect,aspect,duration,quality,speed,brightness,hypnoLight,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
@@ -3877,7 +3877,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-      {studioMode==="therapy" ? <div id="video-hypno-meditation-editor"><MandalaPersonalMeditation
+      {studioMode==="therapy" ? <div id="video-hypno-meditation-editor" aria-hidden="true"/> : null}
+      {studioMode==="therapy" ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?.kind==="file" ? attachedAudio.file.name :
           attachedAudio?.kind==="preset" ?
@@ -3886,7 +3887,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           attachedAudio?.kind==="preset" ? presetAudioUrl(attachedAudio.id) : null}
         pace={speed} brightness={brightness}
         affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-        focus={meditationFocus} disabled={recording||preparing}/></div> : null}
+        focus={meditationFocus} disabled={recording||preparing}/> : null}
 
 
 
