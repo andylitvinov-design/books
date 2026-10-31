@@ -84,19 +84,26 @@ export async function verify(api,ctx,files,options={}) {
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
+  // BASE/HEAD rules enumerate applicable PR specialists. Unrelated feature
+  // branch PUSHes and unassociated/stale PR runs must not hold exact-head CI.
+  // Keep unknown workflows and failed retired migration workflows fail-closed.
+  const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
+  const retired = new Set(delegated.map(item => item.retired));
+  const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
   const deadline=Date.now()+maxWait;
   let state;
   for (;;) {
     const allRuns=await api.runs(ctx.head);
     state=inspectWorkflowRuns({expected,runs:allRuns,pr});
-    if (state.pushFailures.length || state.orphanFailures.length || state.failed.length ||
-        state.observedUnrelated.some(x => x.includes(':failure') || x.includes(':cancelled') || x.includes(':timed_out'))) {
-      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,push:state.pushFailures,
-        orphan:state.orphanFailures,other:state.observedUnrelated}));
+    const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
+    const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
+    if (state.failed.length || unregistered.length || retiredProblems.length) {
+      throw Error('SPECIALIST_FAILED:' + JSON.stringify({failed:state.failed,
+        unregistered,retired:retiredProblems}));
     }
-    if (!state.missing.length && !state.pending.length && !state.observedUnrelated.length) break;
+    if (!state.missing.length && !state.pending.length) break;
     if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending,other:state.observedUnrelated}));
+      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
     }
     await delay(pollMs);
   }
@@ -107,7 +114,13 @@ export async function verify(api,ctx,files,options={}) {
   }
   const fresh=await api.pr(ctx.number);
   assertSame(fresh,ctx);
-  return {expected,delegated,executed,pushFailures:state.pushFailures,packageImpact,head:ctx.head,base:ctx.base};
+  // Report non-gating runs for audit; never confuse them with validated CI.
+  const advisory={
+    nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+    pushFailures:state.pushFailures,
+    orphanFailures:state.orphanFailures,
+  };
+  return {expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 async function main() {
@@ -121,7 +134,8 @@ async function main() {
     ' base=' + ctx.base + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
-    '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')';
+    '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
+    '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }

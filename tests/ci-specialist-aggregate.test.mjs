@@ -92,6 +92,41 @@ test('end-to-end pure verifier succeeds only after scoped job completion and fre
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
 });
 
+test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are advisory',async()=>{
+  const extra='.github/workflows/non-applicable.yml';
+  const extraYaml="on:\n  pull_request:\n    paths:\n      - 'lib/audio/**'\n";
+  const sources={
+    base:new Map([[path,yaml],[extra,extraYaml]]),
+    current:new Map([[path,yaml],[extra,extraYaml]]),
+  };
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    runs:async()=>[
+      run(),
+      run({path:extra,id:752,conclusion:'failure'}),
+      run({event:'push',id:753,conclusion:'failure'}),
+      run({path:extra,id:754,pull_requests:[],conclusion:'failure'}),
+    ],
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const good=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.deepEqual(good.expected,[path]);
+  assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
+  assert.deepEqual(good.advisory.pushFailures,['753:failure']);
+  assert.deepEqual(good.advisory.orphanFailures,['754:failure']);
+  api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+
+  // A workflow absent from BOTH trusted manifests may not be waived.
+  // An actual expected specialist failure also remains a hard blocker.
+  api.runs=async()=>[run(),run({path:'.github/workflows/unknown.yml',id:760,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*unregistered/);
+  api.runs=async()=>[run({conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
 test('read-only GitHub API adapter paginates files and runs without writing',async()=>{
   const requests=[];
   const transport=async(url,options)=>{requests.push({url,method:options.method||'GET',auth:options.headers.Authorization});
