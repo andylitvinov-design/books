@@ -49,6 +49,12 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
+// One proven isolated presentation leaf: two existing suites exercise the exact
+// Alchemy screen/viewport/consent in RU/EN/ES. All JSX, forms and payments stay full.
+const PRESENTATION_CASES = new Map([
+  ['components/alchemy-soul-landing.module.css',
+    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']],
+]);
 
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
@@ -69,6 +75,10 @@ export function planPublicServicesChangedPaths(files) {
       selected.add(browserCase);
       continue;
     }
+    if (PRESENTATION_CASES.has(file)) {
+      for (const name of PRESENTATION_CASES.get(file)) selected.add(name);
+      continue;
+    }
     if (file === METRIC_SCRIPT) {
       performance = true;
       continue;
@@ -82,7 +92,7 @@ export function planPublicServicesChangedPaths(files) {
       build: true, browser: false, metrics: true, cases: 'none' };
   }
   if (selected.size) {
-    return { mode: 'focused', reason: 'BROWSER_HARNESS_ONLY',
+    return { mode: 'focused', reason: 'PROVEN_BROWSER_HARNESS_OR_PRESENTATION',
       build: true, browser: true, metrics: false,
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }

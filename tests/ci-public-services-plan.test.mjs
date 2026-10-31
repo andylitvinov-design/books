@@ -61,6 +61,18 @@ test('browser harness-only changes keep exact targeted real browsers', () => {
     ['verify-contact-channel-chooser-browser.mjs', 'verify-storefront-shop-browser.mjs']);
 });
 
+test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelated scripts', () => {
+  const file = 'components/alchemy-soul-landing.module.css';
+  const plan = planPublicServicesChangedPaths([file]);
+  assert.equal(plan.mode, 'focused');
+  assert.equal(plan.build, true);
+  assert.equal(plan.browser, true);
+  assert.equal(plan.metrics, false);
+  assert.deepEqual(plan.cases.split(',').sort(),
+    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']);
+  assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-lead-form.tsx']).mode, 'full');
+});
+
 test('performance harness changes need production server but no browsers', () => {
   const p = planPublicServicesChangedPaths(['scripts/measure-hh-public-ttfb.mjs']);
   assert.deepEqual([p.mode, p.build, p.browser, p.metrics, p.cases],
@@ -122,6 +134,29 @@ test('only proven alternative owner suites exclude unrelated full Public Service
     'scripts/ci-public-services-plan.mjs',
     'tests/ci-public-services-plan.test.mjs',
   ]) assert.equal(covers(pub,file),true,'production-impact path must trigger Public Services: '+file);
+});
+
+test('direct browser and consent helpers are trigger-owned and never silently skipped', () => {
+  const publicPaths = pathsOf('hh-public-services-production.yml');
+  for (const file of [
+    'scripts/helpers/alchemy-payment-disclosure-verifier.mjs',
+    'scripts/helpers/contact-channel-verifier.mjs',
+    'scripts/helpers/alchemy-panel-overflow-diagnostics.mjs',
+    'scripts/service-cart-response-probe.mjs',
+    'scripts/service-cart-browser-fixture.mjs',
+    'components/alchemy-soul-landing.tsx',
+    'components/alchemy-soul-landing.module.css',
+    'components/alchemy-soul-lead-form.tsx',
+    'components/compact-lead-capture.tsx',
+    'components/contact-channel-chooser.tsx',
+    'lib/whatsapp-enquiry.js',
+    'lib/practitioners/enquiry-receipt.mjs',
+    'app/api/service-enquiries/route.ts',
+  ]) {
+    assert.equal(covers(publicPaths,file), true, 'missing CI dispatch for ' + file);
+    if (file !== 'components/alchemy-soul-landing.module.css')
+      assert.equal(planPublicServicesChangedPaths([file]).mode, 'full', 'must not short-circuit ' + file);
+  }
 });
 
 test('one unchanged specialist job uses gate outputs without skipped check contexts', () => {
