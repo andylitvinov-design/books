@@ -807,7 +807,6 @@ test('Native installer successor claims old native triggers before retiring dupl
     'node --test tests/holistic-house-native-build.test.mjs',
     'npm run native:check',
     'tests/native-private-message-push.test.mjs',
-    "if: github.event_name != 'pull_request'",
     'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
     assert.ok(source.includes(required), 'native successor missing coverage '+required);
   }
