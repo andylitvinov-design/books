@@ -13,6 +13,12 @@ on:
       - 'scripts/pr-sweep-guard.mjs'
       - 'tests/pr-sweep-guard.test.mjs'
       - 'tests/ci-heavy-draft-policy.test.mjs'
+      - 'scripts/ci-heavy-impact.mjs'
+      - 'tests/ci-heavy-impact.test.mjs'
+      - '.github/workflows/hh-app-r1.yml'
+      - '.github/workflows/holistic-support-mandala.yml'
+      - '.github/workflows/hh-free-review-live-mobile.yml'
+      - '.github/workflows/ia-v2.yml'
       - '.github/workflows/assessment-range-mobile-browser.yml'
       - '.github/workflows/hh-benchmark-public-browser.yml'
       - '.github/workflows/hh-home-conversation.yml'
@@ -35,4 +41,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs
