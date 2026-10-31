@@ -47,7 +47,7 @@ test('App R1 uses only the verified GitHub synthetic merge delta, not a stale RE
     })[args[1]]+'\n';
     if (args[0] === 'diff') return 'R100'+z+'old'+z+'new'+z;
     throw Error('unexpected');
-  }),/UNSAFE_TESTED_FILE_STATUS/);
+  }),/(?:UNSAFE_TESTED_FILE_STATUS|INVALID_OR_EMPTY_TESTED_DIFF)/);
 });
 
 test('App R1: only modified client presentation permits avoiding duplicated full App, DB and banner matrix', () => {
