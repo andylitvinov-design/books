@@ -65,4 +65,6 @@ jobs:
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-tantra-next.log; exit 1; fi
           node tests/tantra-reiki-photo-levels.browser.mjs
       - name: TypeScript static validation
+        # Mandatory protected Core owns TypeScript on Ready production PRs.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit

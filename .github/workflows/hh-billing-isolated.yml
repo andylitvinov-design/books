@@ -66,7 +66,12 @@ jobs:
           node --check app/api/payments/square/webhook/route.js
           node --check lib/commerce/talisman-checkout.js
           node --check app/api/payments/talismans/checkout/route.js
-          npx tsc --noEmit --pretty false
+          # Mandatory protected Core already validates global TypeScript on this exact Ready PR.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit --pretty false
+          else
+            echo 'Protected Core owns whole-project TypeScript verification'
+          fi
           npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
         run: node --test tests/paypal-personal-payments.test.mjs

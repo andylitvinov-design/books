@@ -192,3 +192,32 @@ test('lighter specialist CI preserves contract tests, Ready rechecks, and protec
   assert.match(gauntlet, /^  push:/m);
   assert.match(gauntlet, /^  workflow_dispatch:/m);
 });
+
+test('CI wave A omits only redundant global typing, never billing or browser acceptance', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/Full TypeScript check/);
+  assert.match(core,/ci-specialist-aggregate\.mjs/);
+  const guard="if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for(const [name,step,contract] of [
+    ['hh-tantra-photo-levels.yml','TypeScript static validation','tests/tantra-reiki-photo-levels.browser.mjs'],
+    ['meditation-catalog-checks.yml','Typecheck','tests/meditation-catalog-candidates.test.mjs'],
+  ]){
+    const src=workflow(name);
+    assert.ok(src.includes('- name: '+step+'\n        # Mandatory protected Core owns TypeScript on Ready production PRs.\n        '+guard));
+    assert.ok(src.includes(contract),name+': real test must remain');
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+  for(const [name,contract] of [
+    ['hh-billing-isolated.yml','npm run test:billing:db'],
+    ['mentor-community-acceptance.yml','scripts/verify-mentor-community-browser.mjs'],
+    ['practice-google-browser.yml','scripts/verify-practice-post-google-browser.mjs'],
+    ['practice-visual-browser.yml','scripts/verify-practice-visual-browser.mjs'],
+  ]){
+    const src=workflow(name);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'),name+': typecheck guard absent');
+    assert.ok(src.includes('Protected Core owns whole-project TypeScript verification'));
+    assert.ok(src.includes(contract),name+': critical integration/browser coverage lost');
+    assert.doesNotMatch(src,/continue-on-error:\s*true/);
+  }
+});

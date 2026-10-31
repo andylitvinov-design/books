@@ -46,6 +46,8 @@ jobs:
       - name: Lint changed UI, server loader and model
         run: npx eslint components/holistic-meditation-finder.tsx components/holistic-meditation-gallery.tsx lib/holistic-support/meditation-discovery-server.ts app/'[locale]'/holistic-support/page.tsx lib/holistic-support/meditation-catalog-ranker.mjs lib/holistic-support/client-intent-model.mjs lib/practitioners/discovery-intent.js
       - name: Typecheck
+        # Mandatory protected Core owns TypeScript on Ready production PRs.
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit --pretty false
 
   browser-mobile:

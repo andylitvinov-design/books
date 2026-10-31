@@ -67,7 +67,12 @@ jobs:
       - name: Focused linter and TypeScript check
         run: |
           npx --no-install eslint components/master-network-explorer.tsx components/mentor-community-switch.tsx components/community-service-highlights.tsx app/'[locale]'/articles/page.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
-          npx --no-install tsc --noEmit
+          # Mandatory protected Core already validates global TypeScript on this exact Ready PR.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Protected Core owns whole-project TypeScript verification'
+          fi
       - name: Chromium and WebKit for actual hydrated page verification
         run: |
           mkdir -p /tmp/hh-mentor-browser
