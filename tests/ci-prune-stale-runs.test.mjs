@@ -27,8 +27,8 @@ test('never cancel new SHA, production push, running jobs, unrelated or ambiguou
     { pull_requests: [] }, { head_branch: 'other' },
   ]) assert.equal(eligible(run(data), pr(), ctx), false, JSON.stringify(data));
   assert.equal(eligible(run(), pr({ base: { ref: 'main' } }), ctx), false);
-  assert.equal(eligible(run(), pr({ state: 'closed' }), ctx), true);
-  assert.equal(eligible(run({ head_sha: 'new' }), pr({ state: 'closed' }), ctx), true);
+  assert.equal(eligible(run(), pr({ state: 'closed' }), ctx), false);
+  assert.equal(eligible(run({ head_sha: 'new' }), pr({ state: 'closed' }), ctx), false);
 });
 
 test('re-read exact live run and PR before cancellation; cap and dry-run', async () => {
