@@ -580,3 +580,21 @@ test('wave 4: Core owns duplicate global TypeScript on production PRs; specialis
   }
   assert.match(crm,/github.event_name == 'workflow_dispatch'/);
 });
+
+test('public mobile-install PR runs source and consent contracts; full browser/install artifacts run after merge', () => {
+  const yaml=read('holistic-house-mobile-install.yml');
+  assert.match(yaml, /ready_for_review/);
+  for (const name of [
+    'Build public phone installation pages without credentials',
+    'Install Chromium and WebKit for real public iPhone installation QA',
+    'Check EN/RU install pages and real PNG icons',
+  ]) {
+    assert.ok(yaml.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'ordinary PR must skip duplicate mobile browser matrix: '+name);
+  }
+  assert.ok(yaml.includes("if: always() && github.event_name != 'pull_request'"));
+  assert.match(yaml, /^  push:/m);
+  assert.match(yaml, /tests\/holistic-house-install-push-regression\.test\.mjs/);
+  assert.match(yaml, /node --test tests\/holistic-house-pwa\.test\.mjs/);
+  assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
+});
