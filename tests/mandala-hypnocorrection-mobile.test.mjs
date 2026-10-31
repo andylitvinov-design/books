@@ -11,6 +11,23 @@ test("hypnocorrection's smooth six-cycle wave is deterministic and never flashes
   assert.ok(hypnoWavePhase(30,6)>=0);
   assert.ok(hypnoWavePhase(30,6)<=1);
 });
+test("enabled overlay draws a smooth concentric light pattern and restores Canvas state",()=>{
+  const actions=[];
+  const ctx={
+    canvas:{width:1280,height:720},
+    save(){actions.push("save");},restore(){actions.push("restore");},
+    createRadialGradient(){actions.push("gradient");return{addColorStop(){}};},
+    fillRect(){actions.push("fill");},beginPath(){},
+    ellipse(){actions.push("ellipse");},stroke(){actions.push("stroke");},
+    moveTo(){},lineTo(){},
+  };
+  paintHypnoLightOverlay(ctx,5,{enabled:true,cyclesPerMinute:6,opacity:.2});
+  assert.equal(actions[0],"save");
+  assert.equal(actions.at(-1),"restore");
+  assert.equal(actions.filter(x=>x==="fill").length,1);
+  assert.equal(actions.filter(x=>x==="ellipse").length,3);
+  assert.equal(actions.filter(x=>x==="stroke").length,11);
+});
 test("disabled overlay performs no frame drawing",()=>{
   let called=false;
   paintHypnoLightOverlay({canvas:{width:320,height:180},save(){called=true;}},1,{enabled:false});
