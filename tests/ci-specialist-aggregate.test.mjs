@@ -500,14 +500,12 @@ test('private cabinet presentation routes stay STRICT while public styles stay F
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
 });
 
-test('public FAST CSS does not wait for broadly triggered diagnostic specialists', async () => {
+test('public FAST CSS cannot skip a broadly triggered specialist without a trusted exemption', async () => {
   const broad='.github/workflows/diagnostic.yml';
   const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
   const ctx={repo,number:27,head:SHA,base:BASE};
-  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>{throw Error('must not poll diagnostics');}};
-  const result=await verify(api,ctx,sources,{maxWaitMs:0});
-  assert.equal(result.risk,'FAST');
-  assert.deepEqual(result.expected,[]);
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
 test('client progress owner is complete before the trusted second-phase deletion', () => {
@@ -587,4 +585,13 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
   ]);
   assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+});
+
+test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
+  const owner = '.github/workflows/public-owner.yml';
+  const workflow = "on:\n  pull_request:\n    paths:\n      - 'app/[[]locale[]]/about/**'\n";
+  const sources = { base: new Map([[owner, workflow]]), current: new Map([[owner, workflow]]) };
+  const ctx = { repo, number: 27, head: SHA, base: BASE };
+  const api = { pr: async () => pr(), changed: async () => [{ filename: 'app/[locale]/about/page.module.css' }], runs: async () => [] };
+  await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }), /SPECIALIST_MISSING_OR_PENDING/);
 });
