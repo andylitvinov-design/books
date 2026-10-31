@@ -183,7 +183,7 @@ export function MandalaVideoParameters({locale,disabled,group,onGroupChange,visu
                       </button>)}
                     </div>
                   </div>
-                  <details className={styles.custom} open={hasCustom?undefined:undefined}>
+                  <details className={styles.custom}>
                     <summary><PencilLine size={13} aria-hidden="true"/>{t.own}{hasCustom?" · "+t.done:""}</summary>
                     <input type="text" maxLength={160} value={answer?.customText||""}
                       placeholder={t.own} aria-label={t.own+" · "+choiceName}

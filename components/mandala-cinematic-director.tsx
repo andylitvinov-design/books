@@ -5,7 +5,7 @@ import Link from "next/link";
 import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
-import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded,durationFromBrief} from "@/lib/mandala/video-studio-question-registry.mjs";
+import {projectFieldsFromAnswers,subjectIsExplicitlyExcluded,durationFromBrief} from "@/lib/mandala/video-studio-question-registry.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
 import {otherVideoScenes} from "@/lib/mandala/holistic-video-themes";
