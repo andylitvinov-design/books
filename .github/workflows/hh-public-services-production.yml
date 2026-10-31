@@ -48,6 +48,7 @@ on:
       # still match the surrounding positive globs and run full acceptance.
       - '!lib/holistic-support/client-reasoning-*.mjs'
       - '!lib/holistic-support/intelligence-request.mjs'
+      # Pure risk parsing has dedicated unit tests and the exact-head PR core build.
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
@@ -96,6 +97,12 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
+      # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
+      # acceptance in the dedicated Mandala suite, not public Services checkout.
+      - '!app/**/holistic-support/voice-studio/route.ts'
+      - '!components/mandala-affirmation-voice.*'
+      - '!components/mandala-cloud-voice-studio.*'
+      - '!components/mandala-meditation.module.css'
 permissions:
   contents: read
   pull-requests: read
