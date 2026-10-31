@@ -76,6 +76,6 @@ test("crisis text returns support only and must never expose the course offer",(
   assert.equal(isMeditationSafetyResponse(script,"ru"),true);
   assert.match(script,/экстренную помощь/);
   const ui=read("components/mandala-personal-meditation.tsx");
-  assert.match(ui,/if\(coursePreview&&!safetyResponse\)/);
+  assert.match(ui,/if\(coursePreview&&!safetyResponse&&plan\)/);
   assert.match(ui,/else if\(coursePreview\)\{\s*setCourseDays\(\[\]\)/);
 });
