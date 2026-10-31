@@ -100,6 +100,10 @@ on:
       # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
       # acceptance in the dedicated Mandala suite, not public Services checkout.
       - '!app/**/holistic-support/voice-studio/route.ts'
+      # Server-only speech synthesis for the local Mandala/Video Studio, not
+      # Public Services checkout or Alchemy. The independent Mandala gate
+      # owns explicit consent, provider quotas, WAV and real video export.
+      - '!app/api/holistic-support/voice/**'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
       - '!components/mandala-meditation.module.css'

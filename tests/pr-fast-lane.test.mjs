@@ -175,6 +175,12 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
   }
+  // A public speech API is still protected by real Mandala browser and provider
+  // contracts, not 16 unrelated Alchemy/checkout viewport tests. Keep the
+  // shared Mandala landing and user-facing services under Public Services.
+  const voiceRoute='app/api/holistic-support/voice/route.js';
+  assert.equal(covers(service,voiceRoute),false,'voice-only API must not enter unrelated Public Services');
+  assert.equal(covers(mandala,voiceRoute),true,'voice API must run Mandala real WAV/MP4 and consent checks');
   for(const file of [
     'components/mandala-meditation-client.tsx',
     'components/holistic-support-mobile.tsx',
