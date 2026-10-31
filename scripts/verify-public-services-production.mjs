@@ -391,7 +391,11 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      // The main contains the responsive site header: its free-review link is
+      // intentionally hidden when the mobile nav is closed. Verify the hero CTA,
+      // which is the actual visible and directly actionable free alternative.
+      const free = main.locator('section[aria-labelledby="personal-service-title"] a[href="/' + locale + '/services/free-situation-review"]');
+      assert.equal(await free.count(), 1, "One hero free-review link: " + label);
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
