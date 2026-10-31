@@ -705,7 +705,7 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
 
-test('seven costly specialists reuse required Core typing/build on production PR without dropping focused acceptance', () => {
+test('five other specialists delegate TypeScript/build while Public Journey single-owner consolidation remains intact', () => {
   const core = workflow('hh-pr-core-release.yml');
   assert.match(core, /name: Exact proposed release production build and TypeScript check/);
   assert.match(core, /run: npm run build/);
@@ -718,9 +718,16 @@ test('seven costly specialists reuse required Core typing/build on production PR
     const src = workflow(file);
     assert.ok(src.includes('- name: ' + name + '\n        ' + gate + '\n        run: ' + command), file + ' must preserve nonproduction check');
   }
+  // This owner was consolidated independently in production; do not restore its retired jobs.
+  const journey = workflow('hh-public-journey-wave1.yml');
+  for (const evidence of ['node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Whole-project TypeScript outside protected production PRs',
+    'Build exact candidate once for both real-browser suites']) {
+    assert.ok(journey.includes(evidence), 'consolidated Public Journey owner lost '+evidence);
+  }
   for (const [file, evidence] of [
-    ['hh-public-journey-wave1.yml',['node scripts/verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs']],
-    ['hh-public-journey-toronto-wave2.yml',['node scripts/verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs']],
     ['practice-google-browser.yml',['node scripts/verify-practice-post-google-browser.mjs','tests/practice-google-return-and-services-v5.test.mjs']],
     ['practice-visual-browser.yml',['node scripts/verify-practice-visual-browser.mjs','tests/compare-ui-screenshots.test.mjs']],
     ['hh-alchemy-mobile-acceptance.yml',['node scripts/verify-alchemy-one-screen.mjs','npm run build','tests/alchemy-soul-mobile-landing.test.mjs']],

@@ -1,75 +1,114 @@
-name: HH public journey wave 1
+name: HH public journey consolidated (About, Contact and Toronto)
 on:
   pull_request:
-    branches: [codex/public-book-library]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    branches:
+      - codex/public-book-library
+      - codex/public-journey-wave1-20261028
     paths:
       - 'components/public-pathway-strip.*'
       - 'components/public-journey-refresh.module.css'
       - 'components/personal-testimonials.module.css'
       - 'app/**/about/page.tsx'
       - 'app/\[locale\]/contact/**'
+      - 'app/\[locale\]/toronto/**'
       - 'tests/public-pathway-migration.test.mjs'
+      - 'tests/public-pathway-toronto.test.mjs'
       - 'scripts/verify-public-pathway-mobile.mjs'
+      - 'scripts/verify-public-pathway-toronto-mobile.mjs'
       - 'docs/design/PUBLIC_SITE_TRANSFORMATION_V1_20261028.md'
+      - 'scripts/ci-public-journey-scope.mjs'
+      - 'tests/ci-public-journey-consolidation.test.mjs'
       - '.github/workflows/hh-public-journey-wave1.yml'
+      - '.github/workflows/hh-public-journey-toronto-wave2.yml'
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 concurrency:
-  # Only obsolete HEADs of the SAME PR are cancelled; manual/push use unique run_id.
   group: hh-public-wave1-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   public-wave1:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3103
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Wave one public contracts
+      - name: Classify exact PR HEAD vs BASE, unknown changes run both
+        id: scope
+        env:
+          HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-public-journey-scope.mjs
+      - name: Verify consolidated CI route and coverage contracts
+        run: node --test tests/ci-public-journey-consolidation.test.mjs
+      - name: Wave one About and Contact public contracts
+        if: steps.scope.outputs.wave1 == 'true'
         run: |
           node --check scripts/verify-public-pathway-mobile.mjs
           node --test tests/public-pathway-migration.test.mjs
-      - name: Lint and typecheck
-        run: |
           npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
-          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
-            npx --no-install tsc --noEmit
-          else
-            echo 'Full TypeScript delegated to required Core release-ready'
-          fi
-      - name: Real production build
+      - name: Toronto public contracts and scoped lint
+        if: steps.scope.outputs.wave2 == 'true'
+        run: |
+          node --check scripts/verify-public-pathway-toronto-mobile.mjs
+          node --test tests/public-pathway-migration.test.mjs tests/public-pathway-toronto.test.mjs
+          npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
+      - name: Whole-project TypeScript outside protected production PRs
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
+      - name: Build exact candidate once for both real-browser suites
         run: npm run build
-      - name: Install Chromium and WebKit without altering project dependencies
+      - name: Install Chromium and WebKit once for both journeys
         run: |
           npm install --prefix /tmp/hh-public-wave1-browser --no-audit --no-fund --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/hh-public-wave1-browser/node_modules/@playwright node_modules/@playwright
           /tmp/hh-public-wave1-browser/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Real browser contracts on 320/390/430/1200 EN/RU/ES
+      - name: Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server
+        env:
+          HH_RUN_WAVE1: ${{ steps.scope.outputs.wave1 }}
+          HH_RUN_WAVE2: ${{ steps.scope.outputs.wave2 }}
+        shell: bash
         run: |
+          set -euo pipefail
           npm run start -- --hostname 127.0.0.1 --port 3103 > /tmp/hh-public-wave1-next.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
           for ((i=1; i<=75; i++)); do
-            if curl --silent --fail http://127.0.0.1:3103/en/contact >/dev/null; then ready=1; break; fi
-            sleep 2
+            if [[ "$HH_RUN_WAVE1" == true ]]; then
+              curl --silent --fail http://127.0.0.1:3103/en/contact >/dev/null || { sleep 2; continue; }
+            fi
+            if [[ "$HH_RUN_WAVE2" == true ]]; then
+              curl --silent --fail http://127.0.0.1:3103/en/toronto >/dev/null || { sleep 2; continue; }
+            fi
+            ready=1
+            break
           done
-          if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-public-wave1-next.log; exit 1; fi
-          node scripts/verify-public-pathway-mobile.mjs
+          if [[ "$ready" != 1 ]]; then tail -n 120 /tmp/hh-public-wave1-next.log; exit 1; fi
+          if [[ "$HH_RUN_WAVE1" == true ]]; then node scripts/verify-public-pathway-mobile.mjs; fi
+          if [[ "$HH_RUN_WAVE2" == true ]]; then node scripts/verify-public-pathway-toronto-mobile.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: public-journey-wave1-browser
-          path: artifacts/public-wave1/
+          name: public-journeys-consolidated-browser
+          path: |
+            artifacts/public-wave1/
+            artifacts/public-toronto-wave2/
           retention-days: 7
           if-no-files-found: warn
