@@ -21,7 +21,7 @@ type EditPanel = "request"|"phrases"|"display"|"design"|null;
 type Position = "top"|"center"|"bottom";
 type TextScale = "small"|"medium"|"large";
 type HypnoModel="wave"|"gemini";
-type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[];custom:string;status:string};
+type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[];custom:string;status:string;display?:Pick<AffirmationSettings,"density"|"frequency"|"visibility"|"position"|"textScale">};
 
 const topicGoals: Record<VideoTheme, VideoAffirmationGoal[]> = {
   energy:["rhythm","recovery","strength"], money:["value","planning","stability"],
@@ -248,7 +248,7 @@ export function MandalaHypnoCompact({
         input.tone,input.kind,input.focus,input.length,nextRound)});
     return {model:"wave",key,strategy:outcome.strategy,phrases:outcome.phrases,
       selected:outcome.status==="safety_handoff"?[]:[0,1,2],
-      custom:draftState?.custom??settings.custom,status:outcome.status};
+      custom:draftState?.custom??settings.custom,status:outcome.status,display:draftState?.display};
   }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
     pending.current?.abort();runId.current++;
@@ -311,7 +311,7 @@ export function MandalaHypnoCompact({
     setModel("wave");setGeminiBusy(false);setGeminiNotice("");
     setDraftState({model:"wave",key:requestKey,strategy:buildWaveStrategy(waveInput),
       phrases:[...suggestedVideoAffirmations[locale][theme]],selected:[0,1,2],
-      custom:draftState?.custom??settings.custom,status:"category_only"});
+      custom:draftState?.custom??settings.custom,status:"category_only",display:draftState?.display});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
   const changeTheme=(next:VideoTheme)=>{
@@ -353,7 +353,7 @@ export function MandalaHypnoCompact({
       const checked=reviewGeminiStrategy(raw,locale,length);
       if(!checked)throw Error("GEMINI_REVIEW");
       if(number!==runId.current||key!==latestKey.current)return;
-      setDraftState({model:"gemini",key,...checked,selected:[0,1,2],custom:draftState?.custom??settings.custom,status:"category_only"});
+      setDraftState({model:"gemini",key,...checked,selected:[0,1,2],custom:draftState?.custom??settings.custom,status:"category_only",display:draftState?.display});
       setSelectionSource("gemini");
     }catch{
       if(number!==runId.current||key!==latestKey.current)return;
@@ -361,6 +361,20 @@ export function MandalaHypnoCompact({
         status===503||status===429?extra.aiUnavailable:extra.aiFailure);
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
+  const advancedSettings:AffirmationSettings={...settings,...draft?.display,
+    presetOverride:draft?.phrases??settings.presetOverride,selected:draft?.selected??settings.selected,
+    custom:draft?.custom??settings.custom};
+  function updateAdvancedDraft(next:AffirmationSettings){
+    if(safetyBlocked)return;
+    const base=draft??snapshotAsDraft();
+    const phrases=Array.isArray(next.presetOverride)&&next.presetOverride.length===5
+      ?[...next.presetOverride]:base.phrases;
+    setDraftState({...base,phrases,selected:[...next.selected],custom:next.custom,
+      display:{density:next.density,frequency:next.frequency,visibility:[...next.visibility],
+        position:next.position,textScale:next.textScale}});
+    setApprovalKey("");
+  }
+
   function approvePhrases(){
     if(!draft||draft.status==="safety_handoff"||safetyBlocked)return;
     const selected=[...new Set(draft.selected)].filter(i=>Number.isInteger(i)&&i>=0&&i<draft.phrases.length).slice(0,5);
@@ -368,7 +382,7 @@ export function MandalaHypnoCompact({
     if(!selected.length&&!countCustom(custom))return;
     if(selected.length+countCustom(custom)>5)return;
     if(draft.phrases.length!==5)return; // legacy adapter remains five slots
-    const next={...settings,enabled:true,presetOverride:[...draft.phrases],selected,custom};
+    const next={...settings,...draft.display,enabled:true,presetOverride:[...draft.phrases],selected,custom};
     onChange(next); // the ONLY phrase-draft -> live-video transition
     setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
     setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
@@ -547,7 +561,7 @@ export function MandalaHypnoCompact({
               <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
             </div>
           </div>}
-          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
+          <MandalaVideoAffirmations locale={locale} theme={theme} settings={advancedSettings} onChange={updateAdvancedDraft} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
         <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||safetyBlocked||(!draft&&!settings.enabled)||!selectedCount}
