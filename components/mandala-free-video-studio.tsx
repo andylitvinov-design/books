@@ -1918,12 +1918,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(hold.status!=="held")throw new Error("XP_HOLD_INVALID");
         reservedXpId=operationId;
         xpHoldRef.current=operationId;
+        // The user may navigate away or background Safari while the network
+        // reservation is pending; never start media or strand that new hold.
+        if(!aliveRef.current || document.hidden){
+          await releaseVideoXp(operationId);
+          preparingRef.current=false;
+          if(aliveRef.current){
+            setPreparing(false);
+            setNotice(locale==="ru"?"Создание отменено, XP возвращены.":
+              locale==="es"?"Creación cancelada, XP liberados.":
+              "Creation cancelled; reserved XP released.");
+          }
+          return;
+        }
       }catch(error){
+        // A POST can reach the server yet lose its response. Release by the
+        // known idempotency key; server expiry remains the final fallback.
+        void releaseVideoXp(operationId);
         const code=error instanceof Error?error.message:"XP_UNAVAILABLE";
         setNotice(code==="XP_INSUFFICIENT"?
           (locale==="ru"?"Недостаточно XP. Пополните баланс или пригласите друга.":
            locale==="es"?"No tienes XP suficientes. Recarga o invita a alguien.":
            "Not enough XP. Top up or invite a friend."):
+          code==="SIGN_IN_REQUIRED"?
+          (locale==="ru"?"Чтобы использовать XP, войдите в свой кабинет.":
+           locale==="es"?"Inicia sesión para usar XP.":"Sign in to use XP."):
           (locale==="ru"?"Списание XP недоступно. Видео не создавалось.":
            locale==="es"?"No se pudo reservar XP. No se creó el vídeo.":
            "XP reservation unavailable. No video was created."));
