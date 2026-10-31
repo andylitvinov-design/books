@@ -562,7 +562,7 @@ test('Toronto browser owner retains BASE-trusted retirement mapping after deleti
   const replacement='.github/workflows/hh-public-journey-wave1.yml';
   assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
   assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
-  const old="on:\\n  pull_request:\\n    branches: [codex/public-book-library]\\n    paths:\\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\\n";
+  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
   const source=readFileSync(replacement,'utf8');
   for (const expected of [
     "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
