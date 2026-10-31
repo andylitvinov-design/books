@@ -512,3 +512,34 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   ]) assert.throws(() => inspectJobs(jobs, name));
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
+
+test('Toronto browser owner has trusted retirement mapping before deleting old workflow', () => {
+  const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
+  const replacement='.github/workflows/hh-public-journey-wave1.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
+  const old=readFileSync(oldName,'utf8');
+  const source=readFileSync(replacement,'utf8');
+  for (const expected of [
+    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
+    'node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-migration.test.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Build exact candidate once for both real-browser suites',
+    'playwright install --with-deps chromium webkit',
+    'Whole-project TypeScript outside protected production PRs',
+    'HH_RUN_WAVE1',
+    'HH_RUN_WAVE2',
+  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
+  const base=new Map([[oldName,old],[replacement,source]]);
+  const changed=[oldName];
+  const current=new Map([[replacement,source]]);
+  const expected=expectedWorkflows({base,current,changed});
+  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
+  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
+    {retired:oldName,replacement},
+  ]);
+  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+});
