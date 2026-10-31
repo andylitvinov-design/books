@@ -9,10 +9,14 @@ import css from "./mandala-auto-video-director.module.css";
 
 type Preset={
   id:string;theme:VideoTheme;
-  label:Record<PublicLocale,string>;clips:readonly string[];
+  label:Record<PublicLocale,string>;clips:readonly string[];focusTags?:readonly string[];
 };
+type SceneMeta={id:string;theme:string;status:string;media:string;
+  video:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;
+  categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
   locale:PublicLocale;goal:string;theme:VideoTheme;presets:readonly Preset[];
+  scenes:readonly SceneMeta[];
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
   onGoalChange:(value:string)=>void;
@@ -77,7 +81,7 @@ const themeLabels={
 } as const;
 
 export function MandalaAutoVideoDirector({
- locale,goal,theme,presets,disabled,activePresetId,clipLabel,onGoalChange,onApply
+ locale,goal,theme,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -86,10 +90,12 @@ export function MandalaAutoVideoDirector({
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
+ const sceneById=new Map(scenes.map(item=>[item.id,item]));
+ const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const length=seconds||proposal?.durationSeconds||30;
  const choose=()=>{
    setSelectedGoalId(null);
-   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets}));
+   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
@@ -97,7 +103,7 @@ export function MandalaAutoVideoDirector({
    onGoalChange("");
    setSelectedGoalId(goalId);
    setOverrideId(null);setSeconds(null);
-   setProposal(recommendAutoVideo({goalId,locale,fallbackTheme:theme,presets}));
+   setProposal(recommendAutoVideo({goalId,locale,fallbackTheme:theme,presets,scenes}));
  };
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
@@ -132,9 +138,14 @@ export function MandalaAutoVideoDirector({
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
        <ol className={css.shots} data-auto-video-storyboard>
-         {chosen.clips.map((clip,index)=><li key={clip}>
-           <b>{index+1}. {t.stages[index]}</b><span>{clipLabel(clip)}</span>
-         </li>)}
+         {chosen.clips.map((clip,index)=>{
+           const scene=sceneById.get(clip);
+           return <li key={clip}>
+             <b>{index+1}. {t.stages[index]}</b><span>{sceneLabel(clip)}</span>
+             {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
+             {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
+           </li>;
+         })}
        </ol>
        <details className={css.details} data-auto-video-adjust>
          <summary>{t.edit}</summary>
@@ -143,7 +154,7 @@ export function MandalaAutoVideoDirector({
              aria-pressed={proposal.theme===value}
              onClick={()=>{
                setOverrideId(null);
-               setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,
+               setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,scenes,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
          </div>

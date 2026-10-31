@@ -17,8 +17,11 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-director"));
  assert.ok(director.includes("data-auto-video-input"));
  assert.ok(director.includes("data-auto-video-confirm"));
- assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets})"));
+ assert.ok(director.includes("recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes})"));
  assert.ok(director.includes("data-auto-video-goal={item.id}"));
+ assert.ok(studio.includes('scenes={FREE_FILM_CATALOG}'));
+ assert.ok(director.includes('scene.description[locale]'));
+ assert.ok(director.includes('scene.tags.slice(0,3)'));
  assert.ok(director.includes("onClick={()=>chooseReadyGoal(item.id)}"));
  assert.ok(director.includes("goalId:selectedGoalId"));
  assert.ok(director.includes("onGoalChange(\"\")"));

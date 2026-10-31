@@ -1,0 +1,1690 @@
+{
+  "version": "hh-free-film-catalog-v2",
+  "sourcePolicy": "Local approved MP4 masters only; never redistribute raw stock",
+  "count": 44,
+  "scenes": [
+    {
+      "id": "golden-rain",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/golden-rain.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/golden-rain.jpg",
+      "label": {
+        "en": "Golden rain",
+        "ru": "Золотой дождь",
+        "es": "Lluvia dorada"
+      },
+      "description": {
+        "ru": "Плавно падающие золотые искры",
+        "en": "Softly falling golden sparks",
+        "es": "Chispas doradas que caen suavemente"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "gold",
+        "light",
+        "sparkle",
+        "abundance",
+        "hope"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "cosmic-flow",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/cosmic-flow.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/cosmic-flow.jpg",
+      "label": {
+        "en": "Cosmic flow",
+        "ru": "Поток из Вселенной",
+        "es": "Flujo del universo"
+      },
+      "description": {
+        "ru": "Медленный поток золотого света",
+        "en": "Slow drifting streams of golden light",
+        "es": "Corrientes lentas de luz dorada"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "gold",
+        "light",
+        "stars",
+        "flow",
+        "inspiration"
+      ],
+      "motifs": [
+        "light",
+        "stars"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "abundance-tree",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/abundance-tree.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/abundance-tree.jpg",
+      "label": {
+        "en": "Abundance tree",
+        "ru": "Древо изобилия",
+        "es": "Árbol de abundancia"
+      },
+      "description": {
+        "ru": "Золотистое дерево как символ устойчивого роста",
+        "en": "A luminous tree symbolizing steady growth",
+        "es": "Un árbol luminoso que simboliza crecimiento estable"
+      },
+      "categories": [
+        "money",
+        "steady"
+      ],
+      "tags": [
+        "forest",
+        "tree",
+        "roots",
+        "growth",
+        "gold",
+        "grounding"
+      ],
+      "motifs": [
+        "forest",
+        "tree"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "opportunity-falls",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/opportunity-falls.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/opportunity-falls.jpg",
+      "label": {
+        "en": "Opportunity falls",
+        "ru": "Водопад возможностей",
+        "es": "Cascada de oportunidades"
+      },
+      "description": {
+        "ru": "Сияющий каскад света и новых возможностей",
+        "en": "A luminous cascade suggesting new possibilities",
+        "es": "Una cascada luminosa de nuevas posibilidades"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "light",
+        "waterfall",
+        "flow",
+        "opportunity",
+        "gold"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "money-magnet",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/money-magnet.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/money-magnet.jpg",
+      "label": {
+        "en": "Money magnet",
+        "ru": "Магнит денег",
+        "es": "Imán de prosperidad"
+      },
+      "description": {
+        "ru": "Светящиеся золотые частицы в движении",
+        "en": "Moving golden particles gathered in gentle light",
+        "es": "Partículas doradas que se reúnen en luz suave"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "gold",
+        "light",
+        "particles",
+        "movement",
+        "confidence"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "path-to-goals",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/path-to-goals.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/path-to-goals.jpg",
+      "label": {
+        "en": "Path to goals",
+        "ru": "Путь к целям",
+        "es": "Camino a tus metas"
+      },
+      "description": {
+        "ru": "Освещённый путь к новым шагам",
+        "en": "A warmly lit path suggesting next steps",
+        "es": "Un sendero iluminado hacia los próximos pasos"
+      },
+      "categories": [
+        "money",
+        "steady"
+      ],
+      "tags": [
+        "path",
+        "goals",
+        "progress",
+        "warm",
+        "focus"
+      ],
+      "motifs": [],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "partners",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/partners.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/partners.jpg",
+      "label": {
+        "en": "People & opportunities",
+        "ru": "Партнёрство и клиенты",
+        "es": "Personas y oportunidades"
+      },
+      "description": {
+        "ru": "Мотив встречи и сотрудничества",
+        "en": "A visual metaphor for meeting and cooperation",
+        "es": "Una metáfora visual del encuentro y la cooperación"
+      },
+      "categories": [
+        "money",
+        "steady"
+      ],
+      "tags": [
+        "connection",
+        "trust",
+        "collaboration",
+        "people"
+      ],
+      "motifs": [],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "infinite-flow",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/infinite-flow.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/infinite-flow.jpg",
+      "label": {
+        "en": "Infinite flow",
+        "ru": "Бесконечный поток",
+        "es": "Flujo infinito"
+      },
+      "description": {
+        "ru": "Непрерывные ленты мягкого света",
+        "en": "Continuous ribbons of gentle light",
+        "es": "Cintas continuas de luz suave"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "gold",
+        "flow",
+        "light",
+        "movement",
+        "abundance"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "golden-shield",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/golden-shield.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/golden-shield.jpg",
+      "label": {
+        "en": "Golden shield",
+        "ru": "Денежная защита",
+        "es": "Escudo dorado"
+      },
+      "description": {
+        "ru": "Символ защищённости в золотом свете",
+        "en": "A symbol of steadiness in golden light",
+        "es": "Un símbolo de estabilidad en luz dorada"
+      },
+      "categories": [
+        "money",
+        "calm"
+      ],
+      "tags": [
+        "gold",
+        "protection",
+        "safety",
+        "grounding",
+        "stability"
+      ],
+      "motifs": [],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "abundance-circle",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/abundance-circle.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/abundance-circle.jpg",
+      "label": {
+        "en": "Circle of abundance",
+        "ru": "Круг изобилия",
+        "es": "Círculo de abundancia"
+      },
+      "description": {
+        "ru": "Спокойный круг света как символ равновесия",
+        "en": "A quiet circle of light suggesting balance",
+        "es": "Un círculo de luz serena que sugiere equilibrio"
+      },
+      "categories": [
+        "money",
+        "calm"
+      ],
+      "tags": [
+        "light",
+        "circle",
+        "balance",
+        "confidence",
+        "steady"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "life-gifts",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/life-gifts.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/life-gifts.jpg",
+      "label": {
+        "en": "Life's gifts",
+        "ru": "Подарки жизни",
+        "es": "Regalos de la vida"
+      },
+      "description": {
+        "ru": "Мягкие световые акценты и чувство благодарности",
+        "en": "Gentle illuminated details suggesting gratitude",
+        "es": "Detalles luminosos que evocan gratitud"
+      },
+      "categories": [
+        "money",
+        "calm"
+      ],
+      "tags": [
+        "light",
+        "gratitude",
+        "kindness",
+        "warm",
+        "hope"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "dreams",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/dreams.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/dreams.jpg",
+      "label": {
+        "en": "Dreams in focus",
+        "ru": "Воплощение мечты",
+        "es": "Sueños en perspectiva"
+      },
+      "description": {
+        "ru": "Мечтательные световые образы и открытое пространство",
+        "en": "Dreamlike luminous imagery and open space",
+        "es": "Imágenes luminosas de ensueño y espacio abierto"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "dream",
+        "light",
+        "space",
+        "goals",
+        "inspiration"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "wealth-sunrise",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/wealth-sunrise.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/wealth-sunrise.jpg",
+      "label": {
+        "en": "Prosperity sunrise",
+        "ru": "Рассвет процветания",
+        "es": "Amanecer próspero"
+      },
+      "description": {
+        "ru": "Тёплый восход и золотой свет нового дня",
+        "en": "Warm sunrise and golden light at daybreak",
+        "es": "Amanecer cálido con luz dorada"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "sun",
+        "sunrise",
+        "horizon",
+        "light",
+        "optimism"
+      ],
+      "motifs": [
+        "sun",
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "golden-harvest",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/golden-harvest.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/golden-harvest.jpg",
+      "label": {
+        "en": "Golden harvest",
+        "ru": "Золотой урожай",
+        "es": "Cosecha dorada"
+      },
+      "description": {
+        "ru": "Солнечные поля и образы созревания",
+        "en": "Sunlit fields with a sense of ripening",
+        "es": "Campos soleados y sensación de maduración"
+      },
+      "categories": [
+        "money",
+        "steady"
+      ],
+      "tags": [
+        "sun",
+        "nature",
+        "meadow",
+        "growth",
+        "gratitude"
+      ],
+      "motifs": [
+        "sun"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "radiant-portal",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/radiant-portal.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/radiant-portal.jpg",
+      "label": {
+        "en": "Radiant portal",
+        "ru": "Портал возможностей",
+        "es": "Portal radiante"
+      },
+      "description": {
+        "ru": "Световой проход к открытым возможностям",
+        "en": "A luminous passage suggesting possibility",
+        "es": "Un paso luminoso hacia nuevas posibilidades"
+      },
+      "categories": [
+        "money",
+        "uplifting"
+      ],
+      "tags": [
+        "light",
+        "portal",
+        "horizon",
+        "goals",
+        "confidence"
+      ],
+      "motifs": [
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "prosperity-coast",
+      "theme": "money",
+      "collection": "money-films-v1",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/money-films-v1/prosperity-coast.mp4",
+      "poster": "/videos/holistic-house/money-films-v1/prosperity-coast.jpg",
+      "label": {
+        "en": "Coast of abundance",
+        "ru": "Берег изобилия",
+        "es": "Costa de abundancia"
+      },
+      "description": {
+        "ru": "Спокойный берег под золотым солнцем",
+        "en": "A calm coast under golden sunlight",
+        "es": "Una costa tranquila bajo luz dorada"
+      },
+      "categories": [
+        "money",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "coast",
+        "sun",
+        "horizon",
+        "calm"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "coast",
+        "sun"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "solar-surge",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/solar-surge.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/solar-surge.jpg",
+      "label": {
+        "en": "Solar vitality",
+        "ru": "Солнечная энергия",
+        "es": "Vitalidad solar"
+      },
+      "description": {
+        "ru": "Мягкий поток солнечного света в пейзаже",
+        "en": "Soft sunlight flowing over a landscape",
+        "es": "Luz solar suave sobre el paisaje"
+      },
+      "categories": [
+        "energy",
+        "uplifting"
+      ],
+      "tags": [
+        "sun",
+        "light",
+        "warm",
+        "vitality",
+        "morning"
+      ],
+      "motifs": [
+        "sun",
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "ocean-pulse",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/ocean-pulse.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/ocean-pulse.jpg",
+      "label": {
+        "en": "Ocean pulse",
+        "ru": "Пульс океана",
+        "es": "Pulso del océano"
+      },
+      "description": {
+        "ru": "Медленные волны океана и ровный ритм",
+        "en": "Slow ocean waves with an even rhythm",
+        "es": "Olas lentas del océano de ritmo uniforme"
+      },
+      "categories": [
+        "energy",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "water",
+        "waves",
+        "breath",
+        "rhythm"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "water",
+        "waves"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "sunbeam-flow",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/sunbeam-flow.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg",
+      "label": {
+        "en": "Sunbeam flow",
+        "ru": "Поток солнечных лучей",
+        "es": "Flujo de luz solar"
+      },
+      "description": {
+        "ru": "Солнечные лучи через открытое пространство",
+        "en": "Sunbeams passing through open space",
+        "es": "Rayos de sol en un espacio abierto"
+      },
+      "categories": [
+        "energy",
+        "uplifting"
+      ],
+      "tags": [
+        "sun",
+        "light",
+        "rays",
+        "clarity",
+        "focus"
+      ],
+      "motifs": [
+        "sun",
+        "light"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "river-power",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/river-power.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/river-power.jpg",
+      "label": {
+        "en": "Power of water",
+        "ru": "Сила воды",
+        "es": "Fuerza del agua"
+      },
+      "description": {
+        "ru": "Текущая река и ощущение движения",
+        "en": "A flowing river and a gentle sense of motion",
+        "es": "Un río que fluye y sensación de movimiento"
+      },
+      "categories": [
+        "energy",
+        "steady"
+      ],
+      "tags": [
+        "river",
+        "water",
+        "flow",
+        "vitality",
+        "nature"
+      ],
+      "motifs": [
+        "river",
+        "water"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "desert-light",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/desert-light.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/desert-light.jpg",
+      "label": {
+        "en": "Light in motion",
+        "ru": "Свет в движении",
+        "es": "Luz en movimiento"
+      },
+      "description": {
+        "ru": "Свет и простор открытого ландшафта",
+        "en": "Warm light and space across an open landscape",
+        "es": "Luz y amplitud de un paisaje abierto"
+      },
+      "categories": [
+        "energy",
+        "steady"
+      ],
+      "tags": [
+        "desert",
+        "sun",
+        "horizon",
+        "space",
+        "clarity"
+      ],
+      "motifs": [
+        "sun"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "mountain-air",
+      "theme": "energy",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/mountain-air.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/mountain-air.jpg",
+      "label": {
+        "en": "Mountain air",
+        "ru": "Горный воздух",
+        "es": "Aire de montaña"
+      },
+      "description": {
+        "ru": "Горные просторы и медленно плывущие облака",
+        "en": "Open mountains and slow drifting clouds",
+        "es": "Montañas abiertas y nubes que se desplazan"
+      },
+      "categories": [
+        "energy",
+        "steady"
+      ],
+      "tags": [
+        "mountain",
+        "sky",
+        "air",
+        "breath",
+        "freedom"
+      ],
+      "motifs": [
+        "mountain"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "wildflower-dance",
+      "theme": "life",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/wildflower-dance.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/wildflower-dance.jpg",
+      "label": {
+        "en": "Dance of flowers",
+        "ru": "Танец цветов",
+        "es": "Danza de flores"
+      },
+      "description": {
+        "ru": "Полевые цветы, движущиеся на ветру",
+        "en": "Wildflowers swaying in a light breeze",
+        "es": "Flores silvestres que se mecen con la brisa"
+      },
+      "categories": [
+        "life",
+        "uplifting"
+      ],
+      "tags": [
+        "flowers",
+        "meadow",
+        "forest",
+        "growth",
+        "softness"
+      ],
+      "motifs": [
+        "flowers",
+        "forest"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "fern-awakening",
+      "theme": "life",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/fern-awakening.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/fern-awakening.jpg",
+      "label": {
+        "en": "New beginnings",
+        "ru": "Пробуждение жизни",
+        "es": "Nuevo comienzo"
+      },
+      "description": {
+        "ru": "Зелёные листья и пробуждение природы",
+        "en": "Green leaves and the awakening of nature",
+        "es": "Hojas verdes y el despertar de la naturaleza"
+      },
+      "categories": [
+        "life",
+        "steady"
+      ],
+      "tags": [
+        "forest",
+        "fern",
+        "green",
+        "growth",
+        "renewal"
+      ],
+      "motifs": [
+        "forest"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "coastal-freedom",
+      "theme": "life",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/coastal-freedom.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/coastal-freedom.jpg",
+      "label": {
+        "en": "Freedom and space",
+        "ru": "Свобода и простор",
+        "es": "Libertad y espacio"
+      },
+      "description": {
+        "ru": "Широкий морской горизонт и открытое пространство",
+        "en": "A wide coastline and an open horizon",
+        "es": "Una costa amplia y el horizonte abierto"
+      },
+      "categories": [
+        "life",
+        "steady"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "coast",
+        "freedom",
+        "horizon"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "coast"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "lone-tree",
+      "theme": "life",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/lone-tree.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/lone-tree.jpg",
+      "label": {
+        "en": "Roots of life",
+        "ru": "Корни жизни",
+        "es": "Raíces de vida"
+      },
+      "description": {
+        "ru": "Одинокое крепкое дерево в открытом поле",
+        "en": "A sturdy tree in an open field",
+        "es": "Un árbol firme en un campo abierto"
+      },
+      "categories": [
+        "life",
+        "calm"
+      ],
+      "tags": [
+        "forest",
+        "tree",
+        "roots",
+        "stability",
+        "grounding"
+      ],
+      "motifs": [
+        "forest",
+        "tree"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "meadow-morning",
+      "theme": "life",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/meadow-morning.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/meadow-morning.jpg",
+      "label": {
+        "en": "Fresh morning",
+        "ru": "Новое утро",
+        "es": "Mañana nueva"
+      },
+      "description": {
+        "ru": "Раннее утро на спокойном лугу",
+        "en": "A peaceful meadow early in the morning",
+        "es": "Una pradera tranquila al amanecer"
+      },
+      "categories": [
+        "life",
+        "calm"
+      ],
+      "tags": [
+        "meadow",
+        "morning",
+        "sun",
+        "nature",
+        "hope"
+      ],
+      "motifs": [
+        "sun"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "calm-sea",
+      "theme": "health",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/calm-sea.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/calm-sea.jpg",
+      "label": {
+        "en": "Calm sea",
+        "ru": "Спокойное море",
+        "es": "Mar tranquilo"
+      },
+      "description": {
+        "ru": "Ровная морская поверхность и мягкий свет",
+        "en": "A tranquil sea under soft daylight",
+        "es": "Un mar tranquilo bajo luz suave"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "water",
+        "calm",
+        "rest",
+        "breath"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "water"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "morning-dew",
+      "theme": "health",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/morning-dew.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/morning-dew.jpg",
+      "label": {
+        "en": "Morning freshness",
+        "ru": "Утренняя свежесть",
+        "es": "Frescura matinal"
+      },
+      "description": {
+        "ru": "Роса и прохладная свежесть зелёных растений",
+        "en": "Dew and freshness on green leaves",
+        "es": "Rocío y frescura en las hojas verdes"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "dew",
+        "green",
+        "plants",
+        "morning",
+        "freshness"
+      ],
+      "motifs": [],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "mossy-stream",
+      "theme": "health",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/mossy-stream.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/mossy-stream.jpg",
+      "label": {
+        "en": "Quiet stream",
+        "ru": "Тихий ручей",
+        "es": "Arroyo tranquilo"
+      },
+      "description": {
+        "ru": "Прозрачный ручей среди мха и камней",
+        "en": "A clear stream flowing between mossy stones",
+        "es": "Un arroyo transparente entre musgo y piedras"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "river",
+        "water",
+        "forest",
+        "moss",
+        "stream",
+        "grounding"
+      ],
+      "motifs": [
+        "river",
+        "water",
+        "forest",
+        "stream"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "gentle-falls",
+      "theme": "health",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/gentle-falls.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/gentle-falls.jpg",
+      "label": {
+        "en": "Gentle waterfall",
+        "ru": "Мягкий водопад",
+        "es": "Cascada suave"
+      },
+      "description": {
+        "ru": "Небольшой водопад и спокойное течение воды",
+        "en": "A gentle waterfall with steady flowing water",
+        "es": "Una cascada suave de agua constante"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "river",
+        "water",
+        "waterfall",
+        "rest",
+        "soft"
+      ],
+      "motifs": [
+        "river",
+        "water"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "sea-breeze",
+      "theme": "health",
+      "collection": "film-collection-v2",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v2/sea-breeze.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/sea-breeze.jpg",
+      "label": {
+        "en": "Sea breeze",
+        "ru": "Морской бриз",
+        "es": "Brisa marina"
+      },
+      "description": {
+        "ru": "Морской бриз и неспешное движение воздуха",
+        "en": "A sea breeze with a slow sense of movement",
+        "es": "Brisa marina con movimiento pausado"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "coast",
+        "wind",
+        "breath",
+        "rest"
+      ],
+      "motifs": [
+        "sea",
+        "coast",
+        "wind"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "existing_approved_first_party_master"
+      }
+    },
+    {
+      "id": "lake-mist-dawn",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/lake-mist-dawn.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/lake-mist-dawn.jpg",
+      "label": {
+        "ru": "Туманное озеро",
+        "en": "Misty lake",
+        "es": "Lago brumoso"
+      },
+      "description": {
+        "ru": "Туман над озером в утреннем свете",
+        "en": "Morning mist resting above a lake",
+        "es": "Niebla matinal sobre un lago"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "lake",
+        "water",
+        "mist",
+        "calm",
+        "morning",
+        "rest"
+      ],
+      "motifs": [
+        "lake",
+        "water"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "flower-softening",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/flower-softening.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/flower-softening.jpg",
+      "label": {
+        "ru": "Раскрытие цветка",
+        "en": "Flower unfolding",
+        "es": "Flor que se abre"
+      },
+      "description": {
+        "ru": "Раскрывающиеся цветы и мягкие лепестки",
+        "en": "Flowers opening with gentle petals",
+        "es": "Flores abriéndose con pétalos suaves"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "flowers",
+        "bloom",
+        "tenderness",
+        "acceptance",
+        "rest"
+      ],
+      "motifs": [
+        "flowers"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "petal-hope",
+      "theme": "life",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/petal-hope.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/petal-hope.jpg",
+      "label": {
+        "ru": "Нежное цветение",
+        "en": "Gentle blossoms",
+        "es": "Flores delicadas"
+      },
+      "description": {
+        "ru": "Нежные розовые цветы в движении",
+        "en": "Delicate pink blossoms in motion",
+        "es": "Flores rosadas delicadas en movimiento"
+      },
+      "categories": [
+        "life",
+        "uplifting"
+      ],
+      "tags": [
+        "flowers",
+        "bloom",
+        "hope",
+        "growth",
+        "renewal"
+      ],
+      "motifs": [
+        "flowers"
+      ],
+      "pace": "moderate",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "ocean-release",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/ocean-release.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/ocean-release.jpg",
+      "label": {
+        "ru": "Отпустить с волной",
+        "en": "Release with the waves",
+        "es": "Soltar con las olas"
+      },
+      "description": {
+        "ru": "Плавный прибой на песчаном берегу",
+        "en": "Gentle waves washing a sandy shore",
+        "es": "Olas suaves sobre una playa de arena"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "beach",
+        "water",
+        "waves",
+        "release"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "beach",
+        "water",
+        "waves"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "shore-breath",
+      "theme": "energy",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/shore-breath.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/shore-breath.jpg",
+      "label": {
+        "ru": "Дыхание побережья",
+        "en": "Coastal breathing",
+        "es": "Respirar junto al mar"
+      },
+      "description": {
+        "ru": "Скалистое побережье и широкая морская даль",
+        "en": "A rocky shoreline with open sea views",
+        "es": "Costa rocosa con amplias vistas del mar"
+      },
+      "categories": [
+        "energy",
+        "steady"
+      ],
+      "tags": [
+        "sea",
+        "coast",
+        "rock",
+        "air",
+        "breath",
+        "horizon"
+      ],
+      "motifs": [
+        "sea",
+        "coast"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "river-grounding",
+      "theme": "health",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/river-grounding.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/river-grounding.jpg",
+      "label": {
+        "ru": "Опора на берегу",
+        "en": "Riverside grounding",
+        "es": "Arraigo junto al río"
+      },
+      "description": {
+        "ru": "Речная долина и осенний лес",
+        "en": "A riverside landscape and autumn woodland",
+        "es": "Paisaje de río y bosque otoñal"
+      },
+      "categories": [
+        "health",
+        "calm"
+      ],
+      "tags": [
+        "river",
+        "water",
+        "forest",
+        "trees",
+        "grounding"
+      ],
+      "motifs": [
+        "river",
+        "water",
+        "forest",
+        "trees"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "forest-renewal",
+      "theme": "life",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/forest-renewal.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/forest-renewal.jpg",
+      "label": {
+        "ru": "Возрождение леса",
+        "en": "Forest renewal",
+        "es": "Renacer del bosque"
+      },
+      "description": {
+        "ru": "Осенний лес и новые цветущие растения",
+        "en": "Autumn woodland with fresh blossoms",
+        "es": "Bosque otoñal con flores nuevas"
+      },
+      "categories": [
+        "life",
+        "steady"
+      ],
+      "tags": [
+        "forest",
+        "trees",
+        "flowers",
+        "renewal",
+        "growth"
+      ],
+      "motifs": [
+        "forest",
+        "trees",
+        "flowers"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "soft-horizon",
+      "theme": "goals",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/soft-horizon.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/soft-horizon.jpg",
+      "label": {
+        "ru": "Открытый горизонт",
+        "en": "Open horizon",
+        "es": "Horizonte abierto"
+      },
+      "description": {
+        "ru": "Светлый морской горизонт и берег",
+        "en": "A bright sea horizon and gentle shore",
+        "es": "Horizonte luminoso del mar y la costa"
+      },
+      "categories": [
+        "goals",
+        "steady"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "horizon",
+        "goals",
+        "clarity"
+      ],
+      "motifs": [
+        "sea",
+        "ocean"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "heart-flow",
+      "theme": "relationships",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/heart-flow.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/heart-flow.jpg",
+      "label": {
+        "ru": "Мягкость и движение",
+        "en": "Heart in flow",
+        "es": "Corazón en movimiento"
+      },
+      "description": {
+        "ru": "Волны моря сменяются раскрытием цветка",
+        "en": "Sea waves leading into a flower in bloom",
+        "es": "Olas del mar que dan paso a una flor"
+      },
+      "categories": [
+        "relationships",
+        "calm"
+      ],
+      "tags": [
+        "sea",
+        "ocean",
+        "flowers",
+        "connection",
+        "tenderness"
+      ],
+      "motifs": [
+        "sea",
+        "ocean",
+        "flowers"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "clear-morning",
+      "theme": "energy",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/clear-morning.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/clear-morning.jpg",
+      "label": {
+        "ru": "Ясность утра",
+        "en": "A clearer morning",
+        "es": "Una mañana clara"
+      },
+      "description": {
+        "ru": "Свет утреннего озера и прозрачной реки",
+        "en": "Morning light across a lake and clear river",
+        "es": "Luz matinal sobre lago y río"
+      },
+      "categories": [
+        "energy",
+        "steady"
+      ],
+      "tags": [
+        "lake",
+        "water",
+        "river",
+        "morning",
+        "clarity",
+        "focus"
+      ],
+      "motifs": [
+        "lake",
+        "water",
+        "river"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "still-water",
+      "theme": "life",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/still-water.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/still-water.jpg",
+      "label": {
+        "ru": "Спокойная вода",
+        "en": "Still water",
+        "es": "Agua serena"
+      },
+      "description": {
+        "ru": "Неспешная вода у каменистого берега",
+        "en": "Still water along a rocky shore",
+        "es": "Agua quieta junto a una orilla rocosa"
+      },
+      "categories": [
+        "life",
+        "calm"
+      ],
+      "tags": [
+        "water",
+        "lake",
+        "coast",
+        "stillness",
+        "rest"
+      ],
+      "motifs": [
+        "water",
+        "lake",
+        "coast"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    },
+    {
+      "id": "garden-acceptance",
+      "theme": "relationships",
+      "collection": "film-collection-v3",
+      "media": "licensed_mp4",
+      "status": "approved",
+      "video": "/videos/holistic-house/film-collection-v3/garden-acceptance.mp4",
+      "poster": "/videos/holistic-house/film-collection-v3/garden-acceptance.jpg",
+      "label": {
+        "ru": "Сад принятия",
+        "en": "Garden of acceptance",
+        "es": "Jardín de aceptación"
+      },
+      "description": {
+        "ru": "Белые и розовые цветы в мягком свете",
+        "en": "White and pink flowers in gentle light",
+        "es": "Flores blancas y rosas bajo luz suave"
+      },
+      "categories": [
+        "relationships",
+        "calm"
+      ],
+      "tags": [
+        "flowers",
+        "garden",
+        "acceptance",
+        "trust",
+        "tenderness"
+      ],
+      "motifs": [
+        "flowers",
+        "garden"
+      ],
+      "pace": "slow",
+      "rightsReference": {
+        "kind": "dareful_cc_by_4_0",
+        "attribution": "Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted) | Joel Holland / CC BY 4.0 / creativecommons.org/licenses/by/4.0 (adapted)"
+      }
+    }
+  ]
+}

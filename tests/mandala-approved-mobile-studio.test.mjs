@@ -157,19 +157,28 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
 });
 
 
-test("twenty-four unique first-party four-shot free compilations use verified stock masters, not paid AI",()=>{
+test("forty-eight curated free four-shot compilations use all 44 approved local video masters",()=>{
   const src=read("components/mandala-free-video-studio.tsx");
   const money=read("lib/mandala/real-money-film-library.ts");
   const themed=read("lib/mandala/film-collection-v2.ts");
+  const taxonomy=JSON.parse(read("data/video-catalog/scene-taxonomy.json"));
+  const additions=JSON.parse(read("data/video-catalog/free-film-presets-v2.json"));
+  const officialExtras=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
   const start=src.indexOf("const FREE_FILM_PRESETS:");
   assert.ok(start>0,"catalog belongs in the existing approved video editor");
   const arrayStart=src.indexOf("= [",start)+2;
-  const arrayEnd=src.indexOf("] as const;",arrayStart)+1;
-  const catalogue=JSON.parse(src.slice(arrayStart,arrayEnd));
-  assert.equal(catalogue.length,24);
-  const groups=new Map();
-  const ids=new Set();
-  const originalClips=new Set();
+  const spread=src.indexOf("...(extraFreeFilmPresets.presets as FreeFilmPreset[])",arrayStart);
+  assert.ok(spread>arrayStart,"new verified four-shot presets are reused, not copied");
+  const originalPart=src.slice(arrayStart,spread).trim().replace(/,\s*$/,"");
+  const original=JSON.parse(originalPart+"]");
+  const catalogue=[...original,...additions.presets];
+  assert.equal(original.length,24);
+  assert.equal(additions.presets.length,24);
+  assert.equal(catalogue.length,48);
+  assert.equal(taxonomy.scenes.length,44);
+  const physical=new Set(taxonomy.scenes.filter(item=>item.status==="approved").map(item=>item.id));
+  assert.equal(physical.size,44);
+  const groups=new Map(),ids=new Set(),originalClips=new Set();
   for(const film of catalogue){
     assert.ok(!ids.has(film.id),"every free montage has a distinct id");
     ids.add(film.id);
@@ -178,14 +187,18 @@ test("twenty-four unique first-party four-shot free compilations use verified st
     for(const locale of ["ru","en","es"])assert.ok(film.label[locale]?.trim());
     groups.set(film.theme,(groups.get(film.theme)||0)+1);
     for(const clip of film.clips){
-      assert.ok(money.includes('"'+clip+'"') || money.includes(clip+': {src:ROOT+"'+clip+'.mp4"') || themed.includes('film("'+clip+'")'),
-        "every storyboard clip exists as a pre-encoded first-party MP4: "+clip);
+      assert.ok(physical.has(clip),"montage references only verified, licensed local MP4: "+clip);
+      assert.ok(money.includes('"'+clip+'"') || themed.includes('film("'+clip+'")') ||
+        officialExtras.some(item=>item.id===clip&&item.status==="approved"),
+        "all video sources exist in the first-party playback registry: "+clip);
       originalClips.add(clip);
     }
   }
   for(const category of ["money","energy","life","health","relationships","goals"])
-    assert.equal(groups.get(category),4,category);
-  assert.ok(originalClips.size>=24,"montages must vary across many actual videos");
+    assert.equal(groups.get(category),8,category);
+  assert.equal(originalClips.size,44,"all 44 licensed source clips appear in ready-to-edit movies");
+  assert.match(src,/free-film-presets-v2\.json/);
+  assert.match(src,/scene-taxonomy\.json/);
   assert.match(src,/data-free-film-compilation-catalog/);
   assert.match(src,/data-free-film-original-masters/);
   assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
