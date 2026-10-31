@@ -74,10 +74,23 @@ async function verify(engine, locale, width) {
     await root.locator('[data-direction-filter="work-stress"]').click();
     assert.equal(await root.locator('[data-direction-filter="work-stress"]').getAttribute("aria-pressed"),"true",
       label+": focus selection reacts");
-    await root.locator('[data-direction-show-more="session"]').click();
+    const sessionMore = root.locator('[data-direction-show-more="session"]');
+    await sessionMore.click();
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-direction-offers="business"]');
+      return root?.querySelector('[data-direction-show-more="session"]')
+        ?.getAttribute('aria-expanded') === 'true' &&
+        root.querySelectorAll('[data-offer-action="session"]').length === 4;
+    }, null, {timeout:10000});
     assert.equal(await root.locator('[data-offer-action="session"]').count(),4,
       label+": show more reveals four genuine session options");
-    await root.locator('[data-direction-show-more="session"]').click();
+    await sessionMore.click();
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-direction-offers="business"]');
+      return root?.querySelector('[data-direction-show-more="session"]')
+        ?.getAttribute('aria-expanded') === 'false' &&
+        root.querySelectorAll('[data-offer-action="session"]').length === 2;
+    }, null, {timeout:10000});
     assert.equal(await root.locator('[data-offer-action="session"]').count(),2,
       label+": collapse restores compact session choices");
     await root.locator('[data-direction-filter="all"]').click();

@@ -167,13 +167,33 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
   assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
   await submitSyntheticForm(page,chooser,locale,submissions);
-  // The CRM helper already waits for the WhatsApp receipt. Telegram is
-  // committed in the same asynchronous React success state, so also wait for
-  // its real visible link rather than sampling an intermediate count.
-  await tg.waitFor({state:"visible",timeout:10000});
-  assert.equal(await wa.count(), 1);
-  assert.equal(await tg.count(), 1);
-  const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);
+  // Verify a COMMITTED, consented receipt with both actual safe links in the
+  // same DOM snapshot. A single link can flash during a hydrated React swap;
+  // separate instant .count() calls do not prove the user sees both options.
+  await page.waitForFunction(async panelId => {
+    const isReady = () => {
+      const panel = document.getElementById(panelId);
+      if (!panel || panel.hidden) return false;
+      const receipt = panel.querySelector('p[role="status"]');
+      const links = [...panel.querySelectorAll('a[data-contact-channel]')];
+      const channels = links.map(link => link.getAttribute('data-contact-channel')).sort();
+      return Boolean(receipt?.textContent?.includes('HH-CA5016DE79E4') &&
+        links.length === 2 && channels.join(',') === 'telegram,whatsapp' &&
+        links.every(link => link.getAttribute('href')?.startsWith('https://')));
+    };
+    if (!isReady()) return false;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return isReady();
+  }, panelId, {timeout:15000});
+  assert.equal(new URL(page.url()).pathname, new URL(startUrl).pathname,
+    "Saved CRM confirmation must remain on the chosen page until the user selects a channel");
+  const links = await chooser.locator('a[data-contact-channel]').evaluateAll(nodes =>
+    nodes.map(node => ({channel:node.getAttribute('data-contact-channel'),
+      href:node.getAttribute('href')})));
+  assert.deepEqual(links.map(link => link.channel).sort(), ['telegram','whatsapp'],
+    "Exactly one real saved WhatsApp and Telegram option after consent");
+  const waHref = links.find(link => link.channel === 'whatsapp')?.href;
+  const tgHref = links.find(link => link.channel === 'telegram')?.href;
   const waDraft = draft(waHref, "wa.me", "/14376066502");
   const tgDraft = draft(tgHref, "t.me", "/AndyTherapist");
   assert.equal(waDraft, tgDraft, "Both channels must retain the same selected request");
