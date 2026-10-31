@@ -208,8 +208,11 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // Port #2698 HEAD (14beeb06): WebKit can re-render the native details
+        // after the real click. Assert genuine open state with bounded retry.
+        await expect(coverOptions,
+          "photo cover and user-owned image choices must open on user request")
+          .toHaveAttribute("open", "", {timeout:10000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
@@ -340,7 +343,10 @@ const runEngine = async ([engine, browserType]) => {
           "Hypnocorrection opens beneath the button, never as another page");
         await page.locator("[data-video-quick-legacy] > summary").click();
         const detailed=page.locator("[data-video-quick-legacy]");
-        await detailed.waitFor({state:"visible",timeout:12000});
+        // Only an OPEN disclosure makes its real format/voice/phrase actions
+        // reachable. Waiting for <details> visibility alone is insufficient.
+        await expect(detailed,"advanced parameters must expand on a real click")
+          .toHaveAttribute("open","",{timeout:12000});
         assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "Director adds the 15-second option while preserving 10/20/30/60");
@@ -1120,23 +1126,13 @@ const runEngine = async ([engine, browserType]) => {
           // The compact Hypno editor intentionally unmounts its deep inputs
           // until the visitor opens Edit. Preserve real guided-course phrases.
           const guidedPhrasesEdit=page.locator("[data-hypno-phrases-edit]");
-          // Applying the guided session intentionally starts a smooth scroll
-          // to the existing Create action. Center the same visible edit
-          // control before its genuine click so WebKit cannot chase a moving
-          // target behind the fixed mobile dock.
-          await guidedPhrasesEdit.evaluate(element=>{
-            element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
-          });
-          await page.waitForFunction(()=>{
-            const el=document.querySelector("[data-hypno-phrases-edit]");
-            const dock=document.querySelector("[data-mandala-support-bottom-nav]");
-            if(!el)return false;
-            const r=el.getBoundingClientRect(), d=dock?.getBoundingClientRect();
-            const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
-            return r.top>=4 && r.bottom<=innerHeight-4 && (!d||r.bottom<=d.top-8) &&
-              (hit===el||el.contains(hit));
-          },undefined,{timeout:10000});
-          await guidedPhrasesEdit.click();
+          // A guided-video selection now finishes its Create jump immediately.
+          // Playwright's genuine click enforces visibility, pointer hit-testing
+          // and stability; avoid a bespoke elementFromPoint check that can
+          // race WebKit's layout and produce a false failure.
+          await expect(guidedPhrasesEdit).toBeVisible({timeout:12000});
+          await guidedPhrasesEdit.scrollIntoViewIfNeeded({timeout:12000});
+          await guidedPhrasesEdit.click({timeout:15000});
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
