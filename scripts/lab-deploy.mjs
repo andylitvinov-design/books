@@ -33,7 +33,7 @@ async function main(){
   const url=command('vercel',['deploy','--yes','--local-config',cfg,'--scope','super10'],900000).split('\n').findLast(x=>/^https:\/\//.test(x.trim()));
   if(!url)block('missing deployment URL');
   const inspected=command('vercel',['inspect',url,'--scope','super10'],60000);
-  if(!/Target:\\s*preview/i.test(inspected)||/Target:\\s*production/i.test(inspected))block('target is not confirmed preview: cancel deployment');
+  if(!/Target:\s*preview/i.test(inspected)||/Target:\s*production/i.test(inspected))block('target is not confirmed preview: cancel deployment');
   history[history.length-1].status='preview-verified';history[history.length-1].url=url;
   await writeFile(path,JSON.stringify(history,null,2));process.stdout.write(url+'\n');
  }finally{await rm(lock,{recursive:true,force:true})}
