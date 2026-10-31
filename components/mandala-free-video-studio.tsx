@@ -966,7 +966,7 @@ function recordingMimes(withAudio: boolean, preferWebm = false): string[] {
   const webm = withAudio ? [
     'video/webm;codecs="vp8,opus"', "video/webm",
   ] : ["video/webm;codecs=vp8", "video/webm"];
-  const candidates = preferWebm ? [...webm,...mp4] : [...mp4,...webm];
+  const candidates = preferWebm ? webm : [...mp4,...webm];
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
@@ -2457,7 +2457,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </nav>
         <MandalaFirstVideoStart locale={locale} wish={wish}
           disabled={recording||preparing} preparing={preparing} recording={recording}
-          progress={progress} resultReady={Boolean(result)} ready={canGenerate}
+          progress={progress} resultReady={Boolean(result)&&playbackStatus==="ready"} ready={canGenerate}
           onWishChange={value=>{setWish(value);setSuggestion("");}}
           onApply={applyFirstVideoDraft}
           onCreate={()=>{
@@ -3882,7 +3882,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </details>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}>
-        <h3>{ui.videoPreview}</h3>
+        <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
         {result ? (
           <>
             {result.mode==="catalog"?<p className={videoStyles.warning}
