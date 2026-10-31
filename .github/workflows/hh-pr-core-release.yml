@@ -21,6 +21,7 @@ jobs:
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
+      tests_only: ${{ steps.diff.outputs.tests_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +43,7 @@ jobs:
           set -euo pipefail
           docs_only=false
           ci_only=false
+          tests_only=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
             # pull_request checkout uses a synthetic merge commit. Production
             # may advance after the PR event base SHA was recorded. Compare
@@ -63,8 +65,10 @@ jobs:
               fi
             fi
             git diff --no-renames --name-only -z "$diff_base" HEAD > /tmp/hh-pr-changed-files.z
+            git diff --no-renames --name-status -z "$diff_base" HEAD > /tmp/hh-pr-changed-status.z
             docs_only=true
             ci_only=true
+            tests_only=true
             count=0
             while IFS= read -r -d '' f; do
               [[ -z "$f" ]] && continue
@@ -72,6 +76,12 @@ jobs:
               case "$f" in
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
+              esac
+              # Source-only fast lane is limited to modified existing test files.
+              # Any app/runtime/config/fixture/SQL change keeps global compile.
+              case "$f" in
+                tests/*.test.mjs) ;;
+                *) tests_only=false ;;
               esac
               # CI-only allowlist is exact, never includes application, SQL,
               # dependency manifests, auth, billing, RLS or provider code.
@@ -94,11 +104,24 @@ jobs:
                 *) ci_only=false ;;
               esac
             done < /tmp/hh-pr-changed-files.z
-            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
+            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; tests_only=false; fi
+            if [[ "$tests_only" == true && "$ci_only" == false ]]; then
+              # Fail closed on added/deleted/renamed or unparseable changes.
+              while IFS= read -r -d '' status; do
+                IFS= read -r -d '' filename || { tests_only=false; break; }
+                if [[ "$status" != M || "$filename" != tests/*.test.mjs ]]; then
+                  tests_only=false
+                  break
+                fi
+              done < /tmp/hh-pr-changed-status.z
+            else
+              tests_only=false
+            fi
           fi
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+          echo "tests_only=$tests_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only; modified existing tests-only: $tests_only" >> "$GITHUB_STEP_SUMMARY"
   code:
     name: core-lint-types-build
     needs: scope
@@ -153,10 +176,10 @@ jobs:
             echo 'No changed JS/TS files to lint'
           fi
       - name: Full TypeScript check
-        if: needs.scope.outputs.ci_only != 'true'
+        if: needs.scope.outputs.ci_only != 'true' && needs.scope.outputs.tests_only != 'true'
         run: npx --no-install tsc --noEmit --pretty false
       - name: Exact proposed release production build
-        if: needs.scope.outputs.ci_only != 'true'
+        if: needs.scope.outputs.ci_only != 'true' && needs.scope.outputs.tests_only != 'true'
         run: npm run build
   release-ready:
     name: release-ready

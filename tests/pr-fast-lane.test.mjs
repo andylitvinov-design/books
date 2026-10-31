@@ -200,6 +200,10 @@ const classifierCases = [
   ['merge queue docs change', 'docs/start.md', null, 'edit', false, 'merge_group'],
   ['newline code filename', 'source\nfile.ts', 'docs/moved.md', 'rename', false],
   ['missing base', 'docs/start.md', null, 'edit', false, 'pull_request', true],
+  ['modified existing source test uses no duplicate global build', 'tests/focused-contract.test.mjs', null, 'edit', false, 'pull_request', false, false, true],
+  ['deleted source test preserves build', 'tests/focused-contract.test.mjs', null, 'delete', false],
+  ['added source test preserves build', 'tests/focused-contract.test.mjs', null, 'add', false],
+  ['source test mixed with runtime preserves build', 'tests/focused-contract.test.mjs', 'components/example.tsx', 'mixed', false],
   ['CI workflow YAML edit', '.github/workflows/example.yml', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
   ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
@@ -213,7 +217,7 @@ const classifierCases = [
   ['CI instructions update', 'AGENTS.md', null, 'edit', false],
 ];
 
-for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false, expectedCiOnly = false] of classifierCases) {
+for (const [name, from, to, operation, expected, event = 'pull_request', missingBase = false, expectedCiOnly = false, expectedTestsOnly = false] of classifierCases) {
   test(`fail-closed PR classifier: ${name}`, () => {
     const dir = mkdtempSync(join(tmpdir(), 'hh-fast-lane-'));
     const env = { PATH: process.env.PATH, HOME: dir, TMPDIR: dir,
@@ -234,12 +238,13 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       // Explicitly enable detection so the regression cannot pass accidentally
       // because a local Git default happens to disable rename detection.
       git('config', 'diff.renames', 'true');
-      write(from, 'synthetic unchanged content\n');
+      write('baseline.txt', 'unchanged synthetic baseline\n');
+      if (operation !== 'add') write(from, 'synthetic unchanged content\n');
       git('add', '--all'); git('commit', '--quiet', '-m', 'synthetic baseline');
       const base = git('rev-parse', 'HEAD');
       if (operation === 'rename') { mkdirSync(join(dir, to, '..'), { recursive: true }); renameSync(join(dir, from), join(dir, to)); }
       if (operation === 'delete') rmSync(join(dir, from));
-      if (operation === 'edit' || operation === 'mixed') write(from, 'synthetic edited content\n');
+      if (operation === 'edit' || operation === 'mixed' || operation === 'add') write(from, 'synthetic edited content\n');
       if (operation === 'mixed') write(to, 'synthetic source\n');
       git('add', '--all'); git('commit', '--quiet', '--allow-empty', '-m', 'synthetic change');
       const source = workflow('hh-pr-core-release.yml');
@@ -248,7 +253,8 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
       const block = classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
       assert.ok(block, 'classifier shell block is present');
       // Preserve classifier logic exactly; isolate only its fixed temporary file.
-      const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'));
+      const script = block[1].replace(/^          /gm, '').replaceAll('/tmp/hh-pr-changed-files.z', join(dir, 'changed.z'))
+        .replaceAll('/tmp/hh-pr-changed-status.z', join(dir, 'status.z'));
       const invalidBase = missingBase === 'invalid';
       const result = run('bash', ['--noprofile', '--norc', '-c', script], {
         BASE_SHA: invalidBase ? 'not-a-valid-commit' : missingBase ? '' : base, EVENT_NAME: event,
@@ -259,7 +265,7 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
         assert.equal(result.signal, null, 'invalid base is a normal Git failure, not timeout');
         assert.ok(!existsSync(join(dir, 'output')) || !readFileSync(join(dir, 'output'), 'utf8').includes('docs_only=true'));
       } else {
-        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`]);
+        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`,`tests_only=${expectedTestsOnly}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -306,14 +312,15 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
     const block=classifierStep[1].match(/^        run: \|\n([\s\S]*)$/m);
     assert.ok(block);
     const script=block[1].replace(/^          /gm,'')
-      .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
+      .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'))
+      .replaceAll('/tmp/hh-pr-changed-status.z',join(dir,'status.z'));
     const output=join(dir,'output'),summary=join(dir,'summary');
     const checked=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
-      ['docs_only=false','ci_only=true']);
+      ['docs_only=false','ci_only=true','tests_only=false']);
     assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
@@ -446,7 +453,10 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   const actionlint=workflow('hh-actionlint.yml');
   assert.ok(core.includes("ci_only: $"+"{{ steps.diff.outputs.ci_only }}"));
   for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
-  assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
+  assert.ok(core.includes("tests_only: $"+"{{ steps.diff.outputs.tests_only }}"));
+  assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true' && needs.scope.outputs.tests_only != 'true'"));
+  assert.match(core, /git diff --no-renames --name-status -z/);
+  assert.match(core, /tests\/\*\.test\.mjs/);
   assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
   assert.match(core,/npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
