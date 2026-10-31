@@ -12,13 +12,27 @@ on:
       - 'components/sitewide-antistress-banner.tsx'
       - 'public/images/holistic-house/messenger-zen-stones.svg'
       - '.github/workflows/hh-messages-wellness-browser.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/**/app/messages/**'
+      - 'components/app/messages-orders-clients.*'
+      - 'components/app/messages-simple-inbox.*'
+      - 'components/app/messages-hub.*'
+      - 'components/app/practice-request-conversation.*'
+      - 'scripts/verify-messages-wellness-browser.mjs'
+      - 'components/sitewide-antistress-banner.tsx'
+      - 'public/images/holistic-house/messenger-zen-stones.svg'
+      - '.github/workflows/hh-messages-wellness-browser.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: hh-messages-visual-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   synthetic-browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -34,15 +48,18 @@ jobs:
       - name: Script syntax and typecheck
         run: |
           node --check scripts/verify-messages-wellness-browser.mjs
-          npx --no-install tsc --noEmit --pretty false
+          if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit --pretty false; fi
       - name: Build production Next.js before browser tests
+        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install synthetic browser engines
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/hh-messages-visual-tools
           npm install --prefix /tmp/hh-messages-visual-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-messages-visual-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Actual iPhone-sized Orders / Clients / request conversations
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p artifacts/messages-wellness
           npx next start --hostname 127.0.0.1 --port 3127 >/tmp/hh-messages-visual-next.log 2>&1 &
@@ -63,7 +80,7 @@ jobs:
           done
           node scripts/verify-messages-wellness-browser.mjs
       - name: Preserve synthetic rendered screenshots only
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: messages-wellness-synthetic-chromium-webkit

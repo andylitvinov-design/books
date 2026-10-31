@@ -40,14 +40,27 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
-test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+test('Portrait PR runs focused current contracts while the old synthetic DB/browser matrix is manual-only',()=>{
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
   assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
   assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'PR routing must not allocate two private DB/browser runners');
+  assert.ok(s.includes("'[\"chromium\",\"webkit\"]'"), 'manual full matrix remains available');
+  assert.ok(s.includes("'[\"chromium\"]'"), 'normal PR executes one Chromium core check');
+  for (const step of [
+    'Isolated Playwright browser (manual deep QA only)',
+    'Initialize isolated synthetic database',
+    'Five profile navigation with four scored sectors, goal check-in, mobile EN/RU',
+  ]) {
+    assert.ok(s.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+      'obsolete portrait E2E must not block an ordinary PR: '+step);
+  }
+  assert.ok(s.includes('node --test tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs'),
+    'current profile source contracts still run');
   assert.match(s,/postgres:17-alpine/);
   assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
   assert.match(s,/verify-portrait-mobile\.mjs/);
@@ -129,4 +142,24 @@ test('Public Services: only existing executed unit-test changes may skip duplica
     'verify-service-cart-browser.mjs', 'verify-talisman-google-checkout-browser.mjs',
     "'app/api/payments/**'"]) assert.ok(s.includes(required), 'missing full acceptance: ' + required);
   assert.doesNotMatch(s, /continue-on-error:\s*true/);
+});
+
+test('Reiki PR runs current course source contracts; full 64-slide browser suite stays manual', () => {
+  const yaml=workflow('hh-reiki-all-slides-browser.yml');
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.ok(yaml.includes("  course-and-save-gate:\n    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
+    'specialist workflow cannot report a second skipped PR job to release-ready');
+  assert.ok(!yaml.includes('  reiki-current-contracts:'),'duplicate npm install and check job removed');
+  assert.ok(yaml.includes("if: github.event_name == 'pull_request'\n        run: |\n          node --check scripts/verify-reiki-all-slides-browser.mjs"));
+  for (const step of [
+    'Isolated Chromium/WebKit runtime (manual deep QA only)',
+    'Initialize synthetic isolated account database',
+    'Verify Chromium full 64 screens and Safari guest save-only checkpoint',
+  ]) {
+    assert.ok(yaml.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+      'old extended browser/DB matrix must not block an ordinary product PR: '+step);
+  }
+  assert.ok(yaml.includes('node --test tests/reiki-referral-landing.test.mjs'));
+  assert.match(yaml,/HH_APP_TEST_RUNTIME: isolated/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
