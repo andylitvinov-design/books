@@ -1,6 +1,7 @@
 name: Holistic House Free Express v2 protected rollout
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-free-express-wizard-v2.yml'
@@ -30,16 +31,18 @@ on:
       - 'components/app/practitioner-client-profiles.jsx'
       - 'supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql'
       - 'tests/free-express-owner-reply.test.mjs'
+      - 'tests/ci-free-express-draft-gate.test.mjs'
       - 'components/app/free-express-my-requests.jsx'
       - 'scripts/verify-free-express-wizard-v2.mjs'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: hh-free-express-v2-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-free-express-v2-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   protected-wizard:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     # Official Playwright image has matching Chromium/WebKit dependencies.
     # Pinned image digest prevents surprises from mutable tags and avoids
@@ -66,7 +69,7 @@ jobs:
           HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}
         run: |
           npm ci --include=dev --no-audit --no-fund
-          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-owner-reply.test.mjs tests/free-express-retention.test.mjs
+          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-owner-reply.test.mjs tests/free-express-retention.test.mjs tests/ci-free-express-draft-gate.test.mjs
           npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js lib/practitioners/free-express-owner-reply.js lib/practitioners/free-express-owner-reply-policy.mjs components/app/free-express-owner-case.jsx components/app/practitioner-client-profiles.jsx app/api/app/practice/free-express/'[id]'/reply/route.js
           if [ "$GITHUB_EVENT_NAME" != "pull_request" ] || [ "$HH_TARGET_BASE" != "codex/public-book-library" ]; then
             npx tsc --noEmit
@@ -101,6 +104,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
   guest-continuation-rls-postgres17:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     services:
