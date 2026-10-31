@@ -83,7 +83,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
   assert.match(source, /ci-specialist-aggregate\.mjs/);
   assert.match(source, /git show/);
   assert.match(source, /HH_HEAD_REPO/);
-  assert.match(source, /HH_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs/);
+  assert.match(source, /HH_TRUSTED_BASE_SHA:scripts\/ci-specialist-aggregate\.mjs/);
   assert.match(source, /HH_HEAD_SHA/);
   assert.match(source, /HH_BASE_SHA/);
   assert.match(source, /actions: read/);
@@ -110,9 +110,10 @@ test('PR automation policy and agent entry point require specialist safety gates
 
 // Exercise only the classifier shell block in a disposable synthetic Git repository.
 // Never execute workflow jobs, package scripts, application modules or providers.
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, renameSync, rmSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+import { verifiedCheckoutBase, checkoutChangedRows } from '../scripts/ci-specialist-aggregate.mjs';
 
 const directDependencies = {
   "hh-app-browser.yml": ["scripts/helpers/isolated-browser-diagnostics.mjs", "scripts/verify-account-status-filters.mjs", "scripts/verify-asrs6-pdf.mjs", "scripts/verify-asrs6.mjs", "scripts/verify-bach-personal-report-browser.mjs", "scripts/verify-mhc-sf.mjs", "scripts/verify-personality-types.mjs"],
@@ -733,4 +734,58 @@ test('trusted native auto-merge can use a repo-scoped token to preserve push eve
   assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.match(source, /pull_request_target:/);
   assert.doesNotMatch(source, /checkout@|--admin/);
+});
+
+test('release aggregation selects and verifies the actual tested merge parent', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  assert.ok(source.includes('HH_TRUSTED_BASE_SHA='), 'the tested merge parent must be exported');
+  assert.ok(source.includes('git rev-parse HEAD^2'), 'the checkout must belong to the exact PR head');
+  assert.ok(source.includes('compare/$BASE_SHA...$first_parent'), 'a newer checkout parent must descend from the event base');
+  assert.ok(source.includes('git show "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs"'));
+});
+
+test('verified merge checkout uses the tested base and PR-only diff, and fails closed', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'hh-trusted-merge-base-'));
+  const common = { ...process.env, HOME: dir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null',
+    GIT_AUTHOR_NAME: 'Synthetic', GIT_AUTHOR_EMAIL: 'synthetic@example.invalid',
+    GIT_COMMITTER_NAME: 'Synthetic', GIT_COMMITTER_EMAIL: 'synthetic@example.invalid' };
+  const run = (cmd, args, env = {}) => spawnSync(cmd, args, { cwd: dir, encoding: 'utf8', timeout: 10000, env: { ...common, ...env } });
+  const git = (...args) => { const out = run('git', ['-c', 'core.hooksPath=/dev/null', ...args]); assert.equal(out.status, 0, out.stderr); return out.stdout.trim(); };
+  try {
+    git('init', '--quiet');
+    writeFileSync(join(dir, 'original.txt'), 'base'); git('add', '.'); git('commit', '--quiet', '-m', 'base');
+    const eventBase = git('rev-parse', 'HEAD');
+    git('switch', '--quiet', '-c', 'feature');
+    writeFileSync(join(dir, 'pr.txt'), 'change'); git('add', '.'); git('commit', '--quiet', '-m', 'PR');
+    const head = git('rev-parse', 'HEAD');
+    git('switch', '--quiet', '-c', 'production', eventBase);
+    writeFileSync(join(dir, 'other.txt'), 'unrelated production'); git('add', '.'); git('commit', '--quiet', '-m', 'production');
+    const actualBase = git('rev-parse', 'HEAD');
+    git('merge', '--quiet', '--no-ff', 'feature', '-m', 'GitHub merge');
+    const merge = git('rev-parse', 'HEAD');
+    const env = { HH_TRUSTED_BASE_SHA: actualBase, GITHUB_SHA: merge };
+    assert.equal(verifiedCheckoutBase(env, { head }, dir), actualBase);
+    assert.deepEqual(checkoutChangedRows(actualBase, dir), [{ status: 'A', filename: 'pr.txt' }]);
+    assert.throws(() => verifiedCheckoutBase({ ...env, HH_TRUSTED_BASE_SHA: eventBase }, { head }, dir), /UNVERIFIED_MERGE_CHECKOUT/);
+    assert.throws(() => verifiedCheckoutBase({ ...env, GITHUB_SHA: eventBase }, { head }, dir), /UNVERIFIED_MERGE_CHECKOUT/);
+    assert.throws(() => verifiedCheckoutBase(env, { head: eventBase }, dir), /UNVERIFIED_MERGE_CHECKOUT/);
+
+    const source = workflow('hh-pr-core-release.yml');
+    const step = source.match(/^      - name: Pin exact production base for shallow checkout\n([\s\S]*?)(?=^      - (?:name|uses):)/m);
+    assert.ok(step, 'trusted base step must exist');
+    const block = step[1].match(/^        run: \|\n([\s\S]*)$/m);
+    assert.ok(block, 'trusted base step must contain a shell script');
+    const shell = block[1].replace(/^          /gm, '');
+    const gh = join(dir, 'gh');
+    writeFileSync(gh, '#!/bin/sh\nprintf "%s\\n" "$TEST_COMPARE_STATUS"\n'); chmodSync(gh, 0o700);
+    const output = join(dir, 'github-env');
+    const variables = { PATH: dir + ':' + process.env.PATH, BASE_SHA: eventBase, PR_HEAD_SHA: head,
+      GITHUB_SHA: merge, GITHUB_REPOSITORY: 'andylitvinov-design/books', GITHUB_ENV: output, TEST_COMPARE_STATUS: 'ahead' };
+    const ok = run('bash', ['--noprofile', '--norc', '-c', shell], variables);
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.equal(readFileSync(output, 'utf8').trim(), 'HH_TRUSTED_BASE_SHA=' + actualBase);
+    assert.notEqual(run('bash', ['--noprofile', '--norc', '-c', shell], { ...variables, TEST_COMPARE_STATUS: 'diverged' }).status, 0);
+    assert.notEqual(run('bash', ['--noprofile', '--norc', '-c', shell], { ...variables, PR_HEAD_SHA: eventBase }).status, 0);
+    assert.notEqual(run('bash', ['--noprofile', '--norc', '-c', shell], { ...variables, GITHUB_SHA: eventBase }).status, 0);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
