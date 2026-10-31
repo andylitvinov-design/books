@@ -640,7 +640,7 @@ try {
             await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
             const offers = hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]");
             assert.equal(await offers.count(), 3,
-              "Free written situation, free Wu Xing and €50 personal session are three distinct options");
+              "The free consultation hub reuses the same three offers");
             assert.equal(await offers.locator("img").count(), 3,
               "Each diagnosis option has its own real photograph");
             assert.ok(await offers.nth(1).locator("ol li").count() > 0,
