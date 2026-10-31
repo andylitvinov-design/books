@@ -311,9 +311,12 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const css=read("components/mandala-video-mobile.module.css");
   const top=[
     "data-video-quick-builder",'data-video-quick-section="1"',
-    "data-video-live-stage",'id="video-hero"','id="guided-video-series"',
-    "data-video-scene-library",'id="video-templates"',"data-video-quick-tier",
-    'data-video-quick-section="4"',"data-video-quick-personal","data-video-quick-legacy"
+    "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
+    "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-video-quick-section="4"',
+    "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
+    'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
+    "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
   const deep=[
     "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
@@ -452,3 +455,32 @@ test("iPhone release layout has slim diagnostic bar, Picks, visible Support head
   assert.match(browser,/activeTherapyBackground/);
 });
 
+
+
+test("approved video quick flow keeps one real Canvas, six direct controls and actual local phrase/music handlers", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const topics=["energy","health","relationships","money","goals","life"];
+  const orderStart=studio.indexOf("const quickThemeOrder: VideoTheme[]");
+  const orderEnd=studio.indexOf(";",orderStart);
+  assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
+    .map(match=>match[1]),topics,"approved topic order");
+  assert.match(studio,/Выберите тему для видеотерапии/);
+  assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
+  assert.match(studio,/data-video-quick-generate/);
+  assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
+  assert.equal((studio.match(/<canvas key=\{aspect\}/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
+  for(const id of ["style","parameters","personal","phrases","sound","extra"])
+    assert.ok(studio.includes('id:"'+id+'"'),"quick tab "+id);
+  assert.match(studio,/data-video-quick-affirmation=\{index\}/);
+  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/setAttachedAudio\(\{kind:"preset",id\}\)/);
+  assert.match(studio,/data-video-quick-audio-track=\{track.id\}/);
+  assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+  assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
+  assert.match(css,/\.quickVideoNav\{display:grid/);
+  assert.match(css,/\.quickPhraseRail,/);
+  assert.match(css,/\.quickMusicRail,/);
+  assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
+});
