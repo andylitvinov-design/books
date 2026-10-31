@@ -153,11 +153,8 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  // The immutable production catalog contains 93 registered workflows as of
-  // 2026-10-31. Freeze growth at that verified baseline (previous cap of 90
-  // incorrectly made every CI guard run red); future additions still require
-  // a reviewed consolidation or explicit architecture budget change.
-  assert.ok(names.length <= 93, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // One additional metadata-only trusted workflow enables native auto-merge.
+  assert.ok(names.length <= 94, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
@@ -405,4 +402,25 @@ test('Video Studio-only edits run dedicated Mandala real-media acceptance withou
     'actual support/service features still require Public Services');
   assert.equal(matchesTrigger(publicTrigger,['components/mandala-free-video-studio.tsx','components/holistic-support-mobile.tsx']),true,
     'mixed public-service changes never evade the service gate');
+});
+
+test('fast routing is limited to known public presentation assets and mixed risk is strict', async () => {
+  const { classifyReleaseRisk } = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['public/images/hero.webp', 'app/globals.css']), 'FAST');
+  for (const changed of [[], ['app/globals.css', 'supabase/migrations/001.sql'], ['app/api/payment/route.ts'], ['.github/workflows/hh-pr-core-release.yml'], ['lib/unknown.js'], ['app/auth/login.css']]) {
+    assert.equal(classifyReleaseRisk(changed), 'STRICT');
+  }
+});
+
+test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  let reads=0;
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/globals.css'}], runs:async()=>{throw Error('should not wait');}};
+  const result=await verify(api,ctx,{}, {maxWaitMs:0});
+  assert.equal(result.risk,'FAST');
+  assert.equal(reads,2);
+  api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
+  await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}));
+  api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
+  await assert.rejects(()=>verify(api,ctx,{}, {maxWaitMs:0}),/PR_CHANGED_FILES/);
 });
