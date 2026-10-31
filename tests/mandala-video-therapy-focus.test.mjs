@@ -5,19 +5,20 @@ import {buildPersonalImageryCourse} from "../lib/mandala/personal-guided-course.
 
 const read = file => readFileSync(new URL("../"+file,import.meta.url),"utf8");
 
-test("therapy mode is a dedicated programme directly under the central moving video",()=>{
+test("therapy mode remains below the central player and the single Style scene library",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const guided=read("components/mandala-guided-course.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const top=["data-video-quick-builder",'data-video-quick-section="1"',
-    "data-video-live-stage",'id="video-hero"','id="guided-video-series"',
-    "data-video-scene-library","data-video-quick-tier"].map(key=>studio.indexOf(key));
+    "data-video-live-stage",'id="video-hero"',
+    'data-video-quick-section="4"',"data-video-scene-library",
+    'id="guided-video-series"',"data-video-quick-tier"].map(key=>studio.indexOf(key));
   const support=["data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
     "data-video-category-rail","data-video-preview-choices","data-video-editor-nav"].map(key=>studio.indexOf(key));
   for(const [name,indices] of [["top course and video stage",top],["existing Support controls",support]]){
     assert.ok(indices.every(index=>index>=0),name+" landmarks remain");
     assert.ok(indices.slice(1).every((index,i)=>index>indices[i]),
-      name+" remains ordered: source must show the therapy programme immediately after the top preview");
+      name+" remains ordered: one Style library precedes the optional therapy programme");
   }
   assert.doesNotMatch(studio,/data-video-mode-switch/);
   assert.match(studio,/studioMode==="therapy" \? <div className=\{videoStyles\.therapyCourse\}/);

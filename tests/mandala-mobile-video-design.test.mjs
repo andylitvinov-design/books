@@ -313,9 +313,10 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "data-video-quick-builder",'data-video-quick-section="1"',
     "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-video-quick-section="4"',
+    "data-video-scene-library",'id="video-templates"',
     "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
     "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
-    'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
+    'id="guided-video-series"',
     "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
   const deep=[
