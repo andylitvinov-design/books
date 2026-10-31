@@ -228,7 +228,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
         }
       } catch { /* The original server receipt, not browser state, is authoritative. */ }
     })();
-  }, [locale, onSaved, onRestoredFocus, t.restored, t.googleError]);
+  }, [locale, onSaved, onRestoredFocus, t.restored, t.timeout, t.googleError]);
 
   function remember(referenceCode: string) {
     try { window.sessionStorage.setItem(RESUME, JSON.stringify({ locale, referenceCode })); }
