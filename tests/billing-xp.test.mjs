@@ -133,3 +133,19 @@ test('wallet refunds, expired holds and concurrent spend share a safe ledger con
   assert.match(wallet, /expires_at>now\(\)/)
   assert.match(wallet, /select id from app\.accounts where id=\$1 for update/)
 })
+
+
+test('verified invitation sync occurs on any active cabinet screen', () => {
+  const sync = src('components/xp/xp-account-sync.jsx')
+  const workspace = src('components/app/app-workspace.jsx')
+  const xpPanel = src('components/xp/xp-panel.jsx')
+  assert.match(workspace, /<XpAccountSync accountId=\{data\.account\.id\}/)
+  assert.match(workspace, /data\.account\.onboardingState === 'active'/)
+  assert.match(sync, /\/api\/app\/xp\/sync/)
+  assert.match(sync, /x-hh-account-id/)
+  assert.match(sync, /email-unverified/)
+  assert.match(sync, /sessionStorage\.setItem/)
+  assert.doesNotMatch(sync, /localStorage|document\.cookie|rewardAmount|points:\s*10/)
+  assert.match(xpPanel, /data\.debtMinor>0/)
+  assert.match(xpPanel, /t\.dispute/)
+})

@@ -111,3 +111,10 @@ reward clawback audit and product-level unit economics before broad rollout.
   accepting the migration. Source regex checks alone are insufficient.
 - Cash funding remains OFF until provider permission and refund/consumer
   disclosures are reviewed. Source deployment is not proof of live checkout.
+
+- The account cabinet now performs an idempotent XP sync on first authenticated
+  visit to any active screen. The HTTP-only invitation cookie is interpreted only
+  by the authenticated server endpoint. Email-unverified referrals are retried on
+  the next cabinet visit; no client-side amount or referrer identity is trusted.
+- Wallet UX announces an outstanding CAD refund/dispute and does not misrepresent
+  bonus XP as spendable while server-side spending is paused.

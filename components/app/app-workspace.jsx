@@ -52,6 +52,7 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import WalletPanel from '@/components/wallet/wallet-panel'
+import XpAccountSync from '@/components/xp/xp-account-sync'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
@@ -604,6 +605,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     page === 'reports'
   return (
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
+    {data.account.onboardingState === 'active' && <XpAccountSync accountId={data.account.id} />}
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />

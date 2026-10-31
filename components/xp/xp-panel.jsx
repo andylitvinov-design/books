@@ -14,6 +14,7 @@ const copy={
     assessment:'За завершённый тест',consultation:'За услугу',spend:'Видео',
     sync:'Обновить XP',explainer:'XP нельзя перевести другому человеку или обменять на деньги.',
     off:'Платное списание XP ещё не подключено.',
+    dispute:'Возврат или спор по пополнению: новые списания приостановлены до проверки платежа.',
   },
   en:{
     title:'Creative energy',available:'Available',earned:'Earned through activity',
@@ -24,6 +25,7 @@ const copy={
     assessment:'Completed assessment',consultation:'Completed service',spend:'Video',
     sync:'Refresh XP',explainer:'XP cannot be transferred or exchanged for cash.',
     off:'Paid XP redemption is not enabled yet.',
+    dispute:'A wallet refund or dispute is pending. New XP spending is paused until the payment is reconciled.',
   },
   es:{
     title:'Energía creativa',available:'Disponible',earned:'Ganado por actividad',
@@ -34,6 +36,7 @@ const copy={
     assessment:'Prueba completada',consultation:'Servicio completado',spend:'Vídeo',
     sync:'Actualizar XP',explainer:'Los XP no se pueden transferir ni cambiar por dinero.',
     off:'Los pagos con XP aún no están activos.',
+    dispute:'Hay un reembolso o disputa pendiente. El gasto de XP está en pausa hasta la conciliación.',
   },
 }
 export default function XpPanel({accountId,locale='en'}){
@@ -92,6 +95,8 @@ export default function XpPanel({accountId,locale='en'}){
     </div>
     <p className={styles.hint}>{t.test} · {t.video}</p>
     {!data.available?.hypno_video && <p className={styles.hint}>{t.off}</p>}
+    {Number.isSafeInteger(data.debtMinor) && data.debtMinor>0 &&
+      <p role="alert" className={styles.error}>{t.dispute}</p>}
     <p className={styles.foot}>{t.explainer}</p>
     {!!data.history?.length&&<details className={styles.history}>
       <summary>{t.history}</summary>
