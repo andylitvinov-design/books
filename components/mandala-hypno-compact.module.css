@@ -84,3 +84,163 @@
 
 /* Small iPhones retain readable labels; key actions stay at least 44px tall. */
 @media(max-width:360px){.requestPreview strong{font-size:13px}.modeRail button{font-size:11.7px}.selectedPhrases span{font-size:12.3px}.metaGrid strong{font-size:12px}.sceneLabel{font-size:11.4px}}
+
+
+/* Approved Hypno 5.3: reduce visual height without reducing touch targets. */
+.topicMiniRail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:8px}
+.topicMiniRail button{min-width:0;min-height:40px;padding:5px 2px;border:1px solid #d8e7dc;border-radius:10px;background:#fafcf7;color:#286b52;font:750 clamp(10.7px,2.75vw,12px)/1.1 Arial,Helvetica,sans-serif;cursor:pointer}
+.topicMiniRail button[aria-pressed="true"]{background:linear-gradient(105deg,#058b6a,#03a17d);border-color:#058b6a;color:white}
+.profileMiniActions{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:6px;margin-top:7px}
+.profileMiniActions button,.profileMiniActions a{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:6px;border:1px solid #add8c3;border-radius:10px;color:#176b51;background:#ecf8ef;text-align:center;text-decoration:none;font-size:clamp(10.5px,2.85vw,12px);font-weight:750;cursor:pointer}
+.profileMiniActions a{background:#fffefa;border-color:#d5dfd7}
+.profileMiniActions button:disabled{opacity:.55}
+.shortNote{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-top:6px}
+.shortNote input{min-width:0;width:100%;height:40px;padding:7px 10px;border:1px solid #d8e5db;border-radius:10px;color:#1f4d40;background:#fffefa;font:500 12.5px/1.3 Arial,Helvetica,sans-serif}
+.shortNote button{min-height:40px;border:1px solid #abd6bf;border-radius:10px;padding:6px 9px;color:#096f54;background:#edf7f0;font-size:11px;font-weight:750;cursor:pointer}
+.shortNote input::placeholder{color:#879c91}
+.testMiniProposal{display:grid;gap:6px;margin-top:8px;padding:9px;border:1px solid #e8dcbb;border-radius:11px;background:linear-gradient(120deg,#fff8eb,#f3faf1)}
+.testMiniProposal strong{font-size:12.5px;color:#315b4b}
+.testMiniProposal p{margin:0;font-size:10.8px;line-height:1.4;color:#537967}
+.testMiniProposal>div{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.testMiniProposal button{min-height:42px;border:1px solid #a7d3ba;border-radius:9px;background:#fff;color:#157757;font-size:12px;font-weight:750}
+.testMiniProposal button:first-child{background:#038768;color:#fff}
+.filtersMini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:9px}
+.filtersMini label{display:flex;align-items:center;gap:4px;min-width:0;min-height:43px;padding:4px 7px;border:1px solid #d7e8dc;border-radius:9px;background:#f8fbf5;color:#4c7260;font-size:10.7px;font-weight:750}
+.filtersMini label select{width:100%;min-width:0;min-height:32px;border:0;background:transparent;color:#13573f;font-size:11.4px;white-space:nowrap;text-overflow:ellipsis}
+.filtersMini button{min-height:44px;display:flex;justify-content:center;align-items:center;gap:5px;padding:5px 6px;border:1px solid #77c9a7;border-radius:10px;background:#e4f6eb;color:#087b5e;font-size:11.4px;font-weight:750;cursor:pointer}
+.phraseMiniList{display:grid;gap:4px}
+.phraseMiniList button{display:flex;align-items:center;gap:8px;width:100%;min-height:42px;padding:6px 9px;text-align:left;border:1px solid #d9e8dd;border-radius:10px;background:#fffefa;color:#2a5946;font-size:12.2px;font-weight:650;line-height:1.25;cursor:pointer}
+.phraseMiniList button[aria-pressed="true"]{background:#eaf7ee;border-color:#b7dfc9}
+.phraseMiniList svg{flex:none;color:#058e6e}
+.phraseMiniList button span{flex:1;min-width:0}
+.phraseCounter>button{border:0;background:transparent;color:#087b5d;font-size:11px;font-weight:750;cursor:pointer}
+.approveMini{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;margin-top:8px;padding:9px;border:0;border-radius:11px;background:linear-gradient(110deg,#02896b,#039d79);color:#fff;font-size:13px;font-weight:800;cursor:pointer}
+.approveMini:disabled{opacity:.5}
+.hypnoMiniNotice{margin:5px 2px 0;color:#4e7965;font-size:11px;line-height:1.4}
+.miniOwn{margin-top:6px}
+.card .requestPreview{margin-top:7px;padding:8px 9px}
+.card .modeRail{margin-top:7px}
+.card .modeRail button{min-height:40px}
+.card .phraseCounter{margin:7px 0 5px}
+.card .phraseFoot{margin-top:6px}
+.card .editPane{margin-top:7px;padding:8px;gap:6px}
+.card .editPane textarea{min-height:40px}
+.topicMiniRail button:focus-visible,.profileMiniActions button:focus-visible,.profileMiniActions a:focus-visible,.shortNote input:focus-visible,.shortNote button:focus-visible,.filtersMini select:focus-visible,.filtersMini button:focus-visible,.phraseMiniList button:focus-visible,.approveMini:focus-visible{outline:3px solid #6fc6a7;outline-offset:2px}
+@media(max-width:360px){
+ .topicMiniRail{gap:3px}
+ .topicMiniRail button{font-size:10.3px}
+ .profileMiniActions button,.profileMiniActions a{font-size:10.4px}
+ .filtersMini label{font-size:10px;padding:3px 5px}
+ .filtersMini label select{font-size:10.7px}
+ .phraseMiniList button{font-size:11.8px}
+}
+
+
+/* Progressive disclosure retains every control while keeping phone overview compact. */
+.filtersToggle{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-height:40px;margin-top:7px;padding:6px 9px;border:1px solid #cae1d3;border-radius:10px;background:#eef8f0;color:#17785e;font-size:11.5px;font-weight:800;cursor:pointer}
+.filtersToggle span{flex:1;text-align:left}
+.filtersToggle[aria-expanded="true"] svg:last-child{transform:rotate(180deg)}
+.filtersMini[hidden]{display:none}
+.overview{gap:6px}
+.overview>.card{padding:9px 10px}
+.overview .cardHead{gap:7px}
+.overview .emblem{width:32px;height:32px;border-radius:9px}
+.overview .requestPreview{padding:7px 8px;margin-top:6px}
+.overview .requestPreview strong{font-size:12px;line-height:1.17}
+.overview .micro{font-size:10.2px}
+.overview .phraseMiniList button{min-height:39px;padding:5px 8px}
+.overview .phraseMiniList{gap:3px}
+.overview .modeRail{margin-top:6px}
+.overview .metaGrid{margin-top:7px}
+.overview .metaGrid>div{padding:6px 7px;gap:2px}
+.overview .sceneRail{margin-top:6px}
+.overview .sceneRail button{flex-basis:min(22%,86px);min-width:62px}
+.overview .sceneLabel{min-height:20px;line-height:1.12;font-size:10.2px}
+.overview .preview{min-height:94px;gap:5px;padding:10px}
+.overview .preview strong{font-size:18px}
+.overview .preview button{min-height:44px}
+.overview .phraseFoot{margin-top:5px}
+.overview .approveMini{margin-top:6px}
+.overview .enable{min-height:39px}
+.overview .create{min-height:44px}
+@media(max-width:360px){
+ .overview>.card{padding:8px}
+ .filtersToggle{font-size:10.5px}
+ .overview .sceneRail button{flex-basis:64px}
+ .overview .preview{min-height:90px;padding:9px}
+}
+
+/* Compact strategy lives between the request and the actual phrase list. */
+.strategyCard{display:grid;gap:7px;min-width:0;padding:11px 12px;border:1px solid #e1d0ad;border-radius:15px;background:linear-gradient(110deg,#fffaf0,#f1f8f1);color:#244c3e}
+.strategyHead{display:flex;align-items:center;gap:8px;color:#147559}
+.strategyHead h4{font-size:clamp(14px,3.5vw,17px);font-weight:800;line-height:1.2;margin:0}
+.modelChoice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.modelChoice button{min-width:0;min-height:44px;padding:7px 5px;border-radius:10px;border:1px solid #cbdccf;background:#fffefa;color:#28624e;font-size:clamp(11.5px,3vw,13px);font-weight:750;cursor:pointer}
+.modelChoice button[aria-pressed="true"]{background:#096f54;border-color:#096f54;color:white}
+.strategySummary{margin:2px 0;color:#315547;font-size:clamp(12px,3vw,13.5px);line-height:1.45;overflow-wrap:anywhere}
+.strategyPrivacy{font-size:10.5px;line-height:1.3;color:#648374}
+.strategyHint,.strategyNotice{margin:0;color:#82672a;font-size:11px;line-height:1.35}
+.strategyNotice{color:#986336}
+.geminiControls{display:grid;gap:7px}
+.geminiConsent{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;line-height:1.35}
+.geminiConsent input{width:18px;height:18px;flex:none;accent-color:#087f5e}
+.geminiControls>button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:0;border-radius:10px;background:#087f5e;color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.geminiControls>button:disabled{opacity:.55;cursor:not-allowed}
+.modelChoice button:focus-visible,.geminiConsent input:focus-visible,.geminiControls button:focus-visible{outline:3px solid #6dc6a8;outline-offset:2px}
+@media(max-width:360px){.strategyCard{padding:9px}.strategySummary{font-size:12.5px}}
+
+
+/* Expert model settings remain accessible, but never occupy a third large card by default. */
+.strategyDisclosure{min-width:0;border:1px solid #d8e8dc;border-radius:11px;background:#f7fbf5}
+.strategyDisclosure>summary{display:flex;align-items:center;gap:7px;min-height:40px;padding:6px 10px;color:#31745c;font-size:11.5px;font-weight:750;cursor:pointer;list-style:none}
+.strategyDisclosure>summary::-webkit-details-marker{display:none}
+.strategyDisclosure>summary:after{content:"⌄";margin-left:auto;font-size:16px}
+.strategyDisclosure[open]>summary:after{transform:rotate(180deg)}
+.strategyDisclosure .strategyCard{margin:0 6px 7px;box-shadow:none}
+.strategyDisclosure>summary:focus-visible{outline:3px solid #74cbaa;outline-offset:2px}
+
+
+/* Strategy compact merge: keep both models visible without a third tall card. */
+.strategyCard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);grid-template-areas:"strategyhead strategychoice" "strategysummary strategysummary" "strategyprivacy strategyprivacy";gap:3px 6px;padding:6px 8px;border-radius:11px}
+.strategyHead{grid-area:strategyhead;gap:4px}
+.strategyHead svg{width:16px;height:16px}
+.strategyHead h4{font-size:clamp(10.7px,2.9vw,12.2px);line-height:1.13}
+.modelChoice{grid-area:strategychoice;gap:3px}
+.modelChoice button{min-height:44px;padding:4px 3px;border-radius:8px;font-size:clamp(10px,2.65vw,11.3px);line-height:1.1}
+.strategySummary{grid-area:strategysummary;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:clamp(10px,2.65vw,11px);line-height:1.22;margin:0}
+.strategyPrivacy{grid-area:strategyprivacy;display:block;max-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.7px}
+.geminiControls{grid-column:1/-1;grid-row:auto}
+@media(max-width:360px){.strategyCard{gap:2px 4px;padding:5px 6px}.strategyHead h4{font-size:10px}.modelChoice button{font-size:10px}.strategyPrivacy{font-size:9px}}
+
+
+/* Collapsed summary rows keep real video controls accessible with Edit. */
+.compactOverviewLine{display:flex;align-items:center;gap:5px;min-height:32px;margin-top:5px;padding:5px 9px;border:1px solid #e0e9dd;border-radius:9px;background:#f8faf3;color:#245b49;font-size:11px;font-weight:750;line-height:1.25;min-width:0}
+.compactOverviewLine svg{flex:none}
+.overview .preview{grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:7px;min-height:78px;padding:9px}
+.overview .preview>div{gap:2px;min-width:0}
+.overview .preview strong{font-size:15px;line-height:1.2}
+.overview .preview button{width:44px;min-width:44px;max-width:44px;min-height:44px;max-height:44px;padding:0;border-radius:50%;font-size:0;gap:0}
+.overview .preview button svg:first-child{width:25px;height:25px}
+.overview .preview button svg:last-child{display:none}
+@media(max-width:360px){.compactOverviewLine{font-size:10.5px}.overview .preview{padding:7px;gap:5px}.overview .preview strong{font-size:14px}}
+
+
+/* Compact default video-stage summaries: original gallery remains under Edit. */
+.sceneMiniSummary{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:5px;padding:4px 7px;border:1px solid #d7e7d9;border-radius:10px;background:#f7fbf5;color:#166348;text-align:left;font-size:12px;font-weight:750;cursor:pointer}
+.sceneMiniSummary>svg{flex:none;margin-left:auto}
+.sceneMiniThumb{display:grid;place-items:center;flex:none;width:47px;height:34px;overflow:hidden;border-radius:7px;background:#deede5}
+.sceneMiniThumb img{width:100%;height:100%;object-fit:cover}
+.sceneMiniLabel{min-width:0;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sceneMiniSummary[aria-expanded="true"]>svg{transform:rotate(180deg)}
+.sceneMiniSummary:focus-visible{outline:3px solid #69c8a6;outline-offset:2px}
+.overview [data-hypno-display] .heading p,.overview [data-hypno-design] .heading p{display:none}
+.overview .metaGrid{margin-top:5px;gap:4px}
+.overview .metaGrid>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px;min-height:32px;padding:4px}
+.overview .metaGrid small{font-size:9.6px}
+.overview .metaGrid strong{font-size:11px}
+.overview .strategySummary{-webkit-line-clamp:1}
+.overview .privacy{font-size:9.7px;line-height:1.2}
+.overview .privacy span{display:inline}
+.overview .preview{min-height:86px;gap:3px;padding:8px}
+.overview .preview strong{font-size:17px}
+@media(max-width:360px){.sceneMiniSummary{padding:3px 6px;min-height:44px}.overview .metaGrid strong{font-size:10.4px}}

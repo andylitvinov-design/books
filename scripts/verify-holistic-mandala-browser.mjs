@@ -208,8 +208,12 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
         await coverOptions.locator("summary").click();
-        assert.equal(await coverOptions.evaluate(el=>el.open),true,
-          "photo cover and user-owned image choices must open on user request");
+        // A real user click must open the native disclosure. React/Next may
+        // render a fresh scene tree after WebKit resolves the click, so poll
+        // the genuine DOM state without a synthetic click or force-open.
+        await expect(coverOptions,
+          "photo cover and user-owned image choices must open on user request")
+          .toHaveAttribute("open", "", {timeout:10000});
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
@@ -774,6 +778,14 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        // Scene options are genuinely editable, but collapsed on the compact mobile overview.
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"true");
+        // The compact overview presents the selected scene first; the real
+        // thumbnail gallery is still accessible through the original Edit button.
+        const sceneSummary=compactHypno.locator("[data-hypno-scene-summary]");
+        assert.equal(await sceneSummary.count(),1);
+        assert.equal(await sceneSummary.getAttribute("aria-expanded"),"true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -781,6 +793,8 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
+        await compactHypno.locator("[data-hypno-design-edit]").click();
+        assert.equal(await compactHypno.locator("[data-hypno-design-edit]").getAttribute("aria-expanded"),"false");
         // Every editor jump is an actual navigable anchor, not a decorative tab.
         const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
         for (const [tab,id] of destinations) {
