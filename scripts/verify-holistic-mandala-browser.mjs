@@ -109,6 +109,10 @@ const runEngine = async ([engine, browserType]) => {
 
         // First free video: real exported moving media in both engines.
         const firstStart=page.locator("[data-first-free-video]");
+        const firstAdvanced=quick.locator("[data-first-video-advanced]");
+        assert.equal(await firstAdvanced.getAttribute("open"),null,
+          "Advanced prompt stays optional below the Auto Video Director");
+        await firstAdvanced.locator(":scope > summary").click();
         await firstStart.waitFor({state:"visible",timeout:12000});
         assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
@@ -190,8 +194,9 @@ const runEngine = async ([engine, browserType]) => {
           // photo/audio/Hypno regression cases below, on this same page.
           const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
           assert.equal(reloaded?.status(),200);
-          await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
-            .waitFor({state:"visible",timeout:25000});
+          await page.locator('[data-first-video-advanced]').waitFor({state:"attached",timeout:25000});
+          assert.equal(await page.locator('[data-first-video-advanced]').getAttribute("open"),null,
+            "Advanced prompt defaults to closed after export");
         }
 
         // Real first-party video, real choices; the advanced editor is preserved
@@ -229,8 +234,8 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         await expandAllFilms.click();
-        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
-          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
+          "All 48 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
@@ -294,16 +299,36 @@ const runEngine = async ([engine, browserType]) => {
           "six cover/thumbnail scene choices remain separate from six style thumbnails");
         assert.equal(await coverOptions.getAttribute("open"),null,
           "photo and cover choices are collapsed by default to keep the library compact");
-        await coverOptions.locator("summary").click();
-        await expect(coverOptions,"photo cover and user-owned image choices must open on user request")
-          .toHaveAttribute("open","",{timeout:10000});
+        // WebKit may still be finishing the preceding native-video scroll
+        // when its first summary tap arrives. Put the ACTUAL customer-facing
+        // native <summary> clear of the fixed iPhone dock, then require its
+        // first real click to open the original <details>. Never force open
+        // through script or re-click on failure: a broken tap still fails CI.
+        const coverSummary=coverOptions.locator(":scope > summary");
+        await coverSummary.evaluate(el=>{
+          el.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+        });
+        await page.waitForFunction(()=>{
+          const el=document.querySelector("[data-video-cover-options] > summary");
+          if(!el)return false;
+          const r=el.getBoundingClientRect();
+          const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+          const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+          return r.top>=4&&r.bottom<=innerHeight-4&&
+            (!dock||r.bottom<=dock.getBoundingClientRect().top-8)&&
+            (hit===el||el.contains(hit));
+        },undefined,{timeout:10000});
+        await coverSummary.click();
+        await expect(coverOptions).toHaveAttribute("open","",{timeout:10000});
+        assert.equal(await coverOptions.locator("[data-video-quick-scene]").nth(1).isVisible(),true,
+          "the first native tap must reveal the actual selectable cover scenes");
         await coverOptions.locator("[data-video-quick-scene]").nth(1).click();
         assert.notEqual(await livePreview.locator("video").getAttribute("src"),firstMaster,
           "choosing a different scene changes the real preview video");
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -429,7 +454,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-auto-video-input]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
@@ -1468,6 +1493,27 @@ const runEngine = async ([engine, browserType]) => {
           };
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
+        // Goal-first Free Director: selected goal proposes exactly one real
+        // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
+        // Keep the full original Chromium/WebKit recorder & audio E2E intact.
+        if (locale === "ru" && width === 390) {
+          const auto=page.locator("[data-auto-video-director]");
+          await auto.waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+            "six accessible one-tap goals, no mandatory 49-question intake");
+          const planBefore=await page.locator("[data-free-film-original-masters]").count();
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "goal gives four actual source scenes");
+          assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
+            "proposal must not start rendering before user confirms");
+          await auto.locator("[data-auto-video-confirm]").click();
+          await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
+            undefined,{timeout:15000});
+          assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
+            "Auto Director reuses the only live editable video stage");
+        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",
