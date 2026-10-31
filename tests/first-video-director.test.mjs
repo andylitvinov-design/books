@@ -221,3 +221,28 @@ test("retired Gemini Lite model falls back ONLY to free-tier Gemini Flash; failu
   assert.match(ui,/setVariant\(nextVariant\);setPromptOverride\(""\);setMode\("local"\)/);
   assert.match(ui,/localFallback:"Создан другой локальный вариант, без внешнего AI\."/);
 });
+
+
+test("Food/Еда/Comida creates honest harvest storyboard instead of silently treating food as generic energy",()=>{
+  const options={durationSeconds:20,theme:"auto",style:"warm",aspect:"landscape"};
+  const ru=buildFirstVideoDraft({locale:"ru",wish:"Еда",...options});
+  assert.equal(ru.theme,"life");
+  assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
+  assert.equal(ru.descriptionLimited,true);
+  assert.match(ru.prompt,/Тема «Еда»/);
+  assert.match(ru.prompt,/поле урожая/);
+  assert.match(ru.limitationNote,/нет кадров блюд/);
+  assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
+  const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
+  assert.equal(variant.plan.shots[0].sceneId,"golden-harvest");
+  assert.notEqual(ru.prompt,variant.prompt,"real scene variants must change");
+  const manual=buildFirstVideoDraft({locale:"ru",wish:"Еда",promptOverride:"Горы и звёзды",...options});
+  assert.equal(manual.plan.shots[0].sceneId,"golden-harvest","AI text cannot override the user's food intent");
+  for (const [locale,wish] of [["en","Food"],["es","Comida"]]){
+    const result=buildFirstVideoDraft({locale,wish,...options});
+    assert.equal(result.plan.shots[0].sceneId,"golden-harvest");
+    assert.equal(result.descriptionLimited,true);
+    assert.ok(result.limitationNote.length>60);
+  }
+  assert.equal(inferFirstVideoTheme("Победа"),"energy","don't confuse a word containing 'еда' with food");
+});
