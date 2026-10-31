@@ -143,6 +143,10 @@ try {
   // The current signed-in Profile is ProfileDomains (not the older
   // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
   await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
+  // Wait for the authenticated landing's own requests before intentional navigation.
+  // This avoids WebKit cancelling in-flight profile reads as spurious CORS errors;
+  // actual authenticated endpoint failures are still captured and fail the gate.
+  await page.waitForLoadState('networkidle', {timeout:30000})
   verifiedAccountLanding = true
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
