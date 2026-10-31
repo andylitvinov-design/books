@@ -113,7 +113,8 @@ export function MandalaProfessionalPromo({
         {exclusions.map(item=><label key={item.id}>
           <input type="checkbox" checked={avoid.includes(item.id)} disabled={disabled}
             onChange={event=>{
-              setAvoid(old=>event.currentTarget.checked?[...old,item.id]:old.filter(x=>x!==item.id));
+              const checked=event.currentTarget.checked;
+              setAvoid(old=>checked?[...old,item.id]:old.filter(x=>x!==item.id));
               setProposal(null);
             }}/>
           <span>{item.labels[locale]}</span>
