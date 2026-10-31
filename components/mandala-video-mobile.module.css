@@ -2079,3 +2079,73 @@
 @media(prefers-reduced-motion:reduce){
   .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
 }
+
+
+/* A user-invoked published Video Therapy introduction overlays the ONE
+   existing composition stage; no second preview/player is mounted at rest. */
+.studio .therapyIntroLaunch{
+  position:absolute;z-index:6;top:10px;left:10px;
+  display:flex;align-items:center;gap:8px;max-width:min(77%,300px);
+  min-height:44px;padding:8px 11px;border:1px solid #f3f2dfb3;border-radius:12px;
+  background:#155943ed;box-shadow:0 4px 14px #092c2366;color:#fff;
+  font:750 11.5px/1.25 Arial,Helvetica,sans-serif;text-align:left;cursor:pointer;
+}
+.studio .therapyIntroLaunch>svg{flex:none}
+.studio .therapyIntroLaunch:disabled{opacity:.6;cursor:not-allowed}
+.studio .therapyIntroOverlay{position:absolute;inset:0;z-index:7;background:#071f19}
+.studio .therapyIntroFrame{display:block;width:100%;height:100%;border:0}
+.studio .therapyIntroClose,.studio .therapyIntroExternal{
+  position:absolute;z-index:2;top:7px;display:flex;align-items:center;justify-content:center;
+  min-height:44px;padding:7px 9px;border:1px solid #fff9;
+  border-radius:10px;background:#0c3d32e8;color:#fff;
+  font:750 10.5px/1.15 Arial,Helvetica,sans-serif;text-decoration:none;
+  box-shadow:0 2px 10px #001c1466;
+}
+.studio .therapyIntroClose{right:7px;max-width:62%;cursor:pointer}
+.studio .therapyIntroExternal{left:7px}
+.studio .therapyIntroLaunch:focus-visible,.studio .therapyIntroClose:focus-visible,
+.studio .therapyIntroExternal:focus-visible{outline:3px solid #efd28c;outline-offset:2px}
+@media(max-width:355px){
+  .studio .therapyIntroLaunch{top:7px;left:7px;gap:5px;max-width:75%;padding:6px 8px;font-size:10px}
+  .studio .therapyIntroClose{font-size:9.5px;max-width:61%}
+}
+
+
+
+/* Six Video Studio workspaces share the original state, MP4 preview and recorder. */
+.quickVideoNav button[aria-pressed="true"]{border-color:#e7b959;background:#fff6df;color:#654518;box-shadow:inset 0 0 0 1px #e8bd66}
+.quickVideoNav button:first-child:not([aria-pressed="true"]){border-color:#e4e7db;background:linear-gradient(135deg,#fffdf8,#f8f6ef);color:#183c34;box-shadow:none}
+.workspaceHeading{display:grid;gap:6px;margin:10px 0 0;padding:16px;border:1px solid #d0e3d8;border-radius:18px;background:linear-gradient(135deg,#f4f8f1,#fffdf8);color:#164337}
+.workspaceHeading small{font:750 10px/1.2 Arial,sans-serif;letter-spacing:.14em;color:#47826e}
+.workspaceHeading h3{margin:0;font:800 clamp(20px,4.9vw,28px)/1.2 Georgia,serif;color:#173d33}
+.workspaceHeading p{margin:0;font:500 14px/1.45 Arial,sans-serif;color:#4e675a}
+.studio[data-active-workspace] .previewMiniSource{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0;pointer-events:none}
+.studio[data-active-workspace] .quickBuilder [data-workspace-section]{display:none}
+.studio[data-active-workspace="video"] .quickBuilder [data-workspace-section="video"],
+.studio[data-active-workspace="audio"] .quickBuilder [data-workspace-section="audio"],
+.studio[data-active-workspace="characters"] .quickBuilder [data-workspace-section="characters"],
+.studio[data-active-workspace="hypnotherapy"] .quickBuilder [data-workspace-section="hypnotherapy"],
+.studio[data-active-workspace="psychocorrection"] .quickBuilder [data-workspace-section="psychocorrection"],
+.studio[data-active-workspace="courses"] .quickBuilder [data-workspace-section="courses"]{display:grid}
+.studio[data-active-workspace] [data-video-quick-legacy],
+.studio[data-active-workspace] [data-video-catalog],
+.studio[data-active-workspace] [data-video-daily-picks],
+.studio[data-active-workspace] [data-video-support-layout],
+.studio[data-active-workspace] [data-video-quick-start]{display:none}
+.workspaceCourses{margin:0;min-width:0}
+.workspaceCourseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.workspaceCourseGrid>a,.workspaceCourseGrid>button{display:grid;justify-items:start;align-content:start;gap:8px;min-width:0;min-height:140px;border:1px solid #d6e6d8;border-radius:16px;background:#fffefa;color:#174a3d;padding:13px;text-align:left;text-decoration:none;font:500 13px/1.3 Arial,sans-serif}
+.workspaceCourseGrid strong{font-size:15px;line-height:1.2}.workspaceCourseGrid span{color:#61746b}
+.workspaceCourseGrid a:hover,.workspaceCourseGrid button:hover{border-color:#78ba9b}
+.workspaceCourseGrid a:focus-visible,.workspaceCourseGrid button:focus-visible{outline:3px solid #daa755;outline-offset:2px}
+@media(max-width:640px){
+ .studio .quickVideoNav{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .studio .quickVideoNav button{min-height:58px;font-size:clamp(11px,3vw,13px);padding:6px 4px;line-height:1.17}
+ .studio .quickVideoNav button svg{width:20px;height:20px}
+ .workspaceCourseGrid{grid-template-columns:1fr}
+ .workspaceCourseGrid>a,.workspaceCourseGrid>button{min-height:82px;grid-template-columns:24px 1fr 20px;gap:4px 8px;align-items:center}
+ .workspaceCourseGrid strong{grid-column:2}.workspaceCourseGrid span{grid-column:2;grid-row:2}.workspaceCourseGrid svg:last-child{grid-column:3;grid-row:1 / span 2}
+}
+
+/* The full original sound library is now in this tab; avoid a second quick track picker. */
+.studio[data-active-workspace="audio"] .quickMusicRail,.studio[data-active-workspace="audio"] .quickMusicSection>.quickSectionHeading{display:none}

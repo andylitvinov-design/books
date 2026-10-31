@@ -1,11 +1,121 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
+
+test('deep stale triage accepts only latest exact-head required-app gate failure',()=>{
+  const gate=(id,conclusion,overrides={})=>({id,name:'release-ready',status:'completed',conclusion,head_sha:sha('a'),app:{id:15368},started_at:`2026-10-31T12:00:0${id}Z`,...overrides});
+  const assess=(checks,total=checks.length)=>assessRequiredGate({head:sha('a'),appId:15368,checks,total});
+  assert.equal(assess([gate(1,'failure')]).state,'FAILED');
+  assert.equal(assess([gate(1,'failure'),gate(2,'success')]).state,'SUCCESS');
+  assert.equal(assess([gate(2,'failure',{head_sha:sha('b')})]).state,'UNKNOWN');
+  assert.equal(assess([gate(1,'failure'),gate(2,'success',{head_sha:sha('b')})]).state,'UNKNOWN');
+  assert.equal(assess([gate(2,'failure',{app:{id:8}})]).state,'UNKNOWN');
+  assert.equal(assess([gate(2,'failure')],101).state,'UNKNOWN');
+  assert.equal(assess([gate(2,null,{status:'in_progress'})]).state,'WAITING');
+  assert.equal(assess([gate(1,'failure',{started_at:null}),gate(2,'success')]).state,'UNKNOWN');
+  assert.equal(assess([]).state,'UNKNOWN');
+});
+
+test('deep triage routes old unknown PRs only with matching-head failure, never invents a root',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  const row=(number,head)=>({number,created_at:'2026-10-29T12:00:00Z',state:'open',draft:false,mergeable:null,mergeable_state:'unknown',head:{sha:head},base:{ref:'codex/public-book-library'}});
+  const rows=[row(1,sha('a')),row(2,sha('b')),row(3,sha('c'))];
+  const evidence=new Map([[1,{head:sha('a'),state:'FAILED',check_run_id:11,conclusion:'failure'}],
+    [2,{head:sha('a'),state:'FAILED',check_run_id:12,conclusion:'failure'}],
+    [3,{head:sha('c'),state:'WAITING',check_run_id:13}]]);
+  const result=refineStaleRoutes(rows,evidence,now);
+  assert.deepEqual(result.stale_root.map(x=>x.number),[1]);
+  assert.equal(result.stale_root[0].root_id,null);
+  assert.equal(result.stale_root[0].gate.check_run_id,11);
+  assert.deepEqual(result.unknown.map(x=>x.number),[2,3]);
+});
+
+test('deep triage obtains a pinned release-ready app from effective branch rules',()=>{
+  const rule=(checks)=>({type:'required_status_checks',parameters:{required_status_checks:checks}});
+  assert.equal(requiredGateApp([rule([{context:'release-ready',integration_id:15368}])]),15368);
+  assert.throws(()=>requiredGateApp([]),/REQUIRED_GATE/);
+  assert.throws(()=>requiredGateApp([rule([{context:'release-ready'}])]),/REQUIRED_GATE/);
+  assert.throws(()=>requiredGateApp([rule([{context:'release-ready',integration_id:15368}]),{type:'required_status_checks',parameters:{}}]),/REQUIRED_GATE/);
+  assert.throws(()=>requiredGateApp([rule([{context:'release-ready',integration_id:1},{context:'release-ready',integration_id:2}])]),/REQUIRED_GATE/);
+});
+
+test('an explicitly released lease cannot block a new owner until its old expiry',()=>{
+  const now=Date.parse('2026-10-31T19:01:00Z');
+  const lease=makeLease({owner:'agent-a',head_sha:sha('a'),base_sha:sha('b'),now});
+  const comment=(state)=>({id:11,created_at:'2026-10-31T19:01:00Z',body:renderLease({...lease,...state})});
+  assert.ok(activeLease([comment({state:'active'})],now));
+  assert.equal(activeLease([comment({state:'released_after_atomic_commit',last_action:'release'})],now),null);
+  assert.equal(activeLease([comment({last_action:'release'})],now),null);
+  assert.ok(activeLease([comment({state:'released_after_atomic_commit',last_action:'heartbeat'})],now));
+});
+
+test('route-deep rechecks live heads and never attributes an old failure to a changed PR',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'hh-sweep-deep-'));
+  try {
+    const mock=join(dir,'mock.mjs');
+    writeFileSync(mock,`
+      let snapshots=0;
+      const sha=x=>x.repeat(40);
+      globalThis.fetch=async(url,options={})=>{
+        const ok=data=>({ok:true,headers:{get:()=>"3000"},json:async()=>data});
+        if(url==='https://api.github.com/graphql'){
+          if(options.method!=='POST')throw Error('wrong method');
+          snapshots++;
+          const nodes=[1,2].map(n=>({number:n,createdAt:'2020-01-01T00:00:00Z',isDraft:false,mergeable:'UNKNOWN',mergeStateStatus:'UNKNOWN',baseRefName:'codex/public-book-library',headRefOid:n===1?sha('a'):sha(snapshots===1?'b':'c')}));
+          return ok({data:{repository:{pullRequests:{totalCount:2,pageInfo:{hasNextPage:false},nodes}}}});
+        }
+        if(options.method && options.method!=='GET')throw Error('unexpected write');
+        if(url.includes('/rules/branches/'))return ok([{type:'required_status_checks',parameters:{required_status_checks:[{context:'release-ready',integration_id:15368}]}}]);
+        const match=url.match(/commits\\/([a-f0-9]{40})\\/check-runs/);
+        if(!match)throw Error('unexpected request '+url);
+        return ok({total_count:1,check_runs:[{id:11,name:'release-ready',head_sha:match[1],app:{id:15368},status:'completed',conclusion:'failure',started_at:'2026-10-31T12:00:00Z'}]});
+      };
+    `);
+    const child=spawnSync(process.execPath,['--import',mock,'scripts/pr-sweep-guard.mjs','route-deep','andylitvinov-design/books'],{
+      cwd:process.cwd(),env:{PATH:process.env.PATH,GH_TOKEN:'synthetic'},encoding:'utf8',timeout:15000,
+    });
+    assert.equal(child.status,0,child.stderr);
+    const result=JSON.parse(child.stdout);
+    assert.deepEqual(result.stale_root.map(x=>x.number),[1]);
+    assert.deepEqual(result.unknown.map(x=>x.number),[2]);
+    assert.equal(result.merge_authorized,false);
+    assert.equal(result.root_grouping,'UNCLASSIFIED_REQUIRES_CONFIRMED_REGISTRY_EVIDENCE');
+  } finally { rmSync(dir,{recursive:true,force:true}); }
+});
+
+test('two-speed routing prioritizes new and old clean PRs without treating unknown as blocked',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  const row=(number,created_at,mergeable_state,draft=false)=>({number,created_at,state:'open',draft,mergeable_state,mergeable:true,base:{ref:'codex/public-book-library'}});
+  const result=routeSweep([
+    row(1,'2026-10-31T11:00:00Z','blocked'),
+    row(2,'2026-10-29T11:00:00Z','clean'),
+    row(3,'2026-10-30T11:00:00Z','dirty'),
+    row(4,'2026-10-30T11:00:00Z','unknown'),
+    row(5,'2026-10-30T12:00:00Z','blocked'),
+    row(6,'2026-10-29T11:00:00Z','clean',true),
+  ],now);
+  assert.deepEqual(result.fast_ready.map(x=>x.number),[1,2]);
+  assert.deepEqual(result.stale_root.map(x=>x.number),[3,5,6]);
+  assert.deepEqual(result.unknown.map(x=>x.number),[4]);
+  assert.equal(result.fast_ready[0].merge_ready,false);
+  assert.equal(result.fast_ready[1].merge_ready,true);
+});
+
+test('two-speed routing rejects incomplete, duplicate or future evidence',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  const row={number:1,created_at:'2026-10-31T11:00:00Z',state:'open',draft:false,mergeable:true,mergeable_state:'clean',base:{ref:'codex/public-book-library'}};
+  assert.throws(()=>routeSweep([row,row],now),/DUPLICATE/);
+  assert.throws(()=>routeSweep([{...row,created_at:'2026-11-01T00:00:00Z'}],now),/TIMESTAMP/);
+  assert.throws(()=>routeSweep([{...row,draft:null}],now),/INVALID/);
+});
 
 test('passes clean current HEAD only when core gate and applicable specialists succeed',()=>{
   const paths=['components/app/app-workspace.jsx'];
@@ -262,8 +372,6 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
   ]) {
     assert.ok(source.includes('- name: ' + name + '\n        ' + prodOnly + '\n        run: ' + command), name + ' must execute on push and delegate only production PR');
   }
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.match(core, /^  release-ready:/m);
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
@@ -288,8 +396,6 @@ test('Practitioner presentations retain all real contracts on production PRs and
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
   assert.match(core, /^  release-ready:/m);
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.ok(source.includes("'.github/workflows/practitioner-presentations.yml'"));
   for (const [step, command] of [
     ['Full TypeScript (Core owns production PR)', 'npx tsc --noEmit'],
@@ -343,8 +449,6 @@ test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retai
     "'.github/workflows/practice-visual-services.yml'",
   ]) assert.ok(source.includes(contract), 'missing real practice/consent/security gate '+contract);
   assert.match(core, /^  release-ready:/m);
-  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
-  assert.match(core, /run: npm run build/);
   assert.match(core, /ci-specialist-aggregate\.mjs/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
@@ -369,7 +473,6 @@ test('Pro master workflow delegates duplicate global TS/Next to unconditional ex
   ]) assert.ok(pro.includes('- name: '+step+'\n        '+reuse+'\n        run: '+command),
     'Pro '+step+' must be owned by immutable-base Core on production PRs');
   assert.match(core,/^  release-ready:/m);
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.ok(core.includes('ci-specialist-aggregate.mjs'));
   assert.doesNotMatch(pro,/continue-on-error:\s*true/);

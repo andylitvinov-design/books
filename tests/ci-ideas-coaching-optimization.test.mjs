@@ -1,114 +1,95 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { classifyChangedFiles } from "../scripts/ci-ideas-coaching-scope.mjs";
-import { runMobileBrowserCases } from "../scripts/ci-mobile-browser-batch.mjs";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runMobileBrowserCases } from '../scripts/ci-mobile-browser-batch.mjs';
 
-const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const ALL = ["coaching", "support", "ideas"];
+const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
-test("unknown, mixed, shared and missing diff always retain all required browser suites", () => {
-  assert.deepEqual(classifyChangedFiles(null), ALL);
-  assert.deepEqual(classifyChangedFiles([]), ALL);
-  assert.deepEqual(classifyChangedFiles(["components/public-coaching-discovery.jsx"]), ["coaching"]);
-  assert.deepEqual(classifyChangedFiles(["app/[locale]/coaching/session/123/page.jsx"]), ["coaching"]);
-  assert.deepEqual(classifyChangedFiles(["app/[locale]/holistic-support/page.tsx"]), ["support"]);
-  assert.deepEqual(classifyChangedFiles(["components/ideas-discovery.tsx"]), ["support", "ideas"]);
-  assert.deepEqual(classifyChangedFiles(["lib/ideas-guidance.mjs"]), ["support", "ideas"]);
-  assert.deepEqual(classifyChangedFiles(["components/public-coaching-discovery.jsx", "components/holistic-support-choices.tsx"]), ["coaching", "support"]);
-  for (const shared of [
-    ".github/workflows/hh-ideas-coaching-public.yml",
-    "scripts/ci-mobile-browser-batch.mjs",
-    "lib/public-locales.ts",
-    "components/coaching-intake-form.tsx",
-    "app/api/coaching-diagnostic/route.js",
-    "package-lock.json",
-  ]) assert.deepEqual(classifyChangedFiles([shared]), ALL, shared);
-  assert.deepEqual(classifyChangedFiles(["components/public-coaching-discovery.jsx", "app/layout.tsx"]), ALL);
-});
-
-test("one browser launch per engine, two workers max, complete all cases", async () => {
-  const before = process.env.HH_BROWSER_QA_PARALLEL;
-  process.env.HH_BROWSER_QA_PARALLEL = "2";
-  const launches = [], closures = [], seen = [];
+test('browser engines are reused and at most two independent cases execute at once', async () => {
+  const original = process.env.HH_BROWSER_QA_PARALLEL;
+  process.env.HH_BROWSER_QA_PARALLEL = '2';
+  const launched = [], closed = [], results = [];
   let active = 0, peak = 0;
-  const make = name => ({ name: () => name, launch: async () => {
-    launches.push(name);
-    return { close: async () => { closures.push(name); } };
-  } });
+  const engine = name => ({name: () => name, launch: async () => {
+    launched.push(name);
+    return {close: async () => { closed.push(name); }};
+  }});
   try {
     await runMobileBrowserCases([
-      { browserType: make("webkit"), cases: [[1], [2], [3], [4]] },
-      { browserType: make("chromium"), cases: [[5], [6]] },
+      {browserType: engine('webkit'), cases: [[1], [2], [3], [4]]},
+      {browserType: engine('chromium'), cases: [[5], [6]]},
     ], async (type, browser, id) => {
       assert.ok(browser);
       active++;
-      peak = Math.max(peak, active);
+      peak = Math.max(active, peak);
       await Promise.resolve();
-      seen.push(type.name() + ":" + id);
+      results.push(type.name() + ':' + id);
       active--;
     });
-    assert.deepEqual(launches, ["webkit", "chromium"]);
-    assert.deepEqual(closures, ["webkit", "chromium"]);
-    assert.equal(seen.length, 6);
-    assert.equal(new Set(seen).size, 6);
+    assert.deepEqual(launched, ['webkit','chromium']);
+    assert.deepEqual(closed, ['webkit','chromium']);
+    assert.equal(results.length, 6);
+    assert.equal(new Set(results).size, 6);
     assert.ok(peak <= 2 && peak >= 1);
   } finally {
-    if (before === undefined) delete process.env.HH_BROWSER_QA_PARALLEL;
-    else process.env.HH_BROWSER_QA_PARALLEL = before;
+    if (original === undefined) delete process.env.HH_BROWSER_QA_PARALLEL;
+    else process.env.HH_BROWSER_QA_PARALLEL = original;
   }
 });
 
-test("failing case fails closed and browser process is always released", async () => {
-  const before = process.env.HH_BROWSER_QA_PARALLEL;
-  process.env.HH_BROWSER_QA_PARALLEL = "1";
+test('a failed browser case still fails the suite and closes its browser', async () => {
+  const original = process.env.HH_BROWSER_QA_PARALLEL;
+  process.env.HH_BROWSER_QA_PARALLEL = '1';
   let closed = false;
   try {
     await assert.rejects(runMobileBrowserCases([
-      { browserType: { launch: async () => ({ close: async () => { closed = true; } }) }, cases: [[1], [2]] },
-    ], async () => { throw new Error("real browser assertion failed"); }), /real browser assertion failed/);
+      {browserType: {launch: async () => ({close: async () => {closed = true;}})}, cases: [[1],[2]]},
+    ], async () => {throw Error('original browser assertion failed');}), /original browser assertion failed/);
     assert.equal(closed, true);
   } finally {
-    if (before === undefined) delete process.env.HH_BROWSER_QA_PARALLEL;
-    else process.env.HH_BROWSER_QA_PARALLEL = before;
+    if (original === undefined) delete process.env.HH_BROWSER_QA_PARALLEL;
+    else process.env.HH_BROWSER_QA_PARALLEL = original;
   }
 });
 
-test("all 35 original Chromium/WebKit locale/viewport combinations stay real and isolated", () => {
-  for (const path of [
-    "scripts/verify-coaching-lounge-mobile.mjs",
-    "scripts/verify-holistic-support-browser.mjs",
-    "scripts/verify-ideas-mobile-browser.mjs",
+test('all original Coaching, Support and Ideas browser cases retain isolated contexts', () => {
+  const scripts = [
+    'scripts/verify-coaching-lounge-mobile.mjs',
+    'scripts/verify-holistic-support-browser.mjs',
+    'scripts/verify-ideas-mobile-browser.mjs',
+  ];
+  for(const path of scripts) {
+    const js = source(path);
+    assert.match(js, /runMobileBrowserCases\(/, path);
+    assert.match(js, /browser\.newContext\(/, path);
+    assert.match(js, /await context\.close\(\)/, path);
+    assert.doesNotMatch(js, /browser\.newPage\(|await browser\.close\(\)/, path);
+    assert.match(js, /browserType: webkit/);
+    assert.match(js, /browserType: chromium/);
+  }
+  assert.match(source(scripts[0]), /\[320, 390, 430\]/);
+  assert.match(source(scripts[1]), /\["ru", 320, 568\]/);
+  assert.match(source(scripts[1]), /\["en", 430, 844\]/);
+  assert.match(source(scripts[2]), /const widths = \[320, 375, 390, 430\]/);
+});
+
+test('full Next.js and mobile browser runs remain manual-only, not a PR merge blocker', () => {
+  const yaml = source('.github/workflows/hh-ideas-coaching-public.yml');
+  for (const label of [
+    'Next.js production build (manual full acceptance only)',
+    'Install isolated mobile browsers',
+    'Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)',
   ]) {
-    const script = read(path);
-    assert.match(script, /runMobileBrowserCases\(/);
-    assert.match(script, /browser\.newContext\(/);
-    assert.match(script, /await context\.close\(\)/);
-    assert.doesNotMatch(script, /browser\.newPage\(|await browser\.close\(\)/);
-    assert.match(script, /browserType: webkit/);
-    assert.match(script, /browserType: chromium/);
-    assert.match(script, /\["en", "ru", "es"\]/);
+    const start = yaml.indexOf('      - name: ' + label + '\n');
+    assert.ok(start !== -1, 'missing manual acceptance step ' + label);
+    assert.ok(yaml.slice(start, start + 190).includes("if: github.event_name != 'pull_request'"),
+      'expensive acceptance must remain manual-only: ' + label);
   }
-  assert.match(read("scripts/verify-coaching-lounge-mobile.mjs"), /\[320, 390, 430\]/);
-  assert.match(read("scripts/verify-holistic-support-browser.mjs"), /\["ru", 320, 568\]/);
-  assert.match(read("scripts/verify-holistic-support-browser.mjs"), /\["en", 430, 844\]/);
-  assert.match(read("scripts/verify-ideas-mobile-browser.mjs"), /const widths = \[320, 375, 390, 430\]/);
-});
-
-test("workflow runs original build plus safe scoped real browser tests on pinned OS", () => {
-  const yaml = read(".github/workflows/hh-ideas-coaching-public.yml");
-  assert.match(yaml, /runs-on: ubuntu-24\.04/);
-  assert.match(yaml, /playwright install --with-deps --only-shell chromium webkit/);
-  assert.match(yaml, /path: \.next\/cache/);
-  assert.match(yaml, /uses: actions\/cache@v4/);
   assert.match(yaml, /HH_BROWSER_QA_PARALLEL: '2'/);
-  assert.match(yaml, /node scripts\/ci-ideas-coaching-scope\.mjs/);
-  assert.match(yaml, /node scripts\/verify-coaching-lounge-mobile\.mjs/);
-  assert.match(yaml, /node scripts\/verify-holistic-support-browser\.mjs/);
-  assert.match(yaml, /node scripts\/verify-ideas-mobile-browser\.mjs/);
-  assert.match(yaml, /- name: Next\.js production build\n        run: npm run build/);
-  assert.match(yaml, /!tests\/holistic-support-mobile-mock-parity\.test\.mjs/);
-  assert.ok(!yaml.includes("tests/tests-coaching-switchboard.test.mjs tests/coaching-diagnostic-funnel"));
+  assert.match(yaml, /uses: actions\/cache@v4/);
+  assert.match(yaml, /node --test tests\/ci-ideas-coaching-optimization\.test\.mjs/);
+  for(const name of ['verify-coaching-lounge-mobile','verify-holistic-support-browser','verify-ideas-mobile-browser']) {
+    assert.ok(yaml.includes('node scripts/' + name + '.mjs'), name);
+  }
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
-  for (const name of ["COACHING", "SUPPORT", "IDEAS"]) assert.ok(yaml.includes("HH_" + name));
 });

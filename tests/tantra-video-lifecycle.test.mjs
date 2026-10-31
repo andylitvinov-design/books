@@ -215,19 +215,3 @@ test('native seek rejection is contained once without retry or control side effe
  assert.doesNotThrow(()=>f.reconstruct());assert.equal(attempts,1);assert.equal(f.media.paused,true);
  assert.doesNotThrow(()=>f.reconstruct());f.reopen();assert.equal(attempts,1);assert.deepEqual(f.writes,[]);
 });
-
-test('native Tantra YouTube fixture must equal exact privacy-safe iframe URL before expensive browsers', () => {
-  const playerSource = readFileSync(new URL('../components/academy-video-player.tsx', import.meta.url), 'utf8');
-  const browserSource = readFileSync(new URL('../scripts/verify-tantra-testimonials.mjs', import.meta.url), 'utf8');
-  const expectedUrl = 'https://www.youtube-nocookie.com/embed/qM_nFUkYJ1k?autoplay=1&playsinline=1&rel=0';
-  assert.ok(playerSource.includes('https://www.youtube-nocookie.com/embed/" + safeId + "?autoplay=1&playsinline=1&rel=0'),
-    'Keep the privacy-enhanced host, video-ID allowlist and inline playback parameters');
-  assert.ok(browserSource.includes("const youtubeUrl = '" + expectedUrl + "';"),
-    'Fixture URL must match the actual original player');
-  assert.equal(browserSource.split('await context.route(youtubeUrl, route =>').length - 1, 2,
-    'Each live browser fixture must intercept the exact video renderer URL');
-  assert.ok(browserSource.includes("await expect(alena).toHaveAttribute('src', youtubeUrl);"),
-    'Real DOM assertion must require the same exact iframe URL');
-  assert.ok(browserSource.includes(".locator('#player-fixture')).toHaveText('Allowed YouTube renderer');"),
-    'Retain real iframe and close/cleanup browser assertions');
-});

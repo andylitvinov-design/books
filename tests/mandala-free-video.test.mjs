@@ -14,7 +14,7 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /data-mandala-free-video/);
   assert.match(video, /canvas\.captureStream\(framesPerSecond\)/);
   assert.match(video, /new MediaRecorder\(stream/);
-  assert.match(video, /recorder\.start\(500\)/);
+  assert.match(video, /recorder\.start\(\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
   assert.match(video, /loadSceneImage\(snapshot\)/);
@@ -28,7 +28,7 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{createVideo\}/);
+  assert.match(source, /onClick=\{\(\)=>void createVideo\(\)\}/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);

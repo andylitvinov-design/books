@@ -1,0 +1,27 @@
+name: HH native auto-merge
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: ['codex/public-book-library']
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  enable:
+    if: ${{ github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Enable native auto-merge for this exact head
+        env:
+          # A repo-scoped token lets resulting merges trigger push workflows.
+          # Preserve native auto-merge if the optional credential is absent.
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
+            echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
+          fi
+          gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD"

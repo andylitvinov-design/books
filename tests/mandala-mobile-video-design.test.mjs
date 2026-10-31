@@ -220,7 +220,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(studio,/data-mandala-cinematic-canvas/);
   assert.match(studio,/startFromHero/);
   assert.match(studio,/document\.querySelector\("\[data-video-photo-consent\]"\)\?\.scrollIntoView/);
-  assert.match(studio,/onClick=\{createVideo\}/);
+  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
   assert.match(studio,/data-mandala-video-download/);
   assert.match(studio,/data-video-theme=\{item\}/);
   assert.match(css,/\.heroCanvas canvas\{display:block/);
@@ -312,22 +312,27 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const top=[
     "data-video-quick-builder",'data-video-quick-section="1"',
     "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
-    "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-video-quick-section="4"',
-    "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
+    "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
     'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
     "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
   const deep=[
     "data-video-daily-picks","data-video-support-layout","data-video-therapy-toggle",
-    "data-video-category-rail","data-video-preview-choices","data-video-editor-nav",
-    "data-video-audio-section","data-video-hypnosis-section"
+    "data-video-category-rail","data-video-preview-choices","data-video-editor-nav"
   ].map(marker=>studio.indexOf(marker));
   for(const [name,locations] of [["owner preview-first mobile editor",top],["retained deep Support editor",deep]]){
     assert.ok(locations.every(pos=>pos>0),name+" must keep its original functional landmarks");
     for(let i=1;i<locations.length;i++)
       assert.ok(locations[i]>locations[i-1],name+" out of order: "+i);
   }
+  assert.equal((studio.match(/data-video-audio-section/g)||[]).length,1,
+    "single original audio editor mounted in either workspace");
+  assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
+    "single original Hypno editor mounted in either workspace");
+  assert.match(studio,/activeWorkspace==="audio" \? deepAudioPane/);
+  assert.match(studio,/activeWorkspace==="psychocorrection" \? deepHypnoPane/);
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
@@ -471,8 +476,12 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
   assert.equal((studio.match(/<canvas key=\{aspect\}/g)||[]).length,1);
   assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
-  for(const id of ["style","parameters","personal","phrases","sound","extra"])
-    assert.ok(studio.includes('id:"'+id+'"'),"quick tab "+id);
+  const workspaceNav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),
+    studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
+  for(const id of ["video","audio","characters","hypnotherapy","psychocorrection","courses"])
+    assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
+  assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
+  assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id\}\)/);
