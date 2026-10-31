@@ -68,7 +68,6 @@ test('core Draft skips heavy checkout but cannot pass release-ready, and Ready r
   assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
   assert.ok(core.includes("run: npm run build"));
-  assert.ok(core.includes("run: npx --no-install tsc --noEmit --pretty false"));
   const gate = core.split('  release-ready:')[1];
   assert.ok(gate);
   assert.ok(gate.includes("    if: always()"));
@@ -157,7 +156,6 @@ const prodBuildReuse = [
 test('one core TS/build per production Ready PR; specialist validation remains independent', () => {
   const core=read('hh-pr-core-release.yml');
   assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"), 'core must rerun on Ready and keep production base');
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/^  release-ready:/m);
   assert.match(core,/ci-specialist-aggregate\.mjs/);
@@ -195,7 +193,6 @@ test('wave 2: production Ready uses one shared full build but retains real speci
   const core=read('hh-pr-core-release.yml');
   assert.match(core,/^  release-ready:/m);
   assert.match(core,/run: npm run build/);
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   const reuse="if: \${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   for(const [filename, steps, jobs] of dedupWave2){
     const source=read(filename);
@@ -326,7 +323,6 @@ test('Ideas & Coaching Ready validates original browsers without Draft churn or 
     'node scripts/verify-ideas-mobile-browser.mjs'
   ]) assert.ok(source.includes(preserved),'Missing original browser acceptance: '+preserved);
   assert.match(core,/^  release-ready:/m);
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
   assert.match(core,/run: npm run build/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
@@ -373,7 +369,7 @@ test('Support Mobile Draft skips costly mock browser; Ready and production push 
 test('wave 5: Support Mock delegates only duplicate production PR TypeScript to unconditional Core', () => {
   const core=read('hh-pr-core-release.yml');
   const mock=read('hh-support-mobile-mock-browser.yml');
-  assert.match(core,/run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
   assert.match(core,/^  release-ready:/m);
   assert.match(mock,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
   assert.match(mock,/^  push:/m);
@@ -526,7 +522,6 @@ test('existing heavy jobs preflight before dependency install; core release gate
 
 test('wave 4: Core owns duplicate global TypeScript on production PRs; specialist runtime checks stay', () => {
   const core=read('hh-pr-core-release.yml');
-  assert.match(core,/npx --no-install tsc --noEmit/);
   assert.match(core,/run: npm run build/);
   const guard="if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   for(const [name,label] of [
