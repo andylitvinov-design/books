@@ -99,6 +99,10 @@ on:
       # routes or public booking/commerce files from Public Services.
       - '!components/mandala-hypno-compact*'
       - '!components/mandala-hypnocorrection-mobile*'
+      # Studio's standalone local first-meditation course also reuses the same
+      # original composer, is fully covered by specialist browser/media, and
+      # does not edit public services, checkout or booking workflows.
+      - '!components/mandala-personal-meditation*'
       - '!app/api/holistic-support/hypno-strategy/route.js'
       # The goal-first Auto Video Director only selects previously licensed
       # local MP4 montages. Its entire Node/TypeScript/Next.js/Chromium/WebKit
