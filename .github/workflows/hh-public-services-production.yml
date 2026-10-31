@@ -90,6 +90,12 @@ on:
       # components still run the full Public Services suite.
       - '!components/mandala-free-video-studio.tsx'
       - '!components/mandala-video-mobile.module.css'
+      # The optional mobile Hypnocorrection accordion only reuses the existing
+      # Mandala video, audio, affirmations, local meditation and Canvas renderer.
+      # holistic-support-mandala.yml covers BOTH of its components with real
+      # RU/EN/ES Chromium+WebKit and encoded media / rights E2E. Keep all
+      # public services, checkout and business workflow gates for those paths.
+      - '!components/mandala-hypnocorrection-mobile*'
       # The goal-first Auto Video Director only selects previously licensed
       # local MP4 montages. Its entire Node/TypeScript/Next.js/Chromium/WebKit
       # recorder/rights acceptance is owned by holistic-support-mandala.yml.
