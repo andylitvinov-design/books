@@ -448,6 +448,24 @@ test('FAST includes dynamic Next.js presentation paths but sensitive or mixed ch
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
 });
 
+test('private cabinet presentation routes stay STRICT while public styles stay FAST', async () => {
+  const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
+  assert.equal(classifyReleaseRisk(['components/app/crm-messenger.module.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/app/messages/messages-page.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/client/client-teal.css']), 'STRICT');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
+});
+
+test('public FAST CSS does not wait for broadly triggered diagnostic specialists', async () => {
+  const broad='.github/workflows/diagnostic.yml';
+  const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>{throw Error('must not poll diagnostics');}};
+  const result=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.equal(result.risk,'FAST');
+  assert.deepEqual(result.expected,[]);
+});
+
 test('client progress owner is complete before the trusted second-phase deletion', () => {
   const old='.github/workflows/hh-client-report-progress.yml';
   const owner='.github/workflows/hh-reports-development-program.yml';
