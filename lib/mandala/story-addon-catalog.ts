@@ -374,7 +374,7 @@ export const STORY_ADDONS:readonly StoryAddon[] = [
       "en": "Garden of renewal",
       "es": "Jardín de renovación"
     },
-    "poster": "/videos/holistic-house/film-collection-v3/garden-acceptance.jpg",
+    "poster": "/videos/holistic-house/film-collection-v2/wildflower-dance.jpg",
     "estimatedXp": 0,
     "capability": "local",
     "scene": {
