@@ -162,7 +162,7 @@ for(const browserType of [chromium,webkit]){
       const composer=element.closest('[class*="compose"]')
       const send=composer?.querySelector('button[aria-label]')
       const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
-      const navTop=nav&&getComputedStyle(nav).display!=='none
+      const navTop=nav&&getComputedStyle(nav).display!=='none'
         ?nav.getBoundingClientRect().top:innerHeight
       return {inputWidth:input.width,inputBottom:input.bottom,
         sendWidth:send?.getBoundingClientRect().width,
