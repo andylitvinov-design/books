@@ -18,12 +18,11 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
-    '<section className={videoStyles.quickSection} data-video-quick-section="4"',
+    '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
-    "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
     "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
-    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
@@ -33,6 +32,9 @@ test("the existing public editor retains one real video renderer and the new com
     if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
       "video studio hierarchy changed at "+order[i]);
   }
+  assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
+  assert.match(source,/\{activeWorkspace==="characters" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(css,/\.quickOrderBar\{position:static;bottom:auto/,

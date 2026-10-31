@@ -113,7 +113,10 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
   const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
   const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
-  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
+    "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
