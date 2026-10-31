@@ -1498,6 +1498,35 @@ const runEngine = async ([engine, browserType]) => {
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/30 сек/);
         }
 
+        // Owner-approved mobile Stories & Characters: real one-editor interaction.
+        const storyAddons=page.locator("[data-video-stories-characters]");
+        await storyAddons.waitFor({state:"visible",timeout:12000});
+        assert.equal(await storyAddons.locator("[data-story-addon-tab]").count(),5,
+          "five mobile catalog categories are available in every locale");
+        assert.equal(await storyAddons.locator('[data-story-addon-group="character"]').count(),1);
+        if(locale==="ru"&&width===390){
+          await page.locator('[data-video-quick-control="personal"]').click();
+          const plannedCharacter=storyAddons.locator('[data-story-addon-id="C02"]');
+          await plannedCharacter.click();
+          assert.equal(await storyAddons.locator('[data-video-story-addons-apply]').isDisabled(),true,
+            "unavailable AI character cannot trigger fictional XP payment or export");
+          await plannedCharacter.click();
+          for(const id of ["C01","S01","L02"]){
+            await storyAddons.locator('[data-story-addon-id="'+id+'"]').click();
+          }
+          await storyAddons.locator('[data-story-addon-tab="symbol"]').click();
+          await storyAddons.locator('[data-story-addon-id="O01"]').click();
+          const applyStories=storyAddons.locator('[data-video-story-addons-apply]');
+          assert.equal(await applyStories.isEnabled(),true,
+            "first-party symbolic motifs and licensed video scene can apply for 0 XP");
+          await applyStories.click();
+          await page.waitForFunction(()=>
+            document.querySelector('[data-video-quick-theme="life"]')?.getAttribute("aria-pressed")==="true",
+            undefined,{timeout:12000});
+          assert.equal(await storyAddons.locator("[data-story-addons-selected]").count(),1);
+          assert.match(await storyAddons.innerText(),/0 XP/);
+        }
+
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
         await focus.click();
         try {

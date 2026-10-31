@@ -9,6 +9,9 @@ import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
+import { MandalaStoriesCharacters } from "./mandala-stories-characters";
+import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
+import type { StorySelection } from "@/lib/mandala/story-addon-catalog";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
@@ -1168,6 +1171,55 @@ function paintCinematicFrame(
     ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
   }
 }
+// A deliberately SIMPLE first-party symbolic overlay, not a fictional talking AI avatar.
+// It is drawn in the exact same Canvas preview + MediaRecorder export path. No PHI or API.
+function paintStoryMotifs(ctx:CanvasRenderingContext2D,time:number,selection:StorySelection){
+  if(!selection.character&&!selection.story&&!selection.symbol)return;
+  const w=ctx.canvas.width,h=ctx.canvas.height,t=Math.max(0,time);
+  ctx.save();
+  if(selection.character==="C01"){
+    const x=w*.78+Math.sin(t*.65)*w*.01,y=h*.30+Math.sin(t*.9)*h*.01;
+    const r=Math.max(25,Math.min(w,h)*.095);
+    const halo=ctx.createRadialGradient(x,y,0,x,y,r*2.8);
+    halo.addColorStop(0,"rgba(255,251,215,.88)");
+    halo.addColorStop(.3,"rgba(246,211,121,.32)");
+    halo.addColorStop(1,"rgba(246,211,121,0)");
+    ctx.fillStyle=halo;ctx.fillRect(x-r*2.8,y-r*2.8,r*5.6,r*5.6);
+    ctx.strokeStyle="rgba(255,241,194,.65)";
+    ctx.lineWidth=Math.max(1.5,w*.002);
+    ctx.beginPath();ctx.arc(x,y,r*(.54+.04*Math.sin(t*.7)),0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<4;i++){
+      const angle=t*.24+i*Math.PI/2;
+      const px=x+Math.cos(angle)*r*.9,py=y+Math.sin(angle)*r*.9;
+      ctx.fillStyle="rgba(255,240,179,.85)";
+      ctx.beginPath();ctx.arc(px,py,r*.07,0,Math.PI*2);ctx.fill();
+    }
+  }
+  if(selection.story==="S01"){
+    // A clear, non-verbal path motif at the very bottom of the video.
+    const y=h*.84;
+    const start=w*.22,end=w*.55;
+    ctx.strokeStyle="rgba(255,234,171,.78)";ctx.lineWidth=Math.max(2,w*.003);
+    ctx.setLineDash([Math.max(4,w*.01),Math.max(5,w*.012)]);
+    ctx.beginPath();ctx.moveTo(start,y);ctx.quadraticCurveTo(w*.37,y-h*.08,end,y-h*.025);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if(selection.symbol==="O01"){
+    const x=w*.19,y=h*.22,r=Math.max(14,Math.min(w,h)*.035);
+    ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(t*.2)*.08);
+    ctx.fillStyle="rgba(255,229,164,.87)";
+    ctx.shadowColor="rgba(255,218,134,.6)";ctx.shadowBlur=r*.75;
+    ctx.beginPath();
+    for(let i=0;i<10;i++){
+      const a=-Math.PI/2+i*Math.PI/5,rr=i%2===0?r:r*.44;
+      const px=Math.cos(a)*rr,py=Math.sin(a)*rr;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();ctx.fill();ctx.restore();
+  }
+  ctx.restore();
+}
+
 function stopJob(job: Job, cancelled: boolean) {
   job.cancelled = cancelled;
   window.cancelAnimationFrame(job.animation);
@@ -1532,6 +1584,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [customCaption,setCustomCaption] = useState("");
   const [wish,setWish] = useState("");
   const [cinematicPlan,setCinematicPlan] = useState<CinematicStoryboard|null>(null);
+  const [appliedStory,setAppliedStory] = useState<StorySelection>({});
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
   const [showAllFreeFilms,setShowAllFreeFilms] = useState(false);
   const [freeFilmReady,setFreeFilmReady] = useState(false);
@@ -1604,7 +1657,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // a decorative image finishes loading in a different editor panel.
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,
-    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId)]);
+    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
@@ -1863,6 +1916,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
+      paintStoryMotifs(ctx,0,appliedStory);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -1875,6 +1929,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const elapsed=(now-startedAt)/1000;
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
           paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(frameSecond));
+          paintStoryMotifs(ctx,frameSecond,appliedStory);
           paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
           lastFrame = now;
         }
@@ -1883,7 +1938,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan, appliedStory]);
 
   async function createVideo(preferWebm = false) {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
@@ -1924,6 +1979,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         const film=first&&cinematicPlan?.version==="hh-cinematic-storyboard-v1"
           ?firstPartyFilmFor(first.theme,first.sceneId):null;
         if(!backgroundOnly||attachedAudio||caption||affirmations.enabled||
+          storySelectionItems(appliedStory).length>0||
           !film?.src.startsWith("/videos/holistic-house/")){
           setNotice(t.unsupported);
           return;
@@ -1950,6 +2006,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(0));
+      paintStoryMotifs(ctx,0,appliedStory);
       paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
@@ -2043,6 +2100,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(Math.min(duration,(now-start)/1000)));
+          paintStoryMotifs(ctx,Math.min(duration,(now-start)/1000),appliedStory);
           paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
           lastFrame=now;
           if(now-lastProgress>650){
@@ -2579,7 +2637,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {([
           {id:"style",label:{ru:"Стиль",en:"Style",es:"Estilo"},Icon:Film},
           {id:"parameters",label:{ru:"Параметры",en:"Settings",es:"Parámetros"},Icon:SlidersHorizontal},
-          {id:"personal",label:{ru:"Персонализация",en:"Personalize",es:"Personalizar"},Icon:Sparkles},
+          {id:"personal",label:{ru:"Сюжеты и персонажи",en:"Stories & characters",es:"Historias y personajes"},Icon:Sparkles},
           {id:"phrases",label:{ru:"Фразы",en:"Phrases",es:"Frases"},Icon:HandHeart},
           {id:"sound",label:{ru:"Звук",en:"Sound",es:"Sonido"},Icon:Music2},
           {id:"extra",label:{ru:"Дополнительно",en:"More",es:"Más"},Icon:SlidersHorizontal},
@@ -2587,7 +2645,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={recording||preparing} onClick={()=>{
             if(item.id==="parameters"||item.id==="extra"){openQuickDetailed("video-settings");return;}
             const target=item.id==="style"?'[data-video-quick-section="4"]':
-              item.id==="personal"?"#quick-personal-title":
+              item.id==="personal"?"#video-stories-characters":
               item.id==="phrases"?"[data-video-quick-phrases]":"[data-video-quick-audio-choices]";
             document.querySelector(target)?.scrollIntoView({behavior:"smooth",block:"start"});
           }}><item.Icon size={18} aria-hidden="true"/><span>{item.label[locale]}</span></button>)}
@@ -2655,6 +2713,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
           </div>
         </section>
+      <MandalaStoriesCharacters locale={locale} theme={theme}
+        disabled={recording||preparing||micRecording} applied={appliedStory}
+        onApply={next=>{
+          // Only first-party READY scenes can reach the actual local export.
+          // Unavailable AI/premium assets are blocked in the panel itself.
+          if(storySelectionItems(next).some(item=>item.capability!=="local"))return;
+          const scene=availableStoryScene(next);
+          if(scene){
+            setTheme(scene.theme);
+            setVideoCategory(scene.theme);
+            setOtherScene(scene.id as LocalSceneId);
+            setMoneyScene(null);
+            setCinematicPlan(null);
+            setQuickStyleIndex(0);
+          }
+          setAppliedStory(next);
+          setPreviewPlaying(false);
+          setNotice(locale==="ru"?"Сюжетные дополнения применены. Доступные образы появятся в видеопревью и экспортируемом файле.":
+            locale==="es"?"Se aplicaron los elementos disponibles al vídeo y a la exportación.":
+            "Available story elements are now applied to preview and video export.");
+          window.requestAnimationFrame(()=>document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"start"}));
+        }}/>
       {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-video-therapy-banner>
         <div className={videoStyles.therapyBannerCopy}>
           <small>{layout.therapyBannerLabel}</small>
