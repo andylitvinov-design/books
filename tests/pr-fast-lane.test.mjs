@@ -697,6 +697,9 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
   assert.ok(publicQa.includes('if [[ "$ready" != "1" ]]'));
   assert.match(alchemy, /node scripts\/ci-alchemy-impact\.mjs/,
     'Alchemy must route CI-only edits without full recompilation');
+  assert.doesNotThrow(() => execFileSync(process.execPath,
+    [join(root, 'scripts/ci-alchemy-build.mjs'), '--verify-only'], {timeout:5000, stdio:'pipe'}),
+    'Alchemy asset helper must exist and match the actual production prebuild contract');
   assert.match(alchemy, /if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/,
     'Alchemy runs real browser on applicable runtime edits');
   assert.match(alchemy, /HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/,
