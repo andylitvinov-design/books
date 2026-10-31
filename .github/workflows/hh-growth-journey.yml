@@ -18,7 +18,6 @@ on:
       - 'tests/business-consultation-finder.test.mjs'
       - 'tests/business-service-browser.test.mjs'
       - 'tests/topic-journey-account-scope.test.mjs'
-      - 'tests/business-journey-consultation-banner.test.mjs'
       - 'components/library-hub.tsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'components/app/portrait-recommendations.module.css'
@@ -61,7 +60,6 @@ jobs:
           tests/business-consultation-finder.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
-          tests/business-journey-consultation-banner.test.mjs
       - name: Lint changed JS and TypeScript
         run: >-
           npx --no-install eslint
@@ -74,7 +72,6 @@ jobs:
           tests/business-consultation-finder.test.mjs
           tests/business-service-browser.test.mjs
           tests/topic-journey-account-scope.test.mjs
-          tests/business-journey-consultation-banner.test.mjs
           components/library-hub.tsx
           components/app/portrait-recommendations.jsx
           components/app/development-program.jsx

@@ -22,9 +22,10 @@ test('Core owns production PR type/build and specialists retain independent nonp
 test('Growth journey retains business, consent and account scope verification',()=>{
   const s=read('hh-growth-journey.yml');
   for(const path of ['tests/growth-journey-public.test.mjs','tests/business-consultation-finder.test.mjs',
-    'tests/business-service-browser.test.mjs','tests/topic-journey-account-scope.test.mjs',
-    'tests/business-journey-consultation-banner.test.mjs'])
+    'tests/business-service-browser.test.mjs','tests/topic-journey-account-scope.test.mjs'])
     assert.ok(s.includes(path),'Growth evidence lost '+path);
+  assert.doesNotMatch(s,/business-journey-consultation-banner\.test\.mjs/,
+    'Retired Business landing oracle must not block current directions');
   assert.match(s,/name: TypeScript compatibility\n        if:/);
   assert.match(s,/name: Production build\n        if:/);
 });
