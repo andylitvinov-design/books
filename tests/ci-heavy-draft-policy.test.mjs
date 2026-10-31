@@ -267,7 +267,15 @@ test('wave 4: App, OPORA and public-services Draft gates preserve full Ready acc
         database: 'database',
       };
       for (const [job, output] of Object.entries(gated)) {
-        const expected = '  '+job+':\n    needs: impact\n    if: 
+        const target = '  ' + job + ':\n    needs: impact\n';
+        assert.ok(jobs.includes(target), name + '/' + job + ' must depend on fail-closed impact routing');
+        assert.ok(jobs.includes('needs.impact.result ==') && jobs.includes('needs.impact.outputs.' + output + ' =='),
+          name + '/' + job + ' must require successful scope and strict route');
+      }
+    } else {
+      for (const job of jobNames) assert.ok(jobs.includes('  ' + job + ':\n' + gate + '\n'),
+        name + '/' + job + ' must run when ready and retain non-PR events');
+    }
   }
   const browser=read('hh-app-browser.yml');
   const summaryGate='    if: $'+"{{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}";
