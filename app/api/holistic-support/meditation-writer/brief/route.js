@@ -15,7 +15,9 @@ import { buildPsychologyProgram } from "@/lib/holistic-support/psychologist-mind
 import { normalizeWriterRequest } from "@/lib/holistic-support/meditation-writer/contract.mjs";
 import { prepareMeditationCreativeBrief } from "@/lib/holistic-support/meditation-writer/brief.mjs";
 import { writeMeditationDraft } from "@/lib/holistic-support/meditation-writer/writer.mjs";
-import { createAnonymousGeminiSegmentProvider, freeGeminiWriterReady } from "@/lib/holistic-support/meditation-writer/free-gemini.mjs";
+import { createAnonymousGeminiSegmentProvider } from "@/lib/holistic-support/meditation-writer/free-gemini.mjs";
+import { createAnonymousOpenRouterSegmentProvider } from "@/lib/holistic-support/meditation-writer/free-openrouter.mjs";
+import { freeWriterProviders } from "@/lib/holistic-support/meditation-writer/free-json.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -110,29 +112,36 @@ export async function POST(request) {
       canPauseOrSkip:true,requiresEditorialReview:true,
     };
     if(generationMode==="llm"){
-      if(freeGeminiWriterReady(process.env)){
+      const providers=freeWriterProviders(process.env);
+      if(providers.length){
         await consumeRate(config,{op:"meditation-writer-free-hour",actorId:actor.id},3,3600);
-        await consumeRate(config,{op:"meditation-writer-free-global-day"},35,86400);
-        const draft=await writeMeditationDraft(outcome,{
-          writeSegments:createAnonymousGeminiSegmentProvider({
-            key:process.env.HH_COUNCIL_GEMINI_API_KEY,
-          }),signal:AbortSignal.timeout(17000),
-        });
-        if(draft.status==="draft_review_required"){
-          payload={...payload,
-            status:draft.status,generationMode:"llm",modelUsed:true,
-            segments:draft.segments.map(s=>({
-              id:s.beatId,text:s.text,
-              optionalSilenceSeconds:Math.round(s.pauseAfterMs/1000),maySkip:true,
-            })),
-            estimatedDurationSeconds:draft.estimatedDurationSeconds,
-            requiresEditorialReview:true,published:false,
-          };
-        } else {
-          // A failure must never be mislabeled as AI text or clinical approval.
-          payload={...payload,fallbackReason:draft.status==="rejected"?
-            "AI_DRAFT_REJECTED":"AI_FREE_UNAVAILABLE"};
+        await consumeRate(config,{op:"meditation-writer-free-global-day"},30,86400);
+        let accepted=false;
+        for(let i=0;i<providers.length;i++){
+          const candidate=providers[i];
+          const writer=candidate.id==="gemini_free"?
+            createAnonymousGeminiSegmentProvider({key:candidate.key}):
+            createAnonymousOpenRouterSegmentProvider({key:candidate.key});
+          // Two bounded sequential attempts must fit the 25-second function.
+          const draft=await writeMeditationDraft(outcome,{
+            writeSegments:writer,signal:AbortSignal.timeout(i===0?11500:7500),
+          });
+          if(draft.status==="draft_review_required"){
+            payload={...payload,status:draft.status,generationMode:"llm",
+              modelUsed:true,provider:candidate.id,
+              segments:draft.segments.map(s=>({
+                id:s.beatId,text:s.text,
+                optionalSilenceSeconds:Math.round(s.pauseAfterMs/1000),maySkip:true,
+              })),
+              estimatedDurationSeconds:draft.estimatedDurationSeconds,
+              requiresEditorialReview:true,published:false,
+            };
+            accepted=true;
+            break;
+          }
         }
+        if(!accepted)
+          payload={...payload,fallbackReason:"AI_FREE_UNAVAILABLE"};
       } else {
         payload={...payload,fallbackReason:"AI_FREE_NOT_CONFIGURED"};
       }
