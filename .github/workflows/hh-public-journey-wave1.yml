@@ -42,7 +42,11 @@ jobs:
       - name: Lint and typecheck
         run: |
           npx --no-install eslint components/public-pathway-strip.tsx app/'[locale]'/about/page.tsx app/es/about/page.tsx app/'[locale]'/contact/page.tsx tests/public-pathway-migration.test.mjs
-          npx --no-install tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
       - name: Real production build
         run: npm run build
       - name: Install Chromium and WebKit without altering project dependencies

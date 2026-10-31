@@ -68,7 +68,11 @@ jobs:
           node --check scripts/capture-public-ui-reference.mjs
           node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs tests/practice-google-return-and-services-v5.test.mjs
           npx eslint scripts/verify-practice-visual-browser.mjs scripts/compare-ui-screenshots.mjs
-          npx tsc --noEmit --pretty false
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit --pretty false
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
       - name: Install Chromium and WebKit for synthetic UI verification
         run: |
           mkdir -p /tmp/hh-practice-visual-tools

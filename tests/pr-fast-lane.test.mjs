@@ -701,3 +701,32 @@ test('native auto-merge is requested from trusted base for ready same-repository
   assert.match(source, /gh pr merge .*--auto --squash/);
   assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });
+
+test('seven costly specialists reuse required Core typing/build on production PR without dropping focused acceptance', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /run: npx --no-install tsc --noEmit --pretty false/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /^  release-ready:/m);
+  const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for (const [file, name, command] of [
+    ['hh-growth-studio.yml','Next.js build','npm run build'],
+    ['hh-messages-wellness-v2.yml','TypeScript check','npx --no-install tsc --noEmit'],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('- name: ' + name + '\n        ' + gate + '\n        run: ' + command), file + ' must preserve nonproduction check');
+  }
+  for (const [file, evidence] of [
+    ['hh-public-journey-wave1.yml',['node scripts/verify-public-pathway-mobile.mjs','npm run build','tests/public-pathway-migration.test.mjs']],
+    ['hh-public-journey-toronto-wave2.yml',['node scripts/verify-public-pathway-toronto-mobile.mjs','npm run build','tests/public-pathway-toronto.test.mjs']],
+    ['practice-google-browser.yml',['node scripts/verify-practice-post-google-browser.mjs','tests/practice-google-return-and-services-v5.test.mjs']],
+    ['practice-visual-browser.yml',['node scripts/verify-practice-visual-browser.mjs','tests/compare-ui-screenshots.test.mjs']],
+    ['hh-alchemy-mobile-acceptance.yml',['node scripts/verify-alchemy-one-screen.mjs','npm run build','tests/alchemy-soul-mobile-landing.test.mjs']],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'), file + ' nonproduction TypeScript must remain');
+    assert.ok(src.includes('npx --no-install tsc --noEmit'), file + ' must keep nonproduction TypeScript');
+    assert.ok(src.includes("Full TypeScript delegated to required Core release-ready"), file + ' must delegate production typing');
+    for (const item of evidence) assert.ok(src.includes(item), file + ' must preserve ' + item);
+    assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  }
+});

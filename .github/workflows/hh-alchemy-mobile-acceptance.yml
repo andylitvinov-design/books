@@ -56,7 +56,11 @@ jobs:
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \
             tests/alchemy-of-soul-method.test.mjs
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
           npx eslint \
             components/alchemy-soul-landing.tsx \
             components/alchemy-example-report.tsx \

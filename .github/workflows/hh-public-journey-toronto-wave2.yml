@@ -36,7 +36,11 @@ jobs:
       - name: Lint and typecheck
         run: |
           npx --no-install eslint app/'[locale]'/toronto/page.tsx tests/public-pathway-toronto.test.mjs scripts/verify-public-pathway-toronto-mobile.mjs
-          npx --no-install tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
       - name: Production-mode Next build
         run: npm run build
       - name: Install browser tools in isolated directory
