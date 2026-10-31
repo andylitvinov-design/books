@@ -15,7 +15,11 @@ type Segment = { id:string; text:string; optionalSilenceSeconds:number };
 type PracticalStep = {methodId:string;title:string;steps:string[];
   transferAction:string;reflectionQuestion:string;beforeCheckinPrompt:string;
   afterCheckinPrompt:string;optional:true;needsExplicitStart:true;};
-type Preview = {status:string;title:string;segments:Segment[];
+type NextTopic = {day:number;title:string;description:string;
+  status:"topic_only";meditationGenerated:false;};
+type CoursePlan = {totalDays:8;goalCode:string;dayOne:{day:1;title:string};
+  nextTopics:NextTopic[];additionalScriptsGenerated:false;};
+type Preview = {status:string;title:string;segments:Segment[];coursePlan?:CoursePlan;
   plannedDurationSeconds:number;estimatedDurationSeconds?:number;
   generationMode:"template"|"llm";modelUsed:boolean;fallbackReason?:string;
   provider?:"gemini_free"|"openrouter_free";
@@ -34,8 +38,14 @@ const lang={
     estimated:"Оценочная длительность чтения с паузами",
     aiFallback:"AI сейчас недоступен или текст не прошёл проверку: показан шаблон.",
     phrase:"Необязательная личная фраза",phraseHelp:"Можно оставить пустым",
+    wishes:"Что сейчас беспокоит или важно для вас?",wishesPlaceholder:"Например, трудно расслабиться после напряжённого дня…",
+    desired:"К чему хотели бы прийти?",desiredPlaceholder:"Например, найти спокойствие и ясность",
+    wishesPrivacy:"Пожелания используются внутри защищённого Psychologist Mind. Бесплатный AI получает только общие коды темы и стиля, не ваши личные записи.",
+    courseTitle:"Ваш план: восемь дней медитаций",
+    courseExplanation:"Медитация первого дня подготовлена. Вот семь тем для продолжения.",
+    firstCreated:"Текст первого дня подготовлен",courseNote:"Дни 2–8 — пока только темы, не готовые аудиозаписи или оплаченный курс.",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
-    create:"Подготовить текст",loading:"Формируется предпросмотр…",
+    create:"Сгенерировать медитацию и 7 тем",loading:"Пишем медитацию и подбираем темы…",
     template:"Текстовый шаблон · без AI-генерации",durationNote:"Плановая длительность с паузами; аудио ещё не создано.",
     signin:"Для персонального предпросмотра войдите в свой кабинет.",
     unavailable:"Предпросмотр пока недоступен или необходима помощь специалиста.",
@@ -55,8 +65,14 @@ const lang={
     estimated:"Estimated spoken length with pauses",
     aiFallback:"AI is unavailable or the draft failed review; showing the template instead.",
     phrase:"Optional personal phrase",phraseHelp:"You can leave this empty",
+    wishes:"What feels difficult or important now?",wishesPlaceholder:"For example, it is hard to unwind after a demanding day…",
+    desired:"What would you like to move toward?",desiredPlaceholder:"For example, find steadiness and clarity",
+    wishesPrivacy:"Your wishes are used only inside protected Psychologist Mind. Free AI receives generic theme and style codes, never your notes.",
+    courseTitle:"Your eight-day meditation path",
+    courseExplanation:"Your first meditation is prepared. Here are seven topics to continue.",
+    firstCreated:"First-day text prepared",courseNote:"Days 2–8 are topics only, not finished audio or a purchased course.",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
-    create:"Prepare text",loading:"Preparing preview…",
+    create:"Generate meditation and 7 topics",loading:"Writing meditation and selecting topics…",
     template:"Text template · no AI generation",durationNote:"Planned length with pauses; audio has not been created.",
     signin:"Please sign in to My House for a personal preview.",
     unavailable:"Preview is unavailable or a qualified person's review is needed.",
@@ -76,8 +92,14 @@ const lang={
     estimated:"Duración estimada de voz con pausas",
     aiFallback:"La IA no está disponible o el borrador no pasó la revisión; se muestra la plantilla.",
     phrase:"Frase personal opcional",phraseHelp:"Puedes dejarla vacía",
+    wishes:"¿Qué es difícil o importante ahora?",wishesPlaceholder:"Por ejemplo, cuesta relajarse después de un día intenso…",
+    desired:"¿Hacia qué te gustaría avanzar?",desiredPlaceholder:"Por ejemplo, sentir más estabilidad y claridad",
+    wishesPrivacy:"Tus deseos se usan solo dentro de Psychologist Mind protegido. La IA gratuita recibe códigos generales, nunca tus notas.",
+    courseTitle:"Tu programa de ocho días",
+    courseExplanation:"La primera meditación está preparada. Estos son los siete temas siguientes.",
+    firstCreated:"Texto del primer día preparado",courseNote:"Los días 2–8 son solo temas, no audios terminados ni un curso comprado.",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
-    create:"Preparar texto",loading:"Preparando vista previa…",
+    create:"Generar meditación y 7 temas",loading:"Generando la meditación y siete temas…",
     template:"Plantilla de texto · sin generación IA",durationNote:"Duración prevista con pausas; todavía no hay audio.",
     signin:"Inicia sesión en Mi Casa para la vista previa personal.",
     unavailable:"La vista previa no está disponible o requiere ayuda profesional.",
@@ -120,7 +142,9 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [motif,setMotif]=useState<Motif>("gentle_nature");
   const [duration,setDuration]=useState<5|10|15>(10);
   const [clientPhrase,setClientPhrase]=useState("");
-  const [mode,setMode]=useState<"template"|"llm">("template");
+  const [problemFrame,setProblemFrame]=useState("");
+  const [desiredExperience,setDesiredExperience]=useState("");
+  const [mode,setMode]=useState<"template"|"llm">("llm");
   const [providerPreference,setProviderPreference]=useState<ProviderPreference>("auto");
   const [externalOptIn,setExternalOptIn]=useState(false);
   const [consented,setConsented]=useState(false);
@@ -138,7 +162,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         method:"POST",cache:"no-store",credentials:"same-origin",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:l,focus,intentionCode:goal,styleId:style,motifId:motif,
-          durationMinutes:duration,clientPhrase,resourceImageryOptIn:true,
+          durationMinutes:duration,clientPhrase,problemFrame,desiredExperience,resourceImageryOptIn:true,
           generationMode:mode,providerPreference,
           externalModelOptIn:mode==="llm"&&externalOptIn}),
       });
@@ -157,6 +181,19 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   return <section className={styles.shell} aria-label={t.title}>
     <div className={styles.intro}>
       <h2>{t.title}</h2><p>{t.subtitle}</p>
+    </div>
+    <div className={styles.wishes} data-meditation-client-wishes>
+      <label>{t.wishes}
+        <textarea rows={3} maxLength={350} value={problemFrame}
+          placeholder={t.wishesPlaceholder}
+          onChange={e=>{setProblemFrame(e.target.value);setPreview(null);}}/>
+      </label>
+      <label>{t.desired}
+        <input maxLength={180} value={desiredExperience}
+          placeholder={t.desiredPlaceholder}
+          onChange={e=>{setDesiredExperience(e.target.value);setPreview(null);}}/>
+      </label>
+      <p>{t.wishesPrivacy}</p>
     </div>
     <div className={styles.controls}>
       <label>{t.focus}<select value={focus} onChange={e=>{
@@ -264,6 +301,22 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       {preview.estimatedDurationSeconds!==undefined&&
         <p className={styles.caption}>{t.estimated}: {Math.max(1,Math.round(preview.estimatedDurationSeconds/60))} min</p>}
       <MeditationWriterDeviceVoice locale={l} segments={preview.segments} />
+      {preview.coursePlan&&<section className={styles.course} data-meditation-course-topics>
+        <h4>{t.courseTitle}</h4>
+        <p className={styles.caption}>{t.courseExplanation}</p>
+        <div className={styles.firstDay}>
+          <strong>{preview.coursePlan.dayOne.title}</strong>
+          <span>{t.firstCreated}</span>
+        </div>
+        <ol start={2}>
+          {preview.coursePlan?.nextTopics.map(topic=>
+            <li key={topic.day}>
+              <strong>{topic.title}</strong>
+              <span>{topic.description}</span>
+            </li>)}
+        </ol>
+        <p className={styles.caption}>{t.courseNote}</p>
+      </section>
     </article>}
   </section>;
 }

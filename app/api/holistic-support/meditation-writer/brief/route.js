@@ -18,6 +18,8 @@ import { writeMeditationDraft } from "@/lib/holistic-support/meditation-writer/w
 import { createAnonymousGeminiSegmentProvider } from "@/lib/holistic-support/meditation-writer/free-gemini.mjs";
 import { createAnonymousOpenRouterSegmentProvider } from "@/lib/holistic-support/meditation-writer/free-openrouter.mjs";
 import { freeWriterProviders } from "@/lib/holistic-support/meditation-writer/free-json.mjs";
+import { buildEightDayCourseOutline } from "@/lib/holistic-support/meditation-writer/eight-day-course.mjs";
+import { reviewFreeMeditationQuality } from "@/lib/holistic-support/meditation-writer/free-quality.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -85,9 +87,14 @@ export async function POST(request) {
         outcome.status==="invalid_input"?400:422);
       throw e;
     }
+    // Psychologist Mind owns the eight-session roadmap; the LLM writes only day one.
+    const coursePlan=buildEightDayCourseOutline({program,prepared:outcome});
+    if(coursePlan.status!=="ready")
+      throw new AppError("COURSE_OUTLINE_UNAVAILABLE",422);
     const template=outcome.template;
     let payload={
       status:"template_ready",generationMode:"template",modelUsed:false,
+      coursePlan,
       disclaimer:"resource_self_guided_preview_not_clinical_treatment",
       title:template.title,locale:normalized.locale,
       plannedDurationSeconds:template.plannedDurationSeconds,
@@ -128,14 +135,17 @@ export async function POST(request) {
           const draft=await writeMeditationDraft(outcome,{
             writeSegments:writer,signal:AbortSignal.timeout(i===0?11500:7500),
           });
-          if(draft.status==="draft_review_required"){
+          const quality=reviewFreeMeditationQuality({
+            draft,plannedDurationSeconds:outcome.brief.targetDurationSeconds,
+          });
+          if(quality.ok){
             payload={...payload,status:draft.status,generationMode:"llm",
               modelUsed:true,provider:candidate.id,
               segments:draft.segments.map(s=>({
                 id:s.beatId,text:s.text,
                 optionalSilenceSeconds:Math.round(s.pauseAfterMs/1000),maySkip:true,
               })),
-              estimatedDurationSeconds:draft.estimatedDurationSeconds,
+              estimatedDurationSeconds:quality.estimatedDurationSeconds,
               requiresEditorialReview:true,published:false,
             };
             accepted=true;
