@@ -17,6 +17,7 @@ on:
       - 'tests/ci-heavy-impact.test.mjs'
       - '.github/workflows/hh-app-r1.yml'
       - '.github/workflows/holistic-support-mandala.yml'
+      - '.github/workflows/hh-free-review-live-mobile.yml'
       - '.github/workflows/ia-v2.yml'
       - '.github/workflows/assessment-range-mobile-browser.yml'
       - '.github/workflows/hh-benchmark-public-browser.yml'
