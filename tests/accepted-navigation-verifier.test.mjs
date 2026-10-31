@@ -134,12 +134,11 @@ for (const locale of ['en', 'ru']) test(locale + ' mobile Home verifies its exac
   assert.ok(read('scripts/verify-app-r1.mjs').includes('await openCabinetHome(page,expect,{origin})'))
 })
 
-test('MHC-SF follows a visible mobile portrait link to My Tests without depending on a hidden desktop nav', () => {
+test('MHC-SF exercises visible desktop Tests or real mobile Account menu without hidden-nav shortcuts', () => {
   const helper = read('scripts/helpers/cabinet-navigation-verifier.mjs')
   const section = helper.slice(helper.indexOf('export async function openCabinetMyTests'), helper.indexOf('export async function assertCabinetPrimaryNavigation'))
-  assert.match(section, /page\.locator\('main a\[href="/)
-  assert.doesNotMatch(section, /page\.locator\('nav a\[href="/)
-  assert.match(section, /await link\.click\(\)/)
-  assert.match(section, /await expect\(page\)\.toHaveURL\(origin \+ path/)
-  assert.match(section, /\[data-my-tests-dashboard\]/)
+  for (const invariant of ["nav.hh-nav:visible a[href=", "details.hh-account-menu", ":scope > summary", "a[href=", "await link.click()", "[data-my-tests-dashboard]"])
+    assert.ok(section.includes(invariant), 'Missing real visible navigation contract: ' + invariant)
+  assert.doesNotMatch(section, /page\\.locator\\('nav a\\[href="/)
+  assert.match(section, /await expect\\(page\\)\\.toHaveURL\\(origin \\+ path/)
 })

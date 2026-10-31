@@ -14,12 +14,21 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
   const path = '/' + locale + '/app/tests'
-  // On phone the signed-in portrait exposes the test journey in <main>.
-  // The desktop workspace nav is not visible at 390px; follow a genuine
-  // visible test entry, then verify the destination dashboard and URL.
-  const link = page.locator('main a[href="' + path + '"]:visible').first()
-  await expect(link).toBeVisible()
-  await expect(link).toHaveText(locale === 'ru' ? /тест/i : /test/i)
+  // Desktop has Tests in the horizontal nav. On phones the approved five-item
+  // bottom bar omits Tests; the complete seven-item Cabinet lives in Account.
+  // Exercise the actual visible menu instead of waiting for a hidden nav link.
+  const desktop = page.locator('nav.hh-nav:visible a[href="' + path + '"]').first()
+  let link = desktop
+  if (!await desktop.isVisible()) {
+    const menu = page.locator('details.hh-account-menu')
+    await expect(menu.locator(':scope > summary')).toBeVisible()
+    if (!await menu.evaluate(node => node.open)) {
+      await menu.locator(':scope > summary').click()
+    }
+    link = menu.locator('a[href="' + path + '"]').first()
+  }
+  await expect(link).toBeVisible({ timeout: 10000 })
+  await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
   await expect(link).toHaveAttribute('href', path)
   await link.click()
   await expect(page).toHaveURL(origin + path, { timeout: 30000 })
