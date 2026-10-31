@@ -668,7 +668,7 @@ test('Public Services and Alchemy preserve real exact-head E2E with scoped brows
   const alchemy = workflow('hh-alchemy-mobile-acceptance.yml');
   const core = workflow('hh-pr-core-release.yml');
   assert.match(core, /name: core-lint-types-build/);
-  assert.match(core, /run: npx --no-install tsc --noEmit/);
+  assert.doesNotMatch(readFileSync(join(root, 'next.config.ts'), 'utf8'), /ignoreBuildErrors/);
   assert.match(core, /run: npm run build/);
   for (const [name, source] of [['public services', publicQa], ['alchemy', alchemy]]) {
     assert.match(source, /npm run build > artifacts\//, name + ': independent exact-head production build remains');

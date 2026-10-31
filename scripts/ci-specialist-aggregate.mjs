@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
+  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, parsePrTrigger,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -85,13 +85,18 @@ export async function verify(api,ctx,files,options={}) {
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   const risk=classifyReleaseRisk(changed);
-  if (risk === 'FAST') {
+  // Public presentation changes still need specialists whose path filters
+  // explicitly cover them. Broad diagnostic workflows are advisory here.
+  const scopedFiles = risk === 'FAST' ? Object.fromEntries(['base','current'].map(side => [side,
+    new Map([...files[side]].filter(([name, source]) => parsePrTrigger(source, name)?.paths))
+  ])) : files;
+  const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
+  const baselineExpected=expectedWorkflows({ ...scopedFiles,changed,packageImpact });
+  const {expected, delegated}=resolveExpectedSpecialists({ ...scopedFiles,changed,expected:baselineExpected });
+  if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
     assertSame(await api.pr(ctx.number),ctx);
     return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
   }
-  const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
-  const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
-  const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
