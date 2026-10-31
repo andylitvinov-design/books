@@ -555,36 +555,39 @@ test('PR cleanup specialist accepts only its successful policy and intentionally
   assert.throws(() => inspectJobs([policy, pushOnly], '.github/workflows/other.yml'));
 });
 
-test('Toronto browser owner retains BASE-trusted retirement mapping after deletion', () => {
+test('retired Toronto workflow keeps one current browser owner without a stale YAML dependency', () => {
   const oldName='.github/workflows/hh-public-journey-toronto-wave2.yml';
-  const replacement='.github/workflows/hh-public-journey-wave1.yml';
-  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],replacement);
-  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'), false, 'Old Toronto workflow must be absent');
-  const old="on:\n  pull_request:\n    branches: [codex/public-book-library]\n    paths:\n      - '.github/workflows/hh-public-journey-toronto-wave2.yml'\n";
-  const source=readFileSync(replacement,'utf8');
-  for (const expected of [
-    "'.github/workflows/hh-public-journey-toronto-wave2.yml'",
-    'node scripts/verify-public-pathway-mobile.mjs',
-    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+  const owner='.github/workflows/hh-public-journey-wave1.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[oldName],owner,
+    'Keep the historic BASE-trusted migration record');
+  assert.equal(readdirSync('.github/workflows').includes('hh-public-journey-toronto-wave2.yml'),false,
+    'The retired Toronto workflow must stay deleted');
+  const source=readFileSync(owner,'utf8');
+  for(const expected of [
+    'app/\\[locale\\]/toronto/**',
     'tests/public-pathway-migration.test.mjs',
     'tests/public-pathway-toronto.test.mjs',
+    'node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
     'Build exact candidate once for both real-browser suites',
     'playwright install --with-deps chromium webkit',
-    'Whole-project TypeScript outside protected production PRs',
     'HH_RUN_WAVE1',
     'HH_RUN_WAVE2',
-  ]) assert.ok(source.includes(expected), 'Consolidated successor lost original acceptance: '+expected);
-  const base=new Map([[oldName,old],[replacement,source]]);
-  const changed=[oldName];
-  const current=new Map([[replacement,source]]);
-  const expected=expectedWorkflows({base,current,changed});
-  assert.ok(expected.includes(oldName), 'Old workflow still expected from immutable base');
-  assert.ok(expected.includes(replacement), 'Verified owner must actually trigger on old YAML deletion');
-  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}).delegated,[
-    {retired:oldName,replacement},
-  ]);
-  assert.throws(()=>resolveExpectedSpecialists({base,current:new Map([[replacement,source+'\\n# tampered']]),changed,expected}),
-    /UNTRUSTED_SPECIALIST_REPLACEMENT/, 'Modified successor must never approve retirement');
+  ]) assert.ok(source.includes(expected),'Unified public journey lost coverage: '+expected);
+  assert.ok(!source.includes("      - '.github/workflows/hh-public-journey-toronto-wave2.yml'"),
+    'Do not require edits to a permanently retired YAML to execute the owner');
+  const base=new Map([[owner,source]]);
+  const proposed=new Map([[owner,source]]);
+  for(const changed of [
+    ['tests/public-pathway-toronto.test.mjs'],
+    ['tests/public-pathway-migration.test.mjs'],
+  ]) {
+    const selected=expectedWorkflows({base,current:proposed,changed});
+    assert.deepEqual(selected,[owner],'Only the consolidated owner should match '+changed);
+    const result=resolveExpectedSpecialists({base,current:proposed,changed,expected:selected});
+    assert.deepEqual(result.expected,[owner]);
+    assert.deepEqual(result.delegated,[]);
+  }
 });
 
 test('public FAST CSS cannot skip an explicitly applicable specialist', async () => {
