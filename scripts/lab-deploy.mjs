@@ -3,6 +3,7 @@
 import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {resolve,join} from 'node:path';
+import {evaluateLabRelease} from './lab-policy.mjs';
 const root=resolve(process.env.HH_LAB_WORKDIR||'.');
 const state=resolve(process.env.HH_LAB_STATE_DIR||join(root,'.hh-lab-state'));
 const project='prj_bjwATbHF61gzEhfsrNe54lEnvJZw';
@@ -14,8 +15,9 @@ async function main(){
  if(process.env.HH_LAB_ISOLATED_SERVICES!=='true')block('isolated test services not certified');
  if(process.env.HH_LAB_COST_APPROVED!=='true')block('billing budget not certified');
  if(process.env.HH_LAB_CENTRAL_LEASE_VERIFIED!=='true')block('multi-agent lease not verified');
- // These flags are NOT sufficient: the central lease and isolation must be enforced by external infrastructure.
- block('Centralized lease and isolated test services are not yet implemented. Do not deploy.');
+ // Until shared durable lease and verified test-service isolation exist, deployment must remain blocked.
+ const gate=evaluateLabRelease({now:Date.now(),history:[],sha:'0'.repeat(40),budget:'unverified',isolation:'unverified',lease:'unverified',target:'preview',projectId:project});
+ block('Shared controls not installed: '+gate);
  if(process.env.VERCEL_PROJECT_ID!==project||process.env.VERCEL_ORG_ID!==team)block('wrong Vercel project');
  if(!process.env.VERCEL_TOKEN)block('missing Vercel token');
  const sha=command('git',['rev-parse','HEAD']);
