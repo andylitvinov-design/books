@@ -1,6 +1,7 @@
 name: YouTube phone uploader checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'lib/youtube/**'
       - 'components/youtube-phone-uploader*'
@@ -21,8 +22,15 @@ on:
       - 'app/api/app/practice/youtube/**'
       - 'tests/practice-video-composer-compact.test.mjs'
   workflow_dispatch:
+
+# Only superseded commits on the SAME PR cancel each other. Manual QA never cancels.
+concurrency:
+  group: hh-youtube-phone-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

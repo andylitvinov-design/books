@@ -87,7 +87,7 @@ test("public guide remains discoverable from three homepages without forcing a s
 test("PR SEO mobile browser executes all nine public EN/RU/ES viewports on isolated current code",()=>{
  const workflow=read(".github/workflows/hh-live-seo-audit.yml");
  const browser=read("scripts/verify-public-tests-mobile.mjs");
- assert.match(workflow,/^  public-tests-mobile:\n    runs-on: ubuntu-latest/m,
+ assert.match(workflow,/^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\][\s\S]*?^  public-tests-mobile:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}\n    runs-on: ubuntu-latest/m,
    "The required browser specialist must execute, never skip, on a Ready PR");
  assert.match(workflow,/if \[\[ "\$\{\{ github\.event_name \}\}" == "pull_request" \]\]/);
  assert.match(workflow,/npx next dev --hostname 127\.0\.0\.1 --port 3182/);
@@ -120,7 +120,7 @@ test("SEO mobile QA installs pinned isolated Chromium without mutating repositor
  assert.doesNotMatch(workflow,/npx --no-install playwright install/);
  assert.match(script,/import \{ createRequire \} from "node:module"/);
  assert.match(script,/require\(process\.env\.HH_SEO_PLAYWRIGHT_PACKAGE \|\| "playwright"\)/);
- assert.match(workflow,/public-tests-mobile:\n    runs-on: ubuntu-latest/);
+ assert.match(workflow,/pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\][\s\S]*?^  public-tests-mobile:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}\n    runs-on: ubuntu-latest/m);
  assert.match(workflow,/HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
  assert.match(script,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
  assert.match(script,/const widths = \[320, 390, 430\]/);
