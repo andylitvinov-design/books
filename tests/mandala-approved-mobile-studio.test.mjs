@@ -74,8 +74,8 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\}/,
-    "free video is gated until all four genuine stock clips are ready");
+  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\|\|voiceGenerating\|\|narrationInvalid\}/,
+    "free video remains gated until all four genuine stock clips are ready and narration is fresh");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
