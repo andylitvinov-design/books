@@ -62,7 +62,7 @@ test('owner My Clients merges existing real CRM, direct, request and business ro
  assert.match(client,/<PracticeRequestConversation key=\{selected.id\} inline autoOpen/)
  assert.match(css,/\.shell\[data-embedded="true"\] \.person/)
  assert.match(css,/@media\(max-width:700px\)/)
- assert.equal(client.includes('^\\/(ru|en)\\/app'),false)
+ assert.doesNotMatch(client,/api\.telegram\.org|service_role|localStorage|sessionStorage/)
 })
 
 test('order detail sends through its real request with protected participants only',()=>{
@@ -138,5 +138,5 @@ test('CSP class is identical on Spanish app routes in server and client',()=>{
  const edge=source('middleware.ts')
  assert.ok(client.includes('^\\/(ru|en|es)\\/app'))
  assert.ok(edge.includes('^\\/(ru|en|es)\\/app'))
- assert.doesNotMatch(client,/\\/\\(ru\\|en\\)\\/app/)
+ assert.equal(client.includes('^\\/(ru|en)\\/app'),false)
 })
