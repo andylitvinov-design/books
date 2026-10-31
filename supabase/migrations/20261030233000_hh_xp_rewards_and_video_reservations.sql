@@ -64,7 +64,8 @@ create policy xp_invite_read on app_private.xp_invites for select to hh_app_back
 create policy xp_invite_create on app_private.xp_invites for insert to hh_app_backend
  with check (account_id=(select auth.uid()) and (select app_private.account_active()));
 create policy xp_referral_read on app_private.xp_referrals for select to hh_app_backend
- using (invitee_id=(select auth.uid()) or inviter_id=(select auth.uid()));
+ using (invitee_id=(select auth.uid()) or inviter_id=(select auth.uid()) or
+   current_setting('hh.xp_invite_lookup',true)='1');
 create policy xp_referral_create on app_private.xp_referrals for insert to hh_app_backend
  with check (invitee_id=(select auth.uid()) and inviter_id<>invitee_id and
    current_setting('hh.xp_invite_lookup',true)='1' and
