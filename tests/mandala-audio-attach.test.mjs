@@ -87,7 +87,11 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  assert.doesNotMatch(studio,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i,
+    "no network or third-party upload from the Studio UI");
+  assert.match(source,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,
+    "new scores are decoded only from site-owned first-party WAV masters");
+  assert.doesNotMatch(source,/api\\.kling|heygen|sendBeacon|XMLHttpRequest|FormData/i);
 });
 
 test("sound-only covers reuse 13 real local first-party illustration files",()=>{
@@ -131,4 +135,51 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   assert.match(styles,/\.audioSection \.audioFilterRow\{grid-template-columns:/);
   assert.match(styles,/\.audioTrackPlay\{position:absolute/);
   assert.match(styles,/\.quickAudioCompact\{display:grid/);
+});
+
+test("five original, non-empty, melodic WAV masters are first-party, 16 seconds and reproducible",()=>{
+  const songs=["warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"];
+  const catalog=read("lib/mandala/audio-recommendations.mjs");
+  assert.equal((catalog.match(/kind:"melody"/g)||[]).length,5);
+  assert.equal((catalog.match(/kind:"nature"/g)||[]).length,3);
+  for(const id of songs){
+    const data=readFileSync(new URL("../public/audio/mandala/"+id+".wav",import.meta.url));
+    assert.equal(data.toString("ascii",0,4),"RIFF",id);
+    assert.equal(data.toString("ascii",8,12),"WAVE",id);
+    assert.equal(data.readUInt32LE(24),22050,id);
+    assert.equal(data.readUInt16LE(22),1,id);
+    assert.equal(data.readUInt16LE(34),16,id);
+    assert.equal(data.readUInt32LE(40),22050*16*2,id);
+    let level=0;
+    for(let i=44;i<data.length;i+=200)level+=Math.abs(data.readInt16LE(i));
+    assert.ok(level>300000,"score contains actual pitched notes: "+id);
+    assert.ok(catalog.includes('id:"'+id+'"'),"soundtrack is catalogued: "+id);
+    assert.ok(source.includes('"'+id+'"'),"soundtrack can mix into export: "+id);
+  }
+  const generator=read("scripts/generate-mandala-melodies.mjs");
+  assert.match(generator,/renderMelody/);
+  assert.match(generator,/writeFileSync/);
+});
+
+test("one compact music + voice panel has independent checkboxes, real listen, mixed export and stage audio",()=>{
+  const start=studio.indexOf('data-video-quick-audio-choices');
+  const end=studio.indexOf('{studioMode==="therapy" ?',start);
+  const quick=studio.slice(start,end);
+  assert.ok(start>0&&end>start);
+  for(const hook of ["data-video-quick-music-check","data-video-quick-music-play",
+    'aria-checked={checked}','onClick={()=>toggleQuickMusic(id)}','onClick={()=>playQuickTrack(id)}',
+    'locale==="ru"?"Музыка и голос"']){
+    assert.ok(quick.includes(hook),hook);
+  }
+  assert.ok(studio.includes('useState<AmbientMusic>("warm-morning")'));
+  assert.ok(studio.includes('useState<AttachedAudio|null>({kind:"preset",id:"warm-morning"})'));
+  assert.ok(studio.includes('startMovieSound(attachedAudio,soundVolume)'));
+  assert.ok(studio.includes('stopMovieSound()'));
+  assert.ok(studio.includes('startPresetMixAudio(attachedAudio.ids,soundVolume)'));
+  assert.ok(source.includes('sources.forEach(player=>player.start())'));
+  assert.ok(studio.includes('data-video-live-audio'));
+  assert.ok(styles.includes('.quickMusicItem[data-video-melody-active="true"]'));
+  assert.ok(styles.includes('.studio .quickMusicRail .quickMusicPlay'));
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1,"no duplicate HTML audio player");
+  assert.equal((studio.match(/data-video-audio-mic\b/g)||[]).length,1,"no duplicate microphone");
 });

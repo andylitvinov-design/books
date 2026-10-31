@@ -294,6 +294,42 @@ const runEngine = async ([engine, browserType]) => {
         // Keep the native first-party MP4 mounted for the same renderer, without
         // requiring a tap on its hidden (legacy) miniature UI.
         const mainPlay=quick.locator("[data-video-preview-toggle]");
+        if(locale==="ru"&&width===390){
+          const compactMusic=quick.locator("[data-video-quick-audio-choices]");
+          const compactBox=await compactMusic.boundingBox();
+          assert.ok(compactBox&&compactBox.height<=135,
+            "one audio row must be around 3x shorter than the old library: "+JSON.stringify(compactBox));
+          assert.equal(await compactMusic.locator("[data-video-quick-audio-track]").count(),5,
+            "mobile soundtrack picker prefers five first-party composed melodies");
+          const defaultChoice=compactMusic.locator('[data-video-quick-music-check="warm-morning"]');
+          assert.equal(await defaultChoice.getAttribute("aria-checked"),"true",
+            "key original melody is attached by default without autoplay");
+          const targets=await compactMusic.locator(
+            "[data-video-quick-music-check], [data-video-quick-music-play]"
+          ).evaluateAll(elements=>elements.map(el=>({
+            height:el.getBoundingClientRect().height,width:el.getBoundingClientRect().width,
+          })));
+          assert.ok(targets.every(size=>size.height>=44),
+            "separate checkbox and Play buttons are real iPhone-sized targets: "+JSON.stringify(targets));
+          const audition=compactMusic.locator('[data-video-quick-music-play="wings-of-light"]');
+          await audition.click();
+          await page.waitForFunction(()=>{
+            const a=document.querySelector("[data-video-audio-player]");
+            return a&&a.error===null&&!a.paused&&a.currentTime>.2;
+          },undefined,{timeout:18000});
+          assert.equal(await defaultChoice.getAttribute("aria-checked"),"true",
+            "auditioning another melody must not change the selected soundtrack");
+          await audition.click();
+          await page.waitForFunction(()=>Boolean(document.querySelector(
+            "[data-video-audio-player]")?.paused),undefined,{timeout:10000});
+          await compactMusic.locator('[data-video-quick-music-check="heart-harmony"]').click();
+          assert.equal(await compactMusic.locator('[data-video-quick-music-check="heart-harmony"]')
+            .getAttribute("aria-checked"),"true","multi-melody checkbox works");
+          assert.match(await quick.locator("[data-video-live-audio]").innerText(),
+            /Тёплое утро.*Гармония сердца/,"main stage immediately receives selected mix");
+          assert.ok(await quick.locator("[data-video-quick-generate]").isEnabled(),
+            "checked melodic soundtrack is already attached for encoded export");
+        }
         await mainPlay.click();
         await expect(mainPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
         await mainPlay.click();
@@ -1051,10 +1087,11 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
           await page.locator("[data-video-audio-more]").click();
-          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
-            "expanded audio-only library contains all 13 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),18,
+            "expanded library retains 13 ambient WAVs and five original melodic WAVs");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
-            "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
+            "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse",
+            "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
             const native=page.locator("[data-video-audio-player]");
             await native.waitFor({state:"attached",timeout:12000});
