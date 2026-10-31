@@ -458,8 +458,22 @@ const runEngine = async ([engine, browserType]) => {
         const meditation=page.locator("[data-video-personal-meditation]");
         await meditation.waitFor({state:"visible",timeout:12000});
         const writeMeditation=page.locator("[data-meditation-generate]");
+        // Under simultaneous WebKit locale workers the SSR button can be
+        // clicked before React attaches its handler. Never accept a missing
+        // script, but retry one real click after the page has settled instead
+        // of timing out blind on the script locator.
+        const generatedScript=page.locator("[data-meditation-script]");
         await writeMeditation.click();
-        const firstScript=await page.locator("[data-meditation-script]").inputValue();
+        try {
+          await generatedScript.waitFor({state:"visible",timeout:7000});
+        } catch (firstClickError) {
+          const noResult=await generatedScript.count()===0;
+          if(!noResult || !await writeMeditation.isEnabled())throw firstClickError;
+          console.warn(engine+" "+locale+" "+width+"px meditation first click not hydrated; retrying actual generation once");
+          await writeMeditation.click();
+          await generatedScript.waitFor({state:"visible",timeout:15000});
+        }
+        const firstScript=await generatedScript.inputValue();
         assert.ok(firstScript.includes({ru:"ПЕРСОНАЛЬНАЯ МЕДИТАЦИЯ",en:"PERSONAL MEDITATION",es:"MEDITACIÓN PERSONAL"}[locale]),
           "the selected locale generates a real personal meditation");
         assert.equal(await page.locator("[data-meditation-method]").inputValue(),"imagery");
