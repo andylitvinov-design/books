@@ -111,3 +111,36 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.match(source, /input\[type="checkbox"\]/);
   assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
 });
+
+test('Public Services exact-head impact routing preserves all source and browser guarantees', () => {
+  const s = workflow('hh-public-services-production.yml');
+  const planner = readFileSync(new URL('../scripts/ci-public-services-plan.mjs', import.meta.url), 'utf8');
+  assert.ok(!s.includes("      - '.github/workflows/hh-public-services-production.yml'"),
+    'workflow-only changes must use Core/actionlint rather than launching unrelated browsers');
+  assert.match(s, /HH_PUBLIC_HEAD_SHA:.*github\.event\.pull_request\.head\.sha/);
+  assert.match(s, /HH_PUBLIC_BASE_SHA:.*github\.event\.pull_request\.base\.sha/);
+  assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
+  assert.match(s, /if: \$\{\{ steps\.scope\.outputs\.browser == 'true' \}\}/);
+  assert.match(s, /if: \$\{\{ steps\.scope\.outputs\.build == 'true' \}\}/);
+  assert.match(planner, /second !== head/);
+  assert.match(planner, /merge-base/);
+  assert.match(planner, /GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED/);
+  assert.match(planner, /RUNTIME_SHARED_PAYMENT_OR_UNKNOWN_PATH/);
+  const list = planner.match(/PUBLIC_SOURCE_TESTS = Object\.freeze\((\[[\s\S]*?\])\);/);
+  assert.ok(list, 'required existing source contract registry must be declared');
+  const allowed = JSON.parse(list[1]);
+  const invoked = new Set([...s.matchAll(/node --test ([^\n]+)/g)]
+    .flatMap(m => m[1].trim().split(/\s+/).filter(name => name.startsWith('tests/'))));
+  assert.ok(allowed.length >= 20, 'do not silently empty existing Node test contracts');
+  for (const file of allowed) assert.ok(invoked.has(file), 'registered test must run: ' + file);
+  const suites = [...s.matchAll(/run_case "(verify-[\w-]+\.mjs)" node scripts\/verify-[\w-]+\.mjs/g)]
+    .map(m => m[1]);
+  assert.equal(suites.length, 14, 'all 14 real E2E scenarios remain');
+  assert.equal(new Set(suites).size, 14, 'each browser scenario has one real command');
+  for (const required of ['npm run build', 'playwright install --with-deps chromium webkit',
+    'verify-service-cart-browser.mjs', 'verify-talisman-google-checkout-browser.mjs',
+    "'app/api/payments/**'", 'wait "$lane_a_pid"', 'wait "$lane_b_pid"']) {
+    assert.ok(s.includes(required), 'required source/browser/payment acceptance missing: ' + required);
+  }
+  assert.doesNotMatch(s, /continue-on-error:\s*true/);
+});
