@@ -33,7 +33,7 @@ test('14 browser owners and pre-browser source tests are never removed', () => {
   assert.match(source, /npm run build > artifacts\/public-services-production\/build\.log/);
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
-  assert.doesNotMatch(source, /continue-on-error:\\s*true/);
+  assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
 test('contracts-only changes do not repeat Next build or install Playwright', () => {
@@ -136,6 +136,6 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   assert.match(src,/HH_PUBLIC_CASES/);
   assert.match(src,/NOT_APPLICABLE/);
   assert.match(src,/node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(src,/wait "\\$lane_a_pid"/);
-  assert.match(src,/wait "\\$lane_b_pid"/);
+  assert.ok(src.includes('wait "$lane_a_pid"'));
+  assert.ok(src.includes('wait "$lane_b_pid"'));
 });
