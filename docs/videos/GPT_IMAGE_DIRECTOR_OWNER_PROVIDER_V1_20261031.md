@@ -8,6 +8,7 @@
 - `lib/video-generation/openai-image-provider.mjs`: explicit `gpt-image-2.5-flare` Image API adapter, owner and spend switches default **OFF**. A caller must supply proof of an actually persistent single-request reservation and verified owner session; this library does not manufacture proofs or reserve money itself. Builds one lower-cost JPEG request, hashed safety identifier, no automatic paid retry, bounds provider body and verifies JPEG header and dimensions. Returns bytes and a `not_delivered` status; no implicit publish, charge, account entitlement or XP.
 - `scripts/render-image-motion-clip.mjs`: real offline FFmpeg H.264 image-to-camera-motion clip. Explicit rights declaration, SHA-256 checks, path containment, duration and aspect bounds, ffprobe QA. This is visual camera movement over a still **not** generated subject motion. The existing `scripts/cinematic-video-assemble.mjs` can concatenate approved resulting MP4 clips with library clips, voice and music. Works without image API use.
 - `tests/gpt-image-director.test.mjs`, `tests/gpt-image-motion.test.mjs`: deterministic privacy/permission/provider mock and real ffmpeg/ffprobe motion checks.
+- `app/api/admin/gpt-image/route.js`, `app/admin/videos/gpt-image/page.tsx`, `components/gpt-image-owner-panel.tsx`: independent admin-only safe preview and tightly capped owner pilot. No edits to the shared public Video Studio.
 
 ## Flags: never enable all until durable owner controls exist
 
@@ -18,8 +19,9 @@
 | `HH_GPT_IMAGE_OWNER_ONLY` | false | owner pilot boundary |
 | `HH_GPT_IMAGE_SPEND_APPROVED` | false | explicit expenditure gate |
 | `HH_GPT_IMAGE_SAFETY_SALT` | unset | >=32 random chars, keyed hash for `safety_identifier` |
+| `HH_GPT_IMAGE_PROVIDER_BUDGET_VERIFIED` | false | explicit confirmation of a genuine capped OpenAI project budget |
 
-**No connected site route or worker calls `generateOwnerImage` yet.** This is intentional: no API key, global cost reservation ledger, approved spent-budget cap, private image storage and working owner UI were verified. Turning on flags alone does not provide a safe public product. Do not claim image generation is LIVE. A later backend PR must persist/validate the one-shot authorization proof and spend cap, rather than trusting client input.
+**Owner-only controlled pilot added (not a client product):** `/admin/videos/gpt-image` and `/api/admin/gpt-image`. The page is protected by the existing prescription-admin session, presents free server-built visual brief, a clearly labelled paid checkbox, and a single-image JPEG download. Backend requires all provider switches and an extra `HH_GPT_IMAGE_PROVIDER_BUDGET_VERIFIED=true`, same-origin, one global database-backed request per 24 hours via existing `consumeRate`; no automatic retry. This is a deliberately narrow durable **attempt quota**, not a true USD/XP payment ledger or persistent image asset. Do not turn on the switches without a real bounded OpenAI project budget, owner account and observed provider response. A generated image stays on the owner's browser unless separately imported. Client generation remains OFF. A worker with actual cost/XP reservation and private storage must be implemented before any public access.
 
 ## Sample local motion manifest
 
