@@ -171,11 +171,15 @@ test("all published goal formats stay available, with recommendations gated behi
   assert.match(client, /goalSectorCheckinKey\[sector\]/);
   assert.match(client, /checkinOrder: CheckinArea\[\]/);
   assert.match(client, /onCheckinChange\(id, Number\(event\.target\.value\)\)/);
+  // These labels belonged to the owner-removed fourth checkbox step, not to
+  // the automatic nine-format catalogue. Keep the real format IDs and guide
+  // routes above, and assert only currently rendered localized CTA labels.
   for (const text of ["Show recommendations", "Показать рекомендации", "Mostrar recomendaciones",
-    "Консультации и сессии", "Видео и медитации", "Видеомандалы",
-    "Consultations & sessions", "Consultas y sesiones"]) {
+    "Save your data and take tests", "Сохранить данные и пройти тесты",
+    "Guardar datos y hacer pruebas"]) {
     assert.ok(editor.includes(text),text);
   }
+  assert.doesNotMatch(editor, /formatTitle:|formatHelp:|formatLabels:|data-support-goal-formats/);
   assert.doesNotMatch(client, /92% match|Найдено 32|Found 32/);
 });
 
