@@ -77,7 +77,9 @@ test("local recommendation honors real visual motifs, including hidden water in 
    goal:"Без воды, хочу ясности и новых горизонтов",locale:"ru",
    preferredTheme:"goals",presets,scenes
  });
- assert.equal(horizon.kind,"existing_mp4_compilation");
+ // All currently curated goals presets contain water. Do not invent a
+ // replacement: the director must tell the caller there is no match.
+ assert.equal(horizon.kind,"no_matching_licensed_preset");
  assert.ok(!horizon.sourceClipIds.includes("soft-horizon"),
    "actual sea imagery must not bypass water exclusion via an innocent-looking scene ID");
  assert.ok(!JSON.stringify(horizon).includes("горизонтов"),"private request text never copied into public storyboard");

@@ -446,11 +446,11 @@
     {
       "id": "wealth-sunrise",
       "theme": "money",
-      "collection": "money-films-v1",
+      "collection": "film-collection-v2",
       "media": "licensed_mp4",
       "status": "approved",
-      "video": "/videos/holistic-house/money-films-v1/wealth-sunrise.mp4",
-      "poster": "/videos/holistic-house/money-films-v1/wealth-sunrise.jpg",
+      "video": "/videos/holistic-house/film-collection-v2/wealth-sunrise.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg",
       "label": {
         "en": "Prosperity sunrise",
         "ru": "Рассвет процветания",
@@ -484,11 +484,11 @@
     {
       "id": "golden-harvest",
       "theme": "money",
-      "collection": "money-films-v1",
+      "collection": "film-collection-v2",
       "media": "licensed_mp4",
       "status": "approved",
-      "video": "/videos/holistic-house/money-films-v1/golden-harvest.mp4",
-      "poster": "/videos/holistic-house/money-films-v1/golden-harvest.jpg",
+      "video": "/videos/holistic-house/film-collection-v2/golden-harvest.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/golden-harvest.jpg",
       "label": {
         "en": "Golden harvest",
         "ru": "Золотой урожай",
@@ -521,11 +521,11 @@
     {
       "id": "radiant-portal",
       "theme": "money",
-      "collection": "money-films-v1",
+      "collection": "film-collection-v2",
       "media": "licensed_mp4",
       "status": "approved",
-      "video": "/videos/holistic-house/money-films-v1/radiant-portal.mp4",
-      "poster": "/videos/holistic-house/money-films-v1/radiant-portal.jpg",
+      "video": "/videos/holistic-house/film-collection-v2/radiant-portal.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/radiant-portal.jpg",
       "label": {
         "en": "Radiant portal",
         "ru": "Портал возможностей",
@@ -558,11 +558,11 @@
     {
       "id": "prosperity-coast",
       "theme": "money",
-      "collection": "money-films-v1",
+      "collection": "film-collection-v2",
       "media": "licensed_mp4",
       "status": "approved",
-      "video": "/videos/holistic-house/money-films-v1/prosperity-coast.mp4",
-      "poster": "/videos/holistic-house/money-films-v1/prosperity-coast.jpg",
+      "video": "/videos/holistic-house/film-collection-v2/prosperity-coast.mp4",
+      "poster": "/videos/holistic-house/film-collection-v2/prosperity-coast.jpg",
       "label": {
         "en": "Coast of abundance",
         "ru": "Берег изобилия",

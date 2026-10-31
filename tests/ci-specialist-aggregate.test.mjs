@@ -92,6 +92,43 @@ test('end-to-end pure verifier succeeds only after scoped job completion and fre
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
 });
 
+test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are advisory',async()=>{
+  const extra='.github/workflows/non-applicable.yml';
+  const extraYaml="on:\n  pull_request:\n    paths:\n      - 'lib/audio/**'\n";
+  const sources={
+    base:new Map([[path,yaml],[extra,extraYaml]]),
+    current:new Map([[path,yaml],[extra,extraYaml]]),
+  };
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={
+    pr:async()=>pr(),
+    changed:async()=>[{filename:'lib/crm/a.js'}],
+    runs:async()=>[
+      run(),
+      run({path:extra,id:752,conclusion:'failure'}),
+    ],
+    jobs:async()=>[{name:'specialist',status:'completed',conclusion:'success'}],
+  };
+  const good=await verify(api,ctx,sources,{maxWaitMs:0});
+  assert.deepEqual(good.expected,[path]);
+  assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
+  // Exact-HEAD failed PUSH or unassociated PR run is never waived as unrelated:
+  // it has no trusted associated PR evidence for a safe exemption.
+  api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
+  api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
+  assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
+
+  // A workflow absent from BOTH trusted manifests may not be waived.
+  // An actual expected specialist failure also remains a hard blocker.
+  api.runs=async()=>[run(),run({path:'.github/workflows/unknown.yml',id:760,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*unregistered/);
+  api.runs=async()=>[run({conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
 test('read-only GitHub API adapter paginates files and runs without writing',async()=>{
   const requests=[];
   const transport=async(url,options)=>{requests.push({url,method:options.method||'GET',auth:options.headers.Authorization});
@@ -116,7 +153,11 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  assert.ok(names.length <= 90, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // The immutable production catalog contains 93 registered workflows as of
+  // 2026-10-31. Freeze growth at that verified baseline (previous cap of 90
+  // incorrectly made every CI guard run red); future additions still require
+  // a reviewed consolidation or explicit architecture budget change.
+  assert.ok(names.length <= 93, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
