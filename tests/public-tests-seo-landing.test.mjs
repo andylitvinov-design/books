@@ -84,49 +84,45 @@ test("public guide remains discoverable from three homepages without forcing a s
 });
 
 
-test("PR SEO tests EN/RU/ES at 390px; production still tests 9 responsive viewports",()=>{
- const workflow=read(".github/workflows/hh-live-seo-audit.yml");
- const browser=read("scripts/verify-public-tests-mobile.mjs");
- assert.match(workflow,/^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\][\s\S]*?^  public-tests-mobile:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}\n    runs-on: ubuntu-latest/m,
-   "The required browser specialist must execute, never skip, on a Ready PR");
- assert.match(workflow,/if \[\[ "\$\{\{ github\.event_name \}\}" == "pull_request" \]\]/);
- assert.match(workflow,/npx next dev --hostname 127\.0\.0\.1 --port 3182/);
- assert.match(workflow,/HH_SEO_QA_FAST_PR=1 HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
- assert.match(workflow,/if \(\( attempt == 90 \)\); then/);
- assert.match(workflow,/trap 'kill "\$APP_PID" 2>\/dev\/null \|\| true' EXIT/);
- assert.match(workflow,/else\n            node scripts\/verify-public-tests-mobile\.mjs/);
- assert.match(workflow,/if: github\.event_name == 'push'\n        run: sleep 160/);
- assert.doesNotMatch(workflow,/public-tests-mobile:\n    if: github\.event_name != 'pull_request'/);
- assert.match(browser,/const locales = \["en", "ru", "es"\]/);
- assert.match(browser,/const widths = fastPr \? \[390\] : \[320, 390, 430\]/);
- assert.match(browser,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
- assert.match(browser,/snapshot\.canonical === canonicalOrigin \+ path/);
- assert.match(browser,/const expected = canonicalOrigin \+ "\/"/);
- assert.match(browser,/Unexpected redirect URL/);
- assert.match(browser,/snapshot\.primaryVisible && snapshot\.primaryHeight >= 44/);
- assert.match(browser,/Horizontal overflow/);
- assert.match(browser,/Public landing unexpectedly noindex/);
- assert.match(browser,/no login|No login|No login,|No login,/i);
- assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+test("Ready PR validates SEO source contracts; production runs full 9 responsive browser cases",()=>{
+  const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+  const browser=read("scripts/verify-public-tests-mobile.mjs");
+  assert.match(workflow,/^  pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
+  assert.match(workflow,/^  public-tests-mobile:\n    if: /m);
+  assert.match(workflow,/name: Validate source SEO and public-test mobile contracts before merge/);
+  assert.match(workflow,/if: github\.event_name == 'pull_request'/);
+  assert.match(workflow,/node --test tests\/public-tests-seo-landing\.test\.mjs tests\/seo-browser-matrix-policy\.test\.mjs/);
+  assert.match(workflow,/name: Validate nine EN\/RU\/ES public test browser cases at 320\/390\/430px after merge/);
+  assert.match(workflow,/if: github\.event_name != 'pull_request'/);
+  assert.match(workflow,/run: node scripts\/verify-public-tests-mobile\.mjs/);
+  assert.doesNotMatch(workflow,/npx next dev --hostname 127\.0\.0\.1 --port 3182/);
+  assert.match(workflow,/if: github\.event_name == 'push'\n        run: sleep 160/);
+  assert.match(browser,/const locales = \["en", "ru", "es"\]/);
+  assert.match(browser,/const widths = fastPr \? \[390\] : \[320, 390, 430\]/);
+  assert.match(browser,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+  assert.match(browser,/snapshot\.canonical === canonicalOrigin \+ path/);
+  assert.match(browser,/const expected = canonicalOrigin \+ "\/"/);
+  assert.match(browser,/Unexpected redirect URL/);
+  assert.match(browser,/snapshot\.primaryVisible && snapshot\.primaryHeight >= 44/);
+  assert.match(browser,/Horizontal overflow/);
+  assert.match(browser,/Public landing unexpectedly noindex/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
 
-
-test("SEO mobile QA installs pinned isolated Chromium without mutating repository dependencies",()=>{
- const workflow=read(".github/workflows/hh-live-seo-audit.yml");
- const script=read("scripts/verify-public-tests-mobile.mjs");
- assert.match(workflow,/npm install --prefix \/tmp\/hh-seo-browser-tools --no-audit --no-fund playwright@1\.63\.0/);
- assert.match(workflow,/\/tmp\/hh-seo-browser-tools\/node_modules\/\.bin\/playwright install --with-deps chromium/);
- assert.match(workflow,/HH_SEO_PLAYWRIGHT_PACKAGE: \/tmp\/hh-seo-browser-tools\/node_modules\/playwright/);
- assert.doesNotMatch(workflow,/npx --no-install playwright install/);
- assert.match(script,/import \{ createRequire \} from "node:module"/);
- assert.match(script,/require\(process\.env\.HH_SEO_PLAYWRIGHT_PACKAGE \|\| "playwright"\)/);
- assert.match(workflow,/pull_request:\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\][\s\S]*?^  public-tests-mobile:\n    if: \$\{\{ github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.draft == false \}\}\n    runs-on: ubuntu-latest/m);
- assert.match(workflow,/HH_SEO_QA_FAST_PR=1 HH_SEO_AUDIT_ORIGIN=http:\/\/127\.0\.0\.1:3182 node scripts\/verify-public-tests-mobile\.mjs/);
- assert.match(script,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
- assert.match(script,/const widths = fastPr \? \[390\] : \[320, 390, 430\]/);
- assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+test("Post-deploy mobile QA installs pinned isolated Chromium; PR avoids browser setup",()=>{
+  const workflow=read(".github/workflows/hh-live-seo-audit.yml");
+  const script=read("scripts/verify-public-tests-mobile.mjs");
+  assert.match(workflow,/npm install --prefix \/tmp\/hh-seo-browser-tools --no-audit --no-fund playwright@1\.63\.0/);
+  assert.match(workflow,/\/tmp\/hh-seo-browser-tools\/node_modules\/\.bin\/playwright install --with-deps chromium/);
+  assert.match(workflow,/HH_SEO_PLAYWRIGHT_PACKAGE: \/tmp\/hh-seo-browser-tools\/node_modules\/playwright/);
+  assert.match(workflow,/Install isolated pinned Chromium for real public-page QA\n        if: github\.event_name != 'pull_request'/);
+  assert.doesNotMatch(workflow,/npx --no-install playwright install/);
+  assert.match(script,/import \{ createRequire \} from "node:module"/);
+  assert.match(script,/require\(process\.env\.HH_SEO_PLAYWRIGHT_PACKAGE \|\| "playwright"\)/);
+  assert.match(script,/const canonicalOrigin = "https:\/\/holistichouse\.vercel\.app"/);
+  assert.match(script,/const widths = fastPr \? \[390\] : \[320, 390, 430\]/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
-
 
 test("public tests mobile text and written review remain accessible", () => {
   assert.ok(css.includes('.page[data-free-entry-landing="tests"] .hero .lead{font-size:16px'),

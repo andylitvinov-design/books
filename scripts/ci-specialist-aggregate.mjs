@@ -85,8 +85,7 @@ export async function verify(api,ctx,files,options={}) {
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
   const risk=classifyReleaseRisk(changed);
-  // Public presentation changes still need specialists whose path filters
-  // explicitly cover them. Broad diagnostic workflows are advisory here.
+  // Only explicit BASE-trusted specialist path filters can require FAST public presentation QA.
   const scopedFiles = risk === 'FAST' ? Object.fromEntries(['base','current'].map(side => [side,
     new Map([...files[side]].filter(([name, source]) => parsePrTrigger(source, name)?.paths))
   ])) : files;

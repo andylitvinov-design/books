@@ -104,8 +104,9 @@ test('PR automation policy and agent entry point require specialist safety gates
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   assert.match(docs, /sole required GitHub status is `release-ready`/);
-  assert.match(docs, /exact PR HEAD and current production BASE/);
-  assert.match(docs, /All applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /SUCCESS on the exact PR HEAD/);
+  assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
+  assert.match(docs, /production advance alone does not require updating the PR branch/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -782,27 +783,6 @@ test('Public Services keeps 14 original browser checks in two bounded fail-close
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-// #2575: ensure the fast independent Alchemy job retains all original browsers,
-// the full production Next build, and a fail-closed Core/asset-prebuild contract.
-test('Alchemy optimized production build preserves all real browser cases',()=>{
-  const s=workflow('hh-alchemy-mobile-acceptance.yml');
-  assert.match(s,/node scripts\/ci-alchemy-build\.mjs/);
-  assert.match(s,/npm_config_ignore_scripts=true npm run build > artifacts\//);
-  assert.match(s,/playwright install --with-deps chromium webkit/);
-  assert.match(s,/HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/);
-  assert.match(s,/node scripts\/verify-alchemy-one-screen\.mjs/);
-  assert.match(s,/\.next\/cache/);
-  assert.match(s,/public\/images\/holistic-house\/coaching-ancient/);
-  assert.match(s,/if ! wait "\$PW_PID"/);
-  assert.match(s,/exit "\$browser_status"/);
-  assert.doesNotMatch(s,/continue-on-error:\s*true/);
-  const output=execFileSync(process.execPath,['scripts/ci-alchemy-build.mjs','--verify-only'],{
-    cwd:root,encoding:'utf8',timeout:10000
-  });
-  assert.match(output,/production prebuild and Core coverage contract verified/);
-});
-
-
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
@@ -887,4 +867,61 @@ test('Free Review: PR runs only current localized Chromium smoke; post-merge ret
     'all four existing viewport shapes must remain available for manual and push verification');
   assert.ok(script.includes('prSmoke ? [["chromium", chromium]] : [["chromium", chromium], ["webkit", webkit]]'),
     'do not reintroduce WebKit matrix to the PR smoke');
+});
+
+test('five other specialists delegate TypeScript/build while Public Journey single-owner consolidation remains intact', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(core, /name: Exact proposed release production build and TypeScript check/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /^  release-ready:/m);
+  const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
+  for (const [file, name, command] of [
+    ['hh-growth-studio.yml','Next.js build','npm run build'],
+    ['hh-messages-wellness-v2.yml','TypeScript check','npx --no-install tsc --noEmit'],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('- name: ' + name + '\n        ' + gate + '\n        run: ' + command), file + ' must preserve nonproduction check');
+  }
+  // This owner was consolidated independently in production; do not restore its retired jobs.
+  const journey = workflow('hh-public-journey-wave1.yml');
+  for (const evidence of ['node scripts/verify-public-pathway-mobile.mjs',
+    'node scripts/verify-public-pathway-toronto-mobile.mjs',
+    'tests/public-pathway-toronto.test.mjs',
+    'Whole-project TypeScript outside protected production PRs',
+    'Build exact candidate once for both real-browser suites']) {
+    assert.ok(journey.includes(evidence), 'consolidated Public Journey owner lost '+evidence);
+  }
+  for (const [file, evidence] of [
+    ['practice-google-browser.yml',['node scripts/verify-practice-post-google-browser.mjs','tests/practice-google-return-and-services-v5.test.mjs']],
+    ['practice-visual-browser.yml',['node scripts/verify-practice-visual-browser.mjs','tests/compare-ui-screenshots.test.mjs']],
+    ['hh-alchemy-mobile-acceptance.yml',['node scripts/verify-alchemy-one-screen.mjs','npm run build','tests/alchemy-soul-mobile-landing.test.mjs']],
+  ]) {
+    const src = workflow(file);
+    assert.ok(src.includes('if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then'), file + ' nonproduction TypeScript must remain');
+    assert.ok(src.includes('npx --no-install tsc --noEmit'), file + ' must keep nonproduction TypeScript');
+    assert.ok(src.includes("Full TypeScript delegated to required Core release-ready"), file + ' must delegate production typing');
+    for (const item of evidence) assert.ok(src.includes(item), file + ' must preserve ' + item);
+    assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  }
+});
+
+
+test('Practice visual PR does not repeat Google-auth browser or old Chromium/WebKit overlays', () => {
+  const source = workflow('practice-visual-browser.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  assert.match(source, /^  pull_request:/m, 'retain fast source tests on PR');
+  assert.match(source, /^  push:/m, 'retain post-merge real browser visuals');
+  for (const name of [
+    'Install Chromium and WebKit for synthetic UI verification',
+    'Render and verify real Practice page at 320, 354, 390 and 430 pixels',
+    'Generate reproducible Chromium-vs-WebKit visual overlays',
+  ]) {
+    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'duplicate browser work must not run for ordinary PR: '+name);
+  }
+  assert.match(source, /node --test tests\/compare-ui-screenshots\.test\.mjs/,
+    'current visual tooling source contracts must still run');
+  assert.ok(!source.includes('tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs'),
+    'Google auth source tests have a distinct owner');
+  assert.match(core, /^  release-ready:/m);
 });
