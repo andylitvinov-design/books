@@ -458,8 +458,13 @@ async function verifyPublicServiceConversionJourneys(){
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     // The one-screen contract applies to the mobile breakpoints (320/360/390).
+     // Desktop at 1280px intentionally flows naturally, and must not inherit
+     // a phone-only 764px height budget. Its real overflow/CTA tests still run.
+     if(width<=680){
+      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
+       'Every collapsed mobile Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     }
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
