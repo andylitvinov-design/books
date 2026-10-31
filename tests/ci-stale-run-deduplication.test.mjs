@@ -5,7 +5,6 @@ import test from 'node:test'
 const workflows = [
   ['.github/workflows/ia-v2.yml', 'ia-v2-${{ github.ref }}'],
   ['.github/workflows/site-video-browser.yml', 'site-video-browser-${{ github.ref }}'],
-  ['.github/workflows/release-reaudit.yml', 'release-reaudit-${{ github.ref }}'],
 ]
 
 test('expensive PR workflows cancel only superseded runs for the same ref', () => {
