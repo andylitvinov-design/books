@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -373,4 +373,47 @@ test('Pro master workflow delegates duplicate global TS/Next to unconditional ex
   assert.match(core,/run: npm run build/);
   assert.ok(core.includes('ci-specialist-aggregate.mjs'));
   assert.doesNotMatch(pro,/continue-on-error:\s*true/);
+});
+
+test('created-PR cohort uses Toronto day boundaries and separates merge from LIVE',()=>{
+  const rows=[
+    {number:10,state:'closed',created_at:'2026-10-30T04:00:00Z',
+      merged_at:'2026-10-30T04:20:00Z',base:{ref:'codex/public-book-library'},title:'ci: scoped fix'},
+    {number:11,state:'open',draft:true,created_at:'2026-10-31T03:59:59Z',
+      merged_at:null,base:{ref:'codex/public-book-library'},title:'feat: pending'},
+    {number:12,state:'closed',created_at:'2026-10-30T12:00:00Z',
+      merged_at:null,base:{ref:'codex/public-book-library'},title:'feat: closed'},
+    {number:13,state:'closed',created_at:'2026-10-30T16:00:00Z',
+      merged_at:'2026-10-30T17:00:00Z',base:{ref:'feat/stack'},title:'feat: staged'},
+    {number:14,state:'closed',created_at:'2026-10-30T03:59:59Z',
+      merged_at:'2026-10-30T04:01:00Z',base:{ref:'codex/public-book-library'},title:'ci: previous day'},
+  ];
+  assert.equal(torontoPrDate('2026-10-30T03:59:59Z'),'2026-10-29');
+  assert.equal(torontoPrDate('2026-10-31T03:59:59Z'),'2026-10-30');
+  const out=summarizePrCohort(rows,'2026-10-30');
+  assert.deepEqual([out.created,out.merged,out.open,out.closed_without_merge],[4,2,1,1]);
+  assert.deepEqual([out.merged_into_production,out.merged_into_intermediate_branch,out.ci_titled_merges],[1,1,1]);
+  assert.equal(out.median_created_to_merge_minutes,40);
+  assert.equal(out.draft_open,1);
+  assert.equal(out.merge_rate_percent,50);
+  assert.equal(out.live_verified_count,null);
+  assert.equal(out.green_to_merge_minutes,null);
+  assert.equal(out.agent_attribution,'UNVERIFIED_SHARED_GITHUB_ACCOUNT');
+  assert.deepEqual(out.open_sample.map(x=>x.number),[11]);
+});
+
+test('cohort report rejects fabricated dates, duplicate PRs and false merge receipts',()=>{
+  for(const bad of ['2026-02-30','2026-10-32','2026-1-30','tomorrow']) {
+    assert.throws(()=>checkCohortDate(bad),/INVALID_COHORT_DATE/);
+  }
+  const pr={number:7,state:'open',created_at:'2026-10-30T10:00:00Z',title:'test'};
+  assert.throws(()=>summarizePrCohort([pr,pr],'2026-10-30'),/DUPLICATE_PR_COHORT_ROW/);
+  assert.throws(()=>summarizePrCohort([{...pr,merged_at:'2026-10-30T11:00:00Z'}],'2026-10-30'),/INVALID_PR_MERGE_EVIDENCE/);
+  assert.throws(()=>summarizePrCohort([{}],'2026-10-30'),/INVALID_PR_COHORT_ROW/);
+  assert.throws(()=>summarizePrCohort([],'2026-10-30'),/PR_COHORT_SOURCE_MISSING/);
+  const script=readFileSync(new URL('../scripts/pr-sweep-guard.mjs',import.meta.url),'utf8');
+  assert.match(script,/operation === 'daily'/);
+  assert.match(script,/PR_COHORT_INCOMPLETE_PAGINATION/);
+  assert.match(script,/state=all&sort=created&direction=desc/);
+  assert.match(script,/completeness:'PR_CREATED_DAY_EXHAUSTIVE'/);
 });

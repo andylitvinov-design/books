@@ -172,6 +172,10 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     'scripts/verify-holistic-mandala-browser.mjs',
     'components/mandala-free-video-studio.tsx',
     'components/mandala-video-mobile.module.css',
+    'components/mandala-first-video-start.tsx',
+    'components/mandala-first-video-start.module.css',
+    'app/api/holistic-support/first-video-prompt/route.js',
+    'tests/first-video-director.test.mjs',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
@@ -183,6 +187,7 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     'scripts/verify-holistic-support-recommendations-mobile.mjs',
     'app/en/holistic-support/mandala/page.tsx',
     'tests/practitioner-remote-energy-support.test.mjs',
+    'app/api/holistic-support/checkout/route.js',
   ])assert.equal(covers(service,file),true,file+' still covered for public service changes');
 });
 
