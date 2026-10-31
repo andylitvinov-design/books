@@ -62,3 +62,17 @@ test('same-document anchor navigation reloads published snapshot without popstat
   assert.match(source,/assert\.deepEqual\(pageErrors,\[\],/);
   assert.doesNotMatch(source,/^[ \t]*pageErrors\s*=\s*\[\]/m); // no post-initialization reset.
 });
+
+test('owner Reel local preview is checked by real authenticated browser and narrowly scoped media CSP',()=>{
+  const middleware=readFileSync('middleware.ts','utf8')
+  assert.match(middleware,/const videoManager = pathname === '\/admin\/videos'/)
+  assert.match(middleware,/\(\(videoManager\|\|ownerRecorderPage\|\|deliveryOrigin/)
+  assert.match(source,/editorResponse = await target\.goto/)
+  assert.match(source,/const editorMediaSource = editorPolicy/)
+  assert.match(source,/media-src 'self' blob:/)
+  assert.match(source,/publicMediaSource, "media-src 'self'"/)
+  assert.match(source,/nativeFileInput\.setInputFiles/)
+  assert.match(source,/film-collection-v3\/lake-mist-dawn\.mp4/)
+  assert.match(source,/element\.videoWidth > 0/)
+  assert.match(source,/await nativeFileInput\.setInputFiles\(\[\]\)/)
+})
