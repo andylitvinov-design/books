@@ -81,3 +81,14 @@ test('selected client conversation is full screen and follows visualViewport whe
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot \[role="region"\]\{[\s\S]*?position:static/)
   assert.match(crm,/min-height:44px;height:44px/)
 })
+
+// The full request card must hide the pane rather than unmounting the private
+// conversation and dropping a draft or uncertain in-flight operation.
+test('request composer stays mounted behind client card and the hidden pane takes no space',()=>{
+  const jsx=read('components/app/messages-simple-inbox.jsx')
+  const css=read('components/app/messages-simple-inbox.module.css')
+  assert.match(jsx,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}>/)
+  assert.doesNotMatch(jsx,/!showCard&&selected\?\.kind==='request'&&<div/)
+  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
+  assert.match(jsx,/key=\{selected\.id\} inline autoOpen/)
+})

@@ -373,7 +373,7 @@ export default function MessagesSimpleInbox({
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
             simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
         </div>
-        {!showCard&&selected?.kind==='request'&&<div className={styles.requestPane}>
+        {selected?.kind==='request'&&<div className={styles.requestPane} hidden={showCard}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>
