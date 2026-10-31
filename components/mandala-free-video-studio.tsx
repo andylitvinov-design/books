@@ -3076,9 +3076,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
-        open={quickDetailedOpen}>
-        {/* React owns the disclosure state. Prevent native + onToggle races in WebKit. */}
-        <summary onClick={event=>{event.preventDefault();setQuickDetailedOpen(value=>!value);}}>
+        open={quickDetailedOpen} onToggle={event=>setQuickDetailedOpen(event.currentTarget.open)}>
+        {/* Keep the native disclosure gesture and mirror its actual state into
+            React. Preventing the summary default action can leave the real
+            controls closed after a mobile browser rerender. */}
+        <summary>
           <SlidersHorizontal size={18} aria-hidden="true"/>{approved.extra} · {quick.more}</summary>
         <section className={videoStyles.quickSection} data-video-quick-section="3"
           aria-labelledby="quick-hypno-title">

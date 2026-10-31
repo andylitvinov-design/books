@@ -257,9 +257,10 @@ test("Hypno links and advanced controls keep independent, accessible disclosure 
  assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else setQuickDetailedOpen\(true\)/,
    "opening Hypno must not also expand unrelated advanced settings");
  assert.match(src,/open=\{quickDetailedOpen\}/);
- assert.match(src,/<summary onClick=\{event=>\{event\.preventDefault\(\);setQuickDetailedOpen\(value=>!value\);\}\}>/,
-   "advanced disclosure is controlled once, never by both native toggle and React");
- assert.doesNotMatch(src,/onToggle=\{event=>setQuickDetailedOpen/);
+ assert.match(src,/open=\{quickDetailedOpen\}\s+onToggle=\{event=>setQuickDetailedOpen\(event\.currentTarget\.open\)\}/,
+   "advanced disclosure mirrors its real native toggle state into React");
+ assert.doesNotMatch(src,/event\.preventDefault\(\);setQuickDetailedOpen/,
+   "the summary must keep its native disclosure gesture");
  assert.match(browser,/advanced parameters must expand on a real click/);
  assert.match(browser,/photo cover and user-owned image choices must open on user request/);
  assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000\}\)/);
