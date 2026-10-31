@@ -345,7 +345,12 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "Director adds the 15-second option while preserving 10/20/30/60");
         assert.equal(await detailed.locator('[data-video-quick-duration="15"]').count(),1);
-        await detailed.locator('[data-video-quick-duration="30"]').click();
+        // `details` itself remains visible while React applies its controlled
+        // `open` state. Wait for the retained real control, not merely the
+        // disclosure shell, before activating the 30-second option.
+        const quickThirty=detailed.locator('[data-video-quick-duration="30"]');
+        await quickThirty.waitFor({state:"visible",timeout:12000});
+        await quickThirty.click();
         assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
         await detailed.locator('[data-video-quick-aspect="landscape"]').click();
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
@@ -1114,7 +1119,24 @@ const runEngine = async ([engine, browserType]) => {
             "guided first video preserves the visitor's affirmations checkbox");
           // The compact Hypno editor intentionally unmounts its deep inputs
           // until the visitor opens Edit. Preserve real guided-course phrases.
-          await page.locator("[data-hypno-phrases-edit]").click();
+          const guidedPhrasesEdit=page.locator("[data-hypno-phrases-edit]");
+          // Applying the guided session intentionally starts a smooth scroll
+          // to the existing Create action. Center the same visible edit
+          // control before its genuine click so WebKit cannot chase a moving
+          // target behind the fixed mobile dock.
+          await guidedPhrasesEdit.evaluate(element=>{
+            element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+          });
+          await page.waitForFunction(()=>{
+            const el=document.querySelector("[data-hypno-phrases-edit]");
+            const dock=document.querySelector("[data-mandala-support-bottom-nav]");
+            if(!el)return false;
+            const r=el.getBoundingClientRect(), d=dock?.getBoundingClientRect();
+            const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+            return r.top>=4 && r.bottom<=innerHeight-4 && (!d||r.bottom<=d.top-8) &&
+              (hit===el||el.contains(hit));
+          },undefined,{timeout:10000});
+          await guidedPhrasesEdit.click();
           await page.locator("[data-video-custom-affirmations]").waitFor({state:"attached"});
           assert.match(await page.locator("[data-video-custom-affirmations]").inputValue(),
             /Я открыт общению|границы|Я достоин/);
