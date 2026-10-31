@@ -247,7 +247,7 @@ export function CompactLeadCapture({
           </div>
         </div>
       ) : (
-        <form ref={formRef} className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
+        <form className={styles.form} data-compact-lead-form ref={formRef} onSubmit={event => event.preventDefault()}>
           {variant !== "diagnosis" && formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>

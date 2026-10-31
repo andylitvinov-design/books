@@ -41,7 +41,9 @@ test('a verified first lesson offers device setup, while skipping leaves progres
   const older = readFileSync('components/app/opora-v6-slide-player.jsx', 'utf8')
   const habit = readFileSync('components/pwa/course-home-screen-habit.jsx', 'utf8')
 
-  assert.match(player, /cycle\.day===1\?\['weekOne','weekTwo','nextStep','habit'\]/)
+  // The saved lesson's first-day preview now offers next-step and optional device setup;
+  // the removed duplicate week-one/week-two slides are in the separate course map.
+  assert.match(player, /const previewScreens=cycle\.day===1\?\['nextStep','habit'\]:\['nextStep'\]/)
   assert.match(player, /data-opora-first-lesson-habit-invitation/)
   assert.match(player, /data-opora-first-lesson-habit-setup/)
   assert.match(player, /habitSetup\?t\.next:t\.habitConfigure/)
