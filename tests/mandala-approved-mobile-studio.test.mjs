@@ -14,12 +14,17 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  const order=["data-video-quick-builder","data-video-quick-section=\"1\"","data-video-quick-tier",
-    "data-video-quick-live-preview","data-video-quick-section=\"4\"",
+  const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
+    "data-video-live-stage","data-video-mandala-hero","data-video-mini-source",
+    "data-video-quick-live-preview","data-video-scene-library",
+    'id="video-templates"',"data-free-film-compilation-catalog",
+    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
+    "data-video-quick-tier","data-video-practice-accordion",
+    "data-video-quick-section=\"4\"",
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
-    "data-video-quick-section=\"7\"","data-video-quick-section=\"3\"",
-    "data-video-quick-section=\"5\"","data-video-quick-section=\"6\""];
+    "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
+    "data-video-quick-section=\"6\""];
   for(let i=0;i<order.length;i++){
     assert.ok(source.includes(order[i]),"missing "+order[i]);
     if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
@@ -27,6 +32,8 @@ test("the existing public editor retains one real video renderer and the new com
   }
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css,/\.quickOrderBar\{position:static;bottom:auto/,
+    "mobile order bar must not obscure the large player or scene controls");
   assert.match(source,/data-mandala-master-mp4=\{activeFilm\.src\}/);
   assert.match(source,/data-video-quick-scene=\{scene\.id\}/);
   assert.match(source,/if\(theme==="money"\)setMoneyScene\(scene\.id as MoneySceneId\)/);
@@ -36,10 +43,16 @@ test("the existing public editor retains one real video renderer and the new com
 test("shared widescreen preview and mutually exclusive format accordion keep paid formats gated",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
+  const stage=source.slice(source.indexOf('data-video-live-stage'),source.indexOf('data-video-quick-tier'));
   const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-section="4"'));
-  assert.match(tier,/data-video-quick-live-preview/);
-  assert.equal((tier.match(/data-video-quick-live-preview/g)||[]).length,1,
-    "only one first-party video is displayed to the left");
+  assert.match(stage,/data-video-mandala-hero/);
+  assert.match(stage,/data-mandala-cinematic-canvas/);
+  assert.match(stage,/data-video-quick-live-preview/);
+  assert.equal((source.match(/data-video-quick-live-preview/g)||[]).length,1,
+    "one real source MP4 is the miniature below the one Canvas stage");
+  assert.match(stage,/data-video-scene-library[\s\S]*?id="video-templates"[\s\S]*?data-free-film-compilation-catalog/);
+  assert.doesNotMatch(tier,/data-video-quick-live-preview/,
+    "the format section is now the full-width accordion below the media library");
   assert.match(tier,/data-video-practice-accordion/);
   assert.match(tier,/formatPracticeOrder\.map\(format=>/);
   assert.match(tier,/data-video-practice-card=\{format\}/);
@@ -85,8 +98,10 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
   assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
     "selected sound must reveal real attachment controls after mobile collapse");
-  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?setPreviewPlaying\(current=>!current\);\s*if\(!previewPlaying\)openQuickDetailed\("video-hero"\)/,
-    "Canvas-only topics must start the true animated preview on the first tap");
+  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)setPreviewPlaying\(false\);\s*else openAffirmationPreview\(\)/,
+    "Canvas-only topics must play the visible main screen without expanding the editor");
+  assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
+    "photo-rights consent must open the relocated disclosure");
   assert.match(s,/data-video-photo-consent/);
   assert.match(s,/Краткие кадры и гипноаффирмации — экспериментальные/);
   assert.match(s,/25th frame|25th|Brief frames and hypnoaffirmations/);
