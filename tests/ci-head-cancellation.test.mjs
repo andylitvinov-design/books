@@ -25,7 +25,6 @@ const workflows = [
   ['hh-growth-journey.yml', 'hh-growth-journeys'],
   ['hh-home-conversation.yml', 'hh-home-conversation'],
   ['hh-my-progress-release.yml', 'hh-my-progress'],
-  ['hh-personal-coaching-session.yml', 'personal-coaching'],
   ['hh-profile-axis-matching.yml', 'profile-axis'],
   ['hh-public-services-production.yml', 'public-services-production'],
   ['hh-public-test-collections.yml', 'hh-public-test-collections'],
@@ -33,7 +32,6 @@ const workflows = [
   ['hh-tantra-photo-levels.yml', 'hh-tantra-photo'],
   ['ia-v2.yml', 'ia-v2'],
   ['mentor-community-acceptance.yml', 'mentor-community-acceptance'],
-  ['practice-material-previews.yml', 'practice-material-previews'],
   ['pro-reiki-master-paths.yml', 'pro-reiki-master'],
   ['site-video-browser.yml', 'site-video-browser'],
 ];
