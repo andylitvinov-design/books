@@ -12,6 +12,16 @@ on:
       - 'components/*cart*'
       - 'lib/commerce/**'
       - 'lib/billing/**'
+      - 'lib/wallet/**'
+      - 'lib/xp/**'
+      - 'components/xp/**'
+      - 'app/api/app/xp/**'
+      - 'app/**/xp/invite/**'
+      - 'components/wallet/**'
+      - 'app/api/app/wallet/**'
+      - 'app/admin/api/wallet/**'
+      - 'app/admin/wallet/**'
+      - 'tests/wallet-*.mjs'
       - 'lib/checkout/**'
       - 'tests/billing-*.mjs'
       - 'tests/square-*.mjs'
@@ -58,6 +68,13 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Square checkout syntax, TypeScript and focused lint
         run: |
+          node --check lib/xp/model.js
+          node --check lib/xp/service.js
+          node --check app/api/app/xp/'[action]'/route.js
+          node --check lib/wallet/model.js
+          node --check lib/wallet/service.js
+          node --check app/api/app/wallet/'[action]'/route.js
+          node --check app/admin/api/wallet/route.js
           node --check lib/commerce/square-payment-links.js
           node --check lib/commerce/square-gateway.js
           node --check lib/commerce/square-cart-service.js
@@ -67,15 +84,19 @@ jobs:
           node --check lib/commerce/talisman-checkout.js
           node --check app/api/payments/talismans/checkout/route.js
           npx tsc --noEmit --pretty false
-          npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
+          npx eslint lib/xp/model.js lib/xp/service.js app/api/app/xp components/xp/xp-panel.jsx lib/wallet/model.js lib/wallet/service.js app/api/app/wallet app/admin/api/wallet components/wallet/wallet-panel.jsx components/wallet/wallet-review.jsx lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
-        run: node --test tests/paypal-personal-payments.test.mjs
+        run: node --test tests/paypal-personal-payments.test.mjs tests/billing-wallet-topups.test.mjs
+      - name: XP rewards, verified invite policy, atomic holds and video export pricing
+        run: node --test tests/billing-xp.test.mjs
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Talisman fixed-price provider checkout gate and Google account return
         run: node --test tests/talisman-google-checkout.test.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
+      - name: XP isolated rewards, RLS and two-connection account locking
+        run: node --test tests/xp-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression
         run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-paypal.test.mjs tests/service-paypal-hosted-links.test.mjs tests/service-paypal-auto-public-flow.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs tests/service-individual-checkout-methods.test.mjs tests/service-square-individual-payments.test.mjs tests/service-square-api-cart.test.mjs tests/service-personal-payment-entry.test.mjs tests/consultation-cart-experience.test.mjs tests/personal-cart-photo-order.test.mjs tests/service-storefront-shop.test.mjs
       - name: Billing, commerce, CRM and push SQL/RLS with real concurrent transactions

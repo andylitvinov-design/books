@@ -1546,6 +1546,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMeditationFocus(focus);
   },[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
+  // XP never replaces the existing free local renderer. A signed-in XP
+  // reservation is required only when the server explicitly enables a priced
+  // feature. Fail closed for that feature if its public price cannot load.
+  const [videoXpCatalog,setVideoXpCatalog] = useState<{
+    enabled:boolean;available:Record<string,boolean>;prices:Record<string,number>;
+  }|null>(null);
+  const xpHoldRef=useRef<string|null>(null);
+  useEffect(()=>{
+    let active=true;
+    void fetch("/api/app/xp/catalog",{cache:"no-store",credentials:"same-origin"})
+      .then(async response=>{
+        if(!response.ok)throw new Error("XP_CATALOG_UNAVAILABLE");
+        const catalog=await response.json();
+        if(active)setVideoXpCatalog(catalog);
+      })
+      .catch(()=>{
+        // Never silently waive a potential paid feature when pricing is offline.
+        if(active)setVideoXpCatalog({
+          enabled:true,available:{hypno_video:true},prices:{hypno_video:10},
+        });
+      });
+    return ()=>{active=false};
+  },[]);
   const [suggestion,setSuggestion] = useState("");
   const [photoConsent,setPhotoConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -1595,6 +1618,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const caption = captionMode==="none" ? "" :
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
+  const hasHypnoContent=affirmations.enabled && affirmationLines.length>0;
+  const requiresVideoXp=hasHypnoContent && videoXpCatalog?.available?.hypno_video===true;
   const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none":"preset:"+music;
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
@@ -1611,7 +1636,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (!usingFreeFilmCompilation || (freeFilmShots.length===4 && freeFilmReady)) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
-    !audioDurationInvalid && !micRecording && !preparing && !recording;
+    !audioDurationInvalid && !micRecording && !preparing && !recording &&
+    (!hasHypnoContent || videoXpCatalog!==null);
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -1664,6 +1690,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         micRef.current=null;
       }
       aliveRef.current = false;
+      // This is a best-effort release on navigation; server also expires holds.
+      if(xpHoldRef.current) {
+        const operationId=xpHoldRef.current;
+        xpHoldRef.current=null;
+        void fetch("/api/app/xp/release",{
+          method:"POST",credentials:"same-origin",keepalive:true,
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({operationId}),
+        }).catch(()=>{});
+      }
       const job = jobRef.current;
       if (job) {
         stopJob(job, true);
@@ -1871,13 +1907,69 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, locale, cinematicPlan]);
 
+  async function videoXpRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>){
+    const response=await fetch("/api/app/xp/"+action,{
+      method:"POST",credentials:"same-origin",cache:"no-store",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
+    });
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"XP_UNAVAILABLE");
+    return result as {status:string};
+  }
+  async function releaseVideoXp(operationId:string){
+    try { await videoXpRequest("release",{operationId}); }
+    catch { /* The server-side expiration will also release any held XP. */ }
+    finally {if(xpHoldRef.current===operationId)xpHoldRef.current=null;}
+  }
   async function createVideo() {
     if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
+    preparingRef.current=true;
+    setPreparing(true);
+    let reservedXpId:string|null=null;
+    if(requiresVideoXp){
+      const operationId=crypto.randomUUID();
+      try {
+        const hold=await videoXpRequest("hold",{operationId,features:["hypno_video"]});
+        if(hold.status!=="held")throw new Error("XP_HOLD_INVALID");
+        reservedXpId=operationId;
+        xpHoldRef.current=operationId;
+        // The user may navigate away or background Safari while the network
+        // reservation is pending; never start media or strand that new hold.
+        if(!aliveRef.current || document.hidden){
+          await releaseVideoXp(operationId);
+          preparingRef.current=false;
+          if(aliveRef.current){
+            setPreparing(false);
+            setNotice(locale==="ru"?"Создание отменено, XP возвращены.":
+              locale==="es"?"Creación cancelada, XP liberados.":
+              "Creation cancelled; reserved XP released.");
+          }
+          return;
+        }
+      }catch(error){
+        // A POST can reach the server yet lose its response. Release by the
+        // known idempotency key; server expiry remains the final fallback.
+        void releaseVideoXp(operationId);
+        const code=error instanceof Error?error.message:"XP_UNAVAILABLE";
+        setNotice(code==="XP_INSUFFICIENT"?
+          (locale==="ru"?"Недостаточно XP. Пополните баланс или пригласите друга.":
+           locale==="es"?"No tienes XP suficientes. Recarga o invita a alguien.":
+           "Not enough XP. Top up or invite a friend."):
+          code==="SIGN_IN_REQUIRED"?
+          (locale==="ru"?"Чтобы использовать XP, войдите в свой кабинет.":
+           locale==="es"?"Inicia sesión para usar XP.":"Sign in to use XP."):
+          (locale==="ru"?"Списание XP недоступно. Видео не создавалось.":
+           locale==="es"?"No se pudo reservar XP. No se creó el vídeo.":
+           "XP reservation unavailable. No video was created."));
+        preparingRef.current=false;
+        if(aliveRef.current)setPreparing(false);
+        return;
+      }
+    }
     stopSoundPreview();
     const snapshot=source;
     const snapshotKey=signature;
-    preparingRef.current=true;
-    setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
+    setProgress(0);setNotice(t.preparing);setMusicWarning("");
     setResult(null);setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
@@ -1991,23 +2083,51 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       recorder.onstop = () => {
         job.stream.getTracks().forEach(track => track.stop());
         job.musicSession?.close();
-        if (jobRef.current !== job || !aliveRef.current) return;
+        if (jobRef.current !== job || !aliveRef.current) {
+          if(reservedXpId)void releaseVideoXp(reservedXpId);
+          return;
+        }
         jobRef.current=null;
         setRecording(false);
-        if(job.cancelled) return;
+        if(job.cancelled) {
+          if(reservedXpId)void releaseVideoXp(reservedXpId);
+          return;
+        }
         setProgress(100);
         const type=recorder.mimeType || mimeType;
         const blob = new Blob(chunks, { type });
         if (!blob.size) {
+          if(reservedXpId)void releaseVideoXp(reservedXpId);
           setNotice(t.failed);
           return;
         }
-        setResult({
-          url: URL.createObjectURL(blob),
-          extension: type.includes("mp4") ? "mp4" : "webm",
-          bytes: blob.size,blob,mime:type,
-        });
-        setNotice(t.ready);
+        const presentResult=()=>{
+          if(!aliveRef.current)return;
+          setResult({
+            url:URL.createObjectURL(blob),
+            extension:type.includes("mp4")?"mp4":"webm",
+            bytes:blob.size,blob,mime:type,
+          });
+          setNotice(t.ready);
+        };
+        if(reservedXpId){
+          // Do not expose the download until the authenticated server confirms
+          // the charge; rejected/expired holds leave the result unavailable.
+          const operationId=reservedXpId;
+          void videoXpRequest("complete",{operationId,bytes:blob.size})
+            .then(result=>{
+              if(result.status!=="completed")throw new Error("XP_CONFIRMATION_FAILED");
+              if(xpHoldRef.current===operationId)xpHoldRef.current=null;
+              presentResult();
+            })
+            .catch(()=>{
+              void releaseVideoXp(operationId);
+              if(aliveRef.current)setNotice(
+                locale==="ru"?"Не удалось подтвердить XP. Повторите создание видео.":
+                locale==="es"?"No se confirmó el pago en XP. Vuelve a crear el vídeo.":
+                "XP confirmation failed. Please create the video again.");
+            });
+        }else presentResult();
       };
 
       // This user-triggered browser recorder never contacts a backend.
@@ -2043,6 +2163,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       preparingRef.current=false;
       if(aliveRef.current)setPreparing(false);
       musicSession?.close();
+      // A preflight, codec or early-return error must not consume held XP.
+      if(reservedXpId && !jobRef.current)void releaseVideoXp(reservedXpId);
     }
   }
 
@@ -3036,6 +3158,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
         </details>
+        {hasHypnoContent && videoXpCatalog?.available?.hypno_video &&
+          <p className={videoStyles.quickHint} data-video-xp-quote>
+            <span>{locale==="ru"?"Видео с гипноаффирмациями":
+              locale==="es"?"Vídeo con hipnoafirmaciones":"Hypnoaffirmation video"}:
+              {" "}{videoXpCatalog.prices?.hypno_video||10} XP</span>
+            {" · "}<Link href={"/"+(["en","ru"].includes(locale)?locale:"en")+"/app/wallet"}>
+              {locale==="ru"?"Получить XP":locale==="es"?"Obtener XP":"Get XP"}
+            </Link>
+          </p>}
         <div className={videoStyles.quickOrderBar} data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>

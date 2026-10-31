@@ -8,7 +8,7 @@ import './saved-document-reader.css'
 import Image from 'next/image'
 import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -51,6 +51,8 @@ import {
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
+import WalletPanel from '@/components/wallet/wallet-panel'
+import XpAccountSync from '@/components/xp/xp-account-sync'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
@@ -583,9 +585,10 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
+    { id: 'wallet', label: locale === 'ru' ? 'Пополнить баланс' : 'Top up', href: root + '/wallet', icon: Wallet },
   ]
-  // Five prominent mobile destinations mirror the Orders / Clients design.
-  // The complete six-section Cabinet remains available in its account menu.
+  // Keep four compact mobile destinations plus Home, matching the fixed
+  // five-column safe-area dock. Wallet remains in desktop + Account navigation.
   const mobileNav = [
     { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
@@ -602,6 +605,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     page === 'reports'
   return (
     <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
+    {data.account.onboardingState === 'active' && <XpAccountSync accountId={data.account.id} />}
     <PostSignupInstallOffer key={'install:'+data.account.id} locale={locale}
       visible={data.account.onboardingState==='active' && installOfferAccountId===data.account.id}
       context={savedInstallContext ? 'saved' : 'signup'} onDismiss={dismissInstallOffer} />
@@ -683,6 +687,7 @@ export default function AppWorkspace({ locale, path = [] }) {
                 reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
             </>
           )}
+          {page === 'wallet' && <WalletPanel key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}

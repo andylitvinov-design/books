@@ -22,7 +22,7 @@ const COPY = {
     eyebrow: 'MY SPACE · GROWTH ROADMAP',
     title: 'Your path',
     intro: 'From your first discoveries to your own course.',
-    xp: 'XP earned', progress: 'Milestones completed',
+    xp: 'Growth points', progress: 'Milestones completed',
     step: 'Step', of: 'of', here: 'You are here', next: 'Your next step',
     done: 'Done', upcoming: 'Ahead', now: 'Now',
     allDone: 'Your journey is complete', allDoneText: 'Keep sharing what you have learned.',
@@ -35,12 +35,12 @@ const COPY = {
     consultationSent: 'Request sent', consultationHint: 'Not a confirmed appointment',
     masterApproved: 'Approved', masterPending: 'Review pending',
     courseDraft: 'Draft saved', coursePublished: 'Published',
-    pointsNote: 'Points reward participation, not health or qualifications. A request is not a booked session. Master access requires approval.',
+    pointsNote: 'Growth points track progress only and cannot pay for videos. Spendable Creative XP has a separate balance. A request is not a booked session. Master access requires approval.',
     details: 'How are points counted?',
     expand: 'Show actions', collapse: 'Hide actions',
-    earned: 'Earned', available: 'Still available', fullyEarned: 'All XP earned',
-    consultationNote: 'Sending a request earns XP but does not book or confirm a meeting.',
-    masterNote: 'Approval is reviewed by a person. XP never grants professional access.',
+    earned: 'Earned', available: 'Still available', fullyEarned: 'All GP earned',
+    consultationNote: 'Sending a request earns GP but does not book or confirm a meeting.',
+    masterNote: 'Approval is reviewed by a person. GP never grants professional access.',
     authorNote: 'Publishing requires master approval; a saved draft is a separate step.',
     checkApplication: 'Check my application',
     applyFirst: 'Apply to become a master',
@@ -54,22 +54,22 @@ const COPY = {
     },
     stages: [
       { id: 'tests', title: 'Discover yourself', hint: '3 free tests', action: 'Choose a free test',
-        doneAction: 'See my reports', detail: 'Complete 3 different tests. Each saved result earns 30 XP.' },
+        doneAction: 'See my reports', detail: 'Complete 3 different tests. Each saved result earns 30 GP.' },
       { id: 'course', title: 'Learn a skill', hint: 'Free Reiki course', action: 'Start free course',
-        doneAction: 'Review the course', detail: 'Complete your free learning course to earn 130 XP.' },
+        doneAction: 'Review the course', detail: 'Complete your free learning course to earn 130 GP.' },
       { id: 'consultation', title: 'Personal guidance', hint: 'Free introduction request', action: 'Request an introduction',
-        doneAction: 'My requests', detail: 'Send a free introduction request to earn 20 XP.' },
+        doneAction: 'My requests', detail: 'Send a free introduction request to earn 20 GP.' },
       { id: 'master', title: 'Become a master', hint: 'Apply and get approved', action: 'Apply as a master',
-        doneAction: 'Open My Practice', detail: 'An application earns 45 XP; approval adds 55 XP.' },
+        doneAction: 'Open My Practice', detail: 'An application earns 45 GP; approval adds 55 GP.' },
       { id: 'author', title: 'Create your course', hint: 'Draft and publish', action: 'Create a course draft',
-        doneAction: 'Manage my courses', detail: 'Save a course draft for 120 XP; publish after approval for another 80 XP.' },
+        doneAction: 'Manage my courses', detail: 'Save a course draft for 120 GP; publish after approval for another 80 GP.' },
     ],
   },
   ru: {
     eyebrow: 'МОЁ ПРОСТРАНСТВО · ПУТЬ РАЗВИТИЯ',
     title: 'Твой путь',
     intro: 'От первых открытий — к собственному курсу.',
-    xp: 'Накоплено XP', progress: 'Пройдено шагов',
+    xp: 'Баллы развития', progress: 'Пройдено шагов',
     step: 'Шаг', of: 'из', here: 'Ты сейчас здесь', next: 'Твой следующий шаг',
     done: 'Готово', upcoming: 'Впереди', now: 'Сейчас',
     allDone: 'Все шаги пройдены', allDoneText: 'Продолжай делиться своими знаниями.',
@@ -82,12 +82,12 @@ const COPY = {
     consultationSent: 'Запрос отправлен', consultationHint: 'Запись ещё не подтверждена',
     masterApproved: 'Одобрен', masterPending: 'На проверке',
     courseDraft: 'Черновик сохранён', coursePublished: 'Опубликован',
-    pointsNote: 'Баллы — за участие, не за здоровье или квалификацию. Запрос не означает запись на встречу. Статус мастера требует одобрения.',
+    pointsNote: 'Баллы развития показывают прогресс, но не расходуются на видео. Для генерации существует отдельный баланс XP. Заявка не означает запись. Статус мастера требует одобрения.',
     details: 'Как начисляются баллы?',
     expand: 'Показать действия', collapse: 'Скрыть действия',
-    earned: 'Получено', available: 'Можно получить', fullyEarned: 'Все XP получены',
-    consultationNote: 'За отправку запроса начисляются XP, но это ещё не запись и не подтверждённая встреча.',
-    masterNote: 'Заявку проверяет человек. XP сами по себе не открывают права мастера.',
+    earned: 'Получено', available: 'Можно получить', fullyEarned: 'Все GP получены',
+    consultationNote: 'За отправку запроса начисляются GP, но это ещё не запись и не подтверждённая встреча.',
+    masterNote: 'Заявку проверяет человек. GP сами по себе не открывают права мастера.',
     authorNote: 'Публикация требует одобрения мастера; черновик — отдельный этап.',
     checkApplication: 'Проверить заявку',
     applyFirst: 'Сначала стать мастером',
@@ -101,22 +101,22 @@ const COPY = {
     },
     stages: [
       { id: 'tests', title: 'Узнай себя', hint: '3 бесплатных теста', action: 'Выбрать бесплатный тест',
-        doneAction: 'Посмотреть отчёты', detail: 'Пройди 3 разных теста. За каждый сохранённый результат — 30 XP.' },
+        doneAction: 'Посмотреть отчёты', detail: 'Пройди 3 разных теста. За каждый сохранённый результат — 30 GP.' },
       { id: 'course', title: 'Освой навык', hint: 'Бесплатный курс Рейки', action: 'Начать бесплатный курс',
-        doneAction: 'Повторить курс', detail: 'Заверши бесплатный учебный курс и получи 130 XP.' },
+        doneAction: 'Повторить курс', detail: 'Заверши бесплатный учебный курс и получи 130 GP.' },
       { id: 'consultation', title: 'Личная поддержка', hint: 'Запрос знакомства', action: 'Запросить знакомство',
-        doneAction: 'Мои заявки', detail: 'Отправь запрос на бесплатное знакомство и получи 20 XP.' },
+        doneAction: 'Мои заявки', detail: 'Отправь запрос на бесплатное знакомство и получи 20 GP.' },
       { id: 'master', title: 'Стань мастером', hint: 'Заявка и одобрение', action: 'Подать заявку мастера',
-        doneAction: 'Открыть Мою практику', detail: 'За заявку — 45 XP; после одобрения добавится ещё 55 XP.' },
+        doneAction: 'Открыть Мою практику', detail: 'За заявку — 45 GP; после одобрения добавится ещё 55 GP.' },
       { id: 'author', title: 'Создай свой курс', hint: 'Черновик и публикация', action: 'Создать черновик курса',
-        doneAction: 'Мои авторские курсы', detail: 'Сохрани черновик за 120 XP, а после одобрения опубликуй курс ещё за 80 XP.' },
+        doneAction: 'Мои авторские курсы', detail: 'Сохрани черновик за 120 GP, а после одобрения опубликуй курс ещё за 80 GP.' },
     ],
   },
   es: {
     eyebrow: 'MI ESPACIO · MI CAMINO',
     title: 'Tu camino',
     intro: 'De tus primeros descubrimientos a tu propio curso.',
-    xp: 'XP ganados', progress: 'Etapas completadas',
+    xp: 'Puntos de progreso', progress: 'Etapas completadas',
     step: 'Paso', of: 'de', here: 'Estás aquí', next: 'Tu siguiente paso',
     done: 'Hecho', upcoming: 'Después', now: 'Ahora',
     allDone: 'Has completado el camino', allDoneText: 'Sigue compartiendo lo que aprendiste.',
@@ -129,12 +129,12 @@ const COPY = {
     consultationSent: 'Solicitud enviada', consultationHint: 'No es una cita confirmada',
     masterApproved: 'Aprobado', masterPending: 'En revisión',
     courseDraft: 'Borrador guardado', coursePublished: 'Publicado',
-    pointsNote: 'Los XP recompensan la participación, no tu salud ni tus cualificaciones. Una solicitud no confirma una cita. El acceso profesional requiere aprobación.',
-    details: '¿Cómo se cuentan los XP?',
+    pointsNote: 'Los puntos de progreso no se gastan en vídeos. Los XP creativos tienen otro saldo. Una solicitud no confirma una cita ni concede acceso profesional.',
+    details: '¿Cómo se cuentan los GP?',
     expand: 'Ver acciones', collapse: 'Ocultar acciones',
-    earned: 'Ganados', available: 'Aún disponibles', fullyEarned: 'Todos los XP ganados',
-    consultationNote: 'Enviar una solicitud da XP, pero no reserva ni confirma una cita.',
-    masterNote: 'Una persona revisa la solicitud. Los XP no conceden acceso profesional.',
+    earned: 'Ganados', available: 'Aún disponibles', fullyEarned: 'Todos los GP ganados',
+    consultationNote: 'Enviar una solicitud da GP, pero no reserva ni confirma una cita.',
+    masterNote: 'Una persona revisa la solicitud. Los GP no conceden acceso profesional.',
     authorNote: 'Publicar requiere aprobación como profesional; guardar un borrador es otro paso.',
     checkApplication: 'Consultar mi solicitud',
     applyFirst: 'Solicitar perfil profesional',
@@ -148,15 +148,15 @@ const COPY = {
     },
     stages: [
       { id: 'tests', title: 'Descúbrete', hint: '3 tests gratuitos', action: 'Elegir un test',
-        doneAction: 'Ver mis informes', detail: 'Completa 3 tests diferentes. Cada resultado guardado suma 30 XP.' },
+        doneAction: 'Ver mis informes', detail: 'Completa 3 tests diferentes. Cada resultado guardado suma 30 GP.' },
       { id: 'course', title: 'Aprende una habilidad', hint: 'Curso gratuito de Reiki', action: 'Empezar el curso gratuito',
-        doneAction: 'Repasar el curso', detail: 'Termina un curso gratuito para recibir 130 XP.' },
+        doneAction: 'Repasar el curso', detail: 'Termina un curso gratuito para recibir 130 GP.' },
       { id: 'consultation', title: 'Orientación personal', hint: 'Solicitud de introducción', action: 'Solicitar una introducción',
-        doneAction: 'Mis solicitudes', detail: 'Envía una solicitud de introducción gratuita para obtener 20 XP.' },
+        doneAction: 'Mis solicitudes', detail: 'Envía una solicitud de introducción gratuita para obtener 20 GP.' },
       { id: 'master', title: 'Hazte profesional', hint: 'Solicitud y aprobación', action: 'Solicitar perfil profesional',
-        doneAction: 'Abrir Mi práctica', detail: 'La solicitud suma 45 XP; la aprobación añade otros 55 XP.' },
+        doneAction: 'Abrir Mi práctica', detail: 'La solicitud suma 45 GP; la aprobación añade otros 55 GP.' },
       { id: 'author', title: 'Crea tu curso', hint: 'Borrador y publicación', action: 'Crear un borrador de curso',
-        doneAction: 'Gestionar mis cursos', detail: 'Guarda tu borrador por 120 XP y publícalo tras la aprobación para sumar 80 XP.' },
+        doneAction: 'Gestionar mis cursos', detail: 'Guarda tu borrador por 120 GP y publícalo tras la aprobación para sumar 80 GP.' },
     ],
   },
 }
@@ -274,7 +274,7 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
         <p className={styles.intro}>{t.intro}</p>
       </div>
       <div className={styles.xp} aria-label={t.xp}>
-        <span>{ready ? journey.xp : '—'} <strong>XP</strong></span>
+        <span>{ready ? journey.xp : '—'} <strong>GP</strong></span>
         <small>{t.xp}</small>
       </div>
     </header>
@@ -308,8 +308,8 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
         const description = info ? stageMeta(stage.id, info, t) : stage.hint
         const Icon = ICONS[stage.id]
         const points = info ? (info.earned > 0
-          ? String(info.earned) + '/' + String(info.reward) + ' XP'
-          : '+' + String(info.reward) + ' XP') : '— XP'
+          ? String(info.earned) + '/' + String(info.reward) + ' GP'
+          : '+' + String(info.reward) + ' GP') : '— GP'
         const expanded = ready && expandedId === stage.id
         const tasks = ready ? stageTasks(stage.id, info, t) : []
         const action = ready ? stageAction(stage, info, lang, canAuthor, journey.freeConsultationServiceId, t) : null
@@ -351,13 +351,13 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
                   {task.done ? <Check size={13} /> : index + 1}
                 </span>
                 <span className={styles.taskTitle}>{task.label}</span>
-                <strong className={styles.taskXp}>{task.done ? t.earned : '+'}{task.done ? ' ' : ''}{task.reward} XP</strong>
+                <strong className={styles.taskXp}>{task.done ? t.earned : '+'}{task.done ? ' ' : ''}{task.reward} GP</strong>
               </li>)}
             </ul>
             <div className={styles.detailFooter}>
               <span className={styles.remaining}>
                 {info.reward > info.earned
-                  ? t.available + ': +' + Math.max(0, info.reward - info.earned) + ' XP'
+                  ? t.available + ': +' + Math.max(0, info.reward - info.earned) + ' GP'
                   : t.fullyEarned}
               </span>
               <Link href={action.href} prefetch={false} className={styles.detailAction}>
