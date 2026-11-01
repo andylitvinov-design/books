@@ -332,7 +332,10 @@ test("same iPhone editor records actual four-shot canvas montage without sending
 test("approved #2691 quick and legacy wish controls share the Director's single React state",()=>{
   assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
   assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
-  assert.match(studio,/data-video-quick-wish/);
+  assert.match(studio,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
+    "single goal-first input shares wish React state with the optional Cinematic Director");
+  assert.doesNotMatch(studio,/<input data-video-quick-wish/,
+    "do not reintroduce a second competing goal input");
   assert.match(studio,/id="personal-video-wish"/);
   assert.match(studio,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(directorUI,/onIntentTextChange/);

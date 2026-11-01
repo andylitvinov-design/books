@@ -23,7 +23,12 @@ test('Alchemy source tests remain required while heavy CI-only browser work skip
   const s=readFileSync(new URL('../.github/workflows/hh-alchemy-mobile-acceptance.yml',import.meta.url),'utf8');
   assert.match(s,/node scripts\/ci-alchemy-impact\.mjs/);
   assert.match(s,/node --test tests\/ci-alchemy-impact\.test\.mjs/);
-  assert.match(s,/if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/);
+  assert.ok(s.includes("name: Explain deferred manual Alchemy acceptance on PR"));
+  for (const name of ['Install browser once for real responsive check',
+    'Build production-mode Next and measure current Chromium viewports; WebKit manual QA']) {
+    const actual=s.split('      - name: '+name+'\n')[1]?.split('\n')[0]?.trim();
+    assert.equal(actual,"if: github.event_name != 'pull_request'",name+' is manual-only');
+  }
   assert.match(s,/node --test \\/);
   assert.match(s,/node scripts\/verify-alchemy-one-screen\.mjs/);
   assert.match(s,/HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/);
