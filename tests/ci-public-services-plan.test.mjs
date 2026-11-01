@@ -383,7 +383,7 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('Public Services preserves required fast PR checks and explicit manual full browser QA', () => {
+test('Public Services preserves protected high-risk real-browser QA and fast low-risk contracts', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
@@ -393,14 +393,14 @@ test('Public Services preserves required fast PR checks and explicit manual full
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
-    assert.ok(step, 'missing manual QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs." + output + " == 'true' }}\n"),
-      'browser and production build must be manual-only: ' + name);
+    assert.ok(step, 'missing risk-scoped QA step: ' + name);
+    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
+      'sensitive PR browser and build must remain blocking: ' + name);
   }
-  assert.match(src, /if: always\(\) && github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs\.build == 'true'/);
+  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
-  assert.match(src, /Real production build and browser acceptance NOT executed in this PR check/);
+  assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
@@ -493,7 +493,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
 });
 
-test('impact planner preserves sensitive manual acceptance while PR uses source contracts', () => {
+test('impact planner preserves sensitive required browser acceptance while low-risk PR uses source contracts', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
     'scripts/verify-ideas-mobile-browser.mjs',
@@ -521,7 +521,7 @@ test('impact planner preserves sensitive manual acceptance while PR uses source 
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true'/);
+  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
