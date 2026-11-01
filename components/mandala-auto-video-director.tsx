@@ -86,6 +86,7 @@ export function MandalaAutoVideoDirector({
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
+ const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>(null);
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
@@ -94,14 +95,19 @@ export function MandalaAutoVideoDirector({
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const length=seconds||proposal?.durationSeconds||30;
+ // Never allow confirming a montage for an old shared goal or theme.
+ const showProposal=proposal!==null&&proposalContext?.goal===goal&&proposalContext.theme===theme;
  const choose=()=>{
    setSelectedGoalId(null);
+   setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
    // No test result or private objective is sent outside this component.
-   onGoalChange(AUTO_VIDEO_GOALS.find(item=>item.id===goalId)?.labels[locale]||"");
+   const nextGoal=AUTO_VIDEO_GOALS.find(item=>item.id===goalId)?.labels[locale]||"";
+   onGoalChange(nextGoal);
+   setProposalContext({goal:nextGoal,theme});
    setSelectedGoalId(goalId);
    setOverrideId(null);setSeconds(null);
    setProposal(recommendAutoVideo({goalId,locale,fallbackTheme:theme,presets,scenes}));
@@ -113,7 +119,7 @@ export function MandalaAutoVideoDirector({
    <p className={css.goalsTitle}>{t.goalsTitle}</p>
    <div className={css.goalChoices} role="group" aria-label={t.goalsTitle}>
      {AUTO_VIDEO_GOALS.map(item=><button key={item.id} type="button"
-       data-auto-video-goal={item.id} aria-pressed={selectedGoalId===item.id}
+       data-auto-video-goal={item.id} aria-pressed={showProposal&&selectedGoalId===item.id}
        disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
        {item.labels[locale]}
      </button>)}
@@ -137,7 +143,7 @@ export function MandalaAutoVideoDirector({
      <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
        onClick={choose}><Sparkles size={16} aria-hidden="true"/> {t.suggest}</button>
    </div>
-   {proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
+   {showProposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
        {selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
