@@ -808,8 +808,15 @@ test("WebKit without MediaRecorder encodes actual first-video Canvas MP4 using W
   assert.match(helper,/await output\.cancel\(\)/);
   assert.match(helper,/header\[4\] !== 0x66/);
   assert.match(editor,/typeof MediaRecorder === "undefined"/);
-  assert.match(editor,/cinematicPlan\?\.version === "hh-cinematic-storyboard-v1"/);
-  assert.match(editor,/!usingFreeFilmCompilation && !attachedAudio/);
+  assert.match(editor,/cinematicPlan.version === FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION/);
+  assert.match(editor,/cinematicPlan.version === FREE_FILM_PLAN_VERSION/);
+  assert.match(editor,/realtime,audioBuffer:sound/);
+  assert.match(editor,/paintStageCaptionOverlay\(ctx,second,cinematicPlan\)/);
+  assert.match(helper,/new AudioBufferSource\(/);
+  assert.match(helper,/audioSource.add\(audioBuffer\)/);
+  assert.match(helper,/source.loop = !fileMode/);
+  assert.match(helper,/AudioEncoder.isConfigSupported/);
+  assert.match(helper,/webcodecs_narration_exceeds_video/);
   assert.match(editor,/await import\("@\/lib\/mandala\/canvas-webcodecs-mp4"\)/);
   assert.match(editor,/paintCinematicFrame\(ctx,image,effect,second/);
   assert.match(editor,/paintStoryMotifs\(ctx,second,appliedStory\)/);
@@ -817,6 +824,7 @@ test("WebKit without MediaRecorder encodes actual first-video Canvas MP4 using W
   assert.match(editor,/webCodecJobRef\.current\?\.abort\(\)/);
   assert.match(editor,/setResult\(\{url:URL\.createObjectURL\(movie\),extension:"mp4"/);
   // No private request leaves the device, and no audio selection is silently discarded.
-  assert.ok(!helper.includes("fetch("));
+  assert.match(helper,/fetch\(presetAudioUrl\(id\)/);
+  assert.ok(!helper.includes("https://"));
   assert.ok(!helper.includes("MediaRecorder("));
 });
