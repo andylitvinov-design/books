@@ -2,10 +2,11 @@
 
 /**
  * HH Direction Watcher: zero-new-service classifier for ALL open production
- * PRs. Classifies by direction; reflects central five-level policy in GitHub
- * labels. It NEVER changes PR code, branch, reviewers, checks or merge status.
+ * PRs. Classifies by five strategic directions and ten operational ranks,
+ * then reconciles the current queue stage. It NEVER changes PR code,
+ * branch, reviewers, checks or actual merge status.
  */
-const {POLICY,desiredLabels,priorityFor,rankedCandidates,SHA}=
+const {POLICY,desiredLabels,priorityFor,rankedCandidates,MERGE_STAGES,SHA}=
   require('./ci-pr-priority.cjs');
 const PROD='codex/public-book-library';
 const DEFAULT='codex/bootstrap-books';
@@ -26,7 +27,18 @@ const LABELS=[
     description:'Optional owner direction override (priority still inherited): '+d.name})),
   ...POLICY.levels.map(l=>({name:'hh:priority:'+l.id,
     color:['b60205','e99695','fbca04','0e8a16','c5def5'][l.id-1],
-    description:'Inherited priority P'+l.id+' — '+l.name}))
+    description:'Inherited direction priority P'+l.id+' — '+l.name})),
+  ...Array.from({length:10},(_,i)=>({
+    name:'hh:merge-priority:'+String(i+1).padStart(2,'0'),
+    color:['b60205','d93f0b','e99695','e99695','fbca04',
+      'fbca04','0e8a16','0e8a16','c5def5','c5def5'][i],
+    description:'Computed 10-level merge work rank R'+String(i+1).padStart(2,'0')+
+      ' (importance, not merge approval)'
+  })),
+  ...MERGE_STAGES.map(stage=>({
+    name:'hh:merge-stage:'+stage,color:'ededed',
+    description:'Current queue stage: '+stage+' (informational only)'
+  }))
 ];
 
 async function readOpenPRs(github,owner,repo,limited){
@@ -64,7 +76,7 @@ async function ensureKnownLabels(github,owner,repo,limited,dryRun,log){
     }
     created++;
   }
-  log((dryRun?'WOULD_CREATE':'CREATED')+' '+created+' direction/level labels');
+  log((dryRun?'WOULD_CREATE':'CREATED')+' '+created+' direction/rank/stage labels');
   return created;
 }
 function selectReclassification(items,now=Date.now(),max=MAX_WRITES){
@@ -88,12 +100,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   const summary={checkedAt:new Date(now).toISOString(),dryRun,
     inventoried:0,production:0,defaultBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
     pathProbes:0,createdLabels:0,blockedOverrides:0,
-    byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},byDirection:{},
+    byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},
+    byMergePriority:Object.fromEntries(Array.from({length:10},
+      (_,i)=>['R'+String(i+1).padStart(2,'0'),0])),
+    byStage:{},byDirection:{},
     selected:[],errors:0,apiRequests:0,apiRemaining:null,paused:false,
     nextBatch:null,reason:null};
   const finish=async()=>{
     log(JSON.stringify(summary));
-    await core.summary.addHeading('HH Development Direction Watcher — five-level policy')
+    await core.summary.addHeading('HH PR Watcher — five directions / ten merge ranks')
       .addCodeBlock(JSON.stringify(summary,null,2)).write();
     return summary;
   };
@@ -148,6 +163,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     const result=desiredLabels(pr);
     if(result.conflicted){summary.blockedOverrides++;continue;}
     summary.byLevel['P'+result.level]++;
+    summary.byMergePriority['R'+String(result.rank).padStart(2,'0')]++;
+    summary.byStage[result.stage]=(summary.byStage[result.stage]||0)+1;
     summary.byDirection[result.id]=(summary.byDirection[result.id]||0)+1;
     if(result.needsSync)missing.push(pr);
     else summary.synced++;
@@ -193,6 +210,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
 
       summary.selected.push({
         number:live.number,direction:classification.id,level:classification.level,
+        rank:classification.rank,stage:classification.stage,
         source:classification.source
       });
       if(dryRun)continue;
@@ -213,7 +231,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
         }catch(error){if(error.status!==404)throw error;}
       }
       summary.updated++;
-      log('#'+live.number+' -> '+classification.id+' P'+classification.level);
+      log('#'+live.number+' -> '+classification.id+' P'+classification.level+
+        ' R'+String(classification.rank).padStart(2,'0')+
+        ' stage='+classification.stage);
     }catch(error){
       if(summary.paused||error.message?.startsWith('HH_DIRECTION_API_BUDGET_PAUSE')){
         summary.paused=true;break;

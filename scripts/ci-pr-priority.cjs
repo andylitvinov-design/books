@@ -7,7 +7,6 @@
  */
 const POLICY=require('../.github/hh-pr-directions.json');
 const MINUTE=60_000;
-const LEVEL_BASE=Object.freeze({1:500,2:400,3:300,4:200,5:100});
 const SHA=/^[a-f0-9]{40}$/i;
 if(POLICY.schema!=='HH_PR_DIRECTION_POLICY_V1'||
    !Array.isArray(POLICY.directions)||!Array.isArray(POLICY.levels)||
@@ -22,6 +21,42 @@ const BY_ID=new Map(POLICY.directions.map(x=>[x.id,x]));
 const DIRECTION_PREFIX='hh:direction:';
 const OVERRIDE_PREFIX='hh:direction-override:';
 const PRIORITY_PREFIX='hh:priority:';
+const MERGE_PRIORITY_PREFIX='hh:merge-priority:';
+const MERGE_STAGE_PREFIX='hh:merge-stage:';
+const MERGE_STAGES=Object.freeze([
+  'inspect','ci','repair','claimed','conflict','manual','draft','armed'
+]);
+
+/**
+ * Operational urgency is a SECONDARY, computed ten-rank index:
+ * P1 -> R01 (urgent) / R02 (planned), ... P5 -> R09 / R10.
+ * The owner's policy sets direction precedence. Labels never confer merge
+ * permission: actual readiness is independently verified on the exact HEAD.
+ */
+function mergeUrgency(pr){
+  const title=String(pr?.title||'').trim();
+  return /^(?:fix|perf|hotfix|revert|security)(?:\(|:|!)/i.test(title) ||
+    /\b(?:incident|outage|regression|unblock|broken|critical|stuck|deadlock)\b/i.test(title) ||
+    /(?:не работает|ошибк|сбой|исправл)/i.test(title);
+}
+function mergeStage(pr){
+  const names=labelNames(pr);
+  if(pr?.draft)return 'draft';
+  if(names.has('hh:hold')||names.has('hh:blocked')||
+     names.has('hh:repair-manual'))return 'manual';
+  if(names.has('hh:conflict-repair-needed')||
+     pr?.mergeable===false||pr?.mergeable_state==='dirty')return 'conflict';
+  if(names.has('hh:worker-claimed'))return 'claimed';
+  if(names.has('hh:repair-needed'))return 'repair';
+  if(names.has('hh:ci-needed'))return 'ci';
+  if(pr?.auto_merge)return 'armed';
+  return 'inspect'; // Not evidence of green CI: Watchdog still runs full preflight.
+}
+function operationalPriority(pr,direction=classifyDirection(pr)){
+  const urgent=mergeUrgency(pr);
+  return {rank:Math.min(10,Math.max(1,2*direction.level-(urgent?1:0))),
+    urgent,stage:mergeStage(pr)};
+}
 
 function labelNames(pr){
   return new Set((Array.isArray(pr?.labels)?pr.labels:[])
@@ -105,21 +140,31 @@ function classifyDirection(pr,files=null){
 function managedLabels(pr){
   return [...labelNames(pr)].filter(x=>
     x.startsWith(DIRECTION_PREFIX) ||
-    (x.startsWith(PRIORITY_PREFIX) && /^hh:priority:(?:p[0-9]+|[0-9]+)$/.test(x)));
+    (x.startsWith(PRIORITY_PREFIX) && /^hh:priority:(?:p[0-9]+|[0-9]+)$/.test(x)) ||
+    (x.startsWith(MERGE_PRIORITY_PREFIX) &&
+      /^hh:merge-priority:(?:0[1-9]|10)$/.test(x)) ||
+    (x.startsWith(MERGE_STAGE_PREFIX) &&
+      MERGE_STAGES.includes(x.slice(MERGE_STAGE_PREFIX.length))));
 }
 function desiredLabels(pr,files=null){
   const result=classifyDirection(pr,files);
   if(result.conflicted)return {...result,desired:[],obsolete:[],needsSync:false};
-  const desired=[DIRECTION_PREFIX+result.id,PRIORITY_PREFIX+result.level];
+  const operational=operationalPriority(pr,result);
+  const desired=[DIRECTION_PREFIX+result.id,PRIORITY_PREFIX+result.level,
+    MERGE_PRIORITY_PREFIX+String(operational.rank).padStart(2,'0'),
+    MERGE_STAGE_PREFIX+operational.stage];
   const current=labelNames(pr);
   const obsolete=managedLabels(pr).filter(x=>!desired.includes(x));
-  return {...result,desired,obsolete,
+  return {...result,rank:operational.rank,stage:operational.stage,
+    desired,obsolete,
     needsSync:desired.some(x=>!current.has(x))||obsolete.length>0};
 }
 function priorityFor(pr,now=Date.now()){
   const d=classifyDirection(pr);
-  if(d.conflicted)return {tier:'P5',level:5,score:0,source:d.source,
+  if(d.conflicted)return {tier:'P5',level:5,mergeRank:10,
+    mergeStage:'manual',score:0,source:d.source,
     direction:'other',conflicted:true,ageDays:0};
+  const operational=operationalPriority(pr,d);
   const created=Date.parse(pr?.created_at||'');
   const ageDays=Number.isFinite(created)?
     Math.max(0,Math.floor((now-created)/(24*60*MINUTE))):0;
@@ -129,7 +174,9 @@ function priorityFor(pr,now=Date.now()){
   const queueBonus=names.has('hh:repair-needed')?12:
     names.has('hh:ci-needed')?6:0;
   return {tier:'P'+d.level,level:d.level,direction:d.id,
-    score:LEVEL_BASE[d.level]+ageBonus+queueBonus,
+    mergeRank:operational.rank,mergeStage:operational.stage,
+    urgent:operational.urgent,
+    score:(11-operational.rank)*100+ageBonus+queueBonus,
     source:d.source,conflicted:false,ageDays};
 }
 /**
@@ -180,4 +227,5 @@ function pickQueueCandidates(items,now=Date.now(),max=4,fastSlots=3){
 }
 module.exports={POLICY,priorityFor,rankedCandidates,pickQueueCandidates,
   labelNames,classifyDirection,inferLevel,desiredLabels,managedLabels,
+  mergeUrgency,mergeStage,operationalPriority,MERGE_STAGES,
   isFreeFor,selectNextAvailable,titleScope,SHA};

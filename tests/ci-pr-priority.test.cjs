@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {POLICY,priorityFor,rankedCandidates,pickQueueCandidates,desiredLabels,
-  classifyDirection,selectNextAvailable,isFreeFor}=require('../scripts/ci-pr-priority.cjs');
+  classifyDirection,selectNextAvailable,isFreeFor,operationalPriority,mergeStage}=require('../scripts/ci-pr-priority.cjs');
 const NOW=Date.parse('2026-11-01T18:00:00Z');
 const label=name=>({name});
 const pr=(number,title='feat: add assorted enhancements',extra={})=>({
@@ -57,7 +57,8 @@ test('classifier creates authoritative direction and level labels and migrates l
     label('hh:priority:3'),label('hh:repair-needed')]});
   const result=desiredLabels(item);
   assert.equal(result.id,'video');
-  assert.deepEqual(result.desired,['hh:direction:video','hh:priority:1']);
+  assert.deepEqual(result.desired,['hh:direction:video','hh:priority:1',
+    'hh:merge-priority:02','hh:merge-stage:repair']);
   assert.ok(result.obsolete.includes('hh:priority:p0'));
   assert.ok(result.obsolete.includes('hh:direction:audio-hypno'));
   assert.equal(result.obsolete.includes('hh:repair-needed'),false);
@@ -109,4 +110,51 @@ test('historical CI test maintenance does not displace operational Watchdog P1',
   assert.equal(priorityFor(maintenance,NOW).tier,'P5');
   assert.equal(priorityFor(incident,NOW).tier,'P1');
   assert.equal(rankedCandidates([maintenance,incident],NOW)[0].number,2956);
+});
+
+test('ten merge ranks inherit the five directions, then elevate real fixes within a direction',()=>{
+  const titles=[
+    'fix(video): restore generation','feat(video): scenario library',
+    'fix(voice): restore TTS','feat(voice): multilingual voices',
+    'fix(messages): restore replies','feat(messages): add chat view',
+    'fix(cabinet): restore tests','feat(cabinet): add tests',
+    'fix(seo): repair sitemap','feat(seo): add landing pages'
+  ];
+  assert.deepEqual(titles.map((title,i)=>
+    priorityFor(pr(i+1,title),NOW).mergeRank),[1,2,3,4,5,6,7,8,9,10]);
+  assert.ok(priorityFor(pr(1,titles[0]),NOW).score>
+    priorityFor(pr(2,titles[1]),NOW).score);
+  assert.ok(priorityFor(pr(2,titles[1]),NOW).score>
+    priorityFor(pr(3,titles[2]),NOW).score);
+});
+test('queue stage reflects live work status without lying about green CI',()=>{
+  const base=pr(1,'fix(video): restore generation');
+  const cases=[
+    [base,'inspect'],
+    [{...base,labels:[label('hh:ci-needed')]},'ci'],
+    [{...base,labels:[label('hh:repair-needed')]},'repair'],
+    [{...base,labels:[label('hh:worker-claimed')]},'claimed'],
+    [{...base,mergeable:false,mergeable_state:'dirty'},'conflict'],
+    [{...base,labels:[label('hh:hold')]},'manual'],
+    [{...base,draft:true},'draft'],
+    [{...base,auto_merge:{enabled_at:'2026-11-01T00:00:00Z'}},'armed']
+  ];
+  for(const [item,stage] of cases){
+    assert.equal(mergeStage(item),stage);
+    assert.equal(priorityFor(item,NOW).mergeRank,1,'work status never rewrites importance');
+  }
+});
+test('stale rank/stage and manually forged labels are reconciled without replacing workers',()=>{
+  const item=pr(1,'fix(video): repair generation',{labels:[
+    label('hh:merge-priority:10'),label('hh:merge-stage:armed'),
+    label('hh:priority:5'),label('hh:repair-needed')]});
+  const actual=desiredLabels(item);
+  assert.equal(actual.rank,1);
+  assert.equal(actual.stage,'repair');
+  assert.ok(actual.desired.includes('hh:merge-priority:01'));
+  assert.ok(actual.desired.includes('hh:merge-stage:repair'));
+  assert.ok(actual.obsolete.includes('hh:merge-priority:10'));
+  assert.ok(actual.obsolete.includes('hh:merge-stage:armed'));
+  assert.ok(!actual.obsolete.includes('hh:repair-needed'));
+  assert.equal(operationalPriority(item).rank,1);
 });

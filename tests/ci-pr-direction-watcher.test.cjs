@@ -91,7 +91,8 @@ test('legacy manual priority is cleaned but independent Repair labels remain int
   const f=fixture([item]);
   const result=await run({github:f.github,core:core(),context,now:NOW});
   assert.equal(result.updated,1);
-  assert.deepEqual(f.counts.adds[0].labels,['hh:direction:audio-hypno','hh:priority:2']);
+  assert.deepEqual(f.counts.adds[0].labels,['hh:direction:audio-hypno','hh:priority:2',
+    'hh:merge-priority:04','hh:merge-stage:repair']);
   assert.deepEqual(f.counts.removes,['hh:priority:p0']);
 });
 test('vague title may use changed filenames without reading source code',async()=>{
@@ -150,5 +151,21 @@ test('classifier also marks trusted default-branch infrastructure PRs',async()=>
   assert.equal(result.defaultBranchPRs,1);
   assert.equal(result.inScope,1);
   assert.equal(result.updated,1);
-  assert.deepEqual(f.counts.adds[0].labels,['hh:direction:platform','hh:priority:1']);
+  assert.deepEqual(f.counts.adds[0].labels,['hh:direction:platform','hh:priority:1',
+    'hh:merge-priority:01','hh:merge-stage:inspect']);
+});
+
+test('ten-rank watcher updates work stage idempotently without replacing unrelated labels',async()=>{
+  const item=pr(55,'fix(video): restore Create',{labels:[
+    {name:'hh:direction:video'},{name:'hh:priority:1'},
+    {name:'hh:merge-priority:01'},{name:'hh:merge-stage:inspect'},
+    {name:'hh:repair-needed'}
+  ]});
+  const f=fixture([item]);
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.byMergePriority.R01,1);
+  assert.equal(result.byStage.repair,1);
+  assert.equal(result.updated,1);
+  assert.deepEqual(f.counts.adds[0].labels,['hh:merge-stage:repair']);
+  assert.deepEqual(f.counts.removes,['hh:merge-stage:inspect']);
 });
