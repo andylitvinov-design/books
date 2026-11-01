@@ -400,8 +400,19 @@ const runEngine = async ([engine, browserType]) => {
         const playerRect=await screen.boundingBox();
         assert.ok(playerRect&&playerRect.width>playerRect.height,
           engine+" "+locale+" "+width+"px central player must be widescreen");
+        // The six themes now live under a deliberately collapsed disclosure
+        // in the approved mobile Studio. Open it through the real user control
+        // before checking the visible localized label, then restore the layout.
+        const topicDisclosure=quick.locator('[data-video-theme-advanced]');
+        assert.equal(await topicDisclosure.getAttribute("open"),null,
+          "advanced theme list is intentionally collapsed on entry");
+        await topicDisclosure.locator("summary").click();
+        await expect(topicDisclosure).toHaveAttribute("open","");
         assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
+        await topicDisclosure.locator("summary").click();
+        assert.equal(await topicDisclosure.getAttribute("open"),null,
+          "advanced themes return to their original collapsed state");
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
           "three formats share one real cinematic preview");
