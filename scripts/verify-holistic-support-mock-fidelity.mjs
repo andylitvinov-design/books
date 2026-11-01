@@ -566,8 +566,21 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
-              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
+            // Use the visible, accessible label as the real touch target.
+            // A moving/re-rendered checkbox can cause Playwright.uncheck()
+            // to click a stale input while the user-facing choice stays checked.
+            // Verify the actual controlled React state after EACH user click;
+            // never infer opt-out merely from dispatching an event.
+            const checkedFormats=filter.locator('[data-support-goal-format] input:checked');
+            for(let remaining=await checkedFormats.count();remaining>0;remaining--){
+              const choice=filter.locator('[data-support-goal-format]:has(input:checked)').first();
+              await choice.scrollIntoViewIfNeeded();
+              await choice.click();
+              await page.waitForFunction(expected=>
+                document.querySelectorAll('[data-support-goal-filter] [data-support-goal-format] input:checked').length===expected,
+                remaining-1,{timeout:10000});
+              assert.equal(await checkedFormats.count(),remaining-1,
+                label+' opt-out must change the actual selected formats, not just dispatch click');
             }
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
