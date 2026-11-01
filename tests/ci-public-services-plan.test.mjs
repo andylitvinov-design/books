@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -393,8 +393,8 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' }}\n"),
-      'risk-scoped PR acceptance must run when planner selects it: ' + name);
+    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
+      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
   }
   assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
@@ -407,4 +407,55 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
+});
+
+test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+  const focused = paths => planPublicServicesChangedPaths(paths);
+  for (const name of [
+    'scripts/verify-ideas-mobile-browser.mjs',
+    'scripts/verify-direction-focus-mobile.mjs',
+    'scripts/verify-holistic-topics-browser.mjs',
+    'scripts/verify-holistic-support-recommendations-mobile.mjs',
+  ]) {
+    const result=focused([name]);
+    assert.equal(result.mode,'focused');
+    assert.equal(requiresPublicServicesHeavyPr(result),false,name+' visual PR');
+  }
+  for (const name of [
+    'scripts/verify-service-cart-browser.mjs',
+    'scripts/verify-public-services-production.mjs',
+    'scripts/verify-alchemy-one-screen.mjs',
+    'scripts/verify-talisman-google-checkout-browser.mjs',
+    'scripts/verify-storefront-shop-browser.mjs',
+  ]) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' consent/payment/browser');
+  }
+  for (const name of ['app/api/payments/talismans/checkout/route.js',
+    'components/contact-channel-chooser.tsx','middleware.ts',
+    'components/alchemy-soul-landing.tsx']) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' sensitive');
+  }
+  assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
+  const yml=workflow('hh-public-services-production.yml');
+  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
+  assert.doesNotMatch(yml,/continue-on-error:\s*true/);
+});
+
+test('independent Site Video CI orchestration never triggers unrelated thirteen-case public checkout E2E',()=>{
+  const files=[
+    '.github/workflows/site-video-browser.yml',
+    'scripts/ci-site-video-scope.mjs',
+    'tests/ci-site-video-scope.test.mjs',
+    'tests/site-video-admin-e2e-gate.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+  ];
+  const plan=planPublicServicesChangedPaths(files);
+  assert.deepEqual([plan.mode,plan.build,plan.browser],['contracts',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  const mixed=planPublicServicesChangedPaths([...files,'app/api/payments/talismans/checkout/route.js']);
+  assert.deepEqual([mixed.mode,requiresPublicServicesHeavyPr(mixed)],['full',true]);
 });
