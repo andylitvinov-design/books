@@ -22,7 +22,7 @@ export async function POST(request,{params}){
   return auth.apply(NextResponse.json({contact},{headers:PRIVATE_HEADERS}))
  }catch(error){
   // Never format or log errors here: provider/crypto details could contain PII.
-  const allowed=new Set(['SIGN_IN_REQUIRED','ACCOUNT_CHANGED','NOT_FOUND','AUDIT_UNAVAILABLE'])
+  const allowed=new Set(['SIGN_IN_REQUIRED','ACCOUNT_CHANGED','NOT_FOUND','AUDIT_UNAVAILABLE','ORIGIN_DENIED','INVALID_ID'])
   const safe=error instanceof AppError&&allowed.has(error.code)
    ? {code:error.code,status:error.status} : {code:'SERVICE_UNAVAILABLE',status:503}
   const response=NextResponse.json({error:safe.code},{status:safe.status,headers:PRIVATE_HEADERS})
