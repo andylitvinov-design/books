@@ -1145,8 +1145,13 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
-        await compactHypno.locator("[data-hypno-design-edit]").click();
-        await expect(compactHypno.locator("[data-hypno-design-edit]")).toHaveAttribute("aria-expanded","true");
+        // Edit is an idempotent OPEN action; if the panel is already open,
+        // clicking Edit again must not accidentally close it (Safari tap regression).
+        const designEdit=compactHypno.locator("[data-hypno-design-edit]");
+        await designEdit.click();
+        await expect(designEdit).toHaveAttribute("aria-expanded","true");
+        await designEdit.click();
+        await expect(designEdit).toHaveAttribute("aria-expanded","true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1349,8 +1354,8 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
           await attachButton.click();
           assert.equal(await attachButton.isDisabled(),true,"attached soundtrack acknowledged");
-          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Гармония/,
-            "attached identity is separate from current audio preview");
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Фортепиано гармонии/,
+            "attached identity reflects the actual selected original melody, not the playing preview");
           assert.equal(await create.isEnabled(),true,"attach unlocks real audio+video export");
           const nativePlayer=page.locator("[data-video-audio-player]");
           await nativePlayer.waitFor({state:"attached",timeout:10000});
