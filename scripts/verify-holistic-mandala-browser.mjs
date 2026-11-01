@@ -70,7 +70,7 @@ const runEngine = async ([engine, browserType]) => {
     // leaking between closed contexts across repeated iPhone dimensions.
     // This is isolation, not a skipped assertion or retry of a failed case.
     // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
-    // native 13-track audio checks, reducing simultaneous encoding pressure.
+    // native 39-track audio checks, reducing simultaneous encoding pressure.
     const orderedViewports = engine === "chromium"
       ? [...viewports.filter(v => v.locale !== "ru" || v.width !== 390),
         ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
@@ -1235,8 +1235,8 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
           await page.locator("[data-video-audio-more]").click();
-          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
-            "expanded audio-only library contains all 13 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),39,
+            "expanded audio-only library contains all 39 original WAV tracks");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
             "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
@@ -1281,7 +1281,7 @@ const runEngine = async ([engine, browserType]) => {
               "healthy preset must not show direct-open error fallback");
             await page.locator("[data-video-music-preview]").click();
           }
-          // Mock-fidelity regression: five sound filters and all 13 original
+          // Mock-fidelity regression: sound filters and all 39 original
           // WAVs share exactly one real player. A row Play starts native
           // Safari-compatible media but does NOT silently attach it to video.
           assert.equal(await page.locator('[data-video-quick-section="5"] audio').count(),0,
