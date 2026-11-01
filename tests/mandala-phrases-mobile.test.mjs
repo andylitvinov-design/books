@@ -53,3 +53,12 @@ test("voice and music are consecutive, reuse canonical sound attach/play functio
   assert.match(studioCss,/\.phraseMusicList\{display:grid;gap:9px/);
   assert.match(studio,/AI voice presets are not yet export-ready/);
 });
+
+test("single approved phrases workspace with voice/music before the final Create action",()=>{
+  assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
+  assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
+  assert.match(phrases,/children\?:ReactNode/);
+  assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
+});

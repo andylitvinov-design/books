@@ -2536,3 +2536,6 @@
  .phraseAudioHeading h3{font-size:21px}
  .phraseMusicChoice{font-size:15px}
 }
+
+/* One owner-approved phrase editor: remove the redundant external frame. */
+.studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}

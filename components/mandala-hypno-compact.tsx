@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
 import Link from "next/link";
@@ -165,12 +166,12 @@ const profileDirections:Record<string,HypnoTestProposal>={
  relationships:{theme:"relationships",problemIndex:2,goal:"dialogue"}
 };
 export function MandalaHypnoCompact({
-  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="",
+  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
   onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string;
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
@@ -578,6 +579,7 @@ export function MandalaHypnoCompact({
       </section>
 
       </details>
+      {children}
       <label className={css.enable}>
         <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>

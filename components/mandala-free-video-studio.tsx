@@ -3248,7 +3248,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(theme==="money")setMoneyScene(id as MoneySceneId);
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
-        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}>
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>
@@ -3304,6 +3304,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <summary>{locale==="ru"?"Запись голоса и расширенные аудионастройки":locale==="es"?"Grabación de voz y audio avanzado":"Voice recording and advanced audio"}<ChevronDown size={18} aria-hidden="true"/></summary>
         {activeWorkspace==="phrases" ? deepAudioPane : null}
       </details>
+      </MandalaHypnoCompact>
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
@@ -3894,24 +3895,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-labelledby="quick-phrases-heading">
-        <div className={videoStyles.quickSectionHeading}>
-          <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
-          <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
-            onClick={()=>openQuickDetailed("video-hypnosis")}><Sparkles size={15} aria-hidden="true"/>
-            {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
-        </div>
-        <div className={videoStyles.quickPhraseRail} role="group" aria-label={locale==="ru"?"Фразы по теме":locale==="es"?"Frases por tema":"Phrases by theme"}>
-          {quickSupportPhrases[locale][theme].map((phrase,index)=><button type="button" key={phrase}
-            data-video-quick-affirmation={index}
-            aria-pressed={affirmations.enabled&&affirmations.custom.trim()===phrase}
-            disabled={recording||preparing} onClick={()=>{
-              setAffirmations(current=>({...current,enabled:true,selected:[],custom:phrase,visibility:["large"]}));
-              setPreviewPlaying(false);
-            }}><span aria-hidden="true">“</span>{phrase}</button>)}
-        </div>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
         {deepHypnoPane}
-
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
