@@ -1834,6 +1834,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||""]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
+  // The Create tap itself must remain reachable when the sound or photo
+  // needs user approval: createQuickVideo() opens the corresponding control.
+  const canStartSelectedFilm=freeVideoSelected && freeFilmSourcesListed &&
+    !micRecording && !preparing && !recording;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
     (!usingFreeFilmCompilation || freeFilmSourcesListed) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
@@ -3878,7 +3882,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
-          canCreate={canGenerate} rendering={recording||preparing}/>
+          canCreate={canStartSelectedFilm} rendering={recording||preparing}
+          createFeedback={preparing||exportUnavailable?notice:""}/>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
