@@ -632,7 +632,7 @@ try {
           await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false);
+          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false);
         } else if (kind === "dao") {
           await visible(hero.locator("img"));
           await visible(main.locator("#what-you-get"));
@@ -640,8 +640,11 @@ try {
             "The compact Wu Xing journey does not repeat an unused process slide");
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
-            "Consent must remain an explicit, unchecked action");
+          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false,
+            "Reply consent must remain an explicit, unchecked action");
+          const stats=capture.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          if(await stats.count())assert.equal(await stats.isChecked(),false,
+            "Source attribution must remain an independent opt-in");
         } else {
           // The former three-offer widget was replaced by the express review.
           // Verify the real current funnel without submitting any visitor data.
