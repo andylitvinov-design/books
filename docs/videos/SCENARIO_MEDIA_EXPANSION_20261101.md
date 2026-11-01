@@ -4,26 +4,26 @@
 
 ## Verified baseline (production branch `codex/public-book-library` before this PR)
 - **44 actual local H.264 MP4 master clips**: 12 money-v1 + 20 film-v2 + 12 Dareful CC BY v3. Local JPG poster for each.
-- **24 presets / 6 currently executable theme buckets**; each preset references 4 *different* clip IDs (96 placements), but cross-preset sharing is extensive. **Only 36 of 44 approved MP4 IDs are used**.
-- From dedicated clip capacity, 52 *additional independent MP4 masters* are needed to allocate four non-shared, same-theme clips to each current preset. This assumes all 44 existing masters can be allocated exactly once and does not yet cover new stress topics.
+- **48 ACTIVE presets / 6 currently executable theme buckets** (24 inline in `components/mandala-free-video-studio.tsx` plus 24 from `free-film-presets-v2.json`); each preset references 4 *different* clip IDs (192 placements), but cross-preset sharing is extensive. **All 44 approved MP4 IDs are used across the full 48-scenario inventory**.
+- From dedicated clip capacity, 148 *additional independent MP4 masters* are needed to allocate four non-shared, same-theme clips to each current preset. This assumes all 44 existing masters can be allocated exactly once and does not yet cover new stress topics.
 - The previous 22 authored instrumental melody IDs in `scripts/generate-mandala-melodies.mjs` were referenced by the editor but their static `.wav` files were **not committed** to the production branch. 17 texture/nature WAV files already exist. `scripts/ensure-mandala-melodies.mjs` now prepares all 24 real 32s WAV masters (22 originals + 2 new classical-theme variations) in `predev` and `prebuild`; no API or paid service.
 
 | Existing theme bucket | Current MP4 masters | Dedicated slots (4 scenarios × 4) | Minimum new distinct MP4 |
 |---|---:|---:|---:|
-| money / Дело | 16 | 16 | 0 |
-| energy / Энергия | 8 | 16 | 8 |
-| life / Жизненные изменения | 8 | 16 | 8 |
-| health / Тело | 9 | 16 | 7 |
-| relationships / Любовь | 2 | 16 | 14 |
-| goals / Цели, дело | 1 | 16 | 15 |
-| **TOTAL** | **44** | **96** | **52** |
+| money / Дело | 16 | 32 | 16 |
+| energy / Энергия | 8 | 32 | 24 |
+| life / Жизненные изменения | 8 | 32 | 24 |
+| health / Тело | 9 | 32 | 23 |
+| relationships / Любовь | 2 | 32 | 30 |
+| goals / Цели, дело | 1 | 32 | 31 |
+| **TOTAL** | **44** | **192** | **148** |
 
-**Стресс**: new fifth goal category is a structural requirement from the owner's newer scenario-tree specification; it is NOT claimed to have a dedicated executable four-scenario topic in the above 24. Four new stress scenarios imply at least **16 further approved dedicated MP4 slots**, unless a future taxonomy demonstrably allocates additional unique footage. Do not mark it ready based on health footage reused from another scenario. This is a *minimum*, not a final target for the expanded topic tree.
+**Стресс**: new fifth goal category is a structural requirement from the owner's newer scenario-tree specification; it is NOT claimed to have a dedicated executable four-scenario topic in the above 24. Four new stress scenarios (one new stress topic) imply at least **16 further approved dedicated MP4 slots**, unless a future taxonomy demonstrably allocates additional unique footage. Do not mark it ready based on health footage reused from another scenario. This is a *minimum*, not a final target for the expanded topic tree.
 
 ## Implemented controls
 
 1. `lib/mandala/scenario-media-coverage.mjs` is the shared deterministic audit and fair assignment planner. Validates real same-origin MP4/JPG paths, approved license metadata, four distinct IDs in every storyboard and counts *cross-scenario reuse*. The planner proposes unique, same-theme clips, giving existing matching scenes priority, filling each stage fairly, and leaving `null` slots rather than inventing assets.
-2. `npm run media:audit` checks catalogue entries AND **physical** local MP4/JPG files (including duplicate master SHA-256), reports shortages and missing original WAVs; `npm run media:plan` previews proposed assignments. Add `--dedicated` as a future release gate when the library is complete. `--apply` refuses to change live preset allocations unless all four dedicated clips for **every** scenario are ready and music is present; manual viewing is still required for artistic consistency.
+2. `npm run media:audit` checks catalogue entries AND **physical** local MP4/JPG files (including duplicate master SHA-256), reports shortages and missing original WAVs; `npm run media:plan` previews proposed assignments. Add `--dedicated` as a future release gate when the library is complete. `--apply` is intentionally disabled until the 24 inline and 24 JSON presets are migrated to one canonical catalog, ensuring that a partial v2-only rewrite can never masquerade as a complete global rebalance. Manual viewing remains required for artistic consistency.
 3. `npm run media:music` prepares each original 32s WAV only if absent or invalid; `npm run media:music:verify` checks them without generation. All 22 are synthesized from project-authored scores rather than uploading commercial recordings. They are generated during build **before Next.js serves the soundtrack URLs**.
 4. `scripts/import-scenario-video-batch.mjs` imports reviewed local **Dareful CC BY 4.0** footage (two different original source videos per new 5s H.264 film) using the existing FFmpeg-based importer. It rejects source pages reused elsewhere in the catalog and duplicate/new scene IDs; it requires *explicit* independently reviewed visual motif labels and EN/RU/ES descriptions. On success it writes the output MP4/JPG, provenance record and the taxonomy the existing Video Studio reads.
 
@@ -56,7 +56,7 @@
    ```
    Names above illustrate the schema; no `checked-scene-01` video is claimed to exist.
 5. **Dry-run**: `node scripts/import-scenario-video-batch.mjs /private/source/batch.json`. Then `node scripts/import-scenario-video-batch.mjs /private/source/batch.json --import`. The latter performs H.264/1080×1920 render, poster generation, sha256 checks, provenance and taxonomy registration. Import is sequential and non-overwriting; run in a dedicated Git working tree, review its diff, commit the produced files through the existing protected PR/CI process. If a batch fails mid-way, preserve logs and continue using a new batch for unprocessed items; never delete already-published files blindly.
-6. `node scripts/audit-scenario-media.mjs --queue` emits **52 individually addressed missing-shot briefs** for the currently available 24 presets, with desired imagery/tags and blank source/licence fields. This is an editorial acquisition queue, **not** an available video catalog. `npm run media:audit` shows remaining deficits. When all required clips exist, `npm run media:plan`, visually review every proposed four-shot storyboard, then `node scripts/audit-scenario-media.mjs --apply --audio`. The active preset catalog is changed **only after complete coverage**. Test portrait iPhone Safari decoding, music attachment, MP4 export and license credits. Do not disable required CI checks to publish.
+6. `node scripts/audit-scenario-media.mjs --queue` emits **148 individually addressed missing-shot briefs** for the currently active 48 presets, with desired imagery/tags and blank source/licence fields. This is an editorial acquisition queue, **not** an available video catalog. `npm run media:audit` shows remaining deficits. When all required clips exist, `npm run media:plan`, visually review every proposed four-shot storyboard, then first migrate the 24 inline and 24 JSON presets into one tested canonical source, and then implement an atomic, fully verified dedicated assignment. Current `--apply` correctly refuses to modify just half the live catalog. Test portrait iPhone Safari decoding, music attachment, MP4 export and license credits. Do not disable required CI checks to publish.
 
 ## Soundtracks: beautiful & recognisable
 
