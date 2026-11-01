@@ -38,7 +38,7 @@ const copy={
    empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
    input:"Или напишите свою цель (необязательно)",
-   selectedGoal:"Выбранная цель",
+   selectedGoal:"Выбранная цель",shotsLabel:"Четыре последовательные сцены выбранного фильма",
  },
  en:{
    title:"Auto Video Director",
@@ -54,7 +54,7 @@ const copy={
    empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
    input:"Or write your own goal (optional)",
-   selectedGoal:"Selected goal",
+   selectedGoal:"Selected goal",shotsLabel:"Four sequential scenes in the selected film",
  },
  es:{
    title:"Auto Video Director",
@@ -70,7 +70,7 @@ const copy={
    empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
    input:"O escribe tu objetivo (opcional)",
-   selectedGoal:"Objetivo elegido",
+   selectedGoal:"Objetivo elegido",shotsLabel:"Cuatro escenas consecutivas del vídeo elegido",
  }
 } as const;
 const allowedDurations=[10,15,20,30,60] as const;
@@ -95,6 +95,10 @@ export function MandalaAutoVideoDirector({
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const length=seconds||proposal?.durationSeconds||30;
+ const storyOptions=proposal
+   ? [proposal.presetId,...proposal.alternativePresetIds]
+     .map(id=>presets.find(item=>item.id===id))
+     .filter((item):item is Preset=>Boolean(item)) : [];
  // Never allow confirming a montage for an old shared goal or theme.
  const showProposal=proposal!==null&&proposalContext?.goal===goal&&proposalContext.theme===theme;
  const choose=()=>{
@@ -150,6 +154,18 @@ export function MandalaAutoVideoDirector({
        <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
+       {storyOptions.length>1 ? <div className={css.storyChoices} data-auto-video-choices>
+         <p className={css.storyChoicesTitle}>{t.variants} · {themeLabels[locale][proposal.theme]}</p>
+         <div className={css.storyGrid} role="group" aria-label={t.variants}>
+           {storyOptions.map(item=><button key={item.id} type="button"
+             data-auto-video-story={item.id} aria-pressed={chosen.id===item.id}
+             disabled={disabled} onClick={()=>setOverrideId(item.id===proposal.presetId?null:item.id)}>
+             <span>{item.label[locale]}</span>
+             {chosen.id===item.id?<Check size={17} aria-hidden="true"/>:null}
+           </button>)}
+         </div>
+       </div>:null}
+       <p className={css.shotsLabel}>{t.shotsLabel}</p>
        <ol className={css.shots} data-auto-video-storyboard>
          {chosen.clips.map((clip,index)=>{
            const scene=sceneById.get(clip);
@@ -175,16 +191,7 @@ export function MandalaAutoVideoDirector({
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
              aria-pressed={length===n} onClick={()=>setSeconds(n)}>{n} s</button>)}
          </div>
-         {proposal.alternativePresetIds.length?<div className={css.adjust}>
-           <span>{t.variants}:</span>
-           {[proposal.presetId,...proposal.alternativePresetIds].map(id=>{
-             const preset=presets.find(p=>p.id===id);
-             return preset?<button type="button" key={id} disabled={disabled}
-               aria-pressed={chosen.id===id}
-               onClick={()=>setOverrideId(id===proposal.presetId?null:id)}>{preset.label[locale]}</button>:null;
-           })}
-         </div>:null}
-       </details>
+        </details>
        <button type="button" data-auto-video-confirm className={css.confirm}
          disabled={disabled} onClick={()=>onApply(chosen.id,length as 10|15|20|30|60)}>
          <Check size={18} aria-hidden="true"/> {t.accept}
