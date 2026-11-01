@@ -492,7 +492,13 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
-  assert.match(studio,/data-video-quick-affirmation=\{index\}/);
+  // Phrase options are now rendered by the shared goal-tree picker rather
+  // than the retired generic five-item rail in the main Studio.
+  assert.match(studio,/<MandalaPhraseCatalog locale=\{locale\}/);
+  const phrasePicker=read("components/mandala-phrase-catalog.tsx");
+  assert.match(phrasePicker,/data-video-quick-affirmation=\{phrase\.variant-1\}/);
+  assert.match(phrasePicker,/data-video-phrase-idea=\{item\.id\}/);
+  assert.match(phrasePicker,/data-video-phrase-audioguide/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
