@@ -1,0 +1,46 @@
+name: HH PR 10-minute watchdog
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Inspect only; no CI retries, PR comments or merge dispatch'
+        required: false
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  actions: write
+  checks: read
+  issues: write
+  pull-requests: read
+concurrency:
+  group: hh-pr-ten-minute-watchdog
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Read trusted watchdog from default branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Test watchdog decisions without network
+        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs
+      - name: Reconcile complete PR inventory; retry transient CI; hand off red source; dispatch guarded merge
+        uses: actions/github-script@v7
+        env:
+          HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
+            await run({
+              github, core, context,
+              hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
+              dryRun: String(context.payload.inputs?.dry_run ?? 'false') === 'true'
+            });
