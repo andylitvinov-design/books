@@ -100,7 +100,9 @@ export function MandalaAutoVideoDirector({
      .map(id=>presets.find(item=>item.id===id))
      .filter((item):item is Preset=>Boolean(item)) : [];
  // Never allow confirming a montage for an old shared goal or theme.
- const showProposal=proposal!==null&&proposalContext?.goal===goal&&proposalContext.theme===theme;
+ const showProposal=proposal!==null&&proposalContext?.goal===goal&&
+   (proposalContext.theme===theme ||
+     (activePresetId!==null&&activePresetId===chosen?.id&&proposal.theme===theme));
  const choose=()=>{
    setSelectedGoalId(null);
    setProposalContext({goal,theme});
