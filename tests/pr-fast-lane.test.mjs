@@ -906,7 +906,7 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
   assert.match(repair,/actions: write/);
   assert.match(repair,/concurrency:/);
   assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
-  assert.match(repair,/new release-ready SUCCESS still required/);
+  assert.match(repair,/current verified Core and specialist CI still required/);
 });
 
 test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
@@ -929,6 +929,14 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('branch: pr.head.ref, per_page: 100'), 'must query PR branch because CI head_sha may be synthetic');
   assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
+  assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
+  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
+    'must honor legacy branch protection until admin migration');
+  assert.ok(enable.includes('job.name === "release-ready" && job.status === "completed"'),
+    'must not bypass presently required release-ready');
+  assert.ok(enable.includes('const coreRequired = Array.isArray(required) && required.includes("hh-core-verified")'),
+    'must recognize migrated protection without weakening actual CI');
+
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
   assert.ok(enable.includes('"$current_method" == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
