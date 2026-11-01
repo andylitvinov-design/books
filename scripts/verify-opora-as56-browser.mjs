@@ -45,7 +45,8 @@ try {
     // The current V7 lesson displays persisted AS-5.9 wording; compare the
     // hydrated page with that exact authored edition, not archived AS-5.6 copy.
     assert.ok(edition && edition.practice && edition.purpose)
-    const brief = edition.practice
+    // The AS-6.0 experiment is the authoritative one-action practice text.
+    const brief = oporaAs60VariedDay(5,locale).practice
     const support = {title:edition.purposeTitle, body:edition.purpose}
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
