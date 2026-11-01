@@ -7,6 +7,7 @@ on:
     paths:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
@@ -64,6 +65,7 @@ on:
     paths:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'

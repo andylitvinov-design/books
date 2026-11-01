@@ -9,6 +9,7 @@ on:
       - 'components/app/practice-dashboard.css'
       - 'components/app/practice-workspace.jsx'
       - 'app/api/app/practice/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/services/**'
       - 'components/home-master-path.*'
       - 'components/profi-hub.*'

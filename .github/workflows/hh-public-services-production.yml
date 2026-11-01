@@ -67,6 +67,7 @@ on:
       - 'app/api/public/**'
       - 'app/api/payments/**'
       - 'app/api/app/practitioner/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/services/**'
       - 'app/api/app/bookings/**'
       - 'components/holistic-*'

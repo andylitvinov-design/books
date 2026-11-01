@@ -7,6 +7,7 @@ on:
       - 'components/app/cabinet-journey.*'
       - 'components/app/profile-domains.jsx'
       - 'app/api/app/cabinet/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'tests/cabinet-learning-journey.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - 'components/app/my-progress.*'

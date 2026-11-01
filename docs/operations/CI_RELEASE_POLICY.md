@@ -75,7 +75,11 @@ Next app API dispatcher, or `components/app/app-workspace.jsx` may not launch
 unrelated Course Presets, Practice Visual, Personal Coaching, Site Video,
 Public Services, Profile, Cabinet, or Interpretation suites merely because
 Messenger changed. Owned course/editor/report/service/API paths remain live;
-manual dispatch is retained for full diagnostics.
+manual dispatch is retained for full diagnostics. The **exact shared**
+Next.js API dispatcher `app/api/app/[...path]/route.js` is a distinct
+high-risk cross-domain dependency: its actual modification still dispatches
+Course, Cabinet, Practice Visual, Public Services, Site Video, Coaching and
+Interpretation owner checks. Direct isolated Messenger API paths do not.
 
 **Coverage that cannot be removed:** unconditional Core classification/lint
 (and TypeScript/Next build for application changes; CI-policy-only changes retain

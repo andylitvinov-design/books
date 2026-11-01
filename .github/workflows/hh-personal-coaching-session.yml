@@ -20,6 +20,7 @@ on:
       - 'components/academy-hub.tsx'
       - 'components/academy-tradition-coaching-landing*'
       - 'app/api/app/coaching/**'
+      - 'app/api/app/\[...path\]/route.js'
       - 'app/api/app/personal-coaching/**'
       - 'app/**/app/coaching/**'
       - 'app/**/app/personal-coaching/**'

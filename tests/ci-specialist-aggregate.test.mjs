@@ -971,6 +971,17 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
   const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
   assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
 
+  // Unlike a direct Messenger route, the shared API dispatcher must retain
+  // all product/security owners of its exact source.
+  const shared = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/app/[...path]/route.js',
+  ]});
+  for (const owner of [
+    'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+    'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+    'practice-visual-browser','practice-visual-services','ia-v2','hh-app-r1','hh-app-browser',
+  ]) assert.ok(shared.includes(root + owner + '.yml'), 'Shared API router must retain ' + owner);
+
   const changedShell = ['components/app/app-workspace.jsx'];
   const shellRuns = expectedWorkflows({base: all, current: all, changed:changedShell});
   for (const owner of ['hh-app-r1','hh-app-browser','ia-v2']) {
