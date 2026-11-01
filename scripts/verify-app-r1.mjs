@@ -546,7 +546,7 @@ async function verifyPublicServiceConversionJourneys(){
      await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0)
      for(const channel of ['whatsapp','telegram'])
       await expect(form.locator('button[data-compact-channel="'+channel+'"]')).toBeVisible()
-     const alternative=servicePage.locator('main[data-core-service-detail="'+kind+'"] section').last().locator('details')
+     const alternative=servicePage.locator('main[data-core-service-detail="'+kind+'"] > section').last().locator(':scope > details')
      await expect(alternative).toHaveCount(1)
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
