@@ -10,18 +10,20 @@ function fixture(){
 }
 test('selects only direct imports for every modified file',()=>{
  const f=fixture();try{
-  f.put('tests/a.test.mjs',"import '../src/a.mjs';\n");
-  f.put('tests/b.test.cjs',"require('../src/b.js');\n");
+  f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('a',()=>{});\n");
+  f.put('tests/b.test.cjs',"require('../src/b.js');\nconst test=require('node:test');\ntest('b',()=>{});\n");
   f.put('tests/unrelated.test.mjs',"const text=\"import '../src/c.js'\";\n/*\nimport '../src/c.js';\n*/\n");
   assert.deepEqual(selectTests(f.root,['src/a.mjs','src/b.js'],['tests/a.test.mjs','tests/b.test.cjs','tests/unrelated.test.mjs']),['tests/a.test.mjs','tests/b.test.cjs']);
   assert.equal(selectTests(f.root,['src/c.js'],['tests/unrelated.test.mjs']),null);
   f.put('tests/template.test.mjs',"const x = `\nimport '../src/c.js';\n`;\n");
   assert.equal(selectTests(f.root,['src/c.js'],['tests/template.test.mjs']),null);
+  f.put('tests/empty.test.mjs',"import '../src/c.js';\n");
+  assert.equal(selectTests(f.root,['src/c.js'],['tests/empty.test.mjs']),null);
  }finally{f.cleanup()}
 });
 test('missing coverage, malformed paths, symlinks and excessive test scope fail closed',()=>{
  const f=fixture();try{
-  f.put('tests/a.test.mjs',"import '../src/a.mjs';\n");
+  f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('a',()=>{});\n");
   fs.symlinkSync(path.join(f.root,'tests/a.test.mjs'),path.join(f.root,'tests/link.test.mjs'));
   assert.equal(selectTests(f.root,['src/a.mjs','src/b.js'],['tests/a.test.mjs']),null);
   assert.equal(selectTests(f.root,['../escape.js'],['tests/a.test.mjs']),null);
@@ -41,6 +43,8 @@ test('CLI executes a real related test and rejects failure',()=>{
   f.put('src/a.mjs','export const value=2;\n');
   assert.notEqual(spawnSync(process.execPath,[gate,'src/a.mjs'],{cwd:f.root}).status,0);
   assert.notEqual(spawnSync(process.execPath,[gate,'src/missing.mjs'],{cwd:f.root}).status,0);
+  f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('skip',{skip:true},()=>{});\n");
+  assert.notEqual(spawnSync(process.execPath,[gate,'src/a.mjs'],{cwd:f.root}).status,0);
  }finally{f.cleanup()}
 });
 

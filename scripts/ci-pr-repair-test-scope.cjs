@@ -25,6 +25,9 @@ function selectTests(root,changed,candidates){
   // Ambiguous dynamic aliases or indirect coverage intentionally fail closed.
   const lines=source.replace(/\/\*[\s\S]*?\*\//g,'').split(/\r?\n/)
     .filter(l=>!/^\s*\/\//.test(l));
+  const hasNodeTest=lines.some(line=>/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*)['"]node:test['"]/.test(line));
+  const hasTestCall=lines.some(line=>/^\s*(?:test|it|describe)\s*\(/.test(line));
+  if(!hasNodeTest||!hasTestCall)continue;
   let hit=false;
   for(const line of lines){
    const match=line.match(/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|}\s*from\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/);
@@ -46,8 +49,13 @@ function main(){
  if(!tests)throw Error('NO_VERIFIED_BOUNDED_RELATED_TESTS');
  console.log('HH_REPAIR_RELATED_TESTS '+JSON.stringify(tests));
  const env={...process.env};delete env.NODE_TEST_CONTEXT;
- const result=spawnSync(process.execPath,['--test',...tests],{stdio:'inherit',timeout:180000,env});
- if(result.status!==0)throw Error('RELATED_TESTS_FAILED_OR_TIMED_OUT');
+ const result=spawnSync(process.execPath,['--test','--test-reporter=tap',...tests],
+   {encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000,env});
+ if(result.stdout)process.stdout.write(result.stdout);
+ if(result.stderr)process.stderr.write(result.stderr);
+ const passes=[...(result.stdout||'').matchAll(/^# pass (\d+)\s*$/gm)];
+ if(result.status!==0||result.error||!passes.length||Number(passes.at(-1)[1])<1)
+   throw Error('RELATED_TESTS_FAILED_OR_TIMED_OUT_OR_ALL_SKIPPED');
 }
 if(require.main===module){try{main()}catch(error){console.error('HH_REPAIR_TEST_GATE '+error.message);process.exitCode=1;}}
 module.exports={selectTests};
