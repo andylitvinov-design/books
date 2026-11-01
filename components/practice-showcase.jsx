@@ -136,7 +136,7 @@ const TOOLS = [
 const TABS = [
   { key:'home', label:'home', Icon:Home },
   { key:'practice', label:'practice', Icon:Leaf },
-  { key:'requests', label:'forms', Icon:ClipboardList },
+  { key:'messages', label:'inbox', Icon:MessageCircle },
   { key:'materials', label:'assets', Icon:BookOpen },
   { key:'profile', label:'settings', Icon:UserRound },
 ]
@@ -468,9 +468,9 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </section>
     </div>}
 
-    <nav className={styles.bottomNav} aria-label={t.practice}>
+    <nav className={styles.bottomNav} aria-label={locale==='ru'?'Быстрая навигация':locale==='es'?'Navegación rápida':'Quick navigation'} data-hh-five-tab-dock>
       {TABS.map(({key, label, Icon}) =>
-        <button key={key} type="button" className={styles.navItem + (key === 'practice' ? ' ' + styles.navActive : '')}
+        <button key={key} type="button" data-mobile-tab={key} className={styles.navItem + (key === 'practice' ? ' ' + styles.navActive : '')}
           onClick={() => void openAction(key)} aria-current={key === 'practice' ? 'page' : undefined}>
           <Icon size={21} aria-hidden="true"/><span>{t[label]}</span>
         </button>

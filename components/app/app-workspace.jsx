@@ -586,12 +586,19 @@ export default function AppWorkspace({ locale, path = [] }) {
   ]
   // Five prominent mobile destinations mirror the Orders / Clients design.
   // The complete six-section Cabinet remains available in its account menu.
+  // Same five primary tabs as Messages. Progress and Settings remain in the
+  // authenticated account menu; protected practitioner editing stays unchanged.
   const mobileNav = [
-    { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
+    { id: 'practice', label: locale === 'ru' ? 'Практика' : locale === 'es' ? 'Práctica' : 'Practice', href: '/' + locale + '/practice', icon: Leaf },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
-    { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
-    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+    { id: 'materials', label: locale === 'ru' ? 'Материалы' : locale === 'es' ? 'Materiales' : 'Materials', href: data.practitioner || data.practice ? root + '/practice?panel=materials' : root + '/history', icon: BookOpen },
+    { id: 'profile', label: locale === 'ru' ? 'Профиль' : locale === 'es' ? 'Perfil' : 'Profile', href: data.practitioner || data.practice ? root + '/practice?panel=profile' : root + '/portrait', icon: UserRound },
   ]
+  const mobileNavIsActive = id => id === 'profile'
+    ? ['portrait','settings','labs'].includes(page)
+    : id === 'materials' ? page === 'history'
+      : id === 'messages' ? page === 'messages'
+        : id === 'practice' && page === 'practice'
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
     (id === 'course' && ['business','coaching'].includes(page)) ||
@@ -820,14 +827,14 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : locale === 'es' ? 'Navegación rápida' : 'Quick navigation'} data-hh-five-tab-dock>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
         ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
         {mobileNav.map(({ id, label, href, icon: Icon }) => (
           <Link key={id} href={href} prefetch={false}
-            aria-current={navIsActive(id) ? 'page' : undefined}
+            aria-current={mobileNavIsActive(id) ? 'page' : undefined} data-mobile-tab={id}
           ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
         ))}
       </nav>}
