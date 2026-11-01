@@ -21,15 +21,29 @@ function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
  if(!ranked.length)return [];
- // Three high-impact entries plus rotating fairness candidates: low priority
- // cannot monopolize the queue, nor starve forever behind a long P1 backlog.
- const fast=ranked.slice(0,Math.min(3,ranked.length));
- const chosen=new Set(fast.map(x=>x.number));
- const rest=ranked.filter(x=>!chosen.has(x.number)).sort((a,b)=>a.number-b.number);
- const rotationSize=Math.min(MAX_INSPECT-fast.length,rest.length);
- const offset=rest.length?(Math.floor(now/600000)*Math.max(1,rotationSize))%rest.length:0;
- const rotating=Array.from({length:rotationSize},(_,i)=>rest[(offset+i)%rest.length]);
- return [...fast,...rotating].map(pr=>taskFor(pr,priorityFor(pr,now)));
+ // Reserve one candidate per genuinely different worker lane. A large
+ // backlog of P1 manual conflicts must not hide a lower-tier source repair
+ // or an available CI bootstrap from the bounded MAX_INSPECT slice.
+ // Source repair precedes conflict triage because the latter can only hand
+ // non-deterministic conflicts to a human / authorized coding agent.
+ const leaders=['repair','ci','conflict'].flatMap(lane=>{
+  const entry=ranked.find(pr=>laneOf(pr)===lane);
+  return entry?[entry]:[];
+ });
+ const picked=[...leaders];
+ const chosen=new Set(picked.map(pr=>pr.number));
+ // Retain fast high-priority inspection without evicting a lane leader.
+ for(const pr of ranked.slice(0,3))if(!chosen.has(pr.number)&&picked.length<MAX_INSPECT){
+  picked.push(pr);chosen.add(pr.number);
+ }
+ const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
+ const room=Math.min(MAX_INSPECT-picked.length,rest.length);
+ const offset=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
+ for(let i=0;i<room;i++){
+  const pr=rest[(offset+i)%rest.length];
+  picked.push(pr);
+ }
+ return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
