@@ -165,4 +165,84 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    summary.wouldDispatch?'DRY_RUN_CANDIDATES':'NO_SAFE_DISPATCH';
  return finish();
 }
-module.exports={trustedContext,planCandidates,run};
+/**
+ * Zero-cost, event-driven liveness fallback for Direction Watcher. Existing
+ * Control Tower gets worker/Watchdog completion events; its single-writer
+ * concurrency lease ensures two callbacks cannot race the same wake decision.
+ * Do not claim cron is fixed: this is opportunistic during real event traffic.
+ * GITHUB_TOKEN workflow_dispatch is GitHub's documented recursion exception.
+ */
+const DIRECTION_WORKFLOW='hh-pr-direction-watcher.yml';
+const DIRECTION_IDLE_MS=11*60*1000;
+const DIRECTION_ACTIVE=new Set(['queued','in_progress','pending','requested','waiting']);
+async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=false}){
+ const state={decision:'NOT_ELIGIBLE',ageMinutes:null,dispatchAccepted:false};
+ const log=()=>core.info('HH_DIRECTION_EVENT_WAKE: '+JSON.stringify(state));
+ if(dryRun||!trustedContext(context)||context.eventName!=='workflow_run'){
+  log();return state;
+ }
+ if(!Number.isFinite(now)){state.decision='INVALID_CLOCK';log();return state;}
+ const {owner,repo}=context.repo;
+ let runs,history;
+ try{
+  history=(await github.rest.actions.listWorkflowRuns({
+   owner,repo,workflow_id:DIRECTION_WORKFLOW,per_page:20,page:1
+  })).data;
+  runs=history?.workflow_runs;
+ }catch(error){
+  state.decision='HISTORY_UNAVAILABLE';state.error=String(error.message||error).slice(0,140);
+  log();return state;
+ }
+ if(!Array.isArray(runs)||!Number.isSafeInteger(history?.total_count)||
+    history.total_count<runs.length||(history.total_count>0&&!runs.length)){
+  state.decision='INCOMPLETE_HISTORY';log();return state;
+ }
+ if(runs.some(x=>DIRECTION_ACTIVE.has(x.status))){
+  state.decision='WATCHER_ALREADY_RUNNING';log();return state;
+ }
+ if(runs.some(x=>x.status!=='completed'||!Number.isFinite(Date.parse(x.created_at||'')))){
+  state.decision='UNKNOWN_RUN_STATE';log();return state;
+ }
+ const newest=runs.length?Math.max(...runs.map(x=>Date.parse(x.created_at))):null;
+ if(newest!==null){
+  const age=now-newest;
+  state.ageMinutes=Math.floor(age/60000);
+  if(age<0&&age>=-60000){state.decision='RECENT_RUN';log();return state;}
+  if(age<0){state.decision='INCONSISTENT_CLOCK';log();return state;}
+  if(age<DIRECTION_IDLE_MS){state.decision='RECENT_RUN';log();return state;}
+ }
+ // An older in-progress/queued run may be hidden beyond the first history
+ // page during an Actions event storm: check these statuses independently.
+ try{
+  for(const status of ['in_progress','queued']){
+   const active=(await github.rest.actions.listWorkflowRuns({
+    owner,repo,workflow_id:DIRECTION_WORKFLOW,status,per_page:1
+   })).data;
+   if(!Number.isSafeInteger(active?.total_count)||
+      !Array.isArray(active?.workflow_runs)){
+    state.decision='ACTIVE_HISTORY_UNVERIFIED';log();return state;
+   }
+   if(active.total_count>0){
+    state.decision='WATCHER_ALREADY_RUNNING';log();return state;
+   }
+  }
+ }catch(error){
+  state.decision='ACTIVE_HISTORY_UNAVAILABLE';
+  state.error=String(error.message||error).slice(0,140);
+  log();return state;
+ }
+ try{
+  await github.rest.actions.createWorkflowDispatch({
+   owner,repo,workflow_id:DIRECTION_WORKFLOW,ref:DEFAULT,
+   inputs:{dry_run:'false',batch:'0'}
+  });
+  state.decision='EVENT_WAKE_ACCEPTED';
+  state.dispatchAccepted=true;
+ }catch(error){
+  state.decision='DISPATCH_UNAVAILABLE';
+  state.error=String(error.message||error).slice(0,140);
+ }
+ log();return state;
+}
+module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,
+ DIRECTION_IDLE_MS,DIRECTION_WORKFLOW};
