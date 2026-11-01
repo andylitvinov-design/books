@@ -113,6 +113,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
+      await phrases.locator("[data-hypno-pending-approval]").waitFor({state:"visible"});
+      await phrases.locator("[data-hypno-approve]").click();
+      await expect(phrases.locator("[data-hypno-pending-approval]")).toHaveCount(0);
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
@@ -239,6 +242,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-narration-stale]")).toHaveCount(0);
+      await page.locator('[data-workspace-section="phrases"] [data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       await page.locator('[data-video-quick-control="video"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);

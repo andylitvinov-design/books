@@ -97,7 +97,8 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
   assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
     "reuse the approved single phrase editor");
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/onPhraseChoose=\{stageCatalogPhrase\}/);
+  assert.doesNotMatch(studio,/onPhraseChoose=\{phrase=>\{\s*setAffirmations/);
 });
 
 test("each tone keeps distinct wording for the same selected story/idea",()=>{

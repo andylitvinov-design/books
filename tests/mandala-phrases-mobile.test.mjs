@@ -51,7 +51,9 @@ test("voice and music are consecutive, reuse canonical sound attach/play functio
   assert.equal((studio.match(/const deepAudioPane =/g)||[]).length,1);
   assert.match(studioCss,/\.phraseVoiceSection,\.phraseMusicSection/);
   assert.match(studioCss,/\.phraseMusicList\{display:grid;gap:9px/);
-  assert.match(studio,/AI voice presets are not yet export-ready/);
+  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
+  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+  assert.match(studio,/attachedAudio\?\.kind==="file"&&attachedAudio\.narration===true/);
 });
 
 test("single approved phrases workspace with voice/music before the final Create action",()=>{
@@ -60,5 +62,31 @@ test("single approved phrases workspace with voice/music before the final Create
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
   assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio.slice(studio.indexOf("data-hypno-voice"),studio.indexOf("data-hypno-music")),/<MandalaAffirmationVoice locale=\{locale\}/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
+});
+
+test("ready, selected and custom changes are drafts until approval",()=>{
+ const ready=phrases.split("  const ready=()=>{")[1]?.split("  const changeTheme=")[0]||"";
+ const choice=phrases.split("  function toggleSelected(i:number){")[1]?.split("  const toggle=")[0]||"";
+ const own=phrases.split("  function addCustom(){")[1]?.split("  function toggleSelected")[0]||"";
+ const approve=phrases.split("  function approvePhrases(){")[1]?.split("  const selectedScene=")[0]||"";
+ assert.match(ready,/setDraftState\(\{model:"wave"/);
+ for(const part of [ready,choice,own])assert.doesNotMatch(part,/\bonChange\(/);
+ assert.match(choice,/setDraftState\(\{model:"wave"/);
+ assert.match(own,/setStagedCustom\(custom\)/);
+ assert.match(approve,/onChange\(next\)/);
+ assert.match(phrases,/data-hypno-pending-approval/);
+ assert.match(phrases,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingChanges\}/);
+ assert.doesNotMatch(phrases,/MandalaVideoAffirmations locale=\{locale\}/);
+});
+
+test("prepared phrase catalog stages selection through the one approval gate",()=>{
+  assert.match(studio,/<MandalaPhraseCatalog/);
+  assert.match(studio,/onPhraseChoose=\{stageCatalogPhrase\}/);
+  assert.match(studio,/\{\(stageCatalogPhrase:\(text:string\)=>void,selectedDraftPhrase:string\)=><>/);
+  assert.match(phrases,/setStagedCustom\(cleaned\);setStagedSelection\(\[\]\)/);
+  assert.match(phrases,/typeof children==="function"\?children\(stageCatalogPhrase,displayedCustom\):children/);
+  assert.match(studio,/selectedPhrase=\{selectedDraftPhrase\}/);
+  assert.doesNotMatch(studio,/onPhraseChoose=\{phrase=>\{\s*setAffirmations/);
 });
