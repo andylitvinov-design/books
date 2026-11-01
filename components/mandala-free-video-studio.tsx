@@ -40,6 +40,7 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 
@@ -1856,13 +1857,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
     (audioPace==="all"||track.pace===audioPace));
-  const audioMatches=[...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
-  const availableAudioTracks=[...scenarioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  const curatedMatches=recommendCuratedAudio({
+    theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
+    voiceFriendly:audioVoiceFriendly,
+  });
+  const audioMatches=[...matchingScenarioTracks,...curatedMatches,...baseAudioMatches,...classicMatches];
+  const availableAudioTracks=[...scenarioTracks,...curatedAudioTracks,...classicalAudioTracks,...mandalaAudioTracks];
   const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
     theme:audioTheme,kind:"melody",wish,
   })).slice(0,4);
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
+  const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
     ?attachedAudio.file.name:attachedAudio.kind==="presets"
       ?attachedAudio.ids.map(id=>availableAudioTracks.find(item=>item.id===id)?.name[locale]||id).join(" + ")
@@ -3134,6 +3140,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.audioNowPlaying} data-video-audio-now>
             <span>{audioUi.now}</span>
             <strong>{uploadedAudio?uploadedAudio.file.name:selectedAudio?.name[locale]||ui.noMusic}</strong>
+            {reviewedRecording&&!uploadedAudio ? <small data-reviewed-music-license>
+              {locale==="ru"?"Запись по лицензии":locale==="es"?"Grabación licenciada":"Licensed recording"}: {reviewedRecording.rights.license} · {reviewedRecording.rights.creator} / {reviewedRecording.rights.performer}
+              {" · "}<a href={reviewedRecording.rights.sourcePage} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Источник":locale==="es"?"Fuente":"Source"}
+              </a>{" · "}<a href={reviewedRecording.rights.licenseUrl} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Лицензия":locale==="es"?"Licencia":"License"}
+              </a>
+            </small> : null}
             <button type="button" data-video-music="none" onClick={()=>{setAudioAuto(false);chooseMusic("none");}}
               aria-pressed={!uploadedAudio&&music==="none"}>{ui.noMusic}</button>
           </div>
