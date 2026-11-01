@@ -113,3 +113,17 @@ test('IA acceptance scrolls each menu destination into view without omitting it'
   assert.match(source, /for \(const link of await links\.all\(\)\)\s*\{\s*await link\.scrollIntoViewIfNeeded\(\)/)
   assert.match(source, /await inViewport\(link, label \+ '\/site-menu-link'\)/)
 })
+
+test('PR WebKit public navigation stays bounded while full manual/Chromium and private Safari coverage remain', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  const browser = source.slice(source.indexOf('async function verifyPublicHeaderMatrix'), source.indexOf('async function verifyPublicDiscoveryNavigation'))
+  assert.match(browser, /const fullHeaderWidths = \[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/)
+  assert.match(browser, /const prWebkitHeaderWidths = \[320, 390, 768, 1280\]/)
+  assert.match(browser, /engine === 'webkit' && process\.env\.GITHUB_EVENT_NAME === 'pull_request'/)
+  assert.match(browser, /for \(const width of publicHeaderWidths\)/)
+  assert.match(browser, /await expect\(header\)\.toBeVisible\(\)/)
+  assert.doesNotMatch(browser, /waitForLoadState\('networkidle'\)/)
+  assert.match(source, /await verifyPublicHeaderMatrix\(sp, 'webkit'\)/)
+  assert.match(source, /await authenticateOwner\(safari\)/)
+  assert.match(source, /await expect\(sp\.locator\('\.canonical-progress-item'\)\)\.toHaveCount\(2\)/)
+})

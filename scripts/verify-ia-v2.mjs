@@ -196,15 +196,22 @@ async function verifyPublicHeaderMatrix(page, engine) {
     if (!fits) console.error('IA_CONTROL_GEOMETRY', label, JSON.stringify({box, viewport:{width,height}}))
     assert.ok(fits, label + ': visible 44px control must fit viewport')
   }
+  // Keep all eleven breakpoints in Chromium PR and manual full-matrix QA.
+  // PR WebKit uses representative mobile/tablet/desktop widths to avoid
+  // hundreds of repeated route navigations before private Safari assertions.
+  const fullHeaderWidths = [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]
+  const prWebkitHeaderWidths = [320, 390, 768, 1280]
+  const publicHeaderWidths = engine === 'webkit' && process.env.GITHUB_EVENT_NAME === 'pull_request'
+    ? prWebkitHeaderWidths : fullHeaderWidths
   for (const locale of ['en', 'ru', 'es']) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
-      for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
+      for (const width of publicHeaderWidths) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
         await resizePublicViewport(page, { width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
-        await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
+        await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
         const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
@@ -298,7 +305,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
+  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at ' + publicHeaderWidths.join('/') + 'px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
   } finally { diagnostic.stop() }
 }
 async function verifyPublicDiscoveryNavigation(page, engine) {
