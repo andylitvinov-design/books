@@ -66,8 +66,8 @@ test("one original video preview and export share the selected symbolic layer",(
   assert.match(s,/setAppliedStory\(next\)/);
   assert.match(s,/storySelectionItems\(next\)\.some\(item=>item\.capability!=="local"\)/);
   assert.match(s,/storySelectionItems\(appliedStory\)\.length>0\|\|/);
-  assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,4,
-    "first preview + animated preview + first recording frame + recorded frames");
+  assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,5,
+    "first preview + animated preview + native recording + WebCodecs MP4 fallback");
   assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds\]\),appliedStory/,
     "film scene, cut positions and character overlay all invalidate the previous export");
   assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory\]\);/);

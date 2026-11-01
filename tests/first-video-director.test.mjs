@@ -790,3 +790,33 @@ test("food painter is used by shared preview and real MediaRecorder, without lic
   assert.match(editor,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(editor,/FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION/);
 });
+
+
+test("WebKit without MediaRecorder encodes actual first-video Canvas MP4 using WebCodecs",()=>{
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const helper=readFileSync(new URL("../lib/mandala/canvas-webcodecs-mp4.ts",import.meta.url),"utf8");
+  const pkg=JSON.parse(readFileSync(new URL("../package.json",import.meta.url),"utf8"));
+  const lock=JSON.parse(readFileSync(new URL("../package-lock.json",import.meta.url),"utf8"));
+  assert.equal(pkg.dependencies.mediabunny,"1.65.0");
+  assert.equal(lock.packages[""].dependencies.mediabunny,"1.65.0");
+  assert.ok(lock.packages["node_modules/mediabunny"].integrity.startsWith("sha512-"));
+  assert.match(helper,/VideoEncoder\.isConfigSupported/);
+  assert.match(helper,/new CanvasSource\(canvas/);
+  assert.match(helper,/new Mp4OutputFormat\(\)/);
+  assert.match(helper,/await source\.add\(second/);
+  assert.match(helper,/await output\.finalize\(\)/);
+  assert.match(helper,/await output\.cancel\(\)/);
+  assert.match(helper,/header\[4\] !== 0x66/);
+  assert.match(editor,/typeof MediaRecorder === "undefined"/);
+  assert.match(editor,/cinematicPlan\?\.version === "hh-cinematic-storyboard-v1"/);
+  assert.match(editor,/!usingFreeFilmCompilation && !attachedAudio/);
+  assert.match(editor,/await import\("@\/lib\/mandala\/canvas-webcodecs-mp4"\)/);
+  assert.match(editor,/paintCinematicFrame\(ctx,image,effect,second/);
+  assert.match(editor,/paintStoryMotifs\(ctx,second,appliedStory\)/);
+  assert.match(editor,/paintVideoAffirmations\(ctx,second,affirmationLines,affirmations\)/);
+  assert.match(editor,/webCodecJobRef\.current\?\.abort\(\)/);
+  assert.match(editor,/setResult\(\{url:URL\.createObjectURL\(movie\),extension:"mp4"/);
+  // No private request leaves the device, and no audio selection is silently discarded.
+  assert.ok(!helper.includes("fetch("));
+  assert.ok(!helper.includes("MediaRecorder("));
+});
