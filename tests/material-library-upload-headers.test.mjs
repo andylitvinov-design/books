@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 const source=readFileSync(new URL('../components/practitioner-materials-cabinet.jsx',import.meta.url),'utf8')
 const start=source.indexOf('function uploadFile(')
 const end=source.indexOf('\nexport ',start)
-const fragment=source.slice(start,end)
+const fragment='async '+source.slice(start,end) // preserve the real async function with Safari proxy branch
 async function exercise(code,mime='video/quicktime'){
  const calls=[]
  class XHR {
