@@ -760,3 +760,77 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
   assert.equal(ambiguous.result.protectionUnverified,1);
   assert.equal(ambiguous.dispatches,0);
 });
+
+
+test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
+  const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const success=name=>({name,conclusion:'success',status:'completed'});
+  const fail=name=>({name,conclusion:'failure',status:'completed'});
+  const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
+  assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
+  assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
+  assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
+    fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
+  assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
+  assert.equal(classifyCoreFailureJobs(null),'UNVERIFIED');
+  assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
+    {id:1,name:'release-ready',status:'completed',conclusion:'failure'}
+  ]},'release-ready'),true);
+  assert.equal(latestCompletedFailedGate({total_count:1,check_runs:[
+    {id:1,name:'release-ready',status:'in_progress',conclusion:null}
+  ]},'release-ready'),false);
+});
+
+test('green Core plus failed mandatory legacy release gate queues one gate-review not code repair',async()=>{
+  const source=pr(2508);
+  const live={...source,state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
+  let labels=0,comments=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[source]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:{
+      total_count:1,check_runs:[{id:21,name:check_name,status:'completed',
+        conclusion:check_name==='hh-core-verified'?'success':'failure',
+        app:{id:15368}}]
+    }})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['release-ready']}
+    }}})},
+    issues:{addLabels:async({labels:items})=>{
+      assert.deepEqual(items,['hh:release-gate-review']);
+      labels++;return {data:[]};
+    },createComment:async()=>{comments++;throw Error('wrong handoff');}}
+  },request:async()=>{throw Error('no CI or protected merge dispatch necessary');}};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(labels,1);
+  assert.equal(comments,0);
+  assert.equal(result.legacyRequiredPending,1);
+  assert.equal(result.releaseGateOnly,1);
+  assert.equal(result.releaseGateQueued,1);
+  assert.equal(result.sourceRepairQueued,0);
+});
+
+test('failed legacy gate still pending is not prematurely labeled as root failure',async()=>{
+  const source=pr(2509);
+  const live={...source,state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
+  let labels=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[source]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:{
+      total_count:1,check_runs:[{id:21,name:check_name,
+        status:check_name==='hh-core-verified'?'completed':'in_progress',
+        conclusion:check_name==='hh-core-verified'?'success':null,
+        app:{id:15368}}]
+    }})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['release-ready']}
+    }}})},
+    issues:{addLabels:async()=>{labels++;}}
+  },request:async()=>{throw Error('unexpected workflow dispatch');}};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(labels,0);
+  assert.equal(result.releaseGateOnly,0);
+  assert.equal(result.releaseGateQueued,0);
+  assert.equal(result.legacyRequiredPending,1);
+});
