@@ -150,6 +150,7 @@ test("verified script is submitted through the only existing renderer and soundt
   assert.match(chat,/parseAiVideoCutSuggestion/);
   assert.match(chat,/onConfirm\(\{scenario:executable\}\)/);
   assert.match(chat,/data-video-chat-ai-cut/);
+  assert.match(chat,/approvedPlanKeyRef.current!==planKey/);
   assert.match(editor,/scenario\.edit,scenario\.aspect/);
   assert.match(editor,/setAttachedAudio\(soundtrack==="none"\?null/);
   assert.match(editor,/setSoundVolume\(scenario\.audio\.volumePercent\)/);

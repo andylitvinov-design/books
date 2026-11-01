@@ -76,3 +76,9 @@ test('imperatives only perform a stage-appropriate explicit user action',()=>{
  assert.equal(parseVideoChatAction('Создай видео','review'),null);
  assert.equal(parseVideoChatAction('Подтверждаю','ready'),null);
 });
+test('inflected food and person requests require honest symbolic consent',()=>{
+  for(const term of ['Еду','Едой','Супы и блюда','Женщина на улице','A woman cooking']){
+    assert.equal(parseVideoChatIntent('Сделай видео: '+term).specificVisual,true,term);
+  }
+  assert.equal(parseVideoChatIntent('Любовь и спокойствие').specificVisual,false);
+});

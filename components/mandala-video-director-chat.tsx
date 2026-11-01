@@ -92,6 +92,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [aiCut,setAiCut]=useState<{key:string;value:{clipIds:string[];stageSeconds:number[]}}|null>(null);
  const [aiCutState,setAiCutState]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
  const cutAbortRef=useRef<AbortController|null>(null);
+ const approvedPlanKeyRef=useRef("");
  useEffect(()=>()=>cutAbortRef.current?.abort(),[]);
  const [captureStarted,setCaptureStarted]=useState(false);
  const [captureObserved,setCaptureObserved]=useState(false);
@@ -308,6 +309,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(disabled||!executable||offerSymbolic)return;
    const ok=onConfirm({scenario:executable});
    if(!ok){addLine("assistant",t.blocked);return;}
+   approvedPlanKeyRef.current=planKey;
    setStep("ready");addLine("assistant",t.ready);setCaptureStarted(false);setCaptureObserved(false);
  };
  const enhanceExecutable=async()=>{
@@ -351,6 +353,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  };
  const start=()=>{
    if(disabled||!canCreate||captureStarted)return;
+   if(approvedPlanKeyRef.current!==planKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
    const accepted=onCreate();
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
@@ -421,7 +424,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        </div>:null}
        {step==="done"?<button type="button" className={css.primary} onClick={onOpenResult} data-video-chat-result><ArrowRight size={18}/>{t.open}</button>:null}
      </div>:null}
-     {(step==="review"||step==="ready")&&!selected?<div className={css.warning} role="alert"><p>{t.missing}</p><button type="button" onClick={reset}>{t.retryGoal}</button></div>:null}
+     {(step==="review"||step==="ready")&&(!selected||!executable)?<div className={css.warning} role="alert"><p>{t.missing}</p><button type="button" onClick={reset}>{t.retryGoal}</button></div>:null}
      {captureStarted?<div className={css.status} role="status">
        <span className={css.pulse}/>{rendering?t.creating:t.loading}
        {rendering&&renderProgress>0?<small>{Math.round(renderProgress)}%</small>:null}
