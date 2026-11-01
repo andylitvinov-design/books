@@ -3,7 +3,7 @@
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
-const {repairMode}=require('./ci-pr-repair-worker.cjs');
+const {repairMode,safeFiles}=require('./ci-pr-repair-worker.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
@@ -186,6 +186,16 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   if(task.lane==='repair'&&!comments.some(c=>String(c.body||'').includes(
     '<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+task.head_sha+' -->'))){
    blocked('SOURCE_PROOF_MISSING');continue;
+  }
+  // An exact-HEAD receipt alone is not an actionable autofix scope. Mirror
+  // the worker's bounded file filter before reserving; worker rechecks it.
+  if(task.lane==='repair'&&repairMode(fresh)==='lint'){
+   let files;
+   try{files=(await limited('repair-files',()=>github.rest.pulls.listFiles({
+    owner,repo,pull_number:task.pr_number,per_page:100,page:1}))).data;}
+   catch(err){blocked('SOURCE_FILES_UNAVAILABLE');continue;}
+   const safe=safeFiles(files);
+   if(!safe||!safe.length){blocked('SOURCE_SCOPE_NOT_ACTIONABLE');continue;}
   }
   let recent;
   try{const r=(await limited('worker-history',()=>github.request(

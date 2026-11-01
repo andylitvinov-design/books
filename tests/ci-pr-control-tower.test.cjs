@@ -28,7 +28,8 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  const calls={dispatched:[],reserved:[],read:[],removed:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
-  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)})
+  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
+  listFiles:async()=>({data:[{filename:'src/a.js',status:'modified'}]})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
@@ -491,5 +492,15 @@ test('source dispatch requires verified current mergeability before reservation'
   const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
   assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
   assert.equal(f.calls.dispatched.length,0);
+ }
+});
+
+test('source dispatch requires a complete nonempty worker-safe changed-file scope',async()=>{
+ for(const files of [[],[{filename:'tests/only.test.js',status:'modified'}],
+   Array.from({length:100},(_,i)=>({filename:'src/'+i+'.js',status:'modified'}))]){
+  const f=fixture([pr(77)],{comments:{77:[proof()]}});
+  f.github.rest.pulls.listFiles=async()=>({data:files});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
  }
 });
