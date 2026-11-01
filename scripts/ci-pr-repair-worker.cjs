@@ -11,10 +11,10 @@ const SHA = /^[0-9a-f]{40}$/i;
 const PATH = /^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
 const MAX_FILES = 8;
 const MAX_CANDIDATES = 4;
-const MAX_READS = 24;
+const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor}=require('./ci-pr-task-state.cjs');
+const {taskFor,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -149,9 +149,10 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
     // If the branch is a parent of another open PR, never modify its history.
     const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1}))).data;
     if (!Array.isArray(children) || children.length) continue;
-    // An incomplete comment history cannot prove the absence of a repair lease.
-    const comments = (await limited('repair-lease',()=>github.rest.issues.listComments({owner,repo,issue_number:pr.number,per_page:100,page:1}))).data;
-    if (!Array.isArray(comments) || comments.length >= 100) continue;
+    // Incomplete history cannot prove ownership. Bounded pagination avoids
+    // indefinitely blocking mature PRs as they pass 100 issue comments.
+    const comments = await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+    if (!comments) continue;
     const marker = '<!-- ' + MARKER + ' ' + pr.head.sha + ' -->';
     if (comments.some(c => (c.body || '').includes(marker)) ||
         activeSweepLease(comments,pr.head.sha,now)) continue;

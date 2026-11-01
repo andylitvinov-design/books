@@ -1,6 +1,6 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
-const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus}=require('./ci-pr-task-state.cjs');
+const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
@@ -115,10 +115,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    blocked('CONFLICT_NOT_VERIFIED');continue;
   }
   let comments;
-  try{const data=(await limited('read-owner',()=>github.rest.issues.listComments({
-    owner,repo,issue_number:task.pr_number,per_page:100,page:1}))).data;
-   if(!Array.isArray(data)||data.length>=100){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
-   comments=data;
+  try{
+   comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
+   if(!comments){blocked('OWNER_HISTORY_INCOMPLETE');continue;}
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
   if(status!=='FREE'){blocked(status);continue;}

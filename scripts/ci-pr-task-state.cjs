@@ -69,5 +69,21 @@ function reservationStatus(task,comments,now){
  }))return 'OWNER_LEASE_ACTIVE';
  return 'FREE';
 }
+// A single 100-comment page is not proof of complete ownership history.
+// Read up to 299 comments; exactly 300 or any incomplete API response
+// fails closed so older exact-HEAD claims or owner leases are never ignored.
+async function readCompleteIssueComments(github,owner,repo,issueNumber,limited){
+ if(!Number.isSafeInteger(issueNumber)||issueNumber<1)return null;
+ const comments=[];
+ for(let page=1;page<=3;page++){
+  const result=await limited('owner-comments-page-'+page,()=>
+   github.rest.issues.listComments({owner,repo,issue_number:issueNumber,
+    per_page:100,page}));
+  if(!Array.isArray(result?.data)||result.data.length>100)return null;
+  comments.push(...result.data);
+  if(result.data.length<100)return comments;
+ }
+ return null;
+}
 module.exports={REPO,PROD,DEFAULT,SHA,MARKER,labels,validPR,laneOf,taskFor,
- reservation,commentBody,parseRecords,reservationStatus};
+ reservation,commentBody,parseRecords,reservationStatus,readCompleteIssueComments};
