@@ -76,21 +76,55 @@ function boundedRestFallback(selected) {
 function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
   if(!Array.isArray(prs)||!prs.length)return [];
   const ranked=rankedCandidates(prs,now);
-  // CI completion wakes that exact PR; the other fast slots serve impact.
+  if(!ranked.length)return [];
   const wake=Number.isSafeInteger(priorityNumber)
     ?ranked.find(pr=>pr.number===priorityNumber):null;
   const top=wake?[wake]:[];
+  const chosen=new Set(top.map(pr=>pr.number));
+  // Always keep the highest-impact PR visible even while a specific
+  // workflow_run wake consumes another fast slot.
+  const anchor=ranked.find(pr=>!chosen.has(pr.number));
+  if(anchor && top.length<urgentSize){
+    top.push(anchor);
+    chosen.add(anchor.number);
+  }
+  // If P0 (or P1) has more than four PRs, rotate the remaining fast
+  // slots through that tier. The old fixed top-four arrangement delayed
+  // the fifth P0 until it happened to enter the generic 12-PR rotation.
+  const tier=anchor?priorityFor(anchor,now).tier:null;
+  const peers=ranked.filter(pr=>priorityFor(pr,now).tier===tier &&
+    !chosen.has(pr.number));
+  const available=urgentSize-top.length;
+  if(available>0 && peers.length>available){
+    const offset=(Math.floor(now/(10*MINUTE))*available)%peers.length;
+    for(let i=0;i<available;i++){
+      const pr=peers[(offset+i)%peers.length];
+      top.push(pr);
+      chosen.add(pr.number);
+    }
+  }
   for(const pr of ranked){
     if(top.length>=urgentSize)break;
-    if(!top.some(p=>p.number===pr.number))top.push(pr);
+    if(!chosen.has(pr.number)){
+      top.push(pr);
+      chosen.add(pr.number);
+    }
   }
-  const fastIDs=new Set(top.map(pr=>pr.number));
-  // Twelve rotating non-fast slots guarantee that older P2/P3 make progress.
-  const pool=ranked.filter(pr=>!fastIDs.has(pr.number)).sort((a,b)=>a.number-b.number);
-  const offset=pool.length?(Math.floor(now/(10*MINUTE))*rotatedSize)%pool.length:0;
-  const rotating=Array.from({length:Math.min(pool.length,rotatedSize)},
-    (_,i)=>pool[(offset+i)%pool.length]);
-  return [...top,...rotating];
+  // Independent full-inventory round-robin. Every open PR is visited
+  // within ceil(total / rotatedSize) cycles even when fast slots change.
+  const sorted=[...ranked].sort((a,b)=>a.number-b.number);
+  const offset=(Math.floor(now/(10*MINUTE))*rotatedSize)%sorted.length;
+  const rotating=Array.from({length:Math.min(sorted.length,rotatedSize)},
+    (_,i)=>sorted[(offset+i)%sorted.length]);
+  const unique=new Map([...top,...rotating].map(pr=>[pr.number,pr]));
+  const target=Math.min(sorted.length,urgentSize+rotatedSize);
+  // Overlap between fast and rotating slots must not waste API inspection
+  // capacity: advance the same fairness cursor to fill unique candidates.
+  for(let i=rotating.length;unique.size<target && i<sorted.length;i++){
+    const pr=sorted[(offset+i)%sorted.length];
+    unique.set(pr.number,pr);
+  }
+  return [...unique.values()];
 }
 
 function latestByName(checks) {

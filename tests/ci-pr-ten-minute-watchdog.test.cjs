@@ -18,6 +18,28 @@ test('full pool is covered by rotating slices within sixteen 10-minute checks',(
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
+test('all P0 PRs receive fast inspection despite a large low-priority backlog',()=>{
+  const prs=Array.from({length:179},(_,i)=>pr(i+1));
+  const p0=Array.from({length:14},(_,i)=>i+20);
+  for(const number of p0)prs[number-1].labels=[{name:'hh:priority:p0'}];
+  const seen=new Set();
+  for(let tick=0;tick<6;tick++){
+    const picked=selectCandidates(prs,NOW+tick*600000);
+    assert.ok(picked.length<=16);
+    const high=picked.filter(p=>p.labels?.some(l=>l.name==='hh:priority:p0'));
+    assert.ok(high.length>=4,'P0 backlog must occupy all four fast slots');
+    for(const p of high)seen.add(p.number);
+  }
+  assert.ok(p0.every(n=>seen.has(n)),'all P0s must be inspected within six cycles');
+});
+test('exact Core completion wake does not evict the top P0 while preserving fairness',()=>{
+  const prs=Array.from({length:179},(_,i)=>pr(i+1));
+  prs[69].labels=[{name:'hh:priority:p0'}];
+  const picked=selectCandidates(prs,NOW,12,4,159);
+  assert.equal(picked[0].number,159);
+  assert.equal(picked[1].number,70);
+  assert.ok(picked.length<=16);
+});
 test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
   const gate={total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]};
   assert.equal(gateIsGreen(gate),true);
