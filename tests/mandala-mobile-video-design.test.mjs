@@ -112,7 +112,8 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(studio,/data-video-motion/);
   assert.match(studio,/data-video-length/);
   assert.match(studio,/setSpeed\(event.currentTarget.value as Speed\)/);
-  assert.match(studio,/setDuration\(Number\(event.currentTarget.value\)/);
+  assert.match(studio,/changeVideoDuration\(Number\(event.currentTarget.value\)/);
+  assert.match(studio,/const changeVideoDuration=[\s\S]*?setDuration\(seconds\)/);
   assert.match(studio,/data-video-theme-active=\{videoCategory\}/);
   assert.match(studio,/data-preview-playing=\{previewPlaying/);
   assert.match(studio,/data-video-hero-create/);
