@@ -16,11 +16,11 @@ import {fileURLToPath} from "node:url";
 import {validateFreeSceneBrief} from "../lib/mandala/free-stock-sources.mjs";
 import {auditScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
 import {importFreeStockScene} from "./import-free-stock-scene.mjs";
+import {loadActiveFilmPresets} from "./read-live-film-presets.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const pathFor=(name)=>resolve(root,"data/video-catalog",name);
 const registerPath=pathFor("free-stock-scenes.json");
 const taxonomyPath=pathFor("scene-taxonomy.json");
-const presetPath=pathFor("free-film-presets-v2.json");
 const parse=path=>JSON.parse(readFileSync(path,"utf8"));
 const slug=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const text=x=>typeof x==="string"&&x.trim().length>0&&x.length<=200;
@@ -37,7 +37,7 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
   const manifest=realpathSync(resolve(batchName)),dir=dirname(manifest),batch=parse(manifest);
   if(batch.version!==1||!Array.isArray(batch.scenes)||!batch.scenes.length||batch.scenes.length>80)
     throw Error("invalid_batch_or_too_many_scenes");
-  const current=parse(registerPath),taxonomy=parse(taxonomyPath),presets=parse(presetPath).presets;
+  const current=parse(registerPath),taxonomy=parse(taxonomyPath),presets=loadActiveFilmPresets().presets;
   const usedPages=new Set(current.flatMap(s=>(s.sources||[]).map(x=>x.sourcePage)));
   const sourceHashes=new Set(current.flatMap(s=>(s.sources||[]).map(x=>x.sha256).filter(Boolean)));
   const knownIds=new Set(taxonomy.scenes.map(s=>s.id));
@@ -48,7 +48,7 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
     const briefFile=realpathSync(resolve(dir,item.brief));
     if(!inDir(dir,briefFile))throw Error("unsafe_brief_path");
     const brief=parse(briefFile),extra=item.taxonomy;
-    validateFreeSceneBrief(brief);
+    validateFreeSceneBrief(brief,new Date(),{allowSingleSource:true});
     if(!slug.test(brief.id)||knownIds.has(brief.id))throw Error("duplicate_or_invalid_scene_"+brief.id);
     knownIds.add(brief.id);
     if(!extra||!langs(extra.description)||
@@ -100,7 +100,7 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
     writeFileSync(taxonomyPath,JSON.stringify(latest,null,2)+"\n");
     published.push(record.id);
   }
-  const coverage=auditScenarioMedia(parse(presetPath).presets,parse(taxonomyPath).scenes);
+  const coverage=auditScenarioMedia(loadActiveFilmPresets().presets,parse(taxonomyPath).scenes);
   return {mode:"imported",items:published.length,ids:published,
     approvedTotal:coverage.approvedScenes,minimumNewDedicatedScenes:coverage.minimumNewDedicatedScenes,
     nextStep:"Review dedicated assignment with npm run media:plan; never publish a partial rebalance"};

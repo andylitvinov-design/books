@@ -35,6 +35,19 @@ test("requires owner approval, two different sources, EN/RU/ES and no raw distri
  v.sources[1]=clip(2);v.label.ru="";assert.throws(()=>validateFreeSceneBrief(v,now));
  v.label.ru="Тихий луг";v.ownerApproved=false;assert.throws(()=>validateFreeSceneBrief(v,now));
 });
+test("one-source licensed video is explicitly opt-in and money theme can be safely imported",()=>{
+  const brief={...example(),theme:"money",sources:[clip(3,"dareful")]};
+  assert.throws(()=>validateFreeSceneBrief(brief,now),/two_clips_required/);
+  assert.equal(validateFreeSceneBrief(brief,now,{allowSingleSource:true}),true);
+  const empty={...brief,sources:[]};
+  assert.throws(()=>validateFreeSceneBrief(empty,now,{allowSingleSource:true}),/two_clips_required/);
+  const notReviewed={...brief,ownerApproved:false};
+  assert.throws(()=>validateFreeSceneBrief(notReviewed,now,{allowSingleSource:true}),/owner_review_required/);
+  const importer=read("scripts/import-free-stock-scene.mjs");
+  assert.match(importer,/single_source_requires_five_seconds_of_real_motion/);
+  assert.match(importer,/licensed_single_shot_edit/);
+});
+
 test("static JSON-backed gallery only activates approved pre-encoded films",()=>{
  const data=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
  assert.ok(Array.isArray(data));assert.ok(data.every(x=>x.status==="approved"&&x.sha256));

@@ -2,8 +2,8 @@
 /**
  * node scripts/audit-scenario-media.mjs [--json] [--dedicated] [--plan] [--apply] [--audio]
  * Counts only licensed, approved, on-disk MP4 + JPG media.
- * --apply updates the EXISTING preset catalog only when every scenario can
- * receive four dedicated same-theme clips; never ships partial storyboards.
+ * --apply deliberately refuses mutation until both legacy and JSON collections
+ * are atomically migrated to a single catalog; never ships partial storyboards.
  */
 import {readFileSync,existsSync,statSync} from "node:fs";
 import {createHash} from "node:crypto";
