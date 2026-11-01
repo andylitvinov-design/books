@@ -20,6 +20,7 @@ on:
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
       - '.github/workflows/hh-pr-ci-worker.yml'
       - '.github/workflows/hh-pr-repair-worker.yml'
+      - '.github/workflows/hh-pr-cron-owner-repair.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
       - 'tests/ci-pr-repair-worker.test.cjs'
       - 'scripts/ci-pr-ci-worker.cjs'

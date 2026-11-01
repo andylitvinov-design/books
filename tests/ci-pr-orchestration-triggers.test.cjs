@@ -103,3 +103,21 @@ test('Watchdog activates separate direction schedule and never creates legacy P0
   assert.ok(s.includes("'hh-pr-direction-watcher.yml'"));
   assert.ok(!s.includes("'hh:priority:'+tier"));
 });
+
+test('owner cron repair uses one safe lease and never equates reenable with schedule',()=>{
+  const s=read('hh-pr-cron-owner-repair');
+  assert.ok(s.includes('HH_CRON_OWNER_REPAIR_20261101'));
+  assert.ok(s.includes("event:'schedule',per_page:1"));
+  assert.ok(s.includes('history.total_count'));
+  assert.ok(s.includes('HH_AUTOMERGE_TOKEN'));
+  assert.ok(s.includes('ownerGithub.rest.actions.disableWorkflow'));
+  assert.ok(s.includes('ownerGithub.rest.actions.enableWorkflow'));
+  assert.ok(s.includes('github.rest.actions.enableWorkflow'));
+  assert.ok(s.includes("after.state!=='active'"));
+  assert.ok(s.includes("issue.state!=='open'"));
+  assert.ok(s.includes("context.eventName==='workflow_dispatch'"));
+  assert.ok(s.includes("default: true"));
+  assert.ok(s.includes('Cron only recovers after a real event=schedule run'));
+  assert.ok(!s.includes('pull_request:'));
+  assert.ok(!s.includes('schedule:'));
+});
