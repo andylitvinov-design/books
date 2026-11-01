@@ -134,6 +134,6 @@ test("the selected real soundtrack is synchronized with the original central Can
    "pausing the video must pause its selected native audio");
  assert.match(studio,/const player=audioPreviewRef\.current;[\s\S]*?void player\.play\(\)\.catch/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/if\(recording \|\| preparing\) return;\s*setPreviewPlaying\(true\)/,
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*setPreviewPlaying\(true\)/,
    "Play never starts audio during export");
 });
