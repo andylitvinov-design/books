@@ -19,6 +19,7 @@ const MAX_ACTIVE = 12;
 const MAX_QUEUED = 6;
 const MAX_CANDIDATES = 5;
 const SHA = /^[a-f0-9]{40}$/i;
+const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 
 function validBranch(branch) {
   return typeof branch === 'string' && branch.length <= 160 &&
@@ -113,8 +114,8 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     // the bounded queue. Rotate across unclaimed entries for starvation safety.
     const eligible=response.data.filter(item=>item.pull_request &&
       !(item.labels||[]).some(label=>label.name===ATTEMPTED));
-    const offset=eligible.length ? (Math.floor(now/(10*60_000))*MAX_CANDIDATES)%eligible.length : 0;
-    candidates=[...eligible.slice(offset),...eligible.slice(0,offset)].slice(0,MAX_CANDIDATES);
+    // Three high-impact entries plus two rotating slots in each ten-minute cycle.
+    candidates=pickQueueCandidates(eligible,now,MAX_CANDIDATES,3);
     summary.candidateIssues=candidates.length;
   }catch(error){
     summary.reason ||= 'QUEUE_UNAVAILABLE';
@@ -189,7 +190,7 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
         throw Error('Dedicated token did not return a new commit SHA');
       }
       summary.started++;
-      log('BOOTSTRAP_ACCEPTED #'+pr.number+' old='+pr.head.sha.slice(0,12)+
+      log('BOOTSTRAP_ACCEPTED #'+pr.number+' priority='+priorityFor(pr,now).tier+' old='+pr.head.sha.slice(0,12)+
         ' new='+result.sha.slice(0,12)+'; genuine PR synchronize should start CI');
       try{
         await limited('remove-queued-label',()=>github.rest.issues.removeLabel({
