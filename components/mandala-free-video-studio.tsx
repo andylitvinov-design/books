@@ -1632,8 +1632,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
-  const [firstVideoAdvancedOpen,setFirstVideoAdvancedOpen] = useState(false);
-  const [voiceStudioOpen,setVoiceStudioOpen] = useState(false);
+  const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
+  const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
@@ -4049,12 +4049,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           
         </section>
         <details className={videoStyles.quickExtras} data-workspace-section="video"
-          onToggle={event=>setFirstVideoAdvancedOpen(event.currentTarget.open)}
+          onToggle={event=>{if(event.currentTarget.open)setFirstVideoAdvancedActivated(true);}}
           data-video-first-video-advanced>
           <summary>{locale==="ru"?"Дополнительно: видео по подробному описанию":locale==="es"?"Avanzado: vídeo desde descripción":"Advanced: video from description"}</summary>
         {/* Compact first-video tool follows the third Style section,
             main video screen and the six control buttons. */}
-        {firstVideoAdvancedOpen ? <MandalaFirstVideoStart locale={locale} wish={wish}
+        {firstVideoAdvancedActivated ? <MandalaFirstVideoStart locale={locale} wish={wish}
           renderOptions={{quality,brightness,audioVolumePercent:soundVolume}}
           disabled={recording||preparing} preparing={preparing} recording={recording}
           progress={progress} resultReady={Boolean(result)&&playbackStatus==="ready"} ready={canGenerate}
@@ -4772,12 +4772,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
       <details id="voice-studio" className={videoStyles.extraControls} data-video-voice-studio
-        onToggle={event=>setVoiceStudioOpen(event.currentTarget.open)}>
+        onToggle={event=>{if(event.currentTarget.open)setVoiceStudioActivated(true);}}>
         <summary><AudioLines size={17} aria-hidden="true"/>{locale==="ru"
           ?"Озвучить свой текст · 6 голосов RU/EN"
           :locale==="es"?"Crear voz desde texto · 6 voces RU/EN"
           :"Generate voice from text · 6 RU/EN voices"}</summary>
-        {voiceStudioOpen ? <MandalaCloudVoiceStudio locale={locale}
+        {voiceStudioActivated ? <MandalaCloudVoiceStudio locale={locale}
           sourceText={currentAffirmationSpeech} sourceIsPublic
           onAudioReady={attachMeditationNarration}
           onAudioInvalidated={()=>setAttachedAudio(current=>

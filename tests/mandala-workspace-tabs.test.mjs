@@ -152,12 +152,10 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
       name + " should be loaded on demand");
     assert.ok(!studio.includes(`import { ${name} } from "./${path}";`));
   }
-  assert.match(studio, /const \[firstVideoAdvancedOpen,setFirstVideoAdvancedOpen\] = useState\(false\)/);
-  assert.match(studio, /onToggle=\{event=>setFirstVideoAdvancedOpen\(event\.currentTarget\.open\)\}/);
-  assert.match(studio, /\{firstVideoAdvancedOpen \? <MandalaFirstVideoStart/);
-  assert.match(studio, /const \[voiceStudioOpen,setVoiceStudioOpen\] = useState\(false\)/);
-  assert.match(studio, /onToggle=\{event=>setVoiceStudioOpen\(event\.currentTarget\.open\)\}/);
-  assert.match(studio, /\{voiceStudioOpen \? <MandalaCloudVoiceStudio/);
+  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
+  assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
+  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
+  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
