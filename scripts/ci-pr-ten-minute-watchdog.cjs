@@ -219,13 +219,18 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     try {
       // Restrict to the release gate: hundreds of specialist checks can share the same SHA.
       runs = (await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-        owner,repo,workflow_id:'hh-pr-core-release.yml',head_sha:pr.head.sha,
+        owner,repo,workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
         event:'pull_request',per_page:100
       })).data;
     } catch(e) { log(`#${pr.number} CI run lookup unavailable: ${e.message}`); continue; }
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
-    const coreRuns = runs.workflow_runs.filter(r=> r.name===CORE_NAME && r.head_sha===pr.head.sha &&
-      r.head_branch===pr.head.ref && r.event==='pull_request')
+    const coreRuns = runs.workflow_runs.filter(r => r.name===CORE_NAME &&
+      r.head_branch===pr.head.ref && r.event==='pull_request' &&
+      // For pull_request workflows GitHub often stores a synthetic merge SHA
+      // in run.head_sha, different from the PR source HEAD. Validate the
+      // run's exact PR association instead of falsely reporting missing CI.
+      (r.pull_requests||[]).some(p => p.number===pr.number &&
+        p.head?.sha===pr.head.sha && p.head?.ref===pr.head.ref))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
     const latest=coreRuns[0];
     if (!latest) {summary.missingCore++;continue;}
