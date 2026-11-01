@@ -62,9 +62,16 @@ jobs:
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --test tests/ci-pr-control-tower.test.cjs
   dispatch:
+    # No runner should be reserved for callbacks that only report that a
+    # Watchdog/Worker run was skipped or cancelled. Reconciliation is still
+    # event-driven for completed real outcomes, plus explicit/scheduled sweeps.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
-      github.ref == 'refs/heads/codex/bootstrap-books'
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.status == 'completed' &&
+        github.event.workflow_run.conclusion != 'cancelled' &&
+        github.event.workflow_run.conclusion != 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
