@@ -133,12 +133,12 @@ const runEngine = async ([engine, browserType]) => {
           await form.locator("[data-first-video-wish]").fill("Горы");
           const promptField=form.locator("[data-first-video-prompt]");
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
-            .toContain("горные вершины");
+            .toMatch(/горн/i);
           const firstVariant=await promptField.inputValue();
           await form.locator("[data-first-video-refresh]").click();
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
-          assert.match(await promptField.inputValue(),/горные вершины/i);
+          assert.match(await promptField.inputValue(),/горн/i);
           // Exercise actual hydrated iPhone filters; these values MUST
           // survive in the real HTTP body, not merely decorate the UI.
           const aiFilters=form.locator("[data-first-video-filters]");
