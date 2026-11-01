@@ -128,7 +128,12 @@ try {
       // the form state with no phone even when the input visually looks full.
       await page.waitForFunction(() => {
         const input = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="tel"]')
-        const key = Object.keys(input || {}).find(k => k.startsWith('__reactProps
+        const key = Object.keys(input || {}).find(k => k.startsWith("__reactProps$"));
+        return Boolean(key && typeof input[key]?.onChange === "function");
+      }, null, {timeout:30000});
+      await contactForm.locator('input[type="tel"]').fill('416 555 1234');
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Phone without reply-only opt-in is insufficient');
       // Wait for the controlled React opt-in handler before the real click.
       // Pre-hydration native checkbox changes can be reverted on commit.
       await page.waitForFunction(() => {
