@@ -109,6 +109,11 @@ try {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
+  // The approved Video Studio intentionally collapses advanced creation.
+  // Enter it through the real disclosure; do not bypass any real output checks.
+  const advanced = page.locator('[data-video-first-video-advanced]');
+  await advanced.locator(':scope > summary').click({timeout: 20000});
+  assert.equal(await advanced.getAttribute('open'), '', 'ADVANCED_VIDEO_DISCLOSURE_NOT_OPEN');
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
