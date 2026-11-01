@@ -2157,8 +2157,8 @@
  .workspaceCourseGrid strong{grid-column:2}.workspaceCourseGrid span{grid-column:2;grid-row:2}.workspaceCourseGrid svg:last-child{grid-column:3;grid-row:1 / span 2}
 }
 
-/* The full original sound library is now in this tab; avoid a second quick track picker. */
-.studio[data-active-workspace="audio"] .quickMusicRail,.studio[data-active-workspace="audio"] .quickMusicSection>.quickSectionHeading{display:none}
+/* The quick music rail is now the unique three-layer Include/Listen control.
+   Keep it visible above the full first-party sound library in Audio workspace. */
 
 /* 39 first-party soundtracks; preserve the canonical one-player audio rail. */
 .audioTrackRow[data-audio-kind="melody"] .audioTileGlyph{background:#f2e5de;color:#885442}

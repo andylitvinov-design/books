@@ -227,3 +227,13 @@ test("local music mixer reads at most three static site-owned WAVs and emits one
   assert.equal(track.stopped,true);
   assert.equal(session.type,"ambient","restore iOS audio routing");
 });
+
+
+test("quick music rail and shared native player are simultaneously mounted on Audio workspace",()=>{
+  // The old production CSS hid the quick selector exactly when the native player existed.
+  assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
+  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
+  assert.match(studio,/flushSync\(\(\)=>\{setActiveWorkspace\("audio"\);setSamplePreviewId\(choice\);\}\)/);
+  assert.match(studio,/const player=audioPreviewRef\.current/);
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1);
+});

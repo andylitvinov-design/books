@@ -2307,7 +2307,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(samplePreviewId===choice&&soundPreview){stopSoundPreview();return;}
     stopMovieSound();setPreviewPlaying(false);
     stopSoundPreview();
-    flushSync(()=>setSamplePreviewId(choice));
+    // Ensure the original single audio dock is mounted before the user-gesture
+    // play() call, including from the legacy compact first screen.
+    flushSync(()=>{setActiveWorkspace("audio");setSamplePreviewId(choice);});
     const player=audioPreviewRef.current;
     if(!player){setMusicWarning(ui.soundUnavailable);return;}
     try{
