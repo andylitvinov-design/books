@@ -10,6 +10,7 @@
  * See docs/videos/SCENARIO_MEDIA_EXPANSION_20261101.md for the schema.
  */
 import {readFileSync,writeFileSync,realpathSync,existsSync} from "node:fs";
+import {createHash} from "node:crypto";
 import {resolve,relative,dirname,sep} from "node:path";
 import {fileURLToPath} from "node:url";
 import {validateFreeSceneBrief} from "../lib/mandala/free-stock-sources.mjs";
@@ -38,6 +39,7 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
     throw Error("invalid_batch_or_too_many_scenes");
   const current=parse(registerPath),taxonomy=parse(taxonomyPath),presets=parse(presetPath).presets;
   const usedPages=new Set(current.flatMap(s=>(s.sources||[]).map(x=>x.sourcePage)));
+  const sourceHashes=new Set(current.flatMap(s=>(s.sources||[]).map(x=>x.sha256).filter(Boolean)));
   const knownIds=new Set(taxonomy.scenes.map(s=>s.id));
   const prepared=[];
   for(const item of batch.scenes){
@@ -64,6 +66,12 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
     for(const source of brief.sources){
       if(usedPages.has(source.sourcePage))throw Error("duplicate_underlying_footage_"+source.sourcePage);
       usedPages.add(source.sourcePage);
+      // Different URLs/names are NOT proof of different footage.
+      const sourceFile=realpathSync(resolve(dir,source.file));
+      if(!inDir(dir,sourceFile))throw Error("unsafe_video_source_path_"+brief.id);
+      const hash=createHash("sha256").update(readFileSync(sourceFile)).digest("hex");
+      if(sourceHashes.has(hash))throw Error("duplicate_underlying_source_hash_"+hash);
+      sourceHashes.add(hash);
     }
     prepared.push({briefFile,brief,extra,targetScenarioId:item.targetScenarioId||null});
   }
