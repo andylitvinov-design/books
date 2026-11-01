@@ -116,7 +116,15 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
   const offset=(Math.floor(now/(10*MINUTE))*rotatedSize)%sorted.length;
   const rotating=Array.from({length:Math.min(sorted.length,rotatedSize)},
     (_,i)=>sorted[(offset+i)%sorted.length]);
-  return [...new Map([...top,...rotating].map(pr=>[pr.number,pr])).values()];
+  const unique=new Map([...top,...rotating].map(pr=>[pr.number,pr]));
+  const target=Math.min(sorted.length,urgentSize+rotatedSize);
+  // Overlap between fast and rotating slots must not waste API inspection
+  // capacity: advance the same fairness cursor to fill unique candidates.
+  for(let i=rotating.length;unique.size<target && i<sorted.length;i++){
+    const pr=sorted[(offset+i)%sorted.length];
+    unique.set(pr.number,pr);
+  }
+  return [...unique.values()];
 }
 
 function latestByName(checks) {
