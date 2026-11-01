@@ -337,7 +337,7 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
-    const lint=source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+    const lint=source.split(/^  code:/m)[1]?.split(/^  hh-core-verified:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
       'changed-file lint must also exclude unrelated target-branch updates');
   } finally {
@@ -686,8 +686,8 @@ test('Mandala PR runs focused source contracts and manual dispatch owns exhausti
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
-  const release = source.split(/^  release-ready:/m)[1];
+  const code = source.split(/^  code:/m)[1]?.split(/^  hh-core-verified:/m)[0];
+  const release = source.split(/^  hh-specialists-verified:/m)[1]?.split(/^  release-ready:/m)[0];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
     assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
@@ -1005,7 +1005,7 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
 
 test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
+  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  hh-specialists-verified:)/m)?.[0];
   assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
   assert.match(coreSection,/^    name: hh-core-verified$/m);
   assert.match(coreSection,/^    needs: \[scope, code\]$/m);
@@ -1132,4 +1132,21 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   assert.equal(await decide(Array.from({length: 100}, (_, i) => ({
     ...good, id: 300 + i,
   })), live, event, 102), false, 'truncated current-head checks fail closed');
+});
+
+test('legacy release-ready is a short fail-closed facade over Core and specialist verification',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const specialist=source.split(/^  hh-specialists-verified:/m)[1]?.split(/^  release-ready:/m)[0];
+  const legacy=source.split(/^  release-ready:/m)[1];
+  assert.ok(specialist && legacy, 'both independent specialist and legacy jobs are present');
+  assert.match(specialist,/^    needs: \[scope, code\]$/m);
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.match(specialist,/^    timeout-minutes: 45$/m);
+  assert.match(legacy,/^    needs: \[hh-core-verified, hh-specialists-verified\]$/m);
+  assert.match(legacy,/^    if: always\(\)$/m);
+  assert.match(legacy,/^    timeout-minutes: 3$/m);
+  assert.match(legacy,/CORE_RESULT: \$\{\{ needs\['hh-core-verified'\]\.result \}\}/);
+  assert.match(legacy,/SPECIALIST_RESULT: \$\{\{ needs\['hh-specialists-verified'\]\.result \}\}/);
+  assert.match(legacy,/\[\[ \"\$CORE_RESULT\" != success \|\| \"\$SPECIALIST_RESULT\" != success \]\]/);
+  assert.doesNotMatch(legacy,/ci-specialist-aggregate\.mjs|checkout@v4|continue-on-error/);
 });

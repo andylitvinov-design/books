@@ -235,8 +235,8 @@ jobs:
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
           echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
-  release-ready:
-    name: release-ready
+  hh-specialists-verified:
+    name: hh-specialists-verified
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
@@ -258,7 +258,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            echo 'Draft: specialist checks deferred; hh-specialists-verified must remain red until Ready is fully validated.' >&2
             exit 1
           fi
           [[ "$SCOPE_RESULT" == success ]] || exit 1
@@ -336,4 +336,26 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-
+  # Compatibility-only status while legacy branch protection requires
+  # release-ready. Never succeed unless both independently verified gates pass.
+  release-ready:
+    name: release-ready
+    needs: [hh-core-verified, hh-specialists-verified]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Verify actual Core and specialist statuses for legacy protection
+        shell: bash
+        env:
+          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
+          SPECIALIST_RESULT: ${{ needs['hh-specialists-verified'].result }}
+        run: |
+          set -euo pipefail
+          if [[ "$CORE_RESULT" != success || "$SPECIALIST_RESULT" != success ]]; then
+            echo 'Legacy status blocked: Core or applicable specialist verification failed.' >&2
+            exit 1
+          fi
+          echo 'Both Core and specialist checks passed; legacy release-ready compatibility status.' >> "$GITHUB_STEP_SUMMARY"
