@@ -15,8 +15,8 @@ on:
 
 permissions: {}
 concurrency:
-  group: hh-ci-prune-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   policy:
@@ -36,7 +36,7 @@ jobs:
   prune:
     if: github.repository == 'andylitvinov-design/books' && github.event_name == 'push'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
@@ -52,9 +52,11 @@ jobs:
           node-version: '22'
       - name: Verify fail-closed stale-run policy
         run: node --test tests/ci-prune-stale-runs.test.mjs
-      - name: Cancel verified superseded queued PR runs (limit 20)
+      - name: Batch prune superseded queued PR runs and report CI metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HH_CI_PRUNE_LIMIT: '20'
+          HH_CI_PRUNE_LIMIT: '300'
+          HH_CI_WINDOW_MINUTES: '60'
+          HH_CI_JOB_SAMPLE: '20'
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs

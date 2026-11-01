@@ -52,3 +52,97 @@
 .storyChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
 .storyChoices button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:570px){.goal input{font-size:16px}.storyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Owner-approved one-screen mock: the same goal state is shown in the theme
+   card via a React portal; the Director below Music shows real licensed films. */
+.goalPanel{display:grid;gap:9px;min-width:0}
+.goalPanel .goalsTitle{margin:0;font-size:12px;font-weight:700;color:#5c6d62}
+.goalPanel .goalChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.goalPanel .goalChoices button{min-height:45px;max-width:none;padding:8px 7px;border-radius:10px;
+  font-size:12px;line-height:1.2;color:#274b3d;background:#fff}
+.goalPanel .goalChoices button[aria-pressed="true"]{background:#eaf5ec;border-color:#216c51;
+  color:#15533e;box-shadow:inset 0 0 0 1px #297d60}
+.extraGoals{border:0;margin:0;font-size:11px;color:#3b7861}
+.extraGoals summary{min-height:24px;cursor:pointer;display:inline-flex;align-items:center}
+.extraGoals[open] .goalChoices{margin-top:5px}
+.goalPanel .entry{display:block;margin-top:0;min-width:0}
+.goalPanel .goal{display:block;min-width:0;margin:0}
+.goalPanel .notice{margin:0 0 4px;font-size:11px}
+.goalPanel .goal input{width:100%;min-width:0;height:44px;min-height:44px;padding:9px 11px;
+  border-radius:10px;border:1px solid #cad8cf;background:#fff;
+  font:500 16px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.goalActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
+.goalPanel .goalActions button{display:flex;justify-content:center;align-items:center;gap:6px;
+  min-width:0;min-height:43px;width:100%;margin:0;padding:9px 5px;border:1px solid #17684f;
+  background:#17684f;color:#fff;border-radius:10px;font:750 12px/1.15 Arial,sans-serif}
+.goalPanel .goalActions .clarifyButton{background:#f7faf4;color:#17684f}
+.goalPanel .goalActions button:disabled{opacity:.55}
+.refinePanel{display:grid;gap:6px;min-width:0;margin:4px 0;padding:10px;border:1px solid #d3e3d5;
+  border-radius:10px;background:#f5faf6}
+.refinePanel label{font:650 11px/1.4 Arial,sans-serif;color:#315848}
+.refinePanel textarea{width:100%;min-width:0;min-height:57px;resize:vertical;
+  border:1px solid #cbd8cf;border-radius:8px;padding:9px;font:500 16px/1.35 Arial,sans-serif}
+.refinePanel button{display:inline-flex;justify-content:center;align-items:center;gap:5px;
+  width:100%;min-height:39px;border:1px solid #17684f;border-radius:8px;background:#fff;
+  color:#17684f;font:750 12px/1.2 Arial,sans-serif}
+.root{margin:0;min-width:0;max-width:100%;padding:13px;border-radius:15px;border-color:#e1e7db;
+  background:linear-gradient(145deg,#fffefa,#fbfaf5);box-shadow:0 4px 14px #2945310e}
+.head{gap:7px;align-items:center}
+.head svg{width:18px;height:18px;margin:0;color:#0d7056}
+.head h3{font-size:17px;margin:0}
+.head p{margin:2px 0 0;font-size:11px}
+.result{margin-top:10px;padding-top:9px;border-color:#e0e6dd}
+.result h4{font-size:12px;line-height:1.28;margin:0 0 4px}
+.meta{font-size:10.5px;line-height:1.35;margin:0 0 5px}
+.variantsTitle{margin:9px 0 6px;font-size:12px;color:#244b3c}
+.storyChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 11px}
+.storyChoices button{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:flex-start;gap:2px;min-width:0;min-height:129px;max-width:100%;
+  overflow:hidden;padding:4px 4px 7px;border:1px solid #e4e7dd;border-radius:10px;
+  background:#fff;color:#254639;text-align:left}
+.storyChoices button[aria-pressed="true"]{background:#f1f9f1;border:2px solid #17775c;
+  box-shadow:0 0 0 1px #cae6d4}
+.storyPoster{display:block;width:100%;height:auto;aspect-ratio:1.28;object-fit:cover;border-radius:6px}
+.storyChoices button .storyNumber{position:absolute;right:7px;top:7px;z-index:1;
+  display:grid;place-items:center;min-width:21px;height:21px;padding:0 3px;border-radius:12px;
+  background:#155f4c;color:#fff;font-size:10px;font-weight:850}
+.storyChoices button strong{font:750 10.5px/1.2 Arial,sans-serif;overflow-wrap:anywhere}
+.storyChoices button small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;color:#69796e;font:500 10px/1.25 Arial,sans-serif}
+.shots{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:4px 0 11px;list-style:none}
+.shots li{position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;
+  border:0;border-radius:7px;background:transparent}
+.shots li:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:27px;
+  z-index:1;color:#6d8577;font-size:13px}
+.shotPoster{display:block;width:100%;aspect-ratio:1.45;object-fit:cover;border-radius:7px}
+.shots b{display:block;font-size:10px;line-height:1.2;margin:0;color:#315843}
+.shots span{font-size:10px;line-height:1.2}
+.clipDescription{font-size:9px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;overflow:hidden}
+.clipTags{display:none}
+.details{margin:6px 0 9px;font-size:11px}
+.confirm{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  min-height:46px;border-radius:10px;padding:10px;font-size:13px;background:#17694d}
+.appliedActions{display:grid;gap:5px;margin-top:8px}
+.create{display:flex;justify-content:center;align-items:center;gap:7px;width:100%;
+  min-height:46px;border:1px solid #176e52;border-radius:10px;background:#ecf6ec;
+  color:#165c47;font:800 13px/1.2 Arial,sans-serif}
+.create:disabled{opacity:.6;cursor:wait}
+@media(max-width:570px){
+ .root{padding:10px 9px;border-radius:14px}
+ .head h3{font-size:15px}
+ .head p{font-size:10px}
+ .storyChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .storyChoices button{min-height:122px;padding:3px 3px 6px}
+ .shots{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+}
+@media(max-width:355px){
+ .storyChoices button strong{font-size:9px}
+ .storyChoices button small,.shots span{font-size:9px}
+ .goalPanel .goalChoices button{font-size:11px}
+}
+
+/* Owner goal pictograms remain inline, aligned and visible at 320px. */
+.goalPanel .goalChoices button{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.goalPanel .goalChoices button svg{flex:none;width:17px;height:17px}
+@media(max-width:759px){.goalPanel .goalsTitle{display:none}}

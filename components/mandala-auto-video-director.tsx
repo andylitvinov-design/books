@@ -1,7 +1,8 @@
 "use client";
 
-import {useState} from "react";
-import {Check,Sparkles} from "lucide-react";
+import {useEffect,useState} from "react";
+import {createPortal} from "react-dom";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
@@ -12,7 +13,7 @@ type Preset={
   label:Record<PublicLocale,string>;clips:readonly string[];focusTags?:readonly string[];
 };
 type SceneMeta={id:string;theme:string;status:string;media:string;
-  video:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;
+  video:string;poster?:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;
   categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
   locale:PublicLocale;goal:string;theme:VideoTheme;aspect:"landscape"|"portrait"|"square";presets:readonly Preset[];
@@ -21,27 +22,28 @@ type Props={
   clipLabel:(id:string)=>string;
   onGoalChange:(value:string)=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60)=>void;
+  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;
 };
 const copy={
  ru:{
    title:"Auto Video Director",
-   intro:"Выберите цель — мы сразу предложим готовый сюжет. Никаких обязательных фильтров.",
+   intro:"Один общий запрос → четыре варианта сценария",
    goalsTitle:"Что хотелось бы изменить?",
    placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
-   suggest:"Предложить сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
+   suggest:"Подобрать сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
    duration:"Длительность",variants:"Выберите один из сценариев",storyboard:"Четыре сцены выбранного сценария",topic:"Направление",edit:"Изменить детали (необязательно)",
    stages:["Начало","Погружение","Развитие","Завершение"],
    source:"4 настоящих MP4 · бесплатный монтаж",
-   accept:"Подтвердить этот сценарий",applied:"Сценарий выбран — нажмите «Создать видео».",
+   accept:"Подтвердить сценарий",applied:"Сценарий выбран — нажмите «Создать видео».",
    warning:"Новых персонажей и кадров здесь не генерируем: предложен символический монтаж.",
    empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
-   input:"Или напишите свою цель (необязательно)",
+   input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Загружаем четыре видеосцены…",
    selectedGoal:"Выбранная цель",
  },
  en:{
    title:"Auto Video Director",
-   intro:"Choose one goal for an instant ready-made film. No required filters.",
+   intro:"One goal → four story options",
    goalsTitle:"What would you like to change?",
    placeholder:"For example: I want less anxiety and more calm",
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
@@ -52,12 +54,12 @@ const copy={
    warning:"New characters and footage are not generated here; this is a symbolic montage.",
    empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
-   input:"Or write your own goal (optional)",
+   input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Loading four video scenes…",
    selectedGoal:"Selected goal",
  },
  es:{
    title:"Auto Video Director",
-   intro:"Elige un objetivo y verás un vídeo sugerido, sin filtros obligatorios.",
+   intro:"Un objetivo → cuatro opciones de vídeo",
    goalsTitle:"¿Qué te gustaría cambiar?",
    placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
@@ -68,7 +70,7 @@ const copy={
    warning:"No se generan personajes ni escenas nuevas: es un montaje simbólico.",
    empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
-   input:"O escribe tu objetivo (opcional)",
+   input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Cargando cuatro escenas de vídeo…",
    selectedGoal:"Objetivo elegido",
  }
 } as const;
@@ -81,7 +83,7 @@ const themeLabels={
 } as const;
 
 export function MandalaAutoVideoDirector({
- locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply
+ locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -89,10 +91,17 @@ export function MandalaAutoVideoDirector({
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
+ const [refineOpen,setRefineOpen]=useState(false);
+ const [refineText,setRefineText]=useState("");
+ useEffect(()=>{
+   setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
+ },[]);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
+ const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
  const length=seconds||proposal?.durationSeconds||30;
  // A prompt changed in the other shared editor must not leave a stale confirmation.
  const showProposal=Boolean(proposal&&proposalContext?.goal===goal&&
@@ -115,18 +124,27 @@ export function MandalaAutoVideoDirector({
    setOverrideId(null);setSeconds(null);
    setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,fallbackTheme:theme,presets,scenes}));
  };
- return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
-   <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
-     <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
-   </div>
+ const primaryGoalIds=new Set(["confidence","connection","fresh-start","stability"]);
+ const renderGoal=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
+   const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
+     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:Sparkles;
+   return <button key={item.id} type="button" data-auto-video-goal={item.id}
+       aria-pressed={showProposal&&selectedGoalId===item.id}
+       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
+       <Icon size={17} aria-hidden="true"/>{item.labels[locale]}
+     </button>;
+ };
+ const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <p className={css.goalsTitle}>{t.goalsTitle}</p>
    <div className={css.goalChoices} role="group" aria-label={t.goalsTitle}>
-     {AUTO_VIDEO_GOALS.map(item=><button key={item.id} type="button"
-       data-auto-video-goal={item.id} aria-pressed={showProposal&&selectedGoalId===item.id}
-       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
-       {item.labels[locale]}
-     </button>)}
+     {AUTO_VIDEO_GOALS.filter(item=>primaryGoalIds.has(item.id)).map(renderGoal)}
    </div>
+   <details className={css.extraGoals} data-auto-video-more-goals>
+     <summary>{t.moreGoals}</summary>
+     <div className={css.goalChoices}>
+       {AUTO_VIDEO_GOALS.filter(item=>!primaryGoalIds.has(item.id)).map(renderGoal)}
+     </div>
+   </details>
    <div className={css.entry}>
      <label className={css.goal}><span className={css.notice}>{t.input}</span>
        <input type="text" data-auto-video-input value={goal}
@@ -137,9 +155,31 @@ export function MandalaAutoVideoDirector({
            setSelectedGoalId(null);
          }}/>
      </label>
-     <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
-       onClick={choose}><Sparkles size={16} aria-hidden="true"/> {t.suggest}</button>
+     <div className={css.goalActions}>
+       <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
+         onClick={choose}><Sparkles size={16} aria-hidden="true"/>{t.suggest}</button>
+       <button type="button" className={css.clarifyButton} data-auto-video-clarify
+         disabled={disabled} aria-expanded={refineOpen}
+         onClick={()=>setRefineOpen(open=>!open)}>
+         <Target size={16} aria-hidden="true"/>{t.clarify}
+       </button>
+     </div>
    </div>
+   {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
+     <label htmlFor="auto-video-refine">{t.refine}</label>
+     <textarea id="auto-video-refine" rows={2} maxLength={120}
+       disabled={disabled} value={refineText} onChange={event=>setRefineText(event.currentTarget.value)}/>
+     <button type="button" disabled={disabled||!refineText.trim()} onClick={()=>{
+       onGoalChange([goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160));
+       setProposal(null);setProposalContext(null);setSelectedGoalId(null);setRefineOpen(false);
+     }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
+   </div>:null}
+ </div>;
+ return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
+   <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
+     <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
+   </div>
+   {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
@@ -155,8 +195,11 @@ export function MandalaAutoVideoDirector({
            return option?<button key={id} type="button" data-auto-video-option={id}
              aria-pressed={chosen.id===id} disabled={disabled}
              onClick={()=>setOverrideId(id===proposal.presetId?null:id)}>
-             <span>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
+             {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
+               alt="" loading="lazy" className={css.storyPoster}/>:null}
+             <span className={css.storyNumber}>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
              <strong>{option.label[locale]}</strong>
+             <small>{sceneById.get(option.clips[0])?.description[locale]||""}</small>
            </button>:null;
          })}
        </div>
@@ -165,6 +208,7 @@ export function MandalaAutoVideoDirector({
          {chosen.clips.map((clip,index)=>{
            const scene=sceneById.get(clip);
            return <li key={clip}>
+             {scenePoster(clip)?<img src={scenePoster(clip)!} alt="" loading="lazy" className={css.shotPoster}/>:null}
              <b>{index+1}. {t.stages[index]}</b><span>{sceneLabel(clip)}</span>
              {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
              {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
@@ -191,7 +235,15 @@ export function MandalaAutoVideoDirector({
          disabled={disabled} onClick={()=>onApply(chosen.id,length as 10|15|20|30|60)}>
          <Check size={18} aria-hidden="true"/> {t.accept}
        </button>
-       {activePresetId===chosen.id?<p className={css.notice} role="status">{t.applied}</p>:null}
+       {activePresetId===chosen.id?<div className={css.appliedActions}>
+         <p className={css.notice} role="status">{t.applied}</p>
+         {onCreate?<button type="button" className={css.create} data-auto-video-create
+           disabled={disabled||!canCreate} onClick={onCreate}>
+           <Play size={17} fill="currentColor" aria-hidden="true"/>
+           {rendering?t.waiting:t.create}
+         </button>:null}
+         {!canCreate&&!disabled?<p className={css.notice}>{t.waiting}</p>:null}
+       </div>:null}
        <p className={css.notice}>{t.safety}</p>
      </div>:<p role="status" className={css.warning}>{t.empty}</p>}
    </div>:null}
