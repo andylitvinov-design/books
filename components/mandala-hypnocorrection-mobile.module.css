@@ -163,3 +163,16 @@
   .meditationStart{min-height:80px}
   .meditationOptions button{min-height:77px}
 }
+/* Preserve a true 44 × 44 CSS-pixel touch target for the compact iPhone switches.
+   The visible pill remains 44 × 26 inside the transparent button hit area. */
+@media(max-width:759px){
+  .switch{position:relative;display:flex;align-items:center;justify-content:flex-start;
+    width:44px;height:44px;padding:0;background:transparent;border-radius:14px}
+  .switch::before{content:"";position:absolute;top:9px;left:0;width:44px;height:26px;
+    border-radius:18px;background:#bdc3cc}
+  .switch[data-on=true]{background:transparent}
+  .switch[data-on=true]::before{background:#018d79}
+  .switch>span{position:relative;z-index:1;flex:none;margin-left:3px;
+    width:20px;height:20px;transform:none}
+  .switch[data-on=true]>span{transform:translateX(18px)}
+}

@@ -2381,7 +2381,7 @@
  .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{display:grid}
  .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-video-quick-section="1"],
  .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-auto-video-director]{display:none}
- .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result],
+ .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]):not([data-active-workspace="effects"]) .quickBuilder>[data-video-result],
  .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result-empty]{display:none}
  .studio .quickBuilder>.quickHeader,.studio .quickBuilder>.quickBenefits,
  .studio .quickBuilder>.quickDisclosure{display:none}

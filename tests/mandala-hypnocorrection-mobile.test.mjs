@@ -69,6 +69,7 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+  const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
   assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
@@ -79,7 +80,10 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(studio,/studioMode==="pump"&&activeWorkspace!=="effects"/);
   assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:374px\)/);
+  assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
+  assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
+    "generated video result must remain visible in third workspace");
   for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
   assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
-  assert.match(ui,/onCreate=\{onCreate\}/);
+  assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
