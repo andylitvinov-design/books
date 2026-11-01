@@ -232,27 +232,33 @@ export function MandalaHypnoCompact({
   // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
   // to third-party models or written to account state. Existing approved
   // video phrases remain unchanged until the visitor explicitly approves.
-  function createWaveDraft(round:number):HypnoDraft {
-    const fallbackStrategy=buildWaveStrategy(waveInput);
+  function createWaveDraft(round:number,nextTheme:VideoTheme=theme,
+    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal):HypnoDraft {
+    // Test suggestions can change theme/chips in the same React event. Build
+    // the draft with their NEXT values, not a stale pre-render request key.
+    const localInput={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
+    const key=JSON.stringify([localInput,problemNote,goalNote]);
+    const fallbackStrategy=buildWaveStrategy(localInput);
     const fallbackPhrases=buildHypnoFilteredPhrases(
-      locale,theme,problemIndex,extraGoal,tone,kind,focus,length,round);
-    const result=buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,
+      locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,round);
+    const result=buildWaveNarrativeDraft({...localInput,currentText:problemNote,goalText:goalNote,
       round,fallbackStrategy,fallbackPhrases});
     if(result.status==="safety_handoff"){
-      return {model:"wave",key:requestKey,strategy:result.strategy,phrases:[],selected:[]};
+      return {model:"wave",key,strategy:result.strategy,phrases:[],selected:[]};
     }
     const maxLength=length==="short"?26:36;
     const phrases=[...new Set([...result.phrases,...fallbackPhrases])]
       .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
-    return {model:"wave",key:requestKey,strategy:result.strategy,
+    return {model:"wave",key,strategy:result.strategy,
       phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
   }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    setModel("wave");setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
-    const suggestions=buildHypnoFilteredPhrases(locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,next);
-    onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
+    // Updating a request or accepting a test proposal only stages a Wave v2
+    // suggestion. The parent video never receives it before Approve.
+    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal));
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){

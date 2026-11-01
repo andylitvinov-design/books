@@ -170,3 +170,20 @@ test('canonical Wave v2 reads notes locally but Gemini remains enum-only and app
       'Gemini payload must remain only the canonical enum filters');
   }
 });
+
+test('filter updates remain drafts until approve, including same-event test proposals',()=>{
+  const ui=readFileSync(new URL('../components/mandala-hypno-compact.tsx',import.meta.url),'utf8');
+  const filter=ui.split('  function filtered(')[1]?.split('  async function suggestFromTests()')[0];
+  assert.ok(filter,'missing real request-update handler');
+  assert.ok(filter.includes('setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal))'),
+    'test recommendations and request updates must produce unapproved drafts');
+  assert.ok(!filter.includes('onChange('),
+    'no updated/suggested phrases may reach the active video before explicit approval');
+  assert.ok(ui.includes('const localInput={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal}'),
+    'same-event test recommendation must not use stale theme/problem/goal');
+  assert.ok(ui.includes('const key=JSON.stringify([localInput,problemNote,goalNote])'));
+  assert.ok(ui.includes('if(!draft.selected.length)return'),
+    'safety handoff must not be approvable');
+  const approval=ui.split('  function approvePhrases()')[1]?.split('  const selectedScene=')[0];
+  assert.ok(approval.includes('onChange(next)'),'approval must be the only commit of a Wave draft');
+});
