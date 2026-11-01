@@ -18,11 +18,11 @@ The trusted client compiler in lib/mandala/video-executable-director.mjs returns
 - provenance flags: noExternalClientData, paidRenderApproved=false, readyToExecute.
 - No raw client text, account data, portrait, test result or upload in the result.
 
-Priority: scene rights/exclusions > user explicit settings > visual subjects > safe cinematic defaults. For a recognizable visual request, the local compiler may prioritize one relevant hero clip, while retaining curated sequence continuity. For a missing literal subject (new characters / photorealism) the existing mandatory symbolic-montage confirmation remains.
+Priority: scene rights/exclusions > user explicit settings > visual subjects > safe cinematic defaults. For recognizable visual requests, the local compiler selects real, source-backed scenes for up to three positive visual subjects in the visitor's stated order, then fills the remaining stages from the approved curated film. Each scene remains rights-checked. For a missing literal subject (new characters / photorealism) the existing mandatory symbolic-montage confirmation remains.
 
 ## Optional AI montage planner
 Route: POST /api/holistic-support/video-director-plan
-Requires explicit AI opt-in and same-origin. Payload is allowlisted: goal (max 160 chars), locale, duration, aspect, mood, music, phrases, selected candidateSceneIds and excludedMotifs. The server independently checks each candidate against first-party taxonomy, provenance, same-origin MP4 path and exclusion motifs.
+Requires explicit AI opt-in and same-origin. Payload is allowlisted: goal (max 800 chars), locale, duration, aspect, mood, music, phrases, selected candidateSceneIds and excludedMotifs. The server independently checks each candidate against first-party taxonomy, provenance, same-origin MP4 path and exclusion motifs.
 
 The provider sees trusted scene labels/tags, exact user filters and a strict JSON-only output schema:
 {"clipIds":["approved1","approved2","approved3","approved4"],"stageSeconds":[4,6,12,8]}
@@ -47,3 +47,30 @@ The chat storyboard and confirmation now use the SAME compiled scenario. The 4 s
 - Provider cost without explicit future release approval.
 
 Cost: no new paid service, existing free-only opt-in text models. Fallback works without any AI provider. 
+
+
+---
+
+# Executable Video Director — Visual Coverage & Approved-Cut Lock (v2)
+2026-11-01 · Target: production branch codex/public-book-library.
+
+## Problem verified in production code
+The v1 executable director chose a single visual hero shot from a thematic preset. The candidate scene pool remained limited to that theme. A visitor's ordered request such as "сначала лес, затем горы, без моря" could therefore render four nature clips without real mountains even though licensed mountain footage was available. AI suggestions were constrained by licensed IDs and duration, but not by preserving the visitor's requested literal subjects.
+
+A second issue was a stale AI response after the user had already confirmed the local director cut, which could alter the displayed storyboard while the underlying Canvas editor still held the prior one.
+
+## Source-backed improvements
+- Maintain four actual approved same-origin MP4 source IDs, client exclusions, no URLs or prompts supplied by the model.
+- Extract first three positive visual subjects in RU/EN/ES mention order. Match exact visual motifs and content IDs over loose marketing tags. Never treat sky/light as proof of a mountain.
+- Keep curated original montage clips, but enrich the bounded list of 16 candidates with verified visual matches from other thematic categories; only scenes that pass isSafeMontageScene may enter the pool.
+- Local executable plan: one distinct source-backed shot per available requested subject in order, remaining slots from the curated preset. Exact adaptive 10/15/20/30/60 second film timeline, audio/caption/export controls unchanged.
+- Optional consented AI cut: validate JSON at server and browser for unique verified clip IDs, exclusions, exact seconds, requested-subject inclusion AND positive-subject chronology, when suitable real clips exist. Invalid proposal -> local cut fallback. No paid video, false footage claims, new model rights, XP or added service.
+- Report visualCoverage.requested/matched/unavailable using only public subject IDs. An unavailable concrete visual causes requiresNovelFootage; in the existing chat it must require transparent symbolic montage consent, not fake depiction.
+- Stale-cut lock: an AI request cannot overwrite a confirmed storyboard. Disable approval while AI is working, cancel in-flight provider request at confirmation and on changed intent, reject any answer arriving outside the current review state, validate an immutable execution key covering scene order AND lengths before Create.
+- Existing single Canvas/MediaRecorder renderer and music player stay authoritative; no new rendering pipeline or direct production push.
+
+## Verification
+- node --test tests/video-executable-director.test.mjs tests/video-chat-intent.test.mjs tests/video-chat-ai.test.mjs
+- GitHub current HEAD: Mandala/TypeScript, actionlint, Core, Public Services, protected merge only after mandatory checks.
+- Browser/encoded media E2E is a separate release requirement, including Chromium/WebKit and audio sync; physical iPhone Save-to-Files is not implied by CI.
+- Watch overlapping open PR #2629 (voice/mixer) and #2938 (mobile layout) before landing: do not discard their source changes. Both may edit the same Video Director Chat or Studio component. This v2 patch deliberately leaves the Studio renderer untouched.

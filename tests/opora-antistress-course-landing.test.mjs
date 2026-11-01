@@ -74,6 +74,7 @@ test('all major campaign surfaces expose the dedicated info landing without remo
   const academy = read('components/academy-free-course-banner.tsx')
   const publicCourses = read('components/public-growth-courses.tsx')
   const courseSeo = read('app/[locale]/courses/page.tsx')
+  const canonicalLanding = read('components/public-antistress-landing.tsx')
   const spanishSeo = read('app/es/courses/page.tsx')
   const reportBanner = read('components/app/free-course-banner.jsx')
   assert.match(ribbon, /courses\/antistress/)
@@ -82,7 +83,10 @@ test('all major campaign surfaces expose the dedicated info landing without remo
   assert.match(academy, /app\/course\?program=stress/)
   assert.match(publicCourses, /courses\/antistress/)
   assert.match(publicCourses, /app\/course\?program=stress/)
-  assert.match(courseSeo, /ОПОРА Антистресс/)
+  assert.ok(courseSeo.includes("permanentRedirect(`/${locale}/academy`)"),
+    "legacy /courses must lead to the canonical public Academy");
+  assert.match(canonicalLanding, /"heroTitle": "Антистресс"/,
+    "original dedicated Russian Anti-Stress landing is still available");
   assert.match(spanishSeo, /OPORA Antiestrés/)
   assert.doesNotMatch(reportBanner, /courses\/antistress/, 'screening results keep exactly one score-independent optional course link')
 })
