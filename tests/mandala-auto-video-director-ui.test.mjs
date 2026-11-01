@@ -55,5 +55,23 @@ test("changing a shared video goal or theme invalidates stale Auto Director conf
   assert.match(director,/setProposalContext\(\{goal,theme\}\)/);
   assert.match(director,/setProposalContext\(\{goal:nextGoal,theme\}\)/);
   assert.match(director,/\{showProposal\?<div className=\{css\.result\}/);
-  assert.match(studio,/onGoalChange=\{next=>\{setWish\(graphemeTrim\(next\)\)/);
+  assert.match(studio,/onGoalChange=\{next=>\{setWish\(graphemeInput\(next\)\)/);
+});
+
+import {graphemeInput,graphemeTrim} from "../lib/mandala/personal-video-intent.mjs";
+
+test("iPhone goal editor retains spaces during typing, while captions can trim final text",()=>{
+  assert.equal(graphemeInput("Любовь "), "Любовь ");
+  assert.equal(graphemeInput("Любовь и близость "), "Любовь и близость ");
+  assert.equal(graphemeTrim("Любовь и близость "), "Любовь и близость");
+  assert.equal(graphemeInput("Hello world "), "Hello world ");
+});
+
+test("Auto Director is after the actual music section and has four tappable alternatives",()=>{
+  assert.ok(studio.indexOf('data-video-director-after-music') > studio.indexOf('data-video-quick-audio-choices'));
+  assert.ok(studio.indexOf('data-video-director-after-music') > studio.indexOf('id="video-hero"'));
+  assert.match(director,/data-auto-video-choices/);
+  assert.match(director,/data-auto-video-story=\{item\.id\}/);
+  assert.match(director,/aria-pressed=\{chosen\.id===item\.id\}/);
+  assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
 });
