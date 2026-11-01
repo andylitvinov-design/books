@@ -45,3 +45,10 @@ test('trusted workflows have PR mutation scope for their PR issue labels and han
     assert.ok(s.includes('pull-requests: write'),name+' must permit PR label/comment claims');
   }
 });
+
+test('guarded inventory validates but expires historical exact-head sweep ownership',()=>{
+  const s=read('hh-pr-full-inventory');
+  assert.ok(s.includes('lease.lease_expires'));
+  assert.ok(s.includes('lease.state="active"'));
+  assert.ok(s.includes('Unbounded active lease'));
+});

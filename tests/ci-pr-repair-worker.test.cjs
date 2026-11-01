@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,validBranch,validCandidate,activeSweepLease,prioritizedRepairCandidates,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -125,24 +125,43 @@ test('missing manual-repair label is created before returning owner status',asyn
   assert.equal(f.log.commit,0);
 });
 
-test('source-fix queue has priority without starving manual-conflict ownership',()=>{
+
+test('expired historical sweep comments cannot permanently suppress real Repair Worker',async()=>{
+  const now=Date.parse('2026-11-01T18:10:00Z');
+  const wrap=lease=>'<!-- HH_PR_SWEEP_LEASE_V1 -->\n\`\`\`json\n'+JSON.stringify(lease)+'\n\`\`\`';
+  const old={owner:'Codex / video',run_id:'video-2606-20261030',head_sha:sha,
+    lease_expires:'2026-10-30T16:45:00Z',last_action:'verify'};
+  assert.equal(activeSweepLease([{body:wrap(old)}],sha,now),false);
+  assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),true);
+  assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
+    lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
+  assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
+  const f=fixture({comments:[{body:wrap(old)}]});
+  const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
+  assert.equal(claimResult.status,'claimed');
+  assert.equal(f.log.comments,1);
+});
+
+test('source repairs take priority over historical manual-only conflicts',()=>{
   const source=[{number:2606,pull_request:{}}];
   const conflicts=Array.from({length:30},(_,i)=>({number:1400+i,pull_request:{}}));
-  for(let tick=0;tick<12;tick++){
-    const selected=prioritizedRepairCandidates(source,conflicts,1800000000000+tick*600000);
+  for(let i=0;i<12;i++){
+    const selected=prioritizedRepairCandidates(source,conflicts,1800000000000+i*600000);
     assert.equal(selected[0].number,2606);
     assert.ok(selected.length<=4);
     assert.ok(selected.slice(1).every(x=>x.number>=1400&&x.number<1430));
   }
 });
-test('old conflicts still progress when there are no source repairs',()=>{
+test('conflict queue rotates fairly even when no source repairs exist',()=>{
   const conflicts=Array.from({length:23},(_,i)=>({number:1400+i,pull_request:{}}));
   const seen=new Set();
-  for(let tick=0;tick<7;tick++) for(const item of prioritizedRepairCandidates([],conflicts,1800000000000+tick*600000))
+  for(let i=0;i<7;i++)for(const item of prioritizedRepairCandidates([],conflicts,1800000000000+i*600000))
     seen.add(item.number);
   assert.equal(seen.size,23);
 });
-test('prioritization deduplicates source and conflict labels',()=>{
-  const source=[{number:2606,pull_request:{}}], conflict=[{number:2606,pull_request:{}},{number:1421,pull_request:{}}];
-  assert.deepEqual(prioritizedRepairCandidates(source,conflict,1800000000000).map(x=>x.number),[2606,1421]);
+test('candidate queues deduplicate double-labelled pull requests',()=>{
+  assert.deepEqual(prioritizedRepairCandidates(
+    [{number:2606,pull_request:{}}],
+    [{number:2606,pull_request:{}},{number:1421,pull_request:{}}],
+    1800000000000).map(x=>x.number),[2606,1421]);
 });

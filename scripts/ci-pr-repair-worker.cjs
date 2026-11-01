@@ -36,9 +36,24 @@ function activeSweepLease(comments, sha, now) {
     if (start<0 || end<0) return true;
     try {
       const lease = JSON.parse(c.body.slice(start,end+1));
-      if (lease.schema !== 'HH_PR_SWEEP_LEASE_V1') return true;
-      if (lease.head_sha === sha && ['active','claim','heartbeat'].includes(lease.state || lease.last_action) &&
-        Date.parse(lease.expires_at) > now) return true;
+      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
+        if (lease.head_sha === sha &&
+            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
+          const expiry=Date.parse(lease.expires_at || '');
+          if (!Number.isFinite(expiry) || expiry > now) return true;
+        }
+        continue;
+      }
+      // Historical Codex lease comments use lease_expires without schema.
+      // Unknown/malformed ownership always blocks; proven expired leases do not.
+      const legacy=lease.schema == null &&
+        typeof lease.owner === 'string' && lease.owner.trim() &&
+        typeof lease.run_id === 'string' && lease.run_id.trim() &&
+        SHA.test(lease.head_sha || '') &&
+        Number.isFinite(Date.parse(lease.lease_expires || ''));
+      if (!legacy) return true;
+      if (lease.head_sha === sha && Date.parse(lease.lease_expires) > now)
+        return true;
     } catch { return true; }
   }
   return false;
@@ -53,6 +68,7 @@ function safeFiles(items) {
 function writeOutputs(core, values) {
   for (const [k, v] of Object.entries(values)) core.setOutput(k, String(v));
 }
+// Always inspect actionable source repairs before manual-conflict claims.
 function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES) {
   const eligible=items=>[...new Map((items || []).filter(i=>
     i && i.pull_request && Number.isSafeInteger(i.number) && i.number>0)
@@ -64,6 +80,7 @@ function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES) {
     const offset=(Math.floor(now/600000)*MAX_CANDIDATES)%items.length;
     return [...items.slice(offset),...items.slice(0,offset)].slice(0,count);
   };
+  // A bounded conflict slot preserves fairness without starving safe fixes.
   const sourceSlots=conflictItems.length?Math.max(1,max-1):max;
   const first=rotate(sourceItems,sourceSlots);
   return [...first,...rotate(conflictItems,max-first.length)];
@@ -92,8 +109,6 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
       limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
         sort:'updated',direction:'asc',per_page:40}))));
     if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
-    // Recover real source fixes before cycling through manual-only conflicts.
-    // Reserve one conflict slot so the owner handoff queue also progresses.
     candidates=prioritizedRepairCandidates(found[0].data,found[1].data,now);
   }
   for (const item of candidates) {

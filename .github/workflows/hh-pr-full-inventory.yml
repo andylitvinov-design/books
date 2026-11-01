@@ -177,8 +177,26 @@ jobs:
                  try{
                    const start=body.indexOf("{"),end=body.indexOf("}",start);
                    const lease=JSON.parse(body.slice(start,end+1));
-                   if(lease.schema!=="HH_PR_SWEEP_LEASE_V1")throw Error("Unrecognized lease");
-                   leases.set(lease.lease_id||("legacy:"+lease.owner),lease);
+                   if(lease.schema==="HH_PR_SWEEP_LEASE_V1"){
+                     // An active malformed expiry must never unlock a current HEAD.
+                     if(lease.head_sha===c.head &&
+                        ["active","claim","heartbeat"].includes(lease.state||lease.last_action) &&
+                        !Number.isFinite(Date.parse(lease.expires_at||"")))
+                       throw Error("Unbounded active lease");
+                   }else{
+                     // Historical Codex/owner comments use lease_expires.
+                     // Permit an expired exact-head legacy lease, never unknown schemas.
+                     const legacy=lease.schema==null &&
+                       typeof lease.owner==="string"&&lease.owner.trim() &&
+                       typeof lease.run_id==="string"&&lease.run_id.trim() &&
+                       /^[a-f0-9]{40}$/i.test(lease.head_sha||"") &&
+                       Number.isFinite(Date.parse(lease.lease_expires||""));
+                     if(!legacy)throw Error("Unrecognized lease");
+                     lease.state="active";
+                     lease.expires_at=lease.lease_expires;
+                     lease.lease_id="legacy:"+lease.owner+":"+lease.run_id;
+                   }
+                   leases.set(lease.lease_id||("legacy:"+lease.owner+":"+lease.head_sha),lease);
                  }catch{ambiguous=true;break;}
                }
                if(ambiguous||[...leases.values()].some(l=>
