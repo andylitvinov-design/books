@@ -20,16 +20,29 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
             echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
           fi
+          # Stacked child PRs depend on the parent commit ancestry, so the parent
+          # must use Merge Commit. Non-stacked PRs keep the original Squash policy.
+          # Fail closed rather than accidentally arming Squash if discovery fails.
+          if ! stacked_children="$(gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1 --jq 'length')"; then
+            echo '::error::Cannot classify stacked PR ancestry; refusing auto-merge' >&2
+            exit 1
+          fi
+          case "$stacked_children" in
+            0) merge_option=--squash; export HH_EXPECTED_MERGE_METHOD=SQUASH ;;
+            1) merge_option=--merge; export HH_EXPECTED_MERGE_METHOD=MERGE ;;
+            *) echo '::error::Unexpected stacked-child count; refusing auto-merge' >&2; exit 1 ;;
+          esac
           for ((attempt=1; attempt<=3; attempt++)); do
-            if gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
+            if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
               exit 0
             fi
             cat "$RUNNER_TEMP/auto-merge-error" >&2
-            if [[ "$(gh pr view "$PR_NUMBER" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest != null' 2>/dev/null)" == true ]]; then
+            if [[ "$(gh pr view "$PR_NUMBER" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
             fi
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
