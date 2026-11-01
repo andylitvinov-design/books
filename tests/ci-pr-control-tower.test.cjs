@@ -14,7 +14,7 @@ const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42,payload:{inputs:{}}};
 const pr=(number,lane='repair',extra={})=>({number,title:number===1?'fix(video): broken rendering':'feat(tests): updates',
- state:'open',draft:false,user:{login:'andylitvinov-design'},
+ state:'open',draft:false,mergeable:true,mergeable_state:'clean',user:{login:'andylitvinov-design'},
  base:{ref:'codex/public-book-library'},
  head:{ref:'branch-'+number,sha:SHA,repo:{full_name:'andylitvinov-design/books'}},
  labels:[{name:lane==='repair'?'hh:repair-needed':lane==='ci'?'hh:ci-needed':'hh:conflict-repair-needed'}],
@@ -28,7 +28,8 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  const calls={dispatched:[],reserved:[],read:[],removed:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
-  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)})
+  get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
+  listFiles:async()=>({data:[{filename:'src/a.js',status:'modified'}]})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
@@ -481,4 +482,47 @@ test('expired active foreign lease cannot be stolen by a second worker',()=>{
   JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
  assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify(old)}],NOW),'FREE');
+});
+
+
+test('source dispatch requires verified current mergeability before reservation',async()=>{
+ for(const state of [{mergeable:null,mergeable_state:'unknown'},
+  {mergeable:true,mergeable_state:'unknown'}, {mergeable:false,mergeable_state:'blocked'}]){
+  const f=fixture([pr(99,'repair',state)],{comments:{99:[proof()]}});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
+
+test('source dispatch requires a complete nonempty worker-safe changed-file scope',async()=>{
+ for(const files of [[],[{filename:'tests/only.test.js',status:'modified'}],
+   Array.from({length:100},(_,i)=>({filename:'src/'+i+'.js',status:'modified'}))]){
+  const f=fixture([pr(77)],{comments:{77:[proof()]}});
+  f.github.rest.pulls.listFiles=async()=>({data:files});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+ }
+});
+
+test('a blocked first source does not give the shared worker to conflict before another source',async()=>{
+ const first=pr(1,'repair',{title:'fix(video): verified source'}),second=pr(2,'repair',{title:'fix(video): verified source'});
+ const conflict=pr(100,'conflict',{title:'fix(video): conflict',mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([first,second,conflict],{comments:{2:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.workerRuns[0]?.lane,'repair');assert.equal(result.workerRuns[0]?.pr_number,2);
+});
+test('conflict triage has a bounded fairness turn under continuous source backlog',()=>{
+ const sources=Array.from({length:25},(_,i)=>pr(i+1,'repair'));
+ const conflict=pr(100,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const ordinary=planCandidates([...sources,conflict],NOW);
+ const fairness=planCandidates([...sources,conflict],NOW+5*600000);
+ assert.ok(ordinary.findIndex(x=>x.lane==='conflict')>ordinary.findIndex(x=>x.lane==='repair'));
+ assert.ok(fairness.findIndex(x=>x.lane==='conflict')<fairness.findIndex(x=>x.lane==='repair'));
+});
+test('rotation eventually inspects every source in a large sustained backlog',()=>{
+ const sources=Array.from({length:143},(_,i)=>pr(i+1,'repair',{title:'fix: source'}));
+ const conflict=pr(999,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const seen=new Set();for(let turn=0;turn<84;turn++)for(const task of planCandidates([...sources,conflict],NOW+turn*600000))if(task.lane==='repair')seen.add(task.pr_number);
+ assert.equal(seen.size,sources.length);
 });
