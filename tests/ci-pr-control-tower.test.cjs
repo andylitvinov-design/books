@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
-const {computeCapacity,admission}=require('../scripts/ci-pr-capacity.cjs');
+const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run}=require('../scripts/ci-pr-queue-dispatcher.cjs');
 const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
@@ -114,4 +114,73 @@ test('real conflict requires a fresh dirty merge state',async()=>{
  const g=fixture([dirty],{});
  r=await run({github:g.github,core:core(),context,now:NOW,capacityFn:g.capacityFn});
  assert.equal(r.dispatchAccepted,1);
+});
+
+
+test('GitHub in-progress list count race is retried before scheduling',async()=>{
+ let activeReads=0,queuedReads=0,jobReads=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>{
+   if(status==='in_progress'){
+    activeReads++;
+    return {data:{total_count:2,workflow_runs:activeReads===1?
+      [{id:1,name:'Core CI'}]:[{id:1,name:'Core CI'},{id:2,name:'Other CI'}]}};
+   }
+   queuedReads++;
+   return {data:{total_count:0,workflow_runs:[]}};
+  },
+  listJobsForWorkflowRun:async({run_id})=>{
+   jobReads++;return {data:{total_count:1,jobs:[{id:run_id,status:'in_progress'}]}};
+  }
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.known,true);
+ assert.equal(state.activeRuns,2);
+ assert.equal(state.runningJobs,2);
+ assert.equal(activeReads,2);
+ assert.equal(queuedReads,2);
+ assert.equal(jobReads,2);
+});
+
+test('persistently inconsistent inventory fails closed',async()=>{
+ let jobReads=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:status==='in_progress'?
+    {total_count:2,workflow_runs:[{id:1}]}:{total_count:0,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>{jobReads++;return {data:{total_count:0,jobs:[]}};}
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.known,false);
+ assert.equal(state.reason,'INCONSISTENT_RUN_INVENTORY');
+ assert.equal(jobReads,0);
+});
+
+test('saturated run count stops before job reads',async()=>{
+ let jobs=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:status==='in_progress'?
+   {total_count:24,workflow_runs:[]}:{total_count:0,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>{jobs++;return {data:{total_count:0,jobs:[]}};}
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.known,false);
+ assert.equal(state.reason,'RUN_CAPACITY_SATURATED');
+ assert.equal(jobs,0);
+});
+
+test('incomplete job inventory stops without dispatch',async()=>{
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:status==='in_progress'?
+    {total_count:1,workflow_runs:[{id:1,name:'Core'}]}:{total_count:0,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[{id:1,status:'in_progress'}]}})
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(state.known,false);
+ assert.equal(state.reason,'INCOMPLETE_JOB_INVENTORY');
+});
+
+test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(wf.includes("github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer'"));
+ assert.ok(wf.includes('cancel-in-progress: false'));
 });
