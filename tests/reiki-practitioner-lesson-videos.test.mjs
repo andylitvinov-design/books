@@ -54,7 +54,13 @@ test("Each teacher recording has its own slide BEFORE the original guided medita
     ["tan-intro-video", "tan-02"],
     ["kun-intro-video", "kun-02"],
     ["ygg-intro-video", "ygg-02"],
-  ]) assert.equal(sequence.indexOf(meditation), sequence.indexOf(intro) + 1);
+  ]) {
+    const audioId=meditation.replace(/-02$/, "-audio");
+    assert.equal(sequence.indexOf(audioId),sequence.indexOf(intro)+1,
+      "optional audio welcome follows the existing teacher introduction");
+    assert.equal(sequence.indexOf(meditation),sequence.indexOf(audioId)+1,
+      "original guided meditation immediately follows the audio welcome");
+  }
 });
 
 test("All four original EN guided meditations are visible on their established, stable IDs", () => {

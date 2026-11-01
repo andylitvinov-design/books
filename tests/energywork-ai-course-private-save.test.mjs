@@ -47,7 +47,7 @@ test('Server registry includes exactly 68 editorial IDs in one fixed five-lesson
   assert.equal(sequence.length, 68)
   assert.deepEqual(sequence.slice(3,11), ['flight-01','flight-audio','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.ok(!sequence.includes('flight-save'))
-  assert.equal(sequence[10],'tan-01')
+  assert.equal(sequence[11],'tan-01')
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence[1],'welcome-02')
   assert.equal(sequence[2],'welcome-video')
