@@ -134,28 +134,28 @@ const translations = {
 
 const workspaceCopy = {
  ru:{
- video:{tab:"Видео и настройки",title:"Видео и настройки",desc:"Стили, сюжеты, формат и качество вашего видеоролика."},
- audio:{tab:"Музыка и голос",title:"Музыка и голос",desc:"Выберите красивую мелодию, добавьте свою запись или голос и прикрепите к видео."},
- characters:{tab:"Герои и образы",title:"Герои и персонализация",desc:"Добавьте личное пожелание, изображение или фото с разрешения. Другие герои появятся после проверки."},
- hypnotherapy:{tab:"Гипнотерапия",title:"Гипнотерапия · 8 видеосессий",desc:"Бережные образные практики, не заменяющие клинический гипноз или лечение."},
- psychocorrection:{tab:"Гипнокоррекция",title:"Гипнокоррекция и установки",desc:"Подберите поддерживающие фразы, настроив их показ и подачу в видео."},
- courses:{tab:"Курсы и медитации",title:"Курсы и медитации",desc:"Выберите курс, медитацию или персональную видеопрограмму Holistic House."}
+ video:{tab:"Видео",title:"Видео и настройки",desc:"Стили, сюжеты, формат и качество вашего видеоролика."},
+ audio:{tab:"Музыка",title:"Музыка и голос",desc:"Выберите красивую мелодию, добавьте свою запись или голос и прикрепите к видео."},
+ characters:{tab:"Герои",title:"Герои и персонализация",desc:"Добавьте личное пожелание, изображение или фото с разрешения. Другие герои появятся после проверки."},
+ hypnotherapy:{tab:"Терапия",title:"Гипнотерапия · 8 видеосессий",desc:"Бережные образные практики, не заменяющие клинический гипноз или лечение."},
+ psychocorrection:{tab:"Коррекция",title:"Гипнокоррекция и установки",desc:"Подберите поддерживающие фразы, настроив их показ и подачу в видео."},
+ courses:{tab:"Курсы",title:"Курсы и медитации",desc:"Выберите курс, медитацию или персональную видеопрограмму Holistic House."}
  },
  en:{
- video:{tab:"Video settings",title:"Video & settings",desc:"Choose video styles, scenes, format and output quality."},
- audio:{tab:"Music & voice",title:"Music & voice",desc:"Choose a melody, add your own sound or voice and attach it to the video."},
- characters:{tab:"Characters",title:"Characters & personalization",desc:"Add an intention, your imagery or a consented photo. More character options are under development."},
- hypnotherapy:{tab:"Hypnotherapy",title:"Guided hypnotherapy · 8 sessions",desc:"Gentle guided imagery, not clinical hypnosis or a substitute for care."},
- psychocorrection:{tab:"Affirmations",title:"Psychocorrection & affirmations",desc:"Choose supportive phrases and how they appear in the video."},
- courses:{tab:"Courses & meditation",title:"Courses & meditations",desc:"Open a course, meditation or personal video programme."}
+ video:{tab:"Video",title:"Video & settings",desc:"Choose video styles, scenes, format and output quality."},
+ audio:{tab:"Music",title:"Music & voice",desc:"Choose a melody, add your own sound or voice and attach it to the video."},
+ characters:{tab:"Heroes",title:"Characters & personalization",desc:"Add an intention, your imagery or a consented photo. More character options are under development."},
+ hypnotherapy:{tab:"Therapy",title:"Guided hypnotherapy · 8 sessions",desc:"Gentle guided imagery, not clinical hypnosis or a substitute for care."},
+ psychocorrection:{tab:"Correction",title:"Psychocorrection & affirmations",desc:"Choose supportive phrases and how they appear in the video."},
+ courses:{tab:"Courses",title:"Courses & meditations",desc:"Open a course, meditation or personal video programme."}
  },
  es:{
- video:{tab:"Ajustes de vídeo",title:"Vídeo y ajustes",desc:"Elige estilos, escenas, formato y calidad de vídeo."},
- audio:{tab:"Música y voz",title:"Música y voz",desc:"Elige una melodía, añade sonido o voz y adjúntalo al vídeo."},
- characters:{tab:"Personajes",title:"Personajes y personalización",desc:"Añade tu intención, imágenes o una foto consentida. Más personajes llegarán tras verificarlos."},
- hypnotherapy:{tab:"Hipnoterapia",title:"Hipnoterapia guiada · 8 sesiones",desc:"Imágenes guiadas que no sustituyen la atención clínica."},
- psychocorrection:{tab:"Afirmaciones",title:"Psicocorrección y frases",desc:"Frases de apoyo y formas de mostrarlas en el vídeo."},
- courses:{tab:"Cursos y meditación",title:"Cursos y meditaciones",desc:"Abre un curso, meditación o programa personal."}
+ video:{tab:"Vídeo",title:"Vídeo y ajustes",desc:"Elige estilos, escenas, formato y calidad de vídeo."},
+ audio:{tab:"Música",title:"Música y voz",desc:"Elige una melodía, añade sonido o voz y adjúntalo al vídeo."},
+ characters:{tab:"Héroes",title:"Personajes y personalización",desc:"Añade tu intención, imágenes o una foto consentida. Más personajes llegarán tras verificarlos."},
+ hypnotherapy:{tab:"Terapia",title:"Hipnoterapia guiada · 8 sesiones",desc:"Imágenes guiadas que no sustituyen la atención clínica."},
+ psychocorrection:{tab:"Corrección",title:"Psicocorrección y frases",desc:"Frases de apoyo y formas de mostrarlas en el vídeo."},
+ courses:{tab:"Cursos",title:"Cursos y meditaciones",desc:"Abre un curso, meditación o programa personal."}
  },
 } as const;
 const workspaceTabs=[
