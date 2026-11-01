@@ -67,3 +67,8 @@ test('owner tabs are linked, accessible and URL-backed without unmounting chat s
   assert.match(css,/\.shell\[data-detail-open="true"\] \.tabs\{display:none\}/)
   assert.match(css,/\.tabs button\[aria-selected="true"\]/)
 })
+
+test('request composer is shown only when the same request is eligible for a protected conversation',()=>{
+  const source=read('components/app/messages-simple-inbox.jsx')
+  assert.match(source,/inMessagesTab\(selected,'chats'\)\s*\?\s*<PracticeRequestConversation/)
+})

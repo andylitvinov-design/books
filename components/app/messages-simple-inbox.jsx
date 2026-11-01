@@ -361,7 +361,7 @@ export default function MessagesSimpleInbox({
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>
           </div>
-          {selected.item.requestKind!=='public'?
+          {inMessagesTab(selected,'chats')?
             <PracticeRequestConversation key={selected.id} inline autoOpen
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
