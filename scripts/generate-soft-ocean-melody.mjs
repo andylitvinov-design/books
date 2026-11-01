@@ -5,7 +5,7 @@
 // The browser uses a static WAV (not WebAudio) for iPhone media reliability.
 import { writeFileSync } from "node:fs";
 import { writeMelodyMasters } from "./generate-mandala-melodies.mjs";
-import {buildScenarioMusic} from "./generate-scenario-melodies.mjs";
+
 
 function synthSoftMelody() {
   // Uncompressed 24 kHz PCM is used for reliable iPhone Safari HTMLMediaElement playback.
@@ -93,10 +93,6 @@ function synthSoftMelody() {
 // score-owned 32s melodies without broadening package.json CI triggers.
 const authoredMusic=writeMelodyMasters();
 console.log("[holistic-original-melodies] generated",authoredMusic.masters,"original WAV masters");
-// Each existing 4-MP4 scenario receives four distinct, actual native MP3
-// masters before Next.js exports the site. Existing source-track URLs remain.
-const scenarioMusic=buildScenarioMusic();
-console.log("[holistic-scenario-music]",scenarioMusic.totalMasterFiles,"files, generated",scenarioMusic.generated);
 
 
 const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-96s.wav", import.meta.url);
