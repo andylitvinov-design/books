@@ -932,7 +932,7 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
-  assert.ok(enable.includes('current_method == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
+  assert.ok(enable.includes('"$current_method" == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
   assert.ok(enable.includes('current_method" != NONE'), 'must refuse unsafe merge-method switch');
   assert.ok(enable.includes('gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD"'));
   const recover = source.split(/^  recover-interrupted-core:\s*$/m)[1];
