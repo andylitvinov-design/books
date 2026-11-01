@@ -38,10 +38,10 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    assert.ok(studio.includes("activeWorkspace"),"local selection retained");
  }
  assert.match(studio,/data-workspace-section="practices"/);
- assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="psychocorrection" \? deepHypnoPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="phrases" \? deepHypnoPane : null\}/);
  assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="video" \? deepVideoPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="editor" \? deepVideoPane : null\}/);
 });
 test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
