@@ -141,14 +141,19 @@ test('real DIRTY PR enters conflict queue without consuming Core CI requests',as
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
     checks:{listForRef:async()=>{checked++;throw Error('dirty PR must bypass CI');}},
     issues:{addLabels:async()=>{labels++;}}
-  },request:async()=>{dispatched++;throw Error('unexpected API call')}};
+  },request:async(route)=>{
+    if(route.includes('/runs'))return {data:{workflow_runs:[]}};
+    if(route.includes('/dispatches')){dispatched++;return {data:{}};}
+    throw Error('unexpected API route '+route);
+  }};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.mergeConflicts,1);
   assert.equal(result.conflictLabelsQueued,1);
   assert.equal(result.missingCore,0);
   assert.equal(checked,0);
   assert.equal(labels,1);
-  assert.equal(dispatched,0);
+  assert.equal(dispatched,1);
+  assert.equal(result.repairWorkerDispatched,1);
   assert.ok(result.apiRequests<=65);
 });
 test('unknown mergeability is not treated as missing Core CI',async()=>{
@@ -856,4 +861,19 @@ test('expired legacy Codex leases release owner capacity, but active and malform
     lease_expires:new Date(NOW+3600_000).toISOString()})}],SHA,NOW),false);
   assert.equal(hasActiveLease([{body:body({...legacy,lease_expires:'not-a-date'})}],SHA,NOW),true);
   assert.equal(hasActiveLease([{body:body({...legacy,schema:'UNTRUSTED'})}],SHA,NOW),true);
+});
+
+test('saturated Actions capacity defers new conflict Repair dispatch',async()=>{
+  let dispatched=0;
+  const live={...pr(1779),state:'open',mergeable:false,mergeable_state:'dirty',labels:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?25:19}})},
+    issues:{addLabels:async()=>({data:[]})}
+  },request:async()=>{dispatched++;throw Error('busy CI must not dispatch');}};
+  const r=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(r.conflictLabelsQueued,1);
+  assert.equal(r.blockedByCapacity,true);
+  assert.equal(r.repairWorkerDispatched,0);
+  assert.equal(dispatched,0);
 });
