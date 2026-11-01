@@ -155,5 +155,8 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }
-  assert.doesNotMatch(audioSource+client,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
+  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
+  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });

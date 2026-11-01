@@ -12,6 +12,7 @@ import {
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
+import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import css from "./mandala-hypno-compact.module.css";
 
@@ -217,7 +218,8 @@ export function MandalaHypnoCompact({
   const runId=useRef(0);
   const pending=useRef<AbortController|null>(null);
   const waveInput={locale,theme,problemIndex,goalId:extraGoal,tone,focus,kind,length};
-  const requestKey=JSON.stringify(waveInput);
+  // Raw notes remain browser-local and NEVER enter Gemini's enum-only payload.
+  const requestKey=JSON.stringify([waveInput,problemNote,goalNote]);
   const latestKey=useRef(requestKey);
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
@@ -227,12 +229,36 @@ export function MandalaHypnoCompact({
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
   const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
+  // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
+  // to third-party models or written to account state. Existing approved
+  // video phrases remain unchanged until the visitor explicitly approves.
+  function createWaveDraft(round:number,nextTheme:VideoTheme=theme,
+    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal):HypnoDraft {
+    // Test suggestions can change theme/chips in the same React event. Build
+    // the draft with their NEXT values, not a stale pre-render request key.
+    const localInput={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
+    const key=JSON.stringify([localInput,problemNote,goalNote]);
+    const fallbackStrategy=buildWaveStrategy(localInput);
+    const fallbackPhrases=buildHypnoFilteredPhrases(
+      locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,round);
+    const result=buildWaveNarrativeDraft({...localInput,currentText:problemNote,goalText:goalNote,
+      round,fallbackStrategy,fallbackPhrases});
+    if(result.status==="safety_handoff"){
+      return {model:"wave",key,strategy:result.strategy,phrases:[],selected:[]};
+    }
+    const maxLength=length==="short"?26:36;
+    const phrases=[...new Set([...result.phrases,...fallbackPhrases])]
+      .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
+    return {model:"wave",key,strategy:result.strategy,
+      phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
+  }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
     pending.current?.abort();runId.current++;
-    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    setModel("wave");setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
-    const suggestions=buildHypnoFilteredPhrases(locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,next);
-    onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
+    // Updating a request or accepting a test proposal only stages a Wave v2
+    // suggestion. The parent video never receives it before Approve.
+    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal));
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){
@@ -274,7 +300,10 @@ export function MandalaHypnoCompact({
 
   const toggle=(panel:Exclude<EditPanel,null>)=>setOpen(current=>current===panel?null:panel);
   const propose=()=>{
-    filtered();setOpen(null);
+    pending.current?.abort();runId.current++;
+    const next=generation+1;
+    setModel("wave");setDraftState(createWaveDraft(next));
+    setGeneration(next);setSelectionSource("smart");setApprovalKey("");setOpen(null);
   };
   const ready=()=>{
     pending.current?.abort();runId.current++;
@@ -297,11 +326,8 @@ export function MandalaHypnoCompact({
     pending.current?.abort();runId.current++;
     setGeminiBusy(false);setGeminiNotice("");setApprovalKey("");
     setModel(next);setDraftState(null);
-    if(next==="wave"){
-      setDraftState({model:"wave",key:requestKey,strategy:buildWaveStrategy(waveInput),
-        phrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation+1),
-        selected:[0,1,2]});
-    }else if(geminiConsent)void generateGemini();
+    if(next==="wave")setDraftState(createWaveDraft(generation+1));
+    else if(geminiConsent)void generateGemini();
   }
   async function generateGemini(){
     if(disabled||!geminiConsent)return;
@@ -513,7 +539,7 @@ export function MandalaHypnoCompact({
           <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(!draft&&!settings.enabled)||(!selectedCount&&!settings.custom.trim())}
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(!settings.enabled||(!selectedCount&&!settings.custom.trim())))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 

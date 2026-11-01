@@ -7,6 +7,11 @@ on:
       - 'scripts/benchmarking/first-video-live-export.mjs'
       - '.github/workflows/hh-first-video-live-export.yml'
   workflow_dispatch:
+    inputs:
+      require_licensed:
+        description: 'Verify four licensed MP4 sources in the downloaded video'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -58,6 +63,7 @@ jobs:
         timeout-minutes: 3
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
+          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ inputs.require_licensed && 'true' || 'false' }}
         run: node scripts/benchmarking/first-video-live-export.mjs
       - name: Preserve only anonymous capability and failure summary
         if: always()

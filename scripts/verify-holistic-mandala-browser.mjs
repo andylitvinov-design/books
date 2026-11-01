@@ -70,7 +70,7 @@ const runEngine = async ([engine, browserType]) => {
     // leaking between closed contexts across repeated iPhone dimensions.
     // This is isolation, not a skipped assertion or retry of a failed case.
     // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
-    // native 13-track audio checks, reducing simultaneous encoding pressure.
+    // native 39-track audio checks, reducing simultaneous encoding pressure.
     const orderedViewports = engine === "chromium"
       ? [...viewports.filter(v => v.locale !== "ru" || v.width !== 390),
         ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
@@ -133,12 +133,12 @@ const runEngine = async ([engine, browserType]) => {
           await form.locator("[data-first-video-wish]").fill("Горы");
           const promptField=form.locator("[data-first-video-prompt]");
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
-            .toContain("горные вершины");
+            .toMatch(/горн/i);
           const firstVariant=await promptField.inputValue();
           await form.locator("[data-first-video-refresh]").click();
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
-          assert.match(await promptField.inputValue(),/горные вершины/i);
+          assert.match(await promptField.inputValue(),/горн/i);
           // Exercise actual hydrated iPhone filters; these values MUST
           // survive in the real HTTP body, not merely decorate the UI.
           const aiFilters=form.locator("[data-first-video-filters]");
@@ -1090,6 +1090,7 @@ const runEngine = async ([engine, browserType]) => {
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
+        const approvedPreviewBeforeRequest=await compactHypno.locator("[data-hypno-preview] strong").innerText();
         await compactHypno.locator("[data-hypno-request-edit]").click();
         await compactHypno.locator('[data-hypno-problem="1"]').click();
         // The earlier real-film test selected MONEY. Match its actual goal catalogue.
@@ -1097,12 +1098,19 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.equal(await compactHypno.locator("[data-hypno-preview] strong").innerText(),approvedPreviewBeforeRequest,
+          "a proposed Wave phrase must not replace the active preview before approval");
+        const proposedPhrase=(await compactHypno.locator('[data-hypno-phrase="0"]').innerText()).trim();
+        assert.ok(proposedPhrase.length>0,"Wave must offer a concrete phrase");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.ok((await compactHypno.locator("[data-hypno-preview]").innerText()).includes(proposedPhrase),
+          "approval must put the proposed phrase into the active preview");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        await compactHypno.locator("[data-hypno-design-edit]").click();
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1226,8 +1234,8 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
           await page.locator("[data-video-audio-more]").click();
-          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
-            "expanded audio-only library contains all 13 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),39,
+            "expanded audio-only library contains all 39 original WAV tracks");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
             "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
@@ -1272,7 +1280,7 @@ const runEngine = async ([engine, browserType]) => {
               "healthy preset must not show direct-open error fallback");
             await page.locator("[data-video-music-preview]").click();
           }
-          // Mock-fidelity regression: five sound filters and all 13 original
+          // Mock-fidelity regression: sound filters and all 39 original
           // WAVs share exactly one real player. A row Play starts native
           // Safari-compatible media but does NOT silently attach it to video.
           assert.equal(await page.locator('[data-video-quick-section="5"] audio').count(),0,
@@ -1774,6 +1782,34 @@ const runEngine = async ([engine, browserType]) => {
           await auto.waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
             "six accessible one-tap goals, no mandatory 49-question intake");
+          // Owner-reported iPhone regression: focus must not zoom, trailing
+          // whitespace must survive, user intent must change the real proposal,
+          // and one of the alternative film cards must be selectable.
+          const typedGoal=auto.locator("[data-auto-video-input]");
+          await typedGoal.fill("Любовь ");
+          await typedGoal.pressSequentially("и доверие");
+          assert.equal(await typedGoal.inputValue(),"Любовь и доверие",
+            "goal input must preserve the space between two words");
+          await auto.locator("[data-auto-video-suggest]").click();
+          await expect(auto.locator("[data-auto-video-matched-theme]")).toContainText("Отношения");
+          const alternatives=auto.locator("[data-auto-video-option]");
+          assert.ok(await alternatives.count()>=2,"at least two genuine approved alternative story choices");
+          await alternatives.nth(1).click();
+          await expect(alternatives.nth(1)).toHaveAttribute("aria-pressed","true");
+          await expect(alternatives.nth(0)).toHaveAttribute("aria-pressed","false");
+          const geometry=await typedGoal.evaluate(el=>({
+            font:Number.parseFloat(getComputedStyle(el).fontSize),
+            viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+            right:el.getBoundingClientRect().right
+          }));
+          assert.ok(geometry.font>=16 && geometry.right<=geometry.viewport+2 &&
+            geometry.scroll<=geometry.viewport+2,
+            "iPhone goal field must not trigger focus zoom or horizontal overflow: "+JSON.stringify(geometry));
+          const musicPosition=await page.locator("[data-video-quick-audio-choices]").evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          const directorPosition=await auto.evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          assert.ok(directorPosition>musicPosition,
+            "Auto Video Director must appear below the existing Music & Voice block");
+
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
           await auto.locator('[data-auto-video-goal="calm"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
@@ -1786,6 +1822,16 @@ const runEngine = async ([engine, browserType]) => {
             undefined,{timeout:15000});
           assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
             "Auto Director reuses the only live editable video stage");
+          const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          // The legacy quick-duration control is intentionally in a collapsed
+          // details panel. Exercise the actually visible Video workspace button.
+          await page.locator('[data-video-duration="15"]').click();
+          await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
+          assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
+            "duration changes must retain the four selected MP4 sources");
         }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
