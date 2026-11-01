@@ -53,6 +53,14 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // Independent Site Video CI policy and source-only E2E contracts cannot
+  // change public services runtime, consent or payment. Protected Core/actionlint
+  // and its exact-head Site Video job still validate these files.
+  '.github/workflows/site-video-browser.yml',
+  'scripts/ci-site-video-scope.mjs',
+  'tests/ci-site-video-scope.test.mjs',
+  'tests/site-video-admin-e2e-gate.test.mjs',
+  'tests/ci-heavy-draft-policy.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
@@ -200,6 +208,25 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   }
 }
 
+// Temporary backlog optimization: keep full original Chromium/WebKit for
+// unknown, auth, consent, payments, booking and cart paths. Only the reviewed
+// presentation-only focused cases can defer their duplicate real browser to
+// explicit manual QA while Core and source tests still run on PR.
+const SAFE_FOCUSED_PR_CASES = new Set([
+  'verify-ideas-mobile-browser.mjs',
+  'verify-direction-focus-mobile.mjs',
+  'verify-holistic-topics-browser.mjs',
+  'verify-holistic-support-recommendations-mobile.mjs',
+]);
+export function requiresPublicServicesHeavyPr(plan) {
+  if (!plan || plan.mode === 'full') return true;
+  if (plan.mode === 'focused') {
+    const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
+    return !cases.length || cases.some(name => !SAFE_FOCUSED_PR_CASES.has(name));
+  }
+  return false;
+}
+
 function main() {
   const plan = planPublicServicesEvent();
   const summary = 'Public Services impact: ' + plan.mode +
@@ -211,6 +238,7 @@ function main() {
     appendFileSync(process.env.GITHUB_OUTPUT,
       ['mode=' + plan.mode, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
+        'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'cases=' + plan.cases].join('\n') + '\n');
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
