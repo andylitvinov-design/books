@@ -2,21 +2,21 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type TouchEvent } from "react";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Coins, Flower2, Gem, Heart, Leaf, ShoppingBag, Sparkles, Target, UserRound, Waves, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Coins, Flower2, Gem, Heart, Leaf, ShoppingBag, Sparkles, Target, UserRound, Waves, Wind, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { readBrowserTalismanCart, saveBrowserTalismanCart, consumeBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { TaoistTalismanCart } from "@/components/taoist-talisman-cart";
 import styles from "./holistic-support-talisman-viewer.module.css";
 
-type Focus = "energy" | "money" | "relationships" | "goals";
+type Focus = "energy" | "money" | "relationships" | "goals" | "stress";
 type Category = Focus | "balance" | "calm";
 type Property = "all" | "fu-prosperity" | "fu-harmony" | "fu-balance";
 // Categories are browsing intentions, not new SKUs: all point to three existing
 // published Fu illustrations. Price and practitioner are never invented here.
 const byGoal: Record<Category, string> = {
   energy: "fu-balance", money: "fu-prosperity",
-  relationships: "fu-harmony", goals: "fu-prosperity",
+  relationships: "fu-harmony", goals: "fu-prosperity", stress: "fu-balance",
   balance: "fu-balance", calm: "fu-balance",
 };
 const categoryOptions = [
@@ -24,6 +24,7 @@ const categoryOptions = [
   { id: "money", Icon: Coins },
   { id: "relationships", Icon: Heart },
   { id: "goals", Icon: Target },
+  { id: "stress", Icon: Wind },
   { id: "balance", Icon: Flower2 },
   { id: "calm", Icon: Waves },
 ] as const;
@@ -32,7 +33,7 @@ const translations = {
   en: {
     mode: "Talisman", tradition: "Tradition", daoist: "Daoist Fu",
     master: "Master", masterValue: "On request", goal: "Goal",
-    goals: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals" },
+    goals: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", stress: "Anti-stress" },
     recommended: "For your chosen focus", symbol: "Symbolic design", price: "Price confirmed by the master",
     request: "Order", requestAria: "Request talisman", detail: "Details", closeDetail: "Hide details",
     gallery: "Choose a talisman", browse: "Browse all", hideBrowse: "Close catalogue",
@@ -44,9 +45,9 @@ const translations = {
     categoriesTitle: "Talismans", categoryLead: "Choose your intention", categoryAll: "All categories",
     nextCategory: "More categories", filtersLabel: "Talisman filters",
     categoryNames: { energy: "Strength talismans", money: "Money talismans", relationships: "Love talismans",
-      goals: "Goal talismans", balance: "Balance talismans", calm: "Calm talismans" },
+      goals: "Goal talismans", stress: "Calm symbols (anti-stress)", balance: "Balance talismans", calm: "Calm talismans" },
     categoryShortNames: { energy: "Strength", money: "Money", relationships: "Love",
-      goals: "Goals", balance: "Balance", calm: "Calm" },
+      goals: "Goals", stress: "Anti-stress", balance: "Balance", calm: "Calm" },
     allTraditions: "All traditions", descriptionFilter: "Description", allProperties: "All themes",
     properties: { "fu-prosperity": "Prosperity", "fu-harmony": "Harmony", "fu-balance": "Balance" },
     masterNote: "No verified maker is assigned to these illustrative designs yet. The master and final details are confirmed when replying to your request.",
@@ -55,7 +56,7 @@ const translations = {
   ru: {
     mode: "Талисман", tradition: "Традиция", daoist: "Даосские Фу",
     master: "Мастер", masterValue: "По запросу", goal: "Цель",
-    goals: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели" },
+    goals: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", stress: "Антистресс" },
     recommended: "По выбранной цели", symbol: "Символический рисунок", price: "Стоимость уточняется у мастера",
     request: "Заказать", requestAria: "Заказать талисман", detail: "Подробнее", closeDetail: "Скрыть описание",
     gallery: "Выбери талисман", browse: "Весь каталог", hideBrowse: "Свернуть каталог",
@@ -67,9 +68,9 @@ const translations = {
     categoriesTitle: "Талисманы", categoryLead: "Выбери направление энергии", categoryAll: "Все категории",
     nextCategory: "Другие категории", filtersLabel: "Фильтры талисманов",
     categoryNames: { energy: "Талисманы силы", money: "Талисманы денег", relationships: "Талисманы любви",
-      goals: "Талисманы цели", balance: "Талисманы баланса", calm: "Талисманы спокойствия" },
+      goals: "Талисманы цели", stress: "Символы спокойствия", balance: "Талисманы баланса", calm: "Талисманы спокойствия" },
     categoryShortNames: { energy: "Сила", money: "Деньги", relationships: "Любовь",
-      goals: "Цель", balance: "Баланс", calm: "Покой" },
+      goals: "Цель", stress: "Антистресс", balance: "Баланс", calm: "Покой" },
     allTraditions: "Все традиции", descriptionFilter: "Описание", allProperties: "Все свойства",
     properties: { "fu-prosperity": "Достаток", "fu-harmony": "Гармония", "fu-balance": "Равновесие" },
     masterNote: "Автор конкретного эскиза пока не подтверждён. Мастер и условия изготовления уточняются в ответе на заявку.",
@@ -78,7 +79,7 @@ const translations = {
   es: {
     mode: "Talismán", tradition: "Tradición", daoist: "Fu taoísta",
     master: "Maestro", masterValue: "A consultar", goal: "Objetivo",
-    goals: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas" },
+    goals: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Metas", stress: "Antiestrés" },
     recommended: "Para tu objetivo", symbol: "Diseño simbólico", price: "Precio confirmado por el maestro",
     request: "Encargar", requestAria: "Solicitar talismán", detail: "Detalles", closeDetail: "Ocultar detalles",
     gallery: "Elige un talismán", browse: "Ver catálogo", hideBrowse: "Cerrar catálogo",
@@ -90,9 +91,9 @@ const translations = {
     categoriesTitle: "Talismanes", categoryLead: "Elige tu intención", categoryAll: "Todas las categorías",
     nextCategory: "Más categorías", filtersLabel: "Filtros de talismanes",
     categoryNames: { energy: "Talismanes de fuerza", money: "Talismanes de dinero", relationships: "Talismanes de amor",
-      goals: "Talismanes de metas", balance: "Talismanes de equilibrio", calm: "Talismanes de calma" },
+      goals: "Talismanes de metas", stress: "Símbolos de calma", balance: "Talismanes de equilibrio", calm: "Talismanes de calma" },
     categoryShortNames: { energy: "Fuerza", money: "Dinero", relationships: "Amor",
-      goals: "Metas", balance: "Balance", calm: "Calma" },
+      goals: "Metas", stress: "Antiestrés", balance: "Balance", calm: "Calma" },
     allTraditions: "Todas las tradiciones", descriptionFilter: "Descripción", allProperties: "Todas las cualidades",
     properties: { "fu-prosperity": "Prosperidad", "fu-harmony": "Armonía", "fu-balance": "Equilibrio" },
     masterNote: "Todavía no se ha verificado un creador para estos diseños ilustrativos. El maestro y los detalles se confirman al responder a la solicitud.",

@@ -12,7 +12,7 @@ const library = [
   video("ccccccccccc", ["business"]),
   video("ddddddddddd", ["energy"]),
 ];
-const defaultScores = { energy: 4, money: 6, relationships: 7, goals: 5 };
+const defaultScores = { energy: 4, money: 6, relationships: 7, goals: 5, stress: 8 };
 
 test("explicit focus is stronger than another domain's low self-score", () => {
   const result = recommendSupportContent({
@@ -31,6 +31,7 @@ test("every chosen domain returns an actual existing topic video and symbolic ca
     money: ["ccccccccccc", "fu-prosperity"],
     relationships: ["aaaaaaaaaaa", "fu-harmony"],
     goals: ["ccccccccccc", "fu-prosperity"],
+    stress: ["bbbbbbbbbbb", "fu-balance"],
   };
   for (const [focus, [youtubeId, talismanId]] of Object.entries(expected)) {
     const result = recommendSupportContent({
@@ -101,6 +102,7 @@ test("does not invent results for missing publications or invalid personal ratin
   assert.equal(result.scores.money, 5);
   assert.equal(result.scores.relationships, 5);
   assert.equal(result.scores.goals, 5);
+  assert.equal(result.scores.stress, 5);
   assert.equal(result.videos.length, 1);
   assert.equal(result.matchedVideo, false);
   assert.deepEqual(result.talismans, []);
@@ -122,12 +124,13 @@ test("deduplicates source recordings; no assumed products or side effects", () =
 
 
 test("lowest self-rating selects topic without a focus button", () => {
-  const base = { energy: 8, money: 8, relationships: 8, goals: 8 };
+  const base = { energy: 8, money: 8, relationships: 8, goals: 8, stress: 8 };
   const expected = {
     energy: ["bbbbbbbbbbb", "ddddddddddd"],
     money: ["ccccccccccc"],
     relationships: ["aaaaaaaaaaa"],
     goals: ["ccccccccccc"],
+    stress: ["bbbbbbbbbbb"],
   };
   for (const [domain, accepted] of Object.entries(expected)) {
     const result = recommendSupportByLowestScores({
@@ -136,7 +139,7 @@ test("lowest self-rating selects topic without a focus button", () => {
     assert.deepEqual(result.priorities, [domain], domain);
     assert.equal(result.minimum, 1);
     assert.ok(accepted.includes(result.videos[0].id), domain + " chosen from real tagged recordings");
-    assert.equal(result.matchedVideo, true);
+    assert.equal(result.matchedVideo, domain !== "stress");
   }
 });
 
@@ -146,14 +149,14 @@ test("ties are jointly considered; input order never picks a hidden focus", () =
     video("mmmmmmmmmmm", ["love"]),
     video("nnnnnnnnnnn", ["business"]),
   ];
-  const scores = { energy: 2, money: 9, relationships: 2, goals: 9 };
+  const scores = { energy: 2, money: 9, relationships: 2, goals: 9, stress: 9 };
   const result = recommendSupportByLowestScores({ scores, videos });
   assert.equal(result.minimum, 2);
   assert.deepEqual(result.priorities, ["energy", "relationships"]);
   assert.deepEqual(result.videos.slice(0, 2).map(item => item.id),
     ["lllllllllll", "mmmmmmmmmmm"]);
   assert.equal(result.videos[2].id, "nnnnnnnnnnn");
-  assert.deepEqual(scores, { energy: 2, money: 9, relationships: 2, goals: 9 });
+  assert.deepEqual(scores, { energy: 2, money: 9, relationships: 2, goals: 9, stress: 9 });
 });
 
 test("unchanged scores are stable; invalid, duplicate and unverified IDs cannot enter the gallery", () => {
@@ -169,8 +172,24 @@ test("unchanged scores are stable; invalid, duplicate and unverified IDs cannot 
     videos: options, locale: "ru",
   });
   assert.deepEqual(normalized.scores,
-    { energy: 5, money: 5, relationships: 5, goals: 5 });
-  assert.deepEqual(normalized.priorities, ["energy", "money", "relationships", "goals"]);
+    { energy: 5, money: 5, relationships: 5, goals: 5, stress: 5 });
+  assert.deepEqual(normalized.priorities, ["energy", "money", "relationships", "goals", "stress"]);
   assert.deepEqual(normalized.videos.map(item => item.id), ["mmmmmmmmmmm", "lllllllllll"]);
   assert.deepEqual(recommendSupportByLowestScores({ videos: [], scores: defaultScores }).videos, []);
+});
+
+test("anti-stress is independent, and related health videos are not exact matches", () => {
+  const result=recommendSupportContent({
+    focus:"stress",scores:{...defaultScores,stress:1},videos:library,
+    talismans:TAOIST_TALISMANS,locale:"en",
+  });
+  assert.equal(result.videos[0].id,"bbbbbbbbbbb");
+  assert.equal(result.scores.stress,1);
+  assert.equal(result.matchedVideo,false);
+  const quick=recommendSupportByLowestScores({
+    scores:{energy:9,money:9,relationships:9,goals:9,stress:1},videos:library,
+  });
+  assert.deepEqual(quick.priorities,["stress"]);
+  assert.equal(quick.videos[0].id,"bbbbbbbbbbb");
+  assert.equal(quick.matchedVideo,false);
 });

@@ -1203,3 +1203,9 @@
   .videoFeedFooter > small { font-size: 10px; }
   .videoFeedChoose { font-size: 11px; }
 }
+
+/* Independent fifth life rating and related meditation facet. */
+.scaleIcon[data-tone="stress"]{color:#25879b;background:#dff3f4;}
+.scaleValue[data-tone="stress"]{background:#dff3f4;}
+.scaleRow[data-support-scale="stress"] input{accent-color:#168fa0;}
+.meditationCategoryCard[data-category="stress"]{background:#eaf8f7;color:#167d88;border-color:#bde2df;}

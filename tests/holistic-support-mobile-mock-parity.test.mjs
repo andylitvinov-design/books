@@ -73,11 +73,11 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
 });
 
-test("progress is derived from opens and four self-ratings, never fake streaks", () => {
+test("progress is derived from opens and five self-ratings, never fake streaks", () => {
   assert.match(client, /progressTotal = relevantVideos\.length/);
   assert.match(client, /progressCount = relevantVideos\.filter/);
   assert.match(client, /averageScore = \(checkinOrder\.reduce/);
-  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning", "stress"\]/);
   assert.match(client, /className=\{styles\.progressStarted\}/);
   assert.match(client, /className=\{styles\.progressAverage\}/);
   assert.doesNotMatch(client, /fakeStreak|mockStreak|lastSevenDays/);
@@ -112,4 +112,14 @@ test("mobile screenshot acceptance runs all 18 isolated cases with bounded concu
   assert.match(script, /assert\.equal\(evidence\.length, 18/);
   assert.match(script, /await page\.close\(\)/);
   assert.match(script, /serviceWorkers: "block"/);
+});
+
+test("anti-stress is available in the actual video-theme dropdown, with honest related matching", () => {
+  assert.match(client,/type Theme = "all" \| MeditationTopic \| "stress"/);
+  assert.match(client,/\["all", "business", "love", "energy", "health", "stress"\] as Theme\[\]/);
+  assert.match(client,/theme === "stress"/);
+  assert.match(client,/video.topics.includes\("health"\) \|\| video.topics.includes\("energy"\)/);
+  assert.match(client,/data-support-stress-related/);
+  for(const label of ["Anti-stress (related)","Антистресс (близкие)","Antiestrés (afines)"])
+    assert.ok(client.includes(label));
 });

@@ -2,15 +2,15 @@
 
 import { useState, type FormEvent } from "react";
 import { flushSync } from "react-dom";
-import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, Coins, Filter, Flower2, Heart, RotateCcw, Sparkles, Wind, X, Zap, type LucideIcon } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-goal-filter.module.css";
 
-export type GoalSector = "energy" | "money" | "love" | "meaning";
-export type GoalCheckinKey = "energy" | "money" | "relationships" | "meaning";
+export type GoalSector = "energy" | "money" | "love" | "meaning" | "stress";
+export type GoalCheckinKey = "energy" | "money" | "relationships" | "meaning" | "stress";
 // One Meaning check-in also covers purpose, direction and personal goals.
 export const goalSectorCheckinKey: Record<GoalSector, GoalCheckinKey> = {
-  energy: "energy", money: "money", love: "relationships", meaning: "meaning",
+  energy: "energy", money: "money", love: "relationships", meaning: "meaning", stress: "stress",
 };
 export type GoalRating = { current: number; desired: number };
 export type GoalAmount = { current: number | null; desired: number | null };
@@ -42,8 +42,8 @@ type Item = { id: string; en: string; ru: string; es: string };
 type Axis = Item & { unit: "score" | "currency" | "months" };
 type Items = { concerns: Item[]; tasks: Item[]; axes: Axis[] };
 
-export const goalSectorFocus: Record<GoalSector, "energy" | "money" | "relationships" | "goals"> = {
-  energy: "energy", money: "money", love: "relationships", meaning: "goals",
+export const goalSectorFocus: Record<GoalSector, "energy" | "money" | "relationships" | "goals" | "stress"> = {
+  energy: "energy", money: "money", love: "relationships", meaning: "goals", stress: "stress",
 };
 const make = (id: string, en: string, ru: string, es: string): Item => ({ id, en, ru, es });
 const axis = (id: string, en: string, ru: string, es: string, unit: Axis["unit"] = "score"): Axis =>
@@ -53,6 +53,7 @@ const sectorOrder: { id: GoalSector; Icon: LucideIcon }[] = [
   { id: "money", Icon: Coins },
   { id: "love", Icon: Heart },
   { id: "meaning", Icon: Flower2 },
+  { id: "stress", Icon: Wind },
 ];
 
 // Editorial reflection options: not a clinical, financial, or validated assessment.
@@ -126,6 +127,29 @@ const sectors: Record<GoalSector, Items> = {
       axis("communication", "Communication", "Взаимопонимание", "Comunicación"),
     ],
   },
+  stress: {
+    concerns: [
+      make("overload", "Overload", "Перегрузка", "Sobrecarga"),
+      make("worry", "Worry and uncertainty", "Тревога, неопределённость", "Preocupación e incertidumbre"),
+      make("innerTension", "Inner tension", "Внутреннее напряжение", "Tensión interna"),
+      make("racingThoughts", "Racing thoughts", "Навязчивые мысли", "Pensamientos acelerados"),
+      make("restless", "Hard to relax", "Трудно расслабиться", "Dificultad para relajarse"),
+      make("difficultySwitchingOff", "Can't switch off", "Не могу отключиться от дел", "No logro desconectar"),
+    ],
+    tasks: [
+      make("lowerPressure", "Reduce pressure", "Снизить нагрузку", "Reducir la presión"),
+      make("regulateWorry", "Feel more at ease", "Больше спокойствия", "Sentirme más tranquilo"),
+      make("grounding", "Find a sense of safety", "Вернуть ощущение опоры", "Recuperar el apoyo"),
+      make("restoreSleep", "Rest and recover", "Восстановить отдых", "Descansar y recuperarme"),
+      make("takeBreaks", "Create pauses", "Научиться делать паузы", "Hacer pausas"),
+      make("selfSupport", "Support myself gently", "Поддерживать себя", "Apoyarme con amabilidad"),
+    ],
+    axes: [
+      axis("stressBalance", "Feeling calm", "Внутреннее спокойствие", "Calma interior"),
+      axis("stressRecovery", "Ability to recover", "Восстановление", "Recuperación"),
+      axis("stressFocus", "Sense of support", "Ощущение опоры", "Sensación de apoyo"),
+    ],
+  },
   meaning: {
     concerns: [
       // Original Meaning topics come first; former Goals questions follow.
@@ -194,7 +218,11 @@ const ui = {
       healing: "Reiki & energy support", masters: "Masters",
       initiations: "Initiations", mandala: "Video mandalas",
     },
-    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning" },
+    labels: { energy: "Body & energy", money: "Money & work", love: "Love & connection", meaning: "Meaning", stress: "Anti-stress" },
+    stressHint: "1 = very tense, 10 = calm and supported. A personal check-in, not a clinical test.",
+    stressRecheckTitle: "Recheck after your practice", stressRecheckLabel: "How calm do you feel now?",
+    stressRecheckHint: "Compare your own ratings. Edit your goals above if needed; nothing is sent elsewhere.",
+    stressDelta: "Change in your rating",
   },
   ru: {
     title: "Фильтр целей и задач", sector: "Сфера жизни", current: "1. Что сейчас беспокоит?",
@@ -215,7 +243,11 @@ const ui = {
       healing: "Рейки и энергоподдержка", masters: "Мастера",
       initiations: "Инициации", mandala: "Видеомандалы",
     },
-    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы" },
+    labels: { energy: "Энергия и тело", money: "Деньги", love: "Любовь и отношения", meaning: "Смыслы", stress: "Антистресс" },
+    stressHint: "1 — сильное напряжение, 10 — спокойствие и опора. Самооценка, не медицинский тест.",
+    stressRecheckTitle: "Проверь состояние после практики", stressRecheckLabel: "Насколько спокойно сейчас?",
+    stressRecheckHint: "Сравни свои оценки «до» и «после». Цель можно исправить выше. Данные никуда не отправляются.",
+    stressDelta: "Изменение самооценки",
   },
   es: {
     title: "Filtro de metas y tareas", sector: "Área de vida", current: "1. ¿Qué te preocupa?",
@@ -236,7 +268,11 @@ const ui = {
       healing: "Reiki y apoyo energético", masters: "Guías",
       initiations: "Iniciaciones", mandala: "Mandala en vídeo",
     },
-    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido" },
+    labels: { energy: "Cuerpo y energía", money: "Dinero y trabajo", love: "Amor y vínculos", meaning: "Sentido", stress: "Antiestrés" },
+    stressHint: "1 = mucha tensión, 10 = calma. Autoevaluación, no prueba clínica.",
+    stressRecheckTitle: "Revisa tu estado después de la práctica", stressRecheckLabel: "¿Qué tan tranquilo te sientes?",
+    stressRecheckHint: "Compara tus puntuaciones. Puedes corregir tu meta arriba; no se envían datos.",
+    stressDelta: "Cambio en tu autoevaluación",
   },
 } as const;
 
@@ -283,6 +319,7 @@ export function HolisticSupportGoalFilter({
     () => ({ ...savedSectors, ...(initial ? { [initial.sector]: initial } : {}) }));
   const [accepted, setAccepted] = useState<Partial<Record<GoalSector, GoalSectorSnapshot>>>(savedSectors);
   const [dirty, setDirty] = useState<Partial<Record<GoalSector, boolean>>>({});
+  const [stressAfter, setStressAfter] = useState<number | null>(null);
   const selected = sectors[sector];
   const currentCheckin = scores[goalSectorCheckinKey[sector]];
   const markDirty = () => setDirty(previous => ({ ...previous, [sector]: true }));
@@ -343,6 +380,7 @@ export function HolisticSupportGoalFilter({
     setDrafts(previous => ({ ...previous, [sector]: snapshot }));
     setAccepted(previous => ({ ...previous, [sector]: snapshot }));
     setDirty(previous => ({ ...previous, [sector]: false }));
+    if (sector === "stress") setStressAfter(null); // a revised goal needs a new recheck
     onSave(sector, snapshot); // no API, session storage, or analytics
   }
   function nextSector() {
@@ -370,7 +408,7 @@ export function HolisticSupportGoalFilter({
   }
   function reset() {
     setSector("energy"); setConcerns([]); setTasks([]); setRatings({}); setAmounts({}); setCurrency("CAD");
-    setDrafts({}); setAccepted({}); setDirty({});
+    setDrafts({}); setAccepted({}); setDirty({}); setStressAfter(null);
     onSelectedFormatsChange([...GOAL_RECOMMENDATION_FORMATS]);
     onReset();
   }
@@ -411,7 +449,7 @@ export function HolisticSupportGoalFilter({
                 onCheckinChange(sector, Number(event.target.value));
                 markDirty();
               }} />
-            <small>{t.checkinHint}</small>
+            <small>{sector === "stress" ? t.stressHint : t.checkinHint}</small>
           </label>
           <section className={styles.fieldGroup} aria-labelledby="goal-problems">
             <h3 id="goal-problems">{t.current}</h3>
@@ -493,6 +531,22 @@ export function HolisticSupportGoalFilter({
             </div>
             {sector === "money" ? <p className={styles.amountHint}>{t.optional}</p> : null}
           </section>
+          {sector === "stress" && isAccepted("stress") ? <section className={styles.stressRecheck}
+            data-support-stress-recheck aria-label={t.stressRecheckTitle}>
+            <h3>{t.stressRecheckTitle}</h3><p>{t.stressRecheckHint}</p>
+            <label htmlFor="support-stress-after">{t.stressRecheckLabel}
+              <output>{stressAfter ?? accepted.stress?.checkin ?? currentCheckin}/10</output>
+            </label>
+            <input id="support-stress-after" data-support-stress-after type="range"
+              min="1" max="10" step="1"
+              value={stressAfter ?? accepted.stress?.checkin ?? currentCheckin}
+              aria-valuetext={String(stressAfter ?? accepted.stress?.checkin ?? currentCheckin) + " / 10"}
+              onChange={event => setStressAfter(Number(event.target.value))} />
+            {stressAfter !== null ? <strong role="status" data-support-stress-delta>
+              {t.stressDelta}: {stressAfter - (accepted.stress?.checkin ?? currentCheckin) > 0 ? "+" : ""}
+              {stressAfter - (accepted.stress?.checkin ?? currentCheckin)}
+            </strong> : null}
+          </section> : null}
         </div>
       </div>
       <footer className={styles.actions} data-support-goal-actions>

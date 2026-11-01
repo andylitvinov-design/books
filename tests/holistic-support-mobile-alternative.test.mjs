@@ -140,7 +140,7 @@ test("quick matching uses the lowest ratings while goal filtering expands the sa
   assert.match(client, /<HolisticSupportGoalFilter locale=\{locale\}/);
   assert.match(client, /setRecommendation\(asFocusScores\(scores\)\)/);
   assert.match(client, /goals: values\.meaning/);
-  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.match(client, /checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning", "stress"\]/);
   assert.doesNotMatch(client, /energy: 5, money: 5, relationships: 5, goals: 5, meaning: 5/);
   assert.match(client, /setRecommendation\(null\)/);
   assert.match(client, /data-support-meditation-basis role="status"/);
@@ -461,4 +461,14 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(css, /\.reikiOptions\[data-cols="price"\]/);
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
+});
+
+test("fifth stress focus reaches real talisman viewer without new SKU or a promised outcome", () => {
+  const viewer=read("components/holistic-support-talisman-viewer.tsx");
+  assert.match(viewer,/type Focus = "energy" \| "money" \| "relationships" \| "goals" \| "stress"/);
+  assert.match(viewer,/stress: "fu-balance"/);
+  assert.match(viewer,/id: "stress", Icon: Wind/);
+  for(const name of ["Anti-stress","Антистресс","Antiestrés"])assert.ok(viewer.includes(name));
+  assert.match(viewer,/No promised results/);
+  assert.match(viewer,/Без обещания результата/);
 });

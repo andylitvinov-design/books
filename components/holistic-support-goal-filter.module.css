@@ -214,3 +214,13 @@
 @media (prefers-reduced-motion: reduce) {
   .panel * { scroll-behavior: auto; transition: none; }
 }
+
+/* Fifth direction: voluntary, local post-practice recheck. */
+.sector:nth-child(5) svg { color: #258a9b; }
+.stressRecheck { display:grid;gap:8px;min-width:0;padding:12px;border:1px solid #a9d9d2;border-radius:14px;background:#eef9f6; }
+.stressRecheck h3 { margin:0;font-size:clamp(15px,3.8vw,18px);color:#18493f; }
+.stressRecheck p { margin:0;font-size:12px;line-height:1.4;color:#537269; }
+.stressRecheck label { display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:780; }
+.stressRecheck output { flex:none;padding:4px 8px;border-radius:8px;background:#d6efe6;color:#165c4c; }
+.stressRecheck input { width:100%;min-width:0;height:30px;accent-color:#118e7f; }
+.stressRecheck strong { font-size:13px;color:#21594d; }

@@ -9,7 +9,7 @@ import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } f
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-inline-guide.module.css";
 
-type Focus = "energy" | "money" | "relationships" | "goals";
+type Focus = "energy" | "money" | "relationships" | "goals" | "stress";
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 type Phase = "review" | "topic" | "test-invite" | "test-pick" | "test-return" | "reflection" | "practice-invite" | "time" | "media-pick" | "media-return" | "exercise" | "feedback" | "path-confirm" | "recommendations" | "safety";
 type Format = "meditation" | "tests" | "courses" | "consultation" | "healing" | "mandala";
@@ -18,12 +18,14 @@ type Video = { id: string; title: string; topics: string[]; sourceLanguage?: "en
 export type SupportGuideTest = { key: string; title: string; durationMinutes: number; questionCount: number | null; instrumentLocale: string; href: string };
 type Choice = "meditation" | "tests" | "pump" | "consultation" | "healing";
 
-const sectors: GoalSector[] = ["energy", "money", "love", "meaning"];
+const sectors: GoalSector[] = ["energy", "money", "love", "meaning", "stress"];
 const testJourney: Record<Focus, string> = {
-  energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness",
+  energy: "energy", money: "business", relationships: "relationships", goals: "effectiveness", stress: "stress",
 };
 const videoThemes: Record<GoalSector, string[]> = {
   energy: ["energy", "health"], money: ["business"], love: ["love"], meaning: [],
+  // Related health/energy recordings only; no confirmed stress-specific public source.
+  stress: ["health", "energy"],
 };
 const formats: { id: Format; filter: string; choice?: Choice }[] = [
   { id: "meditation", filter: "meditation", choice: "meditation" },
@@ -37,8 +39,8 @@ const formats: { id: Format; filter: string; choice?: Choice }[] = [
 const copy = {
   en: {
     title: "Your personal guide", close: "Close guide", step: "Step",
-    areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning" },
-    ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
+    areas: { energy: "Energy & body", money: "Money & work", love: "Relationships", goals: "Goals", meaning: "Meaning", stress: "Anti-stress" },
+    ratings: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Goals", meaning: "Meaning", stress: "Calm & coping" },
     editedIntro: "You changed your self-rating for",
     noData: "You have not changed your ratings or filled in the goal filter yet. Which area matters most today?",
     filterIntro: "From your goal filter, your chosen focus is",
@@ -55,6 +57,7 @@ const copy = {
       love: ["More connection", "Better communication", "Boundaries"],
       goals: ["Focus", "Motivation", "A simple plan"],
       meaning: ["Find direction", "Explore values", "Make a choice"],
+      stress: ["Less pressure", "Feel grounded", "Build gentle pauses"],
     },
     otherNeed: "Describe it in your words", otherPlaceholder: "One short sentence",
     timeQuestion: "How much time do you have right now?", later: "Plan for later",
@@ -84,8 +87,8 @@ const copy = {
   },
   ru: {
     title: "Ваш проводник", close: "Закрыть проводника", step: "Шаг",
-    areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы" },
-    ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
+    areas: { energy: "Энергия и тело", money: "Деньги и работа", love: "Отношения", goals: "Цели", meaning: "Смыслы", stress: "Антистресс" },
+    ratings: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Цели", meaning: "Смыслы", stress: "Спокойствие" },
     editedIntro: "Вы изменили показатель",
     noData: "Вы пока не изменяли оценки и не заполняли фильтр целей. Какая тема вам сейчас важнее?",
     filterIntro: "По заполненному фильтру целей вы выделили тему",
@@ -102,6 +105,7 @@ const copy = {
       love: ["Больше близости", "Общение", "Личные границы"],
       goals: ["Концентрация", "Мотивация", "Понятный план"],
       meaning: ["Найти направление", "Прояснить ценности", "Принять решение"],
+      stress: ["Снизить нагрузку", "Вернуть опору", "Делать паузы"],
     },
     otherNeed: "Уточнить своими словами", otherPlaceholder: "Коротко опишите свой запрос",
     timeQuestion: "Сколько у вас времени сейчас?", later: "Позже",
@@ -131,8 +135,8 @@ const copy = {
   },
   es: {
     title: "Tu guía personal", close: "Cerrar guía", step: "Paso",
-    areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
-    ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido" },
+    areas: { energy: "Energía y cuerpo", money: "Dinero y trabajo", love: "Relaciones", goals: "Objetivos", meaning: "Sentido", stress: "Antiestrés" },
+    ratings: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Objetivos", meaning: "Sentido", stress: "Calma" },
     editedIntro: "Has cambiado tu puntuación de",
     noData: "Aún no has cambiado las puntuaciones ni completado el filtro de objetivos. ¿Qué tema es más importante hoy?",
     filterIntro: "Según tu filtro de objetivos, el tema elegido es",
@@ -149,6 +153,7 @@ const copy = {
       love: ["Más cercanía", "Comunicación", "Límites"],
       goals: ["Concentración", "Motivación", "Un plan simple"],
       meaning: ["Encontrar rumbo", "Aclarar valores", "Tomar una decisión"],
+      stress: ["Menos presión", "Sentirme más seguro", "Hacer pausas"],
     },
     otherNeed: "Explicar con mis palabras", otherPlaceholder: "Una frase breve",
     timeQuestion: "¿Cuánto tiempo tienes ahora?", later: "Más tarde",
@@ -215,6 +220,7 @@ const conversation = {
       love: ["Hard to talk about it", "Not enough connection", "Unclear expectations"],
       goals: ["Too many priorities", "I keep postponing", "I need a simple start"],
       meaning: ["Unsure of direction", "My priorities changed", "I'd like to explore"],
+      stress: ["Feeling overloaded", "Hard to unwind", "Rest is not enough"],
     },
     skip: "Not sure yet", detailAck: "Thanks, I'll keep that in mind:",
     timeAck: "We can make the first step manageable.",
@@ -260,6 +266,7 @@ const conversation = {
       love: ["Сложно поговорить", "Мало близости", "Неясные ожидания"],
       goals: ["Слишком много задач", "Часто откладываю", "Трудно начать"],
       meaning: ["Неясно направление", "Изменились приоритеты", "Хочу исследовать"],
+      stress: ["Слишком много нагрузки", "Трудно расслабиться", "Не успеваю восстановиться"],
     },
     skip: "Пока не знаю", detailAck: "Спасибо, учту:",
     timeAck: "Начнём с посильного шага.",
@@ -306,6 +313,7 @@ const conversation = {
       love: ["Cuesta hablarlo", "Falta de cercanía", "Expectativas confusas"],
       goals: ["Demasiadas prioridades", "Lo aplazo", "Me cuesta empezar"],
       meaning: ["Rumbo poco claro", "Cambian mis prioridades", "Quiero explorar"],
+      stress: ["Demasiada presión", "Cuesta desconectar", "Me falta descanso"],
     },
     skip: "Aún no lo sé", detailAck: "Gracias, lo tendré en cuenta:",
     timeAck: "Empecemos con algo manejable.",
@@ -651,7 +659,7 @@ export function HolisticSupportInlineGuide({
       <span>{primaryVideo.title}</span><ArrowRight size={16} aria-hidden="true"/></button>
       : <button type="button" className={styles.serviceAction} onClick={()=>onVideo(null)}>{t.videoBrowse}</button>;
     if(kind==="courses")return <Link className={styles.primaryLink}
-      href={"/"+locale+(topic==="money"?"/explore/business":"/academy")} prefetch={false}>
+      href={"/"+locale+(topic==="money"?"/explore/business":topic==="stress"?"/courses/antistress":"/academy")} prefetch={false}>
       {journey.other}<ArrowRight size={17} aria-hidden="true"/></Link>;
     if(kind==="mandala")return <Link className={styles.primaryLink}
       href={"/"+locale+"/holistic-support/mandala"} prefetch={false}>
