@@ -4,7 +4,7 @@ import {useEffect,useMemo,useRef,useState} from "react";
 import type {ChangeEvent,FormEvent} from "react";
 import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
-import {allocateAdaptiveFilmTimeline} from "@/lib/mandala/free-film-timeline.mjs";
+import {compileExecutableVideoScenario,parseAiVideoCutSuggestion} from "@/lib/mandala/video-executable-director.mjs";
 import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
@@ -18,13 +18,14 @@ type Step="goal"|"mood"|"aspect"|"duration"|"music"|"phrases"|"review"|"ready"|"
 type Draft={goal:string;mood:Mood|null;aspect:Aspect|null;duration:Length|null;music:Music|null;phrases:boolean|null};
 type ChatLine={id:number;role:"assistant"|"user";text:string};
 type Preset={id:string;theme:VideoTheme;label:Record<PublicLocale,string>;clips:readonly string[];focusTags?:readonly string[]};
-type Scene={id:string;theme:string;status:string;media:string;video:string;poster?:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
+type Scene={id:string;theme:string;collection:string;status:string;media:string;video:string;poster?:string;rightsReference:{kind:string};label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
  locale:PublicLocale;goal:string;theme:VideoTheme;
  presets:readonly Preset[];scenes:readonly Scene[];disabled:boolean;canCreate:boolean;
+ renderOptions:{quality:"hd"|"fullhd";brightness:"soft"|"bright";volumePercent:number};
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
  onGoalChange:(text:string)=>void;onInvalidate:()=>void;
- onConfirm:(selection:{presetId:string;duration:Length;aspect:Aspect;music:Music;phrases:boolean;mood:Mood})=>boolean;
+ onConfirm:(selection:{scenario:ReturnType<typeof compileExecutableVideoScenario>})=>boolean;
  onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
 const copy={
@@ -36,7 +37,7 @@ const copy={
   missing:"Подходящий монтаж из разрешённых сцен не найден. Измените тему или откройте редактор.", symbolic:"Предложить метафорический сюжет",retryGoal:"Изменить запрос",alternate:"Другой сюжет",confirm:"Подтвердить сценарий",create:"Создать видео",creating:"Собираем видео на устройстве…",loading:"Загружаем выбранные видеосцены…",open:"Открыть готовое видео",editor:"Расширенный редактор",startAgain:"Новый ролик",edit:"Изменить настройки",note:"Видео собирается из разрешённых MP4, не из новых AI-кадров. Ваш текст не передаётся внешним AI-сервисам.",
   noteAi:"С вашего разрешения текст идеи и выбранные настройки отправляются подтверждённому бесплатному AI. Фото и голос остаются на устройстве.",
   placeholder:"Напишите, что хотите создать или изменить…",send:"Отправить",photo:"Добавить своё фото",audio:"Добавить голос или звук",promptChanged:"Обновил параметры. Проверьте сценарий снова.",
-  aiConsent:"Разрешить бесплатному AI сформулировать вопрос по моей идее (отправить текст и настройки внешнему провайдеру)",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
+  aiConsent:"Разрешить бесплатному AI уточнять вопрос и предлагать реальный монтаж (передать идею и фильтры внешнему сервису)",aiPlan:"AI: подобрать сцены и монтаж",aiPlanBusy:"AI подбирает монтаж…",aiPlanReady:"AI предложил проверенный монтаж. Проверьте кадры и подтвердите.",aiPlanFailed:"AI-монтаж недоступен или не прошёл проверку — локальный сценарий сохранён.",planLocal:"Локальный режиссёр",planAi:"AI · проверенный сценарий",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
   assetTimeout:"Сцены или права на запись пока недоступны. Выберите другой сюжет либо проверьте настройки.",
   auto:"Подобрать настройки автоматически",timeout:"Запись не началась. Проверьте доступность сцен и попробуйте снова.",blocked:"Результат не прошёл проверку или запись не удалась. Воспользуйтесь настройками и повторите создание.",stages:["Начало","Погружение","Развитие","Завершение"],
   themeChips:["Хочу больше спокойствия","Любовь и близость","Энергия и бодрость","Уверенность в себе"],
@@ -50,7 +51,7 @@ const copy={
   missing:"No compatible licensed clips were found. Change the goal or open the editor.",symbolic:"Use a symbolic story",retryGoal:"Change idea",alternate:"Another story",confirm:"Confirm story",create:"Create video",creating:"Recording video on this device…",loading:"Loading the selected video clips…",open:"Open finished video",editor:"Advanced editor",startAgain:"New video",edit:"Change settings",note:"Uses approved existing MP4 footage, not newly AI-generated frames. Your text is not sent to an external AI service.",
   noteAi:"With your permission, the idea text and selected settings are sent to confirmed free AI. Photos and voice stay on your device.",
   placeholder:"Describe a video or tell me what to change…",send:"Send",photo:"Add my photo",audio:"Add my voice or audio",promptChanged:"Updated the settings. Please confirm the story again.",
-  aiConsent:"Let free AI personalize one question (send my idea text and settings externally)",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
+  aiConsent:"Allow free AI to ask one question and suggest a real film cut (send my goal and filters externally)",aiPlan:"AI: arrange real scenes",aiPlanBusy:"AI is planning the cut…",aiPlanReady:"AI suggested a verified cut. Review the scenes, then confirm.",aiPlanFailed:"AI edit was unavailable or invalid. Your local film plan is preserved.",planLocal:"Local director",planAi:"AI · validated cut",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
   assetTimeout:"Sources or recording permissions are not ready. Try another story or check settings.",
   auto:"Suggest settings for me",timeout:"Recording did not begin. Check the video sources and retry.",blocked:"Recording or playback verification failed. Adjust settings and retry.",stages:["Opening","Arriving","Exploring","Closing"],
   themeChips:["I want more calm","Love and connection","Energy and vitality","Confidence and focus"],
@@ -64,7 +65,7 @@ const copy={
   missing:"No se encontraron escenas autorizadas compatibles. Cambia el tema o usa el editor.",symbolic:"Usar una historia simbólica",retryGoal:"Cambiar idea",alternate:"Otra historia",confirm:"Confirmar historia",create:"Crear vídeo",creating:"Grabando vídeo en este dispositivo…",loading:"Cargando las escenas…",open:"Abrir vídeo terminado",editor:"Editor avanzado",startAgain:"Nuevo vídeo",edit:"Cambiar ajustes",note:"Montaje de MP4 autorizados, no fotogramas nuevos generados por IA. Tu texto no se envía a un servicio IA externo.",
   noteAi:"Con tu permiso, el texto de la idea y los ajustes elegidos se envían a IA gratuita verificada. Fotos y voz permanecen en tu dispositivo.",
   placeholder:"Describe el vídeo o lo que quieres cambiar…",send:"Enviar",photo:"Añadir mi foto",audio:"Añadir voz o audio",promptChanged:"Ajustes actualizados. Confirma la historia otra vez.",
-  aiConsent:"Permitir que la IA gratuita personalice una pregunta (enviar texto y ajustes a un proveedor externo)",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
+  aiConsent:"Permitir que la IA gratuita formule una pregunta y proponga un montaje real (enviar idea y filtros)",aiPlan:"IA: ordenar escenas reales",aiPlanBusy:"IA prepara el montaje…",aiPlanReady:"La IA propuso un montaje verificado. Revísalo y confírmalo.",aiPlanFailed:"Montaje IA no disponible o no válido. Se mantiene el plan local.",planLocal:"Director local",planAi:"IA · montaje validado",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
   assetTimeout:"Las escenas o permisos aún no están disponibles. Prueba otra historia o revisa los ajustes.",
   auto:"Sugerir ajustes automáticamente",timeout:"No se inició la grabación. Comprueba las escenas y vuelve a intentarlo.",blocked:"Falló la grabación o verificación. Ajusta los parámetros e inténtalo otra vez.",stages:["Inicio","Entrada","Desarrollo","Cierre"],
   themeChips:["Quiero más calma","Amor y conexión","Energía y vitalidad","Confianza y enfoque"],
@@ -74,7 +75,7 @@ const copy={
 const initial=(goal:string):Draft=>({goal:goal.slice(0,160),mood:null,aspect:null,duration:null,music:null,phrases:null});
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
- rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
+ renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
  onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
  const t=copy[locale];
  const [draft,setDraft]=useState<Draft>(()=>initial(goal));
@@ -88,6 +89,10 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const currentStepRef=useRef<Step>(step);
  currentStepRef.current=step;
  const [alternative,setAlternative]=useState(0);
+ const [aiCut,setAiCut]=useState<{key:string;value:{clipIds:string[];stageSeconds:number[]}}|null>(null);
+ const [aiCutState,setAiCutState]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
+ const cutAbortRef=useRef<AbortController|null>(null);
+ useEffect(()=>()=>cutAbortRef.current?.abort(),[]);
  const [captureStarted,setCaptureStarted]=useState(false);
  const [captureObserved,setCaptureObserved]=useState(false);
  const [assetWaitLong,setAssetWaitLong]=useState(false);
@@ -206,9 +211,23 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const chosenId=options[alternative%Math.max(1,options.length)]||null;
  const selected=chosenId?presets.find(item=>item.id===chosenId):null;
  const sourceById=useMemo(()=>new Map(scenes.map(item=>[item.id,item])),[scenes]);
- const durations=selected&&draft.duration?allocateAdaptiveFilmTimeline(draft.duration,selected.clips).map(item=>item.durationSeconds):[];
+ const canPlan=Boolean(selected&&draft.mood&&draft.aspect&&draft.duration&&draft.music!==null&&draft.phrases!==null);
+ const planKey=JSON.stringify([draft.goal,chosenId,draft.duration,draft.aspect,draft.music,
+   draft.mood,draft.phrases,renderOptions.quality,renderOptions.brightness,renderOptions.volumePercent]);
+ const currentAiCut=aiCut?.key===planKey?aiCut.value:null;
+ const executable=useMemo(()=>{
+   if(!canPlan||!selected)return null;
+   try{
+     return compileExecutableVideoScenario({
+       goal:draft.goal,locale,fallbackTheme:theme,presets,scenes,
+       selectedPresetId:selected.id,alternativePresetIds:proposal?.alternativePresetIds||[],
+       excludedMotifs:proposal?.excludedMotifs||[],
+       draft,renderOptions,aiSuggestion:currentAiCut,
+     });
+   }catch{return null;}
+ },[canPlan,selected,draft,locale,theme,presets,scenes,proposal,renderOptions,currentAiCut]);
  const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(draft.goal).specificVisual);
- const reviewAvailable=Boolean(selected&&draft.mood&&draft.aspect&&draft.duration&&draft.music!==null&&draft.phrases!==null);
+ const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
  const choices:readonly (readonly [string,string])[]=step==="goal"?t.themeChips.map(x=>[x,x] as const):
    step==="mood"?t.moodChoices:step==="aspect"?t.aspectChoices:
@@ -219,6 +238,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const value=raw.trim().slice(0,160);
    if(!value)return;
    setInput("");addLine("user",value);
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    const action=parseVideoChatAction(value,step);
    if(action==="confirm"){confirm();return;}
    if(action==="create"){start();return;}
@@ -278,16 +298,56 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  };
  const reset=()=>{
    if(disabled)return;
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setDraft(initial(""));onGoalChange("");setStep("goal");setSymbolicAllowed(false);
    aiAskedKeyRef.current="";setAiStatus("idle");setAiConsent(false);
    setAlternative(0);setCaptureStarted(false);setCaptureObserved(false);
    setLines([{id:++counter.current,role:"assistant",text:t.intro}]);setInput("");
  };
  const confirm=()=>{
-   if(disabled||!reviewAvailable||!selected||!draft.duration||!draft.aspect||!draft.mood||draft.music===null||draft.phrases===null||offerSymbolic)return;
-   const ok=onConfirm({presetId:selected.id,duration:draft.duration,aspect:draft.aspect,music:draft.music,phrases:draft.phrases,mood:draft.mood});
+   if(disabled||!executable||offerSymbolic)return;
+   const ok=onConfirm({scenario:executable});
    if(!ok){addLine("assistant",t.blocked);return;}
    setStep("ready");addLine("assistant",t.ready);setCaptureStarted(false);setCaptureObserved(false);
+ };
+ const enhanceExecutable=async()=>{
+   if(!aiConsent||disabled||!executable||offerSymbolic||aiCutState==="loading")return;
+   cutAbortRef.current?.abort();
+   const requestKey=planKey;
+   const controller=new AbortController();
+   cutAbortRef.current=controller;
+   setAiCutState("loading");
+   try{
+     const response=await fetch("/api/holistic-support/video-director-plan",{
+       method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+       signal:controller.signal,
+       headers:{"Content-Type":"application/json","Accept":"application/json"},
+       body:JSON.stringify({
+         consent:true,locale,goal:draft.goal,durationSeconds:executable.durationSeconds,
+         aspect:executable.aspect,mood:executable.mood,
+         music:executable.audio.trackId,phrases:executable.phrases,
+         candidateSceneIds:executable.candidateSceneIds,
+         excludedMotifs:executable.edit.excludedMotifs,
+       }),
+     });
+     if(!response.ok)throw Error("VIDEO_PLAN_UNAVAILABLE");
+     const payload:unknown=await response.json();
+     if(controller.signal.aborted||!payload||typeof payload!=="object"||
+       !("suggestion" in payload))return;
+     const accepted=parseAiVideoCutSuggestion(payload.suggestion,{
+       candidateSceneIds:executable.candidateSceneIds,
+       durationSeconds:executable.durationSeconds,scenes,
+       excludedMotifs:executable.edit.excludedMotifs,
+     });
+     if(!accepted)throw Error("VIDEO_PLAN_UNTRUSTED");
+     setAiCut({key:requestKey,value:{clipIds:[...accepted.clipIds],
+       stageSeconds:[...accepted.stageSeconds]}});
+     setAiCutState("ready");addLine("assistant",t.aiPlanReady);
+   }catch{
+     if(!controller.signal.aborted){setAiCutState("fallback");addLine("assistant",t.aiPlanFailed);}
+   }finally{
+     if(cutAbortRef.current===controller)cutAbortRef.current=null;
+   }
  };
  const start=()=>{
    if(disabled||!canCreate||captureStarted)return;
@@ -307,12 +367,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      </div>)}
      {(step==="review"||step==="ready"||step==="done")&&selected&&reviewAvailable?<div className={css.storyCard} data-video-chat-storyboard>
        <div className={css.storyTop}><Film size={19}/><strong>{selected.label[locale]}</strong></div>
-       <div className={css.meta}>{draft.duration} s · {draft.aspect==="portrait"?"9:16":draft.aspect==="square"?"1:1":"16:9"} · {draft.music==="none"?"Silent":draft.music} · 4 MP4</div>
+       <div className={css.meta} data-executable-video-scenario={executable?.version}>
+         {draft.duration} s · {draft.aspect==="portrait"?"9:16":draft.aspect==="square"?"1:1":"16:9"} · {draft.music==="none"?"Silent":draft.music} · 4 MP4 · {executable?.origin==="ai_suggestion_validated"?t.planAi:t.planLocal}
+       </div>
        <div className={css.filterSummary} role="group" aria-label={t.edit}>
        {(["mood","aspect","duration","music","phrases"] as const).map(key=><button
          key={key} type="button" disabled={disabled||captureStarted}
          data-video-chat-change-filter={key}
-         onClick={()=>{onInvalidate();setStep(key);addLine("assistant",question(key));}}>
+         onClick={()=>{cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");onInvalidate();setStep(key);addLine("assistant",question(key));}}>
          <span>{t.filterNames[key]}</span>
          <strong>{key==="duration"?draft.duration+" s":
            key==="phrases"?(draft.phrases?"✓":"—"):
@@ -321,12 +383,15 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        </button>)}
      </div>
      <div className={css.shots}>
-         {selected.clips.map((id,index)=>{
-           const source=sourceById.get(id);
-           return <div key={id} className={css.shot}>
+         {executable?.shots.map((shot,index)=>{
+           const source=sourceById.get(shot.sceneId);
+           return <div key={shot.sceneId} className={css.shot} data-chat-shot-id={shot.sceneId}>
              {/* eslint-disable-next-line @next/next/no-img-element */}
              {source?.poster?<img alt="" src={source.poster} loading="lazy"/>:<span className={css.noPoster}><Film size={19}/></span>}
-             <span><b>{index+1}. {t.stages[index]} · {durations[index]} s</b><small>{source?.label[locale]||id}</small></span>
+             <span><b>{index+1}. {t.stages[index]} · {shot.durationSeconds} s</b>
+               <small>{source?.label[locale]||shot.sceneId}</small>
+               {shot.captionText?<small>“{shot.captionText}”</small>:null}
+             </span>
            </div>;
          })}
        </div>
@@ -336,7 +401,13 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        </div>:null}
        {step==="review"&&!offerSymbolic?<div className={css.storyActions}>
          <button type="button" className={css.primary} disabled={disabled} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
-         {options.length>1?<button type="button" className={css.secondary} disabled={disabled} onClick={()=>setAlternative(n=>(n+1)%options.length)}>{t.alternate}</button>:null}
+         {options.length>1?<button type="button" className={css.secondary} disabled={disabled} onClick={()=>{
+           cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");onInvalidate();
+           setAlternative(n=>(n+1)%options.length);
+         }}>{t.alternate}</button>:null}
+         {aiConsent&&executable?<button type="button" className={css.secondary}
+           data-video-chat-ai-cut disabled={disabled||aiCutState==="loading"}
+           onClick={()=>void enhanceExecutable()}>{aiCutState==="loading"?t.aiPlanBusy:t.aiPlan}</button>:null}
        </div>:null}
        {step==="ready"?<div className={css.storyActions}>
          <button type="button" className={css.primary} disabled={!canCreate||disabled||captureStarted} data-video-chat-create onClick={start}>
@@ -377,8 +448,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    <label className={css.aiOptIn}>
      <input type="checkbox" checked={aiConsent} disabled={disabled}
        onChange={(event:ChangeEvent<HTMLInputElement>)=>{
-         setAiConsent(event.currentTarget.checked);
-         if(!event.currentTarget.checked)setAiStatus("idle");
+         const allowed=event.currentTarget.checked;
+         setAiConsent(allowed);
+         if(!allowed){
+           cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+           setAiStatus("idle");onInvalidate();setStep(current=>current==="ready"?"review":current);
+         }
        }}/>
      <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}</span>
    </label>

@@ -3437,30 +3437,41 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <MandalaVideoDirectorChat
           locale={locale} goal={wish} theme={theme}
           presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          renderOptions={{quality,brightness,volumePercent:soundVolume}}
           disabled={recording||preparing} canCreate={canGenerate}
           rendering={recording||preparing} renderProgress={progress}
           resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
           resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
-          onConfirm={({presetId,duration:seconds,aspect:outputAspect,music:track,phrases,mood})=>{
-            // Do not silently discard uploaded/attached client voice. The user
-            // must explicitly resolve this in the existing single Audio pane.
+          onConfirm={({scenario})=>{
+            // The ONLY executable boundary: one validated scenario -> existing
+            // MP4 timeline, audio selection, on-screen text, Canvas and MediaRecorder.
+            // An AI string never becomes a guessed media URL or paid render.
             if(uploadedAudio||attachedAudio?.kind==="file"){
               setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
                 :locale==="es"?"Configura primero la voz añadida en el panel de audio."
                 :"Please review your existing voice recording in the audio settings first.");
               return false;
             }
-            const ok=applyAutoFilm(presetId,seconds,undefined,outputAspect);
+            if(!scenario.readyToExecute||scenario.version!=="hh-executable-video-scenario-v1")
+              return false;
+            const ok=applyAutoFilm(scenario.presetId,
+              scenario.durationSeconds as 10|15|20|30|60,
+              scenario.edit,scenario.aspect as Aspect);
             if(!ok)return false;
-            chooseMusic(track);setAttachedAudio(track==="none"?null:{kind:"preset",id:track});
-            setAudioAuto(false);setSpeed(mood);
-            const chosenTheme=FREE_FILM_PRESETS.find(item=>item.id===presetId)?.theme||theme;
-            setAffirmations(current=>({...current,enabled:phrases,
-              selected:phrases?[]:current.selected,
-              custom:phrases?(current.custom.trim()||quickSupportPhrases[locale][chosenTheme][0]):current.custom,
-              visibility:phrases?["large"]:current.visibility}));
+            const soundtrack=scenario.audio.trackId as AmbientMusic;
+            chooseMusic(soundtrack);
+            setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
+            setAudioAuto(false);setSpeed(scenario.rendering.motion as Speed);
+            setSoundVolume(scenario.audio.volumePercent);
+            setQuality(scenario.rendering.quality as Quality);
+            setBrightness(scenario.rendering.brightness as Brightness);
+            // Stage captions come from scenario.shots in the verified film
+            // plan. Disable the other two overlay tracks to avoid duplicate
+            // affirmations or text unrelated to the user's approved cut.
+            setCaptionMode("none");
+            setAffirmations(current=>({...current,enabled:false,selected:[]}));
             setPreviewPlaying(false);
             return true;
           }}
