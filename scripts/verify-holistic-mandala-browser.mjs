@@ -21,6 +21,7 @@ const PNG = Buffer.from(
 const viewports = [
   { locale: "ru", width: 320 },
   { locale: "ru", width: 354 },
+  { locale: "ru", width: 375 },
   { locale: "ru", width: 390 },
   { locale: "ru", width: 430 },
   { locale: "en", width: 390 },
@@ -158,6 +159,30 @@ const runEngine = async ([engine, browserType]) => {
             await captureSyntheticOverview(deepPage,audioPane,
               "artifacts/mandala-audio/"+engine+"-ru-390-deep-link.png");
           }finally{await deepPage.close();}
+          // Approved phrases belong to the same project; switching workspaces
+          // must not remount and reset the phrase editor.
+          const phrasePage=await context.newPage();
+          try{
+            await phrasePage.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
+            await expect(phrasePage.locator("[data-first-free-video]"))
+              .toHaveAttribute("data-first-video-hydrated","true",{timeout:40000});
+            await phrasePage.locator('[data-video-quick-control="phrases"]').click();
+            await phrasePage.locator("[data-hypno-smart]").click();
+            const candidate=await phrasePage.locator("[data-hypno-phrase]").first().innerText();
+            await phrasePage.locator('[data-video-quick-control="effects"]').click();
+            await phrasePage.locator('[data-video-quick-control="phrases"]').click();
+            assert.equal(await phrasePage.locator("[data-hypno-phrase]").first().innerText(),candidate,
+              "an unapproved local phrase draft survives workspace changes");
+            const approve=phrasePage.locator("[data-hypno-approve]");
+            await approve.click();
+            await expect(approve).toContainText("Фразы утверждены");
+            await phrasePage.locator('[data-video-quick-control="effects"]').click();
+            await expect(phrasePage.locator("[data-hypno-overview]")).toBeHidden();
+            await phrasePage.locator('[data-video-quick-control="phrases"]').click();
+            await expect(approve).toContainText("Фразы утверждены");
+            assert.equal(await phrasePage.locator("[data-hypno-overview]").count(),1,
+              "workspace changes preserve one phrase editor");
+          }finally{await phrasePage.close();}
         }
 
         // The optional detailed creator is a real disclosure, not a duplicate
@@ -418,7 +443,7 @@ const runEngine = async ([engine, browserType]) => {
         const playerRect=await screen.boundingBox();
         assert.ok(playerRect&&playerRect.width>playerRect.height,
           engine+" "+locale+" "+width+"px central player must be widescreen");
-        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
+        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().textContent(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
@@ -555,12 +580,15 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
         await page.locator('[data-video-director-goal-controls] [data-auto-video-input]').fill("I want to feel calmer");
+        await page.locator('[data-video-quick-control="phrases"]').click();
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
+        await page.locator('[data-video-quick-control="video"]').click();
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
         await expect(screen.locator("[data-video-preview-toggle]")).toHaveAttribute("aria-pressed","true",
           {timeout:10000}); // One style tap must immediately play the actual central video.
+        await page.locator('[data-video-quick-control="pro"]').click();
         // React/Next concurrent rendering can commit the shared state after
         // WebKit click() resolves. Await BOTH source button and real checkbox;
         // retain the exact on/off assertion (never skip on timeout).
@@ -590,11 +618,15 @@ const runEngine = async ([engine, browserType]) => {
         await placeAffirmationButton();
         await affirmationsToggle.click();
         await expect(affirmationsToggle).toHaveAttribute("aria-pressed","true",{timeout:10000});
+        await page.locator('[data-video-quick-control="phrases"]').click();
         await expect(actualAffirmations).toBeChecked({timeout:10000});
+        await page.locator('[data-video-quick-control="pro"]').click();
         await placeAffirmationButton();
         await affirmationsToggle.click();
         await expect(affirmationsToggle).toHaveAttribute("aria-pressed","false",{timeout:10000});
+        await page.locator('[data-video-quick-control="phrases"]').click();
         await expect(actualAffirmations).not.toBeChecked({timeout:10000});
+        await page.locator('[data-video-quick-control="video"]').click();
         // Owner reference: compact first screen, genuine hero Play, 44px targets,
         // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
         await themeDisclosure.locator("summary").click();
@@ -611,7 +643,8 @@ const runEngine = async ([engine, browserType]) => {
           const box=node=>node?.getBoundingClientRect();
           return {hero:box(header)?.height,brand:box(brand)?.height,
             goals:[...goalHost?.querySelectorAll("[data-auto-video-goal]")||[]]
-              .filter(node=>node.getClientRects().length).map(node=>box(node)?.width),
+              .filter(node=>!node.closest("details:not([open])") && node.getClientRects().length)
+              .map(node=>box(node)?.width),
             secondaryHeaderVisible:!!root?.querySelector("[data-video-quick-hero-play]")?.getClientRects().length,
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?

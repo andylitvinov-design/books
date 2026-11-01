@@ -3749,7 +3749,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setPreviewPlaying(false);
             }}><span aria-hidden="true">“</span>{phrase}</button>)}
         </div>
-        {activeWorkspace==="phrases" ? deepHypnoPane : null}
+        {deepHypnoPane}
 
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"

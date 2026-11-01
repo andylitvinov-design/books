@@ -39,7 +39,8 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  }
  assert.match(studio,/data-workspace-section="practices"/);
  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="phrases" \? deepHypnoPane : null\}/);
+ assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
+   "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
  assert.match(studio,/\{activeWorkspace==="editor" \? deepVideoPane : null\}/);
 });
