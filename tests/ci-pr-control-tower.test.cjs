@@ -251,3 +251,14 @@ test('unknown runner reserve blocks Repair under conservative job pressure',()=>
    runningJobs:23,queuedJobs:1};
  assert.equal(admission('repair',state),'JOBS_SATURATED');
 });
+
+test('Watchdog wakes the dispatcher only for durable work, not every completed Core callback',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(!workflow.includes("      - 'HH PR 10-minute watchdog'"));
+ assert.ok(workflow.includes("      - 'HH PR source Repair Worker'"));
+ assert.ok(workflow.includes("      - 'HH zero-cost PR CI worker'"));
+ const coordinator=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ assert.ok(coordinator.includes('notifyControlTower({github,owner,repo'));
+ assert.ok(coordinator.includes('summary.controlTowerWake='));
+});
