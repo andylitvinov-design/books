@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveRequiredGatePolicy, assessRequiredGates } from '../lib/ci/required-gate-policy.mjs';
+import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 const H = 'a'.repeat(40), APP = 15368;
 const rule = (...items) => ({type: 'required_status_checks', parameters: { required_status_checks: items.map(name => ({context:name,integration_id:APP})) }});
@@ -71,4 +71,15 @@ test('incomplete pagination, different GitHub App, or wrong context is unknown',
     observe(['release-ready',[check('release-ready',{app:{id:42}})]]),
     observe(['release-ready',[check('hh-specialist')]]),
   ]) assert.equal(assessRequiredGates({head:H,policy,observations}).state,'UNKNOWN');
+});
+
+test('one complete latest-checks page safely replaces multiple per-name reads', () => {
+  const policy=resolveRequiredGatePolicy([rule('hh-core-verified','hh-specialist')]);
+  const page={total_count:3,check_runs:[check('other-check'),check('hh-core-verified'),check('hh-specialist',{id:19})]};
+  const observations=observationsFromCompletePage(policy,page);
+  assert.equal(observations.length,2);
+  assert.equal(assessRequiredGates({head:H,policy,observations}).state,'SUCCESS');
+  assert.equal(observationsFromCompletePage(policy,{...page,total_count:101}),null);
+  assert.equal(observationsFromCompletePage(policy,{...page,total_count:4}),null);
+  assert.equal(assessRequiredGates({head:H,policy,observations:observationsFromCompletePage(policy,{total_count:0,check_runs:[]})}).state,'UNKNOWN');
 });

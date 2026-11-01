@@ -5,7 +5,7 @@
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
 import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
-import { resolveRequiredGatePolicy, assessRequiredGates } from '../lib/ci/required-gate-policy.mjs';
+import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
   if (!token) throw Error('GH_TOKEN or GITHUB_TOKEN required for route');
@@ -56,10 +56,11 @@ async function reportDeepRoutes(repo,token) {
   const snapshot=await collectRouteSnapshot(repo,token);
   const root='https://api.github.com/repos/'+repo;
   const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'};
-  let remaining=Infinity;
+  let remaining=Infinity,restReads=0;
   async function get(path) {
     if (remaining<500) throw Error('SWEEP_RATE_RESERVE');
     const response=await fetch(root+path,{headers,signal:AbortSignal.timeout(20000)});
+    restReads++;
     const value=response.headers.get('x-ratelimit-remaining');
     if (value!==null && Number.isFinite(Number(value))) remaining=Math.min(remaining,Number(value));
     if (!response.ok) throw Error('SWEEP_GITHUB_HTTP_'+response.status);
@@ -77,10 +78,17 @@ async function reportDeepRoutes(repo,token) {
       const row=candidates[next++];
       if (!row) return;
       try {
-        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,Promise.all(policy.contexts.map(async context => {
-          const result=await get('/commits/'+row.head.sha+'/check-runs?check_name='+encodeURIComponent(context)+'&filter=latest&per_page=100');
-          return {context,total_count:result.total_count,check_runs:result.check_runs};
-        })));
+        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,(async () => {
+          // The normal path uses ONE API read, reserving expensive per-name
+          // queries for commits with >100 checks or incomplete pagination.
+          const whole=await get('/commits/'+row.head.sha+'/check-runs?filter=latest&per_page=100');
+          const complete=observationsFromCompletePage(policy,whole);
+          if (complete) return complete;
+          return Promise.all(policy.contexts.map(async context => {
+            const result=await get('/commits/'+row.head.sha+'/check-runs?check_name='+encodeURIComponent(context)+'&filter=latest&per_page=100');
+            return {context,total_count:result.total_count,check_runs:result.check_runs};
+          }));
+        })());
         const observations=await headReads.get(row.head.sha);
         evidence.set(row.number,{head:row.head.sha,...assessRequiredGates({head:row.head.sha,policy,observations})});
       } catch(error) {
@@ -95,7 +103,7 @@ async function reportDeepRoutes(repo,token) {
   const routed=refineStaleRoutes(fresh.rows,evidence,fresh.observed);
   console.log(JSON.stringify({repo,observed_at:new Date(fresh.observed).toISOString(),total:fresh.total,
     ...routed,deep_checks_attempted:candidates.length,unique_heads_read:headReads.size,deep_read_errors:errors,
-    required_policy_mode:policy.mode,required_contexts:policy.contexts,
+    required_policy_mode:policy.mode,required_contexts:policy.contexts,deep_rest_api_reads:restReads,
     root_grouping:'UNCLASSIFIED_REQUIRES_CONFIRMED_REGISTRY_EVIDENCE',merge_authorized:false},null,2));
 }
 

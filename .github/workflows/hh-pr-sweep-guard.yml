@@ -4,6 +4,7 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/ci/pr-sweep-guard.mjs'
+      - 'lib/ci/required-gate-policy.mjs'
       - 'scripts/ci-quick-route.mjs'
       - 'tests/ci-quick-route.test.mjs'
       - 'lib/ci/specialist-aggregate.mjs'
@@ -17,6 +18,7 @@ on:
       - '.github/workflows/hh-pr-core-release.yml'
       - 'scripts/pr-sweep-guard.mjs'
       - 'tests/pr-sweep-guard.test.mjs'
+      - 'tests/required-gate-policy.test.mjs'
       - 'tests/ci-heavy-draft-policy.test.mjs'
       - 'scripts/vercel-ignore-build.mjs'
       - 'tests/ci-vercel-nonruntime.test.mjs'
@@ -50,4 +52,4 @@ jobs:
           node-version: '22'
       - name: Install locked parser without lifecycle scripts
         run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/required-gate-policy.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs
