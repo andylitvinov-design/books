@@ -25,12 +25,22 @@ export type BrowserMovieOptions={
   onProgress?:(percent:number)=>void;
 };
 
-export function supportsLocalWebCodecsMp4():boolean {
+/** A silent Safari MP4 requires only the video encoder; an AAC movie
+ * additionally needs an AudioEncoder and Web Audio's offline mixer.
+ * Some real WebKit builds expose VideoEncoder but not AudioEncoder.
+ */
+export function supportsLocalWebCodecsMp4(needsAudio=false):boolean {
   if(typeof window==="undefined"||typeof navigator==="undefined")return false;
   const ua=navigator.userAgent;
   return /AppleWebKit/i.test(ua)&&!/Chrome|Chromium|Edg|OPR/i.test(ua)&&
-    typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"&&
-    typeof OfflineAudioContext!=="undefined";
+    typeof VideoEncoder!=="undefined"&&
+    typeof VideoEncoder.isConfigSupported==="function"&&
+    typeof VideoFrame!=="undefined"&&
+    (!needsAudio || (
+      typeof AudioEncoder!=="undefined"&&
+      typeof AudioEncoder.isConfigSupported==="function"&&
+      typeof OfflineAudioContext!=="undefined"
+    ));
 }
 
 async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise<AudioBuffer> {
@@ -79,11 +89,26 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
 /** A real H.264/AAC video/audio MP4. Rendering remains on the existing Canvas. */
 export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promise<Blob>{
   const {canvas,seconds,frameRate,renderFrame,audio,shouldContinue,onProgress}=options;
-  if(!supportsLocalWebCodecsMp4())throw new Error("webcodecs_not_supported");
+  if(!supportsLocalWebCodecsMp4(Boolean(audio)))throw new Error("webcodecs_not_supported");
   if(!Number.isFinite(seconds)||seconds<3||seconds>MAX_DURATION||
     !Number.isFinite(frameRate)||frameRate<6||frameRate>25||
     canvas.width<160||canvas.height<160||canvas.width*canvas.height>1920*1080)
     throw new Error("invalid_video_dimensions_or_timing");
+  if(!shouldContinue())throw new Error("export_cancelled");
+  // Preflight BOTH actual codecs before waiting for the entire film. A failed
+  // AAC codec must never produce a silent substitute for selected speech.
+  const h264=await VideoEncoder.isConfigSupported({
+    codec:"avc1.42E01E",width:canvas.width,height:canvas.height,
+    framerate:frameRate,bitrate:Math.min(4_000_000,Math.max(1_200_000,canvas.width*canvas.height*2.8)),
+  });
+  if(!h264.supported)throw new Error("webcodecs_h264_unsupported");
+  if(audio){
+    const aac=await AudioEncoder.isConfigSupported({
+      codec:"mp4a.40.2",sampleRate:SAMPLE_RATE,
+      numberOfChannels:1,bitrate:128000,
+    });
+    if(!aac.supported)throw new Error("webcodecs_aac_unsupported");
+  }
   if(!shouldContinue())throw new Error("export_cancelled");
   const target=new BufferTarget();
   const output=new Output({format:new Mp4OutputFormat(),target});
