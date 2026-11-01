@@ -99,7 +99,7 @@ concurrency:
   group: holistic-support-mandala-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
-  # Voice changes retain the full media/browser matrix on Ready and manual runs.
+  # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
@@ -136,18 +136,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true')
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true')
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true')
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -156,7 +156,7 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true')
+        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -175,7 +175,7 @@ jobs:
           node scripts/verify-affirmation-voice-browser.mjs
           node scripts/verify-holistic-mandala-browser.mjs
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'))
+        if: always() && github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
