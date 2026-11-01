@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {createScenarioAcquisitionQueue} from "../lib/mandala/scenario-media-acquisition.mjs";
+import {loadActiveFilmPresets} from "../scripts/read-live-film-presets.mjs";
 import {auditScenarioMedia,planDedicatedScenarioMedia,isUsableFilm}
   from "../lib/mandala/scenario-media-coverage.mjs";
 
@@ -14,10 +15,10 @@ const film=(id,theme="energy")=>({
 });
 const scenario=(id,clips)=>({id,theme:"energy",clips,focusTags:["light"]});
 test("current real library has no fake/unknown clip in its four-shot scenarios",()=>{
- const p=JSON.parse(readFileSync(new URL("../data/video-catalog/free-film-presets-v2.json",import.meta.url)));
+ const p=loadActiveFilmPresets();
  const s=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url)));
  const audit=auditScenarioMedia(p.presets,s.scenes);
- assert.ok(audit.scenarios>=24);
+ assert.equal(audit.scenarios,48);
  assert.equal(audit.requiredSlots,audit.scenarios*4);
  assert.deepEqual(audit.errors,[]);
  assert.ok(audit.approvedScenes>=44);
@@ -63,12 +64,12 @@ test("invalid scenario with duplicate stages fails even if source is licensed",(
 });
 
 test("editorial queue enumerates the exact independent scenes still required",()=>{
- const presets=JSON.parse(readFileSync(new URL("../data/video-catalog/free-film-presets-v2.json",import.meta.url))).presets;
+ const presets=loadActiveFilmPresets().presets;
  const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url))).scenes;
  const q=createScenarioAcquisitionQueue(presets,scenes);
- assert.equal(q.expectedNewMp4,52);
- assert.equal(q.slots.length,52);
- assert.equal(new Set(q.slots.map(row=>row.id)).size,52);
+ assert.equal(q.expectedNewMp4,148);
+ assert.equal(q.slots.length,148);
+ assert.equal(new Set(q.slots.map(row=>row.id)).size,148);
  for(const row of q.slots){
    assert.equal(row.importStatus,"not_imported");
    assert.equal(row.rightsStatus,"needs_individual_editorial_review");
