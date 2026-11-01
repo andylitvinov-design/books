@@ -375,10 +375,10 @@ test('Holistic Support mock screenshots run only after merge; PR retains current
   assert.match(core, /^  release-ready:/m);
 });
 
-test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
+test('Mandala Ready executes source contracts; P0 product PRs retain real media acceptance', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
-  const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
+  const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]';
   const gate = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   assert.ok(source.includes('  pull_request:\n' + types + '\n'), 'Draft to Ready event is mandatory');
   assert.ok(source.includes("branches: ['codex/public-book-library']"));
@@ -386,7 +386,7 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
+  assert.ok(source.includes("github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'P0'))"));
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));

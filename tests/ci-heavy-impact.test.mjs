@@ -211,13 +211,17 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala PR keeps current unit contracts; full legacy browser/build only by manual request', () => {
+test('Mandala media checks run manually or for P0 product PRs, never test-only changes', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
   assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
-  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
+  const condition = "if: ${{ steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'P0'))) }}";
+  for (const name of ['Build','Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px']) {
+    assert.equal(yaml.split('      - name: '+name+'\n')[1]?.split('\n')[0]?.trim(), condition, name);
+  }
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
