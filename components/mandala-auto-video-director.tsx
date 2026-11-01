@@ -5,6 +5,7 @@ import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
+import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions} from "@/lib/mandala/video-montage-sources.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
@@ -23,10 +24,11 @@ type Props={
   scenes:readonly SceneMeta[];
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
+  audioAttached?:boolean;audioTrackLabel?:string;onOpenAudio?:()=>void;
   onGoalChange:(value:string)=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
-    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];excludedMotifs?:readonly string[]})=>void|boolean;
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]})=>void|boolean;
   onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;
 };
 const copy={
@@ -45,6 +47,7 @@ const copy={
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
    input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Загружаем четыре видеосцены…",
    selectedGoal:"Выбранная цель",
+   captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
    timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
  },
  en:{
@@ -62,6 +65,7 @@ const copy={
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
    input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Loading four video scenes…",
    selectedGoal:"Selected goal",
+   captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
    timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
  },
  es:{
@@ -79,6 +83,7 @@ const copy={
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
    input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Cargando cuatro escenas de vídeo…",
    selectedGoal:"Objetivo elegido",
+   captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
 } as const;
@@ -91,7 +96,8 @@ const themeLabels={
 } as const;
 
 export function MandalaAutoVideoDirector({
- locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
+ locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
+ audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -103,7 +109,7 @@ export function MandalaAutoVideoDirector({
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [timelineEdits,setTimelineEdits]=useState<{
-   presetId:string;totalSeconds:number;clipIds:string[];durations:number[];
+   presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];
  }|null>(null);
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
  useEffect(()=>{
@@ -120,15 +126,17 @@ export function MandalaAutoVideoDirector({
  const stageClipIds=chosen?(activeTimelineEdits?.clipIds||[...chosen.clips]):[];
  const stageDurations=chosen?(activeTimelineEdits?.durations||
    allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
- const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations]);
+ const stageCaptions=chosen?(activeTimelineEdits?.captions||["","","",""]):[];
+ const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,stageCaptions]);
  const availableReplacements=stageClipIds.map(currentId=>
    montageReplacementOptions({scenes,currentId,selectedIds:stageClipIds,
      excludedMotifs:proposal?.excludedMotifs||[],limit:6}));
- const editTimeline=(clipIds:readonly string[],durations:readonly number[])=>{
+ const editTimeline=(clipIds:readonly string[],durations:readonly number[],
+   captions:readonly string[]=stageCaptions)=>{
    if(!chosen)return;
    onInvalidate?.(); // An edited cut must not leave a stale downloadable movie.
    setTimelineEdits({presetId:chosen.id,totalSeconds:length,
-     clipIds:[...clipIds],durations:[...durations]});
+     clipIds:[...clipIds],durations:[...durations],captions:[...captions]});
  };
  const shiftBoundary=(index:number,direction:-1|1)=>{
    if(index<0||index>=3)return;
@@ -216,6 +224,7 @@ export function MandalaAutoVideoDirector({
      <button type="button" disabled={disabled||!refineText.trim()} onClick={()=>{
        onGoalChange([goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160));
        setProposal(null);setProposalContext(null);setSelectedGoalId(null);setRefineOpen(false);
+       setTimelineEdits(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
  </div>;
@@ -303,6 +312,41 @@ export function MandalaAutoVideoDirector({
              </div>
            </div>)}
          </div>
+         <div className={css.trackSection} data-auto-video-tracks>
+           <div className={css.trackLabel}>{t.captionTrack}</div>
+           <div className={css.textSegments} data-auto-video-text-track
+             role="list" aria-label={t.captionTrack}>
+             {stageCaptions.map((caption,index)=><div key={index} role="listitem"
+               data-caption-active={caption.trim()?"true":"false"}
+               title={caption||t.captionTrack}
+               className={css.textSegment} style={{flexGrow:stageDurations[index]}}>
+               <span>{caption?"Aa":"·"}</span>
+             </div>)}
+           </div>
+           <div className={css.stageCaptionFields} data-auto-video-caption-editor>
+             <p className={css.notice}>{t.captionHint}</p>
+             {stageClipIds.map((clip,index)=><label key={clip} className={css.captionInput}>
+               <span>{index+1}. {t.stages[index]} · {stageDurations[index]} s</span>
+               <input type="text" data-auto-video-stage-caption={index}
+                 maxLength={STAGE_CAPTION_LIMIT} disabled={disabled}
+                 value={stageCaptions[index]||""}
+                 onChange={event=>{
+                   const captions=[...stageCaptions];
+                   captions[index]=event.currentTarget.value;
+                   editTimeline(stageClipIds,stageDurations,captions);
+                 }}/>
+             </label>)}
+           </div>
+           <div className={css.soundTrack} data-auto-video-sound-track
+             data-attached={audioAttached?"true":"false"}>
+             <div className={css.soundTrackLabel}>
+               <strong>{t.soundTrack}</strong>
+               <small>{audioAttached?(audioTrackLabel||t.soundTrack):t.soundMissing}</small>
+             </div>
+             {onOpenAudio?<button type="button" disabled={disabled} onClick={onOpenAudio}>
+               {t.soundSettings}</button>:null}
+           </div>
+         </div>
          <p className={css.notice}>{t.replacementHint} {t.audioHint}</p>
        </details>
        <details className={css.details} data-auto-video-adjust>
@@ -326,7 +370,7 @@ export function MandalaAutoVideoDirector({
          disabled={disabled} onClick={()=>{
            const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
              clipIds:stageClipIds,durationSecondsByStage:stageDurations,
-             excludedMotifs:proposal.excludedMotifs});
+             excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
            if(accepted!==false)setConfirmedTimelineKey(timelineKey);
          }}>
          <Check size={18} aria-hidden="true"/> {t.accept}
