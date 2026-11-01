@@ -193,6 +193,17 @@ function classifyCoreFailureJobs(jobs) {
       scope?.conclusion==='success' &&
       (build?.conclusion==='success' || build?.conclusion==='skipped'))
     return 'RELEASE_GATE_ONLY';
+  // Aggregate gates report downstream consequences, not the causal step.
+  // Treat setup/checkout failures as environment triage at any age; the
+  // separate retry policy still decides whether and when a rerun is safe.
+  const aggregate=new Set(['release-ready','hh-specialists-verified','hh-core-verified','hh-specialist']);
+  const causal=failed.filter(job=>!aggregate.has(job.name));
+  const setupStep=/^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i;
+  if(causal.length && causal.every(job=>{
+    if(['timed_out','startup_failure'].includes(job.conclusion))return true;
+    const steps=(job.steps||[]).filter(step=>step.conclusion==='failure');
+    return steps.length>0 && steps.every(step=>setupStep.test(step.name||''));
+  })) return 'CI_INFRA_OR_ENVIRONMENT';
   if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
   return 'UNVERIFIED';
 }
@@ -510,7 +521,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
-    releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
+    releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,infraOrEnvironment:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
@@ -769,6 +780,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
         }
         log('#'+pr.number+' gate-only Core failure; no speculative source repair');
+      } else if(root==='CI_INFRA_OR_ENVIRONMENT') {
+        summary.infraOrEnvironment++;
+        log('#'+pr.number+' setup or infrastructure failure; no speculative source repair');
       } else if(root==='UNVERIFIED') {
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
