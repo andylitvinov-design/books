@@ -103,3 +103,25 @@
  text-align:left;cursor:pointer;color:#205b49}
 .filterSummary button span{font-size:10px;font-weight:600;color:#5b806d}
 .filterSummary button strong{font-size:12px;line-height:1.1}
+
+/* Canonical phrase filters stay in the one chat, with compact horizontal
+   scrolling on iPhone rather than another stacked editor. */
+.phraseFilters{flex:none;display:flex;align-items:end;gap:9px;overflow-x:auto;
+  max-height:122px;padding:8px 12px;border-top:1px solid #e4ece4;background:#fbfdf8;
+  -webkit-overflow-scrolling:touch}
+.phraseFilters fieldset{border:0;padding:0;margin:0;flex:none;min-width:0}
+.phraseFilters legend{font:600 11px/1.3 system-ui,-apple-system,sans-serif;color:#527565;
+  margin-bottom:4px}
+.phraseFilters fieldset div{display:flex;gap:4px}
+.phraseFilters button{min-height:40px;padding:7px 9px;border:1px solid #c3d8cc;
+  border-radius:10px;background:#fff;color:#245940;cursor:pointer;
+  font:650 12px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap}
+.phraseFilters button[aria-pressed="true"]{background:#e5f4e8;border-color:#16896b;color:#14664e}
+.phraseFilters .skipPhrase{align-self:end;margin-left:auto;color:#81643b;border-color:#e2ceb1}
+.window[data-chat-step="category"] .choices{max-height:140px}
+.window[data-chat-step="phrase"] .choices{max-height:144px}
+.window[data-chat-step="phrase"] .choices button{white-space:normal;text-align:left;overflow-wrap:anywhere}
+@media(max-width:355px){
+  .phraseFilters{padding:6px 8px;gap:5px}
+  .phraseFilters button{padding:7px;font-size:11px}
+}
