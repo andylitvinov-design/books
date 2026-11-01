@@ -78,4 +78,6 @@ test("real studio consumes edited storyboard and invalidates stale exported vide
   assert.match(studio,/allocateAdaptiveFilmTimeline\(/);
   assert.match(studio,/retimeAdaptiveFilmPlan\(plan,seconds\)/);
   assert.match(studio,/shot\.sceneId,shot\.startSeconds,shot\.durationSeconds/);
+  assert.match(ui,/onInvalidate\?\.\(\)/,"shot edits must invalidate stale output immediately");
+  assert.match(studio,/onInvalidate=\{\(\)=>\{setPreviewPlaying\(false\);setCinematicPlan\(null\);\}\}/);
 });
