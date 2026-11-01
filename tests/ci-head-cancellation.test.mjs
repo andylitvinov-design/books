@@ -65,7 +65,7 @@ const workflows = [
   ['hh-public-services-production.yml', 'public-services-production'],
   ['hh-public-test-collections.yml', 'hh-public-test-collections'],
   ['hh-sitemap-runtime-assets.yml', 'sitemap-runtime-assets'],
-  ['hh-tantra-photo-levels.yml', 'hh-tantra-photo'],
+  // hh-tantra-photo-levels.yml retired from production workflows; no job to cancel.
   ['ia-v2.yml', 'ia-v2'],
   ['mentor-community-acceptance.yml', 'mentor-community-acceptance'],
   ['pro-reiki-master-paths.yml', 'pro-reiki-master'],
