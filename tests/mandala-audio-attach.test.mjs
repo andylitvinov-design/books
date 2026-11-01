@@ -253,7 +253,6 @@ test("direct audio URL reveals its existing workspace instead of hidden advanced
   assert.match(browser,/deep-link\.png/);
 });
 
-
 test("original audio cover and separate 44px Play keep the real photograph visible",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const styles=read("components/mandala-video-mobile.module.css");
