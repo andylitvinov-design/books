@@ -42,12 +42,16 @@ test('zero tracking is caveated and no personal notes leak into digest',()=>{
   assert.doesNotMatch(report.text,/private@x|secret|private client/)
   assert.match(report.text,/Новые заявки: 0/)
 })
-test('bot schedule retains its own daily slot independent of housekeeping and phone push',()=>{
+test('bot schedule is independent of housekeeping and consented phone push',()=>{
   const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
-  assert.ok(config.crons.some(x=>x.path==='/api/internal/housekeeping'&&x.schedule==='0 5 * * *'))
-  assert.deepEqual(config.crons.filter(x=>x.path==='/api/internal/practice-telegram-digest'),
-    [{path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'}])
-  assert.ok(config.crons.some(x=>x.path==='/api/internal/direct-message-push'&&x.schedule==='*/5 * * * *'))
+  assert.deepEqual(config.crons,[
+    {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
+    {path:'/api/internal/direct-message-push',schedule:'*/5 * * * *'},
+    {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
+    {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
+    {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
+    {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
+  ])
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{
   const request=new Request('https://holistichouse.vercel.app/api/internal/practice-telegram-digest')

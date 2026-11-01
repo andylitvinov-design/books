@@ -67,20 +67,16 @@ test('only authentic bot-authored public GitHub evidence is forwarded',async()=>
   assert.equal(remote.length,1)
   assert.equal(calls[0].opts.headers.Authorization,undefined)
 })
-test('scheduler and private read/write boundaries retain existing cron jobs',()=>{
+test('scheduler keeps existing private bot jobs alongside gated phone push',()=>{
   const cfg=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
-  // Verify this channel's schedule stays unchanged when independent, authenticated
-  // push recovery and other existing reports share the same Vercel project.
-  const expected=[
+  assert.deepEqual(cfg.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
     {path:'/api/internal/direct-message-push',schedule:'*/5 * * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
     {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
-  ]
-  for(const task of expected)
-    assert.deepEqual(cfg.crons.filter(row=>row.path===task.path),[task])
+  ])
   const phone=readFileSync(new URL('../app/api/internal/direct-message-push/route.js',import.meta.url),'utf8')
   assert.match(phone,/cronAuthorized\(request,process\.env\)/)
   assert.match(phone,/VERCEL_ENV==='preview'/)

@@ -96,7 +96,7 @@ test('all outbound sends require existing verified /start and separate master op
  assert.match(sql,/status='claimed'/)
  assert.doesNotMatch(sql,/grant .* on app_private\.practitioner_analytics_subscriptions to (anon|authenticated)/i)
 })
-test('master analytics reuses its existing daily cron and never triggers phone alerts',()=>{
+test('master analytics daily cron stays separate from consented phone push recovery',()=>{
  const vercel=JSON.parse(file('vercel.json'))
  assert.equal(vercel.crons.filter(x=>x.path==='/api/internal/direct-message-push').length,1)
  assert.equal(vercel.crons.filter(x=>x.path==='/api/internal/practice-telegram-digest').length,1)

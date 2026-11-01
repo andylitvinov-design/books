@@ -1,6 +1,5 @@
 import type {Metadata} from 'next'
 import Link from 'next/link'
-import {Bell,MessageCircle,ShoppingBag} from 'lucide-react'
 import {notFound} from 'next/navigation'
 import MessagesHub from '@/components/app/messages-hub'
 import MessagesOrdersClients from '@/components/app/messages-orders-clients'
@@ -20,11 +19,9 @@ export default async function MemberMessages({params,searchParams}:{
   const {locale}=await params
   if(!['en','ru','es'].includes(locale))notFound()
   const query=await searchParams
-  // The approved one-screen Messenger is the DEFAULT for every member.
-  // Older links to a specific order retain their own protected detail.
-  const orderId=typeof query?.order==='string'?query.order:''
-  const showOrders=query?.section==='orders'||
-    (query?.section!=='clients'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId))
+  // All member Messages entry points share one protected Orders / Clients hub.
+  // Legacy ?order=, ?section=clients, ?tab=chats and ?to= routes stay functional.
+  void query
   return <main className="hh-app hh-messages-page" lang={locale}>
     <header className="hh-header">
       <Link href={'/'+locale+'/masters'} className="hh-brand">Holistic House<span>Messages</span></Link>
@@ -32,21 +29,9 @@ export default async function MemberMessages({params,searchParams}:{
         {locale==='ru'?'Мой кабинет':locale==='es'?'Mi cuenta':'My account'}
       </Link>
     </header>
-    <nav className="hh-messages-context-nav" aria-label={locale==='ru'?'Дополнительные разделы':locale==='es'?'Secciones adicionales':'Additional sections'}>
-      <Link prefetch={false} href={'/'+locale+'/app/messages?'+(showOrders?'tab=chats':'section=orders')}
-        className="hh-messages-context-link">
-        {showOrders?<MessageCircle size={17} aria-hidden="true"/>:<ShoppingBag size={17} aria-hidden="true"/>}
-        <span>{showOrders?(locale==='ru'?'К переписке':locale==='es'?'Conversaciones':'Conversations'):
-          (locale==='ru'?'Мои заказы':locale==='es'?'Mis pedidos':'My orders')}</span>
-      </Link>
-      <Link prefetch={false} className="hh-messages-context-link"
-        href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}>
-        <Bell size={17} aria-hidden="true"/>
-        <span>{locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}</span>
-      </Link>
-    </nav>
-    {showOrders?<MessagesOrdersClients locale={locale}><MessagesHub locale={locale}/></MessagesOrdersClients>:
-      <MessagesHub locale={locale}/>}
+    <MessagesOrdersClients locale={locale}>
+      <MessagesHub locale={locale} embedded/>
+    </MessagesOrdersClients>
 
     <MessagesBottomNavigation locale={locale}/>
   </main>

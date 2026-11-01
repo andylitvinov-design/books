@@ -87,13 +87,16 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
-test("sound-only covers reuse 13 real local first-party illustration files",()=>{
+test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
   const covers=[...styles.matchAll(/\.audioTrackRow\[data-audio-id="([a-z-]+)"\] \.audioTileGlyph\{background-image:url\('([^']+)'\)\}/g)];
-  assert.equal(covers.length,13,"all thirteen site audio sounds have honest illustrative cover art");
-  assert.equal(new Set(covers.map(x=>x[1])).size,13);
+  assert.equal(covers.length,39,"all 39 site audio sounds have explicit illustrative cover art");
+  assert.ok(new Set(covers.map(x=>x[1])).size>=13,"retain diverse existing cover scenes");
   for(const [,id,url] of covers){
     assert.match(url,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.jpg$/);
     assert.ok(existsSync(new URL("../public"+url,import.meta.url)),id+" first-party cover must exist");
@@ -105,4 +108,33 @@ test("sound-only covers reuse 13 real local first-party illustration files",()=>
   assert.match(styles,/\.audioFilterRow\{display:grid/);
   assert.match(styles,/\.audioChipRail button\{flex:none;min-height:42px/);
   assert.match(styles,/\.audioFavorite\{display:grid;place-items:center;width:44px;min-height:44px/);
+});
+
+
+test("approved compact audio mock has one real player/microphone and no duplicate picker",()=>{
+  const quickStart=studio.indexOf('data-video-quick-section="5"');
+  const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
+  const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
+  const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
+    "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
+  const quick=studio.slice(quickStart,quickEnd);
+  const full=studio.slice(fullStart,fullEnd);
+  assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
+    "the quick summary cannot host another recorder, media player or sound catalogue");
+  assert.match(quick,/data-video-quick-attach/,"existing quick attach still works");
+  assert.match(quick,/quickAudioSilent/,"silent output remains available");
+  assert.match(full,/data-video-audio-dock/,"one shared selected-track player dock");
+  assert.match(full,/data-video-audio-play=\{track\.id\}/,"every audio row has direct playback");
+  assert.match(studio,/flushSync\(\(\)=>\{/,"same user tap can play new first-party WAV on iOS");
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1,
+    "one native audio element in the canonical video editor");
+  assert.equal((studio.match(/data-video-audio-mic\b/g)||[]).length,1,
+    "one functional mic recorder rather than duplicate voice workflows");
+  assert.match(styles,/\.audioSection \.blockHeading\{display:grid/);
+  assert.match(styles,/\.audioSection \.audioFilterRow\{grid-template-columns:/);
+  assert.match(styles,/\.audioTrackPlay\{position:absolute/);
+  assert.match(styles,/\.quickAudioCompact\{display:grid/);
 });

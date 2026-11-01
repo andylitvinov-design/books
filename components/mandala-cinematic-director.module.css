@@ -53,6 +53,9 @@
 .shot details{margin-top:6px;max-width:100%}
 .shot summary{cursor:pointer;font-size:11px;color:#087e5e;font-weight:800}
 .shot details p{font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.shot[data-director-shot-selected=true]{border-color:#088261;box-shadow:0 0 0 2px rgba(8,130,97,.12)}
+.shotSelect{min-height:38px;margin-top:7px;padding:7px 9px;border:1px solid #9cc9ab;border-radius:9px;background:#f5fbf6;color:#087e5e;font-size:11px;font-weight:850}
+.shotSelect[aria-pressed=true]{background:#087e5e;color:#fff;border-color:#087e5e}
 .helper{font-size:11px;line-height:1.45;color:#657c6a;margin:9px 0}
 .secondary{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .secondary :is(button,a){display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -108,3 +111,54 @@
 .profileConsent input{flex:none;width:19px;height:19px;margin-top:1px;accent-color:#087e5e}
 .profileOptions .sheetChoices button{min-height:44px}
 .profileOptions .secondary{margin-top:0}
+
+/* Free visual-only brief: one field first, at most two contextual questions. */
+.ideaInput{display:grid;gap:7px;margin:0 0 12px;min-width:0}
+.ideaInput strong,.contextQuestions strong,.reference strong{font-size:13px;color:#20543d;font-weight:850}
+.ideaInput textarea{box-sizing:border-box;width:100%;min-height:77px;max-width:100%;
+ resize:vertical;padding:12px;line-height:1.5;font:inherit;font-size:15px;color:#23483b;
+ background:#fffef9;border:1px solid #c5d8c9;border-radius:13px}
+.ideaInput small{color:#6a8272;font-size:11px;line-height:1.45}
+.contextQuestions{display:grid;gap:10px;margin:0 0 12px;padding:10px;
+ border-radius:12px;background:#fffaf0;border:1px solid #e7dabc}
+.contextQuestions>div{display:grid;gap:7px}
+.contextQuestions .chips button{flex:1 1 105px;font-size:12px}
+.contextQuestions .chips button[aria-pressed=true]{background:#e4eddf}
+.questionCategories{display:grid;gap:9px;margin:0 0 12px;padding:10px;border:1px solid #e7dabc;border-radius:12px;background:#fffaf0}
+.categoryTabs{display:flex;gap:6px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding:1px 0 4px;scrollbar-width:thin}
+.categoryTabs button{flex:none;min-height:44px;padding:7px 10px;border:1px solid #d3e0d5;border-radius:12px;background:#fff;color:#3b6554;font-size:11px;font-weight:850;white-space:nowrap}
+.categoryTabs button[aria-pressed=true]{background:#087e5e;border-color:#087e5e;color:#fff}
+.questionList{display:grid;gap:8px}.questionList>small{color:#6a8272;font-size:11px;line-height:1.45}
+.contextQuestion{display:grid;gap:7px;min-width:0;margin:0;padding:9px;border:1px solid #e1e9d8;border-radius:11px;background:#fffef9}
+.contextQuestion legend{padding:0 2px;color:#20543d;font-size:12px;font-weight:850}.contextQuestion .chips button{flex:1 1 90px}
+.contextQuestion input{display:block;width:100%;min-height:44px;padding:9px 10px;border:1px solid #c5d8c9;border-radius:10px;background:#fff;color:#23483b;font:inherit;font-size:12px}
+.reference{margin:10px 0 12px;border:1px solid #d9e5d9;background:#f7faf4;
+ padding:12px;border-radius:13px;min-width:0}
+.reference p{font-size:12px;line-height:1.5;color:#3e6651;margin:9px 0}
+.reference summary{font-size:11px;line-height:1.5;color:#087e5e;cursor:pointer;
+ min-height:44px;display:flex;align-items:center}
+.reference ol{padding-left:22px;margin:0}
+.reference li{padding:8px 0;border-bottom:1px solid #dfebdf}
+.reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
+ color:#536c5c}
+.reference li span+span{color:#788c7c;margin-top:3px}
+
+/* One exact provider prompt preview. Safe visual tokens only; never a paid auto-submit. */
+.aiPrompt{margin:12px 0;border:1px solid #d4c6aa;background:#fffaf0;border-radius:13px;
+  padding:12px;min-width:0}
+.aiPrompt>strong{font-weight:850;font-size:13px;color:#765125}
+.aiPrompt>p{font-size:11px;line-height:1.5;color:#6b695d;margin:9px 0}
+.aiPrompt fieldset{padding:7px 0;border:0}
+.aiPrompt legend{font-size:11px;font-weight:800;color:#765125;padding:0 0 6px}
+.aiPromptText{max-height:170px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;
+  padding:10px;border:1px solid #e6d8bc;border-radius:10px;background:#fffdf8;
+  font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:#355541!important}
+
+
+/* Capability honesty: a crown marks creative-brief choices that cannot
+ * change the currently available free local MP4 output. */
+.premiumOption{display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:11px;font-weight:750;color:#976b28}
+.premiumOption svg,.contextQuestion [data-video-option-tier="premium"] svg{flex:none;color:#a87e35;vertical-align:middle}
+.contextQuestion [data-video-option-tier="premium"]{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-color:#e3d1ac;background:#fff9ec}
+.contextQuestion [data-video-option-tier="premium"][aria-pressed="true"]{border-color:#b58f48;background:#fff0ca}
+.contextQuestion [data-video-option-tier="free"]{border-color:#cee0cc}
