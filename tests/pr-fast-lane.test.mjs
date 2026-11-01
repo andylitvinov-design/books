@@ -712,7 +712,7 @@ test('native auto-merge preserves stacked-child ancestry while keeping squash fo
   assert.match(source, /pull-requests: write/);
   assert.match(source, /head\.repo\.full_name == github\.repository/);
   assert.match(source, /draft == false/);
-  assert.ok(source.includes('PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}'));
+  assert.ok(source.includes('PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}'));
   // A parent with an open child (even Draft) must retain its ancestry.
   assert.ok(source.includes('gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1'));
   assert.match(source, /if ! stacked_children=/, 'failed child lookup must fail closed');
@@ -886,7 +886,7 @@ test('Practice visual PR does not repeat Google-auth browser or old Chromium/Web
 test('native CI interruption recovery is one-time, exact-head and never bypasses failing code', () => {
   const workflow = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.match(workflow, /^  workflow_run:/m);
-  assert.match(workflow, /workflows: \['HH PR core release gate'\]/);
+  assert.match(workflow, /^      - 'HH PR core release gate'$/m);
   const repair=workflow.split(/^  recover-interrupted-core:\s*$/m)[1];
   assert.ok(repair,'missing recovery job');
   for(const guard of [
@@ -907,4 +907,36 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
   assert.match(repair,/concurrency:/);
   assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
   assert.match(repair,/new release-ready SUCCESS still required/);
+});
+
+test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
+  assert.ok(enable, 'missing event-driven enable job');
+  assert.match(source, /^  workflow_run:\s*$/m);
+  for (const name of [
+    'HH PR core release gate',
+    'Holistic Support mandala release checks',
+    'HH workflow syntax — actionlint',
+    'Holistic House public services production acceptance',
+  ]) assert.ok(source.includes("      - '" + name + "'"), 'missing CI completion callback: ' + name);
+  assert.ok(enable.includes("github.event_name == 'workflow_run'"), 'not event-driven');
+  assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'must wake on successful CI');
+  assert.ok(enable.includes('run.event !== "pull_request"'), 'must ignore other triggers');
+  assert.ok(enable.includes('pr.draft'), 'must skip Draft');
+  assert.ok(enable.includes('pr.head.repo?.full_name !== fullRepo'), 'must skip forks');
+  assert.ok(enable.includes('pr.mergeable !== true'), 'must refuse conflicted PRs');
+  assert.ok(enable.includes('expectedHead !== pr.head.sha'), 'must reject stale PR events');
+  assert.ok(enable.includes('head_sha: pr.head.sha'), 'must use exact HEAD');
+  assert.ok(enable.includes('completedRunId && !response.data.workflow_runs.some'), 'must reject stale CI events');
+  assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
+  assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
+  assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
+  assert.ok(enable.includes('"$current_method" == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
+  assert.ok(enable.includes('current_method" != NONE'), 'must refuse unsafe merge-method switch');
+  assert.ok(enable.includes('gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD"'));
+  const recover = source.split(/^  recover-interrupted-core:\s*$/m)[1];
+  assert.ok(recover?.includes("github.event.workflow_run.name == 'HH PR core release gate'"),
+    'core interruption repair must not run for every specialist completion');
+  assert.doesNotMatch(enable, /checkout@|--admin|--delete-branch|continue-on-error:/);
 });
