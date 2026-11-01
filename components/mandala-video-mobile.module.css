@@ -2539,3 +2539,22 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+
+/* Third-screen owner mock: Wave → one Canvas hero → four responsive groups →
+   one existing real on-device Create Video action, no new renderer. */
+.hypnoGenerateCaption{display:grid;gap:2px;text-align:left;line-height:1.13}
+.hypnoGenerateCaption strong{font-size:17px}
+.hypnoGenerateCaption small{font-size:12px;font-weight:500}
+.studio[data-active-workspace="effects"] [data-video-effects-panel]{margin:0;padding:0;border:0;
+ min-width:0;max-width:100%;background:transparent;box-shadow:none}
+.studio[data-active-workspace="effects"] .generate{min-height:64px;border-color:#1ca38f;
+ background:linear-gradient(110deg,#089789,#28b9a3);color:#fff;box-shadow:0 5px 14px #16866b26}
+@media(max-width:760px){
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-hypno-intro]{order:1}
+ .studio[data-active-workspace="effects"] .quickBuilder>.previewStage{order:2}
+ .studio[data-active-workspace="effects"] .quickBuilder>.quickVideoNav{order:3}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:4;display:block}
+ .studio[data-active-workspace="effects"] .quickBuilder>.generate{order:5}
+ .studio[data-active-workspace="effects"] .quickBuilder>.recording{order:5}
+}

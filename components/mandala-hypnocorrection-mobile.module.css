@@ -47,3 +47,91 @@
 .privacy{margin:9px 3px 1px;color:#637c73;font-size:12px;line-height:1.4}
 @media(max-width:360px){.panel{padding:0}.groupHeader{gap:9px;padding:8px}.groupHeader>img{width:66px;height:61px}.feature{grid-template-columns:36px minmax(0,1fr) 48px;gap:8px;padding:8px;min-height:88px}.featureIcon{width:36px;height:36px}.featureText strong{font-size:17px}.featureText span{font-size:13.5px}.switch{width:48px;height:29px}.switch>span{width:23px;height:23px}.switch[data-on=true]>span{transform:translateX(19px)}}
 @media(prefers-reduced-motion:reduce){.panel *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+
+/* Owner-approved third screen, 2026-11-01: one panorama + three true controls
+   per group, all expanded by default. Keep the one original Canvas player. */
+.intro,.panel{min-width:0;max-width:100%;width:100%;color:#152649}
+.intro{display:grid;gap:7px;margin:2px 0 4px;padding:2px}
+.intro>h2{font:700 clamp(30px,8.4vw,43px)/1.06 Georgia,serif;letter-spacing:-.025em;margin:0;color:#13204c}
+.intro>p{margin:0 0 5px;font:500 clamp(14px,3.8vw,17px)/1.35 Arial,sans-serif;color:#64758e}
+.intro .wave{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:9px;min-height:67px;
+ align-items:center;padding:9px 10px;margin:0;border-radius:15px;background:linear-gradient(105deg,#faf7ff,#f4f2ff)}
+.intro .waveTop{display:grid;gap:3px;min-width:0}
+.intro .waveTop strong{font-size:clamp(14px,3.9vw,18px)}
+.intro .waveTop p{font-size:clamp(11px,3vw,13px);line-height:1.18}
+.intro .wave>button{min-width:96px;min-height:46px;width:auto;margin:0;padding:8px 10px;font-size:clamp(12px,3.5vw,15px)}
+.waveStatus{font-size:12px;color:#614c91;margin:2px 0 0}
+.panel{display:grid;gap:9px;margin:0;padding:0}
+.panel .group{display:grid;grid-template-columns:clamp(100px,28%,175px) minmax(0,1fr);
+ min-width:0;min-height:160px;margin:0;overflow:hidden;border-radius:16px;background:#fffdfb}
+.panel .groupHeader{position:relative;display:block;align-self:stretch;min-width:0;
+ min-height:160px;padding:0;overflow:hidden;border:0;background:#162d3a}
+.panel .groupHeader>img{position:absolute;inset:0;width:100%;height:100%;border-radius:0;object-fit:cover}
+.groupShade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 15%,#0b1c31e8 100%)}
+.groupNumber{position:absolute;z-index:2;top:9px;left:9px;display:grid;place-items:center;
+ min-width:30px;height:31px;padding:0 5px;border-radius:8px;background:#fffefa;color:#203147;
+ font:bold 17px Arial,sans-serif}
+.panel .groupTitle{position:absolute;bottom:11px;left:9px;right:6px;display:grid;gap:6px;color:#fff}
+.panel .groupTitle strong{font:700 clamp(16px,4.6vw,24px)/1.07 Georgia,serif;color:#fff;text-shadow:0 2px 6px #0007}
+.panel .groupTitle small{font:500 clamp(10px,2.8vw,12px)/1.25 Arial,sans-serif;color:#fffdf6;text-shadow:0 1px 4px #000a}
+.panel .chevron,.panel .expanded{position:absolute;top:10px;right:5px;z-index:2;color:#fff}
+.panel .chevron{transform:rotate(-90deg)}
+.panel .expanded{transform:rotate(0)}
+.panel .groupContent{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:start;
+ gap:5px;min-width:0;padding:5px}
+.panel .groupContent[hidden]{display:none}
+.panel .feature{display:grid;grid-template-columns:minmax(0,1fr) 36px;
+ grid-template-rows:42px minmax(53px,1fr) 36px;gap:5px 2px;min-width:0;min-height:153px;
+ padding:6px 5px;margin:0;border-radius:11px;background:#fffefb}
+.panel .featureIcon{grid-column:1;grid-row:1;width:100%;height:42px;border:0;border-radius:8px;overflow:hidden;background:#f0ecff}
+.panel .featureIcon svg{height:28px;width:26px}
+.panel .featureIcon img{display:block;width:100%;height:100%;object-fit:cover}
+.panel .switch{grid-column:2;grid-row:1;align-self:start;width:36px;height:25px;padding:3px}
+.panel .switch>span{width:19px;height:19px}
+.panel .switch[data-on=true]>span{transform:translateX(11px)}
+.panel .featureArrow{grid-column:2;grid-row:1;min-width:33px;width:33px;height:33px}
+.panel .featureText{grid-column:1/-1;grid-row:2;align-self:stretch;display:block;min-width:0}
+.panel .featureText strong{font:800 clamp(11px,3vw,14px)/1.16 Arial,sans-serif;color:#13264d;overflow-wrap:anywhere}
+.panel .featureText span{font:500 clamp(10px,2.7vw,12px)/1.25 Arial,sans-serif;color:#6e7d90;margin-top:4px;overflow-wrap:anywhere}
+.configure{grid-column:1/-1;grid-row:3;display:flex;align-items:center;justify-content:space-between;
+ min-width:0;min-height:36px;width:100%;padding:6px 5px;border:0;border-radius:9px;
+ background:#f1f4f2;color:#17244b;font:750 clamp(10px,2.7vw,12px)/1.1 Arial,sans-serif}
+.panel .settings,.panel .note{grid-column:1/-1}
+.panel .note{font-size:12px;margin:0}
+.panel .meditation{grid-column:1/-1;display:grid;gap:6px;padding:0;text-align:left;background:transparent}
+.meditationPrimary{display:grid;grid-template-columns:28px minmax(0,1fr) 20px;
+ align-items:center;gap:7px;min-height:61px;padding:7px;border:1px solid #e6e0ed;
+ border-radius:11px;text-align:left;background:#fffdfb;color:#1a2d50}
+.meditationPrimary>svg:first-child{color:#7450e0}
+.meditationPrimary>span{display:grid;gap:3px;min-width:0}
+.meditationPrimary strong{font:800 clamp(12px,3.3vw,16px)/1.12 Arial,sans-serif}
+.meditationPrimary small{font:500 clamp(10px,2.6vw,12px)/1.2 Arial,sans-serif;color:#697991}
+.meditationOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.meditationOptions button{display:grid;align-content:start;gap:4px;min-width:0;
+ min-height:83px;padding:7px 5px;border:1px solid #e9ebe5;border-radius:11px;
+ background:#fbfaf7;text-align:left;color:#19304f}
+.meditationOptions svg{color:#7756e5}
+.meditationOptions strong{font:750 clamp(11px,2.9vw,13px)/1.1 Arial,sans-serif}
+.meditationOptions small{font:500 clamp(10px,2.6vw,12px)/1.2 Arial,sans-serif;color:#728197;overflow-wrap:anywhere}
+@media(max-width:360px){
+ .intro .wave{grid-template-columns:22px minmax(0,1fr) auto;gap:5px;padding:7px}
+ .intro .wave>button{min-width:76px;padding:6px;font-size:12px}
+ .panel .group{grid-template-columns:87px minmax(0,1fr)}
+ .panel .groupTitle{left:7px;right:3px}
+ .panel .groupTitle strong{font-size:16px}
+ .panel .groupTitle small{font-size:10px}
+ .panel .groupContent{grid-template-columns:repeat(3,minmax(72px,1fr));overflow-x:auto;scrollbar-width:thin}
+ .panel .switch{width:34px}
+ .panel .switch[data-on=true]>span{transform:translateX(9px)}
+ .meditationOptions{grid-template-columns:repeat(3,minmax(73px,1fr));overflow-x:auto}
+}
+@media(min-width:760px){
+ .panel .group{grid-template-columns:175px minmax(0,1fr)}
+ .panel .groupHeader{min-height:180px}
+ .panel .feature{min-height:180px;padding:10px;grid-template-rows:45px minmax(55px,1fr) 40px}
+ .panel .featureText strong{font-size:16px}
+ .panel .featureText span{font-size:13px}
+ .configure{font-size:13px}
+}

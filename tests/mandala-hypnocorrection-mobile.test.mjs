@@ -63,3 +63,29 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
+
+
+test("owner-approved third Hypnocorrection workspace preserves one live player and four rows",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+ const layout=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.equal((studio.match(/<MandalaHypnocorrectionMobile /g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaHypnoIntro /g)||[]).length,1);
+ assert.ok(studio.indexOf("<MandalaHypnoIntro")<studio.indexOf("data-video-live-stage"));
+ assert.equal((ui.match(/data-hypno-wave>/g)||[]).length,1);
+ assert.ok(ui.indexOf('{id:"audio"')<ui.indexOf('{id:"visual"'));
+ assert.ok(ui.indexOf('{id:"visual"')<ui.indexOf('{id:"meditation"'));
+ assert.ok(ui.indexOf('{id:"meditation"')<ui.indexOf('{id:"phrases"'));
+ assert.match(ui,/const \[collapsed,setCollapsed\]=useState<GroupId\[\]>\(\[\]\)/);
+ assert.match(ui,/data-hypno-group=\{group.id\}/);
+ assert.match(ui,/onOpenMeditation\("duration"\)/);
+ assert.match(ui,/onOpenMeditation\("style"\)/);
+ assert.match(ui,/onOpenMeditation\("voice"\)/);
+ assert.match(css,/\.panel \.groupContent\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(layout,/data-video-hypno-intro\]\{order:1/);
+ assert.match(studio,/data-mandala-video-generate/);
+ assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+ assert.match(studio,/0 кредитов/);
+ assert.doesNotMatch(ui,/getUserMedia\(|fetch\(|new MediaRecorder|Stripe|chargeCredits/);
+});
