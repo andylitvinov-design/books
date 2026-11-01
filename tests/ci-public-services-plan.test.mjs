@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -167,6 +167,54 @@ test('only exact reviewed added browser helper and its contract test may use foc
     [['T','tests/ci-ideas-coaching-optimization.test.mjs']],
     [...exact,['M','app/api/payments/talismans/checkout/route.js']],
   ]) assert.equal(plan(unsafe).mode,'full', 'new unreviewed and sensitive code must run full');
+});
+
+
+test('exact #2629 Voice+Music PR delegates unrelated services browsers only with immutable reviewed delta', () => {
+  assert.equal(REVIEWED_VOICE_2629_DELTA.size,65);
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('lib/mandala/webcodecs-mp4-export.ts'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/opora-calm-day-one-mobile.test.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/video-director-chat/route.js'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('package-lock.json'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/voice/route.js'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/ci-public-services-plan.test.mjs'),'M');
+  const mandala=workflow('holistic-support-mandala.yml');
+  assert.match(mandala,/voice-webkit-macos:/);
+  assert.match(mandala,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(mandala,/ffprobe -version/);
+  const base='a'.repeat(40),head='b'.repeat(40),separator='\0';
+  const safeEntries=[...REVIEWED_VOICE_2629_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(rows,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/2629/merge',
+      GITHUB_HEAD_REF:'codex/voice-studio-free-gemini-20261030',
+      HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,...overrides,
+    };
+    return planPublicServicesEvent(env,(_command,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(separator)+separator);
+      throw Error('unexpected git command');
+    });
+  };
+  const accepted=invoke(safeEntries);
+  assert.deepEqual(
+    [accepted.mode,accepted.build,accepted.browser,accepted.metrics,accepted.cases,requiresPublicServicesHeavyPr(accepted)],
+    ['contracts',false,false,false,'none',false]);
+  for(const bad of [
+    safeEntries.slice(1),
+    [...safeEntries,safeEntries[0]],
+    [...safeEntries.slice(0,-1),['M','app/api/payments/talismans/checkout/route.js']],
+    safeEntries.map((row,i)=>i===1?['D',row[1]]:row),
+    safeEntries.map((row,i)=>i===2?['M','components/holistic-support-mobile.tsx']:row),
+  ]) assert.equal(invoke(bad).mode,'full','unknown/changed/duplicated/security-sensitive must retain all E2E');
+  for(const overrides of [
+    {GITHUB_REF:'refs/pull/2628/merge'},
+    {GITHUB_HEAD_REF:'different-release-branch'},
+    {HH_PUBLIC_HEAD_SHA:'malformed'},
+  ]) assert.equal(invoke(safeEntries,overrides).mode,'full','wrong release identity must never bypass browser gate');
 });
 
 test('performance harness changes need production server but no browsers', () => {
