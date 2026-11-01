@@ -14,6 +14,8 @@ const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
 const REPAIR_LABEL = 'hh:repair-needed';
+const CONFLICT_LABEL = 'hh:conflict-repair-needed';
+const MAX_CONFLICT_HANDOFFS = 2;
 // Preserve per-repository API quota for event-driven merge / CI workflows.
 const MAX_API_CALLS = 65;
 const MIN_RATE_REMAINING = 100;
@@ -42,6 +44,13 @@ function gateIsGreen(checks) {
   return Boolean(gate && gate.status === 'completed' && gate.conclusion === 'success' &&
     gate.app?.id === 15368 && ![...entries.values()].some(c =>
       ['failure','cancelled','timed_out','action_required','startup_failure'].includes(c.conclusion)));
+}
+function classifyMergeState(pr) {
+  if (pr?.mergeable === false || pr?.mergeable_state === 'dirty') return 'DIRTY';
+  if (pr?.mergeable === null || !pr?.mergeable_state || pr?.mergeable_state === 'unknown')
+    return 'UNKNOWN';
+  if (pr.mergeable_state === 'behind') return 'BEHIND';
+  return pr.mergeable === true ? 'MERGEABLE' : 'UNKNOWN';
 }
 function canRetryCi(active, queued) {
   // Running and queued runs are different resources; do not conflate them.
@@ -77,6 +86,31 @@ async function listJobs(github, owner, repo, id, limited) {
   return data.total_count <= 100 ? data.jobs : null;
 }
 
+async function ensureQueueLabel(github, owner, repo, pr, name, description, color, dryRun, limited, log) {
+  if ((pr.labels || []).some(label => label.name === name)) return false;
+  if (dryRun) return true;
+  try {
+    try {
+      await limited('queue-label',()=>github.rest.issues.addLabels({
+        owner,repo,issue_number:pr.number,labels:[name]}));
+    } catch (error) {
+      if (error.status !== 404 && error.status !== 422) throw error;
+      try {
+        await limited('queue-label-create',()=>github.rest.issues.createLabel({
+          owner,repo,name,color,description}));
+      } catch (createError) {
+        if (createError.status !== 422) throw createError;
+      }
+      await limited('queue-label',()=>github.rest.issues.addLabels({
+        owner,repo,issue_number:pr.number,labels:[name]}));
+    }
+    return true;
+  } catch (error) {
+    log('#' + pr.number + ' queue label ' + name + ' unavailable: ' + error.message);
+    return false;
+  }
+}
+
 async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
   // Limit comment pagination. If it cannot be checked completely, do not
@@ -108,25 +142,9 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 `;
   if (!dryRun) {
     await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,body}));
-    // A durable GitHub label makes this a discoverable Repair queue; it does not
-    // claim to launch a paid/unconfigured AI coder. Failure must not lose handoff.
-    if (!(pr.labels || []).some(label => label.name === REPAIR_LABEL)) {
-      try {
-        try {
-          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
-        } catch (error) {
-          if (error.status !== 404 && error.status !== 422) throw error;
-          // Repository may not have the label yet. Create once, then assign.
-          try {
-            await limited('repair-label-create',()=>github.rest.issues.createLabel({owner,repo,name:REPAIR_LABEL,
-              color:'d93f0b',description:'Current PR HEAD needs source-code repair after CI failure'}));
-          } catch (createError) {
-            if (createError.status !== 422) throw createError;
-          }
-          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
-        }
-      } catch (error) { log(`#${pr.number} Repair label unavailable: ${error.message}`); }
-    }
+    await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
+      'Current PR HEAD needs source-code repair after CI failure',
+      'd93f0b',false,limited,log);
   }
   log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} repair handoff (not an AI coding run) for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
   return true;
@@ -224,6 +242,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   const selected = selectCandidates(review,now);
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
+    mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
+    staleHead:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
     checkedAt:new Date(now).toISOString(),
@@ -241,10 +261,59 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
-  let handoffs = 0;
+  let handoffs = 0, conflictHandoffs = 0;
   for (const pr of selected) {
     if(budget.exhausted) break;
     summary.inspected++;
+    // Pull-list omits mergeability. Read exact live PR before expensive CI queries.
+    let live;
+    try {
+      live = (await limited('live-merge-state',()=>github.rest.pulls.get({
+        owner,repo,pull_number:pr.number}))).data;
+    } catch (error) {
+      log('#' + pr.number + ' live PR lookup unavailable: ' + error.message);
+      continue;
+    }
+    if (live.state !== 'open' || live.draft || live.base?.ref !== PROD ||
+        live.head?.sha !== pr.head.sha || live.head?.repo?.full_name !== owner+'/'+repo) {
+      summary.staleHead++;
+      continue;
+    }
+    const mergeState = classifyMergeState(live);
+    if (mergeState === 'DIRTY') {
+      summary.mergeConflicts++;
+      if (conflictHandoffs < MAX_CONFLICT_HANDOFFS && !budget.exhausted) {
+        const created = await ensureQueueLabel(github,owner,repo,live,CONFLICT_LABEL,
+          'Production merge conflict: repair without bypassing required checks',
+          'b60205',dryRun,limited,log);
+        if (created) {
+          conflictHandoffs++;
+          summary.conflictLabelsQueued++;
+          log((dryRun ? 'WOULD_QUEUE' : 'QUEUED') +
+            ' conflict repair #' + live.number + ' HEAD ' + live.head.sha.slice(0,12));
+        }
+      }
+      continue;
+    }
+    // Mergeability is asynchronous, so unknown is NOT missing Core CI.
+    if (mergeState === 'UNKNOWN') { summary.mergeStateUnknown++; continue; }
+    // Behind-base PRs require a deliberate source-preserving base update.
+    // Do not create repetitive CI jobs merely to rediscover outdated HEADs.
+    if (mergeState === 'BEHIND') {
+      summary.behindProduction++;
+      // Source-preserving base update only for long-idle, clean BEHIND PRs.
+      // This creates genuine pull_request CI; it never fabricates release-ready.
+      if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
+          summary.legacyCoreBootstraps < MAX_LEGACY_BOOTSTRAPS &&
+          summary.legacyCoreProbes < MAX_LEGACY_PROBES) {
+        summary.legacyCoreProbes++;
+        try {
+          if (await bootstrapLegacyCore({github,repairGithub,owner,repo,pr:live,all,now,dryRun,log,limited}))
+            summary.legacyCoreBootstraps++;
+        } catch(error) { log(`#${pr.number} guarded BEHIND update denied: ${error.message}`); }
+      }
+      continue;
+    }
     let checks;
     try {
       // Query the exact release gate only: many specialist checks may exceed
@@ -270,19 +339,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       r.head_branch===pr.head.ref && r.event==='pull_request')
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
     const latest=coreRuns[0];
-    if (!latest) {
-      summary.missingCore++;
-      if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
-          summary.legacyCoreBootstraps < MAX_LEGACY_BOOTSTRAPS &&
-          summary.legacyCoreProbes < MAX_LEGACY_PROBES) {
-        summary.legacyCoreProbes++;
-        try {
-          if (await bootstrapLegacyCore({github,repairGithub,owner,repo,pr,all,now,dryRun,log,limited}))
-            summary.legacyCoreBootstraps++;
-        } catch(error) { log(`#${pr.number} legacy Core bootstrap denied: ${error.message}`); }
-      }
-      continue;
-    }
+    if (!latest) {summary.missingCore++;continue;}
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
@@ -327,4 +384,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,bootstrapLegacyCore,hasActiveLease};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,bootstrapLegacyCore,hasActiveLease};
