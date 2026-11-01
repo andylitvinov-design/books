@@ -59,6 +59,21 @@ function activeSweepLease(comments, sha, now) {
   }
   return false;
 }
+function repairMode(pr) {
+  const labels=new Set((pr?.labels || []).map(l=>l.name));
+  const source=labels.has(SOURCE), conflict=labels.has(CONFLICT);
+  if(!source && !conflict)return 'not_queued';
+  // A label is a historical hint, never proof of a current Git merge conflict.
+  if(pr.mergeable===false && pr.mergeable_state==='dirty')return 'conflict';
+  if(pr.mergeable===true && ['clean','blocked','behind','unstable'].includes(pr.mergeable_state))
+    return source ? 'lint' : 'stale_conflict';
+  return 'unverified';
+}
+function hasVerifiedSourceHandoff(comments, sha) {
+  const receipt='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+  return Array.isArray(comments) && comments.some(c=>
+    typeof c.body==='string' && c.body.includes(receipt));
+}
 function safeFiles(items) {
   return Array.isArray(items) && items.length < 100 &&
     items.filter(f => ['added','modified'].includes(f.status) &&
@@ -129,7 +144,32 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
     const marker = '<!-- ' + MARKER + ' ' + pr.head.sha + ' -->';
     if (comments.some(c => (c.body || '').includes(marker)) ||
         activeSweepLease(comments,pr.head.sha,now)) continue;
-    const conflict = pr.labels.some(l=>l.name===CONFLICT);
+    const mode=repairMode(pr);
+    if(mode==='stale_conflict'){
+      // A resolved conflict must not consume the manual repair slot forever.
+      if(!dryRun){
+        const fresh=(await limited('recheck-stale-conflict',()=>github.rest.pulls.get({
+          owner,repo,pull_number:pr.number
+        }))).data;
+        if(fresh.head?.sha===pr.head.sha && repairMode(fresh)==='stale_conflict'){
+          try {
+            await limited('clear-stale-conflict-label',()=>github.rest.issues.removeLabel({
+              owner,repo,issue_number:pr.number,name:CONFLICT
+            }));
+            log('CLEARED_STALE_CONFLICT_LABEL #' + pr.number + ' HEAD=' + pr.head.sha);
+          } catch(error){log('Stale conflict label removal failed: '+error.message);}
+        }
+      }
+      continue;
+    }
+    if(mode==='unverified' || mode==='not_queued')continue;
+    const conflict=mode==='conflict';
+    // A source label from an older HEAD is not permission to edit new code.
+    // The trusted Watchdog must have diagnosed this exact HEAD as source-red.
+    if(!conflict && !hasVerifiedSourceHandoff(comments,pr.head.sha)){
+      log('SKIP_SOURCE_WITHOUT_EXACT_HEAD_REPAIR_RECEIPT #' + pr.number);
+      continue;
+    }
     let files = [];
     if (!conflict) {
       const response = (await limited('changed-files',()=>github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1}))).data;
@@ -233,4 +273,4 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
 }
-module.exports={claim,publish,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
