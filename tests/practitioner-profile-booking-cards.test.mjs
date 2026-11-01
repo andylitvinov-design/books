@@ -35,7 +35,8 @@ test('profile shares canonical marketplace service card, preserving direct reque
   assert.match(serviceCards, /styles\.secondary/);
   assert.match(serviceCards, /styles\.primary/);
   assert.match(serviceCards, /service\.pricingMode === "free"/);
-  assert.match(serviceCards, /profileCoverFallback/);
+  assert.match(serviceCards, /profileArtwork/);
+  assert.match(serviceCards, /aria-label=\{\(locale ===/);
   assert.match(css, /\.practitionerServicesGrid/);
   assert.match(css, /\.profileServiceCard > \.actions/);
   assert.match(css, /grid-template-columns:\s*minmax\(0,\.8fr\) minmax\(0,1\.2fr\)/);

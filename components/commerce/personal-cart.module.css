@@ -37,3 +37,96 @@
 .cart :is(button,a,input):focus-visible{outline:3px solid #bf8150;outline-offset:3px}
 @media(max-width:640px){.cart{margin:11px auto 24px;padding:17px 14px;border-radius:16px;width:calc(100% - 22px)}.heading{margin-bottom:12px}.heading h1{font-size:29px}.heading p:not(.eyebrow){font-size:12px}.lines li{padding:10px 0}.methodChoices{gap:6px}.methodChoices label{font-size:11px;min-height:43px;padding:7px 3px}.primary{min-height:47px;font-size:13px}.total strong{font-size:21px}}
 @media(max-width:360px){.methodChoices label{font-size:10px;gap:3px}.methodChoices input{width:12px;height:12px}}
+
+
+/* Compact photo-led checkout. Keep mobile width and all fixed bottom navigation safe. */
+.cart{max-width:780px;background:linear-gradient(165deg,#fcfcf8 0%,#f4f8f5 100%);border-color:#d6e5dd;box-shadow:0 17px 48px rgba(31,81,73,.10)}
+.heading{align-items:center}
+.heading h1{font-size:clamp(32px,5vw,41px);letter-spacing:-.02em}
+.eyebrow{letter-spacing:.12em}
+.count{height:38px;min-width:38px;background:#136f7e;box-shadow:0 5px 13px rgba(19,111,126,.18)}
+.lines{display:grid;gap:11px;border:0}
+.lines li.serviceCard{display:grid;grid-template-columns:100px minmax(0,1fr) 84px;gap:13px;align-items:stretch;padding:12px;border:1px solid #d6e5dd;border-radius:17px;background:#fff;box-shadow:0 4px 16px rgba(27,75,68,.035)}
+.lines li .servicePhoto{display:block;flex:0 0 100px;min-width:0;width:100px;height:112px;overflow:hidden;border-radius:12px;background:#e8e3d9}
+.servicePhoto img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.lines li .serviceDetails{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.serviceDetails .serviceLabel{display:inline-block;color:#367a78;font:800 10px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.015em}
+.lines li .serviceDetails strong{color:#203f47;font:700 16px/1.25 Georgia,"Times New Roman",serif}
+.lines li .serviceDetails p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0;color:#647b75;font:12px/1.48 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.lines li .serviceActions{display:flex;flex:0 0 84px;flex-direction:column;justify-content:space-between;align-items:flex-end;min-width:0;gap:8px}
+.serviceActions b{font:800 18px/1.2 Arial,Helvetica,sans-serif;color:#135f71;white-space:nowrap}
+.serviceActions button{width:35px;height:35px;border-radius:11px;color:#58756d;background:#f7faf8}
+.total{margin:15px 0;padding:16px 18px;border:1px solid #d6e4db;background:#fff;border-radius:15px}
+.total strong{font-size:25px;color:#145f71}
+.orderStep{margin:16px 0 14px;padding:17px;border:1px solid #d1e1d8;border-radius:18px;background:#fff}
+.stepHeading{display:flex;align-items:flex-start;gap:10px;margin:0 0 15px;color:#244f56}
+.stepHeading>div{min-width:0;flex:1}
+.stepHeading strong{display:block;font:800 16px/1.35 Arial,Helvetica,sans-serif}
+.stepHeading p{margin:5px 0 0;color:#647a76;font:12px/1.55 Arial,Helvetica,sans-serif}
+.stepNumber{flex:none;display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:#e7f3ee;color:#197383;font:800 14px Arial,Helvetica,sans-serif}
+.orderButton{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:54px;padding:12px 16px;border:1px solid #166b7d;border-radius:13px;background:#166f80;color:#fff;font:800 16px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.orderButton svg{margin-left:auto}
+.orderButton:hover{background:#0d6071}
+.orderDone{display:flex;align-items:center;gap:9px;margin:0;padding:12px;border-radius:11px;background:#e8f5ef;color:#246754;font:700 13px/1.5 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.orderDone svg{flex-shrink:0}
+.orderForm{margin:9px 0 0}
+.orderForm>div{max-width:100%}
+.orderForm input{max-width:100%}
+.orderForm :is(input,button){touch-action:manipulation}
+.orderStep+.stepHeading{padding:5px 2px 0}
+.methods{margin:0 0 14px}
+.methods legend{margin-bottom:11px}
+.methodChoices label{min-height:49px;border-radius:12px}
+.payment{margin-top:12px;padding:15px;border:1px solid #d5e3dd;border-radius:16px;background:#fff}
+.payment .primary{min-height:58px;padding:12px 17px;border-radius:13px;font-size:16px;box-shadow:0 7px 17px rgba(16,109,126,.15)}
+.payment .hint{font-size:12px}
+.booking{margin-top:12px}
+.fine{margin:14px 2px 0}
+.empty{padding:15px 0 9px}
+.empty>p{margin:0 0 4px;color:#315e60;font:700 17px/1.45 Arial,Helvetica,sans-serif}
+.emptyHint{display:block;margin:0 auto 18px;color:#68817a;font:12px/1.5 Arial,Helvetica,sans-serif}
+.suggestions{display:grid;gap:11px;text-align:left}
+.suggestion{display:grid;grid-template-columns:90px minmax(0,1fr);gap:13px;padding:10px;border:1px solid #d7e5dc;border-radius:16px;background:#fff}
+.suggestionImage{width:90px;height:106px;object-fit:cover;border-radius:11px;background:#e8e4dc}
+.suggestionInfo{display:flex;flex-direction:column;gap:5px;min-width:0}
+.suggestionInfo strong{color:#234a53;font:700 16px/1.25 Georgia,"Times New Roman",serif}
+.suggestionInfo span{color:#6c817b;font:12px/1.3 Arial,Helvetica,sans-serif}
+.suggestionInfo b{color:#175e6e;font:800 18px/1.2 Arial,Helvetica,sans-serif}
+.suggestionInfo button{display:flex;align-items:center;justify-content:center;gap:8px;width:max-content;min-height:38px;margin-top:auto;padding:6px 14px;border:1px solid #177487;border-radius:9px;background:#e6f3f1;color:#155e70;font:800 12px Arial,Helvetica,sans-serif;cursor:pointer}
+.shopMore{display:inline-flex;align-items:center;gap:7px;margin-top:17px;color:#2a7274;text-decoration:none;font:800 12px Arial,Helvetica,sans-serif}
+.free{margin-top:20px}
+.cart :is(button,a,input):focus-visible{outline:3px solid #b47c4b;outline-offset:3px}
+@media(max-width:640px){
+  .cart{width:calc(100% - 18px);margin:10px auto 24px;padding:16px 12px 95px;border-radius:18px}
+  .heading h1{font-size:35px}
+  .lines li.serviceCard{grid-template-columns:84px minmax(0,1fr) 72px;gap:10px;padding:10px;border-radius:14px}
+  .lines li .servicePhoto{width:84px;height:103px;flex-basis:84px}
+  .lines li .serviceActions{flex-basis:72px}
+  .lines li .serviceDetails strong{font-size:15px}
+  .lines li .serviceDetails p{font-size:11px;-webkit-line-clamp:2}
+  .serviceActions b{font-size:16px}
+  .total{margin:13px 0;padding:13px 14px}
+  .total strong{font-size:23px}
+  .orderStep{padding:14px;margin:13px 0}
+  .orderButton{min-height:55px}
+  .payment{padding:12px}
+  .payment .primary{min-height:56px;font-size:15px}
+  .methodChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .methodChoices label{font-size:12px;min-height:47px}
+}
+@media(max-width:360px){
+  .cart{width:calc(100% - 14px);padding:12px 9px 94px}
+  .heading h1{font-size:32px}
+  .lines li.serviceCard{grid-template-columns:70px minmax(0,1fr) 60px;gap:8px;padding:8px}
+  .lines li .servicePhoto{width:70px;height:91px;flex-basis:70px}
+  .lines li .serviceActions{flex-basis:60px}
+  .lines li .serviceDetails strong{font-size:13px}
+  .lines li .serviceDetails p{font-size:10px}
+  .serviceDetails .serviceLabel{font-size:9px}
+  .serviceActions b{font-size:14px}
+  .serviceActions button{height:32px;width:32px}
+  .suggestion{grid-template-columns:78px minmax(0,1fr);gap:10px}
+  .suggestionImage{width:78px;height:102px}
+  .methodChoices label{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.orderButton{scroll-behavior:auto}}

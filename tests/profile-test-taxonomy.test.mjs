@@ -41,8 +41,8 @@ test('all catalogued methods, including non-startable research references, retai
   }
 })
 
-test('four profile directions cover each public measurement axis and every area has a parent', () => {
-  assert.deepEqual(Object.keys(PROFILE_FOCUS_AREAS), ['wellbeing','relationships','work','identity'])
+test('five profile directions cover public axes and every area has a parent', () => {
+  assert.deepEqual(Object.keys(PROFILE_FOCUS_AREAS), ['wellbeing','relationships','work','identity','goal'])
   assert.deepEqual(new Set(allAreas), new Set(Object.keys(PROFILE_AREA_AXES)))
   assert.deepEqual(new Set(Object.values(PROFILE_AREA_AXES).flat()), new Set(TEST_EXPLORER_AXES),
     'every measured axis must be reachable through at least one topic')

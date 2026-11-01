@@ -89,8 +89,10 @@ test('production scheduler invokes only the guarded daily housekeeping route', (
   assert.match(route, /PRIVATE_HEADERS/)
   assert.deepEqual(config.crons, [
     { path: '/api/internal/housekeeping', schedule: '0 5 * * *' },
-    { path: '/api/internal/practice-telegram-digest', schedule: '0 13 * * *' },
-    { path: '/api/internal/council-archive-telegram', schedule: '0 21 * * *' },
+    { path: '/api/internal/revenue-ideas-telegram', schedule: '0 13,14 * * *' },
+    { path: '/api/internal/practice-telegram-digest', schedule: '0 13,14,19,20 * * *' },
+    { path: '/api/internal/council-archive-telegram', schedule: '0 16,17 * * *' },
+    { path: '/api/internal/market-intel-telegram', schedule: '0 18,19 * * *' },
   ])
 })
 
@@ -101,8 +103,23 @@ test('app verification command includes the server-only cron guard suite', () =>
 })
 
 test('R1 database and browser workflows verify canonical-base pull requests', () => {
+  // GitHub Actions allows "types" before "branches". Assert the actual PR
+  // trigger block rather than assuming its child keys have a fixed order.
   for (const workflow of ['hh-app-r1.yml', 'hh-app-browser.yml']) {
-    const source = readFileSync(`${root}/.github/workflows/${workflow}`, 'utf8')
-    assert.match(source, /pull_request:\s*\n\s*branches: \['codex\/public-book-library'\]/)
+    const source = readFileSync(root+'/.github/workflows/'+workflow, 'utf8')
+    const trigger = source.split(/^  pull_request:\s*$/m)[1]
+      ?.split(/^(?:  [a-z][\w-]*:|permissions:|concurrency:|jobs:)/m)[0]
+    assert.ok(trigger, workflow+' must retain the pull_request trigger')
+    assert.match(trigger, /^    branches:\s*\['codex\/public-book-library'\]\s*$/m,
+      workflow+' must target canonical production')
+    assert.match(trigger, /^    types:\s*\[opened, synchronize, reopened, ready_for_review, converted_to_draft\]\s*$/m,
+      workflow+' must rerun for every new HEAD and Draft-to-Ready transition')
+    assert.match(trigger, /^    paths:\s*$/m, workflow+' must retain conservative PR path scoping')
+
+    // Detect accidental broadening and missing Ready-for-review checks.
+    assert.doesNotMatch(trigger.replace('codex/public-book-library','codex/bootstrap-books'),
+      /^    branches:\s*\['codex\/public-book-library'\]\s*$/m)
+    assert.doesNotMatch(trigger.replace(/^    types:.*$/m,''),
+      /^    types:\s*\[opened, synchronize, reopened, ready_for_review, converted_to_draft\]\s*$/m)
   }
 })

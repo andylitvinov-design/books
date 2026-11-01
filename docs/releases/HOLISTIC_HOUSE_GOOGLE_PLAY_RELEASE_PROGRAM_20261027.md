@@ -90,10 +90,15 @@
 - [Google Play / AI Studio Personal Library announcement](https://blog.google/products-and-platforms/platforms/google-play/google-play-updates-october-2026/)
 - [Play Console — Choose developer account type (health apps require Organization)](https://support.google.com/googleplay/android-developer/answer/13634885?hl=en)
 - [Play Console — Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291?hl=en)
-- [Google Play API36 requirement since 31 Aug 2026](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en)
-- [AGP minimum for Android API36](https://developer.android.com/build/releases/about-agp)
 - [Google Play Developer Policy — health, sexual content, privacy](https://support.google.com/googleplay/android-developer/answer/18258653?hl=en)
 - [Payments policy and one-to-one online services exception](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en)
 - [Personal account closed testing rule](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en)
 
 **Status as of authoring:** PLAN + native path drift FIX in review; **NOT** signed AAB, NOT Play Console upload, NOT customer release. Merge, GitHub CI, production deployment and device testing each require separate evidence.
+
+
+## Android native release — техническая интеграция 01.11.2026
+
+Один существующий draft PR #2230 согласован с актуальной production веткой: сохранены Native CI, проверка private Messenger, iOS simulator/iPhone personal bundles, PWA. Проверки исходника Play/AAB подключены к native-current-contracts. Дорогая сборка с одноразовым тестовым ключом — только вручную через workflow_dispatch; не запускается на каждом PR или push. Постоянный ключ применяется отдельно в protected google-play-release workflow только на production HEAD. Он не публикует APK, AAB или App Store автоматически.
+
+Обязательные условия реального клиентского релиза: постоянная подпись, подтверждённый SHA256 сертификата, версия, реальный Android install/update, Google OAuth/PKCE, безопасные личные сообщения и доступы, FCM opt-in/receipt, соответствие политике магазина, одобрение владельца. Play upload certificate и Play app signing certificate могут отличаться — обновление APK между каналами нельзя обещать до проверки пары подписей. До этого доступна PWA, а native download endpoints остаются закрыты.

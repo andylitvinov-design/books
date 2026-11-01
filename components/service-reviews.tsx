@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import styles from "./service-reviews.module.css";
+import { CatalogStarRating, useCatalogRatings } from "@/components/catalog-star-rating";
 
 type Review={
   id:string;displayName:string;rating:number;body:string;status?:string;
@@ -15,7 +16,7 @@ type ReviewPayload={
 };
 const COPY={
   en:{
-    kicker:"Community feedback",title:"Reviews of this service",
+    kicker:"Community feedback",title:"Reviews of the practitioner and service",
     note:"Reviews are written by registered Holistic House members. A booking or completed session is not independently verified.",
     average:"Average rating",reviewCount:"reviews",empty:"No reviews yet. Be the first to share a real experience.",
     write:"Write a review",edit:"Edit my review",signin:"Sign in to leave a review",
@@ -34,7 +35,7 @@ const COPY={
     member:"Member review",edited:"Edited",stars:"stars out of 5",
   },
   ru:{
-    kicker:"Отзывы сообщества",title:"Отзывы об этой услуге",
+    kicker:"Отзывы сообщества",title:"Отзывы о мастере и услуге",
     note:"Отзывы оставляют зарегистрированные участники Holistic House. Факт заказа или прохождения сеанса отдельно не проверен.",
     average:"Средняя оценка",reviewCount:"отзывов",empty:"Пока нет отзывов. Поделитесь реальным личным опытом первым.",
     write:"Оставить отзыв",edit:"Редактировать мой отзыв",signin:"Войти, чтобы оставить отзыв",
@@ -53,7 +54,7 @@ const COPY={
     member:"Отзыв участника",edited:"Изменён",stars:"звёзд из 5",
   },
   es:{
-    kicker:"Opiniones de la comunidad",title:"Opiniones sobre este servicio",
+    kicker:"Opiniones de la comunidad",title:"Opiniones del profesional y su servicio",
     note:"Las opiniones pertenecen a miembros registrados de Holistic House. La reserva o realización del servicio no se verifica por separado.",
     average:"Valoración media",reviewCount:"opiniones",empty:"Todavía no hay opiniones. Comparte tu experiencia real.",
     write:"Escribir opinión",edit:"Editar mi opinión",signin:"Inicia sesión para opinar",
@@ -80,9 +81,11 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
   if(code==="INVALID_REVIEW"||code==="INVALID_RATING")return t.errorInvalid;
   return t.genericError;
 }
-export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean}){
+export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false,sectionId="reviews"}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean;sectionId?:"reviews"|"service-reviews"}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
+  const headingId=sectionId==="reviews"?"service-reviews-heading":"alchemy-service-reviews-heading";
+  const stars=useCatalogRatings("service",[serviceId]);
   const [data,setData]=useState<ReviewPayload|null>(null);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -157,14 +160,14 @@ export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=fal
   }
   const dateLocale=language==="ru"?"ru-RU":language==="es"?"es-ES":"en-CA";
   return (
-    <section id="reviews" className={styles.root} aria-labelledby="service-reviews-heading">
+    <section id={sectionId} className={styles.root} aria-labelledby={headingId}>
       <div className={styles.header}>
-        <div><p className={styles.kicker}>{t.kicker}</p><h2 id="service-reviews-heading">{t.title}</h2></div>
-        {data&&<div className={styles.score} aria-label={t.average}>
-          <strong>{data.summary.count?data.summary.average.toFixed(1):"—"}</strong>
-          <span aria-hidden="true">★</span>
-          <small>{data.summary.count} {t.reviewCount}</small>
-        </div>}
+        <div><p className={styles.kicker}>{t.kicker}</p><h2 id={headingId}>{t.title}</h2></div>
+        <div>
+          <CatalogStarRating locale={language} summary={stars.ratings[serviceId]}
+            onRate={readOnly?undefined:value=>stars.rate(serviceId,value)} unavailable={stars.unavailable}/>
+          {data&&<small className={styles.note}>{data.summary.count} {t.reviewCount}</small>}
+        </div>
       </div>
       <p className={styles.note}>{verifiedOnly
         ? language==='ru'?'Отзывы принимаются только после выполненного заказа. Публичная публикация требует проверки.':

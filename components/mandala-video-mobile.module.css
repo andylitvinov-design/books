@@ -1,0 +1,2541 @@
+/* Mobile first Video Studio, art-directed to the approved Holistic House mock.
+   The same local renderers are used for thumbnails, preview and exported clips. */
+.studio{--ink:#183d35;--green:#07936c;--cream:#fbf8f1;--edge:#e9e6db;
+  color:var(--ink);font:500 14px/1.4 Arial,Helvetica,sans-serif;min-width:0;
+  max-width:960px;margin:0 auto;padding:2px 0 76px}
+.studio *{box-sizing:border-box}
+.studio button{cursor:pointer}
+.studio :is(a,button,input,summary):focus-visible{outline:3px solid #daa755;outline-offset:2px}
+.studio :is(h2,h3,p){margin:0}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.studioTop{display:flex;align-items:center;gap:10px;margin:4px 0 14px}
+.back{display:grid;place-items:center;flex:none;width:43px;height:43px;border:1px solid #e5e7dc;border-radius:50%;background:#fffcf5;color:#244d40}
+.brandTitle{flex:1;min-width:0}
+.brandTitle h2{font:800 clamp(20px,3.1vw,29px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.035em;color:#143d34}
+.brandTitle p{margin-top:4px;color:#69887f;font-size:12.5px}
+.myVideos{display:flex;align-items:center;gap:6px;flex:none;min-height:41px;padding:0 12px;border:1px solid #d8e7da;background:#fffdf8;border-radius:21px;text-decoration:none;color:#225a4a;font-weight:750;font-size:12.5px}
+.firstSteps{display:grid;grid-template-columns:minmax(0,.90fr) minmax(0,1.10fr);align-items:stretch;gap:10px;margin-bottom:12px}
+.photoCard,.themeCard,.templates,.settings{min-width:0;border-radius:21px;background:linear-gradient(155deg,#fffef9,#fdfbf4);border:1px solid #ecebe0;box-shadow:0 6px 23px rgba(35,51,38,.052)}
+.photoCard,.themeCard{padding:12px 13px;min-height:224px}
+.studio h3{font:800 clamp(14px,1.8vw,20px)/1.22 Arial,Helvetica,sans-serif;letter-spacing:-.02em;color:#123e35}
+.photoPortrait{position:relative;display:grid;place-items:center;width:min(100%,132px);aspect-ratio:1;overflow:hidden;margin:13px auto 9px;padding:5px;border-radius:50%;border:3px solid #9bdbca;background:#e4f4e7;color:#236b58;box-shadow:0 0 0 4px #fff,0 3px 10px rgba(27,70,50,.12)}
+.photoPortrait img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.photoEmpty{display:flex;align-items:center;flex-direction:column;gap:3px;text-align:center;color:#729e8d}
+.photoEmpty small{font-size:11px;line-height:1.16}
+.cameraCircle{position:absolute;right:0;bottom:1px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#10594b;color:white;border:2px solid white}
+.replacePhoto{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 auto;min-height:39px;width:100%;max-width:190px;border:1px solid #c4d9ca;background:#fffefa;color:#226650;border-radius:23px;font-size:12.5px;font-weight:750}
+.photoPrivacy{display:block;text-align:center;color:#849288;font-size:10px;margin-top:5px}
+.themeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.themeButton{position:relative;display:flex;align-items:center;flex-direction:column;justify-content:center;gap:7px;min-width:0;min-height:83px;padding:9px 4px;border:1px solid rgba(255,255,255,.5);border-radius:15px;color:#224139;font-weight:800;font-size:12px;line-height:1.12;text-align:center}
+.themeButton[data-theme="money"]{background:linear-gradient(140deg,#c4f0da,#9edbc4);color:#207253}
+.themeButton[data-theme="relationships"]{background:linear-gradient(145deg,#ffe7ee,#f8dce7);color:#d55c79}
+.themeButton[data-theme="energy"]{background:linear-gradient(145deg,#e5f7e8,#dff0e7);color:#2b966d}
+.themeButton[data-theme="goals"]{background:linear-gradient(145deg,#f0eafb,#e8dffa);color:#8b53cd}
+.themeButton span{color:#233f38;max-width:100%;overflow-wrap:break-word}
+.themeButton[aria-pressed="true"]{background:linear-gradient(140deg,#40bd90,#008f68);color:#fff;box-shadow:inset 0 0 0 1px #14ac83,0 4px 10px rgba(0,133,90,.19)}
+.themeButton[aria-pressed="true"] span{color:#fff}
+.checked{position:absolute;right:6px;top:6px;background:white;color:#0b8966;border-radius:100%;padding:2px}
+.templates{padding:15px 11px 12px;margin-bottom:12px}
+.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 3px;margin-bottom:10px}
+.sectionHeading button{display:inline-flex;align-items:center;gap:4px;flex:none;min-height:37px;padding:0 2px;border:0;background:transparent;color:#10694e;font-size:12px;font-weight:750}
+.templateRail{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(130px,23%,184px);gap:9px;min-width:0;padding:3px 3px 9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#bdddc9 transparent}
+.templateTile{display:block;position:relative;isolation:isolate;aspect-ratio:0.77;min-width:0;border:3px solid transparent;border-radius:14px;overflow:hidden;background:#364d49;color:white;text-align:left;scroll-snap-align:start;padding:0}
+.templateTile[aria-pressed="true"]{border-color:#0ba778;box-shadow:0 0 0 2px #ddf4e6}
+.templateTile canvas{display:block;width:100%;height:100%;object-fit:cover}
+.tileShade{position:absolute;inset:25% 0 0;background:linear-gradient(0deg,rgba(0,0,0,.82),transparent 67%);pointer-events:none}
+.tileName{position:absolute;z-index:1;left:7px;right:7px;bottom:9px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.65);font-size:12px;font-weight:800;line-height:1.1}
+.tileCheck{position:absolute;z-index:2;right:7px;top:7px;display:grid;place-items:center;width:24px;height:24px;background:#079b77;border-radius:50%;color:#fff}
+.templateFooter{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:0 5px}
+.templateFooter small{color:#76867a;font-size:10px;line-height:1.3;text-align:right}
+.pagerDots{display:inline-flex;gap:5px}
+.pagerDots i{display:block;width:6px;height:6px;border-radius:50%;background:#dadfda}
+.pagerDots i:first-child{background:#009d70}
+.previewRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;margin-top:11px;padding:9px;border:1px solid #e0e9df;background:#f3f8f2;border-radius:13px}
+.previewButton{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #b7d8be;min-height:43px;border-radius:12px;background:#fffcf5;color:#14724f;font-size:12px;font-weight:750;padding:7px}
+.previewButton[aria-pressed="true"]{background:#e3f2e8;border-color:#0b9973}
+.canvasWindow{position:relative;display:grid;place-items:center;min-width:0;height:71px;overflow:hidden;border-radius:11px;background:#253934}
+.canvasWindow canvas{display:block;max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain}
+.settings{padding:15px 12px 11px}
+.settings>h3{margin:0 0 11px}
+.settingsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.settingCard,.musicCard,.captionCard{min-width:0;padding:11px 10px;border:1px solid #e8e6df;border-radius:15px;background:#fffefb}
+.settingCard legend,.musicCard legend,.captionCard legend{display:flex;align-items:center;gap:6px;margin:0;padding:0 2px;color:#173d33;font-size:13px;font-weight:800}
+.pills{display:flex;flex-wrap:wrap;align-items:stretch;gap:5px;margin-top:11px;min-width:0}
+.pills button{display:inline-flex;flex:1 1 45px;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:39px;padding:6px;border:1px solid #e8e6df;border-radius:12px;background:#f9f8f4;color:#25453a;font-size:11px;font-weight:600}
+.pills button[aria-pressed="true"]{background:linear-gradient(140deg,#16b786,#04956d);border-color:#14b485;color:white;font-weight:800}
+.formatIcon{display:block;flex:none;width:14px;height:23px;border:2px solid currentColor;border-radius:3px}
+.formatIcon[data-format="square"]{width:18px;height:18px}
+.formatIcon[data-format="landscape"]{width:22px;height:14px}
+.musicCard,.captionCard{margin:10px 0 0}
+.musicRail{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;padding:9px 2px 7px}
+.musicRail button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;flex:0 0 95px;min-height:83px;padding:10px 7px;border-radius:12px;border:2px solid transparent;color:white;text-shadow:0 1px 5px rgba(0,0,0,.48);scroll-snap-align:start}
+.musicRail button[aria-pressed="true"]{border-color:#03ac7b;box-shadow:0 0 0 2px #c4efe1}
+.musicRail button>span{font-size:25px;font-weight:700}
+.musicRail button strong{font-size:11px}
+.musicRail button.silent{background:#f2f1e9;color:#517066;text-shadow:none}
+.musicCheck{position:absolute;top:5px;right:5px;background:#07966e;border-radius:50%}
+.musicCard small{color:#8a9188;font-size:10px}
+.captionLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,1.1fr);gap:8px;align-items:center;margin-top:11px}
+.captionModes{display:flex;gap:5px;min-width:0}
+.captionModes button{display:flex;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:0;min-height:45px;border-radius:10px;border:1px solid #e5e6df;background:#f6f6f1;color:#244f42;font-weight:700;font-size:11px}
+.captionModes button[aria-pressed="true"]{background:#15aa7f;color:#fff}
+.captionModes button span{font-size:10px}
+.captionLayout input{display:block;width:100%;min-width:0;min-height:43px;padding:9px;border:1px solid #d6dbd1;border-radius:11px;background:#fff;color:#245345;font-size:12px}
+.captionLayout input:disabled{background:#f7f7f4;opacity:.8}
+.qualityDetails{margin-top:12px;padding:6px;border-top:1px solid #ecebe3;font-size:12px}
+.qualityDetails summary{display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:750;color:#48685b;min-height:36px}
+.qualityDetails .pills{margin:3px 0 6px}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:10px 0 4px;padding:11px;border-radius:12px;background:#f0f6ed;color:#375b4d;font-size:12px;cursor:pointer}
+.consent input{accent-color:#07976e;width:18px;height:18px;flex:none;margin:0}
+.generate{display:flex;justify-content:center;align-items:center;gap:13px;width:100%;min-height:61px;margin:14px 0 7px;border:0;border-radius:999px;background:linear-gradient(110deg,#02916c,#25b786);color:white;font-size:18px;font-weight:800;box-shadow:0 8px 18px rgba(3,146,106,.19)}
+.generate:disabled{opacity:.50;cursor:not-allowed;box-shadow:none}
+.privacy{display:flex;align-items:center;justify-content:center;gap:5px;margin:5px 4px 13px;color:#557c6d;text-align:center;font-size:11px;line-height:1.4}
+.recording .generate{background:#39564c}
+.progress{height:6px;border-radius:10px;background:#dbe6dd;overflow:hidden}
+.progress span{display:block;height:100%;background:#07966e;transition:width .3s ease}
+.notice,.warning{font-size:11.5px;color:#905c22;margin:6px 0}
+.result{margin:12px 0 8px;padding:11px;border:1px solid #e1e8dd;border-radius:16px;background:#f9fcf8;scroll-margin-top:20px}
+.result h3{font-size:14px}
+.result p{color:#667b6f;font-size:11.5px;margin-top:5px}
+.result video{display:block;width:min(100%,280px);height:auto;margin:10px auto;border-radius:12px;background:#253e34;max-height:300px}
+.resultActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.resultActions>*{display:flex;flex:1 1 140px;align-items:center;justify-content:center;gap:5px;padding:9px 10px;min-height:44px;border-radius:11px;background:#078d69;color:#fff;text-align:center;text-decoration:none;border:0;font-weight:750;font-size:12px}
+.resultActions button{background:#e5f1e8;color:#15563d}
+.bottomNav{position:sticky;z-index:9;bottom:0;display:flex;justify-content:space-around;align-items:center;gap:3px;padding:8px 4px max(9px,env(safe-area-inset-bottom));margin:14px -3px 0;border-radius:22px 22px 0 0;border:1px solid #e7e7df;background:rgba(255,253,248,.96);box-shadow:0 -4px 18px rgba(32,56,44,.06)}
+.bottomNav a{display:flex;align-items:center;flex-direction:column;gap:3px;flex:1;min-width:0;color:#77887c;text-decoration:none;text-align:center;font-size:10px;line-height:1.18}
+.bottomNav a[aria-current="page"]{color:#068e68;font-weight:800}
+@media(min-width:760px){.studio{padding:5px 0 15px}.bottomNav{display:none}.firstSteps{gap:16px}.photoCard,.themeCard{padding:20px;min-height:250px}.themeButton{min-height:98px;font-size:15px}.photoPortrait{width:155px}.templateRail{grid-auto-columns:clamp(160px,23%,210px)}.templateTile{aspect-ratio:.82}.settingsGrid{gap:12px}.settingCard{padding:16px}.pills button{min-height:45px;font-size:13px}.generate{font-size:19px}}
+@media(max-width:380px){.studio{padding:1px 0 66px}.studioTop{gap:6px}.brandTitle h2{font-size:19px}.brandTitle p{font-size:11px}.myVideos{padding:0 7px;font-size:10px}.photoCard,.themeCard{padding:9px 8px;min-height:211px}.photoPortrait{width:102px;margin:12px auto 8px}.themeGrid{gap:5px;margin-top:10px}.themeButton{min-height:78px;font-size:10px;gap:5px}.themeButton svg{width:23px;height:23px}.templateRail{grid-auto-columns:128px;gap:7px}.settingsGrid{gap:7px}.settingCard{padding:9px 7px}.pills{gap:3px}.pills button{font-size:9.7px;min-height:39px}.captionLayout{grid-template-columns:1fr}.musicRail button{flex-basis:82px}.generate{font-size:16px;min-height:58px}}
+@media(prefers-reduced-motion:reduce){.studio *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Explicit CSS module exports used by template canvases and save link. */
+.templateArt{display:block;width:100%;height:100%;object-fit:cover}
+.download{display:inline-flex;align-items:center;justify-content:center}
+
+/* Preserve the live cinematic editor's background-only option. */
+.backgroundMode{padding:11px 12px;margin:0 0 12px;border:1px solid #d8e9d7;border-radius:15px;background:#fffdf5;color:#1e5845}
+.backgroundMode legend{font-weight:800;font-size:12px;padding:0 4px}
+.backgroundChoices{display:flex;flex-wrap:wrap;gap:7px}
+.backgroundChoices button{display:flex;flex:1 1 150px;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:9px;border:1px solid #cde1d1;border-radius:11px;background:#f3f8f1;color:#275745;font-weight:750;font-size:12px}
+.backgroundChoices button[aria-pressed="true"]{border-color:#139c74;background:#0a9e77;color:white}
+.backgroundMode small{display:block;margin-top:6px;color:#67796e;font-size:11px}
+
+/* Local wishes: existing editor, no client upload. */
+.wishPanel{display:grid;gap:8px;margin:0 0 12px;padding:13px;border:1px solid #cce8d9;border-radius:16px;background:#f2faf4;color:#194b3d}
+.wishPanel>label{font-size:14px;font-weight:800}
+.wishPanel textarea{display:block;min-width:0;width:100%;min-height:70px;padding:11px;border:1px solid #c9dacc;border-radius:11px;background:white;color:#1b493b;font:500 14px/1.45 Arial,sans-serif}
+.wishPanel>p{font-size:11.5px;line-height:1.4;color:#5b7767}
+.wishActions{display:flex;flex-wrap:wrap;gap:7px}
+.wishActions button{display:flex;flex:1 1 180px;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px;border:1px solid #bbd8c7;border-radius:11px;background:#fffefa;color:#0b7656;font-size:12px;font-weight:800}
+.wishActions button:first-child{background:#078d69;color:white}
+.wishActions button:disabled{opacity:.55;cursor:not-allowed}
+.wishPanel p.wishResult{color:#12664d;font-weight:800}
+
+.musicTools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 7px}
+.musicTools button{min-height:44px;padding:7px 11px;border:1px solid #c9d8c9;border-radius:10px;background:#f4faf3;color:#176548;font-size:12px;font-weight:800}
+.musicTools button[aria-pressed="true"]{background:#0d946e;color:white}
+.musicTools button:disabled{opacity:.5;cursor:not-allowed}
+.musicTools label{display:flex;flex:1 1 150px;flex-direction:column;gap:3px;color:#456c5b;font-size:12px;font-weight:700}
+.musicTools input{accent-color:#07976e;width:100%;min-height:24px}
+.audioUpload{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0 8px}
+.audioUploadLabel{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 12px;border:1px solid #b6dbca;border-radius:12px;background:#eefaf3;color:#146249;font-size:12px;font-weight:800;cursor:pointer}
+.audioUpload input[type=file]{flex:1 1 155px;min-width:0;width:100%;max-width:100%;font-size:11px;color:#456c5b}
+.audioUpload input[type=file]::file-selector-button{background:#fff;border:1px solid #d1ded4;border-radius:8px;padding:7px 9px;color:#165d46;cursor:pointer}
+.audioUpload small{flex-basis:100%;line-height:1.5}
+.audioSelection{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%;min-width:0;padding:8px 10px;border-radius:10px;background:#f5f8f0;color:#235447;font-size:11px;overflow-wrap:anywhere}
+.audioSelection strong{font-weight:800}
+.audioSelection button{border:1px solid #c8d9ce;border-radius:8px;background:#fff;color:#476359;padding:7px 9px;min-height:36px;font-size:11px;font-weight:800}
+.musicCard audio[data-video-audio-player]{display:block;width:100%;min-height:48px;max-width:100%;margin:9px 0;border-radius:10px;background:#f4f8f2}
+.audioRecovery{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px}
+.audioDirectLink{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 8px;padding:8px 11px;border:1px solid #c0d5c9;border-radius:11px;background:#f3faf5;color:#116847;font-size:12px;font-weight:750;text-decoration:underline}
+.audioRights{display:flex;align-items:flex-start;gap:9px;margin:8px 0;color:#235246;font-size:12px;line-height:1.5}
+.audioRights input{width:19px;height:19px;min-width:19px;accent-color:#088d6c;margin-top:0}
+@media(max-width:380px){.audioUpload input[type=file]{flex-basis:100%}.audioUploadLabel{width:100%}.audioSelection{align-items:flex-start}}
+
+/* Native file inputs and media controls have their own intrinsic iOS width.
+   They must not extend a 320–430px viewport beyond the editor card. */
+@media(max-width:759px){
+  .studio{width:100%;overflow-x:clip}
+  .musicCard,.audioUpload,.audioSelection{max-width:100%;min-width:0}
+  .audioUpload input[type=file]{min-width:0;max-width:100%;overflow:hidden}
+  .musicCard audio[data-video-audio-player]{max-width:100%;min-width:0}
+}
+/* Home/Support visual parity — one existing editor, one real media canvas.
+   On 320–430px the three-column check-in/portrait/tools matches the site's
+   compact support home, while the actual video takes the whole hero. */
+.studio{max-width:1040px;padding:0 0 24px;--ink:#173e34;background:transparent}
+.supportTop{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,.82fr) minmax(0,1.04fr);align-items:stretch;gap:9px;margin:1px 0 12px;min-width:0}
+.assessmentCard,.supportTools{min-width:0;border:1px solid #e4e7dc;border-radius:22px;background:linear-gradient(150deg,#fffdfa,#f8f8f1);box-shadow:0 8px 23px rgba(30,67,44,.07);padding:12px 11px}
+.assessmentCard h2,.supportTools h2{margin:0;color:#1e3e34;font:800 16px/1.16 Arial,Helvetica,sans-serif}
+.assessmentCard>p{margin:6px 0 8px;color:#7b8378;font:11px/1.28 Arial,Helvetica,sans-serif}
+.assessmentScales{display:flex;flex-direction:column;gap:5px;margin:5px 0 9px}
+.assessmentScale{display:flex;flex-direction:column;min-width:0;gap:1px;color:#2f483c;font:800 11px/1.2 Arial,Helvetica,sans-serif}
+.scaleControls{display:flex;align-items:center;gap:5px;min-width:0}
+.scaleControls svg{flex:none;width:17px;height:17px}
+.assessmentScale[data-tone="money"] svg{color:#e4a526}
+.assessmentScale[data-tone="energy"] svg{color:#21a36c}
+.assessmentScale[data-tone="relationships"] svg{color:#e35779}
+.assessmentScale[data-tone="goals"] svg{color:#9659c2}
+.scaleControls input{min-width:0;flex:1;max-width:100%;height:20px;accent-color:#159b74;cursor:pointer}
+.assessmentScale[data-tone="money"] input{accent-color:#e7a92b}
+.assessmentScale[data-tone="relationships"] input{accent-color:#df5776}
+.assessmentScale[data-tone="goals"] input{accent-color:#9360c8}
+.scaleControls output{display:grid;place-items:center;flex:none;min-width:23px;height:23px;border-radius:9px;background:#e6f1e8;color:#274f3d;font-weight:850;font-size:13px}
+.assessmentScale[data-tone="money"] output{background:#fbecd2}
+.assessmentScale[data-tone="relationships"] output{background:#fae2e5}
+.assessmentScale[data-tone="goals"] output{background:#f0e4f6}
+.supportTestLink{display:flex;align-items:center;justify-content:center;gap:5px;min-height:37px;padding:5px 6px;border:1px solid #badcc5;border-radius:10px;background:#eff8f0;text-decoration:none;color:#137151;font-size:12px;font-weight:800}
+.centerProfile{display:flex;align-items:center;flex-direction:column;gap:8px;min-width:0;padding:3px 0 0}
+.centerProfile .photoPortrait{display:grid;flex:none;width:clamp(72px,96%,145px);margin:0 auto 1px;aspect-ratio:1;border:3px solid #9cced2;box-shadow:0 0 0 4px #fff,0 3px 14px rgba(28,76,64,.13)}
+.centerProfile .photoEmpty small{font-size:10px}
+.videoMandalaChoice,.profileFocus,.recommendButton{display:flex;align-items:center;justify-content:center;min-width:0;width:100%;border-radius:13px;padding:8px 4px;text-align:center;line-height:1.16}
+.videoMandalaChoice{gap:5px;min-height:40px;border:1px solid #9ccfb5;background:#e4f3e9;color:#116b50;font-weight:800;font-size:12px}
+.profileFocus{display:flex;flex-direction:column;gap:4px;min-height:43px;border:1px solid #e8e4dc;background:#fffcf7;color:#234c3c}
+.profileFocus small{font-size:10px;color:#81847b}
+.profileFocus strong{font-size:12px;line-height:1.1}
+.recommendButton{display:flex;gap:4px;min-height:43px;border:1px solid #159f77;background:#03966c;color:#fff;font-weight:800;font-size:13px}
+.recommendButton:disabled{opacity:.55}
+.supportTools h2{margin-bottom:10px}
+.supportToolGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.supportToolGrid a{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:5px;min-width:0;min-height:78px;padding:7px 3px;border:1px solid #e6dfd5;border-radius:13px;background:#fffcf5;text-decoration:none;color:#27483c;text-align:center;font-size:11px;font-weight:800;line-height:1.13;overflow-wrap:anywhere}
+.supportToolGrid a.toolPrimary{background:linear-gradient(145deg,#0bb68b,#058a67);border-color:#58cea6;color:#fff}
+.supportToolGrid a:nth-child(3) svg{color:#9462c0}
+.supportToolGrid a:nth-child(4) svg{color:#60718a}
+.supportShortcuts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.supportShortcuts a{display:grid;place-items:center;min-height:32px;padding:4px;border:1px solid #cdded2;border-radius:10px;background:#f0f6ef;text-decoration:none;color:#236b51;text-align:center;font-size:11px;font-weight:800}
+.hero{position:relative;isolation:isolate;overflow:hidden;border:1px solid #b7bbae;border-radius:26px;background:#152e28;min-height:350px;margin:7px 0 0;scroll-margin-top:15px;box-shadow:0 8px 26px rgba(36,54,38,.1)}
+.heroCanvas,.heroShade{position:absolute;inset:0;overflow:hidden}
+.heroCanvas{z-index:0;background:radial-gradient(circle at 65% 40%,#9d7633,#132c31 75%)}
+.heroCanvas canvas{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:saturate(1.13) contrast(1.06)}
+.heroShade{z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(9,31,27,.86) 0%,rgba(13,33,29,.72) 39%,rgba(12,32,27,.18) 83%),linear-gradient(0deg,rgba(5,21,18,.55),transparent 67%)}
+.heroOverlay{position:relative;z-index:2;display:flex;flex-direction:column;min-height:350px;padding:16px 15px 15px;color:#fff}
+.heroTabs{display:grid;grid-template-columns:1.20fr 1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.heroTabs>*{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:46px;padding:7px 3px;border:1px solid rgba(236,246,230,.5);border-radius:999px;background:rgba(21,45,42,.73);color:#fff;text-decoration:none;text-align:center;font-size:12px;line-height:1.12;font-weight:800;backdrop-filter:blur(6px)}
+.heroTabs>.heroMode{border-color:#36caa0;background:linear-gradient(115deg,#079e73,#0ab78a);color:white}
+.heroThemes{display:flex;flex-wrap:wrap;gap:5px;scroll-margin-top:75px}
+.heroThemes button{display:flex;align-items:center;justify-content:center;gap:4px;flex:1 1 0;min-width:0;min-height:34px;padding:6px 4px;border:1px solid rgba(242,251,238,.45);border-radius:999px;background:rgba(15,38,33,.67);color:#f9f4e9;font-size:10px;font-weight:750;line-height:1.15}
+.heroThemes button[aria-pressed="true"]{border-color:#2bcba0;background:#0da77d;color:#fff}
+.heroBody{display:flex;align-items:flex-start;flex-direction:column;justify-content:flex-end;gap:8px;flex:1;padding:18px 2px 0}
+.heroAudio,.heroSound{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:5px 9px;border:1px solid rgba(246,243,211,.65);border-radius:999px;background:rgba(17,42,35,.67);color:#fff;font-size:11px;font-weight:800}
+.heroAudio:disabled{opacity:.65;cursor:not-allowed}
+.heroSound{min-height:24px;padding:2px 8px;border-color:transparent;background:rgba(5,29,23,.35);font-size:10px;opacity:.9}
+.heroBody h2{margin:2px 0 0;max-width:min(82%,430px);color:#fff;font:800 clamp(25px,4.2vw,43px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.026em;text-shadow:0 3px 12px rgba(0,0,0,.22)}
+.heroBody p{max-width:78%;margin:1px 0 5px;font-size:13px;line-height:1.25;color:#f3f8ee;text-shadow:0 2px 9px #0a201c}
+.heroCreate{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:min(100%,445px);min-height:50px;padding:9px 14px;border:2px solid #a4d5b7;border-radius:15px;background:linear-gradient(100deg,#04966d,#1ec092);color:white;font-size:15px;font-weight:850;box-shadow:0 3px 0 rgba(8,49,31,.5),0 5px 20px rgba(0,0,0,.2)}
+.heroCreate:disabled{opacity:.6}
+.hero+.backgroundMode{margin:10px 0 5px}
+.backgroundMode{border-radius:13px}
+.templates{padding:13px 11px 12px;margin:9px 0 12px;border-radius:0 0 22px 22px;border-top:0}
+.templates .sectionHeading{margin-bottom:8px}
+.templateRail{grid-auto-columns:clamp(80px,24%,142px);gap:7px;padding:2px 2px 8px}
+.templateTile{aspect-ratio:.83;border-width:2px;border-radius:12px}
+.templateTile canvas{object-fit:cover}
+.templateTile .tileName{left:5px;right:5px;bottom:7px;font-size:11px}
+.templateTile .tileCheck{width:21px;height:21px;right:5px;top:5px}
+.templateFooter{margin:1px 3px 0}
+.settings{padding:14px 11px;border-radius:21px;margin:12px 0}
+.settings .settingCard{padding:9px 9px}
+.settings .pills button{flex:1 1 40px;min-height:39px;font-size:11px}
+.settings .sectionHeading button{font-size:11px}
+.musicRail button{flex-basis:112px;min-height:76px}
+.musicRail{scroll-padding:6px}
+.captionCard{padding:10px}
+.consent{border-radius:10px}
+.generate{min-height:46px;margin:10px 0 7px;border-radius:13px;background:#edf8ef;color:#087651;border:1px solid #9fcab4;font-size:14px;box-shadow:none}
+.generate:hover:not(:disabled){background:#e0f2e5}
+.result{scroll-margin-top:76px}
+.studio>.bottomNav{display:none}
+@media(max-width:760px){
+  .studio{padding:0 0 20px}
+  .supportTop{gap:7px}
+  .assessmentCard,.supportTools{padding:10px 8px;border-radius:18px}
+  .assessmentCard h2,.supportTools h2{font-size:12px}
+  .assessmentCard>p{font-size:10px}
+  .centerProfile{gap:6px}
+  .supportToolGrid a{min-height:70px}
+  .hero{min-height:330px;border-radius:22px}
+  .heroOverlay{min-height:330px;padding:11px}
+  .heroTabs>*{font-size:10.5px;min-height:44px}
+  .heroBody h2{font-size:30px}
+  .heroBody p{font-size:12px}
+  .heroCreate{min-height:48px;font-size:14px}
+  .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:390px){
+  .supportTop{grid-template-columns:minmax(0,1fr) minmax(0,.84fr) minmax(0,1fr);gap:5px}
+  .assessmentCard,.supportTools{padding:8px 6px;border-radius:14px}
+  .assessmentCard h2,.supportTools h2{font-size:11px}
+  .assessmentScale{font-size:9px}
+  .scaleControls{gap:2px}
+  .scaleControls svg{width:13px;height:13px}
+  .scaleControls output{min-width:17px;height:19px;font-size:11px}
+  .centerProfile .photoPortrait{width:clamp(68px,96%,110px)}
+  .videoMandalaChoice{font-size:10px;min-height:37px;gap:3px}
+  .profileFocus{min-height:39px}
+  .profileFocus strong{font-size:10px}
+  .recommendButton{font-size:11px;min-height:40px}
+  .supportToolGrid{gap:4px}
+  .supportToolGrid a{min-height:64px;font-size:9px;padding:4px 1px}
+  .supportToolGrid a svg{width:20px;height:20px}
+  .supportShortcuts a{font-size:9px}
+  .hero{min-height:325px}
+  .heroOverlay{min-height:325px;padding:10px 8px}
+  .heroTabs{gap:4px}
+  .heroTabs>*{font-size:10px;min-height:41px;padding:4px 2px}
+  .heroThemes button{font-size:9px;min-height:32px;padding:5px 1px}
+  .heroThemes svg{width:11px;height:11px}
+  .heroBody h2{font-size:27px}
+  .heroBody p{max-width:86%;font-size:11px}
+  .heroCreate{font-size:12.5px;min-height:45px;padding:7px}
+  .templateRail{grid-auto-columns:clamp(75px,24%,105px);gap:5px}
+  .templateTile .tileName{font-size:10px}
+  .settings .pills button{font-size:10px}
+}
+@media(max-width:345px){
+  .assessmentCard h2,.supportTools h2{font-size:10px}
+  .assessmentCard>p{font-size:9px}
+  .assessmentScale{font-size:8.5px}
+  .centerProfile .photoPortrait{width:70px}
+  .heroTabs>*{font-size:9px}
+  .heroThemes button{font-size:8px}
+  .heroBody h2{font-size:25px}
+  .settingCard .pills{gap:3px}
+  .settings .pills button{font-size:9px;padding:4px 2px}
+}
+
+/* Approved iPhone mandala hierarchy: theme chips above, clear player below. */
+@media(max-width:759px){.hero{margin-top:60px;overflow:visible;border-radius:20px;min-height:365px}.heroCanvas,.heroShade,.heroOverlay{border-radius:inherit;overflow:hidden}.heroOverlay{min-height:365px;padding:11px 12px 12px}.heroThemes{position:absolute;left:0;right:0;top:-52px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;z-index:3}.heroThemes button{min-height:44px;border-radius:12px;background:#eaf4eb;color:#165944;border:1px solid #bbd8c8;font-size:clamp(9px,2.6vw,11px);font-weight:800}.heroThemes button[aria-pressed="true"]{background:#069e76;color:#fff}.heroTabs{display:flex;gap:5px}.heroTabs>*{flex:1;min-height:36px;font-size:clamp(9px,2.6vw,11px)}.heroTabs>a:last-child{display:none}.heroBody{padding:12px 2px 0}.heroBody h2{font-size:clamp(24px,6.2vw,30px);max-width:95%}.heroBody p{max-width:94%}.heroShade{background:linear-gradient(0deg,rgba(7,29,23,.92),rgba(8,30,25,.55) 40%,transparent 76%)}.heroCreate{width:100%;min-height:48px;border-radius:12px}.templates{border:1px solid #e2e7dc;border-radius:19px;margin-top:12px}}
+@media(max-width:350px){.hero{margin-top:67px}.heroThemes{top:-59px}.heroThemes button{min-height:51px;font-size:8.5px;flex-direction:column}}
+
+/* 28 Oct design parity: the user's approved Support reference keeps the
+   three-part header very compact and gives the cinematic background space. */
+.centerProfile .photoEmpty{position:absolute;inset:0;display:block;overflow:hidden;border-radius:50%}
+.centerProfile .referencePortrait{display:block!important;width:100%;height:100%;border-radius:50%;object-fit:cover;opacity:.96}
+.referencePhotoLabel{position:absolute;left:10%;right:10%;bottom:8px;display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 2px;border-radius:8px;background:rgba(13,68,53,.85);color:#fff;font-size:9px;line-height:1.1;font-weight:800}
+.referencePhotoLabel svg{width:12px;height:12px}
+.toolCompact{display:none}
+.hero{background:#1d2b27}
+.heroPromo{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background-image:linear-gradient(105deg,rgba(16,37,27,.20),rgba(38,27,14,.08)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg');
+  background-size:cover;background-position:center;transition:opacity .22s ease}
+.heroPromo::after{content:"";position:absolute;right:-3%;top:0;bottom:0;width:65%;background:url('/images/holistic-house/mandala-gold-reference.webp') 27% 45% / cover no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);mask-image:linear-gradient(90deg,transparent 0%,#000 14%,#000 92%);
+  filter:sepia(.34) saturate(1.35) brightness(1.11)}
+.hero[data-hero-promo="true"] .heroPromo{opacity:1}
+.hero[data-hero-promo="true"] .heroCanvas{opacity:0}
+.heroCanvas{transition:opacity .22s ease}
+.heroShade{z-index:2;background:linear-gradient(90deg,rgba(9,30,24,.91) 0%,rgba(14,38,31,.77) 41%,rgba(13,37,27,.13) 86%),linear-gradient(0deg,rgba(6,28,22,.42),transparent 73%)}
+.heroOverlay{z-index:3}
+.heroTabs{position:relative;z-index:4}
+.heroTabs button{font:inherit;cursor:pointer}
+.heroThemes[hidden]{display:none!important}
+.heroThemes:not([hidden]){position:absolute;top:70px;left:11px;right:11px;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+  padding:8px;border:1px solid rgba(234,245,223,.58);border-radius:15px;background:rgba(14,44,36,.93);box-shadow:0 7px 25px rgba(0,0,0,.3);backdrop-filter:blur(12px)}
+.heroThemes:not([hidden]) button{min-width:0;min-height:37px;padding:4px 3px;font-size:10px}
+.heroBody h2{max-width:76%;text-wrap:balance}
+.heroBody p{max-width:73%}
+.heroCreate{width:min(77%,440px)}
+@media(max-width:760px){
+  .assessmentCard,.supportTools{padding:9px 7px}
+  .assessmentCard>p{margin:4px 0}
+  .assessmentScales{gap:3px;margin:3px 0 6px}
+  .assessmentScale{gap:0}
+  .supportToolGrid a{min-height:60px}
+  .centerProfile .photoPortrait{width:min(95%,106px)}
+  .videoMandalaChoice{min-height:33px}
+  .profileFocus{min-height:33px}
+  .recommendButton{min-height:35px}
+  .supportShortcuts{margin-top:5px}
+  .supportShortcuts a{min-height:29px}
+  .heroBody{padding-top:9px;gap:6px}
+  .heroBody h2{font-size:30px}
+  .heroBody p{font-size:12px}
+  .heroTabs>*{min-height:41px}
+}
+@media(max-width:430px){
+  .supportTop{grid-template-columns:minmax(0,1fr) minmax(0,.83fr) minmax(0,1fr);gap:5px}
+  .assessmentCard,.supportTools{padding:7px 6px}
+  .assessmentCard h2,.supportTools h2{font-size:11px;line-height:1.12}
+  .assessmentCard>p{margin:4px 0 5px;font-size:9px}
+  .assessmentScales{gap:3px;margin:0 0 6px}
+  .assessmentScale{font-size:9px}
+  .scaleControls{gap:3px}
+  .scaleControls output{min-width:21px;height:19px;font-size:10px}
+  .supportTestLink{min-height:30px;font-size:10px}
+  .centerProfile{gap:5px}
+  .centerProfile .photoPortrait{width:min(97%,96px)}
+  .videoMandalaChoice{min-height:33px;font-size:10px}
+  .profileFocus{min-height:32px}
+  .profileFocus small{font-size:9px}
+  .profileFocus strong{font-size:10px}
+  .recommendButton{min-height:34px;font-size:10px}
+  .supportTools h2{margin-bottom:6px}
+  .supportToolGrid{gap:4px}
+  .supportToolGrid a{min-height:58px;padding:4px 2px;gap:3px;font-size:9px;overflow-wrap:normal;word-break:normal}
+  .supportToolGrid a svg{height:21px;width:21px}
+  .toolFull{display:none}
+  .toolCompact{display:block}
+  .supportShortcuts{margin-top:5px;gap:4px}
+  .supportShortcuts a{min-height:25px;font-size:9px}
+  .hero{border-radius:19px;min-height:325px}
+  .heroOverlay{min-height:325px;padding:10px 9px 12px}
+  .heroTabs{gap:5px;margin-bottom:0}
+  .heroTabs>*{min-height:41px;font-size:9.5px;padding:4px 2px}
+  .heroTabs button{font-size:9.5px}
+  .heroThemes:not([hidden]){top:61px;left:8px;right:8px}
+  .heroThemes:not([hidden]) button{font-size:9px}
+  .heroBody{padding-top:18px;gap:7px}
+  .heroBody h2{font-size:clamp(25px,7.8vw,30px);max-width:82%}
+  .heroBody p{font-size:11px;max-width:73%;line-height:1.23}
+  .heroCreate{width:min(79%,450px);font-size:12.5px;min-height:46px}
+}
+@media(max-width:350px){
+  .supportTop{gap:4px}
+  .assessmentCard,.supportTools{padding:6px 4px}
+  .assessmentScale{font-size:8.5px}
+  .scaleControls svg{width:12px;height:12px}
+  .centerProfile .photoPortrait{width:min(100%,82px)}
+  .videoMandalaChoice,.profileFocus,.recommendButton{min-height:30px;font-size:9px}
+  .supportToolGrid a{min-height:52px;font-size:8.5px}
+  .supportToolGrid a svg{height:18px;width:18px}
+  .heroTabs>*{font-size:9px}
+  .heroBody h2{max-width:82%}
+}
+@media(prefers-reduced-motion:reduce){.heroPromo,.heroCanvas{transition:none}}
+
+
+/* Video catalog — aligned with the approved Talisman card hierarchy.
+   Existing renderer and controls remain untouched; only presentation changes. */
+.catalogShell{min-width:0;margin:13px 0 14px;padding:14px 13px 13px;border:1px solid #e6e1d3;border-radius:23px;background:linear-gradient(150deg,#fffaf0 0%,#f9f7ee 75%,#f4f4e9 100%);box-shadow:0 8px 25px rgba(28,53,38,.08)}
+.catalogHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 11px}
+.catalogHeading>div{min-width:0}
+.catalogHeading h2{font:800 clamp(21px,3.3vw,30px)/1.1 Arial,Helvetica,sans-serif;color:#1d3932;letter-spacing:-.028em}
+.catalogHeading p{margin-top:4px;color:#788177;font-size:12px;line-height:1.25}
+.catalogHeading button{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:none;border:0;background:transparent;color:#14795c;font-weight:750;font-size:12px;padding:7px 0;text-align:right}
+.categoryRail{display:flex;align-items:stretch;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding:4px;padding:3px 3px 10px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+.categoryRail button{display:flex;flex:0 0 clamp(91px,20%,135px);align-items:center;justify-content:center;flex-direction:column;gap:7px;min-width:0;min-height:86px;padding:12px 5px 9px;scroll-snap-align:start;border:1px solid #d9e4dc;border-radius:16px;background:#eef7f2;color:#098869;font-size:12px;font-weight:800;line-height:1.15;transition:box-shadow .15s ease,transform .15s ease;text-align:center}
+.categoryRail button:active{transform:scale(.98)}
+.categoryRail button[data-tone="money"]{background:#fffaeb;border-color:#ecd69b;color:#bd8b20}
+.categoryRail button[data-tone="relationships"]{background:#fff0f3;border-color:#efc2d3;color:#d94e75}
+.categoryRail button[data-tone="goals"]{background:#f5edff;border-color:#e2c8ef;color:#9252c0}
+.categoryRail button[data-tone="health"]{background:#eef7f1;border-color:#c9e1d8;color:#148a6a}
+.categoryRail button[aria-pressed="true"]{border:3px solid currentColor;padding:10px 3px 7px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 3px 11px rgba(41,83,63,.15)}
+.catalogFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}
+.catalogFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:54px;padding:7px 9px;border:1px solid #dedfd6;border-radius:13px;background:#fdfcf7;color:#23483a;font-weight:800;font-size:11px}
+.catalogFilters label>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalogFilters select{width:100%;min-width:0;padding:3px 13px 3px 0;border:0;outline:none;background:transparent;color:#6f7a6f;font:500 11px/1.2 Arial,Helvetica,sans-serif;text-overflow:ellipsis;cursor:pointer}
+.catalogFilters select:focus-visible{outline:2px solid #009a75;outline-offset:2px;border-radius:4px}
+.catalogFilters select:disabled{opacity:.5;cursor:not-allowed}
+.catalogShell .hero{position:relative;min-height:318px;margin:0;border-radius:22px;border-color:#506858;background:#0c302a}
+.catalogShell .heroPromo{background-image:linear-gradient(105deg,rgba(10,49,38,.38),rgba(8,40,31,.38)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp');background-position:center;background-size:cover}
+.catalogShell .heroPromo::after{display:none}
+.catalogShell .hero[data-video-theme-active="money"] .heroPromo{background-image:linear-gradient(90deg,rgba(25,36,27,.22),rgba(13,32,26,.44)),url('/videos/holistic-house/money-films-v1/golden-rain.jpg')}
+.catalogShell .hero[data-video-theme-active="relationships"] .heroPromo{background-image:linear-gradient(120deg,rgba(57,30,46,.42),rgba(11,44,36,.48)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .heroPromo{background-image:linear-gradient(105deg,rgba(10,46,43,.39),rgba(16,35,55,.42)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-video-theme-active="health"] .heroPromo{background-image:linear-gradient(105deg,rgba(15,45,32,.37),rgba(7,48,38,.37)),url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.catalogShell .heroShade{background:linear-gradient(90deg,rgba(4,27,22,.24),rgba(7,35,28,.38) 46%,rgba(4,30,25,.87)),linear-gradient(0deg,rgba(4,25,21,.55),transparent 48%)}
+.catalogShell .heroOverlay{display:flex;flex-direction:column;min-height:318px;gap:6px;padding:12px 14px 14px;overflow:visible}
+.catalogShell .heroTabs{display:flex;justify-content:flex-end;gap:5px;margin:0 0 3px}
+.catalogShell .heroTabs>*{flex:0 1 auto;min-width:0;min-height:29px;padding:4px 9px;border-color:rgba(219,243,228,.48);font:750 10px/1.15 Arial,Helvetica,sans-serif;background:rgba(10,54,43,.52)}
+.catalogShell .heroTabs>.heroMode{background:linear-gradient(110deg,#079a72,#11b389)}
+.catalogShell .heroThemes:not([hidden]){top:50px;left:10px;right:10px}
+.catalogShell .heroMain{display:grid;grid-template-columns:minmax(0,.90fr) minmax(0,1.10fr);gap:14px;align-items:center;flex:1;min-width:0}
+.catalogShell .heroVisual{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;min-width:0}
+.catalogShell .videoOrb{width:min(100%,200px);aspect-ratio:1;border-radius:50%;border:8px double rgba(255,220,141,.9);box-shadow:0 0 0 2px rgba(244,211,124,.54),0 0 22px rgba(255,202,106,.57),inset 0 0 18px rgba(252,214,124,.5);background:radial-gradient(circle,transparent 10%,rgba(12,56,36,.12) 70%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') 50% 50% / cover;transition:opacity .2s ease}
+.catalogShell .hero[data-video-theme-active="money"] .videoOrb{background-image:radial-gradient(circle,transparent 35%,rgba(84,44,9,.18)),url('/images/holistic-house/mandala-gold-reference.webp')}
+.catalogShell .hero[data-video-theme-active="relationships"] .videoOrb{background-image:radial-gradient(circle,rgba(251,158,188,.14),rgba(33,58,42,.1)),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.catalogShell .hero[data-video-theme-active="goals"] .videoOrb{background-image:radial-gradient(circle,transparent 25%,rgba(10,55,45,.1)),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.catalogShell .hero[data-hero-promo="false"] .videoOrb{opacity:0}
+.catalogShell .heroAudio{justify-content:center;min-height:31px;max-width:100%;padding:5px 10px;font-size:10px;font-weight:800;background:rgba(8,39,31,.81);white-space:normal;text-align:center;line-height:1.12}
+.catalogShell .heroDetails{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;gap:6px;min-width:0}
+.catalogShell .heroGoal{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid rgba(240,213,135,.5);background:rgba(13,55,42,.5);color:#ecd69d;font-size:10px;font-weight:750;line-height:1.15}
+.catalogShell .heroDetails h2{margin:0;color:#fff;font:800 clamp(21px,3.2vw,34px)/1.07 Arial,Helvetica,sans-serif;letter-spacing:-.03em;overflow-wrap:normal;text-wrap:balance;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.catalogShell .heroDetails p{margin:0;color:#f2f3e8;font-size:12px;line-height:1.32;max-width:32ch}
+.catalogShell .heroFeature,.catalogShell .heroSound{display:inline-flex;align-items:center;gap:4px;width:auto;max-width:100%;min-height:20px;padding:2px 7px;border-radius:99px;border:1px solid rgba(221,249,231,.42);background:rgba(5,39,29,.59);color:#e4f5e9;font:700 10px/1.15 Arial,Helvetica,sans-serif;white-space:normal}
+.catalogShell .heroActions{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,.82fr);gap:7px;margin-top:8px}
+.catalogShell .heroCreate{display:flex;width:100%;min-width:0;min-height:49px;padding:7px 11px;margin:0;font-size:14px;border:2px solid #b5e9cb;border-radius:13px;box-shadow:0 3px 0 rgba(2,40,26,.4)}
+.catalogShell .heroMore{display:flex;align-items:center;justify-content:center;min-width:0;min-height:49px;padding:8px 7px;border:1px solid rgba(209,237,224,.75);border-radius:13px;background:rgba(6,38,31,.56);color:#fff;text-decoration:none;font-weight:750;font-size:13px}
+.catalogShell .hero+.backgroundMode{margin:11px 0 10px}
+.catalogShell .backgroundMode{background:rgba(253,252,245,.9)}
+.catalogShell .templates{margin:10px 0 0;padding:12px 8px 4px;border:0;border-top:1px solid #e3e4d7;border-radius:0;background:transparent;box-shadow:none}
+.catalogShell .templates .sectionHeading h3{font-size:16px}
+.catalogShell .templateRail{grid-auto-columns:clamp(88px,24%,165px);gap:8px;padding-bottom:4px}
+.catalogShell .templateTile{border-radius:13px}
+@media(max-width:760px){
+  .catalogShell{padding:12px 10px}
+  .catalogHeading h2{font-size:23px}
+  .catalogHeading p{font-size:11px}
+  .catalogHeading button{font-size:11px}
+  .categoryRail button{flex-basis:clamp(78px,24%,112px);min-height:76px;padding:9px 4px;font-size:11px}
+  .catalogShell .hero{min-height:315px;margin-top:0;border-radius:19px;overflow:hidden}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 10px 11px}
+  .catalogShell .heroMain{gap:9px}
+  .catalogShell .heroTabs>*{min-height:26px;padding:3px 6px;font-size:9px}
+  .catalogShell .videoOrb{width:min(100%,154px);border-width:6px}
+  .catalogShell .heroDetails h2{font-size:clamp(20px,5.8vw,29px)}
+  .catalogShell .heroDetails p{font-size:11px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:45px;font-size:12px}
+  .catalogShell .heroThemes:not([hidden]){top:43px}
+}
+@media(max-width:390px){
+  .catalogShell{padding:10px 8px}
+  .catalogHeading{gap:5px;margin-bottom:8px}
+  .catalogHeading h2{font-size:22px}
+  .catalogHeading p{font-size:10px}
+  .catalogHeading button{font-size:10px}
+  .categoryRail{gap:6px;padding-bottom:8px}
+  .categoryRail button{flex-basis:77px;min-height:71px;gap:5px;border-radius:12px;font-size:10px}
+  .categoryRail button svg{width:20px;height:20px}
+  .catalogFilters{gap:4px;margin-bottom:9px}
+  .catalogFilters label{min-height:49px;padding:6px 5px;border-radius:10px;font-size:10px}
+  .catalogFilters select{font-size:10px}
+  .catalogShell .hero{min-height:315px}
+  .catalogShell .heroOverlay{min-height:315px;padding:9px 7px}
+  .catalogShell .heroTabs{gap:3px}
+  .catalogShell .heroTabs>*{min-height:27px;padding:3px 4px;font-size:8.5px}
+  .catalogShell .heroMain{grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr);gap:6px}
+  .catalogShell .videoOrb{width:min(100%,133px);border-width:5px}
+  .catalogShell .heroDetails{gap:5px}
+  .catalogShell .heroGoal{padding:4px 6px;font-size:9px}
+  .catalogShell .heroDetails h2{font-size:clamp(18px,5.5vw,23px)}
+  .catalogShell .heroDetails p{font-size:10px}
+  .catalogShell .heroFeature,.catalogShell .heroSound{font-size:9px;min-height:18px}
+  .catalogShell .heroAudio{font-size:9px;padding:5px 6px}
+  .catalogShell .heroActions{gap:5px}
+  .catalogShell .heroCreate,.catalogShell .heroMore{min-height:44px;padding:6px 5px;font-size:11px}
+  .catalogShell .heroCreate svg{width:15px;height:15px}
+  .catalogShell .templates .sectionHeading h3{font-size:14px}
+}
+@media(max-width:345px){
+  .catalogHeading h2{font-size:20px}
+  .catalogHeading button{font-size:9px}
+  .catalogShell .heroDetails h2{font-size:18px}
+  .catalogShell .heroDetails p{font-size:9px}
+  .catalogShell .heroMain{gap:4px}
+  .catalogShell .heroTabs>*{font-size:8px;padding:3px}
+  .catalogShell .heroGoal{font-size:8px}
+  .catalogShell .heroAudio{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.catalogShell .videoOrb,.categoryRail button{transition:none}}
+
+/* Licensed Full HD clips enhance the current approved mobile video layout. */
+.categoryRail button[data-tone="life"]{background:#edf7e9;border-color:#c5debf;color:#3c8354}
+.filmBadge{position:absolute;top:7px;left:7px;z-index:2;border:1px solid rgba(255,248,215,.68);border-radius:7px;background:rgba(17,43,39,.82);color:#fff7db;padding:4px 6px;font:800 9px/1 Arial,sans-serif;letter-spacing:.06em;pointer-events:none}
+.healthNote{margin:0 0 11px;padding:10px 12px;border:1px solid #bedbd6;border-radius:12px;background:#edf9f5;color:#406a61;font:600 11.5px/1.4 Arial,sans-serif}
+
+
+/* 29 Oct 2026: one-screen video entry; photo optional by default.
+   The existing renderer/recorder remains the single source of truth. */
+.quickStart{display:grid;gap:10px;margin:2px 0 12px;min-width:0}
+.modePicker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #e4e5d9;border-radius:17px;background:#eeefe7}
+.modePicker button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:46px;padding:7px 8px;border:1px solid transparent;border-radius:13px;background:transparent;color:#50665b;font-size:clamp(11px,2.8vw,14px);font-weight:800}
+.modePicker button[aria-pressed="true"]{border-color:#70c9a7;background:linear-gradient(105deg,#078b6c,#11b28a);color:white;box-shadow:0 3px 10px #06533d21}
+.modePicker button:disabled{opacity:.6}
+.therapyHint{padding:9px 12px;border-radius:12px;background:#ebf3ec;border:1px solid #cfdfd4;color:#365d4f;font-size:12px;line-height:1.4}
+.therapyHint a{color:#08694f;font-weight:800;text-underline-offset:3px}
+.quickStart .categoryRail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;overflow:visible;margin:0;padding:0}
+.quickStart .categoryRail button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:76px;padding:8px 4px;border:1px solid #c7dfd5;border-radius:15px;font-size:clamp(10px,2.65vw,13px);line-height:1.15;text-align:center;white-space:normal}
+.quickStart .categoryRail button span{display:block;max-width:100%;overflow-wrap:anywhere}
+.quickStart .categoryRail button[aria-pressed="true"]{border:3px solid #0a9172;box-shadow:0 0 0 2px white,0 3px 9px #256b4b23;padding:6px 2px}
+.quickStart .categoryRail button svg{flex:none;width:23px;height:23px}
+.photoChoice{display:flex;align-items:center;gap:5px;min-width:0;padding:0 4px}
+.photoToggle{display:grid;place-items:center;flex:none;width:44px;height:44px;cursor:pointer}
+.photoToggle input{width:22px;height:22px;margin:0;accent-color:#079b79;cursor:pointer}
+.photoLink{display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;min-height:44px;padding:5px 3px;border:0;background:transparent;color:#08795c;font-size:clamp(12px,3.1vw,14px);font-weight:800;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.photoLink svg{flex:none}
+.photoChoice small{margin-left:auto;color:#677e70;font-size:10px;line-height:1.25;max-width:80px;text-align:right}
+.catalogShell{margin-top:4px}
+.catalogHeading{margin-bottom:9px}
+.catalogHeading h2{font-size:clamp(18px,4.2vw,23px)}
+.catalogHeading p{font-size:11px}
+.catalogShell .hero{min-height:350px}
+.catalogShell .heroOverlay{min-height:350px;gap:8px;padding:11px 12px 13px}
+.heroQuickFilters{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border:1px solid #e5efe0a6;border-radius:12px;background:#092c26cc;backdrop-filter:blur(9px)}
+.heroQuickFilters label{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;color:#d8f1e5;font-weight:750;font-size:10px;line-height:1.2}
+.heroQuickFilters select{display:block;width:100%;min-width:0;min-height:34px;padding:4px 19px 4px 6px;border:1px solid #c3d5c9a8;border-radius:8px;background:#fffdf6;color:#173c32;font:700 13px/1.1 Arial,Helvetica,sans-serif}
+.heroQuickFilters select:disabled{opacity:.6}
+.heroQuickFilters select:focus-visible{outline:3px solid #f0c76e;outline-offset:1px}
+.catalogShell .heroMain{align-self:stretch;min-height:185px}
+.catalogShell .heroDetails{gap:5px}
+.catalogShell .heroDetails h2{max-width:100%}
+.catalogShell .heroActions{margin-top:4px}
+.catalogShell .templates{margin-top:12px}
+.moreFilters,.extraControls,.supportMore{margin:10px 0 0;border:1px solid #dce6da;border-radius:14px;background:#fffcf6;overflow:hidden}
+.moreFilters>summary,.extraControls>summary,.supportMore>summary{display:flex;align-items:center;min-height:44px;padding:10px 13px;color:#275c48;font-size:13px;font-weight:800;cursor:pointer}
+.moreFilters[open]>summary,.extraControls[open]>summary,.supportMore[open]>summary{border-bottom:1px solid #e2e8dc}
+.moreFilters .catalogFilters{padding:11px 10px 4px;margin:0}
+.extraCategoryRail{display:flex;align-items:center;gap:8px;padding:7px 10px 11px}
+.extraCategoryRail button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:42px;padding:7px 12px;border:1px solid #d2ded2;border-radius:12px;background:#eef6ed;color:#315949;font-size:12px;font-weight:750}
+.extraCategoryRail button[aria-pressed="true"]{border-color:#068968;background:#d8f0e4;color:#08674e}
+.audioSection,.hypnosisSection{display:grid;gap:9px;min-width:0;margin-top:13px;padding:14px 11px;border:1px solid #e2e8dc;border-radius:19px;background:linear-gradient(155deg,#fffefb,#faf8ef);box-shadow:0 4px 16px #183c300b}
+.blockHeading{display:grid;gap:4px}
+.blockHeading h3{color:#204b3d;font-size:17px}
+.blockHeading p{color:#617b6d;font-size:12px;line-height:1.35}
+.audioSection .musicCard{margin:0;padding:9px 8px;background:#fffefa}
+.hypnosisSection .wishPanel{margin:0}
+.hypnosisSection>section{min-width:0}
+/* In-page navigation directly beneath the main live video preview. */
+.editorJumpNav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0 2px}
+.editorJumpNav a{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:46px;padding:9px 5px;border:1px solid #d7e2d4;border-radius:13px;background:linear-gradient(135deg,#fffef9,#f4f3eb);box-shadow:0 2px 7px #193c2b12;color:#205744;text-align:center;text-decoration:none;font:800 clamp(11px,3vw,13px)/1.2 Arial,Helvetica,sans-serif}
+.editorJumpNav a svg{flex:none}
+.editorJumpNav a:hover{background:#e6f4eb;border-color:#83bc9f}
+.catalogShell .templates,.audioSection,.hypnosisSection{scroll-margin-top:84px}
+/* Deliberate, full-width preview action: never claims to save or render. */
+.affirmationPreviewAction{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:58px;padding:12px 14px;margin:4px 0 0;border:0;border-radius:15px;background:linear-gradient(110deg,#087253,#08aa7d);box-shadow:0 8px 20px #0c6c4a30;color:#fff;font:800 clamp(15px,4vw,18px)/1.2 Arial,Helvetica,sans-serif}
+.affirmationPreviewAction svg{flex:none}
+.affirmationPreviewAction:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.affirmationPreviewHelp{display:block;color:#668071;text-align:center;font-size:11px;line-height:1.35}
+@media(max-width:355px){.editorJumpNav{gap:5px}.editorJumpNav a{gap:4px;padding:9px 3px;font-size:10px}.editorJumpNav a svg{width:14px;height:14px}.affirmationPreviewAction{min-height:55px}}
+.therapyCourse{margin-top:13px;scroll-margin-top:12px}
+.extraControls{margin-top:13px}
+.extraControls .settings{margin:10px;border:0;box-shadow:none;background:transparent;padding:5px 1px 10px}
+.extraControls .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.supportMore .supportTop{padding:12px}
+@media(max-width:430px){
+  .quickStart{gap:8px;margin-bottom:10px}
+  .quickStart .categoryRail{gap:5px}
+  .quickStart .categoryRail button{min-height:73px;padding:7px 2px;border-radius:13px}
+  .quickStart .categoryRail button svg{width:21px;height:21px}
+  .catalogShell{padding:10px 8px}
+  .catalogShell .hero,.catalogShell .heroOverlay{min-height:370px}
+  .catalogShell .heroOverlay{padding:9px 9px 12px}
+  .catalogShell .heroMain{min-height:192px}
+  .catalogShell .heroDetails h2{font-size:clamp(19px,5.5vw,26px)}
+  .heroQuickFilters{gap:4px;padding:5px}
+  .heroQuickFilters label{font-size:10px}
+  .heroQuickFilters select{font-size:16px;padding-left:5px}
+}
+@media(max-width:355px){
+  .modePicker button{font-size:11px;padding:5px 2px;gap:4px}
+  .photoChoice small{display:none}
+  .catalogShell .hero,.catalogShell .heroOverlay{min-height:390px}
+  .catalogShell .heroMain{grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr)}
+  .catalogShell .heroDetails h2{font-size:18px}
+  .catalogShell .heroDetails p{font-size:10px}
+  .catalogShell .heroFeature,.catalogShell .heroSound{font-size:9px}
+  .catalogShell .videoOrb{width:min(100%,114px)}
+  .catalogShell .heroActions{grid-template-columns:minmax(0,1.7fr) minmax(0,.8fr)}
+  .catalogShell .heroCreate{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.modePicker button{transition:none}}
+
+
+/* 29 Oct owner refinement: two opt-ins above a *clean*, smaller real-video
+   preview. The same Canvas/MediaRecorder feed is retained, no fake thumbnail. */
+.previewChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:1px 0 11px}
+.previewChoice{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;min-width:0;min-height:98px;gap:0;padding:4px 9px;border:1px solid #cfe3d4;border-radius:15px;background:linear-gradient(135deg,#f3faf3,#fffefa)}
+.previewChoiceLabel{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;cursor:pointer;color:#235744;font-size:clamp(12px,3.05vw,14px);line-height:1.2;font-weight:800}
+.previewChoiceLabel input{flex:none;width:21px;height:21px;margin:0;accent-color:#078f6b;cursor:pointer}
+.previewChoiceLabel span{min-width:0;overflow-wrap:anywhere}
+.previewChoiceLink{display:inline-flex;align-items:center;gap:5px;min-height:44px;max-width:100%;padding:2px 0;border:0;background:transparent;color:#168363;text-decoration:underline;text-underline-offset:3px;font-size:11px;line-height:1.2;font-weight:750;text-align:left;cursor:pointer}
+.previewChoiceLink svg{flex:none}
+.previewChoiceLink:focus-visible,.previewChoiceLabel input:focus-visible,.heroPlay:focus-visible,
+.therapyBanner button:focus-visible{outline:3px solid #dfbf62;outline-offset:3px}
+.catalogShell .hero{width:100%;min-height:205px;max-height:340px;aspect-ratio:16 / 9;border-radius:20px;overflow:hidden}
+.catalogShell .heroCanvas{z-index:0}
+.catalogShell .heroShade{z-index:2;background:radial-gradient(circle at center,rgba(3,28,23,.06) 16%,rgba(3,29,24,.28) 100%);pointer-events:none}
+.catalogShell .heroPromo{z-index:1}
+.catalogShell .heroPlay{position:absolute;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:76px;height:76px;padding:0;border:2px solid #fff9e9;border-radius:50%;background:rgba(7,98,74,.83);box-shadow:0 0 0 7px rgba(255,255,255,.21),0 10px 30px rgba(1,29,22,.36);backdrop-filter:blur(6px);color:#fff;cursor:pointer;transition:background .2s ease,box-shadow .2s ease,opacity .2s ease}
+.catalogShell .heroPlay svg{margin-left:3px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
+.catalogShell .hero[data-preview-playing="true"] .heroPlay{background:rgba(4,50,40,.65);opacity:.65}
+.catalogShell .hero[data-preview-playing="true"] .heroPlay svg{margin-left:0}
+.catalogShell .heroPlay:hover{opacity:1;background:rgba(6,133,98,.95);box-shadow:0 0 0 9px rgba(255,255,255,.25),0 10px 30px rgba(1,29,22,.38)}
+.catalogShell .heroPlay:disabled{opacity:.5;cursor:not-allowed}
+.postHeroActions{display:flex;margin:9px 0 1px}
+.catalogShell .postHeroActions .heroCreate{width:100%;min-height:48px;margin:0;font-size:14px}
+.therapyBanner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 3px;padding:15px;border:1px solid #c4dfce;border-radius:18px;background:linear-gradient(115deg,#e4f5eb,#fff9ea);box-shadow:0 5px 15px rgba(23,79,54,.08)}
+.therapyBannerCopy{min-width:0;flex:1}
+.therapyBannerCopy small{display:block;color:#148463;font-size:10px;font-weight:850;letter-spacing:.09em}
+.therapyBannerCopy h3{margin:4px 0;color:#214a3b;font-size:clamp(15px,3.5vw,20px);line-height:1.2;letter-spacing:-.01em}
+.therapyBannerCopy p{margin:0;color:#668071;font-size:11px;line-height:1.35}
+.therapyBanner button{display:flex;align-items:center;justify-content:center;gap:6px;max-width:48%;min-height:48px;padding:10px 12px;border:0;border-radius:12px;background:#087f60;color:#fff;text-align:center;font-size:clamp(11px,2.4vw,13px);font-weight:850;line-height:1.2}
+.therapyBanner button svg{flex:none}
+.therapyBanner button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:430px){
+  .previewChoices{gap:6px;margin-bottom:9px}
+  .previewChoice{min-height:96px;padding:3px 7px;border-radius:12px}
+  .previewChoiceLabel{gap:6px;min-height:44px;font-size:clamp(11px,3vw,13px)}
+  .previewChoiceLabel input{width:20px;height:20px}
+  .previewChoiceLink{font-size:10.5px}
+  .catalogShell .hero{min-height:178px;max-height:none;aspect-ratio:16 / 9}
+  .catalogShell .heroPlay{width:67px;height:67px}
+  .catalogShell .heroPlay svg{width:28px;height:28px}
+  .therapyBanner{flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+  .therapyBanner button{max-width:none;width:100%;min-height:46px;font-size:12px}
+}
+@media(max-width:350px){
+  .previewChoiceLabel{font-size:10.5px}
+  .previewChoiceLink{font-size:10px}
+  .catalogShell .hero{min-height:157px}
+}
+@media(prefers-reduced-motion:reduce){.catalogShell .heroPlay{transition:none}}
+
+/* The four accessible choices now live in the disclosure, not over the film. */
+.moreFilters .catalogFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+
+/* Therapy is a separate cinematic tab, reusing the same private Canvas player. */
+.quickStart .previewChoices{margin:2px 0 2px}
+.studio[data-video-studio-mode="therapy"] .modePicker button[data-video-mode="therapy"][aria-pressed="true"]{
+  background:linear-gradient(120deg,#0d736b,#125e70);border-color:#78beb6;box-shadow:0 3px 13px #0a6e752e
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell{
+  border:1px solid #c8e2d6;border-radius:25px;
+  background:linear-gradient(150deg,#f2faf4 0%,#fffef8 45%,#f9fcf3 100%);
+  box-shadow:0 10px 25px rgba(26,85,64,.07)
+}
+.studio[data-video-studio-mode="therapy"] .catalogHeading{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:4px 3px}
+.studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:clamp(20px,5vw,27px);line-height:1.16;letter-spacing:-.025em;color:#174d41}
+.studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:12px;line-height:1.5;color:#608679}
+.courseIndicator{flex:none;align-self:center;display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border:1px solid #c3dfce;border-radius:99px;background:#e6f4e8;color:#197b60;font-size:11px;font-weight:850;letter-spacing:.035em}
+.studio[data-video-studio-mode="therapy"] .catalogShell .hero{
+  min-height:230px;max-height:440px;aspect-ratio:1.72;border-radius:23px;
+  border:1px solid #9bbcb6;box-shadow:0 13px 25px rgba(6,46,38,.15)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{
+  width:78px;height:78px;background:rgba(8,88,80,.8);border-color:#f4eecf;
+  box-shadow:0 0 0 7px rgba(237,252,243,.2),0 9px 25px rgba(4,32,33,.35)
+}
+.studio[data-video-studio-mode="therapy"] .catalogShell .heroShade{
+  background:radial-gradient(circle at center,transparent 22%,rgba(3,39,36,.29) 100%)
+}
+.studio[data-video-studio-mode="therapy"] .therapyCourse{margin:13px 0 4px;scroll-margin-top:12px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav{margin-top:14px}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a{border-color:#c0dccd;background:#f2faf5}
+.studio[data-video-studio-mode="therapy"] .editorJumpNav a:focus-visible{outline:3px solid #a0d1ad;outline-offset:2px}
+@media(max-width:430px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell{padding:12px 9px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:206px;max-height:none;aspect-ratio:1.6}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading{padding:2px 4px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading h2{font-size:19px}
+  .studio[data-video-studio-mode="therapy"] .catalogHeading p{font-size:11px}
+  .studio[data-video-studio-mode="therapy"] .catalogShell .heroPlay{width:68px;height:68px}
+}
+@media(max-width:350px){
+  .studio[data-video-studio-mode="therapy"] .catalogShell .hero{min-height:190px}
+  .courseIndicator{font-size:10px;padding:6px}
+}
+
+
+/* Owner 29 Oct: slim Picks rail, restored visible Support header, and one
+   neutral-by-default Video therapy entry (no two-mode segmented switch). */
+.dailyPicks{display:flex;align-items:center;gap:9px;min-width:0;margin:0 0 10px;padding:4px 9px;min-height:50px;
+  border:1px solid #cfddd0;border-radius:12px;background:#f8faf3;color:#244e42}
+.dailyPicks>strong{flex:none;font:800 clamp(11px,2.9vw,14px)/1.15 Arial,Helvetica,sans-serif;white-space:nowrap}
+.dailyPicksRail{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow-x:auto;
+  overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:thin}
+.dailyPicksRail a{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:44px;
+  padding:7px 10px;border:1px solid #e1d9be;border-radius:999px;background:#fff9e9;color:#41614d;
+  font-size:clamp(10px,2.8vw,12px);font-weight:800;text-decoration:none;white-space:nowrap;scroll-snap-align:start}
+.dailyPicksRail a:hover,.dailyPicksRail a:focus-visible{background:#e3f2e8;border-color:#5ebd94;color:#09634b}
+.studio>.supportTop{margin:0 0 10px}
+.supportTools>.videoMandalaChoice{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+  min-height:44px;margin-top:7px;padding:7px 5px;border:1px solid #ccddd0;border-radius:11px;
+  background:#fffdf7;color:#3b6554;font-size:clamp(10px,2.8vw,12px);font-weight:800;box-shadow:none}
+.supportTools>.videoMandalaChoice[aria-pressed="true"]{background:linear-gradient(115deg,#07996d,#10af80);
+  border-color:#0b9972;color:#fff;box-shadow:0 3px 10px rgba(3,119,83,.16)}
+.supportTools>.videoMandalaChoice:disabled{opacity:.6}
+.supportTools>.videoMandalaChoice:focus-visible{outline:3px solid #daa755;outline-offset:2px}
+.quickStart{gap:7px;margin:0 0 9px}
+.quickStart .previewChoices{margin:1px 0 0;gap:6px}
+.previewChoice{min-height:88px;padding:0 7px;border-radius:12px}
+.previewChoiceLabel,.previewChoiceLink{min-height:44px}
+.previewChoiceLabel{gap:6px}
+.previewChoiceLink{padding:0 2px}
+@media(max-width:430px){
+  .dailyPicks{gap:6px;padding:3px 6px;margin-bottom:8px;min-height:50px}
+  .dailyPicks>strong{font-size:11px}
+  .dailyPicksRail a{padding:7px 8px;font-size:10.5px}
+  .studio>.supportTop{margin-bottom:8px}
+  .supportTools>.videoMandalaChoice{min-height:44px;margin-top:5px;font-size:10px}
+  .quickStart{gap:6px;margin-bottom:7px}
+  .previewChoice{min-height:88px;padding:0 5px}
+  .previewChoiceLabel,.previewChoiceLink{min-height:44px}
+}
+
+/* Context-aware mobile audio library — two compact rows, real audio preview. */
+.audioSection{gap:10px;padding:14px 12px;border-color:#d6e6d9;
+  background:linear-gradient(145deg,#f8fdf7 0%,#fffef8 53%,#f5f7ed 100%);
+  box-shadow:0 8px 25px #184b3012;overflow:hidden}
+.audioSection .blockHeading h3{font-size:clamp(19px,4.6vw,23px);letter-spacing:-.025em}
+.audioSection .blockHeading p{font-size:12px;color:#657e70}
+.audioSection .musicCard{min-width:0;width:100%;padding:11px 9px 13px;border:1px solid #d7e6d9;
+  border-radius:18px;background:#fffefa;overflow:hidden}
+.audioSection .musicCard legend{font-size:13px;color:#1f5b46;font-weight:850;padding:0 8px}
+.audioSmartBar{display:flex;align-items:center;justify-content:space-between;gap:9px;min-width:0;
+  margin:5px 0 10px;padding:9px;border:1px solid #c7e4d4;border-radius:13px;
+  background:linear-gradient(110deg,#e8f7ed,#f6fbec)}
+.audioContextText{display:flex;align-items:center;gap:7px;min-width:0;
+  color:#477565;font-size:11px;line-height:1.25}
+.audioContextText svg{flex:none;color:#128c68}
+.audioContextText strong{display:block;color:#154d3c;font-size:13px;line-height:1.2}
+.audioSmartBar button{display:inline-flex;align-items:center;justify-content:center;
+  flex:none;min-height:38px;padding:7px 10px;border:1px solid #8fcdb2;
+  border-radius:11px;background:#fffdf7;color:#126748;font-size:11px;font-weight:850;line-height:1.2}
+.audioSmartBar button[aria-pressed="true"]{background:#0f8e69;border-color:#0f8e69;color:#fff}
+.audioSmartBar button:disabled{opacity:.45}
+.audioFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;min-width:0;margin:4px 0 10px}
+.audioFilters label{display:flex;flex-direction:column;gap:4px;min-width:0;padding:7px 8px;
+  border:1px solid #dce7db;border-radius:11px;background:#fff;color:#547565;font-size:10px;font-weight:800}
+.audioFilters select{display:block;width:100%;min-width:0;min-height:29px;
+  padding:2px 12px 2px 0;border:0;background:transparent;
+  color:#174a3a;font:750 11px/1.15 Arial,Helvetica,sans-serif;cursor:pointer}
+.audioFilters select:focus-visible{outline:2px solid #098f6e;outline-offset:2px}
+.audioVoiceOption{display:flex;align-items:flex-start;gap:9px;min-width:0;
+  padding:9px 10px;border:1px solid #e2e8d8;border-radius:11px;background:#f9faf3;
+  color:#245542;cursor:pointer}
+.audioVoiceOption input{flex:none;width:19px;height:19px;margin:2px 0 0;accent-color:#078e68}
+.audioVoiceOption span{min-width:0;font-size:11.5px;line-height:1.35}
+.audioVoiceOption strong{display:block;font-size:12px}
+.audioVoiceOption small{display:block;margin-top:2px;font-size:10px;line-height:1.32;color:#72877a}
+.audioCatalogHeading{display:flex;align-items:center;justify-content:space-between;gap:7px;
+  padding:7px 1px 2px;color:#325e4b;font-size:11px}
+.audioCatalogHeading span{color:#85958b;font-size:10px}
+.audioTrackGrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,88px);
+  grid-auto-columns:clamp(135px,43%,190px);gap:8px;min-width:0;max-width:100%;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;
+  scroll-snap-type:x proximity;scroll-padding-inline:5px;scrollbar-width:thin;
+  padding:4px 3px 10px;margin:0 0 7px}
+.audioTrackTile{position:relative;display:grid;grid-template-columns:31px minmax(0,1fr);
+  align-content:center;align-items:center;gap:7px;min-width:0;min-height:84px;
+  padding:14px 8px 7px;border:1px solid #cedbd2;border-radius:12px;
+  background:linear-gradient(135deg,#e0efe9,#c8dcda);color:#19493a;cursor:pointer;
+  text-align:left;scroll-snap-align:start;text-shadow:none;box-shadow:0 2px 6px #1c4b2b0b}
+.audioTrackTile[data-audio-kind="tones"]{background:linear-gradient(120deg,#f7ebd2,#f2dfc0);border-color:#ead8b7}
+.audioTrackTile[data-audio-kind="nature"]{background:linear-gradient(120deg,#d7ede1,#c9e3e7);border-color:#c2dfd8}
+.audioTrackTile[data-audio-kind="pulse"]{background:linear-gradient(120deg,#eee1ed,#e2d6e9);border-color:#d9cade}
+.audioTrackTile[aria-pressed="true"]{border:2px solid #078d6a;padding:13px 7px 6px;
+  box-shadow:0 0 0 2px #b2e7cd,0 3px 9px #23523819}
+.audioTileGlyph{display:grid;place-items:center;width:30px;height:30px;
+  border:1px solid #ffffffaa;border-radius:10px;background:#ffffff70;
+  font:800 21px/1 Georgia,serif;color:#225e4a}
+.audioTileText{display:grid;gap:3px;min-width:0}
+.audioTileText strong{font-size:12px;line-height:1.15;overflow-wrap:anywhere}
+.audioTileText small{font-size:9.5px;line-height:1.18;color:#567568;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.audioTopPick{position:absolute;top:3px;right:6px;color:#096d53;font-size:8px;font-weight:850;line-height:1.1}
+.audioSelectedCheck{position:absolute;right:4px;bottom:4px;color:#077a5d}
+.audioSilentTile{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;min-width:0;min-height:84px;padding:9px;border:1px solid #dadfd7;border-radius:12px;
+  background:#f4f3ee;color:#667c70;font-size:12px;font-weight:800;scroll-snap-align:start}
+.audioSilentTile span{font-size:27px;line-height:1}
+.audioSilentTile[aria-pressed="true"]{border:2px solid #0d8b68;background:#e8f5ec;color:#0a7456}
+.audioEmpty{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px;
+  border:1px dashed #b4cdbf;border-radius:12px;color:#58786c;font-size:11px}
+.audioEmpty button{min-height:35px;padding:6px 10px;border:1px solid #a0ccaf;
+  border-radius:9px;background:#eef9ef;color:#1a6b4f;font-weight:800}
+.audioNowPlaying{display:flex;align-items:baseline;justify-content:space-between;
+  gap:8px;min-width:0;margin:3px 0 9px;padding:8px 10px;border-radius:10px;
+  background:#edf6ed;color:#567464;font-size:10px}
+.audioNowPlaying strong{min-width:0;color:#215b45;text-align:right;font-size:11px;overflow-wrap:anywhere}
+.audioSection .audioUpload{position:relative;display:flex;align-items:center;gap:8px;
+  min-width:0;margin:6px 0 8px;padding:6px 8px;border:1px solid #e3e9dc;
+  border-radius:12px;background:#fafbf6}
+.audioSection .audioUploadLabel{flex:none;min-height:40px;padding:7px 11px;
+  border-color:#b8dec9;border-radius:10px;background:linear-gradient(110deg,#e2f4e9,#f5fbef);
+  color:#15664d;font-size:11.5px}
+.audioSection .audioUpload>small{flex:1 1 110px;color:#708578;font-size:9.5px;line-height:1.35}
+.audioFileInput{position:absolute!important;width:1px!important;height:1px!important;
+  margin:0!important;padding:0!important;border:0!important;
+  clip-path:inset(50%)!important;white-space:nowrap!important;overflow:hidden!important}
+.audioSection .audioUpload:focus-within .audioUploadLabel{outline:3px solid #dcb96a;outline-offset:2px}
+.audioSection .musicTools{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.4fr);
+  gap:8px;margin:9px 0 7px}
+.audioSection .musicTools button{min-height:44px;font-size:11.5px}
+.audioSection .musicTools label{flex:initial;min-width:0;font-size:10.5px}
+.audioSection .musicCard audio[data-video-audio-player]{width:100%;max-width:100%;
+  min-width:0;margin:6px 0 9px;border-radius:12px}
+.audioSection .musicCard>small{display:block;margin-top:6px;color:#89988c;
+  font-size:10px;line-height:1.45}
+@media(max-width:380px){
+  .audioSection{padding:11px 8px}
+  .audioSection .musicCard{padding:10px 7px}
+  .audioSmartBar{flex-direction:column;align-items:stretch;padding:8px}
+  .audioContextText strong{display:inline;font-size:12px}
+  .audioSmartBar button{width:100%;min-height:39px}
+  .audioFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .audioFilters label:last-child{grid-column:1 / -1}
+  .audioTrackGrid{grid-auto-columns:clamp(130px,47%,172px)}
+  .audioSection .audioUpload>small{flex-basis:100%}
+  .audioSection .audioUploadLabel{width:auto}
+}
+@media(min-width:760px){
+  .audioTrackGrid{grid-auto-columns:clamp(155px,24%,205px)}
+  .audioSection .musicCard{padding:14px 16px}
+}
+
+
+/* Approved six-panel quick video builder · 29 Oct 2026
+   Source: owner's first cream/emerald generated mock, same guest video-editor route.
+   All controls address existing local video state. The historic working editor
+   remains available in an opt-in disclosure. No remote pictures or AI calls. */
+.quickBuilder{display:grid;gap:11px;min-width:0;margin:0 0 13px;padding:0 1px;color:#143d35}
+.quickHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 9px 10px}
+.quickHeader>div{min-width:0}
+.quickHeader h2{font:850 clamp(23px,3.5vw,31px)/1.1 Arial,Helvetica,sans-serif;letter-spacing:-.035em;color:#143e35}
+.quickHeader p{max-width:620px;margin:5px 0 0;font-size:13px;line-height:1.42;color:#73847a}
+.quickHeader button{display:flex;align-items:center;justify-content:center;gap:7px;flex:none;
+  min-height:48px;padding:10px 15px;border:0;border-radius:24px;
+  background:linear-gradient(135deg,#e7f2e9,#dbeae0);color:#24624c;font-size:13px;font-weight:750}
+.quickSection{display:grid;gap:11px;min-width:0;padding:15px 15px 16px;border:1px solid #eae8dd;
+  border-radius:23px;background:linear-gradient(145deg,#fffefa,#fbfaf5);
+  box-shadow:0 5px 17px rgba(40,65,47,.055)}
+.quickSectionHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.quickSectionHeading>div{flex:1;min-width:0}
+.quickSectionHeading h3{display:flex;align-items:center;gap:10px;
+  font:800 clamp(17px,2.2vw,21px)/1.2 Arial,Helvetica,sans-serif;color:#143d35}
+.quickSectionHeading h3 svg{flex:none;color:#13785f}
+.quickSectionHeading p{color:#75867c;margin-top:4px;font-size:12.5px;line-height:1.4}
+.quickSectionHeading a,.quickSectionHeading .quickEdit{display:inline-flex;align-items:center;justify-content:center;
+  gap:5px;flex:none;min-height:44px;padding:8px 10px;border:0;border-radius:20px;
+  background:#ecf6ed;color:#156c53;font-size:12px;font-weight:800;text-decoration:none}
+.quickSectionHeading a{background:transparent}
+.quickThemeRail{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;gap:8px;
+  overflow-x:auto;max-width:100%;min-width:0;overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;scrollbar-width:thin;padding:2px 1px 5px}
+.quickThemeRail button{display:flex;align-items:center;gap:7px;justify-content:center;
+  min-height:50px;min-width:112px;max-width:170px;padding:9px 12px;
+  border:1px solid #e9e6dc;border-radius:19px;background:#f8f8f3;
+  color:#243e35;font:700 13.5px/1.18 Arial,Helvetica,sans-serif;white-space:normal;
+  scroll-snap-align:start}
+.quickThemeRail button svg{flex:none}
+.quickThemeRail button[data-tone="energy"]{background:#ecf8e7;color:#428f32}
+.quickThemeRail button[data-tone="money"]{background:#fff4e5;color:#b87b18}
+.quickThemeRail button[data-tone="relationships"]{background:#fff0ee;color:#c84e6b}
+.quickThemeRail button[data-tone="goals"]{background:#f1edfa;color:#7653b1}
+.quickThemeRail button[data-tone="life"]{background:#f4eff8;color:#7655a6}
+.quickThemeRail button[data-tone="health"]{background:#eaf5e9;color:#397e55}
+.quickThemeRail button[aria-pressed="true"]{border-color:#139e79;box-shadow:0 0 0 2px #bfe9d6;
+  background:linear-gradient(110deg,#009a75,#087c63);color:white}
+.quickThemeRail button[aria-pressed="true"] svg{color:white}
+.quickWish{display:flex;align-items:center;gap:11px;width:100%;min-width:0;min-height:52px;
+  padding:0 14px;border:1px solid #e5e4db;border-radius:15px;background:#f8f7f1;color:#367761}
+.quickWish input{display:block;width:100%;min-width:0;padding:12px 0;border:0;outline:none;
+  background:transparent;color:#204838;font-size:14px}
+.quickWish input::placeholder{color:#879187;opacity:1}
+.quickWish:focus-within{outline:3px solid #b3e4c9}
+.quickImageRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(92px,130px);
+  gap:8px;max-width:100%;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:thin;padding:2px 2px 6px}
+.quickImageRail button{position:relative;display:flex;align-items:center;justify-content:center;
+  width:100%;aspect-ratio:1;min-width:0;overflow:hidden;border:2px solid transparent;
+  border-radius:14px;background:#e9efe8;color:#1b765c;scroll-snap-align:start}
+.quickImageRail button.quickImageUpload{flex-direction:column;gap:7px;border:2px dashed #c8d8d0;
+  background:#fbfcfa;text-align:center}
+.quickImageUpload span{max-width:100%;font-size:12px;font-weight:700;overflow-wrap:break-word}
+.quickImageRail button[aria-pressed="true"]{border-color:#089e74;box-shadow:0 0 0 2px #c4eadc}
+.quickImageRail img{width:100%;height:100%;object-fit:cover;display:block}
+.quickTick{position:absolute;top:5px;right:5px;display:grid;place-items:center;
+  width:23px;height:23px;background:#0b996f;border:2px solid white;border-radius:50%;color:white}
+.quickPhotoSwitch{display:flex;align-items:center;gap:9px;min-height:44px;color:#345b48;font-size:13px;cursor:pointer}
+.quickPhotoSwitch input{width:20px;height:20px;flex:none;accent-color:#098d6a}
+.quickHypnoOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.quickHypnoOptions button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;
+  min-width:0;min-height:102px;padding:10px 5px;border:1px solid #dfe6dc;border-radius:15px;
+  background:linear-gradient(145deg,#fffefa,#f6f9f4);color:#1b5f4a;text-align:center}
+.quickHypnoOptions button[aria-pressed="true"]{background:linear-gradient(130deg,#dff4e8,#edf9ef);border-color:#22a478}
+.quickHypnoOptions button strong{font-size:13px;line-height:1.12;overflow-wrap:anywhere}
+.quickHypnoOptions button small{font-size:10.5px;line-height:1.25;color:#70867a}
+.quickStyles{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(112px,144px);
+  max-width:100%;gap:8px;overflow-x:auto;scrollbar-width:thin;scroll-snap-type:x proximity;padding:2px 2px 6px}
+.quickStyles button{display:grid;gap:6px;align-content:start;min-width:0;padding:0;border:0;
+  background:transparent;color:#21493d;text-align:center;scroll-snap-align:start}
+.quickStyles button img{display:block;width:100%;aspect-ratio:1.1;object-fit:cover;
+  border:3px solid transparent;border-radius:14px}
+.quickStyles button[aria-pressed="true"] img{border-color:#0b9c78;box-shadow:0 0 0 2px #a1dfc3}
+.quickStyles button span{min-height:20px;font-size:12px;line-height:1.22;overflow-wrap:break-word}
+.quickHint{display:block;color:#798a7f;font-size:11px;line-height:1.45}
+.quickAudioFilters{display:flex;align-items:center;gap:7px;max-width:100%;
+  overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:2px 0 4px}
+.quickAudioFilters button{flex:none;min-height:42px;padding:7px 14px;border:1px solid #e6ebe3;
+  border-radius:24px;background:#f5f7f3;color:#3b6151;font-size:12px}
+.quickAudioFilters button[aria-pressed="true"]{border-color:#0a9971;
+  background:linear-gradient(130deg,#078e69,#0da77b);color:#fff;font-weight:800}
+.quickAudioItem{display:flex;align-items:center;gap:12px;min-width:0;padding:9px 10px;
+  border:1px solid #e6e8df;border-radius:15px;background:#fffefa}
+.quickAudioItem img{width:64px;height:64px;object-fit:cover;flex:none;border-radius:12px}
+.quickAudioItem>div{display:grid;gap:4px;flex:1;min-width:0}
+.quickAudioItem strong{font-size:14px;color:#21473c;line-height:1.25;overflow-wrap:anywhere}
+.quickAudioItem small{font-size:11px;line-height:1.25;color:#71847a}
+.quickAttach{display:flex;align-items:center;justify-content:center;gap:5px;
+  flex:none;min-height:44px;padding:8px 10px;border:1px solid #badccd;border-radius:14px;
+  background:#e2f4e6;color:#0a7959;font-size:11.5px;font-weight:800}
+.quickAudioPlayer{display:block;width:100%;max-width:100%;min-height:44px;border-radius:12px}
+.quickAudioFooter{display:flex;justify-content:space-between;gap:10px}
+.quickAudioFooter button{display:flex;align-items:center;gap:5px;min-height:42px;
+  padding:6px 11px;border:0;border-radius:12px;background:#f0f6ef;color:#197052;font-size:12px}
+.quickMontageGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.quickMontageGrid fieldset{display:grid;align-content:start;gap:7px;margin:0;min-width:0;
+  padding:10px 8px;border:1px solid #e8e7dd;border-radius:14px;background:#fffefa}
+.quickMontageGrid legend{float:none;display:block;margin-bottom:7px;padding:0;
+  font-size:12px;font-weight:800;color:#335448}
+.quickMontageGrid fieldset>div{display:flex;flex-wrap:wrap;gap:5px}
+.quickMontageGrid button{display:flex;justify-content:center;align-items:center;flex:1 1 34px;
+  min-height:44px;min-width:0;padding:7px 6px;border:1px solid #e7e7df;border-radius:11px;
+  background:#f6f7f2;color:#405b50;font-size:11.5px;white-space:nowrap}
+.quickMontageGrid button[aria-pressed="true"]{background:#0a9471;border-color:#0a9471;color:white;font-weight:800}
+.quickMontageGrid .quickMontageText{grid-column:1 / -1}
+.quickGenerate{display:flex;align-items:center;justify-content:center;gap:13px;min-height:60px;
+  width:100%;margin:2px 0 0;padding:10px 14px;border:0;border-radius:17px;
+  background:linear-gradient(100deg,#087c62,#0d9c74);color:white;
+  font-size:clamp(16px,2.7vw,19px);font-weight:850;box-shadow:0 7px 16px #087b5221}
+.quickGenerate:disabled{opacity:.62;cursor:wait}
+.quickGenerate svg:last-child{margin-left:auto}
+.quickGenerate svg:first-child{margin-left:auto}
+.quickProgress{height:6px;overflow:hidden;border-radius:6px;background:#deece3}
+.quickProgress span{display:block;height:100%;background:#06956f;transition:width .2s ease}
+.quickStatus{padding:9px 11px;border-radius:10px;background:#eef7ed;color:#235a42;font-size:12px}
+.quickPrivacy{display:flex;align-items:center;justify-content:center;gap:6px;
+  color:#698578;text-align:center;font-size:11px;line-height:1.35}
+.quickTherapy{display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:47px;padding:9px 11px;border:1px solid #a1c7b6;
+  border-radius:14px;background:#fcfbf6;color:#17684f;font-size:13px;font-weight:800}
+.quickLegacy{min-width:0;margin:7px 0 12px;padding:0;border:1px solid #dce6db;
+  border-radius:15px;background:#f9fbf6}
+.quickLegacy>summary{display:flex;align-items:center;gap:10px;min-height:50px;
+  padding:10px 13px;color:#205d49;cursor:pointer;list-style:disclosure-closed;
+  font-size:13px;font-weight:800;line-height:1.3}
+.quickLegacy[open]>summary{border-bottom:1px solid #e4e9e2;background:#edf6ed}
+.quickLegacy[open]{padding-bottom:11px}
+.quickLegacy> :not(summary){margin-left:0;margin-right:0}
+.studio .result[hidden]{display:none!important}
+@media(min-width:760px){
+  .quickBuilder{gap:13px}
+  .quickSection{padding:19px 21px 20px}
+  .quickThemeRail{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-columns:unset;overflow-x:visible}
+  .quickThemeRail button{min-width:0;max-width:none}
+  .quickImageRail{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-columns:unset;overflow-x:visible}
+  .quickStyles{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-columns:unset;overflow-x:visible}
+  .quickAudioPlayer{max-width:540px}
+  .quickMontageGrid button{font-size:13px}
+  .quickHypnoOptions button{min-height:110px}
+}
+@media(max-width:430px){
+  .quickBuilder{padding:0;gap:9px}
+  .quickHeader{padding:7px 5px}
+  .quickHeader h2{font-size:23px}
+  .quickHeader p{font-size:11.5px;max-width:220px}
+  .quickHeader button{max-width:145px;padding:7px 10px;min-height:44px;font-size:11px}
+  .quickHeader button svg{width:16px}
+  .quickSection{padding:13px 10px 14px;border-radius:17px;gap:9px}
+  .quickSectionHeading h3{gap:7px;font-size:16px}
+  .quickSectionHeading h3 svg{width:19px}
+  .quickSectionHeading p{font-size:11.5px}
+  .quickSectionHeading a,.quickSectionHeading .quickEdit{padding:6px;min-height:44px;font-size:10.5px}
+  .quickSectionHeading a{max-width:140px;text-align:right}
+  .quickThemeRail button{min-width:106px;padding:7px 9px;font-size:12.5px}
+  .quickImageRail{grid-auto-columns:105px}
+  .quickStyles{grid-auto-columns:114px}
+  .quickHypnoOptions{gap:5px}
+  .quickHypnoOptions button{min-height:103px;padding:9px 4px}
+  .quickHypnoOptions button strong{font-size:11.5px}
+  .quickHypnoOptions button small{font-size:10px}
+  .quickAudioItem{gap:8px;padding:7px}
+  .quickAudioItem img{width:55px;height:55px}
+  .quickAudioItem strong{font-size:12.5px}
+  .quickAttach{flex-direction:column;gap:3px;padding:6px;min-height:44px;max-width:86px}
+  .quickMontageGrid{gap:6px}
+  .quickMontageGrid fieldset{padding:8px 6px}
+  .quickMontageGrid button{font-size:10.5px;padding:7px 4px}
+}
+@media(max-width:350px){
+  .quickHeader button{max-width:120px}
+  .quickSectionHeading h3{font-size:15px}
+  .quickAudioItem img{width:46px;height:46px}
+  .quickMontageGrid{grid-template-columns:1fr}
+  .quickMontageGrid .quickMontageText{grid-column:auto}
+  .quickHypnoOptions button{min-height:98px}
+}
+
+/* Keep the original wish-to-scene tool available, but optional: the new
+   one-screen request/phrases overview is the primary mobile interaction. */
+.hypnoOptionalWish{min-width:0;margin-top:4px;border:1px solid #d5e7d9;border-radius:13px;background:#f9fcf5;overflow:hidden}
+.hypnoOptionalWish summary{display:flex;align-items:center;min-height:44px;padding:10px 13px;cursor:pointer;color:#21634b;font-size:12px;font-weight:750}
+.hypnoOptionalWish[open] summary{border-bottom:1px solid #d5e7d9}
+.hypnoOptionalWish .wishPanel{padding:9px;border:0;box-shadow:none;background:transparent}
+.hypnoOptionalWish summary:focus-visible{outline:3px solid #60ba97;outline-offset:-3px}
+
+/* Audio-only, compact iPhone picker: no video thumbnails or oversized tiles.
+   Tap targets stay >=44px; filter/text sizing stays readable at 320-430px. */
+.audioSection{padding:11px 9px;gap:7px;background:linear-gradient(145deg,#fffdf7,#f6faf4)}
+.audioSection .blockHeading h3{display:flex;align-items:center;gap:8px;font-size:21px;line-height:1.2}
+.audioSection .blockHeading h3 svg{color:#0c8562;flex:none}
+.audioSection .blockHeading p{font-size:13px;line-height:1.4}
+.audioSection .musicCard{padding:9px 9px 12px;background:#fffefa;border-radius:17px}
+.audioSection .musicCard legend{font-size:13px}
+.audioSection .audioSmartBar{padding:7px 8px;margin:4px 0 9px;gap:8px}
+.audioSection .audioContextText{font-size:12px}
+.audioSection .audioContextText strong{font-size:14px}
+.audioSection .audioSmartBar button{font-size:12px;min-height:44px;max-width:49%;padding:7px 8px}
+.audioSection .audioFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0 0 9px}
+.audioSection .audioFilters label{padding:7px 8px 4px;font-size:12px;line-height:1.25;gap:2px}
+.audioSection .audioFilters select{min-height:42px;font-size:13px;line-height:1.25;white-space:nowrap}
+.audioSection .audioVoiceOption{padding:8px 9px;gap:9px;margin:0 0 9px}
+.audioSection .audioVoiceOption input{min-width:20px;width:20px;height:20px}
+.audioSection .audioVoiceOption span strong{font-size:13px}
+.audioSection .audioVoiceOption span small{font-size:11.5px;line-height:1.35}
+.audioSearchRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(116px,.59fr);gap:7px;min-width:0;margin:0 0 8px}
+.audioSearchInput{display:flex;align-items:center;gap:7px;min-width:0;min-height:46px;
+  border:1px solid #d5dfd6;border-radius:12px;padding:0 9px;color:#5b776a;background:#fff}
+.audioSearchInput svg{flex:none}
+.audioSearchInput input{display:block;width:100%;min-width:0;height:42px;border:0;outline:0;
+  background:transparent;color:#214d3b;font:500 13px/1.3 Arial,Helvetica,sans-serif}
+.audioSearchInput input::placeholder{color:#718579}
+.audioSearchInput:focus-within{outline:2px solid #0e9871;outline-offset:1px}
+.audioSort{display:flex;align-items:center;min-width:0;border:1px solid #d5dfd6;border-radius:12px;background:#fff}
+.audioSort select{width:100%;min-width:0;min-height:44px;border:0;padding:7px 7px;background:transparent;
+  color:#244d40;font:650 12px/1.2 Arial,Helvetica,sans-serif}
+.audioSection .audioCatalogHeading{padding:3px 0 7px;font-size:12px}
+.audioSection .audioCatalogHeading span{font-size:11px}
+.audioTrackList{display:flex;flex-direction:column;gap:7px;min-width:0}
+.audioTrackRow{min-width:0;border-radius:13px}
+.audioTrackSelect{display:grid;grid-template-columns:40px minmax(0,1fr) 52px 53px;
+  gap:7px;align-items:center;width:100%;min-width:0;min-height:66px;padding:7px 8px;
+  border:1px solid #e0e6dd;border-radius:13px;background:#fffdf8;
+  color:#1e4839;text-align:left;cursor:pointer;box-shadow:0 2px 8px #1f423510}
+.audioTrackSelect:hover{background:#f2f9f2}
+.audioTrackSelect[aria-pressed="true"]{border:2px solid #159a73;padding:6px 7px;
+  background:linear-gradient(115deg,#e8f6ed,#fdfcf5);box-shadow:0 2px 9px #166b4924}
+.audioTrackSelect:focus-visible{outline:3px solid #e0b85f;outline-offset:2px}
+.audioTrackList .audioTileGlyph{width:40px;height:40px;border:1px solid #d8e7db;
+  border-radius:11px;background:#edf6ef;color:#1d7659}
+.audioTrackRow[data-audio-kind="nature"] .audioTileGlyph{background:#dcefe9;color:#087f76}
+.audioTrackRow[data-audio-kind="tones"] .audioTileGlyph{background:#f5ead9;color:#876035}
+.audioTrackRow[data-audio-kind="pulse"] .audioTileGlyph{background:#efe7f2;color:#80527d}
+.audioTrackList .audioTileText{display:flex;flex-direction:column;gap:4px;min-width:0}
+.audioTrackList .audioTileText strong{display:flex;align-items:center;gap:4px;min-width:0;
+  font-size:13.5px;line-height:1.2;color:#153b31}
+.audioTrackList .audioTileText strong svg{flex:none;color:#128b6b}
+.audioTrackList .audioTileText small{font-size:11.5px;line-height:1.24;color:#637b6e;max-height:2.45em}
+.audioWave{display:flex;align-items:center;justify-content:center;gap:2px;height:27px;min-width:0;color:#a1c9ad}
+.audioWave i{display:block;flex:0 0 2px;height:6px;background:currentColor;border-radius:4px}
+.audioWave i:nth-child(2),.audioWave i:nth-child(8){height:13px}
+.audioWave i:nth-child(3),.audioWave i:nth-child(7){height:19px}
+.audioWave i:nth-child(4),.audioWave i:nth-child(6){height:10px}
+.audioWave i:nth-child(5){height:24px}
+.audioTrackPick{display:inline-flex;justify-content:flex-end;align-items:center;gap:2px;
+  color:#38785e;font-size:11.5px;font-weight:850;text-align:right;line-height:1.2}
+.audioMore{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;
+  padding:9px;border:1px solid #e0e9df;border-radius:11px;background:#f4faf3;
+  color:#166e53;font-size:13px;font-weight:800;margin-top:7px}
+.audioSection .audioEmpty{font-size:12px;padding:11px}
+.audioSection .audioNowPlaying{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;
+  margin:9px 0 8px;padding:8px 10px;background:#eff7f0;font-size:12px}
+.audioSection .audioNowPlaying strong{flex:1;min-width:90px;text-align:left;font-size:13px;line-height:1.25}
+.audioSection .audioNowPlaying button{min-height:38px;padding:7px 9px;border:1px solid #d4e2d5;
+  border-radius:9px;background:#fff;color:#5c7567;font-size:12px;font-weight:700}
+.audioSection .audioNowPlaying button[aria-pressed="true"]{border-color:#0e9570;color:#12694d}
+.audioSection .audioUpload{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;
+  padding:7px;margin:0 0 10px;background:#fafcf9}
+.audioSection .audioUploadLabel,.audioSection .audioMicButton{display:inline-flex;justify-content:center;align-items:center;
+  flex:1 1 115px;gap:6px;min-width:0;min-height:45px;padding:8px;border-radius:11px;
+  font-size:12.5px;font-weight:800;line-height:1.25;cursor:pointer;text-align:center}
+.audioSection .audioUploadLabel{background:#def4e9;border-color:#b4dcc8}
+.audioSection .audioMicButton{border:1px solid #e4cdb5;background:#fff3e6;color:#86502b}
+.audioSection .audioMicButton[aria-pressed="true"]{background:#a43c36;color:#fff}
+.audioSection .audioUpload>small{flex:1 0 100%;font-size:11px;color:#708578;padding:0 4px;line-height:1.3}
+.audioSection .audioSelection{font-size:12px}
+.audioAttachPanel{display:flex;align-items:stretch;gap:8px;min-width:0;padding:8px;
+  border:1px solid #cee5d8;border-radius:13px;background:linear-gradient(105deg,#edf8ef,#fffdf6)}
+.audioApplied{display:flex;flex:1 1 40%;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+.audioApplied small{font-size:11px;color:#628372}
+.audioApplied strong{font-size:13px;color:#204e3e;overflow-wrap:anywhere;line-height:1.25}
+.audioAttachButton{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  flex:1 1 54%;min-width:0;min-height:48px;padding:9px;
+  border:1px solid #07875e;border-radius:11px;background:linear-gradient(115deg,#0b8965,#20a37d);
+  color:white;font-size:13px;line-height:1.2;font-weight:850;text-align:center}
+.audioAttachButton:disabled{border-color:#bdd7c9;background:#e3f0e7;color:#417865;cursor:default}
+.audioAttachButton svg{flex:none}
+.audioAttachHelp{display:block;margin:5px 0 8px;color:#557467;font-size:11.5px;line-height:1.38}
+.audioSection .musicTools{display:grid;grid-template-columns:minmax(95px,.78fr) minmax(0,1.22fr);gap:7px;margin:7px 0}
+.audioSection .musicTools button{font-size:12px}
+.audioSection .musicTools label{font-size:12px}
+.audioSection .musicCard audio[data-video-audio-player]{min-height:46px}
+.audioHelpDetails{margin-top:5px;color:#708577;font-size:11.5px;line-height:1.4}
+.audioHelpDetails summary{min-height:38px;padding:7px 2px;cursor:pointer}
+.audioHelpDetails small{display:block;font-size:11.5px}
+@media(max-width:375px){
+  .audioSection{padding:9px 7px}
+  .audioSection .musicCard{padding:8px 7px}
+  .audioSection .audioSmartBar{flex-direction:row;align-items:center}
+  .audioSection .audioSmartBar button{width:auto;min-height:44px;max-width:51%;font-size:11.5px}
+  .audioSection .audioFilters label{padding:6px 6px 3px}
+  .audioSection .audioFilters select{font-size:12.5px}
+  .audioSearchRow{grid-template-columns:minmax(0,1fr) 110px;gap:5px}
+  .audioSort select{font-size:11.5px}
+  .audioTrackSelect{grid-template-columns:37px minmax(0,1fr) 57px;gap:6px;padding:6px;min-height:67px}
+  .audioTrackSelect[aria-pressed="true"]{padding:5px}
+  .audioTrackList .audioTileGlyph{width:36px;height:36px}
+  .audioTrackList .audioTileText strong{font-size:13px}
+  .audioTrackList .audioTileText small{font-size:11px}
+  .audioWave{display:none}
+  .audioTrackPick{font-size:11px}
+  .audioApplied strong{font-size:12.5px}
+  .audioAttachButton{font-size:12.5px}
+}
+@media(min-width:760px){
+  .audioTrackList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .audioTrackSelect{grid-template-columns:40px minmax(0,1fr) 52px 54px}
+  .audioFilters{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+/* 29 Oct owner-approved audio-only list: static first-party cover art, never
+   video players or remote sound. Five chip rows + accessible 44px controls. */
+.audioSection{padding:10px 9px;border-radius:18px;background:#fffdf7;border-color:#e2e8dc}
+.audioSection .blockHeading{padding:11px 12px 12px;border:1px solid #e3ebda;border-radius:17px;
+  background:linear-gradient(115deg,#eef5e9,#f8f9ee);min-height:82px}
+.audioSection .blockHeading h3{font-size:22px;color:#163f35;letter-spacing:-.03em}
+.audioSection .blockHeading h3 svg{width:26px;height:26px;color:#688c78}
+.audioSection .blockHeading p{font-size:13px;line-height:1.33;max-width:45ch}
+.audioSection .musicCard{border:0;background:transparent;padding:6px 2px 9px;overflow:visible}
+.audioSection .musicCard legend{display:none}
+.audioSection .audioSmartBar{border-radius:14px;margin:0 0 8px;border-color:#d2e2d4;
+  background:linear-gradient(100deg,#f0f7ed,#f5f9f3)}
+.audioSection .audioSmartBar button{background:linear-gradient(110deg,#41846d,#7aa790);
+  color:white;border:0;font-size:12px;font-weight:800}
+.audioSection .audioSmartBar button[aria-pressed="true"]{background:#076d55}
+.audioChipFilters{display:grid;gap:0;margin-bottom:9px;background:transparent}
+.audioFilterRow{display:grid;grid-template-columns:86px minmax(0,1fr);align-items:center;
+  gap:7px;min-width:0;min-height:49px;border-bottom:1px solid #e9ece3}
+.audioFilterRow>strong{font-size:12.5px;color:#3a5149;line-height:1.22;font-weight:750}
+.audioChipRail{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;padding:3px 1px}
+.audioChipRail::-webkit-scrollbar{display:none}
+.audioChipRail button{flex:none;min-height:42px;max-width:100%;padding:8px 12px;border:1px solid #e8e9e0;
+  border-radius:999px;background:#f3f3ee;color:#294c41;font:750 12.5px/1.2 Arial,Helvetica,sans-serif;
+  white-space:nowrap;scroll-snap-align:start;box-shadow:none}
+.audioChipRail button:nth-child(4n+1){background:#e4f1e4;border-color:#dce9dc}
+.audioChipRail button:nth-child(4n+2){background:#f7e6e4;border-color:#efdfda}
+.audioChipRail button:nth-child(4n+3){background:#f8efd9;border-color:#f0e7d7}
+.audioChipRail button:nth-child(4n+4){background:#e4ecf7;border-color:#dce5f1}
+.audioChipRail button[aria-pressed="true"]{background:#147b5c;border-color:#147b5c;color:#fff;
+  box-shadow:0 2px 7px rgba(17,103,73,.18)}
+.audioChipRail button:focus-visible{outline:3px solid #d5ad64;outline-offset:2px}
+.audioSection .audioVoiceOption{margin:5px 0 9px;padding:6px 9px;border-color:#e8e9dd;
+  background:#f8faf6}
+.audioSection .audioVoiceOption span strong{font-size:12.5px}
+.audioSection .audioVoiceOption span small{font-size:11px}
+.audioSection .audioSearchRow{margin:0 0 8px;grid-template-columns:minmax(0,1fr) minmax(105px,.68fr)}
+.audioSection .audioSearchInput,.audioSection .audioSort{border-radius:12px;background:#fffdf9}
+.audioSection .audioCatalogHeading{padding:2px 1px 6px}
+.audioSection .audioCatalogHeading span{font-size:11px;color:#73867a}
+.audioTrackList{gap:5px}
+.audioTrackRow{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:stretch;
+  min-width:0;min-height:78px;border:1px solid #e9ebe3;border-radius:14px;
+  background:#fffefb;box-shadow:0 3px 10px #193d2c0b;overflow:hidden}
+.audioTrackSelect{display:grid;grid-template-columns:58px minmax(0,1fr) auto;
+  gap:9px;align-items:center;min-height:78px;padding:7px 3px 7px 7px;
+  background:transparent;border:0;border-radius:0;box-shadow:none}
+.audioTrackSelect[aria-pressed="true"]{padding:7px 3px 7px 7px;border:0;
+  box-shadow:inset 4px 0 0 #188b66;background:linear-gradient(90deg,#edf8ef,#fffefa)}
+.audioTrackList .audioTileGlyph{display:block;width:58px;height:58px;flex:none;overflow:hidden;
+  border:0;border-radius:10px;background-color:#dceadd;background-size:cover;background-position:center}
+.audioTrackList .audioTileText{display:grid;gap:3px;align-content:center;min-width:0}
+.audioTrackList .audioTileText strong{display:flex;align-items:center;gap:4px;font-size:14px;
+  line-height:1.2;color:#163b30;white-space:normal}
+.audioTrackList .audioTileText small{font-size:11.5px;line-height:1.2;color:#77847c;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audioTrackList .audioWave{display:flex;justify-content:flex-start;gap:2.1px;
+  height:17px;color:#b0d7bd;min-width:0;max-width:100%;overflow:hidden}
+.audioTrackList .audioWave i{flex:0 0 2px}
+.audioTrackList .audioWave i:nth-child(5n+2){height:13px}
+.audioTrackList .audioWave i:nth-child(5n+3){height:8px}
+.audioTrackList .audioWave i:nth-child(5n+4){height:16px}
+.audioTrackList .audioWave i:nth-child(5n+5){height:5px}
+.audioTrackPick{justify-content:flex-end;min-width:36px;color:#188767;font-size:11px}
+.audioFavorite{display:grid;place-items:center;width:44px;min-height:44px;border:0;
+  background:transparent;color:#8c9993;cursor:pointer}
+.audioFavorite[aria-pressed="true"]{color:#e47789}
+.audioFavorite:focus-visible{outline:3px solid #d7b269;outline-offset:-3px;border-radius:10px}
+.audioTrackRow[data-audio-id="harmony"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="prosperity"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
+.audioTrackRow[data-audio-id="energy"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/solar-surge.jpg')}
+.audioTrackRow[data-audio-id="love"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="meditation"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="rain"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/morning-dew.jpg')}
+.audioTrackRow[data-audio-id="ocean"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="breeze"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sea-breeze.jpg')}
+.audioTrackRow[data-audio-id="focus"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="grounding"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="breath"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/gentle-falls.jpg')}
+.audioTrackRow[data-audio-id="sunrise"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="pulse"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/river-power.jpg')}
+.audioSection .audioUpload{padding:6px;border:0;background:transparent}
+.audioSection .audioNowPlaying{background:#e7f4ea;margin-top:7px;border-radius:12px}
+.audioSection .audioAttachPanel{border-color:#b9dec7;background:#e9f6ed}
+.audioSection .musicTools{border:1px solid #e0eadf;border-radius:12px;
+  background:#f3f8f1;padding:7px}
+.audioSection .musicCard audio[data-video-audio-player]{background:#eff6ed;border-radius:14px}
+@media(max-width:375px){
+  .audioFilterRow{grid-template-columns:68px minmax(0,1fr);gap:5px}
+  .audioFilterRow>strong{font-size:11.5px}
+  .audioChipRail{gap:5px}
+  .audioChipRail button{padding:8px 10px;font-size:12px}
+  .audioTrackSelect{grid-template-columns:48px minmax(0,1fr) auto;gap:6px;padding:5px 2px 5px 5px}
+  .audioTrackSelect[aria-pressed="true"]{padding:5px 2px 5px 5px}
+  .audioTrackList .audioTileGlyph{width:48px;height:48px}
+  .audioTrackList .audioTileText strong{font-size:13.2px}
+  .audioTrackList .audioTileText small{font-size:11px}
+  .audioTrackPick{min-width:26px;font-size:10px}
+}
+@media(min-width:760px){
+  .audioFilterRow{grid-template-columns:104px minmax(0,1fr)}
+  .audioTrackList{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+/* Approved Holistic House mobile Video Studio, 30 Oct 2026.
+   Replace a long six-panel entrance with clear topics → truthful tier →
+   real native-video preview → cover/style → content → local export.
+   All existing detailed controls remain under the single legacy disclosure. */
+.quickBuilder{gap:12px;padding:0 0 12px}
+.quickHeader{position:relative;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,.8fr);
+  align-items:stretch;gap:0;min-height:215px;margin:0;padding:17px 16px;
+  border:1px solid #dceadd;border-radius:22px;
+  background:linear-gradient(105deg,#edf6ed 0%,#f6f7e9 57%,#dceadc 100%);
+  overflow:hidden;box-shadow:0 6px 19px #315c4020}
+.quickHeaderText{position:relative;z-index:2;min-width:0;align-self:start}
+.quickHeaderText h2{max-width:15ch;font:850 clamp(25px,3.8vw,35px)/1.08 Arial,Helvetica,sans-serif;
+  letter-spacing:-.04em;color:#123d32}
+.quickHeaderText p{max-width:34ch;margin:9px 0 0;font:500 clamp(13px,1.55vw,16px)/1.4 Arial,Helvetica,sans-serif;
+  color:#526b60}
+.quickHeaderText small{display:block;max-width:43ch;margin-top:9px;color:#65796e;
+  font:500 11.5px/1.35 Arial,Helvetica,sans-serif}
+.quickHeaderArt{position:relative;align-self:stretch;min-width:0;margin:-17px -16px -17px 0;
+  background:linear-gradient(130deg,#e6efe7a3,#c0decb55),
+  url('/videos/holistic-house/film-collection-v2/mountain-air.jpg') center/cover no-repeat}
+.quickHeaderArt::before{content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,#eef6ed 0%,transparent 45%,#ffffff18)}
+.quickHeaderArt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:center 38%;opacity:.9}
+.quickHeader>button{position:absolute;z-index:3;top:12px;right:12px;min-height:42px;
+  max-width:44%;padding:8px 11px;border:1px solid #c5e5d0;border-radius:999px;
+  background:linear-gradient(100deg,#188b6c,#0b9d77);color:#fff;
+  font-size:12.5px;font-weight:800;box-shadow:0 2px 9px #104f3b24}
+.quickBenefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
+  padding:11px 7px;border:1px solid #e4e9df;border-radius:18px;
+  background:#fffdf7;color:#405d50}
+.quickBenefits span{display:flex;align-items:center;flex-direction:column;gap:6px;
+  min-width:0;padding:2px 6px;text-align:center;
+  font:600 12px/1.25 Arial,Helvetica,sans-serif}
+.quickBenefits span+span{border-left:1px solid #e7eae2}
+.quickBenefits svg{color:#168668;flex:none}
+.quickBuilder>.quickSection{padding:17px 14px 18px;border-radius:21px;gap:12px;
+  background:#fffdf8;border-color:#e6e9df;box-shadow:0 5px 16px #184b3510}
+.quickBuilder .quickSectionHeading h3{font-size:clamp(18px,2.2vw,22px);line-height:1.25;gap:8px}
+.quickBuilder .quickSectionHeading p{font-size:13px}
+.quickBuilder .quickSectionHeading a,.quickBuilder .quickSectionHeading .quickEdit{font-size:12px}
+.quickBuilder .quickThemeRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(130px,23%);
+  max-width:100%;gap:9px;padding:4px 2px 7px;overflow-x:auto;scrollbar-width:thin}
+.quickBuilder .quickThemeRail button{position:relative;display:flex;align-items:flex-start;
+  justify-content:flex-end;flex-direction:column;gap:8px;min-width:0;max-width:none;
+  min-height:157px;padding:12px;overflow:hidden;border:2px solid transparent;
+  border-radius:17px;background:#143e36;color:#fff;text-align:left;white-space:normal;
+  box-shadow:0 2px 5px #133c3324}
+.quickBuilder .quickThemeRail button::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,#061f2105 28%,#062923df 100%);z-index:0}
+.quickBuilder .quickThemeRail button>img{position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover}
+.quickBuilder .quickThemeRail button .quickThemeIcon{position:relative;z-index:1;display:grid;
+  place-items:center;width:43px;height:43px;border-radius:50%;
+  background:#fdfbf2e8;color:#0c7a5b;box-shadow:0 2px 7px #173e2f25}
+.quickBuilder .quickThemeRail button .quickThemeName{position:relative;z-index:1;display:block;
+  font:800 14px/1.17 Arial,Helvetica,sans-serif;color:#fff;text-shadow:0 1px 4px #0419147a}
+.quickBuilder .quickThemeRail button[aria-pressed="true"]{padding:10px;
+  border:3px solid #12a87d;box-shadow:0 0 0 2px #d5f2e0,0 5px 12px #23654d27;
+  background:#103c31;color:#fff}
+.quickBuilder .quickThemeRail button[aria-pressed="true"] svg{color:#0b845f}
+.quickTiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+  min-width:0}
+.quickTiers> :is(button,div){display:flex;flex-direction:column;align-items:flex-start;
+  gap:6px;min-width:0;min-height:196px;padding:12px 10px 8px;
+  border:1px solid #e6e9e1;border-radius:17px;background:linear-gradient(160deg,#fffefa,#f6f7f1);
+  color:#1f4338;text-align:left;overflow:hidden;box-shadow:0 2px 7px #244b370f}
+.quickTiers>button{border:2px solid #129a78;padding:11px 9px 7px;
+  background:linear-gradient(135deg,#e9f8ec,#fffefa)}
+.quickTiers svg{flex:none;color:#138465}
+.quickTiers>div:nth-child(2) svg{color:#aa7a24}
+.quickTiers>div:nth-child(3) svg{color:#ad7826}
+.quickTiers strong{font:850 16px/1.15 Arial,Helvetica,sans-serif;color:#1a4539}
+.quickTiers small{flex:1;min-height:31px;font:550 12px/1.22 Arial,Helvetica,sans-serif;color:#687b71}
+.quickTiers em{display:inline-flex;align-items:center;min-height:27px;max-width:100%;
+  padding:4px 8px;border-radius:10px;background:#e0f3e5;color:#137451;
+  font:800 11px/1.18 Arial,Helvetica,sans-serif;font-style:normal;overflow-wrap:anywhere}
+.quickTiers>div[aria-disabled="true"] em{background:#f5eae8;color:#a15353}
+.quickTiers img{display:block;flex:none;width:100%;height:68px;margin-top:3px;border-radius:9px;
+  object-fit:cover}
+.quickTierNote{padding:0 2px;color:#61766a;font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.quickVideoPreview{position:relative;display:block;aspect-ratio:16/9;width:100%;
+  min-height:170px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(145deg,#144a3b,#63866d);
+  border:1px solid #cfddd3;box-shadow:0 6px 15px #133c2b20}
+.quickVideoPreview :is(video,img){display:block;position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center}
+.quickVideoPreview::after{content:"";position:absolute;inset:50% 0 0;pointer-events:none;
+  background:linear-gradient(0deg,#0a2d25a3,transparent)}
+.quickPreviewTag,.quickPreviewMeta{position:absolute;z-index:2;display:inline-flex;
+  align-items:center;gap:5px;min-height:29px;padding:5px 9px;
+  border:1px solid #ffffff66;border-radius:999px;background:#14372abf;
+  color:#fff;font:750 11.5px/1.25 Arial,Helvetica,sans-serif}
+.quickPreviewTag{top:11px;left:11px;max-width:calc(100% - 24px)}
+.quickPreviewMeta{right:11px;bottom:11px}
+.quickPreviewPlay{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:66px;height:66px;border:3px solid #fff;
+  border-radius:50%;background:#fffef3ed;color:#076c55;
+  box-shadow:0 4px 23px #122d2778}
+.quickPreviewPlay:hover{background:#e2f6e8}
+.quickBuilder .quickImageRail{grid-auto-columns:minmax(108px,130px);gap:9px;padding:3px 2px 8px}
+.quickBuilder .quickImageRail button{aspect-ratio:1.45;border-radius:13px}
+.quickBuilder .quickImageUpload span{font-size:12.5px}
+.quickBuilder .quickStyles{grid-auto-columns:minmax(118px,145px);gap:9px}
+.quickBuilder .quickStyles button span{font-size:13px;font-weight:700}
+.quickPersonalActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quickPersonalActions button{display:flex;align-items:center;justify-content:center;gap:6px;
+  flex-direction:column;min-width:0;min-height:75px;padding:10px 7px;
+  border:1px solid #d9e6dc;border-radius:14px;background:linear-gradient(140deg,#fffdf9,#ecf7ed);
+  color:#226b54;font:750 13px/1.18 Arial,Helvetica,sans-serif;text-align:center}
+.quickPersonalActions button[aria-pressed="true"]{border-color:#0b9670;background:#dcf2e6}
+.quickPersonalActions svg{color:#138664;flex:none}
+.quickBuilder .quickWish{min-height:56px;background:#f8f8f3;border-color:#d7e3db}
+.quickBuilder .quickWish input{font-size:15px}
+.quickGenerate{position:relative;z-index:1;
+  min-height:62px;margin:0 2px;border:2px solid #d0eadb;border-radius:17px;
+  background:linear-gradient(100deg,#07916e,#09aa80);
+  color:#fff;font-size:20px;box-shadow:0 5px 17px #0c624d39}
+.quickGenerate:focus-visible,.quickPreviewPlay:focus-visible{outline:3px solid #deb65e;outline-offset:3px}
+.quickBuilder .quickPrivacy{font-size:12px}
+.quickLegacy>summary{font-size:14px;min-height:52px}
+.quickLegacy>.quickSection{margin:10px 10px 0}
+@media (max-width:759px){
+  .quickBuilder{gap:10px}
+  .quickHeader{min-height:225px;padding:15px 13px}
+  .quickHeaderText h2{font-size:clamp(23px,6.4vw,29px)}
+  .quickHeaderText p{font-size:13.5px}
+  .quickHeaderText small{font-size:11px}
+  .quickHeaderArt{margin:-15px -13px -15px 0}
+  .quickHeader>button{top:10px;right:8px;max-width:47%;padding:7px 9px;font-size:11px}
+  .quickBuilder>.quickSection{padding:15px 11px}
+  .quickBuilder .quickSectionHeading h3{font-size:18px}
+  .quickBuilder .quickSectionHeading a{max-width:110px;line-height:1.2}
+  .quickTiers strong{font-size:14px}
+  .quickTiers small{font-size:11.5px}
+  .quickTiers img{height:57px}
+  .quickGenerate{font-size:18px}
+}
+@media (max-width:360px){
+  .quickHeader{grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr);min-height:280px}
+  .quickHeaderText h2{font-size:23px}
+  .quickHeaderText p{font-size:13px}
+  .quickHeader>button{font-size:10.5px}
+  .quickBenefits{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}
+  .quickBenefits span:nth-child(3){border-left:0}
+  .quickBuilder .quickThemeRail{grid-auto-columns:135px}
+  .quickTiers{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:150px;
+    gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+    padding:3px 2px 8px}
+  .quickTiers> :is(button,div){scroll-snap-align:start}
+  .quickPersonalActions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quickPersonalActions button{min-height:54px;flex-direction:row;font-size:13px}
+}
+@media (min-width:760px){
+  .quickHeader{min-height:240px}
+  .quickHeaderArt{max-height:360px}
+  .quickBuilder .quickThemeRail{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-columns:unset;
+    overflow-x:visible}
+  .quickBuilder .quickThemeRail button{min-height:175px}
+  .quickBuilder .quickImageRail{grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-columns:unset;
+    overflow-x:visible}
+}
+@media (prefers-reduced-motion:reduce){
+  .quickBuilder *{scroll-behavior:auto!important;transition:none!important}
+}
+
+
+/* 30 October owner-approved compact format accordion. One real widescreen
+   video at left; only one card opens at once. Warm gold highlights the active
+   product without implying that paid production / credit spend is enabled. */
+.quickFormatGrid{display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+  align-items:start;gap:9px;min-width:0}
+.quickFormatDemo{position:relative;display:block;align-self:start;width:100%;
+  min-width:0;aspect-ratio:16/9;overflow:hidden;border-radius:13px;
+  background:linear-gradient(140deg,#18483c,#75a396)}
+.quickFormatDemo :is(video,img){position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:cover;object-position:center}
+.quickFormatDemo .quickPreviewPlay{position:absolute;left:50%;top:50%;
+  display:grid;place-items:center;width:48px;height:48px;min-width:44px;min-height:44px;
+  transform:translate(-50%,-50%);padding:6px;border:2px solid #fff;
+  border-radius:50%;background:#123c37b8;color:#fff;box-shadow:0 3px 9px #091e1c50}
+.quickFormatDemo .quickPreviewPlay svg{width:22px;height:22px}
+.quickFormatDemo .quickPreviewMeta{position:absolute;right:5px;bottom:5px;
+  min-height:0;padding:2px 6px;border:0;border-radius:8px;
+  font-size:10px;background:#122e2bc9;color:#fff}
+.quickFormatStack{display:flex;flex-direction:column;gap:6px;min-width:0}
+.quickFormatCard{display:block;min-width:0;padding:0;border:1px solid #e4e7df;
+  border-radius:13px;background:linear-gradient(140deg,#fffefa,#f8faf6);
+  box-shadow:0 2px 5px #173d2910;overflow:visible}
+.quickFormatCard[data-selected="true"]{border-color:#e9b653;
+  background:linear-gradient(130deg,#fffff9,#fffbef);
+  box-shadow:0 0 0 1px #f7d98b,0 0 15px #dba74153,0 3px 8px #674b241a}
+.quickFormatTitle{display:flex;align-items:center;gap:7px;width:100%;min-width:0;
+  min-height:44px;padding:6px 8px;border:0;border-radius:12px;
+  background:transparent;text-align:left;color:#173f35;cursor:pointer}
+.quickFormatTitle>svg:first-child{flex:none;width:18px;height:18px;color:#068968}
+.quickFormatTitleLabel{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.quickFormatTitleLabel strong{font:800 clamp(11px,1.45vw,14px)/1.16 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatTitleLabel small{font:550 clamp(10px,1.25vw,12px)/1.15 Arial,Helvetica,sans-serif;
+  color:#718276}
+.quickFormatFrom{flex:none;color:#79877d;font:700 clamp(9px,1.15vw,11px)/1.2 Arial,Helvetica,sans-serif;
+  white-space:nowrap}
+.quickFormatChevron{flex:none;width:15px;height:15px;color:#82988a;transition:transform .15s ease}
+.quickFormatCard[data-selected="true"] .quickFormatChevron{transform:rotate(180deg);color:#ae812c}
+.quickFormatTitle[aria-expanded="true"] .quickFormatTitleLabel strong{color:#174e3e}
+.quickFormatTitle:focus-visible,.quickFormatQuality button:focus-visible,
+.quickFormatDemo button:focus-visible{outline:3px solid #b88525;outline-offset:2px}
+.quickFormatDetails{display:flex;flex-direction:column;gap:7px;min-width:0;
+  padding:0 9px 9px}
+.quickFormatDetails[hidden]{display:none}
+.quickFormatBenefits{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;
+  list-style:none;min-height:0}
+.quickFormatBenefits li{position:relative;margin:0;padding-left:13px;
+  color:#617569;font:500 clamp(10px,1.15vw,11.5px)/1.24 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickFormatBenefits li::before{position:absolute;left:0;top:0;
+  content:"✓";font-weight:900;color:#078d69}
+.quickFormatControls{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:6px;min-width:0}
+.quickFormatQuality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;min-width:0}
+.quickFormatQuality button{display:grid;place-items:center;min-width:0;min-height:42px;
+  padding:3px 2px;border:1px solid #e2e9df;border-radius:8px;background:#f2f3ed;
+  color:#4d655b;font:700 clamp(9.5px,1.1vw,11px)/1.08 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;cursor:pointer}
+.quickFormatQuality button[aria-pressed="true"]{border-color:#079e77;
+  background:linear-gradient(120deg,#099673,#078967);color:#fff}
+.quickFormatQuality button:disabled{opacity:.48;cursor:not-allowed}
+.quickFormatPrice{display:flex;align-items:flex-start;justify-content:center;
+  flex-direction:column;min-width:48px;gap:2px;padding-left:7px;
+  border-left:1px solid #e7eadd}
+.quickFormatPrice strong{color:#087658;font:850 clamp(15px,1.9vw,20px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing:-.035em;white-space:nowrap}
+.quickFormatPrice small{color:#75877e;font:700 clamp(9px,1.1vw,11px)/1.15 Arial,Helvetica,sans-serif}
+.quickBuilder [data-video-quick-tier]{padding-top:12px;padding-bottom:11px;gap:9px}
+.quickBuilder [data-video-quick-tier] .quickTierNote{padding:0 2px;
+  font-size:11.5px;line-height:1.3;color:#647a70}
+@media(max-width:759px){
+  .quickFormatGrid{grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:7px}
+  .quickFormatCard{border-radius:11px}
+  .quickFormatTitle{gap:5px;min-height:44px;padding:5px 6px}
+  .quickFormatTitle>svg:first-child{width:16px;height:16px}
+  .quickFormatChevron{width:13px;height:13px}
+  .quickFormatDetails{padding:0 6px 7px;gap:5px}
+  .quickFormatBenefits{gap:2px}
+  .quickFormatBenefits li{padding-left:11px;font-size:10px;line-height:1.18}
+  .quickFormatControls{gap:4px}
+  .quickFormatQuality{gap:2px}
+  .quickFormatQuality button{min-height:40px;font-size:9.5px}
+  .quickFormatPrice{padding-left:5px;min-width:45px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(max-width:430px){
+  .quickBuilder [data-video-quick-tier]{padding-left:9px;padding-right:9px}
+  .quickFormatGrid{grid-template-columns:minmax(0,36fr) minmax(0,64fr);gap:6px}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitleLabel small{font-size:10px}
+  .quickFormatFrom{font-size:9px}
+  .quickFormatQuality button{min-height:40px;font-size:9px}
+  .quickFormatPrice strong{font-size:15px}
+  .quickFormatPrice small{font-size:9px}
+}
+@media(max-width:355px){
+  .quickFormatGrid{grid-template-columns:minmax(0,32fr) minmax(0,68fr);gap:5px}
+  .quickFormatTitle{gap:4px;padding:4px}
+  .quickFormatTitle>svg:first-child{width:14px;height:14px}
+  .quickFormatDetails{padding:0 4px 5px}
+  .quickFormatBenefits li{font-size:9.7px}
+  .quickFormatPrice{min-width:43px;padding-left:4px}
+  .quickFormatPrice strong{font-size:14px}
+  .quickFormatQuality button{min-height:40px;padding:2px 0;font-size:8.8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickFormatChevron{transition:none}
+}
+
+/* Approved visual's compact sticky price-and-create rail. No credits are
+   claimed or charged; actual cost comes only from the draft local selection. */
+.quickOrderBar{position:sticky;z-index:22;bottom:calc(76px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);align-items:stretch;
+  gap:8px;min-width:0;margin:2px 0;padding:0 2px}
+.quickOrderSummary{display:flex;flex-direction:column;justify-content:center;gap:2px;
+  min-width:0;min-height:63px;padding:8px 12px;border:1px solid #def0e5;
+  border-radius:16px;background:linear-gradient(120deg,#e9f6ed,#f7fbf5);
+  color:#214a3d;box-shadow:0 3px 12px #1b543010}
+.quickOrderSummary small{display:block;min-width:0;color:#69867a;
+  font:550 clamp(10px,1.25vw,12px)/1.22 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere}
+.quickOrderSummary strong{color:#0c7355;font:850 clamp(17px,2.25vw,24px)/1.12 Arial,Helvetica,sans-serif}
+.quickOrderBar .quickGenerate{position:relative;bottom:auto;display:flex;align-items:center;
+  justify-content:center;gap:8px;width:100%;min-width:0;min-height:63px;
+  margin:0;padding:9px 10px;font-size:clamp(13px,2vw,17px)}
+.quickOrderBar .quickGenerate:disabled{opacity:.7;cursor:not-allowed}
+@media(max-width:369px){
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+  .quickOrderSummary{padding:7px 8px}
+  .quickOrderBar .quickGenerate{padding:8px 5px;font-size:12.5px}
+}
+
+
+/* Optional post-render human handoff. The local video and Save actions stay primary. */
+.postVideoSupport{display:grid;gap:8px;min-width:0;margin:16px 0 0;padding:12px;
+  border:1px solid #e5d4ae;border-radius:15px;
+  background:linear-gradient(135deg,#fffcf4,#f5fbf4);color:#24493c}
+.postVideoSupport h4{margin:0;font:800 16px/1.25 Arial,Helvetica,sans-serif;color:#244a3d}
+.postVideoSupport .postVideoSupportLead{margin:0;color:#5b7266;font:500 12.5px/1.4 Arial,Helvetica,sans-serif}
+.postVideoSupportGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.postVideoSupportItem{display:flex;gap:9px;min-width:0;padding:10px;border:1px solid #dce9dd;
+  border-radius:12px;background:#fffdfa}
+.postVideoSupportIcon{display:grid;flex:none;place-items:center;width:31px;height:31px;
+  border-radius:10px;background:#eaf4e8;color:#138366}
+.postVideoSupportBody{display:grid;align-content:start;gap:5px;min-width:0;flex:1}
+.postVideoSupportBody strong{color:#214c3e;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.postVideoSupport .postVideoSupportBody p{margin:0;color:#607269;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.postVideoSupportBody a{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
+  width:fit-content;max-width:100%;min-height:44px;padding:8px 11px;margin-top:2px;
+  border:1px solid #b7d9c7;border-radius:10px;background:#edf7ee;color:#126747;
+  font:800 12px/1.2 Arial,Helvetica,sans-serif;text-decoration:none;overflow-wrap:anywhere}
+.postVideoSupportBody a:hover{border-color:#119c77;background:#e5f4e9}
+.postVideoSupportBody a:focus-visible{outline:3px solid #c09b52;outline-offset:2px}
+.postVideoSupportBody a svg{flex:none}
+.postVideoSupport .postVideoSupportPrivacy{margin:0;color:#698074;font:500 11.5px/1.4 Arial,Helvetica,sans-serif}
+@media(max-width:759px){
+  .postVideoSupport{gap:7px;padding:10px}
+  .postVideoSupportGrid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .postVideoSupportItem{padding:9px}
+  .postVideoSupportBody a{width:100%;justify-content:center}
+}
+@media(max-width:355px){
+  .postVideoSupport h4{font-size:15px}
+  .postVideoSupportItem{gap:7px;padding:8px}
+  .postVideoSupportIcon{width:29px;height:29px}
+}
+
+/* Owner's 30 Oct audio-only iPhone reference: dense pastel filter rows,
+   one first-party soundtrack picker/player/microphone, no second mini-editor.
+   Scoped overrides leave the actual MediaRecorder and consent flow intact. */
+.audioSection{padding:9px 8px 12px;border-radius:20px;background:#fffcf7}
+.audioSection .blockHeading{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,38%);
+  align-items:center;gap:9px;min-height:94px;padding:12px;border-radius:17px;
+  background:radial-gradient(ellipse at 100% 80%,#dfead1 0,transparent 54%),
+    linear-gradient(110deg,#f1f6ec,#f9f9ef);border:1px solid #e1e8d9}
+.audioHeroCopy{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.audioSection .audioHeroCopy h3{font-size:clamp(19px,5vw,27px);line-height:1.12;letter-spacing:-.035em}
+.audioSection .audioHeroCopy h3 svg{width:26px;height:26px;flex:none}
+.audioSection .audioHeroCopy p{color:#64796c;font-size:clamp(11px,2.9vw,13px);line-height:1.3}
+.audioSection .audioSmartBar{display:flex;flex-direction:column;justify-content:center;
+  align-items:stretch;gap:5px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.audioSection .audioContextText{display:flex;justify-content:center;gap:4px;min-width:0;
+  font-size:10px;line-height:1.15;text-align:center;color:#698273}
+.audioSection .audioContextText strong{font-size:10px;color:#246a4e}
+.audioSection .audioSmartBar button{display:flex;align-items:center;justify-content:center;gap:5px;
+  width:100%;max-width:none;min-height:44px;padding:7px 8px;border:1px solid #4c9779;
+  border-radius:13px;background:linear-gradient(110deg,#357d63,#74a18a);color:white;
+  font-size:clamp(10.5px,2.7vw,12px);line-height:1.15;font-weight:800;white-space:normal;
+  box-shadow:0 3px 9px #315e4430}
+.audioSection .audioSmartBar button[aria-pressed="true"]{background:#14765b}
+.audioSection .audioSmartBar button svg{flex:none}
+.audioSection .musicCard{padding:5px 1px 7px;border:0;background:transparent}
+.audioSection .audioChipFilters{margin-bottom:6px}
+.audioSection .audioFilterRow{grid-template-columns:90px minmax(0,1fr);gap:5px;
+  min-height:48px;border-bottom:1px solid #e9ede5}
+.audioSection .audioFilterRow>strong{display:flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:750;color:#38574b}
+.audioSection .audioFilterRow>strong svg{flex:none;color:#8b978b}
+.audioSection .audioChipRail{gap:5px;padding:2px 1px}
+.audioSection .audioChipRail button{min-height:42px;padding:7px 10px;
+  border-radius:999px;font:650 11.5px/1.1 Arial,Helvetica,sans-serif}
+.audioSection .audioChipRail button[aria-pressed="true"]{background:#117958;color:#fff;
+  border-color:#117958;font-weight:800}
+.audioSection .audioVoiceOption{margin:5px 0 8px;padding:5px 8px;gap:7px;
+  border-radius:12px;background:#f5f8f1}
+.audioSection .audioVoiceOption span strong{font-size:11.5px}
+.audioSection .audioVoiceOption span small{font-size:10.5px;line-height:1.2}
+.audioSection .audioSearchRow{grid-template-columns:minmax(0,1fr) minmax(102px,.51fr);
+  gap:6px;margin-bottom:5px}
+.audioSection .audioSearchInput,.audioSection .audioSort{min-height:44px;border-radius:12px;background:#fffdf9}
+.audioSection .audioSearchInput input{font-size:12.5px}
+.audioSection .audioCatalogHeading{padding:2px 2px 6px}
+.audioSection .audioCatalogHeading strong{font-size:12px}
+.audioSection .audioTrackList{display:flex;flex-direction:column;gap:6px}
+.audioSection .audioTrackRow{position:relative;grid-template-columns:minmax(0,1fr) 44px;
+  align-items:center;min-height:74px;border:1px solid #e7ece4;border-radius:14px;
+  background:#fffdfa;box-shadow:0 2px 8px #284a3111}
+.audioSection .audioTrackSelect{display:grid;grid-template-columns:54px minmax(0,1fr) auto;
+  gap:7px;align-items:center;min-height:73px;padding:6px 2px 6px 7px;
+  border:0;background:transparent;box-shadow:none}
+.audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 7px;
+  border:0;background:linear-gradient(100deg,#e9f5ec,#fffefa);
+  box-shadow:inset 3px 0 0 #148365}
+.audioSection .audioTrackList .audioTileGlyph{width:54px;height:54px;border-radius:10px}
+.audioSection .audioTrackList .audioTileText{display:flex;flex-direction:column;gap:3px;
+  justify-content:center;min-width:0}
+.audioSection .audioTrackList .audioTileText strong{font-size:13.5px;line-height:1.14;color:#1a382e}
+.audioSection .audioTrackList .audioTileText small{font-size:11px;line-height:1.15}
+.audioRowMeta{display:flex;align-items:center;gap:7px;min-width:0}
+.audioRowMeta em{display:inline-block;max-width:100%;padding:2px 6px;
+  border-radius:999px;background:#e4f1e7;color:#476857;
+  font:600 9.5px/1.1 Arial,Helvetica,sans-serif;font-style:normal;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.audioSection .audioWave{justify-content:flex-start;height:13px;flex:1;max-width:110px}
+.audioSection .audioWave i{flex-basis:2px}
+.audioSection .audioTrackPick{padding:0 4px 0 0;min-width:0;font-size:10px}
+.audioTrackPlay{position:absolute;z-index:2;top:50%;left:12px;transform:translateY(-50%);
+  display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffffc5;
+  border-radius:50%;background:#e5f3e3e8;color:#237252;box-shadow:0 2px 7px #23544132;
+  cursor:pointer}
+.audioTrackPlay[aria-pressed="true"]{background:#287959;color:#fff}
+.audioTrackPlay:focus-visible{outline:3px solid #d7a951;outline-offset:2px}
+.audioSection .audioFavorite{width:44px;min-height:54px}
+.audioSection .audioMore{min-height:44px;margin-top:5px}
+.audioSection .audioUpload{display:flex;gap:7px;padding:5px 0;margin:4px 0}
+.audioSection .audioUploadLabel,.audioSection .audioMicButton{flex:1 1 120px;
+  min-height:46px;border-radius:12px;padding:8px;font-size:12px}
+.audioSection .audioUpload>small{font-size:10.5px;padding:0 4px}
+.audioPlayerDock{display:grid;gap:6px;min-width:0;margin:8px 0;padding:9px;
+  border:1px solid #c9dfc8;border-radius:16px;
+  background:linear-gradient(110deg,#e5f0e1,#f1f7ec 70%,#e6eedc)}
+.audioSection .audioPlayerDock .audioNowPlaying{display:flex;align-items:center;gap:7px;
+  margin:0;padding:2px;background:transparent;border-radius:0}
+.audioSection .audioPlayerDock .audioNowPlaying span{font-size:10.5px;color:#667c6d}
+.audioSection .audioPlayerDock .audioNowPlaying strong{font-size:13px;color:#21523d}
+.audioSection .audioPlayerDock .audioNowPlaying button{min-height:35px;padding:6px 8px}
+.audioSection .audioPlayerDock .musicTools{display:grid;
+  grid-template-columns:minmax(115px,.7fr) minmax(0,1.3fr);align-items:center;
+  gap:8px;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+.audioSection .audioPlayerDock .musicTools label{font-size:11.5px}
+.audioSection .audioPlayerDock audio[data-video-audio-player]{display:block;width:100%;
+  max-width:100%;min-width:0;height:43px;min-height:43px;border-radius:10px;background:#e5f0e0}
+.audioSection .audioAttachPanel{margin-top:6px;padding:7px;border-radius:13px}
+.audioSection .audioAttachHelp{font-size:10.5px;line-height:1.3}
+.quickAudioSummary.quickSection{gap:6px;padding:10px 11px}
+.quickAudioSummary .quickSectionHeading p{font-size:11px}
+.quickAudioCompact{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;min-width:0}
+.quickAudioCurrent{display:flex;align-items:center;gap:6px;min-width:0;color:#2d6a4f}
+.quickAudioCurrent>svg{flex:none}
+.quickAudioCurrent>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.quickAudioCurrent small{font-size:10px;line-height:1.15;color:#75887b}
+.quickAudioCurrent strong{font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quickAudioAction,.quickAudioSilent{display:inline-flex;align-items:center;justify-content:center;
+  gap:4px;min-height:44px;padding:6px 9px;border:1px solid #bbd9c9;
+  border-radius:10px;background:#eff7ed;color:#1a7657;font:750 11px/1.1 Arial,Helvetica,sans-serif}
+.quickAudioAction{background:#e0f4e8;border-color:#a4d7bf}
+.quickAudioAction:disabled{opacity:.6}
+@media(max-width:375px){
+ .audioSection{padding:8px 6px}
+ .audioSection .blockHeading{grid-template-columns:minmax(0,1fr) 112px;gap:5px;padding:9px}
+ .audioSection .audioHeroCopy h3{font-size:19px}
+ .audioSection .audioHeroCopy h3 svg{width:21px;height:21px}
+ .audioSection .audioHeroCopy p{font-size:11px}
+ .audioSection .audioFilterRow{grid-template-columns:72px minmax(0,1fr);gap:4px}
+ .audioSection .audioFilterRow>strong{gap:4px;font-size:10.5px}
+ .audioSection .audioFilterRow>strong svg{width:14px;height:14px}
+ .audioSection .audioChipRail button{padding:7px 9px;font-size:11px}
+ .audioSection .audioTrackSelect{grid-template-columns:46px minmax(0,1fr) auto;gap:6px;padding:6px 2px 6px 6px}
+ .audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 6px}
+ .audioSection .audioTrackList .audioTileGlyph{width:46px;height:46px}
+ .audioTrackPlay{left:7px;width:44px;height:44px}
+ .audioSection .audioTrackList .audioTileText strong{font-size:13px}
+ .audioSection .audioTrackPick{font-size:9.5px}
+ .audioSection .audioPlayerDock .musicTools{grid-template-columns:minmax(105px,.7fr) minmax(0,1.3fr)}
+ .quickAudioAction,.quickAudioSilent{padding:6px 7px;font-size:10.5px}
+}
+@media(min-width:760px){
+ .audioSection .audioTrackList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .audioSection .blockHeading{grid-template-columns:minmax(0,1fr) 180px}
+}
+
+
+/* 30 Oct owner correction: the ONE original Canvas/MediaRecorder screen now
+   lives before the format accordion. The genuine H.264 sample stays miniature,
+   while Popular Templates and 24 compiled films form ONE shared library. */
+.quickBuilder>.previewStage{
+  display:grid;gap:10px;padding:14px;border:1px solid #badbca;border-radius:23px;
+  background:linear-gradient(150deg,#e9f6ed,#fffef9 68%);
+  box-shadow:0 9px 25px rgba(21,85,62,.08)
+}
+.previewStageHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.previewStageHeading>div{flex:1;min-width:0}
+.previewStageHeading small{display:block;color:#248568;font:800 10px/1.35 Arial,Helvetica,sans-serif;letter-spacing:.07em}
+.previewStageHeading h3{margin:4px 0 5px!important;color:#174c3f;font:800 clamp(19px,3.2vw,25px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.previewStageHeading p{max-width:600px;color:#61786c;font:500 12px/1.43 Arial,Helvetica,sans-serif}
+.previewStageBadge{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  min-height:32px;max-width:36%;padding:7px 9px;border-radius:999px;
+  border:1px solid #bedac9;background:#f5fbf4;color:#147454;
+  text-align:center;font:800 10.5px/1.2 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.studio .previewStage .hero{width:100%;min-width:0;min-height:0;max-height:460px;
+  aspect-ratio:16/9;margin:0;border-radius:19px;overflow:hidden}
+.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+  min-height:0;max-height:460px;aspect-ratio:16/9}
+.previewMiniSource{display:grid;grid-template-columns:minmax(0,1fr) minmax(122px,39%);
+  align-items:center;gap:12px;min-width:0;padding:9px 11px;
+  border:1px solid #d8e8dc;border-radius:14px;background:#fffdf7}
+.previewMiniSource>div:first-child{display:grid;gap:4px;min-width:0}
+.previewMiniSource strong{color:#225441;font:800 13px/1.25 Arial,Helvetica,sans-serif}
+.previewMiniSource small{color:#6b7c72;font:700 11px/1.3 Arial,Helvetica,sans-serif}
+.previewMiniSource .quickFormatDemo{max-width:228px;justify-self:end;box-shadow:0 2px 8px rgba(6,56,40,.13)}
+.previewMiniSource .quickFormatDemo .quickPreviewPlay{width:44px;height:44px}
+.quickBuilder>.sceneLibrary{display:grid;gap:10px;padding:13px 13px 14px;border-radius:22px;
+  background:#fffdf7;border:1px solid #e8e9de;box-shadow:0 6px 20px #193e2d0e}
+.sceneLibraryHeading{display:grid;gap:4px}
+.sceneLibraryHeading h3{display:flex;align-items:center;gap:8px;
+  color:#174b3f;font:800 clamp(18px,3vw,23px)/1.2 Arial,Helvetica,sans-serif}
+.sceneLibraryHeading h3 svg{flex:none;color:#158667}
+.sceneLibraryHeading p{color:#688075;font:500 12px/1.38 Arial,Helvetica,sans-serif}
+.sceneLibrary .templates{margin:2px 0 0;padding:3px 0 11px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary [data-free-film-compilation-catalog]{margin:0;padding:3px 0 10px;border:0;
+  border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
+.sceneLibrary .templates .sectionHeading{margin-bottom:5px}
+.sceneLibrary .templates .sectionHeading h3,
+.sceneLibrary [data-free-film-compilation-catalog] h3{color:#205642;font-size:15px}
+.sceneLibrary .templateRail{display:grid;grid-auto-flow:column;
+  grid-auto-columns:clamp(104px,27%,153px);gap:8px;overflow-x:auto;
+  overscroll-behavior-x:contain;padding:3px 3px 10px;scroll-snap-type:x proximity}
+.sceneLibrary .templateTile{min-width:0;scroll-snap-align:start}
+.sceneLibrary .filmBadge{font-size:9px}
+.previewCoverOptions{min-width:0;border:1px solid #cfe4d6;border-radius:14px;background:#f5faf4}
+.previewCoverOptions>summary{display:flex;align-items:center;gap:9px;min-height:48px;
+  padding:10px 12px;color:#23694f;font:800 13px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.previewCoverOptions>summary::-webkit-details-marker{display:none}
+.previewCoverOptions>summary svg:last-child{margin-left:auto;transition:transform .2s ease}
+.previewCoverOptions[open]>summary svg:last-child{transform:rotate(180deg)}
+.previewCoverOptions>.quickSection{margin:0;padding:10px;border:0;border-top:1px solid #deede2;
+  border-radius:0 0 14px 14px;background:#fffef9;box-shadow:none}
+.previewCoverOptions .quickImageRail{max-width:100%;overflow-x:auto}
+.previewCoverOptions :is(summary,button,input):focus-visible{outline:3px solid #d9b56d;outline-offset:2px}
+/* The format list has its full width now; no squeezed 36/64 split. */
+.quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+.quickFormatStack{gap:9px}
+.quickFormatTitleLabel strong{font-size:clamp(13px,2.25vw,16px)}
+.quickFormatTitleLabel small{font-size:12px}
+.quickFormatBenefits li{font-size:12px;line-height:1.35}
+.quickFormatQuality button{min-height:44px;font-size:11px}
+@media(max-width:759px){
+  .quickBuilder>.previewStage,.quickBuilder>.sceneLibrary{padding:12px 10px}
+  .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:0;max-height:none;aspect-ratio:16/9}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr);gap:9px}
+  .quickFormatTitle{gap:8px;min-height:49px;padding:9px 11px}
+  .quickFormatTitleLabel strong{font-size:14px}
+  .quickFormatTitleLabel small{font-size:11px}
+  .quickFormatBenefits li{font-size:11.5px;line-height:1.3}
+  .quickFormatQuality button{font-size:11px;min-height:44px}
+  .quickFormatPrice strong{font-size:18px}
+  /* The original sticky rail covered video cards and CTA on iPhone. */
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;margin:6px 0 2px}
+}
+@media(max-width:355px){
+  .previewStageHeading h3{font-size:18px}
+  .previewStageBadge{max-width:32%;font-size:9px;padding:6px}
+  .previewMiniSource{gap:7px;padding:7px;grid-template-columns:minmax(0,1fr) minmax(118px,45%)}
+  .previewMiniSource strong{font-size:12px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatTitleLabel strong{font-size:13px}
+  .quickFormatQuality button{font-size:10px}
+  .quickFormatPrice strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .previewCoverOptions>summary svg:last-child{transition:none}
+}
+
+/* Integrate #2694 compact iPhone override after #2695 big stage and live #2696 audio. */
+
+/* Owner mobile screenshot reconciliation · 2026-10-30.
+   This is the real canonical editor, not a second mobile-only renderer.
+   The bottom order stays IN FLOW on phones so it never obscures scenes,
+   while the existing desktop product format/checkout gates remain intact. */
+.quickBrandBar{display:none}
+.quickHeaderPlay{position:absolute;z-index:2;left:50%;top:55%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;width:48px;height:48px;border:2px solid #fff;
+  border-radius:50%;background:#183e34ba;color:#fff;box-shadow:0 3px 13px #162f2770}
+.quickHeaderPlay:disabled{opacity:.65}
+.quickHeaderPlay:focus-visible{outline:3px solid #e7bb60;outline-offset:3px}
+.quickDisclosure{margin:-4px 3px 2px!important;color:#60786c;
+  font:500 11px/1.35 Arial,Helvetica,sans-serif}
+.quickExtras{min-width:0;border:1px solid #e3eade;border-radius:14px;
+  background:#fffdf8;overflow:hidden}
+.quickExtras>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:45px;padding:9px 13px;color:#173f35;
+  font:800 15px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.quickExtras>summary::-webkit-details-marker{display:none}
+.quickExtras>summary svg{flex:none;color:#148064;transition:transform .15s ease}
+.quickExtras[open]>summary svg{transform:rotate(180deg)}
+.quickExtraActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  padding:0 9px 10px}
+.quickExtraActions button{display:flex;align-items:center;justify-content:center;gap:5px;
+  min-width:0;min-height:44px;padding:5px 7px;border:1px solid #d8e6da;
+  border-radius:10px;background:#f2f8f0;color:#17664f;
+  font:700 11px/1.18 Arial,Helvetica,sans-serif}
+.quickExtraActions button svg{flex:none}
+@media(max-width:759px){
+  .studio{padding-top:0}
+  .quickBuilder{gap:7px;padding-bottom:5px}
+  .quickBrandBar{display:flex;align-items:center;gap:9px;min-height:45px;
+    padding:3px 5px 6px;color:#123e34}
+  .quickBrandBack{display:grid;place-items:center;flex:none;width:42px;height:42px;
+    border-radius:13px;color:#185d4c;text-decoration:none}
+  .quickBrandBack svg{transform:rotate(180deg)}
+  .quickBrandBar>strong{display:flex;align-items:center;gap:6px;min-width:0;
+    flex:1;white-space:nowrap;font:850 clamp(15px,4.4vw,19px)/1 Arial,Helvetica,sans-serif;
+    letter-spacing:-.025em}
+  .quickBrandBar>strong svg{flex:none;color:#167e65}
+  .quickBrandFree{display:flex;align-items:center;gap:3px;flex:none;
+    padding:5px 7px;border-radius:999px;background:#e2f5e8;color:#117053;
+    font:800 10.5px/1.1 Arial,Helvetica,sans-serif}
+  .quickHeader{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);
+    min-height:174px;margin:0;padding:12px 12px 10px;border-radius:18px}
+  .quickHeaderText h2{max-width:16ch;font-size:clamp(22px,5.65vw,27px);
+    line-height:1.06;letter-spacing:-.035em}
+  .quickHeaderText p{max-width:29ch;margin-top:6px;font-size:clamp(11px,2.85vw,12.5px);
+    line-height:1.25}
+  .quickHeaderArt{margin:-12px -12px -10px -3px}
+  .quickHeaderArt img{object-position:50% 40%}
+  .quickHeader>button{top:8px;right:6px;max-width:70%;
+    min-height:35px;padding:5px 8px;font-size:10px}
+  .quickHeaderPlay{width:48px;height:48px;top:58%}
+  .quickBenefits{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+    padding:8px 4px;border-radius:15px}
+  .quickBenefits span{justify-content:center;gap:4px;min-height:50px;padding:0 3px;
+    font-size:clamp(9.5px,2.65vw,11px);line-height:1.16}
+  .quickBenefits span:nth-child(3){border-left:1px solid #e7eae2}
+  .quickBenefits svg{width:20px;height:20px}
+  .quickDisclosure{font-size:10px;line-height:1.3;margin:-3px 3px 0!important}
+  .quickBuilder>.quickSection{padding:10px 9px 11px;gap:8px;border-radius:16px}
+  .quickBuilder .quickSectionHeading{gap:7px}
+  .quickBuilder .quickSectionHeading h3{font-size:clamp(16px,4.2vw,19px);
+    line-height:1.18;gap:6px}
+  .quickBuilder .quickSectionHeading h3 svg{width:18px;height:18px}
+  .quickBuilder .quickSectionHeading p{font-size:11px;line-height:1.24;margin-top:2px}
+  .quickBuilder .quickSectionHeading a,.quickBuilder .quickSectionHeading .quickEdit{
+    min-height:44px;max-width:100px;padding:4px;font-size:11px;line-height:1.18}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(66px,19%,85px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity;scroll-padding-inline:2px}
+  .quickBuilder .quickThemeRail button{min-height:112px;padding:7px;
+    gap:4px;border-radius:13px;scroll-snap-align:start}
+  .quickBuilder .quickThemeRail button .quickThemeIcon{width:32px;height:32px}
+  .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:19px;height:19px}
+  .quickBuilder .quickThemeRail button .quickThemeName{font-size:clamp(9.7px,2.6vw,11px);
+    line-height:1.12;overflow-wrap:break-word}
+  .quickBuilder .quickThemeRail button[aria-pressed="true"]{padding:6px}
+  .quickBuilder [data-video-quick-tier]{padding:10px 8px 9px;gap:7px}
+  .quickFormatGrid{grid-template-columns:minmax(0,40fr) minmax(0,60fr);gap:7px}
+  .quickFormatDetails{padding:0 7px 7px}
+  .quickFormatBenefits li{font-size:10px;line-height:1.2}
+  .quickFormatTitleLabel strong{font-size:11px}
+  .quickFormatTitle{padding:5px 6px}
+  .quickFormatQuality button{min-height:44px}
+  .quickBuilder [data-video-quick-tier] .quickTierNote{font-size:10px;line-height:1.24}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,19%,87px);
+    gap:6px;padding:2px 2px 5px;scroll-snap-type:x proximity}
+  .quickBuilder .quickStyles button{gap:3px;scroll-snap-align:start}
+  .quickBuilder .quickStyles button img{aspect-ratio:1.1;border-radius:10px}
+  .quickBuilder .quickStyles button span{min-height:16px;
+    font-size:clamp(10px,2.7vw,11.5px);line-height:1.16;font-weight:750}
+  .quickBuilder .quickHint{font-size:10px;line-height:1.26}
+  .quickBuilder .quickWish{min-height:47px}
+  .quickBuilder .quickWish input{min-height:44px;padding:8px 0;font-size:13px}
+  .quickPersonalActions{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .quickPersonalActions button{flex-direction:column;min-height:48px;padding:5px 3px;
+    gap:4px;border-radius:11px;font-size:clamp(9.5px,2.6vw,11px);line-height:1.12}
+  .quickPersonalActions svg{width:18px;height:18px}
+  .quickOrderBar{position:static;bottom:auto;z-index:auto;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.13fr);
+    gap:6px;margin:2px 0 0;padding:0}
+  .quickOrderSummary{min-height:58px;padding:7px 9px;border-radius:13px}
+  .quickOrderSummary strong{font-size:clamp(16px,4.4vw,20px)}
+  .quickOrderSummary small{font-size:10px}
+  .quickOrderBar .quickGenerate{min-height:58px;margin:0;padding:7px;
+    border-radius:13px;font-size:clamp(12px,3.4vw,15px);line-height:1.15}
+  .quickOrderBar .quickGenerate svg{width:17px;height:17px;flex:none}
+  .quickExtras>summary{font-size:14px}
+  .quickExtraActions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quickExtraActions button:last-child{grid-column:1/-1}
+  .quickTherapy{min-height:44px}
+}
+@media(max-width:379px){
+  .quickHeader{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);min-height:181px}
+  .quickHeaderText h2{font-size:clamp(21px,6vw,23px)}
+  .quickHeaderText p{font-size:11px}
+  .quickBrandFree{font-size:10px}
+  .quickFormatGrid{grid-template-columns:minmax(0,1fr)}
+  .quickFormatDemo{max-height:180px}
+  .quickFormatTitleLabel strong{font-size:12px}
+  .quickFormatBenefits li{font-size:11px}
+  .quickFormatQuality button{font-size:10.5px}
+  .quickBuilder .quickThemeRail{grid-auto-columns:clamp(67px,24%,76px)}
+  .quickBuilder .quickStyles{grid-auto-columns:clamp(69px,24%,81px)}
+  .quickPersonalActions button{font-size:9.6px}
+}
+@media(max-width:340px){
+  .quickBrandBar>strong{font-size:15px}
+  .quickBrandFree svg{display:none}
+  .quickHeader{min-height:192px}
+  .quickHeader>button{max-width:70%;font-size:9.5px}
+  .quickOrderBar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+
+/* Video Studio-only iPhone promo treatment. Keep this in the dedicated
+   Mandala editor module so unrelated service/checkout/CRM pages and their
+   Public Services CI matrix are not affected by the editor's presentation. */
+@media(max-width:640px){
+  :global([data-mandala-meditation-page]):has(.studio) :global([data-video-diagnostic-banner]){display:none}
+}
+
+
+
+/* Owner-approved 30 Oct 2026 video-first mobile quick flow. Reuses ONE Canvas/MediaRecorder,
+   one existing HTMLVideoElement decoder and the same (private) sound attachments. */
+.quickVideoNav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:8px 0 0;min-width:0}
+.quickVideoNav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-width:0;min-height:54px;padding:6px 2px;border:1px solid #e4e7db;border-radius:12px;
+  background:linear-gradient(135deg,#fffdf8,#f8f6ef);color:#183c34;
+  font:750 11px/1.14 Arial,Helvetica,sans-serif;overflow-wrap:anywhere;text-align:center}
+.quickVideoNav button:first-child{border-color:#e8bd66;background:#fff8e6;color:#71501b}
+.quickVideoNav button svg{flex:none;color:#0d6d5b}
+.quickVideoNav button:focus-visible,.quickPhrasePersonal:focus-visible,
+.quickPhraseRail button:focus-visible,.quickMusicRail button:focus-visible{
+  outline:3px solid #daa755;outline-offset:2px}
+.quickPhraseSection,.quickMusicSection{display:grid;gap:9px;min-width:0;padding:12px;
+  border:1px solid #e7e8dc;border-radius:17px;background:linear-gradient(135deg,#fffdf9,#faf9f3);
+  box-shadow:0 3px 13px rgba(32,61,46,.05);scroll-margin-top:76px}
+.quickPhraseSection .quickSectionHeading,.quickMusicSection .quickSectionHeading{display:flex;
+  align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.quickPhraseSection .quickSectionHeading h3,.quickMusicSection .quickSectionHeading h3{
+  display:flex;align-items:center;gap:6px;min-width:0;color:#133f36;
+  font:800 clamp(15px,3.7vw,20px)/1.2 Georgia,serif}
+.quickPhraseSection .quickSectionHeading h3 svg,.quickMusicSection .quickSectionHeading h3 svg{
+  color:#087a67;flex:none}
+.quickPhrasePersonal{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;
+  padding:6px 8px;border:1px solid #cde6da;border-radius:12px;background:#eef7f1;
+  color:#166b55;flex:none;max-width:45%;font:750 clamp(10px,2.8vw,12px)/1.2 Arial,sans-serif;text-align:center}
+.quickPhrasePersonal svg{flex:none}
+.quickPhraseRail,.quickMusicRail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(130px,25%);
+  gap:8px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+  padding:2px 2px 8px;scrollbar-width:thin}
+.quickPhraseRail button{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-height:94px;padding:9px 11px;border:1px solid #e2e4dc;border-radius:14px;
+  background:#fffefb;color:#223e43;text-align:center;font:650 13px/1.3 Arial,sans-serif;
+  scroll-snap-align:start;overflow-wrap:anywhere}
+.quickPhraseRail button>span{font:900 26px/0.8 Georgia,serif;color:#d49f3e}
+.quickPhraseRail button[aria-pressed="true"]{border-color:#dea844;
+  background:linear-gradient(145deg,#fffaf0,#fffef9);box-shadow:0 2px 9px #e1b56942}
+.quickMusicRail{grid-auto-columns:minmax(143px,27%)}
+.quickMusicRail button{display:grid;grid-template-columns:20px 1fr 16px;grid-template-rows:auto auto;
+  align-items:center;gap:4px 5px;min-height:72px;padding:8px;border:1px solid #e0e7dc;
+  border-radius:13px;background:#fffefa;color:#255446;text-align:left;
+  scroll-snap-align:start;min-width:0}
+.quickMusicRail button>svg:first-child{grid-row:1/3;grid-column:1;color:#078b6d}
+.quickMusicRail button strong{grid-row:1;grid-column:2;min-width:0;font-size:12px}
+.quickMusicRail button small{grid-row:2;grid-column:2/4;min-width:0;font-size:10px;color:#688074;line-height:1.3}
+.quickMusicRail button>svg:last-child:not(:first-child){grid-row:1;grid-column:3;color:#087c61}
+.quickMusicRail button[aria-pressed="true"]{border-color:#039172;background:#e7f6eb}
+.studio .therapyBanner{border-color:#dfb65f;box-shadow:0 6px 17px #ad8b4630;
+  background:linear-gradient(115deg,#ffe8a4,#e7b65d 60%,#cb9030);color:#263f38}
+.studio .therapyBanner .therapyBannerCopy small{color:#68501e}
+.studio .therapyBanner .therapyBannerCopy h3{color:#223e37;font-family:Georgia,serif}
+.studio .therapyBanner .therapyBannerCopy p{color:#5b583e}
+.studio .therapyBanner button{background:linear-gradient(110deg,#086d5c,#079471);color:white;
+  box-shadow:0 4px 12px #0a6b5638}
+.studio .therapyBanner button:hover{filter:brightness(1.06)}
+@media(max-width:760px){
+  /* PreviewMiniSource houses the REAL media decoder; keep it mounted and playing
+     for Canvas paint/MediaRecorder, but do not show a second mini-player. */
+  .studio .previewStage{position:relative}
+  .studio .previewStageHeading{display:none}
+  .studio .previewMiniSource{position:absolute!important;width:1px!important;height:1px!important;
+    overflow:hidden!important;opacity:0!important;pointer-events:none!important;padding:0!important;
+    margin:0!important;inset:auto auto 0 0}
+  .studio .previewStage{padding:4px!important;gap:0}
+  .studio .previewStage .hero{margin:0!important;border-radius:16px}
+  .studio .quickBuilder>.quickSection[data-video-quick-section="1"]{margin:0;padding:10px 7px}
+  .studio .quickBuilder .quickThemeRail{grid-auto-columns:clamp(76px,25%,110px)}
+  .studio .quickBuilder .quickThemeRail button{min-height:106px}
+  .studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px 0}
+  .studio .quickVideoNav button{min-height:57px;padding:5px 1px;font-size:clamp(9px,2.4vw,11px)}
+  .studio .quickVideoNav button svg{width:17px;height:17px}
+  .studio .quickPhraseRail{grid-auto-columns:minmax(124px,40%)}
+  .studio .quickMusicRail{grid-auto-columns:minmax(145px,45%)}
+  .studio .therapyBanner{flex-direction:column;align-items:stretch;gap:8px;
+    margin:8px 0;padding:11px 12px;border-radius:16px}
+  .studio .therapyBanner .therapyBannerCopy h3{font-size:clamp(15px,4vw,19px)}
+  .studio .therapyBanner button{max-width:none;width:100%;min-height:44px}
+  .studio [data-video-quick-section="4"]{scroll-margin-top:72px}
+}
+@media(max-width:355px){
+  .studio .quickVideoNav{gap:3px}
+  .studio .quickVideoNav button{font-size:9px}
+  .studio .quickPhraseSection,.studio .quickMusicSection{padding:9px 7px}
+  .studio .quickPhrasePersonal{max-width:40%;padding:5px 4px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .quickVideoNav button,.quickPhraseRail button,.quickMusicRail button{scroll-behavior:auto;transition:none}
+}
+
+
+/* A user-invoked published Video Therapy introduction overlays the ONE
+   existing composition stage; no second preview/player is mounted at rest. */
+.studio .therapyIntroLaunch{
+  position:absolute;z-index:6;top:10px;left:10px;
+  display:flex;align-items:center;gap:8px;max-width:min(77%,300px);
+  min-height:44px;padding:8px 11px;border:1px solid #f3f2dfb3;border-radius:12px;
+  background:#155943ed;box-shadow:0 4px 14px #092c2366;color:#fff;
+  font:750 11.5px/1.25 Arial,Helvetica,sans-serif;text-align:left;cursor:pointer;
+}
+.studio .therapyIntroLaunch>svg{flex:none}
+.studio .therapyIntroLaunch span strong,.studio .therapyIntroLaunch span small{display:block}
+.studio .therapyIntroLaunch span small{margin-top:3px;color:#e0f3eb;font:600 10px/1.2 Arial,Helvetica,sans-serif}
+.studio .therapyIntroDirect{
+  position:absolute;z-index:6;right:8px;bottom:8px;display:flex;align-items:center;
+  justify-content:center;min-height:44px;padding:7px 11px;
+  border:1px solid #f3f2dfb3;border-radius:11px;background:#155943ed;
+  color:#fff;font:750 11px/1.15 Arial,Helvetica,sans-serif;
+  text-decoration:none;box-shadow:0 3px 12px #092c2366
+}
+.studio .therapyIntroDirect:focus-visible{outline:3px solid #efd28c;outline-offset:2px}
+.studio .therapyIntroLaunch:disabled{opacity:.6;cursor:not-allowed}
+.studio .therapyIntroOverlay{position:absolute;inset:0;z-index:7;background:#071f19}
+.studio .therapyIntroFrame{display:block;width:100%;height:100%;border:0}
+.studio .therapyIntroClose,.studio .therapyIntroExternal{
+  position:absolute;z-index:2;top:7px;display:flex;align-items:center;justify-content:center;
+  min-height:44px;padding:7px 9px;border:1px solid #fff9;
+  border-radius:10px;background:#0c3d32e8;color:#fff;
+  font:750 10.5px/1.15 Arial,Helvetica,sans-serif;text-decoration:none;
+  box-shadow:0 2px 10px #001c1466;
+}
+.studio .therapyIntroClose{right:7px;max-width:62%;cursor:pointer}
+.studio .therapyIntroExternal{left:7px}
+.studio .therapyIntroLaunch:focus-visible,.studio .therapyIntroClose:focus-visible,
+.studio .therapyIntroExternal:focus-visible{outline:3px solid #efd28c;outline-offset:2px}
+@media(max-width:355px){
+  .studio .therapyIntroLaunch{top:7px;left:7px;gap:5px;max-width:75%;padding:6px 8px;font-size:10px}
+  .studio .therapyIntroClose{font-size:9.5px;max-width:61%}
+}
+
+
+
+/* Six Video Studio workspaces share the original state, MP4 preview and recorder. */
+.quickVideoNav button[aria-pressed="true"]{border-color:#e7b959;background:#fff6df;color:#654518;box-shadow:inset 0 0 0 1px #e8bd66}
+.quickVideoNav button:first-child:not([aria-pressed="true"]){border-color:#e4e7db;background:linear-gradient(135deg,#fffdf8,#f8f6ef);color:#183c34;box-shadow:none}
+.workspaceHeading{display:grid;gap:6px;margin:10px 0 0;padding:16px;border:1px solid #d0e3d8;border-radius:18px;background:linear-gradient(135deg,#f4f8f1,#fffdf8);color:#164337}
+.workspaceHeading small{font:750 10px/1.2 Arial,sans-serif;letter-spacing:.14em;color:#47826e}
+.workspaceHeading h3{margin:0;font:800 clamp(20px,4.9vw,28px)/1.2 Georgia,serif;color:#173d33}
+.workspaceHeading p{margin:0;font:500 14px/1.45 Arial,sans-serif;color:#4e675a}
+.studio[data-active-workspace] .previewMiniSource{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0;pointer-events:none}
+.studio[data-active-workspace] .quickBuilder [data-workspace-section]{display:none}
+.studio[data-active-workspace="video"] .quickBuilder [data-workspace-section="video"],
+.studio[data-active-workspace="phrases"] .quickBuilder [data-workspace-section="phrases"],
+.studio[data-active-workspace="effects"] .quickBuilder [data-workspace-section="effects"],
+.studio[data-active-workspace="practices"] .quickBuilder [data-workspace-section="practices"],
+.studio[data-active-workspace="pro"] .quickBuilder [data-workspace-section="pro"],
+.studio[data-active-workspace="editor"] .quickBuilder [data-workspace-section="editor"]{display:grid}
+.studio[data-active-workspace] [data-video-quick-legacy],
+.studio[data-active-workspace] [data-video-catalog],
+.studio[data-active-workspace] [data-video-daily-picks],
+.studio[data-active-workspace] [data-video-support-layout],
+.studio[data-active-workspace] [data-video-quick-start]{display:none}
+.workspaceCourses{margin:0;min-width:0}
+.workspaceCourseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.workspaceCourseGrid>a,.workspaceCourseGrid>button{display:grid;justify-items:start;align-content:start;gap:8px;min-width:0;min-height:140px;border:1px solid #d6e6d8;border-radius:16px;background:#fffefa;color:#174a3d;padding:13px;text-align:left;text-decoration:none;font:500 13px/1.3 Arial,sans-serif}
+.workspaceCourseGrid strong{font-size:15px;line-height:1.2}.workspaceCourseGrid span{color:#61746b}
+.workspaceCourseGrid a:hover,.workspaceCourseGrid button:hover{border-color:#78ba9b}
+.workspaceCourseGrid a:focus-visible,.workspaceCourseGrid button:focus-visible{outline:3px solid #daa755;outline-offset:2px}
+@media(max-width:640px){
+ .studio .quickVideoNav{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .studio .quickVideoNav button{min-height:58px;font-size:clamp(11px,3vw,13px);padding:6px 4px;line-height:1.17}
+ .studio .quickVideoNav button svg{width:20px;height:20px}
+ .workspaceCourseGrid{grid-template-columns:1fr}
+ .workspaceCourseGrid>a,.workspaceCourseGrid>button{min-height:82px;grid-template-columns:24px 1fr 20px;gap:4px 8px;align-items:center}
+ .workspaceCourseGrid strong{grid-column:2}.workspaceCourseGrid span{grid-column:2;grid-row:2}.workspaceCourseGrid svg:last-child{grid-column:3;grid-row:1 / span 2}
+}
+
+/* The quick music rail is now the unique three-layer Include/Listen control.
+   Keep it visible above the full first-party sound library in Audio workspace. */
+
+/* Keep horizontally scrolling scene rails inside the mobile editor grid. */
+.quickBuilder,.sceneLibrary,.sceneLibrary [data-free-film-compilation-catalog]{grid-template-columns:minmax(0,1fr)}
+/* 39 first-party soundtracks; preserve the canonical one-player audio rail. */
+.audioTrackRow[data-audio-kind="melody"] .audioTileGlyph{background:#f2e5de;color:#885442}
+.audioTrackRow[data-audio-id="soft-piano"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="kalimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="harp"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="flute"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="celesta"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="strings"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="marimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/golden-harvest.jpg')}
+.audioTrackRow[data-audio-id="lullaby"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="handpan"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="forest"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/fern-awakening.jpg')}
+.audioTrackRow[data-audio-id="stream"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="waterfall"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/gentle-falls.jpg')}
+.audioTrackRow[data-audio-id="fireplace"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/desert-light.jpg')}
+.audioTrackRow[data-audio-id="night"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="birdsong"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/morning-dew.jpg')}
+.audioTrackRow[data-audio-id="singing-bowl"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="wind-chimes"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="crystal"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="cosmos"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="soft-beat"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/solar-surge.jpg')}
+.audioTrackRow[data-audio-id="earth-drum"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/river-power.jpg')}
+.audioTrackRow[data-audio-id="warm-morning"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="wings-of-light"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="heart-harmony"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="quiet-stars"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="bright-path"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
+
+/* Keep the goal editor and its optional fields at stable native iPhone scale. */
+@media(max-width:600px){
+ .studio{max-width:100%;min-width:0}
+ .studio :is(input[type="text"],input[type="search"],textarea,select){font-size:16px!important;min-width:0;max-width:100%}
+}
+
+/* Compact iPhone music + voice picker: one short horizontal rail instead of
+   a second tall audio catalogue. Native audio player/recorder stay in the
+   existing expanded section. Two independent hit targets per soundtrack. */
+.studio .quickMusicSection{
+  gap:4px;min-width:0;padding:7px 9px 8px;border-radius:15px;
+  scroll-margin-top:74px;
+}
+.quickMusicSection .quickSectionHeading h3{
+  font:800 clamp(15px,4vw,19px)/1.2 Georgia,serif;
+}
+.quickMusicSettings{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:36px;padding:5px 9px;border:1px solid #cce3d7;
+  border-radius:11px;background:#edf7f0;color:#13654d;
+  font:750 12px/1.1 Arial,Helvetica,sans-serif;white-space:nowrap;
+}
+.studio .quickMusicRail{
+  display:grid;grid-auto-flow:column;grid-auto-columns:minmax(142px,46%);
+  gap:6px;padding:1px 1px 4px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+  scrollbar-width:thin;max-width:100%;
+}
+.quickMusicItem{
+  display:grid;grid-template-columns:56px minmax(0,1fr) 44px;gap:5px;
+  align-items:center;min-width:0;min-height:44px;
+  padding:1px 2px 1px 4px;border:1px solid #dce7dc;border-radius:12px;
+  background:#fffefa;scroll-snap-align:start;
+}
+.quickMusicPoster{display:block;width:56px;height:62px;object-fit:cover;border-radius:7px}
+.quickMusicItem[data-video-melody-active="true"]{
+  background:#e9f7ee;border-color:#22a681;
+}
+.studio .quickMusicRail .quickMusicCheck{
+  display:flex;align-items:center;justify-content:flex-start;gap:6px;
+  position:static;width:auto;height:auto;min-width:0;min-height:44px;padding:3px 2px;
+  border:0;border-radius:8px;background:transparent;color:#234b3d;
+  font:750 12px/1.13 Arial,Helvetica,sans-serif;text-align:left;
+  overflow-wrap:anywhere;
+}
+.quickMusicCheckbox{
+  display:grid;place-items:center;flex:none;width:20px;height:20px;
+  border:2px solid #699e88;border-radius:6px;background:#fff;color:#fff;
+}
+.quickMusicCheck[aria-checked="true"] .quickMusicCheckbox{
+  border-color:#078c6b;background:#078c6b;
+}
+.studio .quickMusicRail .quickMusicPlay{
+  display:grid;place-items:center;min-width:44px;min-height:44px;
+  padding:5px;border:0;border-radius:10px;background:#e2f5e9;color:#087158;
+}
+.studio .quickMusicRail .quickMusicPlay[aria-pressed="true"]{
+  background:#147c60;color:#fff;
+}
+.quickMusicCheck:focus-visible,.quickMusicPlay:focus-visible,.quickMusicSettings:focus-visible{
+  outline:3px solid #d9ab4e;outline-offset:1px;
+}
+.quickSoundBadge{
+  position:absolute;z-index:2;left:11px;bottom:10px;max-width:65%;
+  display:flex;align-items:center;gap:4px;min-height:25px;padding:3px 7px;
+  border:1px solid #ffffff65;border-radius:9px;background:#123a2fdc;
+  color:#fff;font:650 10px/1.22 Arial,Helvetica,sans-serif;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.quickSoundBadge svg{flex:none}
+@media(max-width:380px){
+  .studio .quickMusicSection{padding:6px 6px 7px}
+  .studio .quickMusicRail{grid-auto-columns:minmax(137px,48%);gap:4px}
+  .studio .quickMusicRail .quickMusicCheck{font-size:11px}
+  .quickMusicSettings{font-size:11px}
+  .quickSoundBadge{font-size:9px}
+}
+
+/* Unambiguous compact description: inclusion is different from audition. */
+.quickMusicHint{padding:2px 4px 4px;color:#356555;font:650 11px/1.4 Arial,Helvetica,sans-serif}
+.quickMusicHint strong{color:#086e51}
+/* 2026-11-01 owner screenshot: ONE real Canvas studio, mockup-aligned iPhone
+   hierarchy. Advanced features remain in their existing live workspaces below. */
+.quickBrandIdentity{display:grid;min-width:0;gap:2px;flex:1}
+.quickBrandIdentity strong{font:800 20px/1.05 Georgia,serif;letter-spacing:-.015em;color:#233c2c}
+.quickBrandIdentity small{display:block;color:#797b69;font:500 10px/1.25 Arial,sans-serif}
+.quickBrandProfile{display:grid;place-items:center;width:37px;height:37px;flex:none;border-radius:50%;
+  background:#ebefe2;color:#60745b;border:1px solid #e2e8d9;text-decoration:none}
+.quickGoalHost{min-width:0;max-width:100%}
+.quickThemeAdvanced{min-width:0;margin:0;border:0}
+.quickThemeAdvanced>summary{display:inline-flex;align-items:center;min-height:29px;padding:0 3px;
+  cursor:pointer;color:#487360;font:650 11px/1.25 Arial,sans-serif}
+.quickThemeAdvanced[open] .quickThemeRail{margin-top:4px}
+.heroEditorial{position:absolute;z-index:4;left:14px;bottom:12px;max-width:52%;
+  pointer-events:none;color:#fff;transition:opacity .2s ease}
+.heroEditorial h2{margin:0 0 4px!important;font:500 clamp(21px,4.7vw,29px)/1.04 Georgia,serif!important;
+  letter-spacing:-.035em;color:#fff!important;text-shadow:0 1px 5px #102a2960}
+.heroEditorial p{margin:0!important;color:#fdfcf5!important;
+  font:500 clamp(10px,2.7vw,12px)/1.26 Arial,sans-serif!important;
+  text-shadow:0 1px 5px #0a1e1d70}
+.heroEditorial[aria-hidden="true"]{opacity:0}
+.heroDuration{position:absolute;z-index:4;right:10px;top:10px;padding:5px 9px;
+  background:#1b2728d1;color:#fff;border-radius:8px;font:700 11px/1 Arial,sans-serif}
+.quickMusicPlay{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:#fff;color:#162d29;box-shadow:0 2px 7px #061a1b49}
+.quickMusicText{display:flex;flex-direction:column;min-width:0;gap:2px}
+.quickMusicCheck{position:absolute;top:4px;right:4px;color:white;background:#087d58;border-radius:50%;padding:2px;width:19px;height:19px}
+.resultMeta{display:grid;gap:5px;min-width:0;align-self:end}
+.resultMeta strong{font:800 13px/1.3 Arial,sans-serif;color:#244537;overflow-wrap:anywhere}
+.resultMeta small{font:600 10px/1.25 Arial,sans-serif;color:#738078}
+.resultEmpty{display:grid;gap:6px;min-width:0;margin:0;padding:12px 13px;border:1px solid #e0e6dc;
+  border-radius:15px;background:#fffefa;color:#345f4c}
+.resultEmptyHead{display:flex;align-items:center;gap:7px}
+.resultEmptyHead svg{color:#18684d}
+.resultEmptyHead h3{font:800 15px/1.2 Arial,sans-serif;color:#214d3d}
+.resultEmpty p{font:500 11.5px/1.4 Arial,sans-serif;color:#687c70}
+@media(max-width:759px){
+ .studio .quickBuilder{display:flex;flex-direction:column;gap:8px;padding:0 0 10px;min-width:0}
+ .studio .quickBuilder>*{min-width:0;max-width:100%;order:20}
+ .studio .quickBuilder>.quickBrandBar{order:0;display:flex;gap:8px;min-height:58px;
+   padding:4px 6px 3px;background:transparent}
+ .studio .quickBuilder .quickBrandBack{width:44px;height:44px;border:0;background:transparent}
+ .studio .quickBuilder .quickBrandBack svg{width:32px;height:32px;transform:none;color:#9ea983}
+ .studio .quickBuilder>.previewStage{order:1;display:grid;gap:0;margin:0;padding:0!important;
+   background:transparent;border:0;border-radius:0;box-shadow:none}
+ .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+   width:100%;min-height:0!important;max-height:none!important;aspect-ratio:2.75/1!important;
+   border-radius:15px!important;border:1px solid #d6decf;overflow:hidden}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroPromo{opacity:1}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroCanvas{opacity:.22}
+ .studio .previewStage .hero[data-preview-playing="true"] .heroCanvas{opacity:1}
+ .studio .previewStage .heroShade{background:linear-gradient(90deg,#13241f8a,transparent 72%),
+   linear-gradient(0deg,#16221f60,transparent 55%);pointer-events:none}
+ .studio .previewStage .heroPlay{z-index:6;left:50%;top:50%;width:54px;height:54px;
+   border-radius:50%;border:1px solid #ffffff85;background:#14251ed2;color:#fff;box-shadow:0 3px 14px #091b1a60}
+ .studio .quickVideoNav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;
+   margin:6px 0 0;padding:0;min-width:0}
+ .studio .quickVideoNav button{display:flex;min-width:0;min-height:53px;gap:3px;
+   padding:5px 1px;border:1px solid #e0e5d9;border-radius:10px;background:#fffefa;
+   color:#46564e;font:650 clamp(10px,2.75vw,12px)/1.05 Arial,sans-serif}
+ .studio .quickVideoNav button svg{width:17px;height:17px}
+ .studio .quickVideoNav button[aria-pressed="true"],
+ .studio .quickVideoNav button:first-child:not([aria-pressed="false"]){
+   color:#155e47;border-color:#176f54;background:#edf7ee;box-shadow:inset 0 0 0 1px #a9d9c0}
+ .studio .quickBuilder>.quickVideoNav{order:2}
+ .studio .quickBuilder>.workspaceHeading{order:3;margin:0}
+ .studio .quickBuilder>[data-video-quick-section="1"]{order:3;display:grid;gap:7px;
+   margin:0;padding:11px 10px 12px!important;border:1px solid #e3e6db;border-radius:15px;
+   background:linear-gradient(150deg,#fffef9,#faf8ef);box-shadow:0 4px 16px #304a3411}
+ .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+   font:800 clamp(15px,4.0vw,18px)/1.2 Arial,sans-serif}
+ .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading a{display:none}
+ .studio .quickThemeAdvanced .quickThemeRail{display:grid;grid-auto-flow:column;grid-auto-columns:105px;
+   overflow-x:auto;max-width:100%}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{order:4;display:grid;gap:5px;
+   margin:0;padding:10px 9px;border:1px solid #e3e7dd;border-radius:15px;
+   background:#fffefa;box-shadow:0 4px 14px #2f463018}
+ .studio .quickMusicSection .quickSectionHeading h3{font:800 16px/1.2 Arial,sans-serif}
+ .studio .quickMusicSection .quickSectionHeading button{font:700 11px/1.15 Arial,sans-serif;
+   min-height:38px;padding:4px}
+ /* Compact iPhone audio: one horizontal rail, not three tall cards. */
+ .studio .quickMusicRail{display:grid;grid-auto-flow:column;
+   grid-auto-columns:minmax(188px,49%);gap:6px;padding:1px 1px 5px;
+   min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;
+   scroll-snap-type:x proximity;overscroll-behavior-x:contain;scrollbar-width:thin}
+ .studio .quickMusicRail .quickMusicItem{position:relative;display:grid;
+   grid-template-columns:56px 44px minmax(0,1fr);grid-template-rows:62px;
+   min-width:0;min-height:70px;gap:5px;padding:4px;
+   border-radius:10px;border:1px solid #d9e7dc;background:#fffefa;scroll-snap-align:start}
+ .studio .quickMusicRail .quickMusicItem[data-video-melody-active="true"]{
+   border-color:#1e835e;background:#eef9ef;box-shadow:inset 0 0 0 1px #a6cdb5}
+ .studio .quickMusicRail .quickMusicPoster{display:block;grid-column:1;grid-row:1;
+   width:56px;height:62px;object-fit:cover;border-radius:7px}
+ .studio .quickMusicRail .quickMusicCheck{grid-column:3;grid-row:1;
+   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+   min-width:0;min-height:44px;padding:3px 0;gap:3px;border:0;background:transparent;
+   font:700 11px/1.18 Arial,sans-serif;color:#254d3b;text-align:left;overflow-wrap:normal}
+ .studio .quickMusicRail .quickMusicCheck span:last-child{display:-webkit-box;
+   -webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;
+   max-width:100%;max-height:41px}
+ .studio .quickMusicRail .quickMusicPlay{position:static;grid-column:2;grid-row:1;align-self:center;
+   display:grid;place-items:center;min-width:44px;min-height:44px;width:44px;height:44px;
+   padding:5px;transform:none;border:1px solid #e9f3e7;border-radius:50%;
+   background:#fffef8;color:#087158;box-shadow:0 2px 8px #09261f45}
+ .studio .quickMusicHint{font:600 10px/1.25 Arial,sans-serif;color:#547366}
+ .studio .quickBuilder>[data-auto-video-director]{order:5;min-width:0}
+ .studio .quickBuilder>[data-video-result],
+ .studio .quickBuilder>[data-video-result-empty]{order:6;margin:0}
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{display:grid}
+ .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-video-quick-section="1"],
+ .studio[data-active-workspace]:not([data-active-workspace="video"]) .quickBuilder>[data-auto-video-director]{display:none}
+ .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result],
+ .studio[data-active-workspace]:not([data-active-workspace="video"]):not([data-active-workspace="editor"]) .quickBuilder>[data-video-result-empty]{display:none}
+ .studio .quickBuilder>.quickHeader,.studio .quickBuilder>.quickBenefits,
+ .studio .quickBuilder>.quickDisclosure{display:none}
+ .studio .quickBuilder>.result{display:grid;grid-template-columns:minmax(0,112px) minmax(0,1fr);
+   gap:6px 9px;align-items:start;padding:10px;border-radius:14px}
+ .studio .quickBuilder>.result>h3{grid-column:1/-1;font-size:15px;margin:0}
+ .studio .quickBuilder>.result>video{grid-column:1;grid-row:2 / span 2;
+   width:100%;height:auto;max-height:115px;margin:0;aspect-ratio:16/9;object-fit:cover;border-radius:9px}
+ .studio .quickBuilder>.result>.resultMeta{grid-column:2;grid-row:2}
+ .studio .quickBuilder>.result>.resultActions{grid-column:1/-1;grid-row:4;
+   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:2px 0 0}
+ .studio .resultActions>*{min-width:0;min-height:40px;flex:auto;padding:7px 4px;font-size:10px;border-radius:8px}
+ .studio .resultActions [data-video-save-direct]{display:none}
+ .studio .resultActions [data-video-share]{background:#e8f3ec;color:#1b674f}
+ .studio .quickBuilder>.result>aside{grid-column:1/-1}
+ .studio .quickBuilder>.result>[role="alert"],
+ .studio .quickBuilder>.result>[role="status"]{grid-column:1/-1}
+}
+@media(max-width:355px){
+ .studio .heroEditorial h2{font-size:19px!important}
+ .studio .heroEditorial p{font-size:9.5px!important}
+ .studio .quickVideoNav button{font-size:10px;min-height:52px}
+ .studio .quickMusicRail{grid-auto-columns:188px}
+ .studio .quickMusicRail .quickMusicCheck{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.heroEditorial{transition:none}}
+
+/* Desktop retains the full previous topic rail; collapsed themes only serve
+   the 320–759px owner iPhone journey. */
+@media(min-width:760px){
+ .quickThemeAdvanced>summary{display:none}
+ .quickThemeAdvanced .quickThemeRail{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+   grid-auto-flow:row;grid-auto-columns:auto;overflow-x:visible}
+}
+
+/* 1 Nov 2026 mock-fidelity correction: preserve the first-party photograph
+   beside (not underneath) the accessible Play/Pause. The dedicated 44px
+   control overlays an empty slot in the *same* selecting row. */
+.audioPlaySlot{display:block;min-width:44px;height:44px;pointer-events:none}
+.audioSection .audioTrackSelect{grid-template-columns:54px 44px minmax(0,1fr) auto;gap:7px}
+.audioSection .audioTrackPlay{left:68px;top:50%;width:44px;height:44px;
+  transform:translateY(-50%);border:1px solid #d5ebda;
+  background:linear-gradient(120deg,#def1e0,#d6ecd7);color:#286c4f}
+.audioSection .audioTrackPlay[aria-pressed="true"]{background:#247d5d;color:#fff}
+@media(max-width:375px){
+  .audioSection .audioTrackSelect{grid-template-columns:46px 44px minmax(0,1fr);
+    gap:6px;padding:6px 2px 6px 6px}
+  .audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 6px}
+  .audioSection .audioTrackPlay{left:59px}
+  .audioSection .audioTrackPick{display:none}
+}
+
+/* Video Studio 2.0: one verified MediaRecorder; final montage edits the shared film shots. */
+.editorTimeline{display:grid;gap:9px;padding:10px;border:1px solid #cfe1d5;
+ border-radius:14px;background:#fffdfa;min-width:0;color:#204b3b;font:600 12px/1.4 Arial,sans-serif}
+.editorTimelineBar{display:flex;gap:3px;min-height:40px;overflow:hidden;border-radius:9px}
+.editorTimelineBar>div{display:grid;place-items:center;min-width:0;
+ background:#d9ede0;color:#194d36;border:1px solid #bbd6c3;font-size:10px}
+.editorTimelineBar>div:nth-child(2n){background:#eff1dc}
+.editorTimelineBar>div:nth-child(3n){background:#e9e0f0}
+.editorTimelineRow{display:flex;justify-content:space-between;align-items:center;gap:8px;
+ min-width:0;padding:8px 0;border-top:1px solid #dbe5dc}
+.editorTimelineRow>span{min-width:0;flex:1;overflow-wrap:anywhere}
+.editorTimelineActions{display:flex;gap:3px;flex-wrap:wrap}
+.editorTimelineActions button,.editorActions button{min-height:44px;min-width:40px;
+ padding:6px 9px;border:1px solid #bddbc8;border-radius:10px;
+ background:#ecf7ef;color:#145a43;font:700 12px Arial,sans-serif}
+.editorTimelineActions button:disabled,.editorActions button:disabled{opacity:.45;cursor:not-allowed}
+.editorVolume{display:grid;gap:8px;font:650 13px/1.35 Arial,sans-serif;color:#234939}
+.editorVolume input{width:100%;accent-color:#167754;min-height:44px}
+.editorActions{display:flex;gap:10px;flex-wrap:wrap}
+.editorActions button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1}
+.studio[data-active-workspace="effects"] [data-video-effects-panel],
+.studio[data-active-workspace="editor"] [data-video-final-editor]{scroll-margin-top:75px}
+@media(max-width:430px){
+ .editorTimelineRow{flex-direction:column;align-items:stretch}
+ .editorTimelineActions button{flex:1}
+ .studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+ .studio .quickVideoNav button{font-size:clamp(8px,2.25vw,10px);min-height:49px;padding:4px 1px}
+}
+@media(prefers-reduced-motion:reduce){.editorTimelineBar>div{transition:none}}
+
+/* Dedicated informational video: no embedded YouTube chrome above the editor. */
+.studio .therapyIntroStandalone{display:grid;gap:9px;min-width:0;
+ padding:12px;border:1px solid #d7e7dc;border-radius:15px;background:#f9fbf5}
+.studio .therapyIntroStandalone .therapyIntroLaunch,
+.studio .therapyIntroStandalone .therapyIntroDirect{
+ position:static;inset:auto;width:fit-content;max-width:100%;box-shadow:none}
+.studio .therapyIntroStandalone .therapyIntroOverlay{
+ position:relative;inset:auto;width:100%;aspect-ratio:16/9;
+ overflow:hidden;border-radius:12px}
+.studio .therapyIntroStandalone .therapyIntroFrame{
+ display:block;width:100%;height:100%;border:0}
+.studio [data-video-first-video-advanced]{min-width:0;margin-top:8px}
+.studio [data-video-first-video-advanced]>summary{
+ display:flex;align-items:center;min-height:44px;padding:10px 12px;
+ font:750 13px/1.3 Arial,sans-serif;color:#19654f}
+@media (max-width:430px){
+ .studio .quickVideoNav button{hyphens:none;overflow-wrap:normal}
+}
+
+
+/* Unified Phrases tab, owner mock 01-Nov-2026. Reuses the canonical player,
+   audio-attachment state and sound previews; no second audio state machine. */
+.studio[data-active-workspace="phrases"] .hypnosisSection{display:grid;gap:12px;
+  margin:0;padding:0;border:0;box-shadow:none;background:transparent}
+.studio[data-active-workspace="phrases"] .hypnosisSection>.blockHeading{display:none}
+.studio[data-active-workspace="phrases"] .hypnoOptionalWish{margin:0;border-radius:14px;background:#fffefa}
+.phraseVoiceSection,.phraseMusicSection{display:grid;gap:12px;min-width:0;margin:0;
+  padding:17px 15px;border:1px solid #e8e7de;border-radius:21px;
+  background:linear-gradient(140deg,#fffefb,#fbfaf5);
+  box-shadow:0 5px 20px rgba(33,60,44,.06)}
+.phraseAudioHeading{display:flex;align-items:flex-start;gap:12px}
+.phraseAudioHeading>span{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+  border-radius:13px;background:linear-gradient(115deg,#fff0d9,#eaf7ef);color:#167864}
+.phraseAudioHeading>div{flex:1;min-width:0}
+.phraseAudioHeading h3{margin:0;color:#17324a;font:800 clamp(22px,5.5vw,27px)/1.16 Arial,Helvetica,sans-serif}
+.phraseAudioHeading p{margin:6px 0 0;color:#667b88;font:500 clamp(13px,3.5vw,15px)/1.4 Arial,Helvetica,sans-serif}
+.phraseVoiceNotice{margin:0;padding:12px 13px;border-radius:12px;background:#f3f8f3;
+  color:#47715f;font:500 clamp(13px,3.5vw,15px)/1.4 Arial,Helvetica,sans-serif}
+.phraseVoiceAction{display:flex;justify-content:center;align-items:center;gap:9px;width:100%;
+  min-height:53px;padding:10px 13px;border:1px solid #8fcab5;border-radius:13px;
+  background:linear-gradient(115deg,#eaf8ef,#fffaf1);color:#106e55;
+  font:800 clamp(14px,3.8vw,16px)/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.phraseVoiceAction>svg:last-child{margin-left:auto}
+.phraseVoiceAction:disabled{opacity:.55}
+.phraseMusicList{display:grid;gap:9px;min-width:0}
+.phraseMusicItem{display:flex;align-items:stretch;gap:8px;min-width:0;min-height:58px}
+.phraseMusicChoice{display:flex;align-items:center;gap:11px;flex:1;min-width:0;
+  min-height:58px;padding:9px 12px;border:1px solid #e1e5df;border-radius:13px;
+  background:#fff;color:#1e4053;font:700 clamp(15px,4vw,17px)/1.25 Arial,Helvetica,sans-serif;
+  text-align:left;cursor:pointer}
+.phraseMusicChoice>span:first-child{display:grid;place-items:center;flex:0 0 33px;width:33px;height:33px;
+  border-radius:10px;background:#eef7f1;color:#057e66}
+.phraseMusicChoice>span:last-child{min-width:0;flex:1}
+.phraseMusicChoice[aria-pressed="true"]{background:#eef9f2;border-color:#83c6ad;color:#08664e}
+.phraseMusicPlay{display:grid;place-items:center;flex:0 0 54px;min-width:54px;min-height:54px;
+  border:1px solid #c1ded0;border-radius:13px;background:#fffefa;color:#08795c;cursor:pointer}
+.phraseMusicPlay[aria-pressed="true"]{background:#e8f7f0}
+.phraseMusicStatus{margin:0;color:#39775f;font-size:13px;line-height:1.3}
+.phraseAudioSettings{min-width:0;margin:0;border:1px solid #dce7df;border-radius:16px;background:#fffdf9}
+.phraseAudioSettings>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:51px;padding:10px 13px;color:#276d5b;font:750 clamp(14px,3.8vw,16px)/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.phraseAudioSettings>summary::-webkit-details-marker{display:none}
+.phraseAudioSettings[open]>summary>svg{transform:rotate(180deg)}
+.phraseAudioSettings .audioSection{margin:6px 8px 10px;padding:10px;border-radius:13px;box-shadow:none}
+.studio :is(.phraseVoiceAction,.phraseMusicChoice,.phraseMusicPlay):focus-visible,
+.studio .phraseAudioSettings>summary:focus-visible{outline:3px solid #dbad58;outline-offset:2px}
+@media(max-width:370px){
+ .phraseVoiceSection,.phraseMusicSection{padding:14px 11px}
+ .phraseAudioHeading{gap:8px}
+ .phraseAudioHeading h3{font-size:21px}
+ .phraseMusicChoice{font-size:15px}
+}
+
+/* One owner-approved phrase editor: remove the redundant external frame. */
+.studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
