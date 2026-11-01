@@ -359,7 +359,7 @@ test('Holistic Support mock screenshots run after merge or on exact existing #24
   const core = read('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
-  const boundedBrowserGate="github.event_name != 'pull_request' || github.event.pull_request.number == 2483";
+  const boundedBrowserGate="${{ github.event_name != 'pull_request' || github.event.pull_request.number == 2483 }}";
   for (const name of [
     'Install Chromium and WebKit (post-merge visual audit)',
     'Check 320 / 390 / 430 in Chromium and WebKit'
