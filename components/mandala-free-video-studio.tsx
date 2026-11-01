@@ -2673,6 +2673,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     stopMovieSound();setPreviewPlaying(false);
   };
+  /** Auto Video Director chooses and attaches the first actual music file.
+   * Respect explicit manual music/silence and the visitor's local audio.
+   * Preview still requires Play; selection never autoplays a device speaker.
+   */
+  const selectScenarioMusic=(presetId:string)=>{
+    if(!audioAuto||uploadedAudio||micRecording)return;
+    const track=scenarioAudioTracks(presetId)[0];
+    if(!track)return;
+    const id=track.id as PresetId;
+    setMusic(id);
+    setSamplePreviewId(null);
+    setAttachedAudio({kind:"preset",id});
+    setMusicWarning("");
+  };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
     edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]},
     outputAspect:Aspect=aspect)=>{
@@ -2682,6 +2696,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
       setActiveFreeFilmPreset(preset.id);
+      selectScenarioMusic(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
       if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
       else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
@@ -4170,6 +4185,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 const nextDuration=duration;
                 const plan=compileFreeFilmPreset(preset,locale,nextDuration,aspect);
                 setActiveFreeFilmPreset(preset.id);
+                selectScenarioMusic(preset.id);
                 setTheme(preset.theme);setVideoCategory(preset.theme);
                 setDuration(nextDuration);setCinematicPlan(plan);
                 setPreviewPlaying(false);setSuggestion("");
