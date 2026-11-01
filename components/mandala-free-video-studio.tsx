@@ -2747,6 +2747,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         return {...plan,durationSeconds:seconds,
           shots:plan.shots.map((shot,index)=>({...shot,...timing[index]}))} as CinematicStoryboard;
       }
+      if(plan?.version==="hh-cinematic-storyboard-v1" && [4,6].includes(plan.shots.length)){
+        // A narrated edit changes the cut times, NOT the approved shots,
+        // captions, story overlays or scene order selected by the visitor.
+        const count=plan.shots.length, unit=Math.floor(seconds/count), extra=seconds%count;
+        if(unit<1)return null;
+        let cursor=0;
+        return {...plan,durationSeconds:seconds,
+          shots:plan.shots.map((shot,index)=>{
+            const durationSeconds=unit+(index<extra?1:0);
+            const result={...shot,startSeconds:cursor,durationSeconds};
+            cursor+=durationSeconds;
+            return result;
+          })} as CinematicStoryboard;
+      }
       return null;
     });
   };
