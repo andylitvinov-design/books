@@ -5,7 +5,8 @@
  * --apply updates the EXISTING preset catalog only when every scenario can
  * receive four dedicated same-theme clips; never ships partial storyboards.
  */
-import {readFileSync,writeFileSync,existsSync} from "node:fs";
+import {readFileSync,writeFileSync,existsSync,statSync} from "node:fs";
+import {createHash} from "node:crypto";
 import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {auditScenarioMedia,planDedicatedScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
@@ -17,12 +18,26 @@ const presetData=load(presetsPath);
 const sceneData=load("data/video-catalog/scene-taxonomy.json");
 const args=new Set(process.argv.slice(2));
 const audit=auditScenarioMedia(presetData.presets,sceneData.scenes);
+const physicalHashes=new Map();
 for(const scene of sceneData.scenes){
   if(scene?.status!=="approved")continue;
   for(const key of ["video","poster"]){
     if(typeof scene[key]!=="string"||!scene[key].startsWith("/")||
       scene[key].includes("..")||!existsSync(resolve(root,"public"+scene[key])))
       audit.errors.push({type:"missing_physical_asset",clip:scene.id,asset:key});
+  }
+  const physicalPath=resolve(root,"public"+scene.video);
+  if(existsSync(physicalPath)){
+    const size=statSync(physicalPath).size;
+    if(size<10_000||size>150*1024*1024){
+      audit.errors.push({type:"unacceptable_video_size",clip:scene.id,bytes:size});
+    }else{
+      // Catch duplicate binary payloads despite different filenames/IDs.
+      const sha=createHash("sha256").update(readFileSync(physicalPath)).digest("hex");
+      const previous=physicalHashes.get(sha);
+      if(previous)audit.errors.push({type:"duplicate_video_payload",clip:scene.id,duplicateOf:previous});
+      physicalHashes.set(sha,scene.id);
+    }
   }
 }
 const expectedBytes=44+SAMPLE_RATE*DURATION_SECONDS*2;
