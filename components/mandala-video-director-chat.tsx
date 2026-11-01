@@ -5,7 +5,7 @@ import type {ChangeEvent,FormEvent} from "react";
 import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {allocateAdaptiveFilmTimeline} from "@/lib/mandala/free-film-timeline.mjs";
-import {hasVideoChatFilter,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
+import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -23,7 +23,7 @@ type Props={
  locale:PublicLocale;goal:string;theme:VideoTheme;
  presets:readonly Preset[];scenes:readonly Scene[];disabled:boolean;canCreate:boolean;
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
- onGoalChange:(text:string)=>void;
+ onGoalChange:(text:string)=>void;onInvalidate:()=>void;
  onConfirm:(selection:{presetId:string;duration:Length;aspect:Aspect;music:Music;phrases:boolean;mood:Mood})=>boolean;
  onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
@@ -75,7 +75,7 @@ const initial=(goal:string):Draft=>({goal:goal.slice(0,160),mood:null,aspect:nul
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
  rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
- onOpenEditor,onPickPhoto,onOpenAudio}:Props){
+ onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
  const t=copy[locale];
  const [draft,setDraft]=useState<Draft>(()=>initial(goal));
  const [step,setStep]=useState<Step>(()=>nextVideoChatStep(initial(goal)) as Step);
@@ -159,7 +159,15 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      if(controller.signal.aborted)return;
      if(typeof payload?.reply!=="string"||payload.reply.length>160)throw Error("UNSAFE_AI_REPLY");
      if(currentStepRef.current!==step){setAiStatus("idle");return;}
-     setAiStatus("ready");addLine("assistant",payload.reply);
+     setAiStatus("ready");
+     // Upgrade the last local question instead of displaying two competing
+     // assistant questions for one filter when external AI responds.
+     setLines(existing=>{
+       const last=existing.at(-1);
+       if(last?.role==="assistant"&&last.text===question(step))
+         return [...existing.slice(0,-1),{...last,text:payload.reply}];
+       return [...existing.slice(-34),{id:++counter.current,role:"assistant",text:payload.reply}];
+     });
    }).catch(()=>{
      if(controller.signal.aborted)return;
      setAiStatus("fallback");addLine("assistant",t.aiFallback);
@@ -211,7 +219,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const value=raw.trim().slice(0,160);
    if(!value)return;
    setInput("");addLine("user",value);
+   const action=parseVideoChatAction(value,step);
+   if(action==="confirm"){confirm();return;}
+   if(action==="create"){start();return;}
+   if(action==="open"){onOpenResult();return;}
    if(step==="goal"){
+     if(isGenericVideoRequest(value)){
+       addLine("assistant",t.goal);return;
+     }
      const parsed=parseVideoChatIntent(value);
      const next:Draft={...draft,goal:parsed.text,mood:parsed.mood as Mood|null,
        aspect:parsed.aspect as Aspect|null,duration:parsed.duration as Length|null,
@@ -222,8 +237,16 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      return;
    }
    if(step==="review"||step==="ready"||step==="done"){
-     const extracted=parseVideoChatIntent(value);
      const hasChoice=hasVideoChatFilter(value);
+     // Existing encoded output must no longer be offered once the user asks
+     // for a new edit or a new film, even before reconfirming the storyboard.
+     onInvalidate();
+     if(isGenericVideoRequest(value)){
+       setDraft(initial(""));onGoalChange("");setSymbolicAllowed(false);setAlternative(0);
+       setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
+       setCaptureStarted(false);setCaptureObserved(false);setStep("goal");
+       addLine("assistant",t.goal);return;
+     }
      if(!hasChoice){
        const next={...initial(value),...{goal:value}};
        setDraft(next);onGoalChange(value);setSymbolicAllowed(false);setAlternative(0);
@@ -289,7 +312,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        {(["mood","aspect","duration","music","phrases"] as const).map(key=><button
          key={key} type="button" disabled={disabled||captureStarted}
          data-video-chat-change-filter={key}
-         onClick={()=>{setStep(key);addLine("assistant",question(key));}}>
+         onClick={()=>{onInvalidate();setStep(key);addLine("assistant",question(key));}}>
          <span>{t.filterNames[key]}</span>
          <strong>{key==="duration"?draft.duration+" s":
            key==="phrases"?(draft.phrases?"✓":"—"):
@@ -301,6 +324,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          {selected.clips.map((id,index)=>{
            const source=sourceById.get(id);
            return <div key={id} className={css.shot}>
+             {/* eslint-disable-next-line @next/next/no-img-element */}
              {source?.poster?<img alt="" src={source.poster} loading="lazy"/>:<span className={css.noPoster}><Film size={19}/></span>}
              <span><b>{index+1}. {t.stages[index]} · {durations[index]} s</b><small>{source?.label[locale]||id}</small></span>
            </div>;
@@ -333,9 +357,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      </div>:null}
      {step==="done"?<div className={css.finishActions}>
        <button type="button" className={css.secondary} onClick={reset}>{t.startAgain}</button>
-       <button type="button" className={css.secondary} onClick={()=>setStep("review")}>{t.edit}</button>
+       <button type="button" className={css.secondary} onClick={()=>{onInvalidate();setStep("review");}}>{t.edit}</button>
      </div>:null}
    </div>
+   {step!=="goal"&&step!=="review"&&step!=="ready"&&step!=="done"?<div className={css.autoChoices}>
+     <button type="button" disabled={disabled} data-video-chat-auto onClick={autoComplete}>
+       <Sparkles size={15}/>{t.auto}
+     </button>
+   </div>:null}
    {choices.length>0?<div className={css.choices} role="group" aria-label={question(step)}>
      {choices.map(([label,value])=><button type="button" key={value} disabled={disabled} onClick={()=>answer(value===label?label:value)}>{label}</button>)}
    </div>:null}

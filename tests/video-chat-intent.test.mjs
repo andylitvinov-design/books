@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, hasVideoChatFilter} from '../lib/mandala/video-chat-intent.mjs';
+import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, hasVideoChatFilter, isGenericVideoRequest, parseVideoChatAction} from '../lib/mandala/video-chat-intent.mjs';
 
 test('RU composite prompt fills known filters but leaves optional questions', () => {
   const item = parseVideoChatIntent('Сделай вертикальный ролик о любви на 30 секунд с музыкой и фразами');
@@ -55,4 +55,24 @@ test('minutes are not silently misread as seconds',()=>{
  assert.equal(parseVideoChatIntent('A 20 minute film').duration,null);
  assert.equal(parseVideoChatIntent('Сделай фильм на 30 секунд').duration,30);
  assert.equal(parseVideoChatIntent('Need a 60s reel').duration,60);
+});
+
+
+test('generic video request asks for a goal instead of selecting a random subject',()=>{
+ for(const v of ['Video','Сделай видео','I want a video','Vídeo','Хочу ролик'])
+   assert.equal(isGenericVideoRequest(v),true,v);
+ for(const v of ['Видео про любовь','Video about nature','Reel о спокойствии'])
+   assert.equal(isGenericVideoRequest(v),false,v);
+});
+
+
+test('imperatives only perform a stage-appropriate explicit user action',()=>{
+ assert.equal(parseVideoChatAction('Подтверждаю','review'),'confirm');
+ assert.equal(parseVideoChatAction('Confirm story','review'),'confirm');
+ assert.equal(parseVideoChatAction('Создай видео','ready'),'create');
+ assert.equal(parseVideoChatAction('Create video','ready'),'create');
+ assert.equal(parseVideoChatAction('Открой видео','done'),'open');
+ assert.equal(parseVideoChatAction('Видео о любви','ready'),null);
+ assert.equal(parseVideoChatAction('Создай видео','review'),null);
+ assert.equal(parseVideoChatAction('Подтверждаю','ready'),null);
 });

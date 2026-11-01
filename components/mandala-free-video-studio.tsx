@@ -3442,6 +3442,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
           resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
+          onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onConfirm={({presetId,duration:seconds,aspect:outputAspect,music:track,phrases,mood})=>{
             // Do not silently discard uploaded/attached client voice. The user
             // must explicitly resolve this in the existing single Audio pane.
