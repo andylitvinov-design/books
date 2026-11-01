@@ -13,6 +13,9 @@ on:
       - 'scripts/ci-pr-slot-wakeup.cjs'
       - 'tests/ci-pr-slot-wakeup.test.cjs'
       - 'scripts/ci-pr-priority.cjs'
+      - '.github/hh-pr-directions.json'
+      - 'scripts/ci-pr-direction-watcher.cjs'
+      - '.github/workflows/hh-pr-direction-watcher.yml'
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
   workflow_dispatch:
@@ -117,6 +120,7 @@ jobs:
             const {owner,repo}=context.repo;
             const paths=[
               'hh-pr-ten-minute-watchdog.yml',
+              'hh-pr-direction-watcher.yml',
               'hh-pr-ci-worker.yml',
               'hh-pr-repair-worker.yml',
               'hh-pr-full-inventory.yml'
@@ -137,24 +141,17 @@ jobs:
                 throw Error('HH_SCHEDULER_REPAIR_NOT_ACTIVE: '+path+' '+after.state);
               results.push({path,before:before.state,after:after.state});
             }
-            // Manual priority overrides are prepared by a trusted push only;
-            // adding labels later never bypasses required checks or leases.
-            for(const [tier,color,description] of [
-              ['p0','b60205','P0 urgent production/CI incident'],
-              ['p1','fbca04','P1 high-impact product delivery'],
-              ['p2','0e8a16','P2 ordinary planned delivery'],
-              ['p3','c5def5','P3 maintenance or experiment']
-            ]){
-              try {
-                await github.rest.issues.createLabel({
-                  owner,repo,name:'hh:priority:'+tier,color,description
-                });
-              }catch(error){if(error.status!==422)throw error;}
-            }
+            // Labels are reconciled by the separate Direction Watcher.
             // workflow_dispatch is a documented GITHUB_TOKEN recursion exception.
             // This is ONE bootstrap per trusted workflow change, not every push.
             await github.rest.actions.createWorkflowDispatch({
               owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
+              ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
+            });
+            // Classify open production PRs immediately on policy rollout; cron
+            // remains a ten-minute fallback, not the only activation path.
+            await github.rest.actions.createWorkflowDispatch({
+              owner,repo,workflow_id:'hh-pr-direction-watcher.yml',
               ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
             });
             core.info('HH_SCHEDULER_REPAIR: '+JSON.stringify(results));

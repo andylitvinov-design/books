@@ -28,7 +28,7 @@ const MAX_LEGACY_PROBES = 3;
 const MAX_LEGACY_BOOTSTRAPS = 1;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
-const {priorityFor,rankedCandidates} = require('./ci-pr-priority.cjs');
+const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -75,10 +75,13 @@ function boundedRestFallback(selected) {
 
 function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
   if(!Array.isArray(prs)||!prs.length)return [];
-  const ranked=rankedCandidates(prs,now);
-  if(!ranked.length)return [];
+  // Fast slots are for PRs that are not on hold or already handed to
+  // an owner. A separate audit rotation still inventories every PR.
+  const ranked=rankedCandidates(prs.filter(pr=>isFreeFor(pr,'inspect')),now);
+  const inventory=rankedCandidates(prs,now);
+  if(!inventory.length)return [];
   const wake=Number.isSafeInteger(priorityNumber)
-    ?ranked.find(pr=>pr.number===priorityNumber):null;
+    ?inventory.find(pr=>pr.number===priorityNumber):null;
   const top=wake?[wake]:[];
   const chosen=new Set(top.map(pr=>pr.number));
   // Always keep the highest-impact PR visible even while a specific
@@ -112,7 +115,7 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
   }
   // Independent full-inventory round-robin. Every open PR is visited
   // within ceil(total / rotatedSize) cycles even when fast slots change.
-  const sorted=[...ranked].sort((a,b)=>a.number-b.number);
+  const sorted=[...inventory].sort((a,b)=>a.number-b.number);
   const offset=(Math.floor(now/(10*MINUTE))*rotatedSize)%sorted.length;
   const rotating=Array.from({length:Math.min(sorted.length,rotatedSize)},
     (_,i)=>sorted[(offset+i)%sorted.length]);
@@ -153,6 +156,14 @@ function canRetryCi(active, queued) {
   // Allow two bounded retries when both pools are below their independent caps.
   return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
     active >= 0 && queued >= 0 && active < 20 && queued < 20;
+}
+// A Repair claim is not a new Core build. Reserve one narrow source-repair
+// lane while ordinary PR CI is congested, but never flood a saturated runner
+// pool or enqueue unlimited workers. The workflow-level lease and three-minute
+// cooldown still enforce one active/recent Repair Worker at a time.
+function canDispatchRepair(active, queued) {
+  return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
+    active >= 0 && queued >= 0 && active < 18 && queued < 80;
 }
 function transientFailure(run, jobs, now) {
   if (!run || run.status !== 'completed' || run.run_attempt !== 1 ||
@@ -465,10 +476,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // require the current Watchdog tick to create a NEW label before waking
   // an idle worker: a previous handoff may have been interrupted.
   const hasLabel=(pr,name)=>(pr.labels||[]).some(l=>l.name===name);
-  const ciQueueBacklog=review.filter(p=>hasLabel(p,CI_BOOTSTRAP_LABEL) &&
-    !hasLabel(p,'hh:ci-bootstrap-attempted')).length;
-  const repairQueueBacklog=review.filter(p=>hasLabel(p,REPAIR_LABEL) ||
-    hasLabel(p,CONFLICT_LABEL)).length;
+  const ciQueueBacklog=review.filter(p=>isFreeFor(p,'ci')).length;
+  const availableRepair=selectNextAvailable(review,'repair',now);
+  const repairQueueBacklog=review.filter(p=>isFreeFor(p,'repair') ||
+    (isFreeFor(p,'inspect') && hasLabel(p,CONFLICT_LABEL))).length;
   const wake=context.eventName==='workflow_run' &&
     context.payload?.workflow_run?.event==='pull_request' &&
     context.payload.workflow_run.status==='completed'
@@ -493,12 +504,15 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }).join(' | ');
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
+    repairNext:availableRepair ?
+      '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
+      ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
-    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
@@ -550,9 +564,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
   const ciRoom = canRetryCi(active,queued);
+  const repairRoom = canDispatchRepair(active,queued);
   summary.activeActions = Number.isFinite(active) ? active : null;
   summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
+  summary.repairBlockedByCapacity=!repairRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let liveBatch=null;
   if (!budget.exhausted && typeof github.graphql === 'function' && selected.length) {
@@ -785,7 +801,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
   if ((summary.sourceRepairQueued || summary.conflictLabelsQueued || repairQueueBacklog) &&
-      hasMergeToken && ciRoom && !budget.exhausted && !dryRun) {
+      hasMergeToken && repairRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -798,7 +814,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         await limited('dispatch-repair-worker',()=>github.request(
           'POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
             owner,repo,workflow_id:'hh-pr-repair-worker.yml',ref:DEFAULT,
-            inputs:{pr_number:'0',dry_run:'false'}
+            inputs:{pr_number:String(availableRepair?.number || 0),
+              expected_sha:availableRepair?.head?.sha || '',dry_run:'false'}
           }));
         summary.repairWorkerDispatched++;
         log('DISPATCHED owner-guarded Repair Worker for source/conflict queue');
@@ -830,4 +847,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};

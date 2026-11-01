@@ -27,7 +27,8 @@ function eligible(pr, fullRepo) {
     pr.user?.login === owner && pr.base?.ref === PROD &&
     pr.head?.repo?.full_name === fullRepo &&
     SHA.test(pr.head?.sha || '') && validBranch(pr.head?.ref) &&
-    pr.labels?.some(l => [SOURCE, CONFLICT].includes(l.name)));
+    pr.labels?.some(l => [SOURCE, CONFLICT].includes(l.name)) &&
+    !pr.labels?.some(l => l.name===MANUAL || l.name==='hh:hold'));
 }
 function activeSweepLease(comments, sha, now) {
   for (const c of comments) {
@@ -123,18 +124,21 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
   if (!dryRun && !hasToken) return skip('HH_AUTOMERGE_TOKEN_MISSING');
   try {
   let candidates = [];
-  if (Number.isSafeInteger(number) && number > 0) candidates = [{number}];
-  else {
-    const found = await Promise.all([SOURCE,CONFLICT].map(labels =>
-      limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
-        sort:'updated',direction:'asc',per_page:40}))));
-    if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
-    candidates=prioritizedRepairCandidates(found[0].data,found[1].data,now);
-  }
+  // Watchdog explicitly targets the highest-priority eligible PR. If its
+  // exact HEAD is already leased, conflicted or stale, fall through to the
+  // next direction-ranked queue candidate in the SAME worker cycle.
+  const found = await Promise.all([SOURCE,CONFLICT].map(labels =>
+    limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
+      sort:'updated',direction:'asc',per_page:40}))));
+  if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
+  const queued=prioritizedRepairCandidates(found[0].data,found[1].data,now);
+  if (Number.isSafeInteger(number) && number > 0)
+    candidates=[{number},...queued.filter(x=>x.number!==number)].slice(0,MAX_CANDIDATES);
+  else candidates=queued;
   for (const item of candidates) {
     const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
     if (!eligible(pr,fullRepo) ||
-        (expectedSha && pr.head.sha !== expectedSha)) continue;
+        (expectedSha && item.number===number && pr.head.sha !== expectedSha)) continue;
     // If the branch is a parent of another open PR, never modify its history.
     const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1}))).data;
     if (!Array.isArray(children) || children.length) continue;
