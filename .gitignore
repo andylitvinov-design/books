@@ -24,3 +24,8 @@ assets/documents/report-coast-cover.jpg
 
 # Build-time thumbnails from licensed Wikimedia originals; static assets, not user uploads.
 /public/images/holistic-house/coaching-ancient/
+
+# Browser screenshot / geometry outputs are ephemeral. Never push account screenshots.
+/artifacts/
+/playwright-report/
+/test-results/

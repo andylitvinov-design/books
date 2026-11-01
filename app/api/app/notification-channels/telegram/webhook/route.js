@@ -12,7 +12,7 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 // Independent free-model calls plus one real synthesis run within a bounded webhook.
-export const maxDuration=120
+export const maxDuration=300
 
 export async function POST(request){
  if(!verifyClientTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token')))

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PrescriptionAdminHeader } from "@/components/prescription-admin-header";
 import { SiteVideoManager } from "@/components/site-video-manager";
 import { KlingSceneStudio } from "@/components/kling-scene-studio";
+import { KlingAvatarStudio } from "@/components/kling-avatar-studio";
 import { books } from "@/data/library";
 import { localizedBookText } from "@/data/library-localization";
 import { getRemedyDirectory } from "@/data/remedies";
@@ -50,6 +51,12 @@ export default async function SiteVideosPage() {
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
         enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true"}
+        premiumEnabled={process.env.HH_KLING_PREMIUM_RENDER_ENABLED === "true"}
+      />
+      <KlingAvatarStudio
+        initialLocale={klingLocale}
+        configured={Boolean(process.env.KLING_API_KEY)}
+        enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true" && process.env.HH_KLING_AVATAR_PAID_ENABLED === "true"}
       />
     </main>
   );

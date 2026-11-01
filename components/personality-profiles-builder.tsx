@@ -6,9 +6,9 @@ import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, Cl
 import styles from "./personality-profiles-builder.module.css";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
-import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
-  buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
-  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+import { PROFILE_AREA_AXES, profileAreasWithTests,
+  buildProfileScaleGroups, selectedProfileAxes, selectedProfileResearchAxes,
+  profileResearchAxisLabel, recommendProfileTopThreeTests, rankProfileAxisTests, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
@@ -31,8 +31,6 @@ type ProfileScaleGroup = {
 // Shared, source-backed topic taxonomy. All catalogue axes are mapped,
 // but only topics supported by eligible tests appear in the wizard.
 const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
-const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
-const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 
 const copy = {
   en: {
@@ -67,7 +65,7 @@ const copy = {
     },
     goalScaleNote: "These three choices identify supporting topics. Your personal 0–10 goal ratings are separate, optional and private.",
     topicTitle: "Select the scales that matter to you",
-    topicHelp: "Choose one or more research scales in each life direction. Goal clarity, motivation and confidence can be selected separately; no tests are selected here.",
+    topicHelp: "Choose only the main scales to explore. You will choose topics next; goal clarity, motivation and confidence remain separate.",
     focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
@@ -82,7 +80,7 @@ const copy = {
       goal: ["Your goal", "Clarity · motivation · confidence"],
     },
     scaleTitle: "Choose the topics within your scales",
-    scaleHelp: "Choose one or several topics for each selected scale. These are areas of exploration, not test choices. You will choose full questionnaires on the next screen.",
+    scaleHelp: "Choose topics within your scales. Actual questionnaires appear only on the next screen.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     scaleSourceLabel: "Questionnaire", scaleItemsLabel: "scale questions", scaleUnknown: "Scale item count not documented",
     fullTestNote: "Only topics are selected here. One topic can have several eligible questionnaires; on the Tests step you choose which complete tests to take.",
@@ -91,8 +89,12 @@ const copy = {
     modeCheckins: "Questionnaires / check-ins", modePro: "Professional tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
     modeOverview: "Filter by test type", modeEstimated: "estimated total", modeSource: "Test questions",
+    selectedTests: "selected", coveredScales: "scales covered",
+    mainThree: "3 key recommended tests", nextFive: "5 more tests ranked by topic match",
+    fit: "match", fitInfo: "Catalogue relevance: 80% coverage of selected research facets + 20% exact selected source scales. Not a health score, clinical probability or validated accuracy.",
+    noneSelected: "Select at least one test to continue. Unticked tests remain available.",
     testTitle: "Your recommended free test selection",
-    testHelp: "Choose the tests you want to take for your topics. Switch between questionnaires and professional-source tests, or add more matching tests below.",
+    testHelp: "Three suggested tests appear first, followed by matching options for your chosen topics. Tick the ones you want.",
     testCount: "tests", minutes: "min", questions: "questions",
     more: "See more matching tests", less: "Show fewer",
     chosen: "Your selection", unmeasured: "Some selected topics may not have a suitable free questionnaire yet. No score will be invented.",
@@ -153,7 +155,7 @@ const copy = {
     },
     goalScaleNote: "Эти три шкалы помогают выбрать темы для исследования. Ваши личные оценки цели от 0 до 10 — отдельное, добровольное и приватное действие.",
     topicTitle: "Выберите шкалы для исследования",
-    topicHelp: "В каждом направлении выберите одну или несколько шкал. Ясность цели, мотивация и уверенность отмечаются отдельно. Тесты здесь пока не выбираются.",
+    topicHelp: "Отметьте только основные шкалы. Темы внутри них выберете дальше. Ясность цели, мотивация и уверенность остаются отдельными шкалами.",
     focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
@@ -168,7 +170,7 @@ const copy = {
       goal: ["Ваша цель", "Ясность · мотивация · уверенность"],
     },
     scaleTitle: "Выберите темы внутри шкал",
-    scaleHelp: "Для каждой выбранной шкалы отметьте одну или несколько тем. Это не список тестов — сами опросники вы выберете на следующем шаге.",
+    scaleHelp: "Выберите интересующие темы внутри отмеченных шкал. Опросники появятся только на следующем экране.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     scaleSourceLabel: "Опросник", scaleItemsLabel: "вопросов шкалы", scaleUnknown: "Число вопросов шкалы не указано в методике",
     fullTestNote: "Здесь выбираются только темы. По одной теме может быть несколько подходящих опросников; конкретные тесты выбираются на следующем шаге.",
@@ -177,8 +179,12 @@ const copy = {
     modeCheckins: "Опросники / мониторинг", modePro: "Профессиональные тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
     modeOverview: "Фильтр по типу теста", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
+    selectedTests: "выбрано", coveredScales: "шкал охвачено",
+    mainThree: "3 основных рекомендованных теста", nextFive: "Ещё 5 тестов по проценту соответствия",
+    fit: "соответствие", fitInfo: "Соответствие каталога: 80% охвата выбранных исследовательских направлений + 20% точных выбранных шкал-источников. Не оценка здоровья, клинический прогноз или подтверждённая точность.",
+    noneSelected: "Отметьте хотя бы один тест. Снятые с выбора тесты остаются в списке.",
     testTitle: "Предложенный набор бесплатных тестов",
-    testHelp: "Выберите тесты по своим темам. Переключайтесь между опросниками и профессиональными методиками или добавляйте другие подходящие тесты ниже.",
+    testHelp: "Сначала три рекомендованных теста, ниже — дополнительные по выбранным темам. Отметьте нужные галочками.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
     more: "Показать больше подходящих тестов", less: "Показать меньше",
     chosen: "Ваш выбор", unmeasured: "Для части тем может не оказаться подходящего бесплатного теста. Баллы не придумываются.",
@@ -239,7 +245,7 @@ const copy = {
     },
     goalScaleNote: "Estas tres opciones permiten explorar temas relacionados. Las puntuaciones personales de tu meta (0–10) son independientes, opcionales y privadas.",
     topicTitle: "Elige las escalas que quieres explorar",
-    topicHelp: "Selecciona una o varias escalas en cada área. Claridad de la meta, motivación y confianza son opciones separadas. Aquí todavía no eliges pruebas.",
+    topicHelp: "Elige solo las escalas principales. Después seleccionarás los temas. Claridad, motivación y confianza son independientes.",
     focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
@@ -254,7 +260,7 @@ const copy = {
       goal: ["Tu meta", "Claridad · motivación · confianza"],
     },
     scaleTitle: "Elige temas dentro de tus escalas",
-    scaleHelp: "Elige uno o varios temas por escala. Son áreas de exploración, no pruebas. Los cuestionarios completos se eligen en el paso siguiente.",
+    scaleHelp: "Marca los temas dentro de las escalas elegidas. Los cuestionarios aparecen solo en la pantalla siguiente.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     scaleSourceLabel: "Cuestionario", scaleItemsLabel: "preguntas de la escala", scaleUnknown: "Sin número de ítems verificado",
     fullTestNote: "Aquí solo se eligen temas. Un tema puede tener varios cuestionarios adecuados; las pruebas completas se eligen en el paso siguiente.",
@@ -263,8 +269,12 @@ const copy = {
     modeCheckins: "Cuestionarios / seguimiento", modePro: "Pruebas profesionales", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
     modeOverview: "Filtrar por tipo de prueba", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
+    selectedTests: "seleccionadas", coveredScales: "escalas cubiertas",
+    mainThree: "3 pruebas principales recomendadas", nextFive: "5 pruebas más, ordenadas por coincidencia",
+    fit: "coincidencia", fitInfo: "Afinidad del catálogo: 80% de cobertura de los ejes elegidos + 20% de las escalas de origen exactas elegidas. No es una medida de salud, probabilidad clínica ni precisión validada.",
+    noneSelected: "Selecciona al menos una prueba. Las desmarcadas permanecen visibles.",
     testTitle: "Tus pruebas gratuitas recomendadas",
-    testHelp: "Elige pruebas según tus temas. Cambia entre cuestionarios y pruebas profesionales o añade otras pruebas compatibles abajo.",
+    testHelp: "Primero verás tres pruebas recomendadas y luego más opciones para tus temas. Marca las que quieras.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
     more: "Ver más pruebas compatibles", less: "Ver menos",
     chosen: "Tu selección", unmeasured: "Es posible que algunas áreas no tengan una prueba gratuita adecuada. No se inventan puntuaciones.",
@@ -358,8 +368,8 @@ const researchLabel = (id: string, locale: Locale) =>
 const additionalCopy = {
   en: {
     notMeasured: "No eligible free questionnaire yet",
-    additionalTitle: "Other tests", additionalHint: "Optional. Add tests without replacing your recommended set.",
-    profile: "Explore other directions (optional)", allSelected: "My selected topics", scales: "2. Choose its scales", scaleHelp: "Select any number. With none checked, all scales in this profile apply.", chooseAll: "Select all", clearScales: "Clear all", chooseFirst: "Choose a profile to see matching additional tests.",
+    additionalTitle: "Other tests for your topics", additionalHint: "Only your selected topics and scales. Expand to browse more; unchecking never hides a test.",
+    scope: "Your selected topics and scales",
     search: "Search tests", searchPlaceholder: "Test name or scale",
     kind: "Type", allKinds: "All types", topic: "Topic", matching: "My topics", allTopics: "All topics",
     time: "Duration", anyTime: "Any length", two: "Up to 2 min", five: "Up to 5 min", ten: "Up to 10 min",
@@ -371,8 +381,8 @@ const additionalCopy = {
   },
   ru: {
     notMeasured: "Пока нет доступного бесплатного теста",
-    additionalTitle: "Другие тесты", additionalHint: "По желанию: добавьте тесты к рекомендованному набору.",
-    profile: "Другие направления (по желанию)", allSelected: "Мои выбранные темы", scales: "2. Отметьте шкалы профиля", scaleHelp: "Можно отметить любое количество шкал. Без галочек учитываются все шкалы выбранного профиля.", chooseAll: "Выбрать все", clearScales: "Снять все", chooseFirst: "Выберите профиль, чтобы открыть дополнительные тесты.",
+    additionalTitle: "Дополнительные тесты по вашим темам", additionalHint: "Только выбранные темы и шкалы. Раскройте список, чтобы увидеть больше; снятие галочки не скрывает тест.",
+    scope: "Ваши выбранные темы и шкалы",
     search: "Поиск теста", searchPlaceholder: "Название теста или шкалы",
     kind: "Тип", allKinds: "Все типы", topic: "Тема", matching: "Мои темы", allTopics: "Все темы",
     time: "Длительность", anyTime: "Любая", two: "До 2 мин", five: "До 5 мин", ten: "До 10 мин",
@@ -384,8 +394,8 @@ const additionalCopy = {
   },
   es: {
     notMeasured: "Aún no hay prueba gratuita disponible",
-    additionalTitle: "Otras pruebas", additionalHint: "Opcional: añade pruebas sin sustituir las recomendadas.",
-    profile: "Otras áreas (opcional)", allSelected: "Mis temas elegidos", scales: "2. Elige sus escalas", scaleHelp: "Selecciona cuantas escalas quieras. Sin selección se incluyen todas las del perfil.", chooseAll: "Seleccionar todas", clearScales: "Quitar todas", chooseFirst: "Elige un perfil para ver las pruebas adicionales.",
+    additionalTitle: "Otras pruebas para tus temas", additionalHint: "Solo tus temas y escalas elegidos. Amplía la lista para ver más; desmarcar no oculta la prueba.",
+    scope: "Temas y escalas elegidos",
     search: "Buscar pruebas", searchPlaceholder: "Nombre o escala",
     kind: "Tipo", allKinds: "Todos los tipos", topic: "Tema", matching: "Mis temas", allTopics: "Todos los temas",
     time: "Duración", anyTime: "Cualquiera", two: "Hasta 2 min", five: "Hasta 5 min", ten: "Hasta 10 min",
@@ -412,14 +422,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [focuses, setFocuses] = useState<Focus[]>([]);
   const [selectedResearchIds, setSelectedResearchIds] = useState<string[]>([]);
   const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
-  const [scalesInitialized, setScalesInitialized] = useState(false);
-  const [expandedScaleAreas, setExpandedScaleAreas] = useState<Area[]>([]);
   const [batteryMode, setBatteryMode] = useState<TestMode>("questionnaires");
   const [selectedByMode, setSelectedByMode] = useState<Record<TestMode, string[]>>({ questionnaires: [], pro: [] });
   const [batterySignature, setBatterySignature] = useState("");
   const [showMore, setShowMore] = useState(false);
-  const [extraProfile, setExtraProfile] = useState<Focus | null>(null);
-  const [extraScales, setExtraScales] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("relevant");
   const [search, setSearch] = useState("");
@@ -456,40 +462,44 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  // With no extra direction chosen, show more tests for the *current* topics
-  // immediately. The optional direction filter deliberately broadens discovery.
-  const extraGroups: ProfileScaleGroup[] = extraProfile
-    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[]
-    : scaleGroups;
-  const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
-    group.researchAxes.map(axis => axis.id)))]
-    .sort((a, b) => profileResearchAxisLabel(a, locale).localeCompare(profileResearchAxisLabel(b, locale), locale));
-  const effectiveExtraScales = extraProfile
-    ? (extraScales.length ? extraScales : axesForExtraProfile)
-    : selectedAxisRefs;
-  const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
-    .filter(scale => effectiveExtraScales.includes(scale.researchAxisId)).map(scale => scale.testKey)));
-  const extraRelevance = (key: string) => extraGroups.reduce((total, group) => total +
-    group.scales.filter(scale => scale.testKey === key &&
-      effectiveExtraScales.includes(scale.researchAxisId)).length, 0);
+  // The visible catalogue is derived only from selected topics/scales, never
+  // from checked test keys. Unchecking changes the plan, not the recommendation.
+  const rankedCandidates: ReadonlyArray<NonNullable<ReturnType<typeof rankProfileAxisTests>[number]>> =
+    rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)
+      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
+  const recommendedKeys = recommendProfileTopThreeTests(tests, scaleGroups,
+    selectedScaleIds, batteryMode);
+  const recommendedTests = rankedCandidates
+    .filter(candidate => recommendedKeys.includes(candidate.key))
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+      .map(test => ({ test, matchPercent: candidate.matchPercent })));
+  const fiveMoreTests = rankedCandidates
+    .filter(candidate => !recommendedKeys.includes(candidate.key))
+    .slice(0, 5)
+    .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
+      .map(test => ({ test, matchPercent: candidate.matchPercent })));
+  const featuredTestKeys = new Set([...recommendedKeys, ...fiveMoreTests.map(item => item.test.key)]);
+  // Every list shares the same chosen-facet eligibility and discovery relevance.
+  // Only explicit expansion/filters change visible rows; checkbox state never does.
+  const eligibleTestKeys = new Set(rankedCandidates.map(candidate => candidate.key));
+  const fitByKey = new Map(rankedCandidates.map(candidate => [candidate.key, candidate.matchPercent]));
+  const extraMatchPercent = (key: string) => fitByKey.get(key) ?? 0;
+  const remainingTestKeys = new Set(rankedCandidates
+    .filter(candidate => !featuredTestKeys.has(candidate.key)).map(candidate => candidate.key));
   const extraMatches = tests
-    .filter(test => !selectedKeys.includes(test.key))
-    .filter(test => test.testKind === modeKind)
-    .filter(test => extraTestKeys.has(test.key))
+    .filter(test => remainingTestKeys.has(test.key) && test.testKind === modeKind)
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
-      [test.title, ...test.scales.map(scale => scale.label),
-        ...extraGroups.flatMap(group => group.scales
-          .filter(scale => scale.testKey === test.key)
-          .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale)))]
+      [test.title, ...scaleGroups.flatMap(group => group.scales
+        .filter(scale => scale.testKey === test.key && selectedAxisRefs.includes(scale.researchAxisId))
+        .flatMap(scale => [scale.label, profileResearchAxisLabel(scale.researchAxisId, locale)]))]
         .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
     .sort((a, b) => sortFilter === "shortest"
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
       : sortFilter === "alphabetical"
         ? a.title.localeCompare(b.title, locale)
-        : extraRelevance(b.key) - extraRelevance(a.key) ||
-          (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
-  const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
+        : extraMatchPercent(b.key) - extraMatchPercent(a.key) || a.key.localeCompare(b.key));
+  const displayTests = showMore ? extraMatches : [];
 
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
@@ -497,11 +507,40 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     // Other directions must not contribute stale topics, scales or plans.
     setSelectedResearchIds([]);
     setSelectedScaleIds([]);
-    setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
-    setExtraProfile(null);
-    setExtraScales([]);
+    setShowMore(false);
+  }
+
+  // Main scale groups are broad areas. Goal clarity, motivation and
+  // confidence remain three independent controls.
+  function toggleMainScale(area: Area) {
+    const group = visibleScaleGroups.find(item => item.area === area);
+    if (!group || area === "goal") return;
+    const ids = group.researchAxes.map(axis => axis.id);
+    if (!ids.length) return;
+    const selected = ids.some(id => selectedResearchIds.includes(id));
+    setSelectedResearchIds(previous => selected
+      ? previous.filter(id => !ids.includes(id))
+      : [...new Set([...previous, ...ids])]);
+    setSelectedScaleIds([]);
+    setSelectedByMode({ questionnaires: [], pro: [] });
+    setBatterySignature("");
+    setShowMore(false);
+  }
+
+  // Topic selection maps to the EXISTING versioned source scales. There
+  // is no independent score, instrument, or invented comparison here.
+  function toggleTopicAxis(axisId: string) {
+    const ids = scaleGroups.flatMap(group => group.scales
+      .filter(scale => scale.researchAxisId === axisId).map(scale => scale.id));
+    if (!ids.length) return;
+    const selected = ids.some(id => selectedScaleIds.includes(id));
+    setSelectedScaleIds(previous => selected
+      ? previous.filter(id => !ids.includes(id))
+      : [...new Set([...previous, ...ids])]);
+    setSelectedByMode({ questionnaires: [], pro: [] });
+    setBatterySignature("");
     setShowMore(false);
   }
 
@@ -511,11 +550,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       ? previous.filter(item => item !== id) : [...previous, id]);
     // A changed construct invalidates only the downstream topic/test draft.
     setSelectedScaleIds([]);
-    setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
-    setExtraProfile(null);
-    setExtraScales([]);
     setShowMore(false);
   }
 
@@ -524,11 +560,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setSelectedScaleIds(previous => previous.includes(id)
       ? previous.filter(item => item !== id) : [...previous, id]);
     setBatterySignature("");
+    setSelectedByMode({ questionnaires: [], pro: [] });
+    setShowMore(false);
   }
 
   function toggleTest(key: string) {
-    // Only tests from this mode of the rights-cleared guest catalogue may enter.
-    if (!tests.some(test => test.key === key && test.testKind === modeKind)) return;
+    // Eligibility includes the current mode, cleared guest rights and chosen source facets.
+    if (!eligibleTestKeys.has(key)) return;
     setSelectedByMode(previous => {
       const keys = previous[batteryMode];
       return { ...previous, [batteryMode]: keys.includes(key)
@@ -541,16 +579,12 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     if (step === 0 && focuses.length) {
       setSelectedResearchIds([]);
       setSelectedScaleIds([]);
-      setScalesInitialized(false);
       setSelectedByMode({ questionnaires: [], pro: [] });
       setBatterySignature("");
       setShowMore(false);
       setStep(1);
     } else if (step === 1 && selectedResearchIds.length && scaleGroups.some(group => group.scales.length)) {
-      if (!scalesInitialized) {
-        setSelectedScaleIds(defaultProfileScaleIds(scaleGroups, 3));
-        setScalesInitialized(true);
-      }
+      // The next screen asks for topics; never preselect questionnaire variants.
       setStep(2);
     } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
       const signature = [...selectedScaleIds].sort().join("|");
@@ -559,9 +593,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         // Big Five extraversion cannot be substituted with an unrelated trait.
         // The selector returns immutable suggestions; React keeps editable
         // per-mode selections as its own mutable arrays.
-        const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
+        const questionnaires = [...recommendProfileTopThreeTests(tests, scaleGroups,
           selectedScaleIds, "questionnaires")];
-        const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
+        const pro = [...recommendProfileTopThreeTests(tests, scaleGroups,
           selectedScaleIds, "pro")];
         setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
@@ -694,31 +728,39 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </section>}
 
       {step === 1 && <section aria-labelledby="profile-builder-step-title" data-profile-scale-selection-step>
-        <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
         <p className={styles.focusContext} data-profile-selected-focus>
           <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
         </p>
-        <div className={styles.researchGroupList} data-profile-topic-options data-profile-research-scale-options>
-          {visibleScaleGroups.map(group => <div key={group.area} className={styles.researchArea}
-              data-profile-scale-area={group.area}>
-            <h3>{t.areas[group.area][0]}</h3>
-            <div className={styles.researchChoices} role="group" aria-label={t.areas[group.area][0]}>
-              {group.researchAxes.map(axis =>
-                <button key={axis.id} type="button" className={styles.researchChoice}
-                  data-profile-research-choice={axis.id} aria-pressed={selectedResearchIds.includes(axis.id)}
-                  onClick={() => toggleResearchAxis(axis.id)}>
-                  <span className={styles.selectDot} aria-hidden="true">
-                    {selectedResearchIds.includes(axis.id) && <Check size={15} />}
-                  </span>
-                  <strong>{researchLabel(axis.id, locale)}</strong>
-                </button>)}
-            </div>
-          </div>)}
+        <div className={styles.researchGroupList} data-profile-research-scale-options data-profile-main-scales>
+          {visibleScaleGroups.flatMap(group => group.area === "goal"
+            ? group.researchAxes.map(axis => <button key={axis.id} type="button"
+                className={styles.researchChoice} data-profile-research-choice={axis.id}
+                data-profile-main-scale={axis.id} aria-pressed={selectedResearchIds.includes(axis.id)}
+                onClick={() => toggleResearchAxis(axis.id)}>
+                <span className={styles.selectDot} aria-hidden="true">
+                  {selectedResearchIds.includes(axis.id) && <Check size={15} />}
+                </span>
+                <strong>{researchLabel(axis.id, locale)}</strong>
+              </button>)
+            : [<button key={group.area} type="button" className={styles.researchChoice}
+                data-profile-scale-area={group.area} data-profile-main-scale={group.area}
+                aria-pressed={group.researchAxes.some(axis => selectedResearchIds.includes(axis.id))}
+                onClick={() => toggleMainScale(group.area)}>
+                <span className={styles.selectDot} aria-hidden="true">
+                  {group.researchAxes.some(axis => selectedResearchIds.includes(axis.id)) && <Check size={15} />}
+                </span>
+                <span className={styles.mainScaleBody}>
+                  <strong>{t.areas[group.area][0]}</strong>
+                  <small>{t.areas[group.area][1]}</small>
+                </span>
+              </button>])}
         </div>
         <p className={styles.researchSelectedCount} role="status">
-          {selectedResearchIds.length} {t.selected}
+          {visibleScaleGroups.filter(group => group.area !== "goal" &&
+            group.researchAxes.some(axis => selectedResearchIds.includes(axis.id))).length +
+            selectedResearchIds.filter(id => id.startsWith("goal::")).length} {t.selected}
         </p>
         {focuses.includes("goal") && <p className={styles.scaleSourceNote}>{t.goalScaleNote}</p>}
       </section>}
@@ -727,57 +769,36 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <h2 id="profile-builder-step-title">{t.scaleTitle}</h2>
         <p className={styles.help}>{t.scaleHelp}</p>
         <div className={styles.scaleOverview} role="status">
-          <strong>{selectedScaleIds.length} {t.scaleSelected}</strong>
+          <strong>{selectedAxisRefs.length} {t.scaleSelected}</strong>
           <span>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</span>
         </div>
         <div className={styles.topicAccordions} data-profile-scales-by-topic>
-          {scaleGroups.map((group, index) => {
-            const selectedInTopic = group.scales.filter(scale => selectedScaleIds.includes(scale.id)).length;
-            const expanded = expandedScaleAreas.includes(group.area);
-            // Always show one registered source scale per conceptual axis;
-            // additional alternatives belong behind "Show more".
-            const shortlist = previewProfileScales(group.scales, 8) as ProfileScaleGroup["scales"];
-            const visible = expanded ? group.scales : [
-              ...shortlist,
-              ...group.scales.filter(scale => selectedScaleIds.includes(scale.id) &&
-                !shortlist.some(item => item.id === scale.id)),
-            ];
-            return <details key={group.area} className={styles.topicAccordion}
-                open={index === 0} data-profile-scale-topic={group.area}>
-              <summary><span className={styles.topicAccordionTitle}>
-                <strong>{t.areas[group.area][0]}</strong>
-                <small>{selectedInTopic} / {group.scales.length} {t.scalePerTopic}</small>
-              </span><ChevronDown size={18} aria-hidden="true" /></summary>
-              <div className={styles.topicAccordionBody}>
-                {group.researchAxes.filter(axis =>
-                  visible.some(scale => scale.researchAxisId === axis.id)).map(axis =>
-                  <div key={axis.id} className={styles.topicAxisGroup} data-profile-research-axis={axis.id}>
-                    <div className={styles.topicAxisHeading}>
+          {scaleGroups.map(group => <div key={group.area} className={styles.researchArea}
+              data-profile-scale-topic={group.area}>
+            <h3>{t.areas[group.area][0]}</h3>
+            <div className={styles.researchChoices} role="group" aria-label={t.areas[group.area][0]}>
+              {group.area === "goal"
+                ? group.scales.map(scale => <label key={scale.id}
+                    className={styles.topicScaleRow} data-profile-topic-choice={scale.id}>
+                    <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
+                      onChange={() => toggleScale(scale.id)} />
+                    <span className={styles.topicScaleText}>
+                      <strong>{topicLabel(group.area, scale, locale)}</strong>
+                    </span>
+                  </label>)
+                : group.researchAxes.map(axis => <label key={axis.id}
+                    className={styles.topicScaleRow} data-profile-topic-choice={axis.id}
+                    data-profile-research-axis={axis.id}>
+                    <input type="checkbox" checked={group.scales.some(scale =>
+                      scale.researchAxisId === axis.id && selectedScaleIds.includes(scale.id))}
+                      onChange={() => toggleTopicAxis(axis.id)} />
+                    <span className={styles.topicScaleText}>
                       <strong>{researchLabel(axis.id, locale)}</strong>
-                      <small>{axis.scaleCount} {t.scaleSourceCount}</small>
-                    </div>
-                    {visible.filter(scale => scale.researchAxisId === axis.id)
-                      .map(scale => <label key={scale.id} className={styles.topicScaleRow}
-                    data-profile-source-scale={scale.id} data-profile-topic-choice={scale.id}>
-                  <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
-                    onChange={() => toggleScale(scale.id)} />
-                  <span className={styles.topicScaleText}>
-                    <strong>{topicLabel(group.area, scale, locale)}</strong>
-                  </span>
-                </label>)}
-                  </div>)}
-                {group.scales.length === 0 && <p className={styles.scaleRequired}>{t.scaleEmpty}</p>}
-                {group.scales.length > 8 && <button type="button" className={styles.scaleExpand}
-                    onClick={() => setExpandedScaleAreas(previous => expanded
-                      ? previous.filter(area => area !== group.area) : [...previous, group.area])}
-                    aria-expanded={expanded}>
-                  {expanded ? t.scaleFewer : t.scaleMore}<ChevronDown size={15} aria-hidden="true" />
-                </button>}
-              </div>
-            </details>;
-          })}
+                    </span>
+                  </label>)}
+            </div>
+          </div>)}
         </div>
-        <p className={styles.scaleSourceNote}>{t.fullTestNote}</p>
         {selectedScaleIds.length === 0 && <p className={styles.caution} role="status">{t.scaleRequired}</p>}
       </section>}
 
@@ -791,7 +812,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 aria-pressed={batteryMode === mode} data-profile-mode={mode}
                 onClick={() => { setBatteryMode(mode); setShowMore(false); }}>
               <strong>{mode === "pro" ? t.modePro : t.modeCheckins}</strong>
-              <small>{modeTotals[mode].count} {t.testCount} · ~{modeTotals[mode].minutes} {t.minutes}
+              <small>{modeTotals[mode].count} {t.selectedTests} · ~{modeTotals[mode].minutes} {t.minutes}
                 {modeTotals[mode].questions ? " · " + modeTotals[mode].questions + " " + t.questions : ""}</small>
             </button>)}
           </div>
@@ -800,26 +821,61 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
           <strong>{chosenTests.length} {t.testCount}</strong>
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
-          <span>· {coverage.size}/{selectedAxisRefs.length} {t.selected}</span>
+          <span>· {coverage.size}/{selectedAxisRefs.length} {t.coveredScales}</span>
         </div>
-        {chosenTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
-          {chosenTests.map(test =>
-            <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked onChange={() => toggleTest(test.key)} />
-              <span className={styles.testText}>
-                <strong>{test.title}</strong>
-                <small>{test.questions ? test.questions + " " + t.questions : ""}
-                  {test.questions && test.minutes ? " · " : ""}
-                  {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{[...new Set(scaleGroups.flatMap(group => group.scales
-                  .filter(scale => scale.testKey === test.key &&
-                    selectedAxisRefs.includes(scale.researchAxisId))
-                  .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
-              </span>
-            </label>)}
+        {recommendedTests.length > 0 ? <div data-profile-recommended-tests>
+          <h3 className={styles.testSectionHeading}>{t.mainThree}</h3>
+          <div className={styles.testList}>
+            {recommendedTests.map(({ test, matchPercent }) =>
+              <label key={test.key} className={styles.testRow} data-profile-recommendation={test.key}>
+                <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                  disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                  onChange={() => toggleTest(test.key)} />
+                <span className={styles.testText}>
+                  <strong>{test.title}</strong>
+                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                    {test.questions && test.minutes ? " · " : ""}
+                    {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                  <span>{[...new Set(scaleGroups.flatMap(group => group.scales
+                    .filter(scale => scale.testKey === test.key &&
+                      selectedAxisRefs.includes(scale.researchAxisId))
+                    .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+                </span>
+                <span className={styles.fitPill} title={t.fitInfo}>
+                  <strong>{matchPercent}%</strong><small>{t.fit}</small>
+                </span>
+              </label>)}
+          </div>
         </div> : <p className={styles.caution} role="status">{t.modeNoTests}</p>}
+        {fiveMoreTests.length > 0 && <div className={styles.fiveMore} data-profile-five-more-tests>
+          <h3 className={styles.testSectionHeading}>{t.nextFive}</h3>
+          <div className={styles.testList}>
+            {fiveMoreTests.map(({ test, matchPercent }) =>
+              <label key={test.key} className={styles.testRow} data-profile-additional-suggestion={test.key}>
+                <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                  disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                  onChange={() => toggleTest(test.key)} />
+                <span className={styles.testText}>
+                  <strong>{test.title}</strong>
+                  <small>{test.questions ? test.questions + " " + t.questions : ""}
+                    {test.questions && test.minutes ? " · " : ""}
+                    {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                  <span>{[...new Set(scaleGroups.flatMap(group => group.scales
+                    .filter(scale => scale.testKey === test.key &&
+                      selectedAxisRefs.includes(scale.researchAxisId))
+                    .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+                </span>
+                <span className={styles.fitPill} title={t.fitInfo}>
+                  <strong>{matchPercent}%</strong><small>{t.fit}</small>
+                </span>
+              </label>)}
+          </div>
+        </div>}
+        {(recommendedTests.length > 0 || fiveMoreTests.length > 0) && <p className={styles.fitNote}>{t.fitInfo}</p>}
         {coverage.size < selectedAxisRefs.length && chosenTests.length > 0 &&
           <p className={styles.caution}>{t.unmeasured}</p>}
+        {selectedKeys.length === 0 && recommendedTests.length > 0 &&
+          <p className={styles.caution} role="status">{t.noneSelected}</p>}
         <div className={styles.startRow}>
           {selectedKeys.length > 0
             ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
@@ -828,55 +884,30 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             : <button type="button" disabled className={styles.primary}>{t.start}</button>}
         </div>
 
-        <section className={styles.extraPanel} aria-labelledby="profile-builder-extra-title" data-profile-additional-tests>
-          <div className={styles.extraHeading}>
-            <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
-              <p>{extra.additionalHint}</p></div>
-            <Link href={'/' + locale + '/client/tests'} prefetch={false} className={styles.fullCatalogue}>
-              {extra.full}<ArrowRight size={14} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
-            <strong>{extra.profile}</strong>
-            <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
-              <button type="button" data-profile-extra-profile="selected" aria-pressed={extraProfile === null}
-                onClick={() => { setExtraProfile(null); setExtraScales([]); setSearch(""); setShowMore(false); }}>
-                {extra.allSelected}
-              </button>
-              {(["wellbeing", "relationships", "work", "identity", "goal"] as const).map(key =>
-                <button type="button" key={key} data-profile-extra-profile={key}
-                  aria-pressed={extraProfile === key}
-                  onClick={() => { setExtraProfile(key); setExtraScales([]); setSearch(""); setShowMore(false); }}>
-                  {extraProfile === key ? "✓ " : ""}{t.focuses[key][0]}
-                </button>)}
+        {remainingTestKeys.size > 0 && <section className={styles.extraPanel}
+          aria-label={extra.additionalTitle} data-profile-additional-tests>
+          <button type="button" className={styles.moreTests}
+            onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}
+            aria-controls="profile-builder-extra-results" data-profile-extra-toggle>
+            {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
+          </button>
+          <div id="profile-builder-extra-results" hidden={!showMore} data-profile-extra-results>
+            <div className={styles.extraHeading}>
+              <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
+                <p>{extra.additionalHint}</p></div>
             </div>
-          </div>
-          {extraProfile && <div className={styles.extraScaleSelector} data-profile-extra-scales>
-            <strong>{extra.scales}</strong>
-            <p>{extra.scaleHelp}</p>
-            <div className={styles.extraScaleChoices} role="group" aria-label={extra.scales}>
-              {axesForExtraProfile.map(axis => <button key={axis} type="button" data-profile-extra-scale={axis}
-                aria-pressed={extraScales.includes(axis)} onClick={() => {
-                  setExtraScales(previous => previous.includes(axis)
-                    ? previous.filter(item => item !== axis) : [...previous, axis]);
-                  setShowMore(false);
-                }}>
-                {extraScales.includes(axis) ? "✓ " : "+ "}{profileResearchAxisLabel(axis, locale)}
-              </button>)}
+            <div className={styles.extraScope} data-profile-extra-selected-scope>
+              <strong>{extra.scope}</strong>
+              <p>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</p>
+              <small>{selectedAxisRefs.map(ref => researchLabel(ref, locale)).join(" · ")}</small>
             </div>
-            <div className={styles.extraScaleActions}>
-              <span role="status">{extraScales.length} / {axesForExtraProfile.length}</span>
-              <button type="button" onClick={() => { setExtraScales([...axesForExtraProfile]); setShowMore(false); }}>{extra.chooseAll}</button>
-              <button type="button" onClick={() => { setExtraScales([]); setShowMore(false); }}>{extra.clearScales}</button>
-            </div>
-          </div>}
           <div className={styles.extraFilters}>
             <label className={styles.extraSearch}><span>{extra.search}</span>
               <input type="search" value={search} placeholder={extra.searchPlaceholder}
-                onChange={event => { setSearch(event.currentTarget.value); setShowMore(false); }} />
+                onChange={event => setSearch(event.currentTarget.value)} />
             </label>
             <label><span>{extra.time}</span>
-              <select value={timeFilter} onChange={event => { setTimeFilter(event.currentTarget.value); setShowMore(false); }}>
+              <select value={timeFilter} onChange={event => setTimeFilter(event.currentTarget.value)}>
                 <option value="all">{extra.anyTime}</option>
                 <option value="2">{extra.two}</option>
                 <option value="5">{extra.five}</option>
@@ -894,25 +925,26 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <p className={styles.extraResultCount} role="status">{extraMatches.length + " " + extra.results}</p>
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
-              <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
-                onChange={() => toggleTest(test.key)} aria-label={extra.add + ": " + test.title} />
+              <input type="checkbox" checked={selectedKeys.includes(test.key)}
+                disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}
+                onChange={() => toggleTest(test.key)} aria-label={test.title} />
               <span className={styles.testText}><strong>{test.title}</strong>
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{[...new Set(extraGroups.flatMap(group => group.scales
+                <span>{[...new Set(scaleGroups.flatMap(group => group.scales
                   .filter(scale => scale.testKey === test.key &&
-                    effectiveExtraScales.includes(scale.researchAxisId))
+                    selectedAxisRefs.includes(scale.researchAxisId))
                   .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
+              </span>
+              <span className={styles.fitPill} title={t.fitInfo}>
+                <strong>{extraMatchPercent(test.key)}%</strong><small>{t.fit}</small>
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
-          {extraMatches.length > 6 && <button type="button" className={styles.moreTests}
-            onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}>
-            {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
-          </button>}
           {selectedKeys.length >= 12 && <p className={styles.caution}>{extra.limit}</p>}
-        </section>
+          </div>
+        </section>}
       </section>}
 
       {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>

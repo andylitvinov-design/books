@@ -102,8 +102,8 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
     route.indexOf('normalizeMessengerUpdates(provider,body)'))
   assert.doesNotMatch(component,/sendOneMessengerMessage|autoSend|createContact|book|payment|sendBeacon/)
   const css=read('components/telegram-diagnostic-entry.module.css')
-  assert.match(css,/@media\(max-width:580px\)/)
-  assert.match(css,/min-height:46px/)
+  assert.match(css,/@media\s*\(max-width:\s*580px\)/)
+  assert.match(css,/min-height:\s*46px/)
 })
 
 test('free-review copy does not contradict consented optional Telegram photo and drawing',()=>{
@@ -113,4 +113,28 @@ test('free-review copy does not contradict consented optional Telegram photo and
   assert.match(landing,/После согласия Telegram-бот может/)
   assert.match(landing,/Tras dar tu consentimiento, Telegram puede pedir/)
   assert.match(landing,/protected website form/)
+})
+
+test('free-review messenger CTAs have branded colors, clear localized names and no duplicate primary button',()=>{
+  const channels=read('components/telegram-diagnostic-entry.tsx')
+  const channelsCss=read('components/telegram-diagnostic-entry.module.css')
+  const capture=read('components/personal-express-enquiry.tsx')
+  const captureCss=read('components/personal-express-enquiry.module.css')
+  for(const label of [
+    'Request my free review via Telegram','Request my free review via WhatsApp',
+    'Запросить бесплатный разбор через Telegram','Запросить бесплатный разбор через WhatsApp',
+    'Solicitar mi revisión gratis por Telegram','Solicitar mi revisión gratis por WhatsApp',
+  ]) assert.ok(channels.includes(label),label)
+  assert.match(channels,/import \{ MessageCircle, Send \} from "lucide-react"/)
+  assert.match(channelsCss,/\.action \{ background: #087cad/)
+  assert.match(channelsCss,/\.manualAction \{ background: #087846/)
+  assert.match(channelsCss,/@media \(max-width: 580px\)/)
+  assert.match(channelsCss,/min-height: 54px/)
+  assert.ok(capture.indexOf('<TelegramDiagnosticEntry locale={locale} />') <
+    capture.indexOf('<button ref={revealRef}'), 'messenger choices precede the discreet secure-form link')
+  assert.doesNotMatch(capture,/reveal:\s*"Request my free review"/)
+  assert.match(capture,/secureAlternative: "Use the secure website form instead"/)
+  assert.match(capture,/data-express-reveal aria-expanded=\{expanded\}/)
+  assert.match(captureCss,/\.reveal\{display:inline-flex;/)
+  assert.match(captureCss,/data-express-review-messenger-choice\]\)\{display:none\}/)
 })

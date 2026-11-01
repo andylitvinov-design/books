@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {PublicSiteHeader} from '@/components/public-site-header'
+import {PublicPathwayStrip} from '@/components/public-pathway-strip'
 import {publicLocales} from '@/lib/public-locales'
 import type {PublicLocale} from '@/lib/public-locales'
 import {metadataBaseFor} from '@/data/site-metadata'
@@ -56,7 +57,7 @@ export default async function ContactPage({params}:Props){
  const whatsapp=whatsappEnquiryUrl({locale:l,service:'Holistic House',
   request:'General contact enquiry',pagePath:'/'+locale+'/contact'})
  const telegram=telegramEnquiryUrlFromWhatsApp(whatsapp)
- return <main className={styles.root} lang={l}>
+ return <main className={styles.root} lang={l} data-public-design-migration="wave1">
   <PublicSiteHeader locale={l}/>
   <div className={styles.wrap}>
    <header className={styles.hero}>
@@ -77,6 +78,7 @@ export default async function ContactPage({params}:Props){
      <Link href={'/'+locale+'/app/settings#hh-client-contact-phone'} className={styles.secondary}>{t.settings} →</Link>
     </section>
    </div>
+   <PublicPathwayStrip locale={l}/>
    <p className={styles.privacy}>{t.privacy} <Link href={'/'+locale+'/about'}>{t.about} →</Link></p>
   </div>
  </main>

@@ -2,74 +2,90 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { HolisticInlineSupportOrder } from "./holistic-inline-support-order";
+import { useRouter } from "next/navigation";
 import { SupportTalismanGallery } from "./support-talisman-gallery";
+import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "./catalog-star-rating";
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
-import type { SupportRequestKind } from "./remote-energy-support-booking";
+import { readBrowserTalismanCart, saveBrowserTalismanCart, TALISMAN_CART_UPDATED_EVENT } from "@/lib/practitioners/taoist-talisman-cart";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./taoist-talisman-catalog.module.css";
 
-type Talisman = (typeof TAOIST_TALISMANS)[number];
 const copy = {
   en: {
-    scroll:"Browse Daoist talismans", price:"Price", quote:"Confirmed by the master",
-    order:"Order", selected:"Your selection",
-    enquiry:"Select a practitioner and send an enquiry. Item, price and delivery are confirmed before you commit to buying.",
-    example:"Photographic illustrations of Daoist-style Fu, not ready-to-ship product photographs. Symbols do not guarantee financial, relational or medical outcomes.",
-    archive:"My private talisman collection",
+    scroll: "Browse Daoist talismans", price: "Price", quote: "Confirmed by the master",
+    add: "Add to cart", order: "Order", cart: "Your basket", selected: "in basket",
+    note: "Prices, availability and delivery are agreed with the master before any payment.",
+    example: "Photographic illustrations of Daoist-style Fu, not ready-to-ship product photographs. Symbols do not guarantee financial, relational or medical outcomes.",
+    best: "Highest rated first", noMatches: "No talismans have this rating yet.", archive: "My private talisman collection", storageError: "Your browser could not save the basket. Please allow temporary site storage.",
   },
   ru: {
-    scroll:"Каталог даосских талисманов", price:"Цена", quote:"Уточняется у мастера",
-    order:"Заказать", selected:"Вы выбрали",
-    enquiry:"Выберите мастера и отправьте заявку. Изготовление, цену и доставку мастер подтвердит до покупки.",
-    example:"Фотографии-иллюстрации талисманов в стиле Фу, а не готовые товары. Символы не гарантируют успеха, отношений или исцеления.",
-    archive:"Моя личная коллекция",
+    scroll: "Каталог даосских талисманов", price: "Цена", quote: "Уточняется у мастера",
+    add: "В корзину", order: "Заказать", cart: "Корзина", selected: "в корзине",
+    note: "Стоимость, изготовление и доставку согласовываем с мастером до оплаты.",
+    example: "Фотографии-иллюстрации талисманов в стиле Фу, а не готовые товары. Символы не гарантируют успеха, отношений или исцеления.",
+    best: "Сначала с лучшей оценкой", noMatches: "Талисманов с такой оценкой пока нет.", archive: "Моя личная коллекция", storageError: "Не удалось сохранить корзину. Разрешите временное хранение данных сайта.",
   },
   es: {
-    scroll:"Explorar talismanes taoístas", price:"Precio", quote:"A confirmar por el profesional",
-    order:"Solicitar", selected:"Tu elección",
-    enquiry:"Elige un profesional y envía tu solicitud. La producción, el precio y la entrega se confirman antes de comprar.",
-    example:"Fotografías ilustrativas de estilo Fu, no fotos de productos listos para enviar. Los símbolos no garantizan resultados económicos, afectivos o médicos.",
-    archive:"Mi colección privada",
+    scroll: "Explorar talismanes taoístas", price: "Precio", quote: "A confirmar por el maestro",
+    add: "Añadir al carrito", order: "Solicitar", cart: "Tu carrito", selected: "en el carrito",
+    note: "El maestro confirma el precio, la disponibilidad y el envío antes de cobrar.",
+    example: "Fotografías ilustrativas de estilo Fu, no fotos de productos listos para enviar. Los símbolos no garantizan resultados económicos, afectivos o médicos.",
+    best: "Mejor valorados primero", noMatches: "Aún no hay talismanes con esa valoración.", archive: "Mi colección privada", storageError: "No se pudo guardar el carrito. Permite el almacenamiento temporal de este sitio.",
   },
 } as const;
 
-export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
+export function TaoistTalismanCatalog({ locale, featuredId, rankedIds }: { locale: PublicLocale; featuredId?: string; rankedIds?: readonly string[] }) {
+  const router = useRouter();
   const t = copy[locale];
-  const [selection, setSelection] = useState<Talisman | null>(null);
-  const [kind, setKind] = useState<SupportRequestKind>("talisman");
+  const stars = useCatalogRatings("talisman", TAOIST_TALISMANS.map(item => item.id));
+  const [minimumStars, setMinimumStars] = useState(0);
+  const [sortRated, setSortRated] = useState(false);
+  // Use the *existing* illustrated SKUs and cart, just put the relevant
+  // symbol first. No purchase is made or customer details transferred.
+  const rankedOrder = new Map((rankedIds || []).map((id, index) => [id, index]));
+  const orderedTalismans = rankedOrder.size
+    ? [...TAOIST_TALISMANS].sort((a, b) =>
+        (rankedOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (rankedOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+    : featuredId && TAOIST_TALISMANS.some(item => item.id === featuredId)
+      ? [...TAOIST_TALISMANS].sort((a, b) => Number(b.id === featuredId) - Number(a.id === featuredId))
+      : TAOIST_TALISMANS;
+  const visibleTalismans = (sortRated ? sortByStars([...orderedTalismans], item => item.id, stars.ratings) : [...orderedTalismans])
+    .filter(item => stars.loading || stars.unavailable || matchesStarFilter(stars.ratings[item.id], minimumStars));
+  const [cartIds, setCartIds] = useState<string[]>([]);
   const [archiveOpen, setArchiveOpen] = useState(false);
-
+  const [storageError, setStorageError] = useState(false);
   useEffect(() => {
-    const onDifferentOrder = (event: Event) => {
-      if ((event as CustomEvent<{ source?: string }>).detail?.source !== "catalog") setSelection(null);
-    };
-    window.addEventListener("hh-support-order-open", onDifferentOrder);
-    return () => window.removeEventListener("hh-support-order-open", onDifferentOrder);
+    const sync = () => setCartIds(readBrowserTalismanCart());
+    sync();
+    window.addEventListener(TALISMAN_CART_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(TALISMAN_CART_UPDATED_EVENT, sync);
   }, []);
 
-  useEffect(() => {
-    if (!selection) return;
-    const panel = document.getElementById("holistic-inline-order");
-    if (!panel) return;
-    panel.scrollIntoView({
-      block:"start",
-      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-    panel.querySelector<HTMLElement>("#holistic-inline-order-title")?.focus({ preventScroll:true });
-  }, [selection]);
-
-  const choose = (item: Talisman) => {
-    window.dispatchEvent(new CustomEvent("hh-support-order-open", { detail:{ source:"catalog" } }));
-    setKind("talisman");
-    setSelection(item);
+  const choose = (itemId: string) => {
+    if (cartIds.includes(itemId)) {
+      router.push("/" + locale + "/talismans/cart");
+      return;
+    }
+    if (!saveBrowserTalismanCart([...cartIds, itemId])) {
+      setStorageError(true);
+      return;
+    }
+    setStorageError(false);
   };
 
   return (
     <div className={styles.root} data-taoist-talisman-catalog>
+      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,marginBottom:12}}>
+        <StarFilter locale={locale} minimum={minimumStars} onChange={setMinimumStars} />
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13}}>
+          <input type="checkbox" checked={sortRated} onChange={event => setSortRated(event.target.checked)} />{t.best}
+        </label>
+      </div>
+      {!visibleTalismans.length && !stars.loading && !stars.unavailable && <p role="status">{t.noMatches}</p>}
       <div className={styles.scroller} role="region" tabIndex={0} aria-label={t.scroll}>
-        {TAOIST_TALISMANS.map(item => (
-          <article key={item.id} className={styles.card} data-tao-talisman={item.id}>
+        {visibleTalismans.map(item => (
+          <article key={item.id} className={styles.card} data-tao-talisman={item.id} data-recommended={item.id === featuredId ? "true" : undefined}>
             <div className={styles.photo}>
               <Image src={item.image} fill
                 alt={item[locale].title + " · " + t.example}
@@ -77,32 +93,28 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
             </div>
             <div className={styles.details}>
               <h3>{item[locale].title}</h3>
+              <CatalogStarRating locale={locale} summary={stars.ratings[item.id]} onRate={value => stars.rate(item.id,value)} unavailable={stars.unavailable} compact />
               <p className={styles.description}>{item[locale].description}</p>
               <div className={styles.purchase}>
                 <span className={styles.price}><small>{t.price}</small><strong>{t.quote}</strong></span>
                 <button type="button" className={styles.order}
                   data-tao-talisman-order={item.id}
-                  aria-expanded={selection?.id === item.id && kind === "talisman"}
-                  aria-controls="holistic-inline-order" onClick={() => choose(item)}>
-                  {t.order}<span aria-hidden="true"> →</span>
+                  aria-pressed={cartIds.includes(item.id)}
+                  onClick={() => choose(item.id)}>
+                  {cartIds.includes(item.id) ? t.order : t.add}<span aria-hidden="true"> →</span>
                 </button>
               </div>
             </div>
           </article>
         ))}
       </div>
-      <p className={styles.note}>{t.example}</p>
-
-      {selection && (
-        <div className={styles.request} data-tao-talisman-request={selection.id}>
-          <p className={styles.selected}><strong>{t.selected}:</strong> {selection[locale].title}</p>
-          <p className={styles.explanation}>{t.enquiry}</p>
-          <HolisticInlineSupportOrder key={selection.id} locale={locale} kind={kind}
-            initialGoal={selection.goal} initialTalismanId={selection.id}
-            onKindChange={setKind} onClose={() => setSelection(null)} />
-        </div>
+      {cartIds.length > 0 && (
+        <button type="button" className={styles.cartBanner} onClick={() => router.push("/" + locale + "/talismans/cart")}>
+          <span>{t.cart}: {cartIds.length} {t.selected}</span><span aria-hidden="true">→</span>
+        </button>
       )}
-
+      {storageError && <p role="alert" className={styles.error}>{t.storageError}</p>}
+      <p className={styles.note}>{t.note} {t.example}</p>
       <div className={styles.archive}>
         <button type="button" className={styles.archiveToggle} aria-expanded={archiveOpen}
           aria-controls="tao-talisman-private-gallery" onClick={() => setArchiveOpen(open => !open)}>

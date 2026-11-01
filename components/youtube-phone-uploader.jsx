@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from 'react'
 import Link from 'next/link'
 import styles from './youtube-phone-uploader.module.css'
-import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl} from '@/lib/youtube/phone-upload-protocol.mjs'
+import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl, validatedOwnerTelegramCut, isOwnerTelegramMp4} from '@/lib/youtube/phone-upload-protocol.mjs'
 import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedDetails} from '@/lib/youtube/browser-upload'
 import {completeYoutubeUpload, hasUnarchivedCompletedUpload, retainUploadEntry, uploadNeedsRecovery} from '@/lib/youtube/upload-completion.mjs'
 import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction, configureYoutubeWebOauthAction} from '@/app/admin/youtube-upload/actions'
@@ -25,6 +25,10 @@ const copy = {
     setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
     setupSave:'Подключить OAuth-клиент',setupSaving:'Сохранение…',setupChange:'Настроить / заменить Google OAuth',
 
+    telegramCutImport:'📥 Взять обрезанный MP4 из Telegram',
+    telegramCutLoading:'Получаем приватный MP4…',
+    telegramCutImported:'Обрезанный MP4 добавлен. Проверьте запись и только после этого нажмите «Загрузить на YouTube».',
+    telegramCutHint:'Возьмите текущую обрезанную версию из закрытого кабинета. Загрузки нет до вашего подтверждения. Только русский канал.',
     historyUnavailable:'Хранилище истории временно недоступно. Загрузка отключена, чтобы не потерять ссылки на готовые видео.',
     target:'Куда загрузить?', ru:'Русский YouTube', en:'English YouTube',
     connect:'Выбрать Google / YouTube-аккаунт', reconnect:'Сменить YouTube-аккаунт',
@@ -63,6 +67,8 @@ const copy = {
       channel_conflict:'Английский канал уже привязан к другому ID. Загрузка остановлена для защиты.',
       invalid_channel:'Неверный канал YouTube.',
       invalid_file:'Выберите видеофайл ненулевого размера.',
+      telegram_cut_unavailable:'Обрезанный приватный MP4 недоступен или ссылка устарела. Проверьте «Мои материалы».',
+      telegram_cut_state:'Сначала подключите русский YouTube и завершите другие загрузки.',
       too_many:'За один раз можно выбрать не более 10 видео.',
       invalid_title:'Название видео должно быть от 1 до 100 символов.',
       invalid_description:'Описание слишком длинное.',
@@ -93,6 +99,10 @@ const copy = {
     setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
     setupSave:'Connect OAuth client',setupSaving:'Saving…',setupChange:'Configure / change Google OAuth',
 
+    telegramCutImport:'📥 Use trimmed Telegram MP4',
+    telegramCutLoading:'Reading private MP4…',
+    telegramCutImported:'Trimmed MP4 added. Review it, then explicitly press Upload to YouTube.',
+    telegramCutHint:'Import your current private cut from the cabinet. Nothing uploads until you approve. Russian channel only.',
     historyUnavailable:'Your saved-link archive is unavailable. Uploads are disabled to prevent lost video links.',
     target:'Upload to which channel?', ru:'Russian YouTube', en:'English YouTube',
     connect:'Choose Google / YouTube account', reconnect:'Switch YouTube account',
@@ -131,6 +141,8 @@ const copy = {
       channel_conflict:'English channel is already paired to another ID. Upload is blocked.',
       invalid_channel:'Invalid YouTube channel.',
       invalid_file:'Choose a non-empty video file.',
+      telegram_cut_unavailable:'The selected private MP4 is unavailable or out of date. Check My Materials.',
+      telegram_cut_state:'Connect the correct Russian channel and finish other uploads first.',
       too_many:'You can select at most 10 videos in a batch.',
       invalid_title:'Video title must be 1 to 100 characters.',
       invalid_description:'Description is too long.',
@@ -161,7 +173,7 @@ function mergeHistory(old, record) {
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
 export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, oauthSource='missing', initialChannels,
-  initialHistory=[], historyReady=false}) {
+  initialHistory=[], historyReady=false, importTelegramCut=false}) {
   const t = copy[locale] || copy.ru
   const [target, setTarget] = useState('ru')
   const [channels, setChannels] = useState(initialChannels || {ru:null,en:null})
@@ -176,6 +188,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const [madeForKids, setMadeForKids] = useState(false)
   const [busy, setBusy] = useState(false)
   const [pairBusy, setPairBusy] = useState(false)
+  const [importingTelegramCut,setImportingTelegramCut] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [history, setHistory] = useState(initialHistory)
@@ -286,7 +299,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }, [enabled,clientId,locale])
 
   function chooseTarget(next) {
-    if (busy || authPending || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
+    if (busy || authPending || importingTelegramCut || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
       setError(t.more);return
     }
     if (next === target) return
@@ -309,7 +322,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   function connect() {
-    if (!oauthClient.current || busy || authPending) {setError(t.errors.google_unavailable);return}
+    if (!oauthClient.current || busy || authPending || importingTelegramCut) {setError(t.errors.google_unavailable);return}
     setAuthPending(true)
     pendingTarget.current = target
     setError('')
@@ -353,6 +366,9 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   function addFiles(event) {
     const files = Array.from(event.target.files || [])
     event.target.value = ''
+    queueFiles(files)
+  }
+  function queueFiles(files,ownerCut=false,sourceCutUrl=null) {
     if (files.length === 0) return
     if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
@@ -361,10 +377,54 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
     alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
-      target, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
+      target, ownerCut, sourceCutUrl, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
     setError('')
     setMessage('')
+  }
+  async function importSelectedTelegramCut() {
+    // This reuses the already implemented Phone GIS OAuth rather than
+    // implying a persistent server-side Google refresh token was granted.
+    // No publication: owner must separately click "Upload to YouTube".
+    if (!importTelegramCut || importingTelegramCut || !enabled || !historyStatus ||
+        !authReady || busy || authPending || pairBusy || target !== 'ru' ||
+        connected?.id !== channels.ru?.id || connected?.target !== 'ru' ||
+        entriesRef.current.some(item => item.state !== 'done')) {
+      setError(t.errors.telegram_cut_state)
+      return
+    }
+    setImportingTelegramCut(true)
+    setError('')
+    setMessage('')
+    try {
+      const response=await fetch('/api/admin/telegram-video/drafts',{
+        credentials:'same-origin',redirect:'error',cache:'no-store',
+        signal:AbortSignal.timeout(15000)
+      })
+      if(!response.ok)throw Error('telegram_cut_unavailable')
+      const metadata=await response.json()
+      const selected=validatedOwnerTelegramCut(metadata?.selected)
+      const fileResponse=await fetch(selected.url,{
+        credentials:'same-origin',redirect:'error',cache:'no-store',
+        signal:AbortSignal.timeout(90000)
+      })
+      if(!fileResponse.ok||!String(fileResponse.headers.get('content-type')||'').startsWith('video/mp4'))
+        throw Error('telegram_cut_unavailable')
+      const length=fileResponse.headers.get('content-length')
+      if(length!==null&&Number(length)!==selected.bytes)
+        throw Error('telegram_cut_unavailable')
+      const bytes=new Uint8Array(await fileResponse.arrayBuffer())
+      if(!isOwnerTelegramMp4(bytes,selected.bytes))
+        throw Error('telegram_cut_unavailable')
+      const ruToken=authorizedChannels.current.get('ru')
+      if(targetRef.current!=='ru'||ruToken?.details?.id!==channelsRef.current.ru?.id||
+        ruToken.token.expiresAt<Date.now()+30_000||
+        entriesRef.current.some(item=>item.state!=='done'))
+        throw Error('telegram_cut_state')
+      queueFiles([new File([bytes],selected.filename,{type:'video/mp4'})],true,selected.url)
+      setMessage(t.telegramCutImported)
+    }catch(reason){setError(humanError(reason,t))}
+    finally{setImportingTelegramCut(false)}
   }
   async function saveLink(entryId, videoId, privacyStatus, title, targetKey, channelId) {
     try {
@@ -389,7 +449,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   async function finish(entry, resultId, auth, channelId) {
     await completeYoutubeUpload({
       videoId:resultId,channelId,
-      readDetails:() => readUploadedDetails(resultId,auth.value),
+      readDetails:() => readUploadedDetails(resultId,auth.value,undefined,{requireProcessed:entry.ownerCut===true}),
       update:partial => update(entry.id,partial),
       save:details => saveLink(entry.id,resultId,details.privacyStatus,entry.title,entry.target,details.channelId),
     })
@@ -420,6 +480,18 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         if (entry.videoId) {
           await finish(entry,entry.videoId,auth,desired.id)
           continue
+        }
+        // Prevent a selected private cut from silently changing between
+        // importing into the browser and pressing the YouTube upload button.
+        // If an upload session already started, only resume/probe it.
+        if (entry.ownerCut===true && !sessions.current.has(entry.id)) {
+          const latest=await fetch('/api/admin/telegram-video/drafts',{
+            credentials:'same-origin',redirect:'error',cache:'no-store',signal:controller.signal
+          })
+          if(!latest.ok)throw Error('telegram_cut_unavailable')
+          const selected=validatedOwnerTelegramCut((await latest.json()).selected)
+          if(selected.url!==entry.sourceCutUrl||selected.bytes!==entry.file.size)
+            throw Error('telegram_cut_unavailable')
         }
         const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',language:target,synthetic,madeForKids})
         update(entry.id,{state:'sending'})
@@ -485,7 +557,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const pending = entries.filter(item => item.state !== 'done')
   const unresolvedUpload = entries.some(uploadNeedsRecovery)
   const canUpload = Boolean(enabled && historyStatus && connectedCorrectly && !busy && !authPending && pending.length &&
-    !hasUnarchivedCompletedUpload(entries) &&
+    !hasUnarchivedCompletedUpload(entries) && !importingTelegramCut &&
     pending.every(item => item.target === target))
   const filteredHistory = historyFilter === 'all' ? history : history.filter(item => item.target === historyFilter)
   return (
@@ -522,7 +594,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </button>
       </div>}
       {!historyStatus && <p className={styles.unavailable} role="status">{t.historyUnavailable}</p>}
-      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy}>
+      <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy || importingTelegramCut}>
         <legend>{t.target}</legend>
         <div className={styles.targets}>
           {(['ru','en']).map(lang => (
@@ -535,7 +607,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         </div>
       </fieldset>
       {enabled && <div className={styles.connect}>
-        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || !historyStatus} onClick={connect}>
+        <button type="button" className={styles.secondary} disabled={!authReady || busy || authPending || pairBusy || importingTelegramCut || !historyStatus} onClick={connect}>
           {authPending ? t.signing : connectedCorrectly ? t.reconnect : t.connect}
         </button>
         {connectedCorrectly && <span className={styles.channel}>✓ {t.connected}: <strong>{connected.name}</strong></span>}
@@ -553,10 +625,20 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
       )}
       {selectedConfig && connected && !connectedCorrectly && <p className={styles.error}>{t.incorrect}</p>}
       <div className={styles.form}>
+        {importTelegramCut&&<div data-private-telegram-cut-import>
+          <p className={styles.muted}>{t.telegramCutHint}</p>
+          <button type="button" className={styles.secondary}
+            disabled={importingTelegramCut||!enabled||!historyStatus||busy||authPending||
+              pairBusy||!connectedCorrectly||target!=='ru'||unresolvedUpload||
+              entries.some(item=>item.state!=='done')}
+            onClick={importSelectedTelegramCut}>
+            {importingTelegramCut?t.telegramCutLoading:t.telegramCutImport}
+          </button>
+        </div>}
         <label className={styles.picker}>
           <span>＋ {t.select}</span>
           <input type="file" accept="video/*,.mp4,.mov,.m4v,.webm" multiple
-            disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly || unresolvedUpload}
+            disabled={!configured || !historyStatus || busy || authPending || pairBusy || importingTelegramCut || !connectedCorrectly || unresolvedUpload}
             onChange={addFiles}/>
         </label>
         {entries.length > 0 && <div className={styles.files}>

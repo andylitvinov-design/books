@@ -1375,7 +1375,7 @@
     min-height:0;
     /* 43svh rather than 31.38svh: the user's chart should dominate a normal
        iPhone viewport. Restrict by card width on narrow/short devices. */
-    width:min(100%,clamp(290px,43svh,390px));
+    width:min(100%,clamp(290px,43svh,330px));
     height:auto;
     aspect-ratio:360 / 390;
     margin:0 auto;
@@ -1418,4 +1418,94 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     width:min(100%,clamp(230px,42svh,275px));
   }
+}
+
+
+/* Reports: thin second-level chart/axis switch directly below four life profiles.
+   Axis chooser is a distinct view, never a second long list below the chart. */
+.visual:not(.visualCompact) .portraitModeBar{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;padding:3px;margin:0 3px 7px;min-width:0;
+  border:1px solid #c6dbd2;border-radius:11px;background:#edf5f0;
+}
+.visual:not(.visualCompact) .portraitModeButton{
+  display:flex;justify-content:center;align-items:center;gap:4px;
+  min-width:0;min-height:44px;padding:7px 7px;
+  border:1px solid transparent;border-radius:8px;
+  background:transparent;color:#346a61;cursor:pointer;
+  font:700 12px/1.2 system-ui,sans-serif;text-align:center;
+}
+.visual:not(.visualCompact) .portraitModeButton[aria-selected=true]{
+  background:#fffdfa;color:#1b5f55;border-color:#a9cec1;
+  box-shadow:0 1px 3px #195f531a;
+}
+.visual:not(.visualCompact) .portraitModeButton:focus-visible,
+.visual:not(.visualCompact) .portraitRayBulk button:focus-visible{
+  outline:3px solid #23796f;outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage[hidden]{display:none!important}
+.visual:not(.visualCompact) .portraitControls{
+  margin:0 3px 8px;padding:10px;border-radius:12px;
+  background:#fbfbf8;border:1px solid #c6dbd2;
+}
+.visual:not(.visualCompact) .portraitRayBulk{
+  display:flex;justify-content:flex-end;gap:10px;margin:5px 0 10px;
+}
+.visual:not(.visualCompact) .portraitRayBulk button{
+  border:0;background:transparent;color:#23695e;
+  padding:5px 2px;cursor:pointer;font:700 11px/1.25 system-ui,sans-serif;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.visual:not(.visualCompact) .portraitAxisHint{
+  margin:0 0 9px;color:#536e64;font:400 11px/1.4 system-ui,sans-serif;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 2px;padding:2px}
+  .visual:not(.visualCompact) .portraitModeButton{min-height:44px;padding:7px 3px;font-size:11px}
+  .visual:not(.visualCompact) .portraitControls{margin:0 2px 7px;padding:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitModeButton{transition:none}
+}
+
+
+/* Reports: the chart has two display-only wheels. Changing the wheel must
+   never alter saved results, targets or questionnaire scores. */
+.visual:not(.visualCompact) .portraitChartChoices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;margin:2px 4px 8px;padding:3px;border-radius:10px;
+  background:rgba(236,244,239,.72);border:1px solid #cee1d7;
+}
+.visual:not(.visualCompact) .portraitChartChoices button{
+  min-height:44px;min-width:0;padding:7px 9px;border:1px solid transparent;
+  border-radius:7px;background:transparent;color:#4b786d;
+  font:700 11px/1.2 system-ui,sans-serif;cursor:pointer;
+}
+.visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true]{
+  background:#fffdf7;border-color:#b6d2c4;color:#175c54;
+}
+.visual:not(.visualCompact) .portraitChartChoices button:focus-visible{
+  outline:3px solid #20786d;outline-offset:2px;
+}
+.visual:not(.visualCompact) .portraitTestPanel{
+  min-width:0;max-width:100%;padding:0 2px 7px;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitModeButton{
+    min-height:44px;padding:7px 2px;font-size:clamp(10px,2.7vw,11px)
+  }
+  .visual:not(.visualCompact) .portraitChartChoices{
+    margin:2px 2px 5px;gap:3px
+  }
+  .visual:not(.visualCompact) .portraitChartChoices button{
+    min-height:44px;font-size:10.5px;padding:8px 3px
+  }
+  /* The Goals anchor is as touchable as its adjacent actions on iPhone. */
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
+    :global(.hh-portrait-quick-actions) > :global(a){
+    flex-direction:row;flex-wrap:wrap;min-height:52px;
+    padding:6px 3px;gap:3px;font-size:clamp(10px,2.65vw,12px)
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
+    :global(.hh-portrait-quick-actions) > :global(a) > :global(svg){display:none}
 }

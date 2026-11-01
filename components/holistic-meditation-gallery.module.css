@@ -58,9 +58,14 @@
 }
 @media(prefers-reduced-motion:reduce){.filter{transition:none}}
 
-/* Full-screen app is the single playback surface: the discovery poster never changes size. */
-.openApp{position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#161b18;color:#fffaf1;text-decoration:none}
-.openApp>img{display:block;width:100%;height:100%;object-fit:cover;opacity:.88}
-.openAppLabel{position:absolute;inset:auto 11px 11px;display:flex;align-items:center;gap:9px;min-height:43px;padding:8px 12px;border-radius:10px;background:#2c392ddb;color:#fffaf3;font:800 13px/1.2 Arial,Helvetica,sans-serif}
-.openAppLabel svg{flex:none;fill:currentColor}
-.openApp:hover .openAppLabel{background:#624735}
+/* Single prominent action opens the local-only personalized finder. */
+.finderToggle{display:inline-flex;align-items:center;justify-content:center;min-height:46px;max-width:100%;margin:0 0 13px;padding:10px 17px;border:1px solid #806049;border-radius:12px;background:#76533e;color:#fffaf4;font:750 12.5px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.finderToggle[aria-expanded="true"]{background:#f8eee2;color:#624a39}
+@media(max-width:430px){.finderToggle{width:100%;font-size:12px}}
+
+/* Optional full-screen path alongside the existing rated, source-backed player. */
+.fullscreenLink{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;max-width:100%;margin-top:9px;padding:9px 14px;border-radius:12px;
+  border:1px solid #72ab90;background:#eef8f1;color:#13563a;font:700 13px/1.3 Arial,sans-serif;
+  text-decoration:none;overflow-wrap:anywhere}
+.fullscreenLink:hover,.fullscreenLink:focus-visible{background:#dff2e7;outline:2px solid #398966;outline-offset:2px}

@@ -103,9 +103,10 @@ test('five localized screens separate research scales, topics, tests and Ready',
   assert.ok(!ui.includes('localStorage'))
 })
 
-test('extra tests from other topics remain visible and removable in the chosen mode', () => {
+test('additional tests remain strictly scoped and removable in the chosen mode', () => {
   const ui=source('components/personality-profiles-builder.tsx')
   assert.match(ui,/selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key/)
-  assert.match(ui,/if \(!tests\.some\(test => test\.key === key && test\.testKind === modeKind\)\) return/)
+  assert.ok(ui.includes('if (!eligibleTestKeys.has(key)) return;'))
+  assert.ok(ui.includes('remainingTestKeys.has(test.key) && test.testKind === modeKind'))
   assert.match(ui,/keys\.length < 12/)
 })

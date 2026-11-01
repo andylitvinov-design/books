@@ -30,7 +30,11 @@ test("meditation app uses full-screen, stable native YouTube playback and the fo
   assert.match(route, /freeMeditationVideos\(locale\)/);
   assert.match(route, /videos\.some\(video => video\.id === requested\)/);
   assert.match(gallery, /data-open-meditation-app/);
-  assert.doesNotMatch(gallery, /<AcademyVideoPlayer/);
+  assert.match(gallery, /<AcademyVideoPlayer/, "retain the currently published, rated inline player");
+  assert.match(gallery, /encodeURIComponent\(activeVideo\.id\)/,
+    "full-screen entry must use the same approved source ID as the existing player");
+  assert.match(gallery, /HolisticMeditationFinder/,
+    "do not remove the existing personal finder to introduce the optional app");
   assert.match(app, /mysteries\/maya-aztec\/feathered-serpent/);
   assert.match(app, /principles-of-energywork/);
   assert.match(app, /egyptian-priesthood/);

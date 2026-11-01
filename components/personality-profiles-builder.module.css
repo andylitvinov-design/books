@@ -149,7 +149,22 @@
 .testText strong { color: #325d4e; font-size: 13px; line-height: 1.3; }
 .testText small { color: #6b7a71; font-size: 11px; }
 .testText > span { color: #597369; font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
-.moreTests { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.testSectionHeading { margin: 13px 0 9px; font-size: 14px; font-weight: 800; color: var(--forest); }
+.fiveMore { margin-top: 19px; padding-top: 13px; border-top: 1px solid #dbebdd; }
+.fitPill {
+  display: flex; flex: 0 0 auto; min-width: 70px; align-items: center;
+  justify-content: center; flex-direction: column; gap: 3px;
+  padding: 7px 8px; border-radius: 10px; background: #ebf3eb;
+  color: #315f52; line-height: 1.1; text-align: center;
+}
+.fitPill strong { font-size: 17px; font-weight: 800; }
+.fitPill small { font-size: 10px; font-weight: 650; }
+.fitNote { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: #587264; }
+@media (max-width: 350px) {
+  .fitPill { min-width: 58px; padding: 6px 5px; }
+  .fitPill strong { font-size: 15px; }
+}
+.moreTests { display: flex; align-items: center; min-height: 44px; gap: 7px; margin-top: 10px; }
 /* Compact profile test finder reuses guest catalogue classifications. */
 .startRow { display: flex; justify-content: flex-end; margin: 13px 0 5px; }
 .startRow > .primary {
@@ -321,19 +336,11 @@
   .templateCard:hover, .begin:hover { transform: none; }
 }
 
-/* Other tests: first choose one life direction, then any number of its real scales. */
-.extraProfileSelector,.extraScaleSelector{display:grid;gap:8px;margin:12px 0}
-.extraProfileSelector>strong,.extraScaleSelector>strong{font-size:13px;color:#335d50}
-.extraScaleSelector>p{margin:0;color:#667368;font-size:12px;line-height:1.4}
-.extraProfileChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.extraProfileChoices button,.extraScaleChoices button{min-height:44px;padding:9px 12px;text-align:left;border:1px solid #d5e1d4;border-radius:12px;background:#fffdf8;color:#3c5c4b;font-size:13px}
-.extraProfileChoices button[aria-pressed=true],.extraScaleChoices button[aria-pressed=true]{background:#e5f2e9;border-color:#41846c;box-shadow:inset 0 0 0 1px #41846c;color:#215843;font-weight:700}
-.extraScaleChoices{display:flex;gap:6px;flex-wrap:wrap}
-.extraScaleChoices button{border-radius:999px}
-.extraScaleActions{display:flex;align-items:center;gap:12px;margin:3px 0 9px}
-.extraScaleActions span{margin-right:auto;font-size:12px;color:#68766c}
-.extraScaleActions button{border:0;background:transparent;padding:8px 2px;color:#246951;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer}
-@media(max-width:450px){.extraProfileChoices{grid-template-columns:1fr}.extraProfileChoices button{min-height:44px}}
+/* Extra tests inherit the preceding selected topics and source facets. */
+.extraScope{display:grid;gap:5px;margin:12px 0;padding:11px 12px;border:1px solid #cbded1;border-radius:12px;background:#f1f7f2;overflow-wrap:anywhere}
+.extraScope strong{font-size:13px;color:#285e48}
+.extraScope p{margin:0;color:#315f50;font-size:12px;font-weight:600;line-height:1.45}
+.extraScope small{color:#536c61;font-size:11px;line-height:1.5}
 
 /* Step 2: independent, source-backed research scales. Goal clarity,
    motivation and confidence stay separate even on a 320px viewport. */
@@ -343,6 +350,11 @@
 .researchChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .researchChoice{min-width:0;min-height:49px;display:flex;align-items:center;gap:9px;padding:10px 11px;text-align:left;border:1px solid #d4e3d6;border-radius:12px;background:#fffdf8;cursor:pointer;color:#315e4f}
 .researchChoice strong{min-width:0;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.mainScaleBody{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:3px}
+.mainScaleBody strong{font-size:15px;line-height:1.35}
+.mainScaleBody small{font-size:12px;line-height:1.35;color:#5f7669}
+.researchGroupList>.researchChoice{width:100%;min-height:64px}
+
 .researchChoice[aria-pressed=true]{background:#e8f3eb;border-color:#508773;box-shadow:inset 0 0 0 1px #508773}
 .researchSelectedCount{margin:7px 0 0;color:#456b58;font-size:12px;font-weight:750}
 .researchChoice:focus-visible{outline:3px solid #9c715e;outline-offset:2px}
@@ -367,7 +379,7 @@
 .topicAccordionTitle strong{color:var(--forest);font-size:15px;line-height:1.3}
 .topicAccordionTitle small{color:#687b6e;font-size:11px}
 .topicAccordionBody{display:grid;gap:7px;padding:0 12px 13px}
-.topicScaleRow{display:flex;align-items:flex-start;gap:10px;min-width:0;padding:10px 11px;border:1px solid #d7e4da;border-radius:12px;background:#fff;cursor:pointer}
+.topicScaleRow{display:flex;align-items:center;min-height:46px;gap:10px;min-width:0;padding:10px 11px;border:1px solid #d7e4da;border-radius:12px;background:#fff;cursor:pointer}
 .topicScaleRow:has(input:checked){background:#edf6ed;border-color:#71a288}
 .topicScaleRow>input{flex:none;margin:4px 0 0;width:19px;height:19px;accent-color:#315f52}
 .topicScaleText{min-width:0;display:flex;flex:1;flex-direction:column;gap:3px;overflow-wrap:anywhere}
