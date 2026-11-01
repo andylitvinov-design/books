@@ -732,21 +732,26 @@ const runEngine = async ([engine, browserType]) => {
           "the owner-approved mock keeps one short editorial line on top of the real video");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
-          "the approved RU presentation belongs only to the RU screen");
-        assert.equal(await hero.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
-          "English route links only to the verified owner English channel, not a Russian soundtrack");
-        const youtubeLink=hero.locator('[data-video-therapy-youtube]');
-        assert.equal(await youtubeLink.count(),locale==="es"?0:1,
-          "one explicitly identified YouTube destination per active language");
+        // The client Canvas is not an informational YouTube player.
+        const introDock=page.locator("[data-video-therapy-info]");
+        assert.equal(await hero.locator("[data-video-therapy-intro]").count(),0,
+          "published YouTube must not cover the live creative video frame");
+        assert.equal(await introDock.count(),locale==="es"?0:1,
+          "only locales with a verified destination receive a separate introduction");
+        assert.equal(await introDock.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
+          "RU presentation stays within the Practices workspace");
+        assert.equal(await introDock.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
+          "EN links to its own verified channel, not the RU soundtrack");
+        const youtubeLink=introDock.locator('[data-video-therapy-youtube]');
+        assert.equal(await youtubeLink.count(),locale==="es"?0:1);
         if(locale==="ru")assert.equal(await youtubeLink.getAttribute("href"),
           "https://www.youtube.com/watch?v=P9Wvo3gEY6U");
         if(locale==="en")assert.equal(await youtubeLink.getAttribute("href"),
           "https://www.youtube.com/@aatapro/videos");
-        assert.equal(await hero.locator("iframe").count(),0,
-          "no external YouTube iframe or requests before an explicit user click");
-        assert.equal(await hero.locator("button").count(),locale==="ru"?2:1,
-          "central Canvas Play stays independent; RU adds its approved video introduction");
+        assert.equal(await introDock.locator("iframe").count(),0,
+          "no remote YouTube iframe before a deliberate visitor interaction");
+        assert.equal(await hero.locator("button").count(),1,
+          "central Canvas Play remains the only creative hero control");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
@@ -792,9 +797,15 @@ const runEngine = async ([engine, browserType]) => {
           engine+" "+locale+" "+width+"px screenshot primary sections exist");
         for(let i=1;i<hierarchy.preview.length;i++)assert.ok(hierarchy.preview[i]>hierarchy.preview[i-1],
           engine+" "+locale+" "+width+"px screenshot order "+i+": "+hierarchy.preview);
-        assert.ok(hierarchy.extended.every(Number.isFinite)&&
-          hierarchy.extended.every(y=>y>hierarchy.preview.at(-1)),
-          "all old editor tools remain accessible below the new fast flow");
+        assert.ok(hierarchy.extended.every(Number.isFinite),
+          "existing advanced editor sections remain mounted, never discarded");
+        assert.equal(await page.locator("[data-mandala-free-video]").getAttribute("data-active-workspace"),"video",
+          "Video is the first active workspace rather than a null state showing all tabs");
+        for(const workspace of ["phrases","effects","practices","pro","editor"]){
+          const other=page.locator('[data-video-quick-builder] [data-workspace-section="'+workspace+'"]').first();
+          if(await other.count())assert.equal(await other.isVisible(),false,
+            "the "+workspace+" workspace must not add vertical clutter to the first screen");
+        }
         // Detailed Support editor is intentionally inside a CLOSED <details>.
         // Its bounding boxes are 0px, so validate DOM structure, not invisible
         // visual geometry, without opening it or skipping any functionality.
