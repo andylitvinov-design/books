@@ -70,3 +70,73 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(reruns,0);
   assert.equal(comments,1);
 });
+
+
+test('GraphQL fast inventory covers all production PRs with two pages',async()=>{
+  let page=0;
+  const source=Array.from({length:101},(_,i)=>({
+    number:i+1,isDraft:false,createdAt:'2026-10-31T00:00:00Z',
+    updatedAt:'2026-11-01T00:00:00Z',headRefOid:('a'.repeat(39)+(i%10)),
+    headRefName:'fix/'+(i+1),headRepository:{nameWithOwner:'andylitvinov-design/books'},
+    mergeStateStatus:i===0?'DIRTY':'BLOCKED',
+    autoMergeRequest:null,statusCheckRollup:{state:i===0?'FAILURE':'PENDING'}
+  }));
+  const github={graphql:async(q,args)=>{
+    assert.ok(q.includes('statusCheckRollup'));
+    const nodes=page++===0?source.slice(0,100):source.slice(100);
+    return {repository:{all:{totalCount:105},production:{
+      totalCount:101,pageInfo:{hasNextPage:page===1,endCursor:page===1?'next':null},nodes
+    }}};
+  }};
+  const {queryInventory,classifyQuick}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const result=await queryInventory(github,'andylitvinov-design','books');
+  assert.equal(page,2);assert.equal(result.open,105);
+  assert.equal(result.production.length,101);
+  assert.equal(classifyQuick(result.production[0]),'DIRTY');
+});
+test('shared API budget reserves room for other workflows',async()=>{
+  const {reserveApiBudget}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const mock=n=>({rest:{rateLimit:{get:async()=>({data:{resources:{core:{remaining:n}}}})}}});
+  assert.equal((await reserveApiBudget(mock(900),()=>{})).deep,22);
+  assert.equal((await reserveApiBudget(mock(390),()=>{})).deep,10);
+  assert.equal((await reserveApiBudget(mock(340),()=>{})).deep,0);
+});
+test('merge conflict and outdated base are not source-code repair failures',()=>{
+  const {classifyQuick}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  assert.equal(classifyQuick({mergeStateStatus:'DIRTY',rollup:'FAILURE'}),'DIRTY');
+  assert.equal(classifyQuick({mergeStateStatus:'BEHIND',rollup:'FAILURE'}),'BEHIND');
+  assert.equal(classifyQuick({mergeStateStatus:'CLEAN',rollup:'FAILURE'}),'RED');
+  assert.equal(classifyQuick({mergeStateStatus:'CLEAN',rollup:'SUCCESS',auto_merge:{enabledAt:'now'}}),'ARMED');
+});
+test('bulk green PR triggers only existing guarded coordinator without N+1 API',async()=>{
+  let deep=0,dispatches=0;
+  const graphql=async()=>({repository:{all:{totalCount:1},production:{
+    totalCount:1,pageInfo:{hasNextPage:false,endCursor:null},nodes:[{
+      number:87,isDraft:false,createdAt:'2026-11-01T00:00:00Z',
+      updatedAt:'2026-11-01T00:00:00Z',headRefOid:SHA,headRefName:'fix/87',
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},mergeStateStatus:'CLEAN',
+      autoMergeRequest:null,statusCheckRollup:{state:'SUCCESS'}
+    }]}}});
+  const github={graphql,rest:{
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    rateLimit:{get:async()=>({data:{resources:{core:{remaining:900}}}})},
+    checks:{listForRef:async()=>{deep++;throw Error('unnecessary per-head CI')}}
+  },request:async(route)=>{if(route.includes('dispatches'))dispatches++;return {data:{workflow_runs:[]}};}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.inventoryMode,'graphql');
+  assert.equal(result.quickGreen,1);
+  assert.equal(result.mergeCoordinatorDispatched,1);
+  assert.equal(dispatches,1);
+  assert.equal(deep,0);
+});
+test('GraphQL failure falls back to safe REST, without direct merge',async()=>{
+  const github={graphql:async()=>{throw Error('GraphQL temporarily unavailable')},rest:{
+    pulls:{list:async()=>({data:[]})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    rateLimit:{get:async()=>({data:{resources:{core:{remaining:850}}}})}
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  assert.equal(result.inventoryMode,'rest-fallback');
+  assert.equal(result.open,0);
+  assert.equal(result.mergeCoordinatorDispatched,0);
+});
