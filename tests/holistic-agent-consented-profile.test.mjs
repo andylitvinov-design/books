@@ -112,3 +112,39 @@ test("existing signed-in My Progress video status is reused only with independen
     history:{completedIds:["youtube:HqfixazXqRY"]}});
   assert.equal(withoutConsent.primary.id,"youtube:HqfixazXqRY");
 });
+
+test("goal-only published original video needs no optional profile axis and no external candidate",()=>{
+ const approved={
+   youtube_id:"HqfixazXqRY",title:"Sun Flight",source_kind:"original",
+   source_url:"https://www.youtube.com/watch?v=HqfixazXqRY",
+   metadata_confidence:"owner_source",editorial_status:"candidate",
+   embed_status:"unverified",rights_status:"pending_embed_check",
+   content_type:"guided",audio_language:"en",claims_risk:"unknown",
+   goals:["energy"],goal_weights:{energy:95},user_situations:[],
+   desired_states:["energy"],techniques:["visualization"],
+ };
+ const base={locale:"en",intent:{goal:"energy",chosenAxes:[],
+   enabledFormats:["video"],preferredFormat:"video"},
+   safety:{status:"clear"},catalogs:{meditationVideos:[approved],
+   publishedSourceIds:["HqfixazXqRY"]}};
+ const matched=buildHolisticGuidedTurn(base);
+ assert.equal(matched.status,"recommend");
+ assert.equal(matched.primary.id,"youtube:HqfixazXqRY");
+ assert.equal(buildHolisticGuidedTurn({...base,
+   catalogs:{meditationVideos:[approved],publishedSourceIds:[]}}).status,"no_match");
+ assert.equal(buildHolisticGuidedTurn({...base,
+   catalogs:{meditationVideos:[{...approved,source_kind:"external"}],
+     publishedSourceIds:["HqfixazXqRY"]}}).status,"no_match");
+ assert.equal(buildHolisticGuidedTurn({...base,
+   safety:{status:"urgent"}}).status,"safety_handoff");
+});
+test("real long user turns remain valid for next-step safety preflight",()=>{
+ const api=read("app/api/holistic-agent/turn/route.js");
+ const ui=read("components/holistic-agent-chat.tsx");
+ assert.match(api,/readBody\(request,32000\)/);
+ assert.match(api,/row\.text\.length > 4000/);
+ assert.match(ui,/role:row\.role,text:row\.role==="user"\?row\.text:row\.text\.slice\(0,4000\)/);
+ assert.match(api,/recentUnsafe = body\.history\.some/);
+ assert.match(api,/preflight\(turn\.text,body\.locale\)/);
+ assert.match(api,/meditationVideos,publishedSourceIds/);
+});
