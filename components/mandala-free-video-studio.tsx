@@ -3093,8 +3093,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"Videoterapia para una vida en armonía":
               "Video practices for a balanced life"}</small>
           </span>
-          <Link href={"/"+locale+"/app"} prefetch={false} className={videoStyles.quickBrandProfile}
-            aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio":"My House"}>
+          <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"} prefetch={false} className={videoStyles.quickBrandProfile}
+            aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio (English)":"My House"}>
             <UserRound size={20} aria-hidden="true"/>
           </Link>
         </nav>
