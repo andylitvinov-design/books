@@ -50,12 +50,12 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
 // Runtime, privacy, auth, checkout and unknown files still fail closed.
 const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/hh-public-services-production.yml',
-  // Trusted production-only pinned Playwright binary cache seed.
+  // Production-only pinned browser cache seed, never app runtime.
   '.github/workflows/hh-public-playwright-cache.yml',
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
-  // CI-only regression guarded by protected Core; no site runtime changes.
+  // CI-only regression verified by protected Core and actionlint.
   'tests/pr-fast-lane.test.mjs',
   // Independent Site Video CI policy and source-only E2E contracts cannot
   // change public services runtime, consent or payment. Protected Core/actionlint
@@ -117,6 +117,22 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // PR #2970: fixed, public-read-only phrase dictionary + UI under the
+  // independently required Mandala specialist's schema/RLS/locale contracts.
+  // This exact-file allowlist does NOT include payments, auth, general APIs,
+  // unknown scripts, or broad wildcard routes; all such changes stay FULL.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
   // Real LIVE Director Chat QA is owned by the independently required Chrome,
   // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
   '.github/workflows/hh-first-video-live-export.yml',
@@ -158,6 +174,21 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // The exact reviewed 2970 addition set. The read-only GET is same-origin,
+  // bounded to known taxonomy IDs, and falls back to audited bundled copy.
+  // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
   // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
   'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
   'tests/video-director-chat-live-acceptance.test.mjs',
