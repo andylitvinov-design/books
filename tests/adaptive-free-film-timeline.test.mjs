@@ -118,3 +118,63 @@ test("all format controls call the same plan-preserving reframe handler",()=>{
   assert.doesNotMatch(studio,/setAspect\((?:format|value)\);setCinematicPlan\(null\)/);
   assert.doesNotMatch(studio,/data-video-aspect=\{format\}[\s\S]{0,240}onPointerUp=/);
 });
+
+
+test("approved real catalogue replacement excludes wrong origins and unknown URLs",async()=>{
+  const {isApprovedMontageScene,validateMontageClips,isSafeMontageScene}=
+    await import("../lib/mandala/video-montage-sources.mjs");
+  const realCatalogue=JSON.parse(readFileSync(
+    new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+  assert.equal(realCatalogue.length,44,"do not invent source MP4 assets");
+  assert.ok(realCatalogue.every(isApprovedMontageScene),
+    "all published first-party / approved CC-BY masters have stable URLs and provenance");
+  const firstFour=realCatalogue.slice(0,4);
+  assert.equal(validateMontageClips(firstFour.map(s=>s.id),realCatalogue),true);
+  assert.equal(validateMontageClips([firstFour[0].id,firstFour[1].id,firstFour[1].id,firstFour[3].id],realCatalogue),false);
+  assert.equal(isSafeMontageScene({...firstFour[0],status:"unverified"}),false);
+  assert.equal(isSafeMontageScene({...firstFour[0],video:"https://example.org/video.mp4"}),false);
+  assert.equal(isSafeMontageScene({...firstFour[0],video:"/videos/holistic-house/private.mp4"}),false);
+  assert.equal(isSafeMontageScene({...firstFour[0],rightsReference:{kind:"unknown-license"}}),false);
+  assert.equal(validateMontageClips(firstFour.map(s=>s.id),realCatalogue,["anything"]),false);
+  assert.equal(isSafeMontageScene(firstFour[2],["forest"]),false,"tree-related motif is excluded");
+});
+
+test("scene replacement is deterministic and preserves explicit avoid-water/night limits",async()=>{
+  const {montageReplacementOptions,validateMontageClips,isSafeMontageScene}=
+    await import("../lib/mandala/video-montage-sources.mjs");
+  const all=JSON.parse(readFileSync(
+    new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+  const current="garden-acceptance";
+  assert.ok(all.find(s=>s.id===current),"source must be a registered MP4");
+  const selected=["garden-acceptance","meadow-morning","flower-softening","petal-hope"];
+  const options=montageReplacementOptions({
+    scenes:all,currentId:current,selectedIds:selected,
+    excludedMotifs:["water","dark"],limit:6,
+  });
+  assert.ok(options.length>0,"offer other licensed footage when one theme has only two clips");
+  assert.ok(options.every(s=>!selected.includes(s.id)&&isSafeMontageScene(s,["water","dark"])));
+  assert.deepEqual(options,montageReplacementOptions({
+    scenes:all,currentId:current,selectedIds:selected,
+    excludedMotifs:["water","dark"],limit:6,
+  }),"same request and scene set must yield same alternatives");
+  const next=[options[0].id,...selected.slice(1)];
+  assert.equal(validateMontageClips(next,all,["water","dark"]),true);
+  assert.deepEqual(montageReplacementOptions({
+    scenes:all,currentId:current,selectedIds:selected,
+    excludedMotifs:["unknown-motif"],limit:6,
+  }),[],"unknown exclusions cannot silently loosen restrictions");
+  assert.deepEqual(montageReplacementOptions({scenes:all,currentId:"never-licensed",selectedIds:selected}),[]);
+});
+
+test("optional replacement picker reaches the original recorder with safe validation",()=>{
+  const ui=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(ui,/data-auto-video-stage-replace=\{index\}/);
+  assert.match(ui,/availableReplacements\[index\]\.map\(item=>/);
+  assert.match(ui,/replaceStage\(index,event\.currentTarget\.value\)/);
+  assert.match(ui,/excludedMotifs:proposal\.excludedMotifs/);
+  assert.match(studio,/validateMontageClips\(\[\.\.\.clipIds\],FREE_FILM_CATALOG/);
+  assert.match(studio,/throw Error\("invalid_free_film_replacement"\)/);
+  assert.match(studio,/firstPartyFilmFor\(shotTheme,sceneId\)/);
+  assert.match(studio,/providerPrompt:""/);
+});
