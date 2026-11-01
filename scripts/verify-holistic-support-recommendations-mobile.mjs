@@ -23,6 +23,7 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce",
+          serviceWorkers: "block", // Synthetic first-party fixtures must win over any old SW.
         });
         const errors = [];
         page.on("pageerror", err => errors.push(err.message));
@@ -47,7 +48,9 @@ for (const engine of [chromium, webkit]) {
           const photo = root.locator("[data-support-photo]");
           const gallery = root.locator("[data-support-meditation-gallery]");
           const hero = root.locator("[data-support-player]");
-          const launch = assessment.locator("[data-support-recommendations]");
+          // The approved compact mobile screen moved its sole recommendation CTA
+          // beside the user's portrait; the four scales remain in assessment.
+          const launch = root.locator("[data-support-recommendations]");
           assert.equal(await launch.count(), 1, label + " one left-side picker");
           assert.equal(await root.locator("[data-support-recommendations]").count(), 1,
             label + " no duplicate focus picker");
@@ -104,7 +107,16 @@ for (const engine of [chromium, webkit]) {
           const id = await selectedThumb.getAttribute("data-support-video");
           assert.match(id, /^[A-Za-z0-9_-]{11}$/, label + " verified selected video ID");
           await selectedThumb.click();
-          assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
+          // React may reorder gallery cards when choosing the scene, so the
+          // original dynamic ".last()" locator can point to another video.
+          // Re-find the exact verified ID and require a committed ARIA change.
+          const committedThumb = gallery.locator('[data-support-video="' + id + '"]');
+          await page.waitForFunction(videoId => Array.from(
+            document.querySelectorAll('[data-support-video]')).some(card =>
+              card.getAttribute("data-support-video") === videoId &&
+              card.getAttribute("aria-pressed") === "true"),
+            id, {timeout:10000});
+          assert.equal(await committedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");
           assert.equal(await root.locator("[data-support-video-source] a[href^='https://www.youtube.com/watch']").count(),

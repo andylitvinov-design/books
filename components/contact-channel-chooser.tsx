@@ -178,6 +178,10 @@ export function ContactChannelChooser({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
+  // Keep SSR cart controls inert until React hydration commits event handlers.
+  // Consent must still be given explicitly and is never set by this effect.
+  const [cartFormHydrated, setCartFormHydrated] = useState(false);
+  useEffect(() => { if (cartContact) setCartFormHydrated(true); }, [cartContact]);
   const [website, setWebsite] = useState("");
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -730,9 +734,11 @@ export function ContactChannelChooser({
       <div ref={panelRef} className={[styles.panel, quick ? styles.quickPanel : ""].join(" ")} id={panelId} hidden={!open && !quick}>
         {(!quick || saved) && <p className={styles.question}>{saved ? c.messengers : c.question}</p>}
         {!saved ? (
-          <form onSubmit={submit} className={styles.enquiryForm}>
+          <form onSubmit={submit} className={styles.enquiryForm}
+            data-contact-hydrated={cartContact ? String(cartFormHydrated) : undefined}
+            aria-busy={cartContact && !cartFormHydrated ? true : undefined}>
             {(!quick || !googleReady) && <button type="button" className={styles.googleButton} onClick={startGoogle}
-              disabled={busy || googleBusy} aria-label={c.google}>
+              disabled={busy || googleBusy || (cartContact && !cartFormHydrated)} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>}
@@ -751,7 +757,7 @@ export function ContactChannelChooser({
             <div className={styles.contactFields}>
               {method === "email" ? (
                 <label>{c.email}
-                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy}
+                  <input type="email" autoComplete="email" maxLength={254} required disabled={busy || googleBusy || (cartContact && !cartFormHydrated)}
                     value={email} onChange={event => {
                       setEmail(event.target.value); setError(""); operationId.current = null;
                     }} />
@@ -760,7 +766,7 @@ export function ContactChannelChooser({
                 <div className={styles.phoneField}>
                   <label htmlFor={panelId + "-phone"}>{c.phone}</label>
                   <PhoneCountryInput id={panelId + "-phone"} locale={locale} required
-                    disabled={busy || googleBusy} value={phone} onChange={value => {
+                    disabled={busy || googleBusy || (cartContact && !cartFormHydrated)} value={phone} onChange={value => {
                       setPhone(value); setError(""); operationId.current = null;
                     }} />
                 </div>
@@ -788,7 +794,7 @@ export function ContactChannelChooser({
             </details>
             </>}
             <label className={styles.consent}>
-              <input type="checkbox" required checked={consent} disabled={busy}
+              <input type="checkbox" required checked={consent} disabled={busy || (cartContact && !cartFormHydrated)}
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
             </label>
@@ -803,7 +809,7 @@ export function ContactChannelChooser({
                 value={website} onChange={event => setWebsite(event.target.value)} />
             </label>
             <button type="submit" className={styles.submit}
-              disabled={busy || googleBusy ||
+              disabled={busy || googleBusy || (cartContact && !cartFormHydrated) ||
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick && cartContact ? c.submit : quick ? c.quickSubmit : c.submit)}
             </button>
