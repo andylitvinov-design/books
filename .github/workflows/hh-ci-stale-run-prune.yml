@@ -61,25 +61,10 @@ jobs:
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs
 
-  # This registered production push workflow is a fallback for the one-time
-  # release migration workflow, which did not dispatch on the first rollout.
-  # A unique squash-merge marker activates this job once; every other push skips.
-  # Run only trusted production YAML, never PR head with an admin-scoped token.
-  migrate-release-status-once:
-    name: guarded one-time required-status migration
-    if: >-
-      github.repository == 'andylitvinov-design/books' &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/codex/public-book-library' &&
-      contains(github.event.head_commit.message, 'HH_STATUS_MIGRATION_ONE_TIME_20261101')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 8
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    steps:
-      - name: Run the previously reviewed fail-closed migration protocol
+      # This existing production-only job owns its runner and never evaluates
+      # privileged workflow code from PR branches. The marker is one-time.
+      - name: Apply guarded release status migration on marked production merge
+        if: contains(github.event.head_commit.message, 'HH_STATUS_MIGRATION_ONE_TIME_20261101')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
