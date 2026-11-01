@@ -255,8 +255,12 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       !SHA.test(expectedSha || '') || !validCandidate(candidate,expectedSha))
     throw Error('HH_REPAIR_PUBLISH_INVALID_CANDIDATE');
   const pr=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
-  if (!eligible(pr,fullRepo) || pr.head.sha !== expectedSha)
+  if (!eligible(pr,fullRepo))
     throw Error('HH_REPAIR_PUBLISH_STALE_OR_UNAUTHORIZED');
+  // An owner edit may move the PR after the isolated patch was computed.
+  // This is a safe cancellation, not a source failure or publish success.
+  if (pr.head.sha !== expectedSha)
+    throw Error('HH_REPAIR_PUBLISH_STALE_HEAD');
   const receipt=taskFor(pr,priorityFor(pr,Date.now()));
   const workerRunUrl=Number.isSafeInteger(context.runId)?
     'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
