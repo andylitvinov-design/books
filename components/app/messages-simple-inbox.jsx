@@ -389,7 +389,7 @@ export default function MessagesSimpleInbox({
                 <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
                   {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
               </div>
-            </>
+            </>}
         </div>}
         {!showCard&&selected?.kind==='business'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
