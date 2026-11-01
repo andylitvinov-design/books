@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
@@ -88,6 +89,7 @@ export function githubReader(repo, token, transport = fetch) {
     changed: (n) => pages('/pulls/' + n + '/files',null,3000),
     runs: (sha) => pages('/actions/runs?head_sha=' + sha,'workflow_runs',1000),
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
 }
 
@@ -203,7 +205,24 @@ export async function verify(api,ctx,files,options={}) {
   // BASE/HEAD workflow definitions and the actual merge snapshot stay
   // immutable even when the production target moves after the check started.
   const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
-  assertSame(pr,ctx,requireCurrentBase);
+  const approvedBaseChanges = new Set();
+  async function verifyCurrentBase(live) {
+    assertSame(live, ctx, false);
+    if (!requireCurrentBase || live.base.sha === ctx.base) return;
+    if (!pinnedChangeRows || typeof api.compare !== 'function') {
+      throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+    }
+    if (!approvedBaseChanges.has(live.base.sha)) {
+      // Compare the exact tested base with the *current* PR base. Incomplete,
+      // unrelated, inaccessible or security-sensitive changes remain blocked.
+      const diff = await api.compare(ctx.base, live.base.sha);
+      if (!safeDocumentationAdvance(diff, ctx.base, live.base.sha, changed)) {
+        throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      approvedBaseChanges.add(live.base.sha);
+    }
+  }
+  await verifyCurrentBase(pr);
   let risk=classifyReleaseRisk(changed);
   const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
@@ -294,7 +313,7 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx,requireCurrentBase);
+  await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],

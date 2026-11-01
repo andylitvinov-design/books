@@ -80,6 +80,7 @@ jobs:
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/fast-static-ui-text.mjs|\
                   lib/ci/fast-ui-parser/package.json|\
@@ -326,10 +327,35 @@ jobs:
             if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
               git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
             fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
+            fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-
+  # A distinct, cheap status for branch protection after the admin migration.
+  # Until then, the legacy release-ready status stays required. Do not re-run
+  # the expensive specialist test; propagate its exact outcome, including red.
+  hh-specialists-verified:
+    name: hh-specialists-verified
+    needs: [release-ready]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Require full specialist aggregate on the same Core workflow
+        env:
+          SPECIALIST_RESULT: ${{ needs.release-ready.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Specialist validation missing, cancelled or failed; refusing a green status' >&2
+            exit 1
+          }
+          echo 'Full specialist aggregation succeeded; safe required status propagated.' >> "$GITHUB_STEP_SUMMARY"

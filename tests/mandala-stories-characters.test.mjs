@@ -68,12 +68,12 @@ test("one original video preview and export share the selected symbolic layer",(
   assert.match(s,/storySelectionItems\(appliedStory\)\.length>0\|\|/);
   assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,4,
     "first preview + animated preview + first recording frame + recorded frames");
-  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds\]\),appliedStory/,
+  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory/,
     "film scene, cut positions and character overlay all invalidate the previous export");
   assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory,creationMode,currentFreeVideoPlan,photoConsent,photoUrl\]\);/,
-    "characters, cinematic cuts and generated-art settings all invalidate stale results");
+    "character and original animation edits always invalidate a stale generated result");
   assert.match(s,/paintFreeVideoFrame\(ctx,proceduralPlan,time,permittedLocalPortrait\)/,
-    "the optional generator draws in the very same Canvas as characters and narration");
+    "the generator uses the same Canvas renderer as character motifs and narration");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);
