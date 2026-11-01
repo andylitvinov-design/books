@@ -161,3 +161,25 @@ test("background-only reusable clip is the default, with an explicit photo check
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
 });
+
+test("Safari failed render offers only a source-backed unedited MP4 without pretending it is customized", () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /const originalFallbackCandidate=cinematicPlan\?\.shots\[0\]/);
+  assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
+  assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
+  assert.match(studio, /data-video-original-fallback-download/);
+  assert.match(studio, /holistic-house-original-scene\.mp4/);
+  assert.match(studio, /Это НЕ ваш готовый фильм/);
+  assert.match(studio, /duration, format, photo, captions and music were not applied/);
+  assert.match(studio, /playbackStatus==="ready" \? <>/);
+  // No user-generated blob is advertised as ready when native decoding fails.
+  assert.match(studio, /playbackStatus==="failed"\?<div role="alert" data-video-playback-error>/);
+  const allowPublicMp4 = /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/;
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/money-films-v1/golden-rain.mp4"), true);
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/film-collection-v2/mountain-air.mp4"), true);
+  for (const malicious of ["https://other.example/a.mp4", "/api/private.mp4",
+    "/videos/holistic-house/../secret.mp4", "/videos/holistic-house/clip.mp4?token=abc",
+    "//other.example/videos/holistic-house/a.mp4"]) {
+    assert.equal(allowPublicMp4.test(malicious), false, "no unapproved fallback: " + malicious);
+  }
+});
