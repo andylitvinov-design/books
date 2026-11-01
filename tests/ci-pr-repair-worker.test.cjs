@@ -53,6 +53,29 @@ test('a repair is claimed only once per exact HEAD; author assigned',async()=>{
   assert.equal(second.status,'skipped');
   assert.equal(already.log.comments,0);
 });
+test('Repair Worker reads owner lease and exact-head source receipt beyond page 1',async()=>{
+ const f=fixture();
+ let pages=[];
+ f.github.rest.issues.listComments=async({page,per_page})=>{
+  assert.equal(per_page,100);pages.push(page);
+  return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):
+   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+ };
+ core.outputs={};
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+ assert.deepEqual(pages,[1,2]);
+ assert.equal(result.status,'claimed');assert.equal(f.log.comments,1);
+});
+test('Repair Worker fails closed when history cannot be fully paginated',async()=>{
+ const f=fixture();
+ let pages=[];
+ f.github.rest.issues.listComments=async({page})=>{
+  pages.push(page);return {data:Array.from({length:100},()=>({body:'old'}))};
+ };
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+ assert.deepEqual(pages,[1,2,3]);
+ assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
+});
 test('dry run and absent owner token never claim or modify source',async()=>{
   for(const params of [{dryRun:true},{hasToken:false}]){
     const f=fixture();const r=await claim({github:f.github,core,context,number:11,...params});

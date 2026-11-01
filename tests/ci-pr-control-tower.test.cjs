@@ -105,6 +105,28 @@ test('CI candidate is inspected even when P1 conflict list fills the rotation',(
  assert.equal(chosen.length,16);
  assert.ok(chosen.some(x=>x.pr_number===4000&&x.lane==='ci'));
 });
+test('more than 100 comments still preserve exact-head source proof',async()=>{
+ const f=fixture([pr(1)]);
+ let pages=[];
+ f.github.rest.issues.listComments=async({page,per_page})=>{
+  pages.push(page);assert.equal(per_page,100);
+  return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):[proof()]};
+ };
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.deepEqual(pages,[1,2]);
+ assert.equal(result.dispatchAccepted,1);
+});
+test('over 299 comments without a completed final page stops dispatch',async()=>{
+ const f=fixture([pr(1)]);
+ let pages=[];
+ f.github.rest.issues.listComments=async({page})=>{
+  pages.push(page);return {data:Array.from({length:100},()=>({body:'older note'}))};
+ };
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.deepEqual(pages,[1,2,3]);
+ assert.equal(result.blocked.OWNER_HISTORY_INCOMPLETE,1);
+ assert.equal(result.dispatchAccepted,0);
+});
 test('duplicate task reservation suppresses repeated dispatch',async()=>{
  const t=taskFor(pr(1),{tier:'P1'}),body=commentBody(reservation(t,NOW,1));
  const f=fixture([pr(1)],{comments:{1:[proof(),{body}]}});
