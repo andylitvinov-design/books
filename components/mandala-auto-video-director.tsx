@@ -157,7 +157,7 @@ export function MandalaAutoVideoDirector({
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
        {storyOptions.length>1 ? <div className={css.storyChoices} data-auto-video-choices>
-         <p className={css.storyChoicesTitle}>{t.variants} · {themeLabels[locale][proposal.theme]}</p>
+         <p className={css.storyChoicesTitle}>{t.variants} · {themeLabels[locale][proposal.theme as VideoTheme]}</p>
          <div className={css.storyGrid} role="group" aria-label={t.variants}>
            {storyOptions.map(item=><button key={item.id} type="button"
              data-auto-video-story={item.id} aria-pressed={chosen.id===item.id}
