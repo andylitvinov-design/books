@@ -94,6 +94,7 @@ jobs:
             /^components\/app\/(?:messages-|crm-messenger|crm-salesbot-assist)/,
             /^lib\/app\/messages-inbox-tabs\.mjs$/,
             /^scripts\/verify-messages-wellness-browser\.mjs$/,
+            /^scripts\/verify-ia-v2\.mjs$/,
             /^tests\/messages-[^/]+\.test\.mjs$/,
             /^docs\/crm\/EXTERNAL_TO_PRACTITIONER_MESSENGER_20261031\.md$/,
             /^docs\/design\/MESSAGES_[^/]+\.md$/,
@@ -148,6 +149,7 @@ jobs:
         run: npm run verify:ia-v2
         env:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
+          HH_IA_MESSENGER_ONLY: ${{ steps.messenger-scope.outputs.messenger_only }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
