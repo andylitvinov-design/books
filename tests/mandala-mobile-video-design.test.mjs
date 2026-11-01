@@ -376,7 +376,10 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
 test("clean smaller video player binds two independent opt-ins and opens the existing eight-session planner",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const switches=studio.slice(studio.indexOf('data-video-preview-choices'),studio.indexOf('data-video-catalog'));
+  // Match the actual catalog section, not the earlier honest catalog-fallback label
+  // inside the relocated user-facing recording result.
+  const switches=studio.slice(studio.indexOf('data-video-preview-choices'),
+    studio.indexOf('data-video-catalog aria-labelledby'));
   const heroStart=studio.indexOf('id="video-hero"');
   const hero=studio.slice(heroStart,studio.indexOf("</section>",heroStart));
   assert.ok(heroStart>0,"the original central visual player remains mounted");
