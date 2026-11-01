@@ -28,6 +28,7 @@ const MAX_LEGACY_PROBES = 3;
 const MAX_LEGACY_BOOTSTRAPS = 1;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
+const {priorityFor,rankedCandidates} = require('./ci-pr-priority.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -72,19 +73,24 @@ function boundedRestFallback(selected) {
   return [...selected.slice(0,2),...selected.slice(4,8)].slice(0,MAX_REST_FALLBACK_LOOKUPS);
 }
 
-function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4, priorityNumber = null) {
-  const sorted = [...prs].sort((a, b) => a.number - b.number);
-  if (!sorted.length) return [];
-  const offset = (Math.floor(now / (10 * MINUTE)) * rotatedSize) % sorted.length;
-  const rotated = Array.from({length: Math.min(sorted.length, rotatedSize)}, (_, i) => sorted[(offset + i) % sorted.length]);
-  const recent = [...prs].sort((a,b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0)).slice(0, urgentSize);
-  const list=[...new Map([...recent, ...rotated].map(p => [p.number, p])).values()];
-  // Workflow-run completion wakes the exact PR first, not just today's rotation.
-  if(Number.isSafeInteger(priorityNumber) && !list.some(p=>p.number===priorityNumber)){
-    const priority=prs.find(p=>p.number===priorityNumber);
-    if(priority)list[list.length-1]=priority;
+function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
+  if(!Array.isArray(prs)||!prs.length)return [];
+  const ranked=rankedCandidates(prs,now);
+  // CI completion wakes that exact PR; the other fast slots serve impact.
+  const wake=Number.isSafeInteger(priorityNumber)
+    ?ranked.find(pr=>pr.number===priorityNumber):null;
+  const top=wake?[wake]:[];
+  for(const pr of ranked){
+    if(top.length>=urgentSize)break;
+    if(!top.some(p=>p.number===pr.number))top.push(pr);
   }
-  return list;
+  const fastIDs=new Set(top.map(pr=>pr.number));
+  // Twelve rotating non-fast slots guarantee that older P2/P3 make progress.
+  const pool=ranked.filter(pr=>!fastIDs.has(pr.number)).sort((a,b)=>a.number-b.number);
+  const offset=pool.length?(Math.floor(now/(10*MINUTE))*rotatedSize)%pool.length:0;
+  const rotating=Array.from({length:Math.min(pool.length,rotatedSize)},
+    (_,i)=>pool[(offset+i)%pool.length]);
+  return [...top,...rotating];
 }
 
 function latestByName(checks) {
@@ -407,7 +413,12 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     if(matches.length===1)priorityNumber=matches[0].number;
   }
   const selected = selectCandidates(review,now,12,4,priorityNumber);
+  const priorityTop=selected.slice(0,4).map(pr=>{
+    const priority=priorityFor(pr,now);
+    return '#'+pr.number+' '+priority.tier+'('+priority.score+': '+priority.source+')';
+  }).join(' | ');
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
+    priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,
