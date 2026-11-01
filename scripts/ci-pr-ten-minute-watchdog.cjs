@@ -13,8 +13,9 @@ const MINUTE = 60_000;
 const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
+const REPAIR_LABEL = 'hh:repair-needed';
 
-function selectCandidates(prs, now, rotatedSize = 36, urgentSize = 8) {
+function selectCandidates(prs, now, rotatedSize = 30, urgentSize = 6) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
   if (!sorted.length) return [];
   const offset = (Math.floor(now / (10 * MINUTE)) * rotatedSize) % sorted.length;
@@ -35,6 +36,12 @@ function gateIsGreen(checks) {
   return Boolean(gate && gate.status === 'completed' && gate.conclusion === 'success' &&
     gate.app?.id === 15368 && ![...entries.values()].some(c =>
       ['failure','cancelled','timed_out','action_required','startup_failure'].includes(c.conclusion)));
+}
+function canRetryCi(active, queued) {
+  // Running and queued runs are different resources; do not conflate them.
+  // Allow two bounded retries when both pools are below their independent caps.
+  return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
+    active >= 0 && queued >= 0 && active < 20 && queued < 20;
 }
 function transientFailure(run, jobs, now) {
   if (!run || run.status !== 'completed' || run.run_attempt !== 1 ||
@@ -82,8 +89,29 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     `Do not delete required checks or force-merge. This is a handoff to existing Repair workers, `+
     `**not** a claim that source code has already been fixed.
 `;
-  if (!dryRun) await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body});
-  log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} source repair for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
+  if (!dryRun) {
+    await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body});
+    // A durable GitHub label makes this a discoverable Repair queue; it does not
+    // claim to launch a paid/unconfigured AI coder. Failure must not lose handoff.
+    if (!(pr.labels || []).some(label => label.name === REPAIR_LABEL)) {
+      try {
+        try {
+          await github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]});
+        } catch (error) {
+          if (error.status !== 404 && error.status !== 422) throw error;
+          // Repository may not have the label yet. Create once, then assign.
+          try {
+            await github.rest.issues.createLabel({owner,repo,name:REPAIR_LABEL,
+              color:'d93f0b',description:'Current PR HEAD needs source-code repair after CI failure'});
+          } catch (createError) {
+            if (createError.status !== 422) throw createError;
+          }
+          await github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]});
+        }
+      } catch (error) { log(`#${pr.number} Repair label unavailable: ${error.message}`); }
+    }
+  }
+  log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} repair handoff (not an AI coding run) for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
   return true;
 }
 
@@ -97,6 +125,7 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
+    activeActions:null,queuedActions:null,checkedAt:new Date(now).toISOString(),
     dryRun,hasMergeToken};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
   let active = Infinity, queued = Infinity;
@@ -106,7 +135,9 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     active = a.data.total_count;
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
-  const ciRoom = Number.isFinite(active) && Number.isFinite(queued) && active+queued < 20;
+  const ciRoom = canRetryCi(active,queued);
+  summary.activeActions = Number.isFinite(active) ? active : null;
+  summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let handoffs = 0;
@@ -114,7 +145,11 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     summary.inspected++;
     let checks;
     try {
-      checks = (await github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,per_page:100,filter:'latest'})).data;
+      // Query the exact release gate only: many specialist checks may exceed
+      // GitHub's first-page 100 limit. Full coordinator still validates ALL
+      // required checks, rules and leases before native auto-merge.
+      checks = (await github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+        check_name:'release-ready',per_page:100,filter:'latest'})).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
     if (gateIsGreen(checks)) {
       if (!pr.auto_merge) summary.greenUnarmed++;
@@ -174,4 +209,4 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi};
