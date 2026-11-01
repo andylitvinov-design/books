@@ -10,6 +10,8 @@ import {
   linesForVideoAffirmations, suggestedVideoAffirmations,
 } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/video-affirmations";
+import {buildWaveNarrativeDraft} from "@/lib/mandala/hypno-wave-engine.mjs";
+import type {WaveDraft} from "@/lib/mandala/hypno-wave-engine.mjs";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
 import css from "./mandala-hypno-compact.module.css";
 
@@ -93,6 +95,7 @@ export function MandalaHypnoCompact({
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
   const [problemNote,setProblemNote]=useState("");
   const [goalNote,setGoalNote]=useState("");
+  const [waveDraft,setWaveDraft]=useState<WaveDraft|null>(null);
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests">("ready");
   const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
   const goal=affirmationGoalCatalog[locale].find(item=>item.id===goalId) || affirmationGoalCatalog[locale][0];
@@ -107,6 +110,20 @@ export function MandalaHypnoCompact({
     const suggestions=buildHypnoRequestPhrases(locale,theme,problemIndex,goalId);
     onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
     setSelectionSource("smart");setOpen(null);
+  };
+  const generateWave=()=>{
+    const fallbackPhrases=buildHypnoRequestPhrases(locale,theme,problemIndex,goalId);
+    setWaveDraft(buildWaveNarrativeDraft({
+      locale,theme,problemIndex,goalId,tone:"gentle",kind:"affirmation",
+      focus:"calm",length:"medium",currentText:problemNote,goalText:goalNote,
+      fallbackPhrases,fallbackStrategy:ui.requestHint,
+    }));
+  };
+  const approveWave=()=>{
+    if(!waveDraft || waveDraft.status==="safety_handoff" || waveDraft.phrases.length===0)return;
+    onChange({...settings,enabled:true,presetOverride:waveDraft.phrases,selected:[0,1,2]});
+    setSelectionSource("smart");
+    setWaveDraft(null);
   };
   const ready=()=>{
     onChange({...settings,enabled:true,presetOverride:undefined,selected:[0,1,2]});
@@ -146,25 +163,53 @@ export function MandalaHypnoCompact({
           <div className={css.chipGrid}>
             {hypnoRequestProblems[locale][theme].map((item,i)=><button key={item.label}
               type="button" data-hypno-problem={i} aria-pressed={problemIndex===i}
-              disabled={disabled} onClick={()=>setProblemIndex(i)}>{item.label}</button>)}
+              disabled={disabled} onClick={()=>{setProblemIndex(i);setWaveDraft(null);}}>{item.label}</button>)}
           </div>
           <textarea rows={2} value={problemNote} maxLength={400} disabled={disabled}
             aria-label={ui.optional} placeholder={ui.problemPlaceholder}
-            onChange={event=>setProblemNote(event.target.value)}/>
+            onChange={event=>{setProblemNote(event.target.value);setWaveDraft(null);}}/>
           <strong className={css.fieldLabel}>{ui.goal}</strong>
           <div className={css.chipGrid}>
             {topicGoals[theme].map(id=>{
               const row=affirmationGoalCatalog[locale].find(entry=>entry.id===id);
               return row?<button type="button" key={id} aria-pressed={goalId===id}
-                data-hypno-goal={id} disabled={disabled} onClick={()=>setGoalId(id)}>{row.label}</button>:null;
+                data-hypno-goal={id} disabled={disabled} onClick={()=>{setGoalId(id);setWaveDraft(null);}}>{row.label}</button>:null;
             })}
           </div>
           <textarea rows={2} value={goalNote} maxLength={400} disabled={disabled}
             aria-label={ui.goalPlaceholder} placeholder={ui.goalPlaceholder}
-            onChange={event=>setGoalNote(event.target.value)}/>
+            onChange={event=>{setGoalNote(event.target.value);setWaveDraft(null);}}/>
           <small className={css.contextNote}>{ui.optional}</small>
           <button type="button" className={css.apply} data-hypno-apply-request
             disabled={disabled} onClick={propose}><WandSparkles size={17} aria-hidden="true"/>{ui.apply}</button>
+        </div>}
+        <div className={css.designFoot}>
+          <button type="button" className={css.secondaryAction} data-hypno-wave-generate
+            disabled={disabled} onClick={generateWave}>
+            <WandSparkles size={16} aria-hidden="true"/>
+            {locale==="ru"?"Wave · Предложить стратегию и фразы":locale==="es"?
+              "Wave · Proponer estrategia y frases":"Wave · Suggest strategy and phrases"}
+          </button>
+        </div>
+        {waveDraft && <div className={css.editPane} data-hypno-wave-draft aria-live="polite">
+          <strong className={css.fieldLabel}>{locale==="ru"?"Предварительная стратегия":locale==="es"?"Estrategia provisional":"Provisional strategy"}</strong>
+          <p className={css.contextNote} data-hypno-wave-strategy>{waveDraft.strategy}</p>
+          {waveDraft.phrases.length>0 && <div className={css.selectedPhrases}>
+            {waveDraft.phrases.map((line,i)=><span key={i}><Check size={14} aria-hidden="true"/>{line}</span>)}
+          </div>}
+          <div className={css.designFoot}>
+            <button type="button" className={css.apply} data-hypno-wave-approve
+              disabled={disabled||waveDraft.status==="safety_handoff"||waveDraft.phrases.length===0}
+              onClick={approveWave}>{locale==="ru"?"Утвердить фразы для видео":locale==="es"?"Aprobar frases":"Approve phrases for video"}</button>
+            <button type="button" className={css.secondaryAction} data-hypno-wave-discard
+              disabled={disabled} onClick={()=>setWaveDraft(null)}>
+              {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
+            </button>
+          </div>
+          <small className={css.contextNote}>{locale==="ru"?
+            "Текст остаётся на устройстве. Утверждение не является лечением. Фразы не меняются до нажатия «Утвердить».":
+            locale==="es"?"Texto local. Sin promesas clínicas. Las frases activas no cambian sin confirmación.":
+            "On-device only. No clinical claims. Active phrases never change before approval."}</small>
         </div>}
       </section>
 
