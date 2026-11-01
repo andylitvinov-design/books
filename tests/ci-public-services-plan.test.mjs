@@ -436,10 +436,10 @@ test('temporary public-service fast lane retains payment/consent/unknown real br
     assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' sensitive');
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
-  const workflow=workflow('hh-public-services-production.yml');
-  assert.match(workflow,/pr_heavy == 'true'/);
-  assert.match(workflow,/node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(workflow,/playwright install --with-deps chromium webkit/);
-  assert.match(workflow,/run_case "verify-service-cart-browser.mjs"/);
-  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+  const yml=workflow('hh-public-services-production.yml');
+  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
+  assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
