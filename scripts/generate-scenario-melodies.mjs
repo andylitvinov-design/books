@@ -98,8 +98,11 @@ function plausibleMp3(path) {
     (b[0]===0xff&&(b[1]&0xe0)===0xe0);
 }
 function encodeMaster(file,wav) {
-  if(!ffmpegPath)throw Error("ffmpeg-static unavailable — do not publish empty tracks");
-  const result=spawnSync(ffmpegPath,[
+  // GitHub ocean-audio workflow uses npm ci --ignore-scripts; that leaves
+  // ffmpeg-static's binary absent. Ubuntu runners have system ffmpeg.
+  // Prefer the bundled first-party dependency whenever installed.
+  const encoder=ffmpegPath&&existsSync(ffmpegPath)?ffmpegPath:"ffmpeg";
+  const result=spawnSync(encoder,[
     "-hide_banner","-loglevel","error","-nostdin","-y",
     "-f","wav","-i","pipe:0",
     "-codec:a","libmp3lame","-b:a","96k",
