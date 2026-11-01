@@ -312,8 +312,8 @@ jobs:
         run: |
           echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        id: public_acceptance
         if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        id: public_acceptance
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
