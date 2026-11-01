@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {filterInboxRows,normalizeMessagesTab} from '../lib/app/messages-inbox-tabs.mjs'
+import * as inbox from '../lib/app/messages-inbox-tabs.mjs'
+const {filterInboxRows,normalizeMessagesTab}=inbox
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -71,4 +72,17 @@ test('owner tabs are linked, accessible and URL-backed without unmounting chat s
 test('request composer is shown only when the same request is eligible for a protected conversation',()=>{
   const source=read('components/app/messages-simple-inbox.jsx')
   assert.match(source,/inMessagesTab\(selected,'chats'\)\s*\?\s*<PracticeRequestConversation/)
+})
+
+test('both inbox tabs report website loading and failure even when CRM is ready',()=>{
+  assert.equal(typeof inbox.inboxSourceStatus,'function')
+  assert.deepEqual(inbox.inboxSourceStatus({websiteLoading:true}),{loading:true,unavailable:false})
+  assert.deepEqual(inbox.inboxSourceStatus({websiteUnavailable:true}),{loading:false,unavailable:true})
+  assert.deepEqual(inbox.inboxSourceStatus({crmLoading:true}),{loading:true,unavailable:false})
+  assert.deepEqual(inbox.inboxSourceStatus({crmError:true}),{loading:false,unavailable:true})
+  assert.deepEqual(inbox.inboxSourceStatus({}),{loading:false,unavailable:false})
+  const source=read('components/app/messages-simple-inbox.jsx')
+  assert.match(source,/inboxSourceStatus\(\{websiteLoading,websiteUnavailable,/)
+  assert.match(source,/!tabTotal&&!tabLoading&&!sourcesUnavailable/)
+  assert.match(source,/websiteUnavailable&&<p role="alert"/)
 })

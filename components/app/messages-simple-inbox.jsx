@@ -9,7 +9,7 @@ import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
-import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
+import {filterInboxRows,inMessagesTab,inboxSourceStatus,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
@@ -159,8 +159,8 @@ export default function MessagesSimpleInbox({
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
   const tabTotal=embedded?rows.length:tab==='requests'?requestsCount:chatsCount
-  const tabLoading=embedded?(websiteLoading||crmState.loading):
-    tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
+  const {loading:tabLoading,unavailable:sourcesUnavailable}=inboxSourceStatus({websiteLoading,websiteUnavailable,
+    crmLoading:crmState.loading,crmError:crmState.error})
   const displayed=embedded
     ?rows.filter(row=>(!unreadOnly||row.unread>0)&&
       [row.name,row.source,row.preview,row.item?.message,row.item?.question].some(value=>
@@ -302,10 +302,10 @@ export default function MessagesSimpleInbox({
         </div>
         <div className={styles.peopleScroll}>
           {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!tabTotal&&!tabLoading?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
           {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
-          {websiteUnavailable&&(embedded||tab==='requests')&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}
             className={selectedKey===row.key?styles.personSelected:styles.person}
