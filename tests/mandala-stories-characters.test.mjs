@@ -58,9 +58,9 @@ test("one original video preview and export share the selected symbolic layer",(
   const c=read("components/mandala-stories-characters.tsx");
   const css=read("components/mandala-stories-characters.module.css");
   assert.match(s,/import \{ MandalaStoriesCharacters \}/);
-  assert.match(s,/data-workspace-section="characters"/);
+  assert.match(s,/data-workspace-section="pro"/);
   assert.match(s,/data-video-quick-control=\{item\.id\}/);
-  assert.match(s,/activeWorkspace==="characters"/);
+  assert.match(s,/activeWorkspace==="pro"/);
   assert.match(s,/<MandalaStoriesCharacters locale=\{locale\} theme=\{theme\}/);
   assert.equal((s.match(/<MandalaStoriesCharacters /g)||[]).length,1,"one catalog, same established workspace");
   assert.match(s,/setAppliedStory\(next\)/);
@@ -68,7 +68,8 @@ test("one original video preview and export share the selected symbolic layer",(
   assert.match(s,/storySelectionItems\(appliedStory\)\.length>0\|\|/);
   assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,4,
     "first preview + animated preview + first recording frame + recorded frames");
-  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\),appliedStory/);
+  assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory/,
+    "film scene, cut positions and character overlay all invalidate the previous export");
   assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory\]\);/);
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
