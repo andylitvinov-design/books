@@ -9,7 +9,7 @@ import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
-import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
+import {filterInboxRows,inMessagesTab,inboxSourceStatus,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
@@ -18,27 +18,27 @@ const COPY={
     telegram:'Telegram',website:'Website request',business:'Business request',direct:'Holistic House',
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
     replyWebsite:'Reply in the protected client cabinet',openCase:'Full request',manual:'Open WhatsApp to reply',
-    email:'Reply by email',unavailable:'Website requests could not be loaded; existing chats remain available.',
+    email:'Reply by email',unavailable:'Website requests could not be loaded.',crmUnavailable:'Connected messenger conversations could not be loaded.',
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
-    more:'More conversations',other:'Other requests',portal:'Private website conversations'},
+    more:'More conversations',other:'Other requests',portal:'Private website conversations',previewNeedsReply:'Open the conversation to reply',previewHistory:'Open message history'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
     tabs:'Разделы сообщений',chats:'Переписка',requestsTab:'Заявки',emptyChats:'Пока нет переписок.',emptyRequests:'Пока нет заявок.',noMatches:'Ничего не найдено.',
     choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
     telegram:'Telegram',website:'Заявка с сайта',business:'Бизнес-заявка',direct:'Holistic House',
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',
     replyWebsite:'Ответить в защищённом кабинете',openCase:'Вся заявка',manual:'Ответить через WhatsApp',
-    email:'Ответить по email',unavailable:'Заявки сайта сейчас недоступны, но переписка остаётся открытой.',
+    email:'Ответить по email',unavailable:'Не удалось загрузить заявки сайта.',crmUnavailable:'Не удалось загрузить переписки подключённых мессенджеров.',
     offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
-    more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
+    more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте',previewNeedsReply:'Откройте переписку, чтобы ответить',previewHistory:'Открыть историю сообщений'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
     tabs:'Carpetas de mensajes',chats:'Recibidos',requestsTab:'Solicitudes',emptyChats:'Aún no hay conversaciones.',emptyRequests:'Aún no hay solicitudes.',noMatches:'No se encontraron personas.',
     choose:'Elige una persona para abrir la conversación',back:'Volver',card:'Ficha',refresh:'Actualizar',loading:'Cargando conversaciones…',
     telegram:'Telegram',website:'Solicitud web',business:'Solicitud de negocio',direct:'Holistic House',
     waiting:'Esperando tu respuesta',received:'Recibida',details:'Solicitud',contact:'Contacto',
     replyWebsite:'Responder en el portal privado',openCase:'Solicitud completa',manual:'Responder por WhatsApp',
-    email:'Responder por correo',unavailable:'No están disponibles las solicitudes web, pero puedes leer tus chats.',
+    email:'Responder por correo',unavailable:'No se pudieron cargar las solicitudes web.',crmUnavailable:'No se pudieron cargar las conversaciones de mensajería conectadas.',
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
-    more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio'},
+    more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
 const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
@@ -129,12 +129,12 @@ export default function MessagesSimpleInbox({
       key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
       source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
-      preview:item.needsReply?t.waiting:channelNames[item.channel]||item.channel,
+      preview:item.needsReply?t.previewNeedsReply:t.previewHistory,
     }))
     const portal=directThreads.map(item=>({
       key:'direct:'+item.id,kind:'direct',id:item.id,peerMasterSlug:item.peerMasterSlug||'',name:item.peerName||t.portal,
       source:t.direct,unread:Number(item.unread)||0,needsReply:(Number(item.unread)||0)>0,
-      at:item.updatedAt,preview:t.portal,
+      at:item.updatedAt,preview:t.previewHistory,
     }))
     const incoming=requests.filter(item=>validId(item.id)).map(item=>({
       key:'request:'+item.id,kind:'request',id:item.id,item,
@@ -159,8 +159,8 @@ export default function MessagesSimpleInbox({
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
   const tabTotal=embedded?rows.length:tab==='requests'?requestsCount:chatsCount
-  const tabLoading=embedded?(websiteLoading||crmState.loading):
-    tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
+  const {loading:tabLoading,unavailable:sourcesUnavailable}=inboxSourceStatus({websiteLoading,websiteUnavailable,
+    crmLoading:crmState.loading,crmError:crmState.error})
   const displayed=embedded
     ?rows.filter(row=>(!unreadOnly||row.unread>0)&&
       [row.name,row.source,row.preview,row.item?.message,row.item?.question].some(value=>
@@ -186,13 +186,28 @@ export default function MessagesSimpleInbox({
     const update=()=>{
       if(!window.matchMedia('(max-width:700px)').matches){
         windowElement.style.removeProperty('--hh-mobile-window-height')
+        windowElement.style.removeProperty('--hh-mobile-window-top')
+        delete windowElement.dataset.keyboardOpen
         return
       }
       const visual=window.visualViewport
-      const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
-      const top=windowElement.getBoundingClientRect().top
       const focused=windowElement.contains(document.activeElement)&&
         /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
+      // A selected conversation is a full-screen chat, not a card below
+      // the orders header. Safari's visual viewport tracks the real space
+      // left above its software keyboard (including viewport scrolling).
+      if(openDetail){
+        const height=Math.max(1,Math.floor(visual?.height||window.innerHeight))
+        const top=Math.max(0,Math.floor(visual?.offsetTop||0))
+        windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
+        windowElement.style.setProperty('--hh-mobile-window-top',top+'px')
+        windowElement.dataset.keyboardOpen=focused?'true':'false'
+        return
+      }
+      windowElement.style.removeProperty('--hh-mobile-window-top')
+      delete windowElement.dataset.keyboardOpen
+      const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
+      const top=windowElement.getBoundingClientRect().top
       const nav=document.querySelector('.hh-mobile-app-nav')
       const navVisible=nav&&window.getComputedStyle(nav).display!=='none'
       const navTop=navVisible&&!focused?nav.getBoundingClientRect().top:null
@@ -223,6 +238,8 @@ export default function MessagesSimpleInbox({
       visual?.removeEventListener('resize',requestUpdate)
       visual?.removeEventListener('scroll',requestUpdate)
       windowElement.style.removeProperty('--hh-mobile-window-height')
+      windowElement.style.removeProperty('--hh-mobile-window-top')
+      delete windowElement.dataset.keyboardOpen
     }
   },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
@@ -301,11 +318,11 @@ export default function MessagesSimpleInbox({
             onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
         </div>
         <div className={styles.peopleScroll}>
-          {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!tabTotal&&!tabLoading?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
+          {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
-          {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
-          {websiteUnavailable&&(embedded||tab==='requests')&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {crmState.error&&<p role="alert" className={styles.info}>{t.crmUnavailable}</p>}
+          {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}
             className={selectedKey===row.key?styles.personSelected:styles.person}
@@ -356,12 +373,12 @@ export default function MessagesSimpleInbox({
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
             simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
         </div>
-        {!showCard&&selected?.kind==='request'&&<div className={styles.requestPane}>
+        {selected?.kind==='request'&&<div className={styles.requestPane} hidden={showCard}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>
           </div>
-          {selected.item.requestKind!=='public'?
+          {inMessagesTab(selected,'chats')?
             <PracticeRequestConversation key={selected.id} inline autoOpen
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:

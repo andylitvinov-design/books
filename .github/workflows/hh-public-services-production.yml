@@ -1,6 +1,7 @@
 name: Holistic House public services production acceptance
-# Exact PR impact controls costly verification: contracts-only changes skip browsers;
-# sensitive/runtime changes fail closed to all 13 real browser scenarios before merge.
+# Fast source/consent/booking contracts on low-risk PRs; sensitive-risk
+# changes still run required Chromium/WebKit acceptance. Full manual QA
+# remains available via workflow_dispatch on an exact candidate ref.
 on:
   workflow_dispatch:
   pull_request:
@@ -243,10 +244,15 @@ jobs:
           HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
         run: |
           node --conditions=react-server tests/helpers/app-db-setup.mjs
+      # Low-risk PRs keep required security and contact-consent contracts even
+      # when the expensive independently owned browser acceptance is deferred.
+      - name: Fast public consent, service and Reiki contract tests
+        if: github.event_name == 'pull_request'
+        run: node --test tests/contact-channel-chooser.test.mjs tests/services-browser-order-contract.test.mjs tests/reiki-unified-order-capture.test.mjs tests/public-service-enquiries.test.mjs
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} pr_heavy=${{ steps.scope.outputs.pr_heavy }} engines=${{ steps.scope.outputs.engines }} cases=${{ steps.scope.outputs.cases }}. Safe CSS uses Core build/source tests; focused public UI runs selected engines; sensitive/unknown uses full real browser.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate browser cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. Full standalone QA is available via workflow_dispatch on the exact candidate ref; Core/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
         if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
@@ -297,7 +303,7 @@ jobs:
             exit 1
           fi
           status=0
-          # Real 13-case risk-scoped E2E on PR and full manual QA, including payment,
+          # Real 14-case risk-scoped E2E on sensitive PRs and full manual QA, including payment,
           # consent, browser engines and RU/EN/ES viewports. One Next server,
           # two bounded independent lanes with checked exit statuses.
           # Each suite writes its own diagnostics; both lanes MUST be awaited.

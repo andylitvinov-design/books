@@ -398,6 +398,11 @@ test('required Public Services PR gate follows exact-head risk without suppressi
       'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
   }
   assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
+  // Fast source/consent acceptance applies to every non-Draft PR, while
+  // the original risk-scoped browser suite remains required for sensitive code.
+  assert.match(src, /Fast public consent, service and Reiki contract tests/);
+  assert.match(src, /tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
+  assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
     const plan = planPublicServicesChangedPaths([risky]);
     assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
