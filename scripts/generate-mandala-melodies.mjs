@@ -34,7 +34,10 @@ export const SONGS=[
   {id:"strings",key:53,mode:"major",chords:[0,4,5,3],motif:[4,2,1,0,2,4,5,4],lead:"strings",back:"piano",color:0},
   {id:"marimba",key:52,mode:"major",chords:[0,3,5,4],motif:[0,2,4,2,5,7,4,2],lead:"marimba",back:"harp",color:3},
   {id:"lullaby",key:48,mode:"major",chords:[0,5,3,4],motif:[2,null,4,2,0,null,1,2],lead:"piano",back:"celesta",color:0},
-  {id:"handpan",key:50,mode:"dorian",chords:[0,3,4,0],motif:[0,4,2,1,0,2,4,2],lead:"handpan",back:"flute",color:1}
+  {id:"handpan",key:50,mode:"dorian",chords:[0,3,4,0],motif:[0,4,2,1,0,2,4,2],lead:"handpan",back:"flute",color:1},
+  // Newly synthesized performances of old public-domain themes; no borrowed recordings.
+  {id:"ode-to-joy",key:48,mode:"major",chords:[0,0,3,4],motif:[2,2,3,4,4,3,2,1],lead:"piano",back:"strings",color:1},
+  {id:"greensleeves",key:57,mode:"minor",chords:[0,4,5,3],motif:[0,2,3,4,5,4,3,1],lead:"flute",back:"harp",color:0},
 ];
 export const MASTER_IDS=Object.freeze(SONGS.map(x=>x.id));
 export const SAMPLE_RATE=22050;
