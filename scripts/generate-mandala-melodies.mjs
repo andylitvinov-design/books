@@ -81,6 +81,22 @@ const soundEnvelope=(t,d,kind)=>{
 
 export function renderMelody(song){
   if(!SONGS.includes(song))throw Error("unapproved_original_score");
+  return renderAuthorizedScore(song);
+}
+/** Strict first-party note-score renderer for the separate scenario music
+ * pipeline; never accepts visitor prompts, media URLs, or uploaded files.
+ * Existing 22 songs still require their exact authored SONGS identities.
+ */
+export function renderAuthorizedScore(song) {
+  if(!song||!SCALES[song.mode]||
+    !Array.isArray(song.chords)||song.chords.length!==4||
+    song.chords.some(n=>!Number.isInteger(n)||n<0||n>6)||
+    !Array.isArray(song.motif)||song.motif.length!==8||
+    song.motif.some(n=>n!==null&&(!Number.isInteger(n)||n<0||n>9))||
+    !Number.isInteger(song.key)||song.key<45||song.key>60||
+    !TONES[song.lead]||!TONES[song.back]||
+    !Number.isInteger(song.color)||song.color<0||song.color>3)
+    throw Error("unapproved_scenario_score");
   const rate=SAMPLE_RATE,n=rate*DURATION_SECONDS;
   const signal=new Float32Array(n);
   function note(midi,start,duration,amp,kind){
