@@ -22,6 +22,50 @@ const MIN_RATE_REMAINING = 100;
 const MAX_LEGACY_PROBES = 3;
 const MAX_LEGACY_BOOTSTRAPS = 1;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
+const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
+
+/**
+ * One GraphQL read obtains mergeability for all selected PRs instead of one
+ * REST GET per PR. This uses the GITHUB_TOKEN GraphQL quota, not the owner PAT.
+ * Missing/changed objects never grant authorization: exact HEAD, branch and
+ * repository identity must still match the authoritative REST list snapshot.
+ */
+function buildLiveBatchQuery(prs) {
+  if (!Array.isArray(prs) || prs.length > 20) throw Error('Unsafe PR batch size');
+  const fields=prs.map(pr=>{
+    if (!Number.isSafeInteger(pr.number) || pr.number < 1) throw Error('Unsafe PR number');
+    return 'p'+pr.number+':pullRequest(number:'+pr.number+') {'+
+      ' number state isDraft mergeable mergeStateStatus baseRefName'+
+      ' headRefName headRefOid headRepository { nameWithOwner }'+
+      ' autoMergeRequest { enabledAt } }';
+  }).join('\n');
+  return 'query($owner:String!,$repo:String!){'+
+    ' repository(owner:$owner,name:$repo) { '+fields+' }'+
+    ' rateLimit { remaining } }';
+}
+
+function normalizeLiveBatchPR(node, listed) {
+  if (!node || node.number !== listed.number) return null;
+  return {
+    number:node.number,state:node.state==='OPEN'?'open':'closed',
+    draft:node.isDraft,
+    base:{ref:node.baseRefName},
+    head:{sha:node.headRefOid,ref:node.headRefName,
+      repo:{full_name:node.headRepository?.nameWithOwner || null}},
+    mergeable:node.mergeable==='MERGEABLE'?true:
+      node.mergeable==='CONFLICTING'?false:null,
+    mergeable_state:String(node.mergeStateStatus || 'UNKNOWN').toLowerCase(),
+    labels:listed.labels || [],updated_at:listed.updated_at,
+    auto_merge:node.autoMergeRequest ? {enabled_at:node.autoMergeRequest.enabledAt}:null
+  };
+}
+
+function boundedRestFallback(selected) {
+  // Keep two most recently edited PRs and four rotating ones. Without GraphQL
+  // the oldest 180 PRs must still get attention rather than only hot PRs.
+  if (selected.length <= MAX_REST_FALLBACK_LOOKUPS) return selected;
+  return [...selected.slice(0,2),...selected.slice(4,8)].slice(0,MAX_REST_FALLBACK_LOOKUPS);
+}
 
 function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
@@ -267,7 +311,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }
       return result;
     }catch(error){
-      if([403,429].includes(error?.status)&&/rate.limit|abuse|secondary/i.test(String(error?.message))){
+      if(([403,429].includes(error?.status) || error?.status == null || error?.status === 200) &&
+         /rate.limit|rate limit|abuse|secondary/i.test(String(error?.message))){
         budget.exhausted=true;
         budget.reason='GITHUB_RATE_LIMIT';
       }
@@ -304,6 +349,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     staleHead:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
+     liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
@@ -319,19 +365,46 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
+  let liveBatch=null;
+  if (!budget.exhausted && typeof github.graphql === 'function' && selected.length) {
+    try {
+      const response=await limited('live-mergeability-batch',()=>
+        github.graphql(buildLiveBatchQuery(selected),{owner,repo}));
+      if (!response?.repository) throw Error('GraphQL PR repository response missing');
+      summary.liveBatchUsed=true;
+      liveBatch=new Map(selected.map(pr=>[
+        pr.number, normalizeLiveBatchPR(response.repository['p'+pr.number],pr)
+      ]));
+      if (Number.isFinite(response?.rateLimit?.remaining)) {
+        summary.graphqlRemaining=response.rateLimit.remaining;
+        if (summary.graphqlRemaining < MIN_RATE_REMAINING) {
+          budget.exhausted=true;
+          budget.reason='GRAPHQL_RATE_RESERVE';
+          log('PAUSE GraphQL API: remaining='+summary.graphqlRemaining);
+        }
+      }
+    } catch(error) {
+      log('Batch mergeability unavailable; bounded REST fallback: '+error.message);
+    }
+  }
   let handoffs = 0, conflictHandoffs = 0;
-  for (const pr of selected) {
+  for (const pr of (liveBatch ? selected : boundedRestFallback(selected))) {
     if(budget.exhausted) break;
     summary.inspected++;
-    // Pull-list omits mergeability. Read exact live PR before expensive CI queries.
-    let live;
-    try {
-      live = (await limited('live-merge-state',()=>github.rest.pulls.get({
-        owner,repo,pull_number:pr.number}))).data;
-    } catch (error) {
-      log('#' + pr.number + ' live PR lookup unavailable: ' + error.message);
-      continue;
+    // The GraphQL batch provides live mergeability with the exact-HEAD lease
+    // below. Only use per-PR REST reads when GraphQL is unavailable.
+    let live=liveBatch?.get(pr.number);
+    if (!liveBatch) {
+      try {
+        live = (await limited('live-merge-state',()=>github.rest.pulls.get({
+          owner,repo,pull_number:pr.number}))).data;
+        summary.liveRestLookups++;
+      } catch (error) {
+        log('#' + pr.number + ' live PR lookup unavailable: ' + error.message);
+        continue;
+      }
     }
+    if (!live) {summary.staleHead++;continue;}
     if (live.state !== 'open' || live.draft || live.base?.ref !== PROD ||
         live.head?.sha !== pr.head.sha || live.head?.repo?.full_name !== owner+'/'+repo) {
       summary.staleHead++;
@@ -451,4 +524,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback};
