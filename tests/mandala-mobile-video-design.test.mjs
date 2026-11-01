@@ -491,8 +491,13 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"preset",id\}\)/);
-  assert.match(studio,/data-video-quick-audio-track=\{track.id\}/);
+  assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
+  assert.match(studio,/setAttachedAudio\(attached\)/);
+  assert.match(studio,/data-video-quick-audio-track=\{id\}/);
+  assert.match(studio,/data-video-quick-music-check=\{id\}/);
+  assert.match(studio,/data-video-quick-music-play=\{id\}/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);

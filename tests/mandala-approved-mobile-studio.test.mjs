@@ -109,7 +109,7 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
   assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
     "selected sound must reveal real attachment controls after mobile collapse");
-  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)setPreviewPlaying\(false\);\s*else openAffirmationPreview\(\)/,
+  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
     "photo-rights consent must open the relocated disclosure");
