@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import {
-  ArrowRight, AudioLines, ChevronDown, Eye, FileText, Headphones, Image as Picture,
-  MapPin, Mic, Quote, Repeat2, Sparkles, Sun, Waves,
+  ArrowRight, AudioLines, ChevronDown, Clock3, Eye, FileText, Headphones, Image as Picture,
+  MapPin, Mic, Quote, Repeat2, Sparkles, Sun, UserRound, Waves,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
@@ -22,11 +22,10 @@ type Props = {
   onOpenPhraseEditor: () => void;
   onOpenAudioEditor: () => void;
   onOpenScenes: () => void;
-  onOpenMeditation: () => void;
+  onOpenMeditation: (focus?:"create"|"duration"|"style"|"voice") => void;
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
   onPreview: () => void;
-  onWavePreset: () => void;
   hasPhoto: boolean;
   hasVoiceFile: boolean;
   posters: Record<GroupId,string>;
@@ -110,12 +109,34 @@ const copy = {
   },
 } as const;
 
-function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailable}:{
-  icon:ReactNode;title:string;help:string;active:boolean;
-  onToggle?:()=>void;onConfigure:()=>void;disabled:boolean;unavailable?:boolean;
+
+/** Only the existing Canvas hero plays and exports; Wave is a settings shortcut. */
+export function MandalaHypnoIntro({locale,disabled,onWavePreset}:{
+  locale:PublicLocale;disabled:boolean;onWavePreset:()=>void;
+}) {
+  const t=copy[locale];
+  const [applied,setApplied]=useState(false);
+  const sub=locale==="ru"?"Добавьте медитацию, визуальные эффекты, звук и фразы поддержки"
+    :locale==="es"?"Añade meditación, efectos visuales, sonido y frases de apoyo"
+    :"Add meditation, visual effects, sound and supportive phrases";
+  return <header className={styles.intro} data-video-hypno-intro lang={locale}>
+    <h2>{t.title}</h2><p>{sub}</p>
+    <section className={styles.wave}>
+      <Sparkles size={27} aria-hidden="true"/>
+      <div className={styles.waveTop}><strong>{t.wave}</strong><p>{t.waveHelp}</p></div>
+      <button type="button" onClick={()=>{onWavePreset();setApplied(true);}}
+        disabled={disabled} data-hypno-wave>{t.try}<ArrowRight size={19} aria-hidden="true"/></button>
+    </section>
+    {applied?<p className={styles.waveStatus} role="status">{t.suggested}</p>:null}
+  </header>;
+}
+
+function Feature({icon,poster,title,help,active,onToggle,onConfigure,configure,disabled,unavailable}:{
+  icon:ReactNode;poster?:string;title:string;help:string;active:boolean;
+  onToggle?:()=>void;onConfigure:()=>void;configure:string;disabled:boolean;unavailable?:boolean;
 }){
   return <div className={styles.feature}>
-    <span className={styles.featureIcon} aria-hidden="true">{icon}</span>
+    <span className={styles.featureIcon} aria-hidden="true">{poster? /* eslint-disable-next-line @next/next/no-img-element */ <img src={poster} alt="" loading="lazy"/>:icon}</span>
     <button type="button" className={styles.featureText} onClick={onConfigure}
       disabled={disabled} aria-label={title+": "+help}>
       <strong>{title}</strong><span>{help}</span>
@@ -125,18 +146,20 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
       <span/>
     </button>:<button type="button" className={styles.featureArrow} onClick={onConfigure}
       disabled={disabled} aria-label={title}><ArrowRight size={21}/></button>}
+    <button type="button" className={styles.configure} onClick={onConfigure}
+      disabled={disabled} aria-label={title+": "+configure}>{configure}<ArrowRight size={13} aria-hidden="true"/></button>
   </div>;
 }
 
 export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenAudioEditor,onOpenScenes,onOpenMeditation,
-  onPickPhoto,onRemovePhoto,onPreview,onWavePreset,hasPhoto,hasVoiceFile,posters,
+  onPickPhoto,onRemovePhoto,onPreview,hasPhoto,hasVoiceFile,posters,
 }:Props) {
   const t=copy[locale];
-  const [open,setOpen]=useState<GroupId|"">("phrases");
+  const [collapsed,setCollapsed]=useState<GroupId[]>([]);
   const [showLightSettings,setShowLightSettings]=useState(false);
-  const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
+  const [note,setNote]=useState<"audio"|"voice"|"frame"|"">("");
   const visible=affirmations.enabled&&affirmations.visibility.includes("large");
   const briefFrame=affirmations.enabled&&affirmations.visibility.includes("frame");
   const toggleVisibility=(mode:"large"|"frame")=>{
@@ -147,61 +170,52 @@ export function MandalaHypnocorrectionMobile({
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
   const groups: {id:GroupId;title:string;help:string}[]=[
-    {id:"phrases",title:t.phrases,help:t.phrasesHelp},
-    {id:"audio",title:t.audio,help:t.audioHelp},
+    {id:"audio",title:locale==="ru"?"Аудио":"Audio",help:t.audioHelp},
     {id:"visual",title:t.visual,help:t.visualHelp},
     {id:"meditation",title:t.meditation,help:t.meditationHelp},
+    {id:"phrases",title:t.phrases,help:t.phrasesHelp},
   ];
   return <section className={styles.panel} data-hypno-mobile lang={locale}
     aria-label={t.title}>
-    <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
-    <section className={styles.wave}>
-      <div className={styles.waveTop}><Sparkles size={29} aria-hidden="true"/>
-        <div><strong>{t.wave}</strong><p>{t.waveHelp}</p></div></div>
-      <button type="button" onClick={()=>{
-        onWavePreset();setOpen("visual");setShowLightSettings(true);setNote("wave");
-      }} disabled={disabled} data-hypno-wave>
-        {t.try}<ArrowRight size={20} aria-hidden="true"/>
-      </button>
-      {note==="wave"?<p role="status" className={styles.note}>{t.suggested}</p>:null}
-    </section>
-    {groups.map(group=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
-      <button type="button" className={styles.groupHeader} aria-expanded={open===group.id}
+    {groups.map((group,index)=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
+      <button type="button" className={styles.groupHeader} aria-expanded={!collapsed.includes(group.id)}
         aria-controls={"hypno-group-"+group.id}
-        onClick={()=>setOpen(open===group.id?"":group.id)}>
+        onClick={()=>setCollapsed(current=>current.includes(group.id)?current.filter(value=>value!==group.id):[...current,group.id])}>
         {/* First-party scene posters; no duplicated player or third-party images. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={posters[group.id]} alt="" loading="lazy"/>
+        <span className={styles.groupShade} aria-hidden="true"/>
+        <span className={styles.groupNumber}>{index+1}</span>
         <span className={styles.groupTitle}><strong>{group.title}</strong><small>{group.help}</small></span>
-        <ChevronDown size={23} className={open===group.id?styles.expanded:styles.chevron} aria-hidden="true"/>
+        <ChevronDown size={19} className={!collapsed.includes(group.id)?styles.expanded:styles.chevron} aria-hidden="true"/>
       </button>
-      <div className={styles.groupContent} id={"hypno-group-"+group.id} hidden={open!==group.id}>
+      <div className={styles.groupContent} id={"hypno-group-"+group.id} hidden={collapsed.includes(group.id)}>
         {group.id==="phrases"?<>
-          <Feature icon={<Quote/>} title={t.text} help={t.textHelp}
+          <Feature configure={t.settings} icon={<Quote/>} title={t.text} help={t.textHelp}
             active={visible} onToggle={()=>toggleVisibility("large")} onConfigure={onOpenPhraseEditor} disabled={disabled}/>
-          <Feature icon={<Eye/>} title={t.frame} help={t.frameHelp}
+          <Feature configure={t.settings} icon={<Eye/>} title={t.frame} help={t.frameHelp}
             active={briefFrame} onToggle={()=>{toggleVisibility("frame");showNote("frame");}}
             onConfigure={()=>showNote("frame")} disabled={disabled}/>
-          <Feature icon={<Repeat2/>} title={t.repeat} help={t.repeatHelp}
+          <Feature configure={t.settings} icon={<Repeat2/>} title={t.repeat} help={t.repeatHelp}
             active={false} unavailable onToggle={()=>showNote("audio")}
             onConfigure={()=>showNote("audio")} disabled={disabled}/>
           {note==="frame"?<p role="note" className={styles.note}>{t.science}</p>:null}
           {note==="audio"?<p role="status" className={styles.note}>{t.pending}</p>:null}
         </>:null}
         {group.id==="audio"?<>
-          <Feature icon={<Mic/>} title={t.speech} help={t.speechHelp}
+          <Feature configure={t.settings} icon={<Mic/>} title={t.speech} help={t.speechHelp}
             active={hasVoiceFile} onToggle={onOpenAudioEditor}
             onConfigure={onOpenAudioEditor} disabled={disabled}/>
-          <Feature icon={<AudioLines/>} title={t.whisper} help={t.whisperHelp}
+          <Feature configure={t.settings} icon={<AudioLines/>} title={t.whisper} help={t.whisperHelp}
             active={false} unavailable onToggle={()=>showNote("audio")}
             onConfigure={()=>showNote("audio")} disabled={disabled}/>
-          <Feature icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
+          <Feature configure={t.settings} icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
             active={false} unavailable onToggle={()=>showNote("audio")}
             onConfigure={()=>showNote("audio")} disabled={disabled}/>
           <p className={styles.note}>{note==="audio"?t.pending:t.voiceHint}</p>
         </>:null}
         {group.id==="visual"?<>
-          <Feature icon={<Sun/>} title={t.light} help={t.lightHelp}
+          <Feature configure={t.settings} icon={<Sun/>} poster={posters.visual} title={t.light} help={t.lightHelp}
             active={light.enabled}
             onToggle={()=>onLightChange({...light,enabled:!light.enabled})}
             onConfigure={()=>setShowLightSettings(value=>!value)} disabled={disabled}/>
@@ -215,18 +229,37 @@ export function MandalaHypnocorrectionMobile({
                 disabled={disabled} onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
             </label>
           </div>:null}
-          <Feature icon={<MapPin/>} title={t.places} help={t.placesHelp}
+          <Feature configure={t.settings} icon={<MapPin/>} poster={posters.phrases} title={t.places} help={t.placesHelp}
             active={false} onConfigure={onOpenScenes} disabled={disabled}/>
-          <Feature icon={<Picture/>} title={t.photo} help={t.photoHelp}
+          <Feature configure={t.settings} icon={<Picture/>} poster={posters.meditation} title={t.photo} help={t.photoHelp}
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
             onConfigure={onPickPhoto} disabled={disabled}/>
         </>:null}
         {group.id==="meditation"?<div className={styles.meditation}>
-          <FileText size={30} aria-hidden="true"/>
-          <p>{t.meditationDetail}</p>
-          <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-            <Sparkles size={19} aria-hidden="true"/>{t.generateMeditation}<ArrowRight size={19} aria-hidden="true"/>
+          <button type="button" className={styles.meditationPrimary}
+            onClick={()=>onOpenMeditation("create")} disabled={disabled}>
+            <FileText size={26} aria-hidden="true"/>
+            <span><strong>{locale==="ru"?"Создать личную медитацию":locale==="es"?"Crear meditación personal":"Create personal meditation"}</strong>
+              <small>{t.meditationDetail}</small></span>
+            <ArrowRight size={19} aria-hidden="true"/>
           </button>
+          <div className={styles.meditationOptions}>
+            <button type="button" onClick={()=>onOpenMeditation("duration")} disabled={disabled}>
+              <Clock3 size={22} aria-hidden="true"/>
+              <strong>{locale==="ru"?"Длительность":locale==="es"?"Duración":"Duration"}</strong>
+              <small>3 / 5 / 8 / 12 {locale==="ru"?"мин":"min"}</small>
+            </button>
+            <button type="button" onClick={()=>onOpenMeditation("style")} disabled={disabled}>
+              <Sparkles size={22} aria-hidden="true"/>
+              <strong>{locale==="ru"?"Стиль":locale==="es"?"Estilo":"Style"}</strong>
+              <small>{locale==="ru"?"Расслабление · Энергия · Уверенность":locale==="es"?"Calma · Energía · Confianza":"Calm · Energy · Confidence"}</small>
+            </button>
+            <button type="button" onClick={()=>onOpenMeditation("voice")} disabled={disabled}>
+              <UserRound size={22} aria-hidden="true"/>
+              <strong>{locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}</strong>
+              <small>{locale==="ru"?"Мой или разрешённый голос":locale==="es"?"Mi voz o voz autorizada":"My voice or authorized voice"}</small>
+            </button>
+          </div>
         </div>:null}
       </div>
     </section>)}

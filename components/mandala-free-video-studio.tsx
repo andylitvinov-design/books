@@ -8,7 +8,7 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
-import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
+import { MandalaHypnocorrectionMobile, MandalaHypnoIntro } from "./mandala-hypnocorrection-mobile";
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
@@ -3800,6 +3800,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
+        {activeWorkspace==="effects"?<MandalaHypnoIntro locale={locale}
+          disabled={recording||preparing} onWavePreset={()=>{
+            setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
+            setAffirmations(current=>({...current,enabled:true,
+              visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
+            setPreviewPlaying(false);
+          }}/>:null}
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
@@ -3986,7 +3993,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
           </div>
         </section>
-      {activeWorkspace!=="video" ? <header className={videoStyles.workspaceHeading} id="video-workspace-panel"
+      {activeWorkspace!=="video"&&activeWorkspace!=="effects" ? <header className={videoStyles.workspaceHeading} id="video-workspace-panel"
         data-video-workspace-heading role="region" aria-live="polite" aria-label={workspaceCopy[locale][activeWorkspace].title}>
         <small>HOLISTIC HOUSE · VIDEO STUDIO</small>
         <h3>{workspaceCopy[locale][activeWorkspace].title}</h3>
@@ -4090,19 +4097,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
             onOpenScenes={()=>openQuickDetailed("video-templates")}
-            onOpenMeditation={()=>{
+            onOpenMeditation={focus=>{
               setActiveWorkspace("practices");setStudioMode("therapy");
-              window.requestAnimationFrame(()=>document.querySelector('[data-video-meditation-course-panel]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
+              const target=focus==="duration"?"[data-meditation-length]"
+                :focus==="style"?"[data-meditation-accents]"
+                :focus==="voice"?"[data-meditation-narration]"
+                :"[data-video-personal-meditation]";
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+                (document.querySelector(target)||document.querySelector("[data-video-personal-meditation]"))
+                  ?.scrollIntoView({block:"center",behavior:"smooth"});
+              }));
             }}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
             onPreview={openAffirmationPreview}
-            onWavePreset={()=>{
-              setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
-              setAffirmations(current=>({...current,enabled:true,
-                visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
-              setPreviewPlaying(false);
-            }}/>
+            />
         </div> : null}
       </section>
       <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
@@ -5162,7 +5171,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       ):(
         <button type="button" className={videoStyles.generate} data-mandala-video-generate
           disabled={!canGenerate} onClick={()=>void createVideo()}>
-          <Play size={21} fill="currentColor" aria-hidden="true"/>{ui.create}
+          <Play size={21} fill="currentColor" aria-hidden="true"/>
+          {activeWorkspace==="effects"?<span className={videoStyles.hypnoGenerateCaption}>
+            <strong>{locale==="ru"?"Сформировать видео":locale==="es"?"Crear vídeo":"Create video"}</strong>
+            <small>{locale==="ru"?"Локально · 0 кредитов":locale==="es"?"Local · 0 créditos":"On-device · 0 credits"}</small>
+          </span>:ui.create}
         </button>
       )}
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
