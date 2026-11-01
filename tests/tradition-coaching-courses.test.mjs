@@ -201,10 +201,14 @@ test('existing local Egyptian/Greek covers and sixteen unique credited stage ima
  const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
  const {TRADITION_COURSES}=await import('../lib/personal-coaching/traditions.js')
  const root='/images/holistic-house/coaching-ancient/'
- assert.equal(traditionCoachingArt.egyptian,'/images/holistic-house/books-library.webp')
- assert.equal(traditionCoachingArt.greek,'/images/holistic-house/hero-olive-incense.webp')
+ assert.equal(traditionCoachingArt.egyptian,root+'egyptian-cover.jpg')
+ assert.equal(traditionCoachingArt.greek,root+'greek-cover.jpg')
+ const fallback={egyptian:'/images/holistic-house/books-library.webp',
+  greek:'/images/holistic-house/hero-olive-incense.webp'}
  for(const course of TRADITION_COURSES){
-  assert.equal(course.art,traditionCoachingArt[course.slug])
+  // Course catalog uses distinct static illustrations while the free session
+  // screens use 18 historical photos from the validated prebuild mirror.
+  assert.equal(course.art,fallback[course.slug])
   assert.equal(traditionStages(course.slug).length,8)
  }
  const stages=['egyptian','greek'].flatMap(slug=>traditionStages(slug))
