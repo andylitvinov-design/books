@@ -357,21 +357,22 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
-test('Holistic Support mock screenshots run only after merge; PR retains current source contracts', () => {
+test('Holistic Support mock screenshots run after merge or on exact existing #2483 QA; PR retains source contracts', () => {
   const source = read('hh-support-mobile-mock-browser.yml');
   const core = read('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  push:/m);
+  const boundedBrowserGate="${{ github.event_name != 'pull_request' || github.event.pull_request.number == 2483 }}";
   for (const name of [
     'Install Chromium and WebKit (post-merge visual audit)',
     'Check 320 / 390 / 430 in Chromium and WebKit'
   ]) {
-    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
-      'Only post-merge runs may allocate duplicated browser matrices: '+name);
+    assert.ok(source.includes('- name: '+name+'\n        if: '+boundedBrowserGate),
+      'Only production push or exact preapproved PR #2483 may allocate browser matrices: '+name);
   }
   assert.ok(source.includes("if: always() && github.event_name != 'pull_request'"),
     'PRs must not allocate duplicate screenshot artifacts');
-  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'),
+  assert.ok((/node --test [^\n]*tests\/greek-video-series\.test\.mjs/).test(source),
     'PR source contracts must still execute');
   assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'),
     'Parity source contract must not be removed');
@@ -410,7 +411,7 @@ test('Support Mobile Draft skips costly mock browser; Ready and production push 
   assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
   assert.ok(source.includes("group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),'never cancel production push');
-  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'));
+  assert.ok((/node --test [^\n]*tests\/greek-video-series\.test\.mjs/).test(source));
   assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
   assert.ok(source.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
@@ -429,7 +430,7 @@ test('wave 5: Support Mock delegates only duplicate production PR TypeScript to 
   assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(mock.includes('- name: Full TypeScript on non-production PR or production push\n        if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"+'\n        run: npx --no-install tsc --noEmit --pretty false'));
   assert.match(mock,/node-version: '22'\s*\n          cache: npm/);
-  assert.match(mock,/node --test tests\/greek-video-series\.test\.mjs/);
+  assert.match(mock,/node --test [^\n]*tests\/greek-video-series\.test\.mjs/);
   assert.match(mock,/npx eslint/);
   assert.match(mock,/playwright install --with-deps chromium webkit/);
   assert.ok(mock.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
@@ -470,8 +471,10 @@ for (const [name, jobs] of heavyDraftStage) {
 
 test('Draft staging keeps full IA security, SEO source-build and production monitoring', () => {
   const ia = read('ia-v2.yml');
-  // YAML-only edits belong to the exact-head Core/actionlint gates, not IA's product suite.
-  assert.doesNotMatch(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  // IA workflow changes run their own security and browser acceptance on the exact head.
+  assert.match(ia, /'\.github\/workflows\/ia-v2\.yml'/);
+  assert.match(ia, /npm run test:app/);
+  assert.match(ia, /IA security, ownership and navigation contracts/);
   assert.match(read('hh-actionlint.yml'), /^      - '\.github\/workflows\/\*\*'$/m);
   assert.match(read('hh-pr-core-release.yml'), /node --test tests\/pr-fast-lane\.test\.mjs/);
   assert.match(ia, /verify:ia-v2/);
