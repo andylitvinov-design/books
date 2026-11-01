@@ -82,6 +82,8 @@ test('CI-only App R1 policy and new routing tests skip obsolete unrelated app an
   for (const source of [
     one('.github/workflows/hh-app-r1.yml'),
     one('.github/workflows/hh-app-browser.yml'),
+    one('.github/workflows/hh-alchemy-mobile-acceptance.yml'),
+    one('tests/ci-alchemy-impact.test.mjs'),
     one('scripts/ci-heavy-impact.mjs'),
     one('tests/ci-heavy-impact.test.mjs', 'added'),
     one('tests/ci-specialist-aggregate.test.mjs'),
