@@ -79,7 +79,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-result-empty/);
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
- assert.match(studio,/playAudioTrack\(id\);setAttachedAudio\(\{kind:"preset",id\}\)/);
+ assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
+ assert.match(studio,/data-video-quick-music-check=\{id\}/);
+ assert.match(studio,/data-video-quick-music-play=\{id\}/);
+ assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
  assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
  assert.match(studio,/kind:"melody",mood:"all",pace:"all"/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
@@ -128,12 +131,12 @@ test("desktop retains original six explicit theme choices while iPhone starts wi
 });
 
 test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
- assert.match(studio,/if\(attachedAudio && audioPreviewRef\.current\?\.paused\)toggleSoundPreview\(\)/,
+ assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\)/,
    "selected audio must begin from the same trusted Play tap on Safari");
- assert.match(studio,/if\(previewPlaying\)\{setPreviewPlaying\(false\);if\(attachedAudio\)stopSoundPreview\(\);\}/,
+ assert.match(studio,/if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}/,
    "pausing the video must pause its selected native audio");
- assert.match(studio,/const player=audioPreviewRef\.current;[\s\S]*?void player\.play\(\)\.catch/,
+ assert.match(studio,/function playQuickTrack\(choice:PresetId\)/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*setPreviewPlaying\(true\)/,
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\);\s*setPreviewPlaying\(true\)/,
    "Play never starts audio during export");
 });

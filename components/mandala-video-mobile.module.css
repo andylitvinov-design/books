@@ -2157,8 +2157,8 @@
  .workspaceCourseGrid strong{grid-column:2}.workspaceCourseGrid span{grid-column:2;grid-row:2}.workspaceCourseGrid svg:last-child{grid-column:3;grid-row:1 / span 2}
 }
 
-/* The full original sound library is now in this tab; avoid a second quick track picker. */
-.studio[data-active-workspace="audio"] .quickMusicRail,.studio[data-active-workspace="audio"] .quickMusicSection>.quickSectionHeading{display:none}
+/* The quick music rail is now the unique three-layer Include/Listen control.
+   Keep it visible above the full first-party sound library in Audio workspace. */
 
 /* Keep horizontally scrolling scene rails inside the mobile editor grid. */
 .quickBuilder,.sceneLibrary,.sceneLibrary [data-free-film-compilation-catalog]{grid-template-columns:minmax(0,1fr)}
@@ -2197,6 +2197,79 @@
  .studio :is(input[type="text"],input[type="search"],textarea,select){font-size:16px!important;min-width:0;max-width:100%}
 }
 
+/* Compact iPhone music + voice picker: one short horizontal rail instead of
+   a second tall audio catalogue. Native audio player/recorder stay in the
+   existing expanded section. Two independent hit targets per soundtrack. */
+.studio .quickMusicSection{
+  gap:4px;min-width:0;padding:7px 9px 8px;border-radius:15px;
+  scroll-margin-top:74px;
+}
+.quickMusicSection .quickSectionHeading h3{
+  font:800 clamp(15px,4vw,19px)/1.2 Georgia,serif;
+}
+.quickMusicSettings{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:36px;padding:5px 9px;border:1px solid #cce3d7;
+  border-radius:11px;background:#edf7f0;color:#13654d;
+  font:750 12px/1.1 Arial,Helvetica,sans-serif;white-space:nowrap;
+}
+.studio .quickMusicRail{
+  display:grid;grid-auto-flow:column;grid-auto-columns:minmax(142px,46%);
+  gap:6px;padding:1px 1px 4px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+  scrollbar-width:thin;max-width:100%;
+}
+.quickMusicItem{
+  display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:2px;
+  align-items:center;min-width:0;min-height:44px;
+  padding:1px 2px 1px 4px;border:1px solid #dce7dc;border-radius:12px;
+  background:#fffefa;scroll-snap-align:start;
+}
+.quickMusicItem[data-video-melody-active="true"]{
+  background:#e9f7ee;border-color:#22a681;
+}
+.studio .quickMusicRail .quickMusicCheck{
+  display:flex;align-items:center;justify-content:flex-start;gap:6px;
+  min-width:0;min-height:44px;padding:3px 2px;
+  border:0;border-radius:8px;background:transparent;color:#234b3d;
+  font:750 12px/1.13 Arial,Helvetica,sans-serif;text-align:left;
+  overflow-wrap:anywhere;
+}
+.quickMusicCheckbox{
+  display:grid;place-items:center;flex:none;width:20px;height:20px;
+  border:2px solid #699e88;border-radius:6px;background:#fff;color:#fff;
+}
+.quickMusicCheck[aria-checked="true"] .quickMusicCheckbox{
+  border-color:#078c6b;background:#078c6b;
+}
+.studio .quickMusicRail .quickMusicPlay{
+  display:grid;place-items:center;min-width:44px;min-height:44px;
+  padding:5px;border:0;border-radius:10px;background:#e2f5e9;color:#087158;
+}
+.studio .quickMusicRail .quickMusicPlay[aria-pressed="true"]{
+  background:#147c60;color:#fff;
+}
+.quickMusicCheck:focus-visible,.quickMusicPlay:focus-visible,.quickMusicSettings:focus-visible{
+  outline:3px solid #d9ab4e;outline-offset:1px;
+}
+.quickSoundBadge{
+  position:absolute;z-index:2;left:11px;bottom:10px;max-width:65%;
+  display:flex;align-items:center;gap:4px;min-height:25px;padding:3px 7px;
+  border:1px solid #ffffff65;border-radius:9px;background:#123a2fdc;
+  color:#fff;font:650 10px/1.22 Arial,Helvetica,sans-serif;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.quickSoundBadge svg{flex:none}
+@media(max-width:380px){
+  .studio .quickMusicSection{padding:6px 6px 7px}
+  .studio .quickMusicRail{grid-auto-columns:minmax(137px,48%);gap:4px}
+  .studio .quickMusicRail .quickMusicCheck{font-size:11px}
+  .quickMusicSettings{font-size:11px}
+  .quickSoundBadge{font-size:9px}
+}
+
+/* Unambiguous compact description: inclusion is different from audition. */
+.quickMusicHint{padding:2px 4px 4px;color:#356555;font:650 11px/1.4 Arial,Helvetica,sans-serif}
+.quickMusicHint strong{color:#086e51}
 /* 2026-11-01 owner screenshot: ONE real Canvas studio, mockup-aligned iPhone
    hierarchy. Advanced features remain in their existing live workspaces below. */
 .quickBrandIdentity{display:grid;min-width:0;gap:2px;flex:1}
@@ -2269,30 +2342,31 @@
  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading a{display:none}
  .studio .quickThemeAdvanced .quickThemeRail{display:grid;grid-auto-flow:column;grid-auto-columns:105px;
    overflow-x:auto;max-width:100%}
- .studio .quickBuilder>[data-video-quick-audio-choices]{order:4;display:grid;gap:6px;
+ .studio .quickBuilder>[data-video-quick-audio-choices]{order:4;display:grid;gap:5px;
    margin:0;padding:10px 9px;border:1px solid #e3e7dd;border-radius:15px;
    background:#fffefa;box-shadow:0 4px 14px #2f463018}
  .studio .quickMusicSection .quickSectionHeading h3{font:800 16px/1.2 Arial,sans-serif}
- .studio .quickMusicSection .quickSectionHeading button{border:0;background:transparent;
-   color:#1b7756;padding:3px;font:700 10px/1.15 Arial,sans-serif;min-height:36px}
- .studio .quickMusicSection .quickSectionHeading button svg{display:none}
- .studio .quickMusicRail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-   grid-auto-flow:row;grid-auto-columns:auto;gap:5px;padding:0;overflow:visible}
- .studio .quickMusicRail button{position:relative;display:grid;grid-template-columns:minmax(0,44%) minmax(0,56%);
-   grid-template-rows:auto;align-items:center;gap:5px;min-width:0;min-height:63px;padding:4px;
-   border:1px solid #e0e7dd;border-radius:10px;background:#fff;color:#234e3d}
- .studio .quickMusicRail button[aria-pressed="true"]{border-color:#1f7456;
-   background:#eff8f0;box-shadow:inset 0 0 0 1px #80b89d}
- .studio .quickMusicRail button>img{display:block;width:100%;height:55px;grid-column:1;grid-row:1;
-   object-fit:cover;border-radius:7px}
- .studio .quickMusicRail button .quickMusicPlay{position:absolute;left:calc(22% - 12px);top:50%;
-   transform:translateY(-50%);width:24px;height:24px}
- .studio .quickMusicRail button .quickMusicText{grid-column:2;grid-row:1;min-width:0;align-self:center}
- .studio .quickMusicRail button .quickMusicText strong{display:block;grid-column:auto;grid-row:auto;
-   font-size:clamp(9px,2.65vw,11px);line-height:1.16;overflow-wrap:anywhere}
- .studio .quickMusicRail button .quickMusicText small{display:-webkit-box;grid-column:auto;grid-row:auto;
-   -webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
-   font-size:9px;line-height:1.2;color:#65776d}
+ .studio .quickMusicSection .quickSectionHeading button{font:700 11px/1.15 Arial,sans-serif;
+   min-height:38px;padding:4px}
+ .studio .quickMusicRail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:row;
+   grid-auto-columns:auto;gap:5px;padding:0;overflow:visible;min-width:0}
+ .studio .quickMusicRail .quickMusicItem{display:grid;grid-template-columns:minmax(0,1fr) 44px;
+   grid-template-rows:56px auto;min-width:0;min-height:106px;gap:3px;padding:4px;
+   border-radius:10px;border:1px solid #d9e7dc;background:#fffefa;align-items:center}
+ .studio .quickMusicRail .quickMusicItem[data-video-melody-active="true"]{
+   border-color:#1e835e;background:#eef9ef;box-shadow:inset 0 0 0 1px #a6cdb5}
+ .studio .quickMusicRail .quickMusicPoster{display:block;grid-column:1/-1;grid-row:1;
+   width:100%;height:56px;object-fit:cover;border-radius:7px}
+ .studio .quickMusicRail .quickMusicCheck{grid-column:1;grid-row:2;display:flex;min-width:0;
+   min-height:44px;padding:3px 1px;gap:3px;border:0;background:transparent;
+   font:700 10px/1.17 Arial,sans-serif;color:#254d3b;text-align:left;
+   overflow-wrap:anywhere}
+ .studio .quickMusicRail .quickMusicCheck span:last-child{display:block;overflow:hidden;
+   text-overflow:ellipsis;max-height:36px}
+ .studio .quickMusicRail .quickMusicPlay{grid-column:2;grid-row:2;display:grid;
+   place-items:center;position:static;transform:none;min-width:44px;min-height:44px;
+   border-radius:9px;background:#e2f5e9;color:#087158}
+ .studio .quickMusicHint{font:600 10px/1.25 Arial,sans-serif;color:#547366}
  .studio .quickBuilder>[data-auto-video-director]{order:5;min-width:0}
  .studio .quickBuilder>[data-video-result],
  .studio .quickBuilder>[data-video-result-empty]{order:6;margin:0}
@@ -2322,9 +2396,9 @@
  .studio .heroEditorial h2{font-size:19px!important}
  .studio .heroEditorial p{font-size:9.5px!important}
  .studio .quickVideoNav button{font-size:8.4px;min-height:48px}
- .studio .quickMusicRail button>img{height:47px}
- .studio .quickMusicRail button{min-height:55px}
- .studio .quickMusicRail button .quickMusicText small{font-size:8px}
+ .studio .quickMusicRail .quickMusicPoster{height:47px}
+ .studio .quickMusicRail .quickMusicItem{min-height:95px;grid-template-rows:47px auto}
+ .studio .quickMusicRail .quickMusicCheck{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.heroEditorial{transition:none}}
 

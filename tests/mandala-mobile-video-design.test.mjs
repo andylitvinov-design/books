@@ -389,8 +389,9 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   assert.match(switches,/data-video-affirmations-feature/);
   assert.match(switches,/checked=\{affirmations\.enabled\}/);
   assert.match(switches,/setAffirmations\(previous=>/);
-  assert.doesNotMatch(hero,/<select/,"cinematic preview has no manual selectors");
-  assert.match(hero,/className=\{videoStyles\.heroEditorial\}/,"the approved mock has one editorial overlay");
+  assert.doesNotMatch(hero,/<select/,"the real Canvas retains no visual filter dropdown");
+  assert.match(hero,/className=\{videoStyles\.heroEditorial\}/,
+    "approved hero copy overlays the original player");
   assert.match(hero,/data-mandala-cinematic-canvas/);
   assert.match(hero,/data-video-preview-toggle/);
   assert.match(hero,/className=\{videoStyles\.heroPlay\}/);
@@ -492,8 +493,13 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"preset",id\}\)/);
-  assert.match(studio,/data-video-quick-audio-track=\{track.id\}/);
+  assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
+  assert.match(studio,/setAttachedAudio\(attached\)/);
+  assert.match(studio,/data-video-quick-audio-track=\{id\}/);
+  assert.match(studio,/data-video-quick-music-check=\{id\}/);
+  assert.match(studio,/data-video-quick-music-play=\{id\}/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
