@@ -90,6 +90,18 @@ test("parent changes invalidate all dependent IDs and reject mismatched paths",(
   assert.equal(newTopic.categoryId,"stress");
 });
 
+test("changing an editorial goal clears only generated goal copy, not the visitor's own words",()=>{
+  const path=pick(pick(draft(),"category","love"),"topic","love-trust");
+  const generatedGoal=listVideoGoalTopics("love","ru").find(row=>row.id==="love-trust")?.desiredOutcome;
+  assert.ok(generatedGoal);
+  const changed=pick({...path,goal:generatedGoal},"category","business");
+  assert.equal(changed.goal,"");
+  const custom=pick({...path,goal:"Моя личная история"},"category","business");
+  assert.equal(custom.goal,"Моя личная история");
+  const topicChanged=pick({...path,goal:generatedGoal},"topic","love-self");
+  assert.equal(topicChanged.goal,"");
+});
+
 test("text search never invents a category for unsupported food subject",()=>{
   const matched=initialVideoChatTree("доверие","ru");
   assert.equal(matched.categoryId,"love");

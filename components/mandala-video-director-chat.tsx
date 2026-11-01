@@ -231,12 +231,16 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const proposal=useMemo(()=>goalForPlan?recommendAutoVideo({
    goal:goalForPlan,locale,fallbackTheme:filmTheme,presets,scenes}):null,
    [goalForPlan,locale,filmTheme,presets,scenes]);
- const proposed=proposal?[proposal.presetId,...proposal.alternativePresetIds]
-   .filter((id):id is string=>Boolean(id)):[];
- const scoped=proposed.filter(id=>presets.find(item=>item.id===id)?.theme===filmTheme);
  // The selected canonical topic determines the visual production theme.
- const options=chosenTopic?(scoped.length?scoped:
-   presets.filter(item=>item.theme===filmTheme).map(item=>item.id)).slice(0,4):proposed;
+ // Stable options make the validated four-shot compiler independent of
+ // unrelated chat-message rerenders.
+ const options=useMemo(()=>{
+   const proposed=proposal?[proposal.presetId,...proposal.alternativePresetIds]
+     .filter((id):id is string=>Boolean(id)):[];
+   const scoped=proposed.filter(id=>presets.find(item=>item.id===id)?.theme===filmTheme);
+   return draft.topicId?(scoped.length?scoped:
+     presets.filter(item=>item.theme===filmTheme).map(item=>item.id)).slice(0,4):proposed;
+ },[proposal,draft.topicId,filmTheme,presets]);
  const chosenId=options[alternative%Math.max(1,options.length)]||null;
  const selected=chosenId?presets.find(item=>item.id===chosenId):null;
  const sourceById=useMemo(()=>new Map(scenes.map(item=>[item.id,item])),[scenes]);
@@ -264,7 +268,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      return {...plan,shots:plan.shots.map((shot,index)=>({...shot,captionText:captions[index]})),
        edit:{...plan.edit,captionTexts:captions}};
    }catch{return null;}
- },[canPlan,selected,draft,locale,filmTheme,goalForPlan,presets,scenes,proposal,renderOptions,currentAiCut]);
+ },[canPlan,selected,draft,locale,filmTheme,goalForPlan,presets,scenes,proposal,options,renderOptions,currentAiCut]);
  const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(goalForPlan).specificVisual);
  const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
