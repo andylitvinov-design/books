@@ -30,6 +30,8 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/MAX_DURATION=60/);
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
+  assert.match(helper,/video_encoder_timeline_drift/);
+  assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
   assert.match(helper,/video_output_not_mp4/);
   assert.match(helper,/await output\.cancel\(\)/);
@@ -38,7 +40,8 @@ test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(studio,/loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);
   assert.match(helper,/source\.loop=entry\.loop/);
-  assert.match(helper,/gain\.gain\.value=gainValue/);
+  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(gainValue,fadeIn\)/);
+  assert.match(helper,/narration_longer_than_video/);
   assert.match(helper,/offline\.startRendering\(\)/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/);
 });
@@ -51,3 +54,10 @@ test("Real browser validation still requires downloaded video and non-silent aud
   ])assert.ok(script.includes(required),required);
 });
 
+
+test("WebKit export can be cancelled, and microphone speech is not looped",()=>{
+  assert.match(studio,/webCodecJobRef\.current\?\.abort\(\)/);
+  assert.match(studio,/shouldContinue:\(\)=>!controller\.signal\.aborted/);
+  assert.match(studio,/nonLoop:true as const/);
+  assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(0,seconds\)/);
+});
