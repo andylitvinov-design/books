@@ -717,6 +717,7 @@ test('exact HEIC PR #2566 delegates to real Mandala browsers but unknown changes
     ['M','tests/ci-heavy-impact.test.mjs'],
     ['M','scripts/ci-public-services-plan.mjs'],
     ['M','tests/ci-public-services-plan.test.mjs'],
+    ['M','scripts/verify-holistic-mandala-browser.mjs'],
   ];
   const run=(rows,overrides={})=>planPublicServicesEvent({...env,...overrides},(_cmd,args)=>{
     if(args[0]==='rev-parse')return Buffer.from(head+'\n');

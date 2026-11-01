@@ -407,7 +407,10 @@ const runEngine = async ([engine, browserType]) => {
         const playerRect=await screen.boundingBox();
         assert.ok(playerRect&&playerRect.width>playerRect.height,
           engine+" "+locale+" "+width+"px central player must be widescreen");
-        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
+        // The themed rail lives in a collapsed disclosure on first load. Assert its
+        // truthful localized DOM label here; the later explicit open/click checks
+        // prove visibility, activation and actual source selection in both engines.
+        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().textContent(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
