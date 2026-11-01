@@ -109,7 +109,7 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
   assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
     "selected sound must reveal real attachment controls after mobile collapse");
-  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)setPreviewPlaying\(false\);\s*else openAffirmationPreview\(\)/,
+  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
     "photo-rights consent must open the relocated disclosure");
@@ -155,8 +155,11 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   }
   assert.match(source,/30 минут · €50 или 60 минут · €100/);
   assert.match(source,/Заявка — не бронь и не оплата/);
-  assert.doesNotMatch(result,/\b(?:wish|photoUrl|meditationFocus|scores|affirmations)\b/,
+  const handoff=result.slice(offer);
+  assert.doesNotMatch(handoff,/\b(?:wish|photoUrl|meditationFocus|scores|affirmations)\b/,
     "private video inputs must never be sent in a service link");
+  assert.match(result,/wish\.trim\(\)\.slice\(0,60\)/,
+    "the goal label stays local beside the recording, never in any outbound link");
   assert.match(css,/\.postVideoSupportGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.postVideoSupportGrid\{grid-template-columns:minmax\(0,1fr\)/);
 });

@@ -48,6 +48,23 @@ test('recognized eagle story has distinct localized visible scene descriptions w
     }
   }
 });
+test('flight concepts describe different visible actions rather than relabelling the same shot',()=>{
+  for(const [locale,idea,patterns] of [
+    ['ru','Белый орёл летит над горами на рассвете',[/пространств/i,/крыл/i,/парит/i,/финал/i]],
+    ['en','A white eagle flies over mountains at sunrise',[/landscape/i,/wings/i,/glides/i,/ending/i]],
+    ['es','Un águila blanca vuela sobre montañas al amanecer',[/paisaje/i,/alas/i,/planea/i,/final/i]],
+  ]){
+    const p=compileCinematicReferencePack({plan:project({locale,durationSeconds:30}),visualIdea:idea});
+    p.shots.forEach((shot,i)=>assert.match(shot.conceptDescription,patterns[i]));
+    assert.ok(p.shots.every(shot=>shot.artOnlyPrompt.includes('fictional')));
+  }
+});
+test('non-flight stories retain rounded progression for four shots',()=>{
+  const p=compileCinematicReferencePack({plan:project({locale:'en',durationSeconds:30}),visualIdea:'A wolf travels through the forest'});
+  assert.deepEqual(p.shots.map(shot=>shot.conceptDescription.split('.')[0]),[
+    'An opening view','The movement begins','The journey continues','A gentle ending',
+  ]);
+});
 test('v1.4 preserves all 96 stable question IDs, 49 contextual questions and 30+3 named internal scales',()=>{
   assert.equal(VIDEO_STUDIO_BRIEF_SCHEMA,'hh-video-brief-v1.4');
   assert.deepEqual(VIDEO_STUDIO_QUESTION_COUNTS,{PERSONAL:16,BASIC:12,ADV:18,PRO:34,EXTRA:16});

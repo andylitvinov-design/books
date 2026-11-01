@@ -17,12 +17,12 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  assert.match(studio,/Гипнотерапия/);
  assert.match(studio,/Гипнокоррекция/);
  assert.match(studio,/Курсы и медитации/);
- assert.match(studio,/Герои и образы/);
+ assert.match(studio,/characters:\{tab:"Герои",title:"Герои и персонализация"/);
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/setActiveWorkspace\(item\.id\)/);
- assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\}/);
+ assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
  assert.match(nav,/aria-controls="video-workspace-panel"/);
  assert.doesNotMatch(nav,/scrollIntoView|openQuickDetailed|location\.hash|pushState/);
  assert.match(studio,/data-video-workspace-heading/);
