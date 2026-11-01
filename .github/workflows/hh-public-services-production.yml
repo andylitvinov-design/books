@@ -1,13 +1,46 @@
 name: Holistic House public services production acceptance
+# Exact PR impact controls costly verification: contracts-only changes skip browsers;
+# sensitive/runtime changes fail closed to all 13 real browser scenarios before merge.
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
+      # CI-policy YAML itself is guarded by actionlint and protected Core;
+      # only source/test changes launch this specialist.
+      - 'scripts/ci-public-services-plan.mjs'
+      - 'tests/ci-public-services-plan.test.mjs'
+      # Alchemy landing/form and consent are direct browser surfaces, not generic *service* filenames.
+      - 'components/alchemy-soul-landing.tsx'
+      - 'components/alchemy-soul-landing.module.css'
+      - 'components/alchemy-soul-lead-form.tsx'
+      - 'components/compact-lead-capture*'
+      - 'components/contact-channel-chooser*'
+      # Real public conversion/consent/booking and cart UI are NOT covered by
+      # the shallow components/*service* glob. A source change to these
+      # surfaces needs real Public Services Chromium/WebKit, not only Core.
+      - 'components/consultation-choice-capture*'
+      - 'components/public-consultation-cta*'
+      - 'components/free-diagnosis-offers*'
+      - 'components/business-website-enquiry*'
+      - 'components/phone-country-input*'
+      - 'components/free-resource-enquiry*'
+      - 'components/academy-course-capture*'
+      - 'components/commerce/**'
+      - 'lib/whatsapp-enquiry.js'
+      - 'lib/practitioners/enquiry-receipt.mjs'
+      - 'app/api/service-enquiries/**'
       - 'components/academy-course-video-playlist.tsx'
       - 'lib/practitioners/taoist-talisman-cart.js'
       - 'scripts/fixtures/holistic-support-directory.mjs'
       - 'scripts/measure-hh-public-ttfb.mjs'
+      # Direct E2E helper dependencies: edits must still trigger real browser QA.
+      - 'scripts/helpers/alchemy-payment-disclosure-verifier.mjs'
+      - 'scripts/helpers/contact-channel-verifier.mjs'
+      - 'scripts/helpers/alchemy-panel-overflow-diagnostics.mjs'
+      - 'scripts/service-cart-response-probe.mjs'
+      - 'scripts/service-cart-browser-fixture.mjs'
       - 'scripts/verify-alchemy-one-screen.mjs'
       - 'scripts/verify-business-quiz-mobile.mjs'
       - 'scripts/verify-contact-channel-chooser-browser.mjs'
@@ -48,7 +81,6 @@ on:
       # still match the surrounding positive globs and run full acceptance.
       - '!lib/holistic-support/client-reasoning-*.mjs'
       - '!lib/holistic-support/intelligence-request.mjs'
-      # Pure risk parsing has dedicated unit tests and the exact-head PR core build.
       - 'lib/practitioners/public-*'
       - 'lib/commerce/**'
       - 'lib/checkout/**'
@@ -97,22 +129,31 @@ on:
       # Do not run unrelated Alchemy/checkout E2E for this isolated widget.
       # Main public service routes/components still match the positive globs.
       - '!components/mandala-auto-video-director*'
-      # Voice Studio owns its PCM/WAV, consent, type, build, WebKit and video export
-      # acceptance in the dedicated Mandala suite, not public Services checkout.
+      - '!components/mandala-first-video-start*'
+      - '!app/api/holistic-support/first-video-prompt/route.js'
+      # These isolated editor modules run the dedicated Mandala real-media E2E.
+      - '!components/mandala-hypno-compact*'
+      - '!components/mandala-personal-meditation*'
+      # The Ideas & Coaching specialist owns this exact browser harness.
+      - '!scripts/verify-holistic-support-browser.mjs'
+      # Independently owned Voice Studio paths continue under Mandala real-media E2E.
       - '!app/**/holistic-support/voice-studio/route.ts'
+      - '!app/api/holistic-support/voice/**'
       - '!components/mandala-affirmation-voice.*'
       - '!components/mandala-cloud-voice-studio.*'
+      # Video Director's isolated source-only test also belongs to Mandala.
+      - '!tests/first-video-director.test.mjs'
       - '!components/mandala-meditation.module.css'
 permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: public-services-production-${{ github.ref }}
-  cancel-in-progress: true
+  group: public-services-production-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   public-services:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CI: 'true'
@@ -122,14 +163,26 @@ jobs:
       HH_PLAYWRIGHT_PACKAGE: /tmp/hh-public-services-tools/node_modules/playwright
     steps:
       - uses: actions/checkout@v4
-        with: {persist-credentials: false}
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Select exact-head Public Services impact
+        id: scope
+        env:
+          HH_PUBLIC_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_PUBLIC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-public-services-plan.mjs
+      - name: Verify fail-closed Public Services routing
+        run: node --test tests/ci-public-services-plan.test.mjs
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
@@ -143,51 +196,158 @@ jobs:
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
+      # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
+      # Install the isolated browser suite only when the exact-head planner
+      # selects focused/full acceptance. Contracts-only PRs use Core's build;
+      # sensitive payments/auth/checkout changes retain required real E2E.
+      - name: Cache exact Playwright Chromium and WebKit browsers
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        env:
+          HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          if [[ "$HH_PUBLIC_BROWSER_ENGINES" == chromium ]]; then
+            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
+          else
+            # Full sensitive acceptance retains iPhone/WebKit and checkout QA.
+            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          fi
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
-      - name: Production build and public browser acceptance
+      - name: Record fast PR acceptance
+        if: github.event_name == 'pull_request'
         run: |
+          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} pr_heavy=${{ steps.scope.outputs.pr_heavy }} engines=${{ steps.scope.outputs.engines }} cases=${{ steps.scope.outputs.cases }}. Safe CSS uses Core build/source tests; focused public UI runs selected engines; sensitive/unknown uses full real browser.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Production build and public browser acceptance
+        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        env:
+          HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
+          HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
+        run: |
+          set -euo pipefail
           mkdir -p artifacts/public-services-production
-          npm run build > artifacts/public-services-production/build.log 2>&1
-          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 & SERVER_PID=$!
+          printf 'case,status,seconds\n' > artifacts/public-services-production/timings.csv
+          acceptance_started=$SECONDS
+          build_started=$SECONDS
+          build_code=0
+          npm run build > artifacts/public-services-production/build.log 2>&1 || build_code=$?
+          if (( build_code != 0 )); then
+            printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+            echo "::error::Public Services production build failed (exit $build_code)"
+            tail -n 100 artifacts/public-services-production/build.log
+            exit 1
+          fi
+          printf 'next-production-build,PASS,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 &
+          SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 90); do
-            echo "Public services readiness attempt ${i}/90"
-            if curl --silent --fail http://127.0.0.1:3100/en/services >/dev/null; then break; fi
+          ready=0
+          for ((i=1; i<=30; i++)); do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Public Services server exited before readiness" >&2
+              break
+            fi
+            if curl --fail --silent --max-time 3 --output /dev/null http://127.0.0.1:3100/en/services; then
+              ready=1
+              break
+            fi
+            echo "Public services readiness attempt ${i}/30" >&2
             sleep 2
           done
+          if [[ "$ready" != "1" ]]; then
+            echo "::error::Public Services server not ready; browser suites were not run" >&2
+            tail -n 120 /tmp/hh-public-services-next.log || true
+            exit 1
+          fi
           status=0
-          # Alchemy chapter geometry, 320-430px EN/RU/ES, including 320x568.
-          node scripts/verify-alchemy-one-screen.mjs || status=$?
-          node scripts/verify-business-quiz-mobile.mjs || status=$?
-          node scripts/verify-ideas-mobile-browser.mjs || status=$?
-          node scripts/verify-holistic-master-browser.mjs || status=$?
-          node scripts/verify-reiki-mobile-order-browser.mjs || status=$?
-          node scripts/verify-holistic-support-recommendations-mobile.mjs || status=$?
-          node scripts/verify-talisman-google-checkout-browser.mjs || status=$?
-          node scripts/verify-holistic-topics-browser.mjs || status=$?
-          node scripts/verify-direction-focus-mobile.mjs || status=$?
-          node scripts/verify-public-services-production.mjs || status=$?
-          node scripts/verify-home-consultation-first-screen.mjs || status=$?
-          # Capture safe aggregate HTML / Flight metrics from THIS PR's local
-          # production build; the separate public audit reads old live alias.
-          # Never upload Flight contents or private routes.
-          TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json || status=$?
-          node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
-          node scripts/verify-service-cart-browser.mjs || status=$?
-          node scripts/verify-storefront-shop-browser.mjs || status=$?
-          {
+          # Real 13-case risk-scoped E2E on PR and full manual QA, including payment,
+          # consent, browser engines and RU/EN/ES viewports. One Next server,
+          # two bounded independent lanes with checked exit statuses.
+          # Each suite writes its own diagnostics; both lanes MUST be awaited.
+          run_case() {
+            local label="$1"; shift
+            if [[ "$HH_PUBLIC_CASES" != all && ",${HH_PUBLIC_CASES}," != *",${label},"* ]]; then
+              printf '%s,NOT_APPLICABLE,0\n' "$label" >> artifacts/public-services-production/timings.csv
+              return 0
+            fi
+            local started=$SECONDS
+            local code=0
+            local outcome=PASS
+            local log="artifacts/public-services-production/$label.log"
+            "$@" > "$log" 2>&1 || code=$?
+            if (( code != 0 )); then
+              outcome=FAIL
+              echo "::error::Public Services browser case $label failed (exit $code)"
+              tail -n 100 "$log" || true
+            else
+              echo "$label: PASS in $((SECONDS-started))s"
+              tail -n 3 "$log" || true
+            fi
+            printf '%s,%s,%s\n' "$label" "$outcome" "$((SECONDS-started))" >> artifacts/public-services-production/timings.csv
+            return "$code"
+          }
+          lane_a() {
+            local failed=0
+            # Alchemy covers 320–430px, three languages and booking consent.
+            run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
+            run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
+            run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
+            run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
+            run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
+            run_case "verify-holistic-topics-browser.mjs" node scripts/verify-holistic-topics-browser.mjs || failed=1
+            run_case "verify-direction-focus-mobile.mjs" node scripts/verify-direction-focus-mobile.mjs || failed=1
+            return "$failed"
+          }
+          lane_b() {
+            local failed=0
+            run_case "verify-ideas-mobile-browser.mjs" node scripts/verify-ideas-mobile-browser.mjs || failed=1
+            run_case "verify-home-consultation-first-screen.mjs" node scripts/verify-home-consultation-first-screen.mjs || failed=1
+            run_case "verify-business-quiz-mobile.mjs" node scripts/verify-business-quiz-mobile.mjs || failed=1
+            run_case "verify-reiki-mobile-order-browser.mjs" node scripts/verify-reiki-mobile-order-browser.mjs || failed=1
+            run_case "verify-talisman-google-checkout-browser.mjs" node scripts/verify-talisman-google-checkout-browser.mjs || failed=1
+            run_case "verify-storefront-shop-browser.mjs" node scripts/verify-storefront-shop-browser.mjs || failed=1
+            return "$failed"
+          }
+          lane_a &
+          lane_a_pid=$!
+          lane_b &
+          lane_b_pid=$!
+          trap 'kill "$lane_a_pid" "$lane_b_pid" "$SERVER_PID" 2>/dev/null || true' EXIT
+          wait "$lane_a_pid" || { echo "::error::Public Services acceptance lane A failed"; status=1; }
+          wait "$lane_b_pid" || { echo "::error::Public Services acceptance lane B failed"; status=1; }
+          # Measure unladen production TTFB *after* browsers finish, never under
+          # concurrent test load; do not save HTML, Flight bodies or private data.
+          if [[ "$HH_PUBLIC_METRICS" == true ]]; then
+            metrics_started=$SECONDS
+            if TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json 2> artifacts/public-services-production/ttfb-stderr.log; then
+              printf 'home-rsc-local,PASS,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+            else
+              echo "::error::Public Services local performance measurement failed"
+              tail -n 40 artifacts/public-services-production/ttfb-stderr.log || true
+              printf 'home-rsc-local,FAIL,%s\n' "$((SECONDS-metrics_started))" >> artifacts/public-services-production/timings.csv
+              status=1
+            fi
+          else
+            printf 'home-rsc-local,NOT_APPLICABLE,0\n' >> artifacts/public-services-production/timings.csv
+          fi
+          printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
+          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
+          cat artifacts/public-services-production/timings.csv
+                    {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
             grep -Ei 'ready|started|error|warn|failed|exception' /tmp/hh-public-services-next.log | tail -n 200 || true
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
           path: |
