@@ -66,6 +66,7 @@ jobs:
           fi
           ffprobe -version | sed -n '1p'
       - name: Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity
+        id: legacy_export
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
@@ -73,6 +74,9 @@ jobs:
           HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ github.event_name == 'pull_request' && 'true' || (inputs.require_licensed && 'true' || 'false') }}
         run: node scripts/benchmarking/first-video-live-export.mjs
       - name: Real LIVE Video Director Chat → guided storyboard → encoded audio-video
+        # Keep the chat acceptance observable even when the older optional
+        # first-video form fails. Both failures still make the job red.
+        if: ${{ always() && steps.legacy_export.outcome != 'skipped' }}
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs

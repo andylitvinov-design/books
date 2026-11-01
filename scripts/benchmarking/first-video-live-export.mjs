@@ -118,6 +118,12 @@ try {
   if(await advanced.getAttribute('open')===null)
     await advanced.locator(':scope > summary').click();
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
+  // The original first-video builder remains available in an explicit
+  // optional section. Open it as a visitor would before testing its render.
+  const advanced = page.locator('[data-video-first-video-advanced]');
+  assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
+  if(await advanced.getAttribute('open')===null)
+    await advanced.locator(':scope > summary').click();
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
   const prompt = first.locator('[data-first-video-prompt]');
