@@ -59,7 +59,9 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       }
       if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
-      await click(player,t.next)
+      // AS-6.0 inserts a real ritual scene after the practice and before
+      // feedback; verify the actual moment rather than a stale slide index.
+      await advanceOporaTo(player,'feel',t.next)
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
