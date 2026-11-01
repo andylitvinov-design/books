@@ -98,3 +98,38 @@ test('negative control rejects previous handler in four nonowner workspaces',()=
  const line='      if(activeWorkspace && activeWorkspace!=="pro")setActiveWorkspace("video");';assert.equal(source.split(line).length,2);
  for(const workspace of ['phrases','effects','practices','editor']){const r=exercise(source.replace(line,''),workspace);assert.equal(r.scrolls[0].visible,false);assert.equal(r.renders,0);assert.throws(()=>assert.equal(r.scrolls[0].visible,true));}
 });
+
+// Approved iPhone mock: show one simple path without losing advanced functionality.
+test("Video opens as the only active workspace, advanced first-video remains accessible",()=>{
+  assert.match(studio,/useState<StudioWorkspace>\("video"\)/);
+  assert.match(studio,/data-video-first-video-advanced>/);
+  assert.match(studio,/<details className=\{videoStyles\.quickExtras\} data-workspace-section="video"/);
+  assert.match(studio,/<MandalaFirstVideoStart/);
+  assert.match(studio,/<MandalaAutoVideoDirector/);
+  assert.match(studio,/<MandalaGuidedCourse/);
+  assert.match(studio,/data-video-audio-attach/);
+});
+test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+  const start=studio.indexOf('id="video-hero"');
+  const finish=studio.indexOf('<nav className={videoStyles.quickVideoNav}',start);
+  assert.ok(start>0&&finish>start);
+  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
+  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
+  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
+  assert.match(studio,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
+  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+});
+test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
+  assert.match(css,/grid-auto-columns:minmax\(148px,43%\)/);
+  assert.match(css,/scroll-snap-type:x proximity/);
+  assert.match(css,/\.studio \.quickMusicRail \.quickMusicPlay\{position:absolute/);
+  assert.match(studio,/data-video-quick-music-play=\{id\}/);
+  assert.match(studio,/data-video-quick-music-check=\{id\}/);
+  assert.match(css,/font:650 clamp\(10px,2.75vw,12px\)/);
+});
+test("free personal video starts before the separate diagnostic marketing CTA",()=>{
+ const page=readFileSync(new URL("../app/[locale]/holistic-support/mandala/page.tsx",import.meta.url),"utf8");
+ const studioPos=page.indexOf("<MandalaMeditationClient");
+ const promoPos=page.indexOf("styles.slimDiagnostic");
+ assert.ok(studioPos>=0&&promoPos>studioPos);
+});
