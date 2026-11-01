@@ -2505,6 +2505,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const openAffirmationPreview = () => {
     if (recording || preparing) return;
     setPreviewPlaying(true);
+    // Native audio and the original Canvas begin on the same trusted tap.
+    // Only the visitor-attached soundtrack plays; no auto sound before consent.
+    if(attachedAudio && audioPreviewRef.current?.paused)toggleSoundPreview();
     const film = premiumVideoRef.current;
     if (film && activeFilm) {
       film.muted = true;
@@ -3281,7 +3284,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
           title={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
           disabled={!source||recording||preparing}
-          onClick={()=>{if(previewPlaying)setPreviewPlaying(false);else openAffirmationPreview();}}>
+          onClick={()=>{if(previewPlaying){setPreviewPlaying(false);if(attachedAudio)stopSoundPreview();}
+            else openAffirmationPreview();}}>
           {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>}
