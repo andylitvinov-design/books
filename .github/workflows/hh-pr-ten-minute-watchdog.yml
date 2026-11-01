@@ -10,6 +10,8 @@ on:
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'scripts/ci-pr-slot-wakeup.cjs'
+      - 'tests/ci-pr-slot-wakeup.test.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
@@ -159,3 +161,37 @@ jobs:
               .addCodeBlock(JSON.stringify(results,null,2))
               .addRaw('Live watchdog workflow_dispatch accepted (dry_run=false).')
               .write();
+
+  core-slot-wakeup:
+    name: core-ci-freed-slot-wakeup
+    # Success already wakes native AutoMerge. Only schedule a fresh Watchdog
+    # when the exact trusted Core event frees scarce CI capacity.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    concurrency:
+      group: hh-pr-core-slot-wakeup
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout trusted default branch for bounded admission policy
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: codex/bootstrap-books
+      - name: Verify slot wakeup decisions
+        run: node --test tests/ci-pr-slot-wakeup.test.cjs
+      - name: Dispatch one live Watchdog only when actual CI capacity is free
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-slot-wakeup.cjs');
+            await run({github,core,context});

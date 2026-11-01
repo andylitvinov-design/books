@@ -74,3 +74,14 @@ test('Watchdog dispatches from durable CI and repair queue only when a slot exis
   assert.ok(s.includes("inputs:{dry_run:'false'}"));
   assert.ok(s.includes("inputs:{pr_number:'0',dry_run:'false'}"));
 });
+
+test('successful Core event has a separate rate-bounded free-slot wakeup',()=>{
+  const s=read('hh-pr-ten-minute-watchdog');
+  assert.ok(s.includes('  core-slot-wakeup:\n'));
+  assert.ok(s.includes('name: core-ci-freed-slot-wakeup'));
+  assert.ok(s.includes('group: hh-pr-core-slot-wakeup'));
+  assert.ok(s.includes('cancel-in-progress: false'));
+  assert.ok(s.includes('github.event.workflow_run.conclusion == \'success\''));
+  assert.ok(s.includes('scripts/ci-pr-slot-wakeup.cjs'));
+  assert.ok(s.includes('actions: write'));
+});
