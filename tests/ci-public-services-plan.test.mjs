@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -407,4 +407,39 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
+});
+
+test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+  const focused = paths => planPublicServicesChangedPaths(paths);
+  for (const name of [
+    'scripts/verify-ideas-mobile-browser.mjs',
+    'scripts/verify-direction-focus-mobile.mjs',
+    'scripts/verify-holistic-topics-browser.mjs',
+    'scripts/verify-holistic-support-recommendations-mobile.mjs',
+  ]) {
+    const result=focused([name]);
+    assert.equal(result.mode,'focused');
+    assert.equal(requiresPublicServicesHeavyPr(result),false,name+' visual PR');
+  }
+  for (const name of [
+    'scripts/verify-service-cart-browser.mjs',
+    'scripts/verify-public-services-production.mjs',
+    'scripts/verify-alchemy-one-screen.mjs',
+    'scripts/verify-talisman-google-checkout-browser.mjs',
+    'scripts/verify-storefront-shop-browser.mjs',
+  ]) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' consent/payment/browser');
+  }
+  for (const name of ['app/api/payments/talismans/checkout/route.js',
+    'components/contact-channel-chooser.tsx','middleware.ts',
+    'components/alchemy-soul-landing.tsx']) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' sensitive');
+  }
+  assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
+  const workflow=workflow('hh-public-services-production.yml');
+  assert.match(workflow,/pr_heavy == 'true'/);
+  assert.match(workflow,/node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(workflow,/playwright install --with-deps chromium webkit/);
+  assert.match(workflow,/run_case "verify-service-cart-browser.mjs"/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
