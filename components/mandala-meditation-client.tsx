@@ -29,6 +29,17 @@ const templates = [
   { id: "stone", names: { en: "Stone mosaic", ru: "Каменная мозаика", es: "Mosaico de piedra" }, back: "#e5d9cb", ink: "#423d35", soft: "#b6a899" },
 ] as const;
 
+export type MandalaProfessionalSource = {
+  publicOffer: {
+    id:string;kind:string;published:boolean;publicSnapshot:boolean;
+    practitionerId:string;locale:string;title:string;
+    publicDescription:string;href:string;
+  };
+  publicPractitioner: {
+    id:string;practitionerId:string;published:boolean;publicSnapshot:boolean;
+    displayName:string;professionalTitle:string;credentialVerified:boolean;
+  };
+};
 type Template = (typeof templates)[number];
 type Topic = MeditationTopic | "all";
 const topics: Topic[] = ["all", "business", "love", "energy", "health"];
@@ -177,7 +188,11 @@ function MandalaArt({ option }: { option: Template }) {
   );
 }
 
-export function MandalaMeditationClient({ locale, videos }: { locale: PublicLocale; videos: MeditationVideo[] }) {
+export function MandalaMeditationClient({ locale, videos, professionalSource = null, professionalMode = false }: {
+  locale: PublicLocale; videos: MeditationVideo[];
+  professionalSource?: MandalaProfessionalSource | null;
+  professionalMode?: boolean;
+}) {
   const t = copy[locale];
   const [templateId, setTemplateId] = useState<Template["id"]>("client");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -299,7 +314,8 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       <input ref={fileInput} id="mandala-photo" type="file" accept="image/jpeg,image/png,image/webp"
         className={styles.hiddenPhotoInput} onChange={handleImage}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
-        onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
+        onPickPhoto={() => fileInput.current?.click()} photoError={imageError}
+        professionalSource={professionalSource} professionalMode={professionalMode} />
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>

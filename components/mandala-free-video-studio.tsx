@@ -14,6 +14,8 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
+import { MandalaProfessionalPromo } from "./mandala-professional-promo";
+import type { MandalaProfessionalSource } from "./mandala-meditation-client";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import { MandalaStoriesCharacters } from "./mandala-stories-characters";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
@@ -1615,9 +1617,10 @@ const quickCanvasPoster=(scene:LocalSceneId)=>
   "/videos/holistic-house/film-collection-v2/"+(quickCanvasScenePoster[scene]||"mountain-air")+".jpg";
 
 
-export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError }: {
+export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto, photoError, professionalSource = null, professionalMode = false }: {
   locale: PublicLocale; frameUrl: string | null; photoUrl?: string | null;
   onPickPhoto: () => void; photoError?: string;
+  professionalSource?: MandalaProfessionalSource | null; professionalMode?: boolean;
 }) {
   const t = translations[locale];
   const ui = studioCopy[locale];
@@ -3855,6 +3858,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
           canCreate={canGenerate} rendering={recording||preparing}/>
+      {professionalMode ? <MandalaProfessionalPromo
+        locale={locale} presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+        publicOffer={professionalSource?.publicOffer ?? null}
+        publicPractitioner={professionalSource?.publicPractitioner ?? null}
+        disabled={recording||preparing}
+        onApply={(presetId,seconds,outputAspect,proposal)=>{
+          // Recheck that the verified four media sources still match the chosen
+          // local preset. Never invent footage, send content or bypass rights.
+          const existing=FREE_FILM_PRESETS.find(item=>item.id===presetId);
+          if(!existing || !proposal.montage ||
+             proposal.montage.presetId!==presetId ||
+             existing.clips.join("|")!==proposal.montage.sceneIds.join("|")){
+            setNotice(ui.videoUnavailable);
+            return;
+          }
+          applyAutoFilm(presetId,seconds,undefined,outputAspect);
+          // Optional source-approved professional draft; not a publication.
+          // Don't silently include client photos, personal hypnosis or music.
+          setBackgroundOnly(true);
+          setAffirmations({...defaultAffirmations,enabled:false});
+          setMusic("none");setAttachedAudio(null);setAudioAuto(false);
+          setWish(proposal.headline.slice(0,160));
+          setCustomCaption(proposal.headline.slice(0,160));
+          setCaptionMode("custom");
+        }}/> : null}
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
