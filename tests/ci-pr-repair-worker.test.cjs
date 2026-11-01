@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,validBranch,validCandidate,activeSweepLease,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,validBranch,validCandidate,activeSweepLease,prioritizedRepairCandidates,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -123,4 +123,26 @@ test('missing manual-repair label is created before returning owner status',asyn
   assert.equal(calls,2);
   assert.equal(f.log.comments,1);
   assert.equal(f.log.commit,0);
+});
+
+test('source-fix queue has priority without starving manual-conflict ownership',()=>{
+  const source=[{number:2606,pull_request:{}}];
+  const conflicts=Array.from({length:30},(_,i)=>({number:1400+i,pull_request:{}}));
+  for(let tick=0;tick<12;tick++){
+    const selected=prioritizedRepairCandidates(source,conflicts,1800000000000+tick*600000);
+    assert.equal(selected[0].number,2606);
+    assert.ok(selected.length<=4);
+    assert.ok(selected.slice(1).every(x=>x.number>=1400&&x.number<1430));
+  }
+});
+test('old conflicts still progress when there are no source repairs',()=>{
+  const conflicts=Array.from({length:23},(_,i)=>({number:1400+i,pull_request:{}}));
+  const seen=new Set();
+  for(let tick=0;tick<7;tick++) for(const item of prioritizedRepairCandidates([],conflicts,1800000000000+tick*600000))
+    seen.add(item.number);
+  assert.equal(seen.size,23);
+});
+test('prioritization deduplicates source and conflict labels',()=>{
+  const source=[{number:2606,pull_request:{}}], conflict=[{number:2606,pull_request:{}},{number:1421,pull_request:{}}];
+  assert.deepEqual(prioritizedRepairCandidates(source,conflict,1800000000000).map(x=>x.number),[2606,1421]);
 });
