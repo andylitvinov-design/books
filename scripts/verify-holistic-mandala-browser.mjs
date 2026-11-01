@@ -660,8 +660,10 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,false,
-          "the approved mobile layout hides the diagnostic banner while keeping its route intact");
+        assert.equal(layout.diagnosticVisible,true,
+          "the free diagnostic CTA remains visible below the Video Studio");
+        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
+          "the diagnostic CTA must follow—not precede—the editor: "+JSON.stringify(layout));
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);
