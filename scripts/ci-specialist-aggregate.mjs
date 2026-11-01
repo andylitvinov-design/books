@@ -333,7 +333,7 @@ export function diagnoseAggregateError(error) {
   const symptoms = [];
   const add = (type, raw) => {
     const path = String(raw).split(':')[0];
-    if (/^\\.github\\/workflows\\/[a-z0-9._-]+\\.ya?ml$/i.test(path)) {
+    if (/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(path)) {
       symptoms.push(type + '/' + path);
     }
   };
@@ -381,7 +381,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.met
   main().catch(error=>{
     const diagnosis = diagnoseAggregateError(error);
     const detail = String(error?.message || error).slice(0,1200);
-    const escaped = (diagnosis.category + ': ' + detail).replace(/%/g,'%25').replace(/\\r/g,'%0D').replace(/\\n/g,'%0A');
+    const escaped = (diagnosis.category + ': ' + detail).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
     console.error('::error title=HH CI ' + diagnosis.category + '::' + escaped);
     console.error('CI_SPECIALIST_FAIL_CLOSED: ' + detail);
     const report = ['## HH CI blocker diagnosis', '',
@@ -389,7 +389,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.met
       '- Next action: ' + diagnosis.action,
       '- Shared symptom keys (NOT verified common root causes): ' +
         (diagnosis.symptomKeys.length ? diagnosis.symptomKeys.map(x=>'\`'+x+'\`').join(', ') : 'none'),
-      '- Check exact-head job logs before combining repairs.', ''].join('\\n');
+      '- Check exact-head job logs before combining repairs.', ''].join('\n');
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,report);
     process.exitCode=1;
   });
