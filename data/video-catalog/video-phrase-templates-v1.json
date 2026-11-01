@@ -1,0 +1,216 @@
+{
+  "schemaVersion": "hh-video-phrase-templates-v1",
+  "ideaPrefix": {
+    "ru": "Я могу",
+    "en": "I can",
+    "es": "Puedo"
+  },
+  "prefixes": {
+    "ru": {
+      "gentle": {
+        "self": [
+          "Мне можно",
+          "Я могу",
+          "Позволяю себе"
+        ],
+        "support": [
+          "Тебе можно",
+          "Ты можешь",
+          "Ты вправе"
+        ]
+      },
+      "confident": {
+        "self": [
+          "Я выбираю",
+          "Я могу",
+          "Я решаю"
+        ],
+        "support": [
+          "Ты выбираешь",
+          "Ты можешь",
+          "Ты решаешь"
+        ]
+      },
+      "grounded": {
+        "self": [
+          "Сейчас могу",
+          "Сегодня могу",
+          "Я пробую"
+        ],
+        "support": [
+          "Сейчас можешь",
+          "Сегодня можешь",
+          "Можешь попробовать"
+        ]
+      },
+      "inspiring": {
+        "self": [
+          "Я учусь",
+          "Начинаю",
+          "Продолжаю учиться"
+        ],
+        "support": [
+          "Ты учишься",
+          "Можешь начать",
+          "Можешь учиться"
+        ]
+      }
+    },
+    "en": {
+      "gentle": {
+        "self": [
+          "I may",
+          "I can",
+          "I allow myself to"
+        ],
+        "support": [
+          "You may",
+          "You can",
+          "You have room to"
+        ]
+      },
+      "confident": {
+        "self": [
+          "I choose to",
+          "I can",
+          "I decide to"
+        ],
+        "support": [
+          "You choose to",
+          "You can",
+          "You decide to"
+        ]
+      },
+      "grounded": {
+        "self": [
+          "Right now I can",
+          "Today I can",
+          "I can try to"
+        ],
+        "support": [
+          "Right now you can",
+          "Today you can",
+          "You can try to"
+        ]
+      },
+      "inspiring": {
+        "self": [
+          "I am learning to",
+          "I begin to",
+          "I keep learning to"
+        ],
+        "support": [
+          "You are learning to",
+          "You may begin to",
+          "You can learn to"
+        ]
+      }
+    },
+    "es": {
+      "gentle": {
+        "self": [
+          "Puedo",
+          "Me permito",
+          "Me doy permiso para"
+        ],
+        "support": [
+          "Puedes",
+          "Te permites",
+          "Tienes derecho a"
+        ]
+      },
+      "confident": {
+        "self": [
+          "Elijo",
+          "Puedo",
+          "Decido"
+        ],
+        "support": [
+          "Eliges",
+          "Puedes",
+          "Decides"
+        ]
+      },
+      "grounded": {
+        "self": [
+          "Ahora puedo",
+          "Hoy puedo",
+          "Puedo intentar"
+        ],
+        "support": [
+          "Ahora puedes",
+          "Hoy puedes",
+          "Puedes intentar"
+        ]
+      },
+      "inspiring": {
+        "self": [
+          "Aprendo a",
+          "Empiezo a",
+          "Sigo aprendiendo a"
+        ],
+        "support": [
+          "Aprendes a",
+          "Puedes empezar a",
+          "Puedes aprender a"
+        ]
+      }
+    }
+  },
+  "closings": {
+    "ru": {
+      "journey": {
+        "self": "Один шаг уже имеет смысл.",
+        "support": "Твой шаг уже имеет смысл."
+      },
+      "shelter": {
+        "self": "Я могу искать мягкую опору.",
+        "support": "Тебе можно искать опору."
+      },
+      "awakening": {
+        "self": "Перемены начинаются с малого.",
+        "support": "Можно начинать с малого."
+      },
+      "connection": {
+        "self": "Я уважаю себя и других.",
+        "support": "Твоё пространство важно."
+      }
+    },
+    "en": {
+      "journey": {
+        "self": "A small step still matters.",
+        "support": "Your small step matters."
+      },
+      "shelter": {
+        "self": "I can seek gentle support.",
+        "support": "You can seek gentle support."
+      },
+      "awakening": {
+        "self": "Change can begin with little.",
+        "support": "You can start small."
+      },
+      "connection": {
+        "self": "I respect myself and others.",
+        "support": "Your space matters."
+      }
+    },
+    "es": {
+      "journey": {
+        "self": "Un paso pequeño ya cuenta.",
+        "support": "Tu pequeño paso importa."
+      },
+      "shelter": {
+        "self": "Puedo buscar apoyo amable.",
+        "support": "Puedes buscar apoyo amable."
+      },
+      "awakening": {
+        "self": "El cambio empieza poco a poco.",
+        "support": "Puedes empezar poco a poco."
+      },
+      "connection": {
+        "self": "Me respeto y respeto a otros.",
+        "support": "Tu espacio importa."
+      }
+    }
+  }
+}
