@@ -11,7 +11,7 @@ const pr=(extra={})=>({number:11,state:'open',draft:false,user:{login:owner},
     repo:{full_name:owner+'/'+repo}},labels:[{name:'hh:repair-needed'}],...extra});
 const sourceFiles=[{filename:'lib/a.ts',status:'modified'}];
 function fixture(options={}){
-  const p=options.pr||pr(), log={comments:0,assigned:0,labels:0,read:0,commit:0};
+  const p=options.pr||pr(), log={comments:0,assigned:0,labels:0,removed:[],read:0,commit:0};
   const github={rest:{pulls:{
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
@@ -19,7 +19,7 @@ function fixture(options={}){
       listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
       createComment:async()=>{log.comments++},
       addAssignees:async()=>{log.assigned++},
-      addLabels:async()=>{log.labels++},removeLabel:async()=>{}},
+      addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
     repos:{getContent:async()=>{log.read++;return {data:{type:'file',sha:newSha}}}},
     git:{getCommit:async()=>({data:{tree:{sha:'c'.repeat(40)}}})}
   }};
@@ -65,6 +65,8 @@ test('conflicting source is assigned to owner but never unsafe-merged',async()=>
   const r=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(r.status,'manual_conflict');
   assert.equal(f.log.comments,2);
+  assert.equal(f.log.labels,1);
+  assert.deepEqual(f.log.removed,['hh:conflict-repair-needed']);
   assert.equal(f.log.commit,0);
 });
 test('active external lease blocks concurrent worker',async()=>{
@@ -96,6 +98,7 @@ test('no safe patch sends owner to manual repair without source push',async()=>{
     candidate:{head_sha:sha,files:[]},writer:f.writer});
   assert.equal(r.status,'manual_required');
   assert.equal(f.log.labels,1);assert.equal(f.log.commit,0);
+  assert.deepEqual(f.log.removed,['hh:repair-needed']);
 });
 
 test('low API quota pauses repair without a source claim',async()=>{

@@ -595,7 +595,8 @@ test('watchdog directly dispatches one free CI worker for a truly missing Core r
       return {data:{workflow_runs:[]}};
     }
   };
-  const r=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  // Only a configured owner token can create genuine PR synchronize CI.
+  const r=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(r.missingCore,1);
   assert.equal(r.ciBootstrapQueued,1);
   assert.equal(r.ciWorkerDispatched,1);

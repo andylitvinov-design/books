@@ -193,7 +193,16 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
         'HH Repair Worker: true merge conflict detected. No safe deterministic resolution; '+
         '@' + pr.user.login + ' must resolve the conflicting source semantics or use an approved coding agent. '+
         'No force-push or automatic ours/theirs resolution performed.'});
-      log('MANUAL_CONFLICT #' + pr.number);
+      // A claimed conflict is not a source-fixable queue item. Preserve a
+      // visible owner blocker but release its repair labels so idle slots are
+      // spent on work that CAN be fixed. A future changed HEAD can be requeued.
+      await github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[MANUAL]});
+      for(const name of [SOURCE,CONFLICT]){
+        if(!pr.labels.some(l=>l.name===name))continue;
+        try {await github.rest.issues.removeLabel({owner,repo,issue_number:pr.number,name});}
+        catch(error){if(error.status!==404)log('Manual conflict queue cleanup #'+pr.number+' '+name+': '+error.message);}
+      }
+      log('MANUAL_CONFLICT #' + pr.number+' queued as owner action, auto-queue released');
       return {status:'manual_conflict',number:pr.number,sha:pr.head.sha};
     }
     writeOutputs(core,{strategy:'lint',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
@@ -256,6 +265,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       'HH Repair Worker: ran targeted ESLint autofix, but no safe validated source change was produced '+
       'for HEAD ' + expectedSha + '. Owner action required: diagnose the failed Core/TypeScript build and '+
       'apply a tested source fix. No checks were bypassed.'});
+    // An actionable source queue must not endlessly cycle once a verified
+    // deterministic repair attempt concludes that human/AI coding is required.
+    try {await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE});}
+    catch(error){if(error.status!==404)core.info('Manual source queue cleanup #'+prNumber+': '+error.message);}
     return {status:'manual_required',number:prNumber};
   }
   if (!writer) throw Error('HH_REPAIR_PUBLISH_OWNER_TOKEN_REQUIRED');

@@ -2,9 +2,7 @@ name: HH PR source Repair Worker
 on:
   schedule:
     - cron: '5,15,25,35,45,55 * * * *'
-  workflow_run:
-    workflows: ['HH PR 10-minute watchdog']
-    types: [completed]
+  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -37,12 +35,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   claim:
-    if: >-
-      github.repository == 'andylitvinov-design/books' &&
-      github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event != 'push'))
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:

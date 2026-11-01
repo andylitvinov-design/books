@@ -18,12 +18,12 @@ for(const [file,cron] of [
   ['hh-pr-ci-worker','4,14,24,34,44,54'],
   ['hh-pr-repair-worker','5,15,25,35,45,55']
 ]){
-  test(file+' recovers scheduled and event-driven work',()=>{
+  test(file+' uses cron and explicit queue dispatch, never workflow_run fanout',()=>{
     const s=read(file);
     assert.ok(s.includes("cron: '"+cron+" * * * *'"));
-    assert.ok(s.includes("workflows: ['HH PR 10-minute watchdog']"));
-    assert.ok(s.includes("github.event.workflow_run.event != 'push'"));
-    assert.ok(s.includes("github.event.workflow_run.conclusion == 'success'"));
+    assert.ok(s.includes('workflow_dispatch:'));
+    assert.ok(!s.includes('  workflow_run:'));
+    assert.ok(s.includes('cancel-in-progress: false'));
     assert.ok(s.includes('default: false'));
   });
 }
@@ -62,4 +62,15 @@ test('skipped successful Core events never replace a pending failed-Core watchdo
   assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
   assert.ok(!s.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
+});
+
+test('Watchdog dispatches from durable CI and repair queue only when a slot exists',()=>{
+  const {readFileSync}=require('node:fs');
+  const s=readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(s.includes('const ciQueueBacklog=review.filter'));
+  assert.ok(s.includes('const repairQueueBacklog=review.filter'));
+  assert.ok(s.includes('(summary.ciBootstrapQueued || ciQueueBacklog) && ciRoom'));
+  assert.ok(s.includes('summary.conflictLabelsQueued || repairQueueBacklog'));
+  assert.ok(s.includes("inputs:{dry_run:'false'}"));
+  assert.ok(s.includes("inputs:{pr_number:'0',dry_run:'false'}"));
 });
