@@ -65,3 +65,27 @@ test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable sourc
     assert.equal(proof.sha256, createHash('sha256').update(await read(path)).digest('hex'))
   }
 })
+
+test('unsaved AS-6.0 browser follows current versioned source text while preserving legacy V6 checks', async () => {
+  const browser = await read('scripts/verify-opora-as56-browser.mjs')
+  const player = await read('components/app/opora-experience-player.jsx')
+  assert.ok(browser.includes('oporaAs60VariedDay(5,locale)'))
+  assert.ok(browser.includes('const brief = activeEdition.practice'))
+  assert.ok(browser.includes('const support = {title:activeEdition.purposeTitle,body:activeEdition.purpose}'))
+  assert.ok(browser.includes("await expect(page.locator('[data-opora-daily-support=\"5\"]')).toContainText(support.body)"))
+  assert.ok(browser.includes('assert.equal(state.saves, 0'))
+  assert.ok(browser.includes("assert.deepEqual(unexpectedRequests, []"))
+  assert.ok(player.includes('return hasSaved?prior:{...prior,experienceEdition:OPORA_EXPERIENTIAL_EDITION,contentRevision:OPORA_VARIETY_REVISION}'))
+  const [{oporaAs60VariedDay}, {oporaExperienceSupport}] = await Promise.all([
+    import('../lib/inner-growth/opora-as60-varied-content.js'),
+    import('../lib/inner-growth/opora-as56-experience-guides.js')
+  ])
+  for (const locale of ['ru', 'en', 'es']) {
+    const current = oporaAs60VariedDay(5, locale)
+    const legacy = oporaExperienceSupport(5, locale)
+    assert.ok(current.purpose && current.purposeTitle && current.practice)
+    assert.notEqual(current.purpose, legacy.body)
+    assert.ok(current.practice.length <= 140)
+    assert.ok(current.practice.split(/\s+/u).length <= 20)
+  }
+})

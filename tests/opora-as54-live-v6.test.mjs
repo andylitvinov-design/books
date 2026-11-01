@@ -134,7 +134,7 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  const legacy=read('components/app/course-slide-player.jsx')
  const css=read('components/app/opora-v6-slide-player.module.css')
  const entry=read('components/app/course-today.jsx')
- assert.match(entry,/data\?\.lesson\?\.antiStress\?\.slideModel===OPORA54_SLIDE_MODEL/)
+ assert.match(entry,/playerData\?\.lesson\?\.antiStress\?\.slideModel===OPORA54_SLIDE_MODEL/)
  assert.match(entry,/<OporaV6SlidePlayer key=/)
  assert.match(entry,/:<CourseSlidePlayer key=/)
  assert.match(legacy,/export default function CourseSlidePlayer/)
