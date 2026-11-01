@@ -98,7 +98,10 @@ jobs:
                   tests/ci-workflow-globs.test.mjs|\
                   tests/workflow-next-route-filters.test.mjs|\
                   tests/pr-sweep-guard.test.mjs|\
-                  tests/ci-heavy-draft-policy.test.mjs) ;;
+                  tests/ci-heavy-draft-policy.test.mjs|\
+                  tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-head-cancellation.test.mjs|\
+                  tests/ci-stale-run-deduplication.test.mjs) ;;
                 *) ci_only=false ;;
               esac
             done < /tmp/hh-pr-changed-files.z
