@@ -60,7 +60,8 @@ test('skipped successful Core events never replace a pending failed-Core watchdo
   assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
   assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
   assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
-  assert.ok(!s.includes("github.event.workflow_run.status == 'completed'"));
+  const reconcile=s.split('\n  core-slot-wakeup:\n')[0];
+  assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
 
@@ -73,4 +74,15 @@ test('Watchdog dispatches from durable CI and repair queue only when a slot exis
   assert.ok(s.includes('summary.conflictLabelsQueued || repairQueueBacklog'));
   assert.ok(s.includes("inputs:{dry_run:'false'}"));
   assert.ok(s.includes("inputs:{pr_number:'0',dry_run:'false'}"));
+});
+
+test('successful Core event has a separate rate-bounded free-slot wakeup',()=>{
+  const s=read('hh-pr-ten-minute-watchdog');
+  assert.ok(s.includes('  core-slot-wakeup:\n'));
+  assert.ok(s.includes('name: core-ci-freed-slot-wakeup'));
+  assert.ok(s.includes('group: hh-pr-core-slot-wakeup'));
+  assert.ok(s.includes('cancel-in-progress: false'));
+  assert.ok(s.includes('github.event.workflow_run.conclusion == \'success\''));
+  assert.ok(s.includes('scripts/ci-pr-slot-wakeup.cjs'));
+  assert.ok(s.includes('actions: write'));
 });
