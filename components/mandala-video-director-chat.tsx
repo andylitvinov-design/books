@@ -82,6 +82,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [step,setStep]=useState<Step>(()=>nextVideoChatStep(initial(goal)) as Step);
  const [lines,setLines]=useState<ChatLine[]>([{id:0,role:"assistant",text:t.intro}]);
  const [input,setInput]=useState("");
+ // Server-rendered chat can be visible before React attaches input handlers.
+ const [clientHydrated,setClientHydrated]=useState(false);
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
  const [aiStatus,setAiStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
@@ -100,6 +102,13 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const counter=useRef(0);
  const threadRef=useRef<HTMLDivElement|null>(null);
  const windowRef=useRef<HTMLElement|null>(null);
+ const composerRef=useRef<HTMLTextAreaElement|null>(null);
+ useEffect(()=>{
+   // Preserve a guest's text if they started typing before hydration.
+   const preHydrationText=composerRef.current?.value||"";
+   if(preHydrationText)setInput(value=>value||preHydrationText.slice(0,800));
+   setClientHydrated(true);
+ },[]);
  const addLine=(role:ChatLine["role"],text:string)=>{
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
@@ -358,7 +367,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} aria-labelledby="video-director-chat-heading">
+  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
@@ -444,7 +453,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    </div>:null}
    <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <textarea rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
+     <textarea ref={composerRef} rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
        onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
        maxLength={800} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>
