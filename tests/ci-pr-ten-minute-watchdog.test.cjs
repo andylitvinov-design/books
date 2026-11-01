@@ -276,3 +276,18 @@ test('scheduled coordinator repairs the missing-Core legacy category at bounded 
   assert.equal(updates,1);
   assert.equal(comments,1);
 });
+
+
+test('obsolete release-ready recovery is absent while interrupted-core recovery remains fail closed', () => {
+  const {readFileSync} = require('node:fs');
+  const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.doesNotMatch(source,/^  recover-missing-required-ci:/m);
+  assert.match(source,/^  recover-interrupted-core:/m);
+  assert.match(source,/^  workflow_run:/m);
+  assert.match(source,/^      - 'HH PR core release gate'$/m);
+  assert.ok(source.includes('github.rest.actions.reRunWorkflow'));
+  assert.ok(source.includes('fresh.run_attempt !== 1'));
+  assert.ok(source.includes('event.head_repository?.full_name !== fullRepo'));
+  assert.ok(source.includes('github-token: ${{ github.token }}'));
+  assert.doesNotMatch(source,/--admin|--force|bypass_rulesets|continue-on-error:/);
+});
