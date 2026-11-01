@@ -177,6 +177,56 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   'tests/meditation-course-enquiry.test.mjs',
   'tests/meditation-regeneration.test.mjs',
 ]);
+// Exact operator guest reply (#2856): reviewed private route and SQL audit
+// are backed by isolated PostgreSQL17, other-account negative auth, IA/CRM,
+// real EN/RU/ES public enquiry browser and Core build. Any unknown file or
+// payment, common auth, provider transport change runs the full 13 browsers.
+const REVIEWED_GUEST_REPLY_PATHS=new Set([
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_REPLY_ADDITIONS=new Set([
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
+]);
+const REVIEWED_GUEST_CI_POLICY=new Set([
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+]);
+function exactReviewedGuestReply(files) {
+  const changed=files.filter(file=>!REVIEWED_GUEST_CI_POLICY.has(file));
+  return changed.length===REVIEWED_GUEST_REPLY_PATHS.size &&
+    changed.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)) &&
+    files.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)||
+      REVIEWED_GUEST_CI_POLICY.has(file));
+}
+
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 // The Ideas/Coaching source owner checks these exact files. Public Services
 // must still run its real Ideas browser when the shared mobile QA harness
@@ -224,6 +274,14 @@ export function planPublicServicesChangedPaths(files) {
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
+  }
+  if(exactReviewedGuestReply(files)) {
+    // Keep real EN/RU/ES service consent Chromium and production build;
+    // the separate mandatory IA owner/browser runs WebKit and the dedicated
+    // Messages workflow runs PostgreSQL17 tenant isolation. Unknowns run ALL.
+    return {mode:'focused',reason:'EXACT_PRIVATE_GUEST_REPLY',
+      build:true,browser:true,metrics:false,
+      cases:'verify-public-services-production.mjs'};
   }
   const selected = new Set();
   let performance = false;
@@ -451,7 +509,7 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (status !== 'M' && !(status === 'A' &&
         (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+         MANDALA_REVIEWED_ADDITIONS.has(file) || REVIEWED_GUEST_REPLY_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
