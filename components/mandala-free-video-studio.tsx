@@ -335,14 +335,14 @@ const audioCopy = {
   en: {
     context:"For your video theme",automatic:"Smart match",autoOn:"Matched to theme",topic:"Theme",favorite:"Favorite",unfavorite:"Remove favorite",byFavorites:"Favorites first",
     type:"Sound type",mood:"Mood",pace:"Tempo",
-    types:{all:"All sounds",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
+    types:{all:"All sounds",melody:"Original melodies",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
     moods:{all:"Any mood",calm:"Calm",focus:"Focus",uplift:"Inspiration"},
     paces:{all:"Any pace",slow:"Slow",steady:"Steady",active:"Energizing"},
     voice:"Soft sound for a later voiceover",voiceInfo:"Quiet tracks at 30%. Only one soundtrack exports; voice and music are not mixed here.",
     suggested:"Best for this topic",browse:"Scroll to explore",count:"sounds",
     empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected sound",
     search:"Find a sound…",sort:"Sort",byTopic:"Best match",byName:"Name A–Z",
-    videoLength:"Video length",loop:"8-second loop",showMore:"Show all sounds",showLess:"Show fewer",
+    videoLength:"Video length",loop:"8–16-second original loops",showMore:"Show all sounds",showLess:"Show fewer",
     pick:"Select",picked:"Selected",attach:"Attach to video",attached:"Attached to video",
     detach:"Remove from video",needsAttach:"Select a sound and tap Attach to video before export.",
     applied:"Sound is attached to this video setup. Create the video again to save a file with this sound.",
@@ -356,14 +356,14 @@ const audioCopy = {
   ru: {
     context:"Под вашу тему",automatic:"Умный подбор",autoOn:"Подобрано по теме",topic:"Тема",favorite:"В избранное",unfavorite:"Убрать из избранного",byFavorites:"Сначала избранные",
     type:"Тип звука",mood:"Настрой",pace:"Темп",
-    types:{all:"Все звуки",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
+    types:{all:"Все звуки",melody:"Авторские мелодии",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
     moods:{all:"Любой",calm:"Успокоение",focus:"Концентрация",uplift:"Вдохновение"},
     paces:{all:"Любой",slow:"Медленный",steady:"Ровный",active:"Бодрый"},
     voice:"Мягкий фон для будущей озвучки",voiceInfo:"Спокойные треки, громкость 30%. Голос и музыка пока не накладываются одновременно.",
     suggested:"Лучше подходит",browse:"Листайте звуки",count:"звуков",
     empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранный звук",
     search:"Найти звук…",sort:"Сортировка",byTopic:"Подходящие",byName:"По названию",
-    videoLength:"Длина видео",loop:"Цикл 8 секунд",showMore:"Показать все звуки",showLess:"Свернуть список",
+    videoLength:"Длина видео",loop:"Авторские циклы 8–16 секунд",showMore:"Показать все звуки",showLess:"Свернуть список",
     pick:"Выбрать",picked:"Выбран",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
     detach:"Убрать звук из видео",needsAttach:"Выберите дорожку и нажмите «Прикрепить к видео» перед сохранением.",
     applied:"Дорожка прикреплена к настройкам ролика. Создайте видео заново, чтобы получить файл со звуком.",
@@ -377,14 +377,14 @@ const audioCopy = {
   es: {
     context:"Para el tema elegido",automatic:"Selección inteligente",autoOn:"Según el tema",topic:"Tema",favorite:"Favorito",unfavorite:"Quitar favorito",byFavorites:"Primero favoritos",
     type:"Tipo de sonido",mood:"Ambiente",pace:"Ritmo",
-    types:{all:"Todos",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
+    types:{all:"Todos",melody:"Melodías originales",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
     moods:{all:"Cualquiera",calm:"Calma",focus:"Concentración",uplift:"Inspiración"},
     paces:{all:"Cualquiera",slow:"Lento",steady:"Regular",active:"Dinámico"},
     voice:"Fondo suave para añadir voz después",voiceInfo:"Pistas suaves al 30%. Por ahora solo se exporta una pista de audio.",
     suggested:"Recomendado",browse:"Desliza para explorar",count:"sonidos",
     empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
     search:"Buscar sonido…",sort:"Orden",byTopic:"Recomendados",byName:"Nombre A–Z",
-    videoLength:"Duración del vídeo",loop:"Bucle de 8 segundos",showMore:"Ver todos los sonidos",showLess:"Mostrar menos",
+    videoLength:"Duración del vídeo",loop:"Pistas originales de 8–16 segundos",showMore:"Ver todos los sonidos",showLess:"Mostrar menos",
     pick:"Elegir",picked:"Elegido",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
     detach:"Quitar sonido del vídeo",needsAttach:"Elige un sonido y pulsa Adjuntar antes de guardar el vídeo.",
     applied:"Audio adjunto a este vídeo. Créalo de nuevo para guardar el archivo con sonido.",
@@ -2417,6 +2417,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
+      // Outside Characters the shared consent panel lives in the Video workspace.
+      if(activeWorkspace && activeWorkspace!=="characters")setActiveWorkspace("video");
       // Reveal the single original consent control in the relocated cover panel.
       const coverOptions=document.querySelector<HTMLDetailsElement>("[data-video-cover-options]");
       if(coverOptions)coverOptions.open=true;
@@ -2681,7 +2683,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <strong>{track.name[locale]}{index===0&&audioSort==="best"?<Sparkles size={14} aria-label={audioUi.suggested}/>:null}</strong>
                   <small>{track.detail[locale]}</small>
                   <span className={videoStyles.audioRowMeta}>
-                    <em>{track.kind==="nature"?audioUi.types.nature:track.kind==="tones"?audioUi.types.tones:audioUi.types.pulse}</em>
+                    <em>{track.kind==="nature"?audioUi.types.nature:track.kind==="tones"?audioUi.types.tones:track.kind==="melody"?audioUi.types.melody:audioUi.types.pulse}</em>
                     <span className={videoStyles.audioWave} aria-hidden="true">
                       {Array.from({length:15},(_,i)=><i key={i}/>)}
                     </span>
