@@ -102,6 +102,7 @@ test('the actual report renders the optional banner without skill mappings or co
     exports: reportModule.exports,
     require: name => name === 'react' ? isolatedReactState
       : name === './free-course-banner' ? { FreeCourseBanner }
+      : name === './motivator-mind' ? { MotivatorMind: () => null }
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
@@ -155,7 +156,10 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
   })
   const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
     'react': isolatedReactState,
-    './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
+    './free-course-banner': { FreeCourseBanner },
+    // This isolated banner boundary test does not render the separate Motivator.
+    './motivator-mind': { MotivatorMind: () => null },
+    './assessment-gauge': gauges,
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
     '@/lib/assessments/result-overview': { assessmentResultOverview },
