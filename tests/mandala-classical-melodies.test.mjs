@@ -39,5 +39,10 @@ test("all Video Studio melody IDs have a local first-party playback endpoint",()
    localMusic.includes('  "'+id+'",')||
    (id==="handpan"&&localMusic.includes('  "handpan",')),
    "missing playback ID "+id);
- assert.match(localMusic,/return "\/audio\/mandala\/" \+ preset \+ "\.wav";/);
+ // Both routes must stay valid: dedicated MP3 files and the historical WAV catalog.
+ assert.match(localMusic,/return isScenarioAudioPreset\(preset\)/);
+ assert.match(localMusic,/\/audio\/mandala\/scenarios\//);
+ assert.match(localMusic,/"\.mp3"/);
+ assert.match(localMusic,/\/audio\/mandala\//);
+ assert.match(localMusic,/"\.wav"/);
 });

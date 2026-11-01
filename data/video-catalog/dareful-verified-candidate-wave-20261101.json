@@ -16,11 +16,18 @@
       "suggestedTheme": "health",
       "targetScenarioId": "forest-balance",
       "suggestedNames": {
-        "ru": "Солнечные ветви",
-        "en": "Sunlight through branches",
-        "es": "Luz entre ramas"
+        "ru": "Солнечный зимний лес",
+        "en": "Sunlit snowy forest",
+        "es": "Bosque nevado al sol"
       },
-      "visualReviewRequired": true
+      "visualReviewRequired": true,
+      "visualTags": [
+        "winter",
+        "frost",
+        "snow",
+        "forest",
+        "sunlight"
+      ]
     },
     {
       "id": "mountain-fall-autumn",

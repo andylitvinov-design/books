@@ -8,6 +8,9 @@ test("four unapproved, official Dareful Mux sources have license and video previ
  assert.equal(manifest.sources.length,4);
  assert.equal(manifest.approvedForPublication,false);
  assert.equal(new Set(manifest.sources.map(s=>s.id)).size,4);
+ const snowy=manifest.sources.find(s=>s.id==="sun-trees-forest");
+ assert.ok(snowy.suggestedNames.en.includes("snowy"),"film is a snowy winter forest, not summer woods");
+ assert.ok(snowy.visualTags.includes("winter"));
  for(const item of manifest.sources){
   assert.equal(item.visualReviewRequired,true);
   assert.match(item.sourcePage,/^https:\/\/dareful\.com\/[a-z0-9-]+\/$/);
