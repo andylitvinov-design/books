@@ -13,8 +13,8 @@ test('Free Express heavy browser and database skip Draft and re-enable on exact 
     assert.ok(yaml.includes("  "+job+":\n"+ready+"\n"),job+' must be gated on Ready');
   }
   assert.match(yaml,/^  workflow_dispatch:/m);
-  assert.ok(yaml.includes("group: hh-free-express-v2-\u0024{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
-  assert.ok(yaml.includes("cancel-in-progress: \u0024{{ github.event_name == 'pull_request' }}"));
+  assert.ok(yaml.includes("group: hh-free-express-v2-\u0024{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(yaml.includes("cancel-in-progress: \u0024{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
   assert.ok(yaml.includes("      - 'tests/ci-free-express-draft-gate.test.mjs'"));
   assert.ok(yaml.includes("node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-owner-reply.test.mjs tests/free-express-retention.test.mjs tests/ci-free-express-draft-gate.test.mjs"));
 });
