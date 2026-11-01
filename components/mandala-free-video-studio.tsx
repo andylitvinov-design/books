@@ -1617,6 +1617,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         film:firstPartyFilmFor(shot.theme,shot.sceneId)
       }))
     : [];
+  // If iOS rejects a finalized Canvas recording, preserve a real, public,
+  // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
+  // it as the personal montage, with applied music/photo/text or duration.
+  const originalFallbackCandidate=cinematicPlan?.shots[0]
+    ? firstPartyFilmFor(cinematicPlan.shots[0].theme,cinematicPlan.shots[0].sceneId)?.src
+    : activeFilm?.src;
+  const originalFallbackMp4=originalFallbackCandidate &&
+    /^\\/videos\\/holistic-house\\/[a-z0-9_-]+(?:\\/[a-z0-9_-]+)*\\.mp4$/.test(originalFallbackCandidate)
+    ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
   const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
@@ -4094,6 +4103,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     ?"El codificador no funciona aquí. Actualiza Safari o crea el vídeo en un ordenador."
                     :"The available recorder codec is failing. Update Safari or try a desktop browser."}</p>}
             </div>:null}
+            {playbackStatus==="failed" && originalFallbackMp4 ?
+              <div className={videoStyles.warning} data-video-original-fallback role="note">
+                <p>{locale==="ru"
+                  ?"Если запись на устройстве не работает, можно открыть исходную сцену MP4. Это НЕ ваш готовый фильм: выбранные длительность, формат, фото, фразы и музыка не применены."
+                  :locale==="es"
+                  ?"Si falla la grabación, puedes abrir una escena MP4 original. NO es tu vídeo personalizado: duración, formato, foto, texto y música no se aplicaron."
+                  :"If recording fails, you can open an original MP4 scene. This is NOT your personalized film: duration, format, photo, captions and music were not applied."}</p>
+                <a href={originalFallbackMp4} download="holistic-house-original-scene.mp4"
+                  data-video-original-fallback-download className={videoStyles.audioDirectLink}>
+                  {locale==="ru"?"Открыть исходную сцену MP4 (без настроек)"
+                    :locale==="es"?"Abrir escena MP4 original (sin ajustes)"
+                    :"Open original MP4 scene (without edits)"}
+                </a>
+              </div> : null}
             {playbackStatus==="ready" ? <>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
