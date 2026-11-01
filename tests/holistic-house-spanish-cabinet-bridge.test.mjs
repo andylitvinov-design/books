@@ -55,3 +55,13 @@ test('Spanish messenger stays in Spanish; no duplicate install or private servic
   assert.match(sw,/\/es\/app/)
   assert.match(sw,/network-only/)
 })
+
+test('Spanish route bridge rejects invalid EN targets without weakening authentication', () => {
+  for (const route of [['unknown'],['admin'],['coaching','unapproved'],['documents','not-a-uuid']]) {
+    assert.equal(englishCabinetTarget(route), null, 'No redirect for invalid ' + route.join('/'))
+  }
+  const id = '01234567-89ab-4cde-8abc-0123456789ab'
+  assert.equal(englishCabinetTarget(['documents',id]), '/en/app/documents/' + id)
+  assert.equal(englishCabinetTarget(['coaching','egyptian']), '/en/app/coaching/egyptian')
+  assert.equal(englishCabinetTarget(['coaching','greek']), '/en/app/coaching/greek')
+})
