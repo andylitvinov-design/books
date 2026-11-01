@@ -59,7 +59,7 @@ test('approved mobile entry opens one shared AI chat from free help; mandatory r
  assert.match(qa,/\[data-auto-video-clarify\]/);
  assert.match(qa,/OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY/);
  assert.match(qa,/DUPLICATE_VIDEO_DIRECTOR_CHAT/);
- assert.match(qa,/chat\.locator\('\[data-video-chat-confirm\]'\)\.click/);
+ assert.match(qa,/card\.locator\('\[data-video-chat-confirm\]'\)\.click/);
  assert.match(qa,/await create\.click\(/);
  assert.match(qa,/LICENSED_VIDEO_SOURCE_ABSENT_/);
  assert.match(qa,/EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN/);
