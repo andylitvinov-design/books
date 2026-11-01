@@ -53,6 +53,11 @@ test('guarded inventory validates but expires historical exact-head sweep owners
   assert.ok(s.includes('lease.lease_expires'));
   assert.ok(s.includes('lease.state="active"'));
   assert.ok(s.includes('Unbounded active lease'));
+  // An elapsed timeout cannot release a modern actively-editing owner.
+  assert.ok(s.includes('lease.historical_expiry_allowed=true'));
+  assert.ok(s.includes('l.historical_expiry_allowed!==true'));
+  assert.ok(s.includes('l.head_sha===c.head'));
+  assert.ok(!s.includes('l.head_sha===c.head&&Date.parse(l.expires_at||"")>Date.now()'));
 });
 
 test('skipped successful Core events never replace a pending failed-Core watchdog',()=>{

@@ -195,13 +195,19 @@ jobs:
                      lease.state="active";
                      lease.expires_at=lease.lease_expires;
                      lease.lease_id="legacy:"+lease.owner+":"+lease.run_id;
+                     // Only expired historical Codex *verify* records can
+                     // relinquish ownership by time alone. A modern active
+                     // repair/heartbeat requires explicit release or new HEAD.
+                     lease.historical_expiry_allowed=true;
                    }
                    leases.set(lease.lease_id||("legacy:"+lease.owner+":"+lease.head_sha),lease);
                  }catch{ambiguous=true;break;}
                }
                if(ambiguous||[...leases.values()].some(l=>
                   ["active","claim","heartbeat"].includes(l.state||l.last_action)&&
-                  l.head_sha===c.head&&Date.parse(l.expires_at||"")>Date.now())){
+                  l.head_sha===c.head&&
+                  (l.historical_expiry_allowed!==true||
+                   Date.parse(l.expires_at||"")>Date.now()))){
                  skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
                }
                attempts++;
