@@ -2181,6 +2181,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopMovieSound();
     const snapshot=source;
     const snapshotKey=signature;
+    // Safari 26+ WebCodecs avoids WebKit MediaRecorder's Canvas/audio muxer
+    // deadlock. Chromium retains its tested native recorder implementation.
+    const ua=typeof navigator==="undefined"?"":navigator.userAgent;
+    const useWebCodecsMp4=/AppleWebKit/i.test(ua)&&
+      !/Chrome|Chromium|Edg|OPR/i.test(ua)&&
+      typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"&&
+      typeof OfflineAudioContext!=="undefined";
     preparingRef.current=true;
     setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
     setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
@@ -2188,15 +2195,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let musicSession:AmbientSession|null=null;
     try {
       musicSession = attachedAudio?.kind==="file"
-        ? await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true})
-        : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
-        : attachedAudio?.kind==="presets" ? await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
+        ? useWebCodecsMp4?null:await startUploadedAudio(attachedAudio.file,soundVolume,{loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true})
+        : attachedAudio?.kind==="preset" ? useWebCodecsMp4?null:await startPresetAudio(attachedAudio.id,soundVolume)
+        : attachedAudio?.kind==="presets" ? useWebCodecsMp4?null:await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
       if(attachedAudio && !musicSession) {
-        setMusicWarning(ui.soundUnavailable);
-        setNotice(ui.soundUnavailable);
-        setExportUnavailable(true);
-        return;
+        if(!useWebCodecsMp4){
+          setMusicWarning(ui.soundUnavailable);
+          setNotice(ui.soundUnavailable);
+          setExportUnavailable(true);
+          return;
+        }
       }
+
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       if(activeFilm) {
@@ -2206,7 +2216,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       setPreviewPlaying(false);
       const canvas = canvasRef.current;
-      if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
+      if (!canvas || (!useWebCodecsMp4 &&
+          (typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined"))) {
         // Linux Playwright WebKit and some Safari releases cannot capture
         // Canvas frames. Offer a REAL, approved source MP4 rather than a fake
         // downloaded film, a silent paid request or an endless spinner.
@@ -2264,6 +2275,57 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         : (quality === "fullhd" ? (cores>=8 ? 25 : 20) : (cores>=8 ? 30 : 24));
       const framesPerSecond=baselineFramesPerSecond === 25 || (phone && cores<=2)
         ? baselineFramesPerSecond : suggestedFps;
+      if(useWebCodecsMp4){
+        // Safari's entire H.264/AAC export runs locally with WebCodecs. The
+        // user-selected first-party scene, narration and filters remain here.
+        setPreparing(false);
+        setRecording(true);
+        try{
+          const {encodeLocalWebCodecsMp4}=await import("@/lib/mandala/webcodecs-mp4-export");
+          const files:({file:File|Blob;loop:boolean}|{preset:string;loop:true})[]=[];
+          if(attachedAudio?.kind==="file"){
+            files.push({file:attachedAudio.file,
+              loop:attachedAudio.narration!==true&&attachedAudio.nonLoop!==true});
+          }else if(attachedAudio){
+            const ids=attachedAudio.kind==="preset"?[attachedAudio.id]:attachedAudio.ids;
+            for(const id of ids)files.push({preset:id,loop:true});
+          }
+          if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          const blob=await encodeLocalWebCodecsMp4({
+            canvas,seconds:duration,frameRate:Math.min(20,framesPerSecond),
+            audio:files.length?{files,volume:soundVolume}:undefined,
+            shouldContinue:()=>aliveRef.current&&sourceRef.current===snapshotKey,
+            onProgress:p=>{if(aliveRef.current&&sourceRef.current===snapshotKey)
+              setProgress(Math.min(99,p));},
+            renderFrame:time=>{
+              const frame=freeFilmVideoAt(time);
+              if(usingFreeFilmCompilation&&!frame)return false;
+              paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,caption,
+                theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame);
+              paintStoryMotifs(ctx,time,appliedStory);
+              paintHypnoLightOverlay(ctx,time,hypnoLight);
+              paintVideoAffirmations(ctx,time,affirmationLines,affirmations);
+              paintStageCaptionOverlay(ctx,time,cinematicPlan);
+              return true;
+            },
+          });
+          if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+          setResult({url:URL.createObjectURL(blob),extension:"mp4",bytes:blob.size,
+            blob,mime:"video/mp4"});
+          setProgress(100);
+          setPlaybackStatus("checking");
+          setNotice(locale==="ru"?"Проверяем настоящий MP4 с вашим звуком.":
+            locale==="es"?"Verificando el vídeo MP4 y su audio.":
+              "Verifying the finished MP4 with your selected audio.");
+        }catch{
+          if(sourceRef.current===snapshotKey&&aliveRef.current){
+            setNotice(t.failed);setExportUnavailable(true);
+          }
+        }finally{
+          if(aliveRef.current)setRecording(false);
+        }
+        return;
+      }
       stream = canvas.captureStream(framesPerSecond);
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
