@@ -173,9 +173,9 @@ const studioCopy = {
     replace:"Replace photo",addPhoto:"Add photo",noPhoto:"Your photo here",photoPrivate:"Only on your device",
     allTemplates:"All templates",fewTemplates:"Show less",templateHint:"Moving scenery; your face stays unchanged",
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
-    brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Sound ambience",noMusic:"Silent",
+    brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Original instrumental music",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"39 original first-party WAV soundtracks (13 existing + 26 new, including melodies). No third-party streaming; you can add your own music or voice.",
+    originalAudio:"22 original instrumental melodies (piano, harp, flute, strings and more), plus 17 optional sound textures. Original music, no third-party streaming. Add your own recording if you prefer.",
     openAudioDirect:"Open soundtrack directly",retryAudio:"Retry playback",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
@@ -213,9 +213,9 @@ const studioCopy = {
     replace:"Заменить фото",addPhoto:"Загрузить фото",noPhoto:"Ваше фото",photoPrivate:"Только на устройстве",
     allTemplates:"Все шаблоны",fewTemplates:"Свернуть",templateHint:"Анимируется фон; лицо на фото не меняется",
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
-    brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Звуковой фон",noMusic:"Без звука",
+    brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Красивая инструментальная музыка",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"39 авторских WAV-дорожек с нашего сайта: 13 прежних и 26 новых, включая мелодии. Без внешнего стриминга; можно добавить свой звук или голос.",
+    originalAudio:"22 авторские инструментальные мелодии: фортепиано, арфа, флейта, струны и другие. Ещё 17 звуковых фактур доступны дополнительно. Без внешнего стриминга.",
     openAudioDirect:"Открыть аудиофайл отдельно",retryAudio:"Повторить",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
@@ -253,9 +253,9 @@ const studioCopy = {
     replace:"Cambiar foto",addPhoto:"Subir foto",noPhoto:"Tu foto",photoPrivate:"Solo en tu dispositivo",
     allTemplates:"Todas las plantillas",fewTemplates:"Mostrar menos",templateHint:"Se anima el entorno; tu rostro no se altera",
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
-    brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Ambiente sonoro",noMusic:"Sin sonido",
+    brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Melodías instrumentales",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"39 pistas WAV originales del sitio (13 anteriores y 26 nuevas, incluidas melodías). Sin streaming externo; puedes añadir tu audio o voz.",
+    originalAudio:"22 melodías instrumentales originales de piano, arpa, flauta y cuerdas, más 17 texturas opcionales. Sin streaming externo.",
     openAudioDirect:"Abrir el archivo de audio",retryAudio:"Reintentar",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
@@ -335,19 +335,19 @@ const layoutCopy = {
 const audioCopy = {
   en: {
     context:"For your video theme",automatic:"Smart match",autoOn:"Matched to theme",topic:"Theme",favorite:"Favorite",unfavorite:"Remove favorite",byFavorites:"Favorites first",
-    type:"Sound type",mood:"Mood",pace:"Tempo",
-    types:{all:"All sounds",melody:"Original melodies",tones:"Ambient tones",nature:"Nature textures",pulse:"Soft rhythm"},
+    type:"Music and accompaniment",mood:"Mood",pace:"Tempo",
+    types:{all:"All tracks",melody:"Beautiful melodies",tones:"Ambient textures",nature:"Nature sounds · optional",pulse:"Soft rhythm · optional"},
     moods:{all:"Any mood",calm:"Calm",focus:"Focus",uplift:"Inspiration"},
     paces:{all:"Any pace",slow:"Slow",steady:"Steady",active:"Energizing"},
     voice:"Soft sound for a later voiceover",voiceInfo:"Quiet tracks at 30%. Only one soundtrack exports; voice and music are not mixed here.",
-    suggested:"Best for this topic",browse:"Scroll to explore",count:"sounds",
-    empty:"No sounds match these filters.",clear:"Clear filters",now:"Selected sound",
-    search:"Find a sound…",sort:"Sort",byTopic:"Best match",byName:"Name A–Z",
-    videoLength:"Video length",loop:"8–16-second original loops",showMore:"Show all sounds",showLess:"Show fewer",
+    suggested:"Best for this topic",browse:"Explore the melodies",count:"tracks",melodyCount:"melodies",
+    empty:"No melodies match these filters.",clear:"Clear filters",now:"Selected music",
+    search:"Find a melody…",sort:"Sort",byTopic:"Best match",byName:"Name A–Z",
+    videoLength:"Video length",loop:"32-second original compositions · gentle looping",showMore:"More melodies",showLess:"Show fewer",
     pick:"Select",picked:"Selected",attach:"Attach to video",attached:"Attached to video",
     detach:"Remove from video",needsAttach:"Select a sound and tap Attach to video before export.",
     applied:"Sound is attached to this video setup. Create the video again to save a file with this sound.",
-    chooseFirst:"Choose a sound",noAudioInfo:"No sound is attached. Select a sound or create a silent video.",
+    chooseFirst:"Choose a melody",noAudioInfo:"No melody attached. Choose music or create a silent video.",
     attachedLabel:"On video",noAttached:"No sound attached",
     recordVoice:"Record my voice",stopVoice:"Finish recording",recordUnavailable:"Microphone is unavailable here. Try Safari or upload an audio file.",
     recordFailed:"Could not record audio. Check microphone permission or use Files.",
@@ -356,19 +356,19 @@ const audioCopy = {
   },
   ru: {
     context:"Под вашу тему",automatic:"Умный подбор",autoOn:"Подобрано по теме",topic:"Тема",favorite:"В избранное",unfavorite:"Убрать из избранного",byFavorites:"Сначала избранные",
-    type:"Тип звука",mood:"Настрой",pace:"Темп",
-    types:{all:"Все звуки",melody:"Авторские мелодии",tones:"Музыка и тоны",nature:"Звуки природы",pulse:"Мягкий ритм"},
+    type:"Музыкальный стиль",mood:"Настрой",pace:"Темп",
+    types:{all:"Все дорожки",melody:"Красивые мелодии",tones:"Звуковые фактуры",nature:"Звуки природы · дополнительно",pulse:"Ритм · дополнительно"},
     moods:{all:"Любой",calm:"Успокоение",focus:"Концентрация",uplift:"Вдохновение"},
     paces:{all:"Любой",slow:"Медленный",steady:"Ровный",active:"Бодрый"},
     voice:"Мягкий фон для будущей озвучки",voiceInfo:"Спокойные треки, громкость 30%. Голос и музыка пока не накладываются одновременно.",
-    suggested:"Лучше подходит",browse:"Листайте звуки",count:"звуков",
-    empty:"По этим фильтрам звуков нет.",clear:"Сбросить фильтры",now:"Выбранный звук",
-    search:"Найти звук…",sort:"Сортировка",byTopic:"Подходящие",byName:"По названию",
-    videoLength:"Длина видео",loop:"Авторские циклы 8–16 секунд",showMore:"Показать все звуки",showLess:"Свернуть список",
+    suggested:"Лучше подходит",browse:"Послушайте мелодии",count:"дорожек",melodyCount:"мелодии",
+    empty:"По этим настройкам мелодий нет.",clear:"Сбросить фильтры",now:"Выбранная мелодия",
+    search:"Найти мелодию…",sort:"Сортировка",byTopic:"Подходящие",byName:"По названию",
+    videoLength:"Длина видео",loop:"Авторские музыкальные композиции по 32 секунды",showMore:"Больше мелодий",showLess:"Свернуть список",
     pick:"Выбрать",picked:"Выбран",attach:"Прикрепить к видео",attached:"Прикреплено к видео",
     detach:"Убрать звук из видео",needsAttach:"Выберите дорожку и нажмите «Прикрепить к видео» перед сохранением.",
     applied:"Дорожка прикреплена к настройкам ролика. Создайте видео заново, чтобы получить файл со звуком.",
-    chooseFirst:"Выберите звук",noAudioInfo:"Звук не прикреплён. Выберите дорожку либо создайте видео без звука.",
+    chooseFirst:"Выберите мелодию",noAudioInfo:"Мелодия не прикреплена. Выберите музыку или создайте видео без звука.",
     attachedLabel:"В видео",noAttached:"Без звука",
     recordVoice:"Записать голос",stopVoice:"Завершить запись",recordUnavailable:"Микрофон недоступен. Откройте Safari или загрузите аудио из «Файлов».",
     recordFailed:"Записать голос не удалось. Проверьте разрешение на микрофон или загрузите файл.",
@@ -377,19 +377,19 @@ const audioCopy = {
   },
   es: {
     context:"Para el tema elegido",automatic:"Selección inteligente",autoOn:"Según el tema",topic:"Tema",favorite:"Favorito",unfavorite:"Quitar favorito",byFavorites:"Primero favoritos",
-    type:"Tipo de sonido",mood:"Ambiente",pace:"Ritmo",
-    types:{all:"Todos",melody:"Melodías originales",tones:"Tonos y música",nature:"Naturaleza sintética",pulse:"Ritmo suave"},
+    type:"Música y acompañamiento",mood:"Ambiente",pace:"Ritmo",
+    types:{all:"Todas las pistas",melody:"Melodías bonitas",tones:"Texturas suaves",nature:"Naturaleza · opcional",pulse:"Ritmo · opcional"},
     moods:{all:"Cualquiera",calm:"Calma",focus:"Concentración",uplift:"Inspiración"},
     paces:{all:"Cualquiera",slow:"Lento",steady:"Regular",active:"Dinámico"},
     voice:"Fondo suave para añadir voz después",voiceInfo:"Pistas suaves al 30%. Por ahora solo se exporta una pista de audio.",
-    suggested:"Recomendado",browse:"Desliza para explorar",count:"sonidos",
-    empty:"No hay sonidos con estos filtros.",clear:"Restablecer filtros",now:"Audio elegido",
-    search:"Buscar sonido…",sort:"Orden",byTopic:"Recomendados",byName:"Nombre A–Z",
-    videoLength:"Duración del vídeo",loop:"Pistas originales de 8–16 segundos",showMore:"Ver todos los sonidos",showLess:"Mostrar menos",
+    suggested:"Recomendado",browse:"Explora las melodías",count:"pistas",melodyCount:"melodías",
+    empty:"No hay melodías con estos filtros.",clear:"Restablecer filtros",now:"Melodía elegida",
+    search:"Buscar melodía…",sort:"Orden",byTopic:"Recomendados",byName:"Nombre A–Z",
+    videoLength:"Duración del vídeo",loop:"Composiciones originales de 32 segundos",showMore:"Más melodías",showLess:"Mostrar menos",
     pick:"Elegir",picked:"Elegido",attach:"Adjuntar al vídeo",attached:"Adjunto al vídeo",
     detach:"Quitar sonido del vídeo",needsAttach:"Elige un sonido y pulsa Adjuntar antes de guardar el vídeo.",
     applied:"Audio adjunto a este vídeo. Créalo de nuevo para guardar el archivo con sonido.",
-    chooseFirst:"Elige un sonido",noAudioInfo:"No hay audio adjunto. Elige un sonido o crea un vídeo sin él.",
+    chooseFirst:"Elige una melodía",noAudioInfo:"No hay melodía adjunta. Elige música o crea un vídeo sin sonido.",
     attachedLabel:"En el vídeo",noAttached:"Sin sonido",
     recordVoice:"Grabar voz",stopVoice:"Terminar grabación",recordUnavailable:"El micrófono no está disponible. Prueba Safari o sube un archivo.",
     recordFailed:"No se pudo grabar. Revisa los permisos o utiliza Archivos.",
@@ -1558,11 +1558,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [brightness,setBrightness] = useState<Brightness>("soft");
   const [music,setMusic] = useState<AmbientMusic>("none");
   const [soundVolume,setSoundVolume] = useState(75);
-  const [audioKind,setAudioKind] = useState("all");
+  const [audioKind,setAudioKind] = useState("melody");
   const [audioMood,setAudioMood] = useState("all");
   const [audioPace,setAudioPace] = useState("all");
   const [audioVoiceFriendly,setAudioVoiceFriendly] = useState(false);
-  const [audioAuto,setAudioAuto] = useState(false);
+  const [audioAuto,setAudioAuto] = useState(true);
   const [audioSearch,setAudioSearch] = useState("");
   const [audioSort,setAudioSort] = useState<"best"|"name"|"favorites">("best");
   const [audioThemeOverride,setAudioThemeOverride] = useState<VideoTheme|null>(null);
@@ -2718,8 +2718,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </label>
           </div>
           <div className={videoStyles.audioCatalogHeading}>
-            <strong>{filteredAudio.length} {audioUi.count}</strong>
-            <span>{audioUi.loop}</span>
+            <strong>{filteredAudio.length} {audioKind==="melody"?audioUi.melodyCount:audioUi.count}</strong>
+            <span>{audioKind==="melody"?audioUi.loop:audioUi.types[audioKind as keyof typeof audioUi.types]}</span>
           </div>
           {filteredAudio.length?<div className={videoStyles.audioTrackList} data-video-audio-tracks>
             {visibleAudio.map((track,index)=><div className={videoStyles.audioTrackRow}
@@ -2764,7 +2764,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>)}
           </div>:<div className={videoStyles.audioEmpty} role="status">
             <span>{audioUi.empty}</span>
-            <button type="button" onClick={()=>{setAudioKind("all");setAudioMood("all");setAudioPace("all");setAudioSearch("");}}>
+            <button type="button" onClick={()=>{setAudioKind("melody");setAudioMood("all");setAudioPace("all");setAudioSearch("");}}>
               {audioUi.clear}
             </button>
           </div>}

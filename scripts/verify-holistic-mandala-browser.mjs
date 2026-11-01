@@ -1242,8 +1242,11 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-audio-sort]").selectOption("name");
           await page.locator("[data-video-audio-sort]").selectOption("best");
           await page.locator('[data-video-audio-length="20"]').click();
-          await page.locator("[data-video-audio-auto]").click();
-          assert.equal(await page.locator("[data-video-audio-auto]").getAttribute("aria-pressed"),"true");
+          // Music-first is already automatic by default. Do not accidentally
+          // turn it off before verifying the chosen original composition.
+          const autoMusic=page.locator("[data-video-audio-auto]");
+          if(await autoMusic.getAttribute("aria-pressed")!=="true")await autoMusic.click();
+          assert.equal(await autoMusic.getAttribute("aria-pressed"),"true");
           assert.ok(await page.locator("[data-video-audio-player]").getAttribute("src"));
           await page.locator("[data-video-audio-voice]").check();
           assert.equal(await page.locator("[data-video-music-volume]").inputValue(),"30",
