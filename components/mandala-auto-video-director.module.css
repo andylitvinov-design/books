@@ -221,3 +221,15 @@
  .soundTrack{flex-wrap:wrap}
  .soundTrack button{width:100%}
 }
+
+
+/* Source-backed scene replacement is part of the existing optional montage. */
+.montageRow{grid-template-columns:minmax(0,1fr) minmax(145px,1fr) auto}
+.montageReplace{display:grid;gap:3px;min-width:0;color:#2b5743}
+.montageReplace span{font-size:11px;font-weight:700;line-height:1.3}
+.montageReplace select{box-sizing:border-box;display:block;width:100%;min-width:0;
+  min-height:44px;padding:8px;border:1px solid #bbd5c4;border-radius:9px;
+  background:#f9fdf9;color:#1b4534;font:600 16px/1.3 system-ui,-apple-system,sans-serif}
+.montageReplace select:disabled{color:#8a998d;background:#f4f6f4}
+.montageReplace select:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+@media(max-width:730px){.montageRow{grid-template-columns:minmax(0,1fr)}}
