@@ -15,7 +15,7 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 
 
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
-import { MandalaPhraseCatalog } from "./mandala-phrase-catalog";
+
 
 
 
@@ -64,6 +64,7 @@ const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start
 const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
 const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-meditation").then(module => module.MandalaPersonalMeditation));
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
+const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -1633,6 +1634,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [firstVideoAdvancedOpen,setFirstVideoAdvancedOpen] = useState(false);
   const [voiceStudioOpen,setVoiceStudioOpen] = useState(false);
+  const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
@@ -3406,11 +3408,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
         }} onPreview={openAffirmationPreview} onCreate={startFromHero}>
-      <details className={videoStyles.phraseAudioSettings} data-video-phrase-catalog-details>
+      <details className={videoStyles.phraseAudioSettings} data-video-phrase-catalog-details
+        onToggle={event=>{if(event.currentTarget.open)setPhraseCatalogActivated(true);}}>
         <summary>{locale==="ru"?"Каталог фраз по целям и сценариям":
           locale==="es"?"Catálogo de frases por objetivos e historias":
           "Phrase catalog by goals and stories"}<ChevronDown size={18} aria-hidden="true"/></summary>
-        <MandalaPhraseCatalog locale={locale} theme={theme} wish={wish}
+        {phraseCatalogActivated ? <MandalaPhraseCatalog locale={locale} theme={theme} wish={wish}
           disabled={recording||preparing} selectedPhrase={affirmations.custom}
           onPhraseChoose={phrase=>{
             setAffirmations(current=>({...current,enabled:true,selected:[],
@@ -3421,7 +3424,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
-          }}/>
+          }}/> : null}
       </details>
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
