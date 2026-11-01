@@ -5,9 +5,12 @@ import Link from "next/link";
 import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
+import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
+import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
@@ -16,6 +19,7 @@ import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations,
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
+import { allocateFreeFilmTimeline } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -847,34 +851,35 @@ const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
       "wealth-sunrise",
       "radiant-portal"
     ]
-  }
+  },
+  ...(extraFreeFilmPresets.presets as FreeFilmPreset[])
 ] as const;
-const FREE_FILM_CLIP_THEMES:Record<string,VideoTheme> = {"golden-rain":"money","cosmic-flow":"money","abundance-tree":"money","opportunity-falls":"money","money-magnet":"money","path-to-goals":"money","partners":"money","infinite-flow":"money","golden-shield":"money","abundance-circle":"money","life-gifts":"money","dreams":"money","wealth-sunrise":"money","golden-harvest":"money","radiant-portal":"money","prosperity-coast":"money","solar-surge":"energy","ocean-pulse":"energy","sunbeam-flow":"energy","river-power":"energy","desert-light":"energy","mountain-air":"energy","wildflower-dance":"life","fern-awakening":"life","coastal-freedom":"life","lone-tree":"life","meadow-morning":"life","calm-sea":"health","morning-dew":"health","mossy-stream":"health","gentle-falls":"health","sea-breeze":"health"};
+const FREE_FILM_CATALOG = freeSceneTaxonomy.scenes;
+const FREE_FILM_CATALOG_BY_ID = new Map(FREE_FILM_CATALOG.map(scene=>[scene.id,scene]));
+const FREE_FILM_CLIP_THEMES:Record<string,VideoTheme> = Object.fromEntries(
+  FREE_FILM_CATALOG.filter(scene=>scene.status==="approved").map(scene=>[scene.id,scene.theme])
+) as Record<string,VideoTheme>;
 function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string}|null {
   if(theme==="money")return getRealMoneyFilm(id as MoneySceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
 function compileFreeFilmPreset(preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect):CinematicStoryboard {
-  // Existing safe timing model, but every shot is an actual licensed MP4.
-  // Stock edits use an independent plan version to FAIL-CLOSED paid AI prompts.
-  if(![10,20,30,60].includes(durationSeconds))throw Error("unsupported_free_film_length");
+  // Exactly four source-backed MP4 shots for every 10/15/20/30/60s free edit.
+  // Short source masters may loop; the preview must not claim new footage.
+  const timings=allocateFreeFilmTimeline(durationSeconds,preset.clips);
   const base=buildCinematicStoryboard({
-    theme:preset.theme,locale,style:"nature",aspect,
-    durationSeconds:durationSeconds===10?20:durationSeconds
+    theme:preset.theme,locale,style:"nature",aspect,durationSeconds:20
   });
-  const step=Math.floor(durationSeconds/4),remainder=durationSeconds-step*4;
-  let start=0;
+  if(base.shots.length!==4)throw Error("invalid_free_film_base_shot_count");
   const shots=base.shots.map((shot:{id:string;number:number;title:string;startSeconds:number;durationSeconds:number},i:number)=>{
-    const sceneId=preset.clips[i], shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
+    const timing=timings[i];
+    const sceneId=timing.sceneId,shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
     if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))throw Error("unavailable_free_film_clip");
-    const shotLength=step+(i<remainder?1:0);
-    const result={...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
-      startSeconds:start,durationSeconds:shotLength,
-      providerPrompt:""}; // A montage never becomes a provider prompt.
-    start+=shotLength;
-    return result;
+    return {...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
+      startSeconds:timing.startSeconds,durationSeconds:timing.durationSeconds,
+      providerPrompt:""}; // No paid video provider or personal-data upload.
   });
-  return {...base,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
+  return {...base,shotCount:4,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
     sceneChoices:shots.map((shot:{sceneId:string;theme:VideoTheme})=>({
       sceneId:shot.sceneId,theme:shot.theme,visualCue:preset.label.en
     })),
@@ -1631,6 +1636,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
   const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
     FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
+  const freeFilmClipLabel=(id:string)=>{
+    const origin=FREE_FILM_CLIP_THEMES[id];
+    return origin==="money" ? moneyTemplateLabels[id as MoneySceneId]?.[locale]||
+      moneyScenes.find(scene=>scene.id===id)?.label[locale]||id
+      :origin?otherVideoScenes[origin].find(scene=>scene.id===id)?.label[locale]||id:id;
+  };
   // These are the SAME original, source-backed scenes as the full gallery.
   // The compact Hypno video-design rail is a shortcut, not a second editor.
   const hypnoScenes = theme === "money"
@@ -2329,6 +2340,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
+  const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,outputAspect:Aspect=aspect)=>{
+    if(recording||preparing)return;
+    const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
+    if(!preset){setNotice(ui.videoUnavailable);return;}
+    try{
+      const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect);
+      setActiveFreeFilmPreset(preset.id);
+      setTheme(preset.theme);setVideoCategory(preset.theme);
+      if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
+      else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
+      setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
+      setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
+      setPreviewPlaying(false);setSuggestion("");
+      setNotice(locale==="ru"?"Бесплатный монтаж из четырёх MP4 выбран. Дождитесь загрузки кадров и нажмите «Создать видео».":locale==="es"?
+        "Montaje gratuito de cuatro MP4 seleccionado. Espera la carga y pulsa Crear vídeo.":
+        "Four-MP4 free film selected. Once the clips load, choose Create video.");
+      document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }catch{
+      setNotice(ui.videoUnavailable);
+    }
+  };
   const selectCategory=(next:VideoCategory)=>{
     setCinematicPlan(null);setIntroPlaying(false);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
@@ -3284,6 +3316,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(job)stopJob(job,true);
             firstVideoRequestRef.current=false;
           }}/>
+        <MandalaAutoVideoDirector
+          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
+          scenes={FREE_FILM_CATALOG}
+          disabled={recording||preparing}
+          activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
+          clipLabel={freeFilmClipLabel}
+          showGoalInput={false}
+          onGoalChange={next=>{setWish(graphemeTrim(next));setSuggestion("");setCinematicPlan(null);}}
+          onApply={applyAutoFilm}/>
         </div>
 
 
@@ -3431,15 +3472,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.quickSectionHeading}>
           <div>
             <h3 id="free-film-catalog-title"><Film size={19} aria-hidden="true"/>
-              {locale==="ru"?"24 готовых видеосюжета":locale==="es"?"24 historias de vídeo":"24 ready-to-edit films"}</h3>
-            <p>{locale==="ru"?"Каждый фильм — монтаж 4 разных MP4 из нашей лицензированной коллекции (32 исходника).":
-              locale==="es"?"Cada montaje combina 4 MP4 distintos de 32 vídeos con licencia.":
-              "Each montage combines 4 different MP4 clips from 32 licensed originals."}</p>
+              {locale==="ru"?`${FREE_FILM_PRESETS.length} готовых видеосюжетов`:locale==="es"?`${FREE_FILM_PRESETS.length} historias de vídeo`:`${FREE_FILM_PRESETS.length} ready-to-edit films`}</h3>
+            <p>{locale==="ru"?"Каждый монтаж — 4 разных MP4 из 44 лицензированных источников, подобранных по цели.":
+              locale==="es"?"Cuatro MP4 distintos de 44 fuentes autorizadas, seleccionados según tu objetivo.":
+              "Four distinct MP4 clips from 44 licensed sources, selected for your goal."}</p>
           </div>
           <button type="button" data-free-film-more disabled={recording||preparing}
             aria-expanded={showAllFreeFilms} onClick={()=>setShowAllFreeFilms(value=>!value)}>
             {showAllFreeFilms?(locale==="ru"?"По теме":locale==="es"?"Por tema":"By topic"):
-              (locale==="ru"?"Все 24":locale==="es"?"Ver 24":"All 24")}
+              (locale==="ru"?`Все ${FREE_FILM_PRESETS.length}`:locale==="es"?`Ver ${FREE_FILM_PRESETS.length}`:`All ${FREE_FILM_PRESETS.length}`)}
             <ArrowRight size={16} aria-hidden="true"/>
           </button>
         </div>
@@ -3449,7 +3490,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {freeFilmOptions.map(preset=>{
             const clipTheme=FREE_FILM_CLIP_THEMES[preset.clips[0]];
             const poster=firstPartyFilmFor(clipTheme,preset.clips[0])?.poster;
+            const clipSummary=preset.clips.map(id=>FREE_FILM_CATALOG_BY_ID.get(id)?.description[locale]||freeFilmClipLabel(id)).join("; ");
             return <button key={preset.id} type="button" data-free-film-preset={preset.id}
+              title={clipSummary} aria-label={`${preset.label[locale]}: ${clipSummary}`}
               aria-pressed={usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id}
               disabled={recording||preparing} className={videoStyles.templateTile}
               onClick={()=>{

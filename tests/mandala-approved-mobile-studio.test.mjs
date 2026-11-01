@@ -156,7 +156,7 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
 });
 
 
-test("twenty-four unique first-party four-shot free compilations use verified stock masters, not paid AI",()=>{
+test("forty-eight unique first-party four-shot compilations use verified licensed stock, not paid AI",()=>{
   const src=read("components/mandala-free-video-studio.tsx");
   const money=read("lib/mandala/real-money-film-library.ts");
   const themed=read("lib/mandala/film-collection-v2.ts");
@@ -164,8 +164,14 @@ test("twenty-four unique first-party four-shot free compilations use verified st
   assert.ok(start>0,"catalog belongs in the existing approved video editor");
   const arrayStart=src.indexOf("= [",start)+2;
   const arrayEnd=src.indexOf("] as const;",arrayStart)+1;
-  const catalogue=JSON.parse(src.slice(arrayStart,arrayEnd));
-  assert.equal(catalogue.length,24);
+  const inline=src.slice(arrayStart,arrayEnd);
+  const originalCatalogue=JSON.parse(inline.replace(/,\s*\.\.\.\(extraFreeFilmPresets\.presets as FreeFilmPreset\[\]\)(?=\s*\]$)/,""));
+  const newCatalogue=JSON.parse(read("data/video-catalog/free-film-presets-v2.json")).presets;
+  const extraMedia=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
+  assert.equal(originalCatalogue.length,24);
+  assert.equal(newCatalogue.length,24);
+  const catalogue=[...originalCatalogue,...newCatalogue];
+  assert.equal(catalogue.length,48);
   const groups=new Map();
   const ids=new Set();
   const originalClips=new Set();
@@ -177,13 +183,13 @@ test("twenty-four unique first-party four-shot free compilations use verified st
     for(const locale of ["ru","en","es"])assert.ok(film.label[locale]?.trim());
     groups.set(film.theme,(groups.get(film.theme)||0)+1);
     for(const clip of film.clips){
-      assert.ok(money.includes('"'+clip+'"') || money.includes(clip+': {src:ROOT+"'+clip+'.mp4"') || themed.includes('film("'+clip+'")'),
+      assert.ok(money.includes('"'+clip+'"') || money.includes(clip+': {src:ROOT+"'+clip+'.mp4"') || themed.includes('film("'+clip+'")') || extraMedia.some(media=>media.id===clip&&media.status==="approved"),
         "every storyboard clip exists as a pre-encoded first-party MP4: "+clip);
       originalClips.add(clip);
     }
   }
   for(const category of ["money","energy","life","health","relationships","goals"])
-    assert.equal(groups.get(category),4,category);
+    assert.equal(groups.get(category),8,category);
   assert.ok(originalClips.size>=24,"montages must vary across many actual videos");
   assert.match(src,/data-free-film-compilation-catalog/);
   assert.match(src,/data-free-film-original-masters/);
@@ -191,8 +197,8 @@ test("twenty-four unique first-party four-shot free compilations use verified st
   assert.match(src,/if\(storyboard\?\.version===FREE_FILM_PLAN_VERSION\)/);
   assert.match(src,/selected\.theme,selected\.sceneId as LocalSceneId,speed,brightness,stockShotVideo\)/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/durationSeconds===10\?20:durationSeconds/);
-  assert.match(src,/startSeconds:start,durationSeconds:shotLength/);
+  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/);
+  assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/);
   assert.match(src,/providerPrompt:""/);
   assert.match(src,/new MediaRecorder\(stream/);
   assert.doesNotMatch(src.slice(start,src.indexOf("const effects:",start)),
