@@ -8,7 +8,7 @@ import styles from './messages-contact-card.module.css'
 import {mediaFromMessages,mergeMediaPages} from '@/lib/app/messenger-private-media.mjs'
 
 const COPY={
- en:{title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
+ en:{reference:'Reference',service:'Service',page:'Source page',unverified:'Visitor-submitted contact is unverified and for replying to this enquiry only.',title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
    status:'Status',source:'Channel',date:'Received',photos:'Conversation attachments',
    hint:'Private photos and recordings are linked to this conversation; nothing is copied into a different client profile.',
    none:'No attachments in the loaded history.',loading:'Opening private client details…',
@@ -18,7 +18,7 @@ const COPY={
    empty:'No other verified details yet.',privacy:'CRM contacts, private client records and master profiles are linked only after identity verification.',
    video:'Videos from the private client case are available through its protected case link, not from this messenger archive.',
    photo:'Photo',audio:'Audio',movie:'Video'},
- ru:{title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
+ ru:{reference:'Номер заявки',service:'Услуга',page:'Страница заявки',unverified:'Контакт посетителя не подтверждён. Используйте его только для ответа на эту заявку.',title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
    status:'Статус',source:'Канал',date:'Получена',photos:'Материалы переписки',
    hint:'Приватные фотографии и записи привязаны к диалогу. В другой профиль клиента ничего не копируется.',
    none:'В загруженной истории вложений нет.',loading:'Открываю защищённую карточку…',
@@ -28,7 +28,7 @@ const COPY={
    empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные клиентские записи и профили мастеров связываются только после проверки личности.',
    video:'Видео из личного дела доступны через защищённую заявку, а не через общий архив мессенджера.',
    photo:'Фото',audio:'Аудио',movie:'Видео'},
- es:{title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
+ es:{reference:'Referencia',service:'Servicio',page:'Página de origen',unverified:'Contacto no verificado. Úsalo solo para responder a esta solicitud.',title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
    status:'Estado',source:'Canal',date:'Recibida',photos:'Adjuntos de la conversación',
    hint:'Fotos y grabaciones privadas pertenecen a esta conversación y no se copian a otras fichas.',
    none:'No hay adjuntos en el historial cargado.',loading:'Abriendo ficha privada…',
@@ -128,8 +128,10 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
    }finally{if(olderRef.current===abort)olderRef.current=null}
  }
  const kind=item?.kind
- const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:kind==='business'?item.item:null
+ const contact=kind==='crm'?view.contact:kind==='request'?
+   (item.item?.requestKind==='public'?item.item?.replyContact:item.item?.contact):kind==='business'?item.item:null
  const email=field(contact,'email'),phone=field(contact,'phone'),status=field(contact,'lifecycle','status')||field(item?.item,'status')
+ const publicRequest=kind==='request'&&item.item?.requestKind==='public'
  const masterSlug=kind==='direct'&&validSlug(item.peerMasterSlug)?item.peerMasterSlug:''
  const date=displayDate(item.at||item.item?.createdAt,lang)
  return <section className={styles.card} aria-label={t.title} data-messages-client-card data-kind={kind}>
@@ -148,7 +150,11 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
        {status&&<div><dt>{t.status}</dt><dd>{status}</dd></div>}
        {item.source&&<div><dt>{t.source}</dt><dd>{item.source}</dd></div>}
        {date&&<div><dt>{t.date}</dt><dd>{date}</dd></div>}
+       {publicRequest&&item.item?.referenceCode&&<div><dt>{t.reference}</dt><dd>{item.item.referenceCode}</dd></div>}
+       {publicRequest&&item.item?.serviceTitle&&<div><dt>{t.service}</dt><dd>{item.item.serviceTitle}</dd></div>}
+       {publicRequest&&item.item?.sourcePath&&<div><dt>{t.page}</dt><dd>{item.item.sourcePath}</dd></div>}
      </dl>
+     {publicRequest&&<p className={styles.muted}>{t.unverified}</p>}
      {!email&&!phone&&!status&&!view.loading&&!view.error&&<p className={styles.muted}>{t.empty}</p>}
    </section>
    {masterSlug&&<section className={styles.section}><h3>{t.master}</h3>
