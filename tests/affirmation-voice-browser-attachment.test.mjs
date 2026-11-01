@@ -40,3 +40,13 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
   ])assert.ok(source.includes(assertion),assertion);
 });
 
+test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/macOS",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  assert.match(source,/HH_VOICE_E2E_ENGINE/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE=chromium node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(workflow,/voice-webkit-macos:/);
+  assert.match(workflow,/runs-on: macos-15/);
+  assert.match(workflow,/HH_VOICE_E2E_ENGINE: webkit/);
+  assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.doesNotMatch(workflow,/voice-webkit-macos:[\s\S]*continue-on-error:\s*true/);
+});

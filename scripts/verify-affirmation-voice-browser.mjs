@@ -16,7 +16,13 @@ function wav(seconds=3) {
   for(let i=0;i<n;i++)b.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*280/rate)*8000),44+i*2);
   return b;
 }
-for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
+// Linux WebKit often lacks Canvas capture codecs. Run the very same real
+// encoded video+audio acceptance on macOS WebKit and Linux Chromium.
+// The default still exercises BOTH engines for developer/manual runs.
+const requestedEngine=process.env.HH_VOICE_E2E_ENGINE||"both";
+assert.ok(["both","webkit","chromium"].includes(requestedEngine),"unknown test browser");
+for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
+  .filter(([name])=>requestedEngine==="both"||name===requestedEngine)) {
   const browser=await browserType.launch({headless:true});
   try {
     const locale=engine==="webkit"?"ru":"en";

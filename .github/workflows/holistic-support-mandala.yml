@@ -87,6 +87,7 @@ on:
       - 'tests/mandala-stories-characters.test.mjs'
       - 'tests/mandala-free-scene-taxonomy.test.mjs'
       - 'tests/free-film-timeline.test.mjs'
+      - 'tests/adaptive-free-film-timeline.test.mjs'
       - 'tests/cinematic-creative-brief.test.mjs'
       - 'tests/cinematic-kling-handoff.test.mjs'
       - 'lib/mandala/cinematic-kling-handoff.mjs'
@@ -133,7 +134,7 @@ jobs:
       - name: Generate original first-party melody masters
         run: node scripts/generate-mandala-melodies.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs
+        run: node --test tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs
       - name: Voice provider contract and negative cases
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs
       - name: Stories and Characters exact source acceptance
@@ -188,7 +189,9 @@ jobs:
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
-          node scripts/verify-affirmation-voice-browser.mjs
+          # Linux Chromium supports the local recorder; WebKit runs in a
+          # separate macOS job with real Safari-platform media codecs.
+          HH_VOICE_E2E_ENGINE=chromium node scripts/verify-affirmation-voice-browser.mjs
           node scripts/verify-hypno-wave-browser.mjs
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
@@ -214,3 +217,50 @@ jobs:
           path: artifacts/hypno-compact/*.png
           if-no-files-found: ignore
           retention-days: 3
+
+  # Linux Playwright WebKit does not implement Canvas captureStream in this
+  # runner image. Prove the *actual encoded* voice/video via WebKit on macOS,
+  # the closest supported CI platform to iPhone Safari. Never mock a download.
+  voice-webkit-macos:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-')) }}
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+      HH_VOICE_E2E_ENGINE: webkit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and build exact voice release candidate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Install WebKit and real media decoders
+        run: |
+          mkdir -p "$RUNNER_TEMP/voice-playwright"
+          npm install --prefix "$RUNNER_TEMP/voice-playwright" --no-audit --no-fund @playwright/test@1.63.0
+          ln -s "$RUNNER_TEMP/voice-playwright/node_modules/@playwright" node_modules/@playwright
+          "$RUNNER_TEMP/voice-playwright/node_modules/.bin/playwright" install webkit
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            brew install ffmpeg
+          fi
+      - name: WebKit recorded movie contains video and audible consented voice
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-voice-macos-next.log 2>&1 & NEXT_PID=$!
+          trap 'kill "$NEXT_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for ((i=1; i<=60; i++)); do
+            if curl --silent --fail http://127.0.0.1:3100/ru/holistic-support/mandala >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
+          node scripts/verify-affirmation-voice-browser.mjs
