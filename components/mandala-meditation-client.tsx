@@ -196,6 +196,10 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const closeButton = useRef<HTMLButtonElement | null>(null);
+  // Let the native button click represent one activation for mouse, touch,
+  // keyboard and assistive technology. Toggling on pointerup can re-layout the
+  // WebKit target *before* the following click, causing a second transition.
+  function toggleFocusMode() { setFocusMode(value => !value); }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
 
@@ -299,11 +303,11 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
-        <Link href={"/" + locale + "/holistic-support#meditation-practices"} className={styles.back} prefetch={false}>
+        <Link href={"/" + locale + "/holistic-support/mobile?view=meditation#support-mobile-experience"} className={styles.back} prefetch={false}>
           <ArrowLeft size={17} aria-hidden="true" /> {t.back}
         </Link>
         <button className={styles.focusButton} type="button" ref={closeButton}
-          aria-pressed={focusMode} onClick={() => setFocusMode(value => !value)}>
+          aria-pressed={focusMode} onClick={toggleFocusMode}>
           {focusMode ? <Minimize2 size={18} aria-hidden="true" /> : <Expand size={18} aria-hidden="true" />}
           {focusMode ? t.leave : t.focus}
         </button>

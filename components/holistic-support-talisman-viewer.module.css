@@ -444,3 +444,30 @@
   .starFilters { gap:3px 10px; padding:4px 9px 7px; }
   .starReview { padding:4px 10px; }
 }
+
+/* The parent mobile page applies ".page button { font: inherit; }", which
+   has higher specificity than the standalone .categoryCard rule. Explicitly
+   restore the readable 11–13px category type at phone widths instead of
+   hiding clipped Russian "Деньги"/"Любовь" labels in the four-up rail. */
+@media (max-width: 640px) {
+  .categorySection .categoryCard {
+    font-size: clamp(11px, 2.85vw, 13px);
+    font-weight: 750;
+    line-height: 1.18;
+  }
+}
+
+/* Mobile talisman finder: no rating rows, closer artwork and catalogue, 44px filters. */
+@media(max-width:640px) {
+  .categorySection { padding:5px 9px 2px; }
+  .categoryHeader { margin-bottom:3px; }
+  .categoryRail { padding-bottom:2px; }
+  .categoryFrame:not([data-expanded="true"]) .categoryRail { height:64px;min-height:0; }
+  .categoryFrame:not([data-expanded="true"]) .categoryCard {
+    height:56px;min-height:0;max-height:56px;padding:4px 2px;gap:2px;
+  }
+  .categoryCard svg { width:19px;height:19px; }
+  .categoryFrame[data-expanded="true"] .categoryCard { min-height:56px; }
+  .filtersStrip { padding:3px 8px 6px; }
+  .filterChip { min-height:44px; }
+}

@@ -59,7 +59,7 @@ test('owner projection excludes storage key, personal email, credentials and aut
 })
 
 test('private migration enforces non-public storage and owner/moderator RLS',()=>{
-  const sql=file('supabase/migrations/20261028170000_hh_practitioner_meditation_studio.sql')
+  const sql=file('supabase/migrations/20261028143326_hh_practitioner_meditation_studio_20261028.sql')
   assert.match(sql,/hh-practitioner-meditation-drafts/)
   assert.match(sql,/false,45000000/)
   assert.match(sql,/force row level security/i)

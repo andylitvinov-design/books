@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { isPublicLocale } from "@/data/academy/catalog";
@@ -48,10 +51,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MandalaMeditationPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  const promo = {
+    en: { label: "PERSONAL DIAGNOSTIC · FREE", action: "Get a review" },
+    ru: { label: "ЛИЧНАЯ ДИАГНОСТИКА · БЕСПЛАТНО", action: "Получить разбор" },
+    es: { label: "DIAGNÓSTICO PERSONAL · GRATIS", action: "Solicitar análisis" },
+  }[locale];
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
-      <PublicSiteHeader locale={locale} />
+      <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
+
       <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)} />
+      <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
+        <Sparkles size={17} aria-hidden="true" />
+        <strong>{promo.label}</strong>
+        <Link href={"/"+locale+"/services/free-situation-review"} prefetch={false}>
+          {promo.action}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </aside>
+      <HolisticSupportMandalaDock locale={locale} />
     </main>
   );
 }

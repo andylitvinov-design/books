@@ -45,6 +45,13 @@ export async function GET(request) {
                 '@/lib/practitioners/owner-telegram-video-service')
               await reconcilePendingOwnerYoutubeVideo(config)
             }catch{console.error('HH_OWNER_YOUTUBE_READBACK_RECONCILE_FAILED')}
+            // Up to three owner-approved cabinet videos with provider IDs.
+            // Never attempt another upload or inspect unconsented material.
+            try{
+              const {reconcileOwnerYoutubePublications}=await import(
+                '@/lib/youtube/owner-publication-service')
+              await reconcileOwnerYoutubePublications(config)
+            }catch{console.error('HH_OWNER_PUBLICATIONS_RECONCILE_FAILED')}
           }
           return result
         } catch (error) {

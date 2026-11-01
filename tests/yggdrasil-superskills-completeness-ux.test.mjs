@@ -62,10 +62,15 @@ test("nineteen original source URLs stay documented, not promoted as separate le
 });
 
 test("free Level 1 is first-party and keeps seven questions, video and teacher contact", () => {
-  const blocks = [...free.matchAll(/    questions: \[([\s\S]*?)\n    \],\n    statement:/g)];
-  assert.equal(blocks.length, 3);
-  for (const [i, block] of blocks.entries()) {
-    assert.equal(block[1].split("\n").filter((line) => /^\s*"/.test(line)).length, 7, "locale " + i);
+  const questions = read("data/academy/yggdrasil-preparation-questions.ts");
+  assert.match(free, /import \{ yggdrasilPreparationQuestions \}/);
+  for (const locale of ["en", "ru", "es"]) {
+    assert.ok(free.includes("questions: [...yggdrasilPreparationQuestions." + locale + "]"));
+    const block = new RegExp("  " + locale + ": \\[\\n([\\s\\S]*?)\\n  \\],").exec(questions);
+    assert.ok(block, "canonical questions missing for " + locale);
+    const values = JSON.parse("[" + block[1].trim().replace(/,$/, "") + "]");
+    assert.equal(values.length, 7, "locale " + locale);
+    assert.ok(values.every(value => typeof value === "string" && value.trim().length > 0));
   }
   assert.match(free, /const originalLevelOneVideoId = "DYo-fG-SyKw"/);
   assert.match(free, /AcademyVideoPlayer youtubeId=\{originalLevelOneVideoId\}/);

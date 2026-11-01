@@ -6,7 +6,7 @@ import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/li
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings, type StarSummary } from "@/components/catalog-star-rating";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
-import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { getPublicServiceDetailHref, getPublicServiceReviewHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -554,6 +554,7 @@ function ServiceCard({
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
+  const reviewHref = getPublicServiceReviewHref(locale, service.practitionerSlug, service.slug);
   const requestHref = service.slug === "remote-energy-support"
     ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
     : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
@@ -623,7 +624,7 @@ function ServiceCard({
       <div className={styles.actions}>
         <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
         {!profileView && (
-          <Link className={styles.secondary} href={detailsHref + "#reviews"}>
+          <Link className={styles.secondary} href={reviewHref}>
             {locale === "ru" ? "Оставить отзыв" : locale === "es" ? "Dejar opinión" : "Leave a review"} ★
           </Link>
         )}
@@ -633,7 +634,7 @@ function ServiceCard({
           {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
         {profileView && (
-          <Link className={styles.profileReviewLink} href={detailsHref + "#reviews"}>
+          <Link className={styles.profileReviewLink} href={reviewHref}>
             ★ {locale === "ru" ? "Оставить отзыв мастеру" : locale === "es" ?
               "Dejar una opinión al profesional" : "Leave a review for this practitioner"} →
           </Link>

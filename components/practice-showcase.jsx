@@ -39,6 +39,8 @@ const COPY = {
     countUnknown:'—', defaultName:'Ваш профиль', emptyName:'Заполните профиль',
     loading:'Проверяем вход…', moderation:'Новые материалы остаются черновиками до проверки и публикации.',
     example:'Пример оформления', editTitle:'Мой профиль', next:'Открыть',
+    readyTitle:'Вы вошли в Практику',readyLead:'Главная страница и меню остаются такими же. Можно продолжить выбранное действие.',
+    resume:'Продолжить',dismissResume:'Остаться на главной',
   },
   en: {
     title:'Practitioner workspace', subtitle:'Manage your practices and offerings',
@@ -67,6 +69,8 @@ const COPY = {
     countUnknown:'—', defaultName:'Your profile', emptyName:'Complete your profile',
     loading:'Checking sign-in…', moderation:'New materials remain drafts until approved for publication.',
     example:'Layout preview', editTitle:'My profile', next:'Open',
+    readyTitle:'Welcome back to Practice',readyLead:'Your home screen and menu stay the same. Continue when you are ready.',
+    resume:'Continue',dismissResume:'Stay on home',
   },
   es: {
     title:'Espacio profesional', subtitle:'Gestiona tus prácticas y servicios',
@@ -95,6 +99,8 @@ const COPY = {
     countUnknown:'—', defaultName:'Tu perfil', emptyName:'Completa tu perfil',
     loading:'Comprobando sesión…', moderation:'Los nuevos materiales quedan como borradores hasta su aprobación.',
     example:'Vista de ejemplo', editTitle:'Mi perfil', next:'Abrir',
+    readyTitle:'Has entrado en Práctica',readyLead:'Tu pantalla principal y menú permanecen iguales. Continúa cuando quieras.',
+    resume:'Continuar',dismissResume:'Seguir en inicio',
   },
 }
 
@@ -140,14 +146,20 @@ function destination(locale, key) {
   const appLocale = locale === 'es' ? 'en' : locale
   const root = '/' + appLocale + '/app/practice'
   const routes = {
-    home:'/' + appLocale + '/app/portrait',
+    // The Home tab is the public homepage, never the old personal login gate.
+    home:'/' + locale,
     // The highlighted tab retains the same signed-in preview; editors live in their own tools.
     practice:'/' + locale + '/practice',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
+    intro:root + '?panel=services&create=1&starter=intro',
+    workshop:root + '?panel=services&create=1&starter=workshop',
+    diagnostic:root + '?panel=services&create=1&starter=diagnostic',
+    energy:root + '?panel=services&create=1&starter=energy',
+    personal:root + '?panel=services&create=1&starter=personal',
     meditation:root + '?panel=meditations&meditation=audio',
     talisman:root + '?panel=services&create=1&starter=energy',
-    reiki:root + '?panel=services&create=1&starter=energy',
+    reiki:root + '?panel=services&create=1&starter=reiki',
     course:root + '?panel=materials&materialTab=courses&create=1',
     material:root + '?panel=materials&materialTab=articles',
     session:root + '?panel=services',
@@ -158,7 +170,7 @@ function destination(locale, key) {
     masters:'/' + appLocale + '/masters',
     clients:root + '?panel=clients',
     requests:root + '?panel=requests',
-    messages:'/' + appLocale + '/app/messages',
+    messages:'/' + appLocale + '/app/messages?section=clients&tab=chats',
     services:root + '?panel=services',
     materials:root + '?panel=materials',
     analytics:root + '?panel=analytics',
@@ -166,6 +178,19 @@ function destination(locale, key) {
     community:'/' + appLocale + '/masters',
   }
   return routes[key] || root
+}
+
+const RESUMABLE_ACTIONS = new Set([
+  'create','service','intro','workshop','diagnostic','energy','personal','session','meditation',
+  'talisman','reiki','course','material','meditationList','talismanList',
+  'reikiList','courseList','clients','requests','messages','services',
+  'materials','analytics','profile',
+])
+const PRO_STARTS = new Set(['diagnostic','energy','personal','meditation','profile'])
+const ACTION_NAMES = {
+  en:{intro:'Introduction',workshop:'Workshop',diagnostic:'Personal diagnostics',energy:'Energy support',personal:'Personal session',meditation:'Meditation',reiki:'Reiki support'},
+  ru:{intro:'Вводная встреча',workshop:'Семинар',diagnostic:'Диагностика',energy:'Энергетическая поддержка',personal:'Личная сессия',meditation:'Медитация',reiki:'Рейки'},
+  es:{intro:'Introducción',workshop:'Taller',diagnostic:'Diagnóstico personal',energy:'Apoyo energético',personal:'Sesión personal',meditation:'Meditación',reiki:'Reiki'},
 }
 
 function countRequests(list) {
@@ -181,6 +206,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
   const [pendingAction, setPendingAction] = useState('')
+  const [nextAction, setNextAction] = useState('')
   const signedIn = session === 'signed'
 
   const checkSession = useCallback(async (signal) => {
@@ -208,40 +234,90 @@ export default function PracticeShowcase({ locale = 'en' }) {
     const controller = new AbortController()
     void checkSession(controller.signal)
     const params = new URLSearchParams(window.location.search)
+    const start = params.get('start')
+    if (PRO_STARTS.has(start)) setPendingAction(start)
+    // Remove legacy OAuth ?ready=<action> links before rendering the
+    // authenticated dashboard. They must never shift the approved hero.
+    // Explicit Pro ?start=... intent remains available independently.
+    if (params.has('ready')) {
+      const cleanUrl = new URL(window.location.href)
+      cleanUrl.searchParams.delete('ready')
+      window.history.replaceState(window.history.state, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash)
+    }
     if (params.get('auth') === 'cancelled' || params.get('auth') === 'failed')
       setNotice(t.authCancelled)
     return () => controller.abort()
   }, [checkSession, t.authCancelled])
 
+  // The Google callback and Pro deep links must leave this same dashboard
+  // on screen. An explicit Continue click (never an effect) opens an editor.
+  useEffect(() => {
+    if (!signedIn) return
+    const start = new URLSearchParams(window.location.search).get('start')
+    if (!PRO_STARTS.has(start)) return
+    setPendingAction('')
+    setNextAction(start)
+  }, [signedIn])
+
+  function continueAction() {
+    if (!signedIn || !RESUMABLE_ACTIONS.has(nextAction)) return
+    router.push(destination(locale, nextAction))
+  }
+  function dismissContinue() {
+    setNextAction('')
+    const url = new URL(window.location.href)
+    url.searchParams.delete('ready')
+    url.searchParams.delete('start')
+    window.history.replaceState(window.history.state, '', url.pathname+url.search+url.hash)
+  }
+
   function openAction(key) {
     if (busy) return
+    // This selected tab is already the new practitioner page. It must never
+    // request Google sign-in or send a visitor to the legacy Account landing.
+    if (key === 'practice') {
+      setPendingAction('')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    // Public exploration and the approved showcase never demand a Google session.
+    if (['home','masters','community'].includes(key)) {
+      router.push(destination(locale, key))
+      return
+    }
     if (signedIn) {
       router.push(destination(locale, key))
       return
     }
-    // An action first offers Google sign-in; merely browsing is always free.
+    // Actual edit/actions prompt Google, then open the existing protected tool.
     setNotice('')
     setPendingAction(key)
   }
 
   async function confirmSignIn() {
     if (busy) return
-    const key = pendingAction || 'practice'
-    const target = destination(locale, key)
+    const key = pendingAction || 'profile'
     setBusy(key)
     setNotice('')
     try {
       if (session === 'checking') {
         try {
           await appFetch('bootstrap')
+          setSession('signed')
           setPendingAction('')
-          router.push(target)
+          void checkSession()
+          // The user has already tapped a protected action. If the session
+          // was merely still checking, honour that explicit click directly.
+          router.push(destination(locale, key))
           return
         } catch (error) {
           if (error?.status !== 401) throw error
         }
       }
-      // Allowlisted continuation: the callback returns to this same public UI.
+      // Google always returns to the unchanged dashboard. Do not pass the
+      // pending action in profi: that generated ?ready=create and a large
+      // unexpected Continue card above the six creation tiles on iPhone.
+      // Once signed in, the person chooses the action on the same screen.
       const result = await appFetch('auth/start', { locale, continueTo:'practice-preview' })
       if (!result?.redirectUrl || !result.redirectUrl.startsWith('https://'))
         throw new Error('INVALID_OAUTH_REDIRECT')
@@ -267,10 +343,14 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const active = services.filter(item => item.status === 'published').length
   const newRequests = countRequests(requests)
   const initials = name ? name.slice(0, 1).toUpperCase() : ''
+  const photoPath = practitioner?.profile?.photoPath || practitioner?.draftProfile?.photoPath
+  const profilePhoto = typeof photoPath === 'string' &&
+    (photoPath.startsWith('https://') || (photoPath.startsWith('/') && !photoPath.startsWith('//')))
+    ? photoPath : ''
   const metric = signedIn && practice ? String(active) : t.countUnknown
   const requestMetric = signedIn && practice ? String(newRequests) : t.countUnknown
 
-  return <div className={styles.screen} data-practice-showcase data-auth-state={session}>
+  return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
       <header className={styles.header}>
         <div>
@@ -284,7 +364,11 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>
-        <span className={styles.avatar} aria-hidden="true">{signedIn ? (initials || <UserRound size={42}/>) : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
+        <span className={styles.avatar} aria-hidden="true">{signedIn
+          ? (profilePhoto
+            ? <Image src={profilePhoto} alt="" width={68} height={68} unoptimized />
+            : (initials || <UserRound size={42}/>))
+          : <Image src="/images/holistic-house/support-reference-avatar.webp" alt="" width={68} height={68} />}</span>
         <div className={styles.identityCopy}>
           <strong>{signedIn ? (name || t.emptyName) : t.defaultName}</strong>
           <small>{t.practitioner}</small>
@@ -299,6 +383,21 @@ export default function PracticeShowcase({ locale = 'en' }) {
           </button>
         </div>
       </section>
+
+      {signedIn && RESUMABLE_ACTIONS.has(nextAction) && <section
+        className={styles.resumePanel} data-practice-after-google role="status">
+        <div className={styles.resumeCopy}>
+          <strong>{t.readyTitle}</strong>
+          <small>{t.readyLead}</small>
+        </div>
+        <button type="button" className={styles.resumeButton} onClick={continueAction}>
+          {t.resume}: {ACTION_NAMES[locale]?.[nextAction] || t[nextAction] || t.create}
+          <ArrowRight size={16} aria-hidden="true"/>
+        </button>
+        <button type="button" className={styles.resumeDismiss} onClick={dismissContinue}>
+          {t.dismissResume}
+        </button>
+      </section>}
 
       <div className={styles.quickGrid} aria-label={t.creations}>
         {CREATE.map(({ key, label, Icon, tint }) =>

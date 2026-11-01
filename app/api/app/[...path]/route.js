@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
+import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { videoProfileFocus } from '@/lib/mandala/video-affirmation-focus.mjs'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
 import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
@@ -78,6 +81,38 @@ import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
 import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
+// Only a button on the public practitioner showroom may request one of these
+// pre-existing protected destinations after Google OAuth. Never put client data,
+// a draft, a URL or an arbitrary return path into the OAuth continuation.
+const PRACTICE_PREVIEW_ACTIONS = Object.freeze({
+  create:'/app/practice?panel=services&create=1&starter=session',
+  service:'/app/practice?panel=services&create=1&starter=session',
+  intro:'/app/practice?panel=services&create=1&starter=intro',
+  workshop:'/app/practice?panel=services&create=1&starter=workshop',
+  diagnostic:'/app/practice?panel=services&create=1&starter=diagnostic',
+  energy:'/app/practice?panel=services&create=1&starter=energy',
+  personal:'/app/practice?panel=services&create=1&starter=personal',
+  session:'/app/practice?panel=services',
+  meditation:'/app/practice?panel=materials&materialTab=courses&create=1&meditation=audio',
+  talisman:'/app/practice?panel=services&create=1&starter=energy',
+  reiki:'/app/practice?panel=services&create=1&starter=reiki',
+  course:'/app/practice?panel=materials&materialTab=courses&create=1',
+  material:'/app/practice?panel=materials&materialTab=articles',
+  meditationList:'/app/practice?panel=materials&materialTab=courses',
+  talismanList:'/app/practice?panel=services',
+  reikiList:'/app/practice?panel=services',
+  courseList:'/app/practice?panel=materials&materialTab=courses',
+  clients:'/app/practice?panel=clients',
+  requests:'/app/practice?panel=requests',
+  messages:'/app/messages?section=clients&tab=chats',
+  services:'/app/practice?panel=services',
+  materials:'/app/practice?panel=materials',
+  analytics:'/app/practice?panel=analytics',
+  profile:'/app/practice?panel=profile',
+})
+const validPracticeContinuation=(continueTo,profi)=>
+  profi===null || (continueTo==='practice-preview' && Object.hasOwn(PRACTICE_PREVIEW_ACTIONS,profi)) ||
+  (continueTo==='my-practice' && ['session','intro','workshop','diagnostic','energy','personal','course','profile','requests'].includes(profi))
 export const runtime = 'nodejs'
 // The Cabinet Postgres and verified Supabase Auth run in ca-central-1.
 // Keep only this private API close to its data source (not the whole site).
@@ -143,8 +178,8 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang'])
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(body.continueTo) ? 'es' : 'en'
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug'])
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -154,13 +189,19 @@ async function handle(request, { params }) {
         returnPath = body.returnPath ?? null,
         profi = body.profi ?? null,
         coachingMode = body.coachingMode ?? null,
-        coachingLang = body.coachingLang ?? null
+        coachingLang = body.coachingLang ?? null,
+        recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
-        !['cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-practice','practice-preview','direct-messages','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (recipientSlug !== null) {
+        if (continueTo !== 'direct-messages') throw new AppError('INVALID_CONTINUATION',400)
+        try { directMessengerRecipient(recipientSlug) }
+        catch { throw new AppError('INVALID_RECIPIENT',400) }
+      }
+      if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -182,7 +223,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -192,7 +233,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -202,10 +243,17 @@ async function handle(request, { params }) {
         returnPath = url.searchParams.get('returnPath'),
         profi = url.searchParams.get('profi'),
         coachingMode = url.searchParams.get('coachingMode'),
-        coachingLang = url.searchParams.get('coachingLang')
+        coachingLang = url.searchParams.get('coachingLang'),
+        recipientSlug = url.searchParams.get('recipientSlug')
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (url.searchParams.getAll('recipientSlug').length>1) throw new AppError('INVALID_CONTINUATION',400)
+      if (recipientSlug !== null) {
+        if (continueTo !== 'direct-messages') throw new AppError('INVALID_CONTINUATION',400)
+        try { directMessengerRecipient(recipientSlug) }
+        catch { throw new AppError('INVALID_RECIPIENT',400) }
+      }
+      if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -213,7 +261,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -221,7 +269,7 @@ async function handle(request, { params }) {
       if (url.searchParams.get('native') === '1') {
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -238,6 +286,8 @@ async function handle(request, { params }) {
             ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
           : continueTo === 'enquiry'
             ? `${origin}${returnPath}?hh_enquiry=google`
+          : continueTo === 'direct-messages'
+            ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -249,11 +299,17 @@ async function handle(request, { params }) {
               : continueTo === 'coaching-intake'
                 ? `${origin}/${locale}/coaching/intake`
               : continueTo === 'practice-preview'
+                // Return to the identical canonical Practice dashboard for
+                // guest and signed-in users. Older action-code continuations
+                // stay allowlisted but never inject a layout-shifting banner.
+                // The user explicitly chooses a protected editor after login.
                 ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
-                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
+                  ? profi
+                    ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
+                    : `${origin}/${locale}/practice`
                 : continueTo === 'my-tests'
                   ? `${origin}/${locale}/app/tests`
                   : continueTo === 'my-courses'
@@ -275,9 +331,13 @@ async function handle(request, { params }) {
                         : continueTo === 'energywork'
                           ? `${origin}/${locale}/academy/principles-of-energywork/learn`
                         : `${origin}/${locale}/app`
+      // Failed Google login returns to the guest-visible approved design,
+      // not a private editor that can only show an old sign-in shell.
+      const failedPracticeDestination = continueTo === 'practice-preview'
+        ? `${origin}/${locale}/practice` : destination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
-          NextResponse.redirect((value => { const url = new URL(destination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -289,15 +349,20 @@ async function handle(request, { params }) {
       )
       if (error)
         return auth.apply(
-          NextResponse.redirect((value => { const url = new URL(destination); url.searchParams.set('auth', value); return url.href; })('failed'), {
+          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
         )
       const actor = await auth.verified()
-      await createAppRepository(config).ensureAccount(actor)
+      const account=await createAppRepository(config).ensureAccount(actor)
+      // On first Google sign-in, the client must finish explicit account
+      // consent before a private thread is created. Keep the chosen master's
+      // public slug through this existing Cabinet onboarding, never in storage.
+      const verifiedDestination=continueTo==='direct-messages'&&account.onboardingState!=='active'
+        ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
       return auth.apply(
-        NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
+        NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
@@ -718,6 +783,12 @@ async function handle(request, { params }) {
         return json(await saveCoachingIntake(config, actor, await readBody(request, 40000)))
       }
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'video-affirmation-focus' && method === 'GET') {
+      // Verifies Supabase identity and owner-scope before reading private results.
+      // No raw answers, scores or clinical notes are sent to the video editor.
+      const data = await repo.bootstrap(actor, { view: 'portrait' })
+      return json(videoProfileFocus(buildPsychPortrait(data.results)))
     }
     if (joined === 'bootstrap' && method === 'GET') {
       // A reduced initial payload is safe only after the normal verified session,

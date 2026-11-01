@@ -6,6 +6,13 @@ on:
       - 'vercel.json'
       - 'lib/practitioners/telegram-hub.mjs'
       - 'lib/practitioners/council-telegram-archive.mjs'
+      - 'lib/practitioners/market-intelligence-telegram-delivery.js'
+      - 'lib/practitioners/owner-telegram-report-hours.mjs'
+      - 'app/api/internal/market-intel-telegram/route.js'
+      - 'supabase/migrations/*owner_market_intel_telegram_receipt*.sql'
+      - 'tests/market-intelligence-telegram.test.mjs'
+      - 'tests/owner-telegram-daily-schedule.test.mjs'
+      - 'tests/app-housekeeping-cron.test.mjs'
       - 'lib/practitioners/chatgpt-telegram-report.mjs'
       - 'lib/practitioners/council-telegram-delivery.js'
       - 'lib/practitioners/council-one-shot-guard.mjs'
@@ -60,6 +67,9 @@ jobs:
           node --check app/api/internal/telegram-owner-discovery/route.js
           node --check lib/practitioners/telegram-hub.mjs
           node --check lib/practitioners/council-telegram-archive.mjs
+          node --check lib/practitioners/market-intelligence-telegram-delivery.js
+          node --check lib/practitioners/owner-telegram-report-hours.mjs
+          node --check app/api/internal/market-intel-telegram/route.js
           node --check lib/practitioners/chatgpt-telegram-report.mjs
           node --check lib/practitioners/council-telegram-delivery.js
           node --check lib/practitioners/council-one-shot-guard.mjs
@@ -67,4 +77,4 @@ jobs:
           node --check lib/practitioners/owner-ai-provider-settings.js
           node --check app/api/internal/telegram-hub/route.js
           node --check app/api/internal/council-archive-telegram/route.js
-          node --test tests/council-one-shot-guard.test.mjs tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-chatgpt-daily-telegram.test.mjs tests/practitioner-noon-two-documents.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+          node --test tests/council-one-shot-guard.test.mjs tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-chatgpt-daily-telegram.test.mjs tests/practitioner-noon-two-documents.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs tests/owner-telegram-daily-schedule.test.mjs tests/market-intelligence-telegram.test.mjs

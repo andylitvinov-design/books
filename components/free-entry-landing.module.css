@@ -480,3 +480,11 @@
 @media(prefers-reduced-motion:reduce){
   .reviewIntro *, .reviewSocialProof * {scroll-behavior:auto}
 }
+
+/* Keep the SEO /tests introduction readable at phone widths without
+   modifying the video-first situation or Dao flow. */
+@media(max-width:600px){
+  .page[data-free-entry-landing="tests"] .hero .lead{font-size:16px;line-height:1.45}
+}
+.testReviewLink{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;color:#24584b;font-size:14px;line-height:1.4;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.testReviewLink:hover{text-decoration-thickness:2px}

@@ -7,6 +7,8 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import facetsData from "@/data/academy/meditation-filter-facets-20261028.json";
 import { coreServiceOffers } from "@/data/core-service-offers";
+import { PROFILE_RESEARCH_AXES } from "@/lib/profile/profile-scale-selection";
+import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { rankClientServices } from "@/lib/holistic-support/client-intent-model.mjs";
 import { rankMeditationCatalog } from "@/lib/holistic-support/meditation-catalog-ranker.mjs";
 import type {
@@ -37,6 +39,7 @@ const copy = {
     title: "Choose a meditation for your situation",
     intro: "Select your goal and preferences. Matching happens on this device only.",
     goals: { money: "Money", energy: "Energy", relationships: "Relationships", goals: "Goals", meaning: "Meaning" },
+    axisSearch: "Explore by profile axis (optional)", axisNone: "All profile axes",
     situation: "What's happening right now?",
     outcome: "How would you like to feel?",
     technique: "Preferred practice",
@@ -82,6 +85,7 @@ const copy = {
     title: "Подобрать медитацию под ваш запрос",
     intro: "Выберите цель и предпочтения. Подбор выполняется только в вашем браузере.",
     goals: { money: "Деньги", energy: "Энергия", relationships: "Отношения", goals: "Цели", meaning: "Смыслы" },
+    axisSearch: "Ось профиля для подбора (необязательно)", axisNone: "Все оси профиля",
     situation: "Что происходит сейчас?",
     outcome: "Какое состояние хочется?",
     technique: "Предпочитаемая практика",
@@ -127,6 +131,7 @@ const copy = {
     title: "Encuentra una meditación para tu situación",
     intro: "Elige una meta y preferencias. La selección ocurre solo en tu navegador.",
     goals: { money: "Dinero", energy: "Energía", relationships: "Relaciones", goals: "Metas", meaning: "Sentido" },
+    axisSearch: "Eje del perfil (opcional)", axisNone: "Todos los ejes",
     situation: "¿Qué ocurre ahora?",
     outcome: "¿Cómo quieres sentirte?",
     technique: "Tipo de práctica",
@@ -174,6 +179,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
   const [minimumStars,setMinimumStars] = useState(0);
   const [sortRated,setSortRated] = useState(false);
   const [goal, setGoal] = useState<Goal>("energy");
+  const [axisFocus,setAxisFocus] = useState("");
   const [language, setLanguage] = useState<VideoLanguage>(locale);
   const [situations, setSituations] = useState<string[]>([]);
   const [states, setStates] = useState<string[]>([]);
@@ -197,7 +203,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     setApplied(null);
   }
   function reset() {
-    setGoal("energy"); setLanguage(locale); setSituations([]); setStates([]); setTechniques([]);
+    setGoal("energy"); setAxisFocus(""); setLanguage(locale); setSituations([]); setStates([]); setTechniques([]);
     setSourceKind("all"); setMaxDurationMinutes(0); setTimeOfDay("any"); setSpiritualStyle("any");
     setExperienceLevel("any"); setIntensity("any"); setPosture("any"); setMusicStyle("any");
     setExactOnly(false); setIncludeApprox(false); setFreeServicesOnly(false);
@@ -207,6 +213,7 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
     event.preventDefault();
     setApplied({
       goal, language, situations, desiredStates: states, techniques, sourceKind,
+      axisRefs:axisFocus ? [axisFocus] : [],
       maxDurationMinutes: maxDurationMinutes || undefined,
       // An unverified "10 min" title is NOT a confirmed runtime.
       allowUnverifiedDuration: includeApprox,
@@ -252,6 +259,19 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
             </button>
           ))}
         </div>
+        <label className={styles.axisSelector}>
+          {t.axisSearch}
+          <select data-meditation-profile-axis value={axisFocus}
+            onChange={event => {setAxisFocus(event.target.value);setApplied(null);}}>
+            <option value="">{t.axisNone}</option>
+            {Object.entries(PROFILE_RESEARCH_AXES).map(([topic, axes]) =>
+              <optgroup key={topic} label={topic}>
+                {axes.map(axis => <option key={topic+"::"+axis.id} value={topic+"::"+axis.id}>
+                  {axis.label[locale] || axis.label.en}
+                </option>)}
+              </optgroup>)}
+          </select>
+        </label>
         <div className={styles.facets}>
           {(["situation", "outcome", "technique"] as FilterKind[]).map(kind => {
             const values = kind === "situation" ? situations : kind === "outcome" ? states : techniques;
@@ -398,7 +418,8 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
                     {active.reasons.length
                       ? active.reasons.slice(0,4).map(({facet:reasonFacet,value},index) =>
                         <li key={reasonFacet+value+index}><Check size={12} aria-hidden="true"/>
-                          {reasonFacet === "goal" ? t.goals[value as Goal] : selectedInfo(reasonFacet as FilterKind,value)}
+                          {reasonFacet === "axis" ? (AXIS_REFS[value]?.label[locale] || value) :
+                            reasonFacet === "goal" ? t.goals[value as Goal] : selectedInfo(reasonFacet as FilterKind,value)}
                         </li>)
                       : <li>{t.noReasons}</li>}
                   </ul>
@@ -435,12 +456,14 @@ export function HolisticMeditationFinder({ locale, videos, publishedSourceIds, o
           </div>
           {services.length ? (
             <div className={styles.serviceCards}>
-              {services.map(({offer,free,matchType}) => (
+              {services.map(({offer,free,matchType,reasons}) => (
                 <article className={styles.serviceCard} key={offer.id} data-request-service-id={offer.id}>
                   <span className={styles.serviceTag}>{free ? t.servicesFree : t.servicesPaid}</span>
                   <h5>{offer.title}</h5>
                   <p>{offer.promise}</p>
                   <small>{t.matchLabels[matchType]}</small>
+                  {reasons?.filter(item => item.facet === "axis").map(item =>
+                    <small key={item.value}>{AXIS_REFS[item.value]?.label[locale] || item.value}</small>)}
                   <a href={offer.href} className={styles.serviceLink}>
                     {t.servicesAction}<ArrowRight size={14} aria-hidden="true"/>
                   </a>

@@ -20,7 +20,7 @@ const run = async (locale, width) => {
   const page = await ctx.newPage();
   page.setDefaultTimeout(20000);
   let signedIn = false, priced = false;
-  const captured = { enquiries:[], checkouts:[], authStarts:[], unexpected:[], external:[] };
+  const captured = { enquiries:[], checkouts:[], authStarts:[], ratingReads:[], unexpected:[], external:[] };
   const pageErrors = [];
   page.on("pageerror",e=>pageErrors.push(e.message));
   const fixed = {
@@ -38,6 +38,19 @@ const run = async (locale, width) => {
     if (url.origin !== origin) {
       captured.external.push(req.url());
       return route.abort("blockedbyclient");
+    }
+    // Public star summaries are read-only catalog data, not a CRM or provider write.
+    // Stub them deterministically to keep the price/consent/payment test offline.
+    // POST /api/catalog/ratings remains forbidden by the unexpected-API guard.
+    if (url.pathname === "/api/catalog/ratings" && method==="GET") {
+      const kind = url.searchParams.get("kind");
+      const keys = (url.searchParams.get("keys") || "").split(",").filter(Boolean);
+      if (!["video","talisman","service"].includes(kind) || !keys.length || keys.length > 40) {
+        captured.unexpected.push("INVALID_RATING_READ");
+        return json({error:"SYNTHETIC_ONLY"},400);
+      }
+      captured.ratingReads.push({kind, count:keys.length});
+      return json({ratings:Object.fromEntries(keys.map(key => [key,{count:0,average:0,mine:null}]))});
     }
     if (url.pathname === "/api/public/talisman-checkout" && method==="GET")
       return json(priced ? fixed : {available:false,reason:"PRICE_NOT_APPROVED"});
@@ -143,6 +156,8 @@ const run = async (locale, width) => {
     // The browser request event is the reliable proof of attempted provider
     // navigation; the route abort callback can run a tick later in WebKit.
     assert.equal(sent.url(),"https://paypal.me/psitrends/45EUR");
+    assert.ok(captured.ratingReads.some(read => read.kind==="talisman"),
+      "Published talisman rating summaries are read without a write");
     assert.deepEqual(captured.unexpected,[]);
     if (locale==="ru") await page.screenshot({
       path:"artifacts/talisman-google-checkout/ru-390-google-pay.png",

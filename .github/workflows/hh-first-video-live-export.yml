@@ -1,0 +1,77 @@
+name: HH First Video LIVE · encoded file acceptance
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/benchmarking/first-video-live-export.mjs'
+      - '.github/workflows/hh-first-video-live-export.yml'
+  workflow_dispatch:
+    inputs:
+      require_licensed:
+        description: 'Verify four licensed MP4 sources in the downloaded video'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-live-video-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  anonymous-encoded-video:
+    # Test the deployed real MP4 and all four licensed source shots on every change to this gate.
+    # Research acceptance runs even on Draft; merging stays disabled until it passes.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate safe standalone browser test syntax
+        run: node --check scripts/benchmarking/first-video-live-export.mjs
+      - name: Reuse preinstalled Google Chrome; install pinned Playwright client only
+        timeout-minutes: 2
+        env:
+          npm_config_ignore_scripts: 'true'
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/hh-live-video-browser" \
+            --no-audit --no-fund --no-package-lock --ignore-scripts \
+            playwright@1.63.0
+          # Ubuntu 24.04 GitHub runners already include Chrome. Do not waste
+          # minutes downloading a second Chromium copy.
+          if command -v google-chrome >/dev/null; then google-chrome --version;
+          elif command -v google-chrome-stable >/dev/null; then google-chrome-stable --version;
+          else echo 'RUNNER_SYSTEM_CHROME_MISSING' >&2; exit 1; fi
+      - name: Verify media inspection utilities
+        timeout-minutes: 4
+        run: |
+          set -euo pipefail
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get install -y --no-install-recommends ffmpeg || {
+              sudo apt-get update -qq
+              sudo apt-get install -y --no-install-recommends ffmpeg
+            }
+          fi
+          ffprobe -version | sed -n '1p'
+      - name: Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity
+        timeout-minutes: 5
+        env:
+          HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
+          # Strict four-source identity is required for every PR; manual diagnostic may opt out.
+          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ github.event_name == 'pull_request' && 'true' || (inputs.require_licensed && 'true' || 'false') }}
+        run: node scripts/benchmarking/first-video-live-export.mjs
+      - name: Preserve only anonymous capability and failure summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-first-video-live-encoded-evidence
+          path: artifacts/benchmarking/first-video-live-export.json
+          retention-days: 2
+          if-no-files-found: warn

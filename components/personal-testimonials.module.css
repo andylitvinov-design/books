@@ -351,3 +351,22 @@
     font-size: 17px;
   }
 }
+
+/* ABOUT_ARCHIVE_ROOT_CLIP: isolate the horizontally scrollable testimonials
+   from the document's scroll width on 320px iPhones. overflow-x:hidden
+   establishes a scroll container; the inner .videoGrid retains independent
+   overflow-x:auto for touch, pointer and keyboard horizontal navigation. */
+.section[data-personal-testimonials="about"] {
+  min-width: 0;
+  max-width: 100%;
+  /* Paint containment is essential in Chromium: hiding horizontal overflow
+     alone still lets offscreen flex-row video slides expand html.scrollWidth. */
+  contain: paint;
+  overflow-x: hidden;
+}
+.section[data-personal-testimonials="about"] .videoGrid {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}

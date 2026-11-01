@@ -12,7 +12,7 @@ const suggest=(theme,wish,availableScenes,locale="ru")=>
   suggestPersonalVideoScene({theme,wish,locale,availableScenes});
 
 test("all 24 existing visual scenes represented; never builds a second catalog",()=>{
-  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","relationships","energy","goals"]);
+  assert.deepEqual(PERSONAL_VIDEO_THEMES,["money","energy","life","health","relationships","goals"]);
   assert.equal(money.length+love.length+energy.length+goals.length,24);
 });
 test("RU personal money wishes choose corresponding artwork, preserving explicit category",()=>{
@@ -51,30 +51,52 @@ test("wish and caption lengths count Unicode graphemes; original text not echoed
   const choice=suggest("energy","очень личный секрет, не передавать в CRM",energy);
   assert.doesNotMatch(JSON.stringify(choice),/секрет/);
 });
+test("keeps a Video Studio long-form brief within its explicit 2,000-grapheme limit",()=>{
+  const brief="🦅".repeat(2_001);
+  assert.equal([...new Intl.Segmenter(undefined,{granularity:"grapheme"}).segment(graphemeTrim(brief,2_000))].length,2_000);
+});
 test("pure local engine never posts, persists, processes photos or sends private health/identity data",()=>{
   const src=readFileSync(new URL("../lib/mandala/personal-video-intent.mjs",import.meta.url),"utf8");
   assert.doesNotMatch(src,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|localStorage|sessionStorage|postMessage|api\.kling|supabase|google-analytics/i);
 });
 test("existing Mandala editor remains the sole renderer; UI wires independent wish and user override",()=>{
   const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const director=readFileSync(new URL("../components/mandala-cinematic-director.tsx",import.meta.url),"utf8");
   assert.match(ui,/suggestPersonalVideoScene\(/);
-  assert.match(ui,/data-video-wish/);
+  assert.match(ui,/data-video-wish-disclosure/);
   assert.match(ui,/data-video-suggest/);
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
-  assert.match(ui,/maxLength=\{160\}/);
-  assert.match(ui,/href="#personal-video-result"/);
+  assert.match(ui,/intentText=\{wish\}/);
+  // The new goal-first Director has the ONE short-form wish input and shares
+  // its local state with the existing optional advanced Cinematic Director.
+  assert.match(ui,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/);
+  assert.doesNotMatch(ui,/<input data-video-quick-wish/);
+  assert.match(ui,/onIntentTextChange=\{value=>\{setWish\(value\)/);
+  assert.match(director,/maxLength=\{2000\}/);
+  assert.match(ui,/id="personal-video-result"/);
 });
 
-test("sound preview is user-clicked, volume-controlled, and fades during final export",()=>{
+test("native audio preview is user-clicked, media-controlled, and the selected audio fades during export",()=>{
   const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const audio=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
   assert.match(ui,/data-video-music-preview/);
   assert.match(ui,/data-video-music-volume/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume,true\)/);
-  assert.match(ui,/startAmbientMusic\(music,soundVolume\)/);
+  assert.match(ui,/presetAudioUrl\(music\)/);
+  assert.match(ui,/data-video-audio-player/);
+  assert.match(ui,/audioPreviewRef\.current/);
+  assert.match(ui,/data-video-audio-upload/);
+  assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
+  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume\)/);
+  assert.match(ui,/!audioNeedsAttachment &&/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);
   assert.match(audio,/linearRampToValueAtTime\(0, at \+ \.7\)/);
   assert.match(audio,/context\.createMediaStreamDestination\(\)/);
+});
+
+test("full HD energy, life and wellbeing suggestions remain local and multilingual",()=>{
+  assert.equal(suggest("energy","Мне нужен заряд бодрости",["solar-surge","ocean-pulse"]).sceneId,"solar-surge");
+  assert.equal(suggest("life","Я хочу свободу",["wildflower-dance","coastal-freedom"]).sceneId,"coastal-freedom");
+  assert.equal(suggest("health","I want a calm pause",["calm-sea","morning-dew"],"en").sceneId,"calm-sea");
 });

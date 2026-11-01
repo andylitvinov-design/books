@@ -1,4 +1,6 @@
 import test from 'node:test'
+// Run the new metadata contract suite inside the existing owner-video CI command.
+import './owner-telegram-youtube-metadata.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
@@ -470,8 +472,9 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_edit','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video_edit').description,/Название и описание/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
    .find(x=>x.url==='https://t.me/Andydotbot?start=video')
@@ -505,8 +508,8 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
 test('private /video command remains registered if Owner AI is disabled',()=>{
  const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
- assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','video_edit','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','video_edit','materials','track'])
  assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
@@ -714,7 +717,7 @@ test('owner Google OAuth RU grant upsert matches the deployed RU/EN composite ta
  assert.ok(oauth.includes("where practitioner_id=$1 and target='ru'"))
  assert.ok(oauth.includes('[PRACTITIONER_ID,channelId,encrypted]'))
  assert.ok(oauth.includes('channelId!==VIDEO_RU_CHANNEL_ID'))
- assert.ok(oauth.includes('seal({refreshToken},ENCRYPTION_CONTEXT,config)'))
+ assert.ok(oauth.includes('seal({refreshToken,visibility:visibility===true},ENCRYPTION_CONTEXT,config)'))
  assert.ok(oauth.includes('openSealed(row.token_ciphertext,ENCRYPTION_CONTEXT,config)'))
  assert.ok(!oauth.includes('on conflict(practitioner_id) do update set'))
  // Never delete/re-pair the unrelated English consent when reconnecting RU.
