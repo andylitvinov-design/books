@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import AcademyVideoProgress from "@/components/app/academy-video-progress";
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
@@ -175,9 +176,9 @@ const copy = {
     healingTitle: "Reiki support", healingIntro: "Find published practitioners or remote energy support services.",
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
-    progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
+    progress: "Activity on this page", openFullProgress: "Open my saved progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
-    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
+    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings", saveWatched: "I watched this video", savedWatched: "Saved to My Progress", videoLogin: "Sign in, then return to this video to mark it watched.", videoSaveError: "Unable to save the mark. Try again.", videoSaving: "Saving…",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
@@ -275,9 +276,9 @@ const copy = {
     healingTitle: "Рейки поддержка", healingIntro: "Выберите мастера или действующую услугу дистанционной поддержки.",
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
-    progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
+    progress: "На этом экране", openFullProgress: "Открыть мой прогресс в кабинете", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
-    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
+    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки", saveWatched: "Я посмотрел(а) это видео", savedWatched: "Сохранено в «Мой прогресс»", videoLogin: "Войдите, затем вернитесь к ролику и отметьте просмотр.", videoSaveError: "Не удалось сохранить отметку. Повторите.", videoSaving: "Сохраняем…",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
@@ -375,9 +376,9 @@ const copy = {
     healingTitle: "Apoyo Reiki", healingIntro: "Encuentra profesionales y servicios publicados de apoyo a distancia.",
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
-    progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
+    progress: "Actividad en esta página", openFullProgress: "Abrir mi progreso guardado", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
-    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
+    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes", saveWatched: "He visto este vídeo", savedWatched: "Guardado en Mi progreso", videoLogin: "Inicia sesión, vuelve al vídeo y márcalo visto.", videoSaveError: "No se ha podido guardar. Inténtalo otra vez.", videoSaving: "Guardando…",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
@@ -626,6 +627,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const startVideo = () => {
     if (!selected) return;
     setPlaying(true);
+    // Local "opened" is only a current-visit UI counter, never an account mark.
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
   const changeChoice = (value: Choice) => {
@@ -645,6 +647,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   }, [choice, goalFilterOpen]);
   const activeProgramValues = Array.from(new Set(browseVideos.map(video => video.program)));
   const activeAuthorValues = Array.from(new Set(browseVideos.map(video => video.author)));
+  const accountProgressHref = "/" + (locale === "es" ? "en" : locale) + "/app/progress";
   const progressCount = relevantVideos.filter(video => opened.includes(video.id)).length;
   const progressTotal = relevantVideos.length;
   const averageScore = (checkinOrder.reduce((sum, id) => sum + scores[id], 0) / checkinOrder.length).toFixed(1);
@@ -953,6 +956,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
               <div className={styles.videoSourceRow} data-support-video-source>
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
+                {playing && selected ? <div className={styles.videoAccountProgress} data-support-account-video-mark>
+                  <AcademyVideoProgress key={selected.id} videoId={selected.id} title={selected.title} locale={locale} />
+                </div> : null}
               </div>
               {choice === "pump" ? <div className={styles.supportEnquiry} data-support-courses-panel>
                 <p>{t.energyIntro}</p>
@@ -1031,6 +1037,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <div className={styles.progressAverage}><BarChart3 size={25} aria-hidden="true" /><strong>{averageScore}/10</strong><span>{t.average}</span></div>
           </div>
           <p className={styles.privacyNote}><ShieldCheck size={18} aria-hidden="true" />{t.privateInfo}</p>
+          <Link href={accountProgressHref} prefetch={false} className={styles.accountProgressLink} data-support-open-account-progress>
+            <BarChart3 size={19} aria-hidden="true" /><span>{t.openFullProgress}</span><ArrowRight size={18} aria-hidden="true"/>
+          </Link>
         </section>
         <footer className={styles.disclaimer}>
           <p>{t.healthNote}</p>
@@ -1055,7 +1064,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false} data-support-mobile-messages>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.navMessages}</span>
         </Link>
-        <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
+        <Link href={accountProgressHref} prefetch={false} data-support-mobile-progress-link><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></Link>
         <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
       </nav>
