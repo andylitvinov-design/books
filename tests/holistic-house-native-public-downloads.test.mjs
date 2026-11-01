@@ -141,3 +141,15 @@ test('direct Android APK top CTA appears only after verified native release gate
   assert.match(gate,/ownerApproved !== true/)
   assert.match(gate,/process\.env\.HH_NATIVE_PUBLIC_RELEASES_ENABLED === 'true'/)
 })
+
+test('rendered mobile install checker supports signed APK launch without weakening fail-closed pending state',()=>{
+  const checker=read('scripts/verify-hh-install-browser.mjs')
+  assert.match(checker,/nativeAndroidReady:/)
+  assert.match(checker,/directApkReady:/)
+  assert.match(checker,/nativeIosReady:/)
+  assert.match(checker,/assert\.notEqual\(measurements\.nativeAndroidPending,measurements\.nativeAndroidReady/)
+  assert.match(checker,/assert\.equal\(measurements\.directApkReady,measurements\.nativeAndroidReady/)
+  assert.match(checker,/assert\.equal\(measurements\.directApkHref,'\/api\/native-download\/android'/)
+  assert.match(checker,/directApkAction\.height>=44/)
+  assert.doesNotMatch(checker,/nativeIosPending&&measurements\.nativeAndroidPending/)
+})
