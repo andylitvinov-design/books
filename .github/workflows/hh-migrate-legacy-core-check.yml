@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Replace only legacy release-ready with existing Core gate
+      - name: Require both existing Core and specialist gates before migrating legacy
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
@@ -30,11 +30,15 @@ jobs:
           policy="$(mktemp)"
           change="$(mktemp)"
           after="$(mktemp)"
-          trap 'rm -f "$before" "$policy" "$change" "$after"' EXIT
-          # Verify the replacement job is already on production, not only a PR.
+          workflow="$(mktemp)"
+          trap 'rm -f "$before" "$policy" "$change" "$after" "$workflow"' EXIT
+          # Never drop the full specialist gate from branch protection. This
+          # migration is illegal until production publishes BOTH named jobs.
           gh api "repos/$GH_REPO/contents/.github/workflows/hh-pr-core-release.yml?ref=codex/public-book-library" --jq '.content' |
-            base64 --decode | grep '^    name: hh-core-verified$' >/dev/null || {
-              echo 'Production does not yet have hh-core-verified; refusing migration' >&2; exit 1;
+            base64 --decode > "$workflow"
+          grep -Fxq '    name: hh-core-verified' "$workflow" &&
+            grep -Fxq '    name: hh-specialists-verified' "$workflow" || {
+              echo 'Production must publish both verified Core and specialists; refusing migration' >&2; exit 1;
             }
           gh api "repos/$GH_REPO/rulesets/26269892" > "$policy"
           jq -e '
@@ -51,9 +55,10 @@ jobs:
             echo 'Legacy branch protection requires repository-administration permission' >&2; exit 1;
           }
           if jq -e '
-            .strict == false and .contexts == ["hh-core-verified"] and
-            ([.checks[]? | select(.context == "hh-core-verified" and .app_id == 15368)] | length) == 1 and
-            (.checks | length) == 1
+            .strict == false and
+            (.contexts | index("release-ready") == null) and
+            ([.checks[]?.context] | sort) == ["hh-core-verified","hh-specialists-verified"] and
+            (all(.checks[]; .app_id == 15368))
           ' "$before" >/dev/null; then
             echo 'Legacy branch protection already migrated; no mutation' >> "$GITHUB_STEP_SUMMARY"
             exit 0
@@ -65,16 +70,16 @@ jobs:
           ' "$before" >/dev/null || {
             echo 'Unexpected existing required checks: refusing destructive replacement' >&2; exit 1;
           }
-          printf '%s\n' '{"strict":false,"contexts":[],"checks":[{"context":"hh-core-verified","app_id":15368}]}' > "$change"
+          printf '%s\n' '{"strict":false,"contexts":[],"checks":[{"context":"hh-core-verified","app_id":15368},{"context":"hh-specialists-verified","app_id":15368}]}' > "$change"
           gh api --method PATCH "$endpoint" --input "$change" >/dev/null
           gh api "$endpoint" > "$after"
           jq -e '
             .strict == false and
             (.contexts | index("release-ready") == null) and
-            (.checks | length == 1) and
-            .checks[0].context == "hh-core-verified" and .checks[0].app_id == 15368
+            ([.checks[]?.context] | sort) == ["hh-core-verified","hh-specialists-verified"] and
+            (all(.checks[]; .app_id == 15368))
           ' "$after" >/dev/null || {
             echo 'Migration did not read back the intended required-check state' >&2; exit 1;
           }
-          echo 'Legacy required check migrated: release-ready -> hh-core-verified; strict=false.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified; strict=false.' >> "$GITHUB_STEP_SUMMARY"
           echo 'All other branch rules and ruleset #26269892 unchanged.' >> "$GITHUB_STEP_SUMMARY"
