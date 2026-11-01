@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { buildFirstVideoDraft } from "@/lib/mandala/first-video-director.mjs";
+import { VIDEO_QUICK_TEMPLATES, getVideoQuickTemplateDraft } from "@/lib/mandala/video-quick-templates.mjs";
 import css from "./mandala-first-video-start.module.css";
 
 type FilmStyle = "warm" | "nature" | "dream" | "minimal";
@@ -44,6 +45,7 @@ const l10n = {
     intro: "Ваша идея → подходящие готовые сцены → видео.",
     wish: "Ваше пожелание", placeholder: "Например: Тёплый рассвет над морем, затем дорога через цветущий сад. Хочу ощущение надежды и спокойствия.",
     wishHelp: "Пока вы не разрешите использовать AI, текст остаётся в браузере.",
+    templates: "Готовые видео за одно касание", templatesHelp: "Выберите идею — сцены, музыку и формат можно изменить.", useTemplate: "Выбрать шаблон", quickResize: "Формат видео",
     filters: "Дополнительные пожелания и фильтры", filtersHelp: "Необязательно · по умолчанию подберём автоматически",
     theme: "Тема", automatic: "Автоматически", style: "Визуальный стиль",
     aspect: "Формат", length: "Продолжительность", movement: "Движение",
@@ -72,6 +74,7 @@ const l10n = {
     intro: "Your idea → matching existing scenes → video.",
     wish: "Your idea", placeholder: "For example: A warm sunrise over the sea, followed by a path through a flower garden. A gentle sense of hope.",
     wishHelp: "Your text stays in this browser unless you explicitly agree to use an AI model.",
+    templates: "One-tap video templates", templatesHelp: "Pick an idea, then adjust scenes, sound or format.", useTemplate: "Use template", quickResize: "Video format",
     filters: "Optional preferences and filters", filtersHelp: "Optional · automatic defaults",
     theme: "Theme", automatic: "Automatic", style: "Visual style",
     aspect: "Aspect ratio", length: "Duration", movement: "Movement",
@@ -100,6 +103,7 @@ const l10n = {
     intro: "Tu idea → escenas disponibles → vídeo.",
     wish: "Tu idea", placeholder: "Por ejemplo: Amanecer cálido sobre el mar, luego un sendero en un jardín de flores. Un sentimiento de esperanza.",
     wishHelp: "Tu texto permanece en el navegador sin consentimiento explícito para usar una IA.",
+    templates: "Plantillas de vídeo en un toque", templatesHelp: "Elige una idea y ajusta las escenas, el sonido o el formato.", useTemplate: "Usar plantilla", quickResize: "Formato de vídeo",
     filters: "Preferencias y filtros opcionales", filtersHelp: "Opcionales · selección automática",
     theme: "Tema", automatic: "Automático", style: "Estilo visual",
     aspect: "Formato", length: "Duración", movement: "Movimiento",
@@ -135,6 +139,7 @@ export function MandalaFirstVideoStart({
   const [hydrated,setHydrated] = useState(false);
   useEffect(()=>{setHydrated(true);},[]);
   const [prefs, setPrefs] = useState<Preferences>(initial);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [variant, setVariant] = useState(0);
   const [promptOverride, setPromptOverride] = useState("");
   const [mode, setMode] = useState<"local" | "manual" | "ai">("local");
@@ -157,26 +162,38 @@ export function MandalaFirstVideoStart({
   function changeWish(value: string) {
     const next = value.slice(0, 800);
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
-    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0);
+    onWishChange(next); setPromptOverride(""); setMode("local"); setAiStatus(""); setVariant(0); setSelectedTemplateId(null);
     if (next.trim()) apply(next, prefs, "", 0);
   }
   function changePreferences(patch: Partial<Preferences>) {
     const next = { ...prefs, ...patch };
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
-    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0);
+    setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0); setSelectedTemplateId(null);
     if (wish.trim()) apply(wish, next, "", 0);
   }
   function changePrompt(value: string) {
     const next = value.slice(0, 1000);
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
-    setPromptOverride(next); setMode("manual"); setAiStatus("");
+    setPromptOverride(next); setMode("manual"); setAiStatus(""); setSelectedTemplateId(null);
     if (wish.trim()) apply(wish, prefs, next);
   }
   function resetPrompt() {
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     const nextVariant=(variant+1)%100;
-    setVariant(nextVariant); setMode("local"); setPromptOverride(""); setAiStatus("");
+    setVariant(nextVariant); setMode("local"); setPromptOverride(""); setAiStatus(""); setSelectedTemplateId(null);
     if (wish.trim()) apply(wish, prefs, "", nextVariant);
+  }
+  function applyTemplate(templateId: string) {
+    if (disabled || !hydrated || recording || preparing) return;
+    const choice = getVideoQuickTemplateDraft(templateId, locale, prefs.avoid);
+    if (!choice) return;
+    const nextPrefs: Preferences = { ...initial, ...choice.preferences };
+    aiRevisionRef.current++; aiAbortRef.current?.abort();
+    setAiLoading(false); setAiStatus("");
+    setSelectedTemplateId(choice.id);
+    setPrefs(nextPrefs); setVariant(0); setMode("local"); setPromptOverride("");
+    onWishChange(choice.wish);
+    apply(choice.wish, nextPrefs, "", 0);
   }
   async function enhancePrompt() {
     if (disabled || aiLoading || !aiConsent || wish.trim().length<3) return;
@@ -206,7 +223,7 @@ export function MandalaFirstVideoStart({
         typeof data.prompt !== "string" || data.prompt.length < 30 ||
         data.prompt.length > 1000) throw Error("invalid_response");
       if(revision!==aiRevisionRef.current)return;
-      setPromptOverride(data.prompt); setMode("ai");
+      setPromptOverride(data.prompt); setMode("ai"); setSelectedTemplateId(null);
       const provider="provider" in data && data.provider==="gemini_free"?"Gemini":"OpenRouter";
       setAiStatus(t.aiReady+" · "+provider);
       apply(wish, prefs, data.prompt);
@@ -247,6 +264,39 @@ export function MandalaFirstVideoStart({
       onChange={event => changeWish(event.currentTarget.value)}
       placeholder={t.placeholder}/>
     <p className={css.subtle}>{t.wishHelp}</p>
+    <div className={css.templateArea} data-first-video-templates>
+      <div className={css.templateHeading}>
+        <strong>{t.templates}</strong><small>{t.templatesHelp}</small>
+      </div>
+      <div className={css.templateStrip} role="group" aria-label={t.templates}>
+        {VIDEO_QUICK_TEMPLATES.map(template =>
+          <button key={template.id} type="button"
+            data-first-video-template={template.id}
+            className={css.templateCard}
+            aria-pressed={selectedTemplateId===template.id}
+            aria-label={t.useTemplate+": "+template.title[locale]}
+            disabled={disabled || !hydrated}
+            onClick={()=>applyTemplate(template.id)}>
+            <strong>{template.title[locale]}</strong>
+            <span>{template.hint[locale]}</span>
+            <small>{template.aspect==="portrait"?"9:16":template.aspect==="square"?"1:1":"16:9"} · {template.durationSeconds} s</small>
+          </button>)}
+      </div>
+
+      <div className={css.quickFormat} role="group" aria-label={t.quickResize} data-first-video-quick-aspect-group>
+        <small>{t.quickResize}</small>
+        <div className={css.quickFormatButtons}>
+          {(["landscape", "portrait", "square"] as const).map(format => (
+            <button type="button" key={format} data-first-video-quick-aspect={format}
+              aria-pressed={prefs.aspect===format}
+              disabled={disabled || !hydrated || preparing || recording}
+              onClick={()=>changePreferences({aspect:format})}>
+              {format==="landscape"?"16:9":format==="portrait"?"9:16":"1:1"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
 
     <details className={css.disclosure} data-first-video-filters>
       <summary><span><SlidersHorizontal size={18} aria-hidden="true"/>
