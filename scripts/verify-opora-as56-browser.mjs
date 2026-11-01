@@ -3,7 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaAs59Day } from '../lib/inner-growth/opora-as59-seven-skills.js'
+import { oporaAs60VariedDay } from '../lib/inner-growth/opora-as60-varied-content.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -39,8 +41,13 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale)
-    const support = oporaExperienceSupport(5,locale)
+    const t = words[locale], edition = oporaAs59Day(5,locale)
+    // The current V7 lesson displays persisted AS-5.9 wording; compare the
+    // hydrated page with that exact authored edition, not archived AS-5.6 copy.
+    assert.ok(edition && edition.practice && edition.purpose)
+    // The AS-6.0 experiment is the authoritative one-action practice text.
+    const brief = oporaAs60VariedDay(5,locale).practice
+    const support = {title:edition.purposeTitle, body:edition.purpose}
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
@@ -115,9 +122,16 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaAs60VariedDay(5,locale).result)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
+      // AS-6.0 adds four distinct optional self-guided scenes between the
+      // single goal card and the real experiment. Keep them in the test.
+      for(const moment of ['bodyExperience','emotionExperience','mentalExperience','imageryMeditation']){
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await assertBounds(moment)
+      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -148,10 +162,15 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // Feel; navigation closes optional original guidance.
+      await click(t.next) // Real ritual scene follows the practical experiment.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await click(t.next) // Then the original feelings check.
+      await expect(page.locator('[data-opora-current-screen="feel"]')).toBeVisible()
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
-      await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
+      await click(t.previous) // Feel -> ritual, still no old guidance.
+      await assertNeutral()
+      await click(t.previous) // Ritual -> practice, preserve voluntary neutral pause.
       await assertNeutral()
       await click(t.original)
       await click(t.pause); await click(t.back)
@@ -192,7 +211,7 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
+              assert.equal(await recapPage.locator('[data-opora-current-screen] [class*="summaryItem"]').count(),1,
                 'Each takeaway has exactly one visible idea')
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
