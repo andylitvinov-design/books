@@ -886,3 +886,25 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
     assert.equal(requiresPublicServicesHeavyPr(plan), true);
   }
 });
+test('Core-only PR fast-lane regression cannot summon unrelated public browser E2E', () => {
+  const ciOnly = [
+    '.github/workflows/hh-public-services-production.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-workflow-globs.test.mjs',
+    'tests/pr-fast-lane.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(ciOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for (const unsafe of [
+    'middleware.ts', 'app/api/payments/checkout/route.js',
+    'app/api/service-enquiries/route.js', 'components/commerce/service-cart.tsx',
+  ]) {
+    const sensitive=planPublicServicesChangedPaths([...ciOnly,unsafe]);
+    assert.deepEqual([sensitive.mode,sensitive.build,sensitive.browser,sensitive.cases],
+      ['full',true,true,'all'], 'must not suppress risk gate for ' + unsafe);
+  }
+});
+

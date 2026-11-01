@@ -269,13 +269,15 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
-          # GitHub-hosted runners normally already have system browser libs.
-          # Avoid a repeated apt-get/apt update on every heavy PR. Fail closed:
-          # launch every requested engine; install OS deps and retry if needed.
+          # Chromium can launch directly on ubuntu-24.04; WebKit requires
+          # substantial system libraries that were NOT present in the measured
+          # cold runner. Install WebKit dependencies once, before real smoke.
+          # Never try the known-to-fail WebKit first and then repeat install.
           if [[ "$HH_PUBLIC_BROWSER_ENGINES" == chromium ]]; then
             /tmp/hh-public-services-tools/node_modules/.bin/playwright install chromium
           else
-            /tmp/hh-public-services-tools/node_modules/.bin/playwright install chromium webkit
+            # Full sensitive acceptance retains iPhone/WebKit and checkout QA.
+            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
           fi
           smoke_engines() {
             node --input-type=module <<'NODE'

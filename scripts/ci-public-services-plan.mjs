@@ -53,6 +53,9 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // Reviewed CI-policy regression test: it changes no public runtime surface.
+  // Required Core and actionlint validate it on the exact PR candidate.
+  'tests/pr-fast-lane.test.mjs',
   // Independent Site Video CI policy and source-only E2E contracts cannot
   // change public services runtime, consent or payment. Protected Core/actionlint
   // and its exact-head Site Video job still validate these files.
