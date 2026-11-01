@@ -20,6 +20,13 @@ test("affirmation attachment acceptance opens the advanced disclosure and checks
   assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
 });
 
+test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
+  assert.match(source,/if\(engine==="chromium"\|\|engine==="webkit"\)/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/tracks\.includes\("audio"\)/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
+
 test("disclosure acceptance retains provider privacy, real exported audio and stale narration gates",()=>{
   for(const assertion of [
     'assert.equal(payloads.length,1)',

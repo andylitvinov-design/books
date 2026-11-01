@@ -193,7 +193,11 @@ jobs:
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
             node scripts/benchmarking/first-video-live-export.mjs
-          node scripts/verify-holistic-mandala-browser.mjs
+          # The voice release path requires dual-engine real encoded-audio QA.
+          # The long all-workspaces Mandala suite remains available manually.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            node scripts/verify-holistic-mandala-browser.mjs
+          fi
       - name: Upload synthetic audio-only iPhone screenshots
         if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         uses: actions/upload-artifact@v4

@@ -237,3 +237,18 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
 });
+
+
+test("direct audio URL reveals its existing workspace instead of hidden advanced settings",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/const revealAudioDeepLink=\(\)=>\{/);
+  assert.match(s,/if\(window\.location\.hash!==\"#video-audio\"\)return;/);
+  assert.match(s,/setActiveWorkspace\(\"audio\"\)/);
+  assert.match(s,/window\.addEventListener\(\"hashchange\",revealAudioDeepLink\)/);
+  assert.match(s,/window\.removeEventListener\(\"hashchange\",revealAudioDeepLink\)/);
+  assert.equal((s.match(/id=\"video-audio\"/g)||[]).length,1);
+  assert.equal((s.match(/data-video-audio-mic\b/g)||[]).length,1);
+  assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
+  assert.match(browser,/deep-link\.png/);
+});

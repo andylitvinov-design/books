@@ -41,3 +41,11 @@
 - Open PR #2550 already proposes a larger 34-loop library with one-tap playback; its older branch overlaps this file. Rebase/port the new library *after* this compact UI without overwriting its single picker/one-player contract. Do not release competing copies.
 - PR #2694 also touches the broader mobile editor design; reconcile owner approval and shared files before merge.
 - Voice Studio, cloud-generated speech, paid renders, medical data, private client delivery and billing are unchanged.
+
+## 1 Nov follow-up · real Audio deep-link navigation
+
+**Confirmed source-level regression:** In the six-workspace mobile Video Studio, visiting `/{ru,en,es}/holistic-support/mandala#video-audio` directly did not set `activeWorkspace="audio"`; the canonical `#video-audio` element existed only within collapsed advanced controls on initial page entry, despite the Audio tab itself working.
+
+**Targeted fix:** An on-mount and `hashchange` listener opens only the existing Audio workspace and scrolls to its one canonical audio picker. It does not automatically play any media, request microphone access, attach a track, or change URL/consent. Same first-party components, no new recorder/renderer/API. Browser regression checks a fresh RU 390px deep link under both Chromium/WebKit, with a single microphone, readable layout and synthetic screenshots; unit test checks the one-instance contract.
+
+**Release gate:** exact PR HEAD targeted unit/lint/typecheck/build and real browser test; protected merge into current production `codex/public-book-library`; Vercel READY exact new SHA/alias and RU/EN/ES live URL. Separate physical iPhone speaker/microphone/Files QA and independent owner-reference pixel overlay must remain unclaimed until actually performed.

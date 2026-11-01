@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
-import {chromium,webkit} from "@playwright/test";
+import {chromium,webkit,expect} from "@playwright/test";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 function wav(seconds=3) {
@@ -80,9 +80,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await attachedFile.waitFor({state:"visible"});
       assert.equal(await selectedFile.innerText(),expectedFileName);
       assert.equal(await attachedFile.innerText(),expectedFileName);
-      await advanced.locator(":scope > summary").click();
-      await selectedFile.waitFor({state:"hidden"});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
@@ -97,15 +94,40 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
-      if(engine==="chromium") {
+      await advanced.locator(":scope > summary").click();
+      await selectedFile.waitFor({state:"hidden"});
+      // Wait for actual capture readiness; an enabled button must not silently
+      // prime an unloaded HD source and require a second user click.
+      const generate=page.locator("[data-video-quick-generate]");
+      if(engine==="chromium"||engine==="webkit") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
           const v=document.querySelector("[data-mandala-master-mp4]");
           return !v || v.readyState>=2;
         },undefined,{timeout:25000});
-        await page.locator("[data-video-quick-generate]").click();
+        await expect(generate).toBeEnabled({timeout:30000});
+        await generate.click();
         const output=page.locator("[data-mandala-video-download]");
-        await output.waitFor({state:"visible",timeout:45000});
+        try {
+          await output.waitFor({state:"visible",timeout:45000});
+        } catch (error) {
+          const uiState=await page.evaluate(()=>{
+            const video=document.querySelector("[data-mandala-master-mp4]");
+            const create=document.querySelector("[data-video-quick-generate]");
+            const result=document.querySelector("[data-video-result]");
+            return {
+              canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
+              source:video instanceof HTMLVideoElement ? {
+                readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
+                error:video.error?.code??null
+              } : null,
+              resultHidden:result instanceof HTMLElement ? result.hidden : null,
+              progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+              notices:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(x=>x.textContent?.trim()).filter(Boolean).slice(0,8),
+            };
+          });
+          throw new Error(engine+" recorded video never became downloadable: "+JSON.stringify(uiState),{cause:error});
+        }
         const [download]=await Promise.all([
           page.waitForEvent("download",{timeout:20000}),output.click(),
         ]);
@@ -156,7 +178,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(typed.text,customText);
       assert.equal(typed.consent,true);
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
-      process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + real local nature WAV attachment + stale guard\n");
+      process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
     }finally{await context.close();}
   }finally{await browser.close();}
 }

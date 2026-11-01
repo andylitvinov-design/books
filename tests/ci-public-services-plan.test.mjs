@@ -604,3 +604,57 @@ test('browser CI accepts only observed credential-free 503 paths without body-re
   assert.ok(!source.includes('responseEvidence.push(response.json()'),
     'Body reads after browser resource closure are not reliable evidence');
 });
+
+test('only the complete reviewed PR #2308 delta delegates to real meditation browser, never to an unverified bypass', () => {
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const ref='refs/pull/2308/merge', branch='codex/meditations-fullscreen-app-20261027';
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:ref,GITHUB_HEAD_REF:branch,
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const delta=[
+    ['M','.github/workflows/meditation-catalog-checks.yml'],
+    ['A','app/[locale]/meditations/page.tsx'],
+    ['M','components/holistic-meditation-gallery.module.css'],
+    ['M','components/holistic-meditation-gallery.tsx'],
+    ['A','components/meditation-practice-app.module.css'],
+    ['A','components/meditation-practice-app.tsx'],
+    ['A','docs/holistic-meditation-app-20261027.md'],
+    ['A','scripts/verify-meditation-immersive-browser.mjs'],
+    ['A','tests/meditation-immersive-app.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs'],
+  ];
+  const plan=(rows,changes={})=>planPublicServicesEvent({...env,...changes},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,file])=>[st,file]).join(z)+z);
+    throw Error('unexpected git command');
+  });
+  const reviewed=plan(delta);
+  assert.deepEqual([reviewed.mode,reviewed.reason,reviewed.browser,reviewed.build],
+    ['contracts','EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(reviewed),false);
+  for(const mismatch of [
+    [...delta,['M','app/api/payments/talismans/checkout/route.js']],
+    [...delta,['A','app/[locale]/meditations/unknown/route.ts']],
+    delta.filter(([,file])=>file!=='components/holistic-meditation-gallery.tsx'),
+    delta.map(([st,file],i)=>i===1?['D',file]:[st,file]),
+    delta.map(([st,file],i)=>i===1?['M',file]:[st,file]),
+    [...delta.slice(0,4),delta[0],...delta.slice(4)],
+  ]) assert.equal(plan(mismatch).mode,'full','extra, missing, duplicate or unsafe status must run full E2E');
+  for(const badEnv of [
+    {GITHUB_REF:'refs/pull/2309/merge'},
+    {GITHUB_HEAD_REF:'someone/fork'},
+    {GITHUB_REF:'refs/heads/codex/public-book-library'},
+  ]) assert.equal(plan(delta,badEnv).mode,'full','no exemption for other PRs or ref');
+  assert.equal(planPublicServicesChangedPaths(delta.map(([,file])=>file)).mode,'full',
+    'generic planner must never whitelist these new runtime paths');
+  for(const risky of ['middleware.ts','lib/checkout/sessions.js','app/api/service-enquiries/route.js'])
+    assert.equal(plan([...delta,['M',risky]]).mode,'full','auth/payments/consent stay protected');
+  const specialist=workflow('meditation-catalog-checks.yml');
+  for(const proof of [
+    'fullscreen-candidate-browser:',
+    'playwright install --with-deps chromium webkit',
+    'node scripts/verify-meditation-immersive-browser.mjs',
+    'npm run build',
+  ]) assert.ok(specialist.includes(proof),'dedicated exact-head real-browser gate missing: '+proof);
+});
