@@ -157,6 +157,14 @@ function canRetryCi(active, queued) {
   return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
     active >= 0 && queued >= 0 && active < 20 && queued < 20;
 }
+// A Repair claim is not a new Core build. Reserve one narrow source-repair
+// lane while ordinary PR CI is congested, but never flood a saturated runner
+// pool or enqueue unlimited workers. The workflow-level lease and three-minute
+// cooldown still enforce one active/recent Repair Worker at a time.
+function canDispatchRepair(active, queued) {
+  return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
+    active >= 0 && queued >= 0 && active < 18 && queued < 80;
+}
 function transientFailure(run, jobs, now) {
   if (!run || run.status !== 'completed' || run.run_attempt !== 1 ||
       now - Date.parse(run.updated_at || run.created_at || 0) < 15 * MINUTE ||
@@ -504,7 +512,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
-    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
@@ -556,9 +564,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
   const ciRoom = canRetryCi(active,queued);
+  const repairRoom = canDispatchRepair(active,queued);
   summary.activeActions = Number.isFinite(active) ? active : null;
   summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
+  summary.repairBlockedByCapacity=!repairRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let liveBatch=null;
   if (!budget.exhausted && typeof github.graphql === 'function' && selected.length) {
@@ -791,7 +801,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
   if ((summary.sourceRepairQueued || summary.conflictLabelsQueued || repairQueueBacklog) &&
-      hasMergeToken && ciRoom && !budget.exhausted && !dryRun) {
+      hasMergeToken && repairRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -837,4 +847,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};

@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -56,6 +56,15 @@ test('CI admission uses separate running and queued limits, not their sum',()=>{
   assert.equal(canRetryCi(20,0),false);
   assert.equal(canRetryCi(0,20),false);
   assert.equal(canRetryCi(Infinity,0),false);
+});
+test('Repair has an independently bounded lane when queued Core CI is saturated',()=>{
+  assert.equal(canRetryCi(16,43),false);
+  assert.equal(canDispatchRepair(16,43),true);
+  assert.equal(canDispatchRepair(17,79),true);
+  assert.equal(canDispatchRepair(18,1),false);
+  assert.equal(canDispatchRepair(0,80),false);
+  assert.equal(canDispatchRepair(Infinity,0),false);
+  assert.equal(canDispatchRepair(3,NaN),false);
 });
 test('merge state classifier distinguishes dirty, unknown and behind',()=>{
   assert.equal(classifyMergeState({mergeable:false,mergeable_state:'dirty'}),'DIRTY');
@@ -177,6 +186,29 @@ test('real DIRTY PR enters conflict queue without consuming Core CI requests',as
   assert.equal(dispatched,1);
   assert.equal(result.repairWorkerDispatched,1);
   assert.ok(result.apiRequests<=65);
+});
+test('Watchdog dispatches one Repair Worker despite a crowded regular CI queue',async()=>{
+  let dispatched=0;
+  const live={...pr(1992),state:'open',mergeable:false,
+    mergeable_state:'dirty',labels:[{name:'hh:conflict-repair-needed'}]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async({status})=>
+      ({data:{total_count:status==='queued'?43:16}})}
+  },request:async(route,args)=>{
+    if(route.includes('/dispatches')){
+      assert.equal(args.workflow_id,'hh-pr-repair-worker.yml');
+      assert.equal(args.inputs.dry_run,'false');
+      dispatched++;
+    }
+    return {data:{workflow_runs:[]}};
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.blockedByCapacity,true);
+  assert.equal(result.repairBlockedByCapacity,false);
+  assert.equal(result.repairQueueBacklog,1);
+  assert.equal(result.repairWorkerDispatched,1);
+  assert.equal(dispatched,1);
 });
 test('unknown mergeability is not treated as missing Core CI',async()=>{
   let checks=0;
