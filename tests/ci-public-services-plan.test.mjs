@@ -813,3 +813,46 @@ test('Video Director reviewed exact sources use Mandala CI, not unrelated checko
  }
  assert.equal(simulate([...rows,['D','tests/video-executable-director.test.mjs']]).mode,'full');
 });
+
+
+// PR #2964: exact owned LIVE media-QA files require real encoded-video acceptance.
+// Unrelated public checkout E2Es are not a substitute for these four-source tests.
+test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full unknown-risk gates',()=>{
+  const changed=[
+    '.github/workflows/hh-first-video-live-export.yml',
+    'components/mandala-video-director-chat.tsx',
+    'scripts/benchmarking/first-video-live-export.mjs',
+    'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+    'tests/video-director-chat-live-acceptance.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(changed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  const owner=workflow('hh-first-video-live-export.yml');
+  assert.ok(owner.includes('node scripts/benchmarking/video-director-chat-live-acceptance.mjs'));
+  assert.ok(owner.includes('node --test tests/video-director-chat-live-acceptance.test.mjs'));
+  assert.ok(owner.includes('node scripts/benchmarking/first-video-live-export.mjs'));
+  assert.ok(owner.includes('pull_request:'));
+  const head='b'.repeat(40),base='a'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2964/merge',
+    GITHUB_HEAD_REF:'feat/video-director-chat-live-smoke-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const rows=changed.map(path=>[path.includes('/video-director-chat-live-acceptance.')?'A':'M',path]);
+  const run=changes=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changes.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected git command: '+args.join(' '));
+  });
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of ['app/api/payments/checkout/route.js',
+    'app/api/holistic-support/new-paid-provider/route.js',
+    'app/api/app/user/account/route.js','middleware.ts',
+    'components/commerce/service-cart.tsx']){
+    assert.equal(planPublicServicesChangedPaths([...changed,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
+});

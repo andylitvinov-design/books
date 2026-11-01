@@ -361,7 +361,9 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   const compact=read("components/mandala-hypno-compact.tsx");
   assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
-  const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
+  // Scope the contract to this handler, not every later video/renderer action.
+  const previewHandler=studio.match(/const openAffirmationPreview = \(\) => \{[\s\S]*?\n  \};/)?.[0] || "";
+  assert.ok(previewHandler,"preview handler must remain in the canonical Studio");
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
   assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);
@@ -492,8 +494,6 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
-  // Phrase options are now rendered by the shared goal-tree picker rather
-  // than the retired generic five-item rail in the main Studio.
   assert.match(studio,/<MandalaPhraseCatalog locale=\{locale\}/);
   const phrasePicker=read("components/mandala-phrase-catalog.tsx");
   assert.match(phrasePicker,/data-video-quick-affirmation=\{phrase\.variant-1\}/);
