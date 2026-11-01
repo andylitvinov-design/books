@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: '25 * * * *'
   workflow_dispatch:
+  # Vercel's existing integration emits deployment completion on default.
+  # Only LIVE verifier can respond; the merge coordinator remains quiet.
+  repository_dispatch:
+    types: ['vercel.deployment.success', 'vercel.deployment.promoted']
   push:
     branches: ['codex/bootstrap-books']
     paths: ['.github/workflows/hh-pr-full-inventory.yml']
@@ -13,10 +17,13 @@ permissions:
   issues: read
   pull-requests: read
 concurrency:
-  group: hh-pr-full-inventory
+  # Vercel event storms never displace the independent hourly inventory lease.
+  group: hh-pr-full-inventory-${{ github.event_name == 'repository_dispatch' && 'vercel-event' || 'periodic' }}
   cancel-in-progress: false
 jobs:
   reconcile:
+    # Vercel callbacks verify LIVE only, never scan/merge PRs.
+    if: github.event_name != 'repository_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -242,3 +249,41 @@ jobs:
             ];
             for(const r of report)log(r);
             await core.summary.addHeading("HH PR inventory: all open pages").addRaw(report.join("\n\n")).write();
+
+  verify-live:
+    name: independent production LIVE evidence (read-only)
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'push' ||
+       (github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.environment == 'production'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      statuses: read
+    steps:
+      - name: Checkout only trusted control-plane code
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Verify read-only LIVE classifier contracts without credentials
+        run: |
+          node --check scripts/ci-pr-live-verifier.cjs
+          node --test tests/ci-pr-live-verifier.test.cjs
+      - name: Independently compare production HEAD, Vercel deployment and alias
+        uses: actions/github-script@v7
+        env:
+          # Existing optional read-only Vercel API credential; absent means UNVERIFIED.
+          # No Vercel credential is exposed to PR source or public browser.
+          HH_VERCEL_READ_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const verifier=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-live-verifier.cjs');
+            await verifier.run({github,core,context,
+              vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
