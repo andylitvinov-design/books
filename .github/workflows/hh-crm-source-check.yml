@@ -91,6 +91,8 @@ on:
       - 'app/api/masters/**/shared-audio/**'
       - 'supabase/migrations/*practitioner_direct_media*'
       - 'tests/practitioner-direct-message*.test.mjs'
+      - 'tests/direct-message-idempotency.integration.mjs'
+      - 'lib/practitioners/direct-messages.js'
       - 'components/app/practitioner-client-profiles.*'
       - 'components/app/practice-request-conversation.*'
       - 'lib/practitioners/request-media.js'
@@ -203,7 +205,7 @@ jobs:
       - name: Approved Messenger default entry, orders fallback, CRM and private inbox
         run: node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs
       - name: Native member-to-practitioner media inbox, encryption and outsider-denial
-        run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs
+        run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs tests/direct-message-idempotency.integration.mjs
       - name: Lint member inbox backend, privacy route and EN/RU/ES UI
         run: npx eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-voice-recorder.jsx app/api/app/direct-messages/route.js 'app/api/app/direct-messages/media/[assetId]/route.js' 'app/api/app/direct-messages/media/[assetId]/upload/route.js' 'app/api/masters/[slug]/shared-audio/[assetId]/route.js' 'app/[locale]/app/messages/page.tsx'
       - name: Validate practitioner CRM JSX explicitly
