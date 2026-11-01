@@ -110,8 +110,9 @@ test('owner cron repair uses one safe lease and never equates reenable with sche
   assert.ok(s.includes("event:'schedule',per_page:1"));
   assert.ok(s.includes('history.total_count'));
   assert.ok(s.includes('HH_AUTOMERGE_TOKEN'));
-  assert.ok(s.includes('ownerGithub.rest.actions.disableWorkflow'));
-  assert.ok(s.includes('ownerGithub.rest.actions.enableWorkflow'));
+  assert.ok(s.includes("await ownerAction(item.workflow_id,'disable')"));
+  assert.ok(s.includes("await ownerAction(item.workflow_id,'enable')"));
+  assert.ok(!s.includes("require('@actions/github')"));
   assert.ok(s.includes('github.rest.actions.enableWorkflow'));
   assert.ok(s.includes("after.state!=='active'"));
   assert.ok(s.includes("issue.state!=='open'"));
