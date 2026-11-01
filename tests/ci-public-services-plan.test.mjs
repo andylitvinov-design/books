@@ -872,7 +872,7 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
     'actions/cache/save@v4',
     'hh-public-next-',
     'steps.public_acceptance.outputs.build_ok',
-    'playwright install chromium webkit',
+    'playwright install chromium',
     'smoke_engines',
     'playwright install --with-deps chromium webkit',
     './node_modules/.bin/next build',
