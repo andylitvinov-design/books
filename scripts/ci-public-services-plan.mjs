@@ -69,6 +69,60 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/hh-ideas-coaching-public.yml',
 ]);
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
+// Scoped PR #2702: these EXACT files are owned by the independent Mandala
+// workflow (source, Node/TS, same-origin/consent tests and true encoded-media
+// acceptance on manual release). No checkout, booking, public-service route,
+// middleware or payment code is touched. New/unknown filenames remain FULL.
+const MANDALA_OWNED_HYPNO_FILES = new Set([
+  '.github/workflows/holistic-support-mandala.yml',
+  'app/api/holistic-support/hypno-strategy/route.js',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-hypno-compact.module.css',
+  'components/mandala-hypno-compact.tsx',
+  'components/mandala-hypnocorrection-mobile.module.css',
+  'components/mandala-hypnocorrection-mobile.tsx',
+  'components/mandala-personal-meditation.module.css',
+  'components/mandala-personal-meditation.tsx',
+  'docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md',
+  'lib/mandala/adaptive-meditation-course.mjs',
+  'lib/mandala/hypno-psych-strategy.ts',
+  'lib/mandala/hypno-visual-overlay.mjs',
+  'lib/mandala/personal-meditation-script.mjs',
+  'lib/mandala/video-affirmations.ts',
+  'tests/adaptive-meditation-course.test.mjs',
+  'tests/mandala-hypnocorrection-mobile.test.mjs',
+  'tests/mandala-meditation-courses.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/meditation-regeneration.test.mjs',
+  'tests/personal-meditation-script.test.mjs',
+  'tests/video-affirmations.test.mjs',
+]);
+// Unlike editor-only changes, the new course contact UI calls the EXISTING
+// /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
+// browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+const MANDALA_COURSE_ENQUIRY_FILES = new Set([
+  'components/meditation-course-enquiry.module.css',
+  'components/meditation-course-enquiry.tsx',
+  'tests/meditation-course-enquiry.test.mjs',
+]);
+// Only reviewed new files may enter the focused route as A. Everything else
+// (including new routes and unreviewed tests) fails closed to all browsers.
+const MANDALA_REVIEWED_ADDITIONS = new Set([
+  'app/api/holistic-support/hypno-strategy/route.js',
+  'components/mandala-hypnocorrection-mobile.module.css',
+  'components/mandala-hypnocorrection-mobile.tsx',
+  'components/meditation-course-enquiry.module.css',
+  'components/meditation-course-enquiry.tsx',
+  'docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md',
+  'lib/mandala/adaptive-meditation-course.mjs',
+  'lib/mandala/hypno-psych-strategy.ts',
+  'lib/mandala/hypno-visual-overlay.mjs',
+  'tests/adaptive-meditation-course.test.mjs',
+  'tests/mandala-hypnocorrection-mobile.test.mjs',
+  'tests/mandala-meditation-courses.test.mjs',
+  'tests/meditation-course-enquiry.test.mjs',
+  'tests/meditation-regeneration.test.mjs',
+]);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 // The Ideas/Coaching source owner checks these exact files. Public Services
 // must still run its real Ideas browser when the shared mobile QA harness
@@ -112,6 +166,11 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
+      selected.add('verify-public-services-production.mjs');
+      continue;
+    }
     if (sourceTests.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
@@ -190,7 +249,8 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (status !== 'M' && !(status === 'A' &&
-        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file))))
+        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
+         MANDALA_REVIEWED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
