@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
@@ -226,7 +226,7 @@ test("Live academy cards show only confirmed future events with real registratio
   assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
 });
 
-test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and Greek only in Coaching", () => {
+test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and Greek only in Coaching", async () => {
  const hub=read("components/academy-hub.tsx");
  const discovery=read("components/academy-discovery.tsx");
  const css=read("components/academy-discovery.module.css");
@@ -241,7 +241,13 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- // The old remote-media filenames were replaced by first-party art references.
- assert.match(art,/egyptian:'\/images\/holistic-house\/coaching-ancient\/egyptian-cover\.jpg'/);
- assert.match(art,/greek:'\/images\/holistic-house\/coaching-ancient\/greek-cover\.jpg'/);
+ // Verify the actual selected first-party assets, not outdated remote filenames.
+ assert.match(art,/traditionCoachingArt=Object\.freeze/);
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js');
+ assert.notEqual(traditionCoachingArt.egyptian,traditionCoachingArt.greek);
+ for(const key of ['egyptian','greek']){
+  const image=traditionCoachingArt[key];
+  assert.match(image,/^\/images\/holistic-house\/[a-z0-9-]+\.webp$/);
+  assert.ok(existsSync(path.join(root,'public'+image)),key+' image asset must be published');
+ }
 });
