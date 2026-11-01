@@ -755,6 +755,14 @@ const runEngine = async ([engine, browserType]) => {
         await workspaceQuick.locator('[data-video-quick-control="effects"]').click();
         const effects=page.locator("[data-hypno-mobile]");
         await expect(effects).toBeVisible({timeout:15000});
+        const intro=page.locator("[data-hypno-intro-slot]");
+        await expect(intro.locator("[data-hypno-wave]")).toBeVisible({timeout:12000});
+        assert.equal(await page.locator("[data-hypno-wave]").count(),1,
+          "Wave is moved above the existing real player, not duplicated");
+        const waveBox=await intro.locator("[data-hypno-wave]").boundingBox();
+        const playerBox=await page.locator("[data-video-mandala-hero]").boundingBox();
+        assert.ok(waveBox&&playerBox&&waveBox.y+waveBox.height<playerBox.y,
+          engine+" "+locale+" "+width+" Wave should precede player as in owner mock");
         const groups=effects.locator("[data-hypno-group]");
         assert.deepEqual(await groups.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hypno-group"))),
           ["audio","visual","meditation","phrases"]);
@@ -779,7 +787,7 @@ const runEngine = async ([engine, browserType]) => {
         assert.ok(effectGeometry.width<=effectGeometry.viewport+2&&
           effectGeometry.pageWidth<=effectGeometry.viewport+2,
           engine+" "+locale+" "+width+" hypno overflow: "+JSON.stringify(effectGeometry));
-        await effects.locator("[data-hypno-wave]").click();
+        await intro.locator("[data-hypno-wave]").click();
         await expect(effects.locator('[data-hypno-group="visual"] [role="switch"]').first())
           .toHaveAttribute("aria-checked","true");
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){

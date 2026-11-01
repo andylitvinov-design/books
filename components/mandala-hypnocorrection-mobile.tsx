@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
   ArrowRight, AudioLines, ChevronDown, Clock3, Eye, FileText, Headphones, Image as Picture,
@@ -149,6 +150,10 @@ export function MandalaHypnocorrectionMobile({
   const [open,setOpen]=useState<GroupId[]>(["audio","visual","meditation","phrases"]);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
+  const [introTarget,setIntroTarget]=useState<HTMLElement|null>(null);
+  useLayoutEffect(()=>{
+    setIntroTarget(document.querySelector<HTMLElement>("[data-hypno-intro-slot]"));
+  },[]);
   const visible=affirmations.enabled&&affirmations.visibility.includes("large");
   const briefFrame=affirmations.enabled&&affirmations.visibility.includes("frame");
   const toggleVisibility=(mode:"large"|"frame")=>{
@@ -164,8 +169,7 @@ export function MandalaHypnocorrectionMobile({
     {id:"meditation",title:t.meditation,help:t.meditationHelp},
     {id:"phrases",title:t.phrases,help:t.phrasesHelp},
   ];
-  return <section className={styles.panel} data-hypno-mobile lang={locale}
-    aria-label={t.title}>
+  const intro=<div className={styles.intro} data-hypno-intro>
     <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
     <section className={styles.wave}>
       <div className={styles.waveTop}><Sparkles size={29} aria-hidden="true"/>
@@ -177,6 +181,10 @@ export function MandalaHypnocorrectionMobile({
       </button>
       {note==="wave"?<p role="status" className={styles.note}>{t.suggested}</p>:null}
     </section>
+  </div>;
+  return <section className={styles.panel} data-hypno-mobile lang={locale}
+    aria-label={t.title}>
+    {introTarget?createPortal(intro,introTarget):intro}
     {groups.map(group=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
       <button type="button" className={styles.groupHeader} aria-expanded={open.includes(group.id)}
         aria-controls={"hypno-group-"+group.id}

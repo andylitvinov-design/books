@@ -176,3 +176,11 @@
     width:20px;height:20px;transform:none}
   .switch[data-on=true]>span{transform:translateX(18px)}
 }
+
+/* The one real Hypnocorrection title + Wave is portaled ahead of the shared
+   original hero player only in the third workspace; no duplicate controls. */
+.intro{display:grid;gap:8px;min-width:0;width:100%;margin:0 0 5px;padding:1px 0;
+  font-family:Arial,Helvetica,sans-serif;color:#122c48}
+.intro *{box-sizing:border-box}
+.intro button:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
+.intro .wave{margin:0}

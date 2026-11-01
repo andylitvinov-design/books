@@ -76,6 +76,10 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(ui,/data-hypno-card/);
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
+  assert.match(ui,/createPortal\(intro,introTarget\)/);
+  assert.match(ui,/data-hypno-intro/);
+  assert.match(studio,/data-hypno-intro-slot/);
+  assert.match(css,/\.intro\{display:grid/);
   assert.match(studio,/onCreate=\{startFromHero\}/);
   assert.match(studio,/studioMode==="pump"&&activeWorkspace!=="effects"/);
   assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);

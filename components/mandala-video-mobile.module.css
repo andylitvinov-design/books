@@ -2539,3 +2539,11 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+/* Third mobile workspace: one portaled heading/Wave ABOVE the existing
+   16:9 hero, matching the owner's approved screen without forking playback. */
+.hypnoIntroSlot{display:block;min-width:0;width:100%;margin:8px 0 0}
+@media(max-width:759px){
+  .studio .quickBuilder>.hypnoIntroSlot{order:0;margin:4px 0 2px}
+  .studio[data-active-workspace="effects"] .workspaceHeading{display:none}
+}
