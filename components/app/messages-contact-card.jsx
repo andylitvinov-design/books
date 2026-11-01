@@ -128,8 +128,10 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
    }finally{if(olderRef.current===abort)olderRef.current=null}
  }
  const kind=item?.kind
- const contact=kind==='crm'?view.contact:kind==='request'?
-   (item.item?.requestKind==='public'?item.item?.replyContact:item.item?.contact):kind==='business'?item.item:null
+ // An assigned master sees only the redacted contact alias. Platform owner
+ // CRM access is a separate audited operator workflow, never a shared card field.
+ const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:
+   kind==='business'?item.item:null
  const email=field(contact,'email'),phone=field(contact,'phone'),status=field(contact,'lifecycle','status')||field(item?.item,'status')
  const publicRequest=kind==='request'&&item.item?.requestKind==='public'
  const masterSlug=kind==='direct'&&validSlug(item.peerMasterSlug)?item.peerMasterSlug:''
