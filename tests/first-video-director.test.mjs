@@ -484,3 +484,75 @@ test("401 and 403 are shared Google key failures: skip secondary Gemini and use 
     assert.equal(count,2);
   }
 });
+
+
+test("Server-side optional Groq router is fail closed, free-only and priority configurable",async()=>{
+  const {freeFirstVideoProviders,generateFreeFirstVideoPrompt,FIRST_VIDEO_GROQ_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const {orderFreeTextProviders}=await import("../lib/ai/free-text-provider-route.mjs");
+  const env={
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-key-123",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-openrouter-key-123",
+    HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-key-123",
+    HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"groq_free,rogue_https://private.invalid,gemini_free",
+  };
+  assert.equal(FIRST_VIDEO_GROQ_MODEL,"openai/gpt-oss-20b");
+  assert.deepEqual(freeFirstVideoProviders(env),
+    ["groq_free","gemini_free","openrouter_free"]);
+  assert.deepEqual(orderFreeTextProviders(["gemini_free","openrouter_free"],"bad,openrouter_free"),
+    ["openrouter_free","gemini_free"]);
+  assert.deepEqual(freeFirstVideoProviders({...env,HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"false"}),
+    ["gemini_free","openrouter_free"],"an API key alone never authorizes Groq");
+  assert.deepEqual(freeFirstVideoProviders({...env,HH_FIRST_VIDEO_GROQ_API_KEY:""}),
+    ["gemini_free","openrouter_free"],"a free flag alone never authorizes Groq");
+  const urls=[];
+  const result=await generateFreeFirstVideoPrompt(
+    {locale:"es",wish:"Montañas al amanecer",theme:"auto",
+      style:"warm",aspect:"landscape",durationSeconds:20},
+    env,async (url,options)=>{
+      urls.push(url);
+      assert.equal(options.method,"POST");
+      assert.equal(options.redirect,"error");
+      assert.equal(options.headers.Authorization,"Bearer "+env.HH_FIRST_VIDEO_GROQ_API_KEY);
+      const body=JSON.parse(options.body);
+      assert.equal(body.model,FIRST_VIDEO_GROQ_MODEL);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:"Montañas doradas bajo el sol. Cuatro planos sucesivos de luz y nubes, con transiciones suaves y sin escenas inventadas."}}],
+      })};
+    });
+  assert.equal(result.provider,"groq_free");
+  assert.equal(result.model,FIRST_VIDEO_GROQ_MODEL);
+  assert.equal(urls.length,1);
+  assert.deepEqual(urls,["https://api.groq.com/openai/v1/chat/completions"]);
+  assert.ok(!JSON.stringify(result).includes(env.HH_FIRST_VIDEO_GROQ_API_KEY));
+});
+
+test("Groq 503 uses independent confirmed-free Gemini; no paid or arbitrary URL",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={
+    HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-key-123",
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-key-123",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"groq_free,gemini_free",
+  };
+  const urls=[];
+  const r=await generateFreeFirstVideoPrompt(
+    {locale:"en",wish:"Gentle sky and sunrise",theme:"auto",
+      style:"warm",aspect:"landscape",durationSeconds:20},
+    env,async url=>{
+      urls.push(url);
+      if(url.includes("api.groq.com"))return {ok:false,status:503};
+      assert.match(url,/^https:\/\/generativelanguage\.googleapis\.com\//);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"A calm open sky at dawn, warming mountains, four gentle successive shots of real scenery, and soft light."}]}}],
+      })};
+    });
+  assert.equal(r.provider,"gemini_free");
+  assert.equal(urls.length,2);
+  assert.deepEqual(r.diagnostics.map(x=>x.reason),["http_503"]);
+  assert.ok(!JSON.stringify(r).includes(env.HH_FIRST_VIDEO_GROQ_API_KEY));
+});
