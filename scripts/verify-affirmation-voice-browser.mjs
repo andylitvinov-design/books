@@ -147,6 +147,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           return !v || v.readyState>=2;
         },undefined,{timeout:25000});
         await expect(generate).toBeEnabled({timeout:30000});
+        const mediaCapabilities=await page.evaluate(()=>({
+          userAgent:navigator.userAgent,
+          canvasCapture:typeof HTMLCanvasElement.prototype.captureStream==="function",
+          supportedMimes:['video/webm;codecs="vp8,opus"','video/webm',
+            'video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4'].filter(
+              mime=>typeof MediaRecorder!=="undefined" && MediaRecorder.isTypeSupported(mime)),
+        }));
+        console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
         await generate.click();
         phase(engine,"recording-started");

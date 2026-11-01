@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 
@@ -168,4 +169,26 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
   assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
   assert.doesNotMatch((audioSource+client).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
+});
+
+
+test("desktop Safari WebM preference is capability-gated even with Playwright-style UA",()=>{
+  const safariAgents=[
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+  ];
+  for(const ua of safariAgents){
+    assert.equal(prefersSafariWebm(ua),true,"desktop WebKit should attempt WebM first when available");
+    const ordered=orderRecordingMimes({mp4:["video/mp4"],webm:["video/webm"],userAgent:ua});
+    assert.deepEqual(ordered,["video/webm","video/mp4"]);
+    assert.deepEqual(ordered.filter(mime=>mime==="video/mp4"),["video/mp4"],
+      "older Safari with unsupported WebM retains the real MP4 fallback");
+    assert.deepEqual(orderRecordingMimes({mp4:["video/mp4"],webm:["video/webm"],userAgent:ua,forceMp4:true}),
+      ["video/mp4"],"explicit MP4 retry must be preserved");
+  }
+  const chrome="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
+  assert.equal(prefersSafariWebm(chrome),false);
+  assert.deepEqual(orderRecordingMimes({mp4:["video/mp4"],webm:["video/webm"],userAgent:chrome}),
+    ["video/mp4","video/webm"],"Chrome default must not be rewritten");
 });
