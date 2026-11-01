@@ -14,6 +14,7 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
+import { MandalaPhraseCatalog } from "./mandala-phrase-catalog";
 import { MandalaVideoDirectorChat } from "./mandala-video-director-chat";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import { MandalaStoriesCharacters } from "./mandala-stories-characters";
@@ -1583,31 +1584,6 @@ const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
   health:["morning-dew","sea-breeze","calm-sea","mossy-stream","gentle-falls","morning-dew"],
 };
 const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
-// Optional editorial phrases; chosen locally and painted by the existing Canvas renderer.
-const quickSupportPhrases: Record<PublicLocale,Record<VideoTheme,readonly string[]>> = {
-  ru:{
-    energy:["Я полон энергии и сил","Я в тебя верю, ты можешь","Ты способен на большее","Я спокоен и уверен","Каждый день я становлюсь сильнее"],
-    health:["Я бережно отношусь к себе","Ты достоин заботы и отдыха","Я слушаю своё тело","Мне можно отдыхать","Я могу попросить поддержку"],
-    relationships:["Я тебя люблю","Ты дорог мне","Я достоин любви","Я слышу тебя","Мы можем говорить открыто"],
-    money:["Я ценю свой труд","Ты справишься с этой задачей","Мои навыки имеют ценность","Я вижу новые возможности","Я прошу справедливую оплату"],
-    goals:["Я в тебя верю, ты можешь","Ты самый лучший","Я делаю первый шаг","Мой путь имеет смысл","Я могу двигаться вперёд"],
-    life:["Я могу замедлиться","Мне можно отдохнуть","Я выбираю спокойствие","Ты достоин внимания","Каждый мой шаг имеет ценность"]},
-  en:{
-    energy:["I am full of energy","I believe in you; you can do it","You are capable of more","I feel calm and confident","I grow stronger day by day"],
-    health:["I take care of myself","You deserve care and rest","I listen to my body","I am allowed to rest","I can ask for support"],
-    relationships:["I love you","You matter to me","I deserve love","I hear you","We can speak openly"],
-    money:["I value my work","You can handle this task","My skills have value","I see new opportunities","I can ask for fair pay"],
-    goals:["I believe in you; you can do it","You are wonderful","I take the first step","My journey has meaning","I can keep moving forward"],
-    life:["I can slow down","I am allowed to rest","I choose calm","You deserve attention","Every step I take matters"]},
-  es:{
-    energy:["Tengo energía y fuerza","Creo en ti; tú puedes","Eres capaz de más","Estoy en calma y con confianza","Cada día avanzo con fuerza"],
-    health:["Me cuido con cariño","Mereces cuidado y descanso","Escucho a mi cuerpo","Puedo descansar","Puedo pedir apoyo"],
-    relationships:["Te quiero","Eres importante para mí","Merezco amor","Te escucho","Podemos hablar con sinceridad"],
-    money:["Valoro mi trabajo","Puedes con esta tarea","Mis habilidades valen","Veo nuevas oportunidades","Puedo pedir un pago justo"],
-    goals:["Creo en ti; tú puedes","Eres una gran persona","Doy el primer paso","Mi camino tiene sentido","Puedo seguir avanzando"],
-    life:["Puedo ir más despacio","Puedo descansar","Elijo la calma","Mereces atención","Cada paso importa"]},
-};
-
 /** These Canvas-only animated scenes have NO standalone H.264 master.
  * Curated first-party JPGs in the gallery are illustrative, not fake MP4s. */
 const quickCanvasScenePoster: Partial<Record<LocalSceneId,string>> = {
@@ -2920,10 +2896,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectCategory=(next:VideoCategory)=>{
     setCinematicPlan(null);setIntroPlaying(false);
     setTheme(next);setVideoCategory(next);setSuggestion("");setShowAllMoney(false);
-    // A visitor-picked quick affirmation follows their selected video topic;
-    // arbitrary private custom lines are never overwritten by changing a topic.
-    setAffirmations(previous=>quickSupportPhrases[locale][theme].includes(previous.custom.trim())
-      ? {...previous,enabled:true,selected:[],custom:quickSupportPhrases[locale][next][0]} : previous);
+    // Keep the client's approved wording when selecting another video theme;
+    // the optional goal-tree catalogue will suggest the next relevant phrases.
     setPreviewPlaying(false); // Theme changes preserve the user's photo checkbox choice.
     if(next==="money")setMoneyScene("golden-rain");
     else {setMoneyScene(null);setOtherScene(otherVideoScenes[next][0].id);}
@@ -3424,6 +3398,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
         }} onPreview={openAffirmationPreview} onCreate={startFromHero}>
+      <details className={videoStyles.phraseAudioSettings} data-video-phrase-catalog-details>
+        <summary>{locale==="ru"?"Каталог фраз по целям и сценариям":
+          locale==="es"?"Catálogo de frases por objetivos e historias":
+          "Phrase catalog by goals and stories"}<ChevronDown size={18} aria-hidden="true"/></summary>
+        <MandalaPhraseCatalog locale={locale} theme={theme} wish={wish}
+          disabled={recording||preparing} selectedPhrase={affirmations.custom}
+          onPhraseChoose={phrase=>{
+            setAffirmations(current=>({...current,enabled:true,selected:[],
+              custom:phrase,visibility:["large"]}));
+            setPreviewPlaying(false);
+          }}
+          onOpenAudio={()=>{
+            setPhraseAudioExpanded(true);
+            window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")
+              ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
+          }}/>
+      </details>
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>

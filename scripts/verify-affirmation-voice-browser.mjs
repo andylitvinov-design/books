@@ -113,6 +113,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
+      // Phrase choices are explicitly pending until the visitor approves them.
+      // The voice transcript and attached movie must not change prematurely.
+      await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
