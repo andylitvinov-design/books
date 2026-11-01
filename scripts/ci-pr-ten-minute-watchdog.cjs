@@ -380,7 +380,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     ciBootstrapQueued:0,ciWorkerDispatched:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
-    transientCiReruns:0,sourceRepairQueued:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
@@ -623,6 +623,29 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         log('DISPATCHED bounded CI worker for new legacy Core queue item');
       } else log('CI worker active/recent or API reserve low; schedule will retry');
     }catch(error){log('CI worker dispatch unavailable; schedule fallback: '+error.message);}
+  }
+  // Repair is a real separate default-branch workflow, not merely a label.
+  // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
+  // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
+  if (summary.sourceRepairQueued && hasMergeToken && !budget.exhausted && !dryRun) {
+    try {
+      const info=(await limited('repair-worker-recent',()=>github.request(
+        'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+          owner,repo,workflow_id:'hh-pr-repair-worker.yml',per_page:5
+        }))).data;
+      const recent=info.workflow_runs||[];
+      const busy=recent.some(r=>['queued','in_progress','waiting','requested'].includes(r.status));
+      const justRan=recent.some(r=>now-Date.parse(r.created_at)<3*MINUTE);
+      if (!busy && !justRan && !budget.exhausted) {
+        await limited('dispatch-repair-worker',()=>github.request(
+          'POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
+            owner,repo,workflow_id:'hh-pr-repair-worker.yml',ref:DEFAULT,
+            inputs:{pr_number:'0',dry_run:'false'}
+          }));
+        summary.repairWorkerDispatched++;
+        log('DISPATCHED owner-guarded source Repair Worker');
+      } else log('Repair Worker already active/recent or API reserve low; schedule fallback');
+    } catch(error) { log('Repair Worker dispatch unavailable; schedule fallback: '+error.message); }
   }
   if (summary.greenUnarmed && hasMergeToken) {
     try {
