@@ -73,7 +73,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
-      id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+      id:44,name:'HH PR core release gate',event:'pull_request',head_sha:SHA,head_branch:'test-98',
       pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],
       status:'completed',conclusion:'failure',run_attempt:1,
       created_at:new Date(NOW-60*60000).toISOString(),updated_at:new Date(NOW-40*60000).toISOString()}]}};
