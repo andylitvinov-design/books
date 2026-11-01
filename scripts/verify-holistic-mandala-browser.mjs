@@ -335,7 +335,26 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count()>0,true,
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
-        await expandAllFilms.click();
+        try {
+          await expandAllFilms.click();
+        } catch (error) {
+          const geometry=await expandAllFilms.evaluate(element=>{
+            const nodes=[];
+            for(let node=element;node && nodes.length<8;node=node.parentElement){
+              const r=node.getBoundingClientRect(),style=getComputedStyle(node);
+              nodes.push({tag:node.tagName,rect:{x:r.x,y:r.y,width:r.width,height:r.height},
+                clientWidth:node.clientWidth,scrollWidth:node.scrollWidth,
+                overflowX:style.overflowX,overflowY:style.overflowY});
+            }
+            return {viewport:{width:innerWidth,height:innerHeight,scrollX,scrollY},nodes};
+          });
+          console.error("FILM_CATALOG_GEOMETRY",engine,locale,width,JSON.stringify(geometry));
+          if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+            mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+            await page.screenshot({path:`${process.env.HH_HYPNO_SCREENSHOT_DIR}/film-catalog-${engine}-${locale}-${width}.png`});
+          }
+          throw error;
+        }
         assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
           "All 48 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
