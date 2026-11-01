@@ -160,7 +160,13 @@ const runEngine = async ([engine, browserType]) => {
           }finally{await deepPage.close();}
         }
 
-        // First free video: real exported moving media in both engines.
+        // The optional detailed creator is a real disclosure, not a duplicate
+        // entry that can obscure the owner-approved quick Video screen.
+        const firstAdvanced=page.locator("[data-video-first-video-advanced]");
+        assert.equal(await firstAdvanced.getAttribute("open"),null,
+          "detailed video wizard starts collapsed in the compact mobile flow");
+        await firstAdvanced.locator(":scope > summary").click();
+        await expect(firstAdvanced).toHaveAttribute("open","",{timeout:10000});
         const firstStart=page.locator("[data-first-free-video]");
         await firstStart.waitFor({state:"visible",timeout:12000});
         await expect(firstStart).toHaveAttribute("data-first-video-hydrated","true",{timeout:40000});
@@ -383,8 +389,13 @@ const runEngine = async ([engine, browserType]) => {
           const reloaded=await page.goto(url,{waitUntil:"domcontentloaded",timeout:90000});
           assert.equal(reloaded?.status(),200);
           await page.locator('[data-first-free-video][data-first-video-hydrated="true"]')
-            .waitFor({state:"visible",timeout:25000});
+            .waitFor({state:"attached",timeout:25000});
         }
+        // Return to the approved compact screen before measuring geometry:
+        // the detailed first-video form remains available on user request.
+        if(await firstAdvanced.getAttribute("open")!==null)
+          await firstAdvanced.locator(":scope > summary").click();
+        await expect(firstAdvanced).not.toHaveAttribute("open","",{timeout:10000});
 
         // Real first-party video, real choices; the advanced editor is preserved
         // but must be collapsed until the visitor explicitly opens it.
@@ -604,7 +615,8 @@ const runEngine = async ([engine, browserType]) => {
             secondaryHeaderVisible:!!root?.querySelector("[data-video-quick-hero-play]")?.getClientRects().length,
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?
-              getComputedStyle(diagnostic).display!=="none":false};
+              getComputedStyle(diagnostic).display!=="none":false,
+            diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
         });
         assert.ok(layout.hero<=205 && layout.hero>=90,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
@@ -615,7 +627,9 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,false,"marketing banner must not push down iPhone editor");
+        assert.equal(layout.diagnosticVisible,true,"free diagnostic remains accessible as a secondary CTA");
+        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
+          "diagnostic CTA belongs below—not above—the primary video editor: "+JSON.stringify(layout));
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);
@@ -827,9 +841,12 @@ const runEngine = async ([engine, browserType]) => {
             Boolean(nodes[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING));
         },supportSelectors);
         assert.equal(supportOrder,true,"collapsed detailed Support editor preserves complete DOM order");
-        // Banner must activate the actual existing 8-session planner without
-        // rendering, downloading, buying or contacting third-party providers.
-        await page.locator("[data-video-therapy-start]").click();
+        // The approved Practices tab is the actual 8-session entry; the former
+        // banner-only action is intentionally not exposed in the Video workspace.
+        // Navigation must be a real tab click, without rendering or paid API.
+        await page.locator('[data-video-quick-control="practices"]').click();
+        await expect(page.locator('[data-video-quick-control="practices"]'))
+          .toHaveAttribute("aria-pressed","true");
         await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"true");
         const activeTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
@@ -1851,13 +1868,20 @@ const runEngine = async ([engine, browserType]) => {
           await button.click();
           await expect(button).toHaveAttribute("aria-pressed","true");
           await expect(page.locator("[data-mandala-free-video]")).toHaveAttribute("data-active-workspace",id);
-          await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
-          await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
+          if(id==="video"){
+            await expect(page.locator("[data-video-workspace-heading]")).toBeHidden();
+            await expect(page.locator('[data-video-quick-builder] [data-video-quick-section="1"]')).toBeVisible();
+          }else{
+            await expect(page.locator("[data-video-workspace-heading]")).toBeVisible();
+            await expect(page.locator('[data-video-quick-builder] [data-workspace-section="'+id+'"]').first()).toBeVisible();
+          }
           assert.equal(await page.evaluate(()=>window.location.hash),originalHash,
             "workspace taps must not navigate to a legacy hash");
           const geometry=await page.evaluate(()=>{
             const nav=document.querySelector("[data-video-quick-controls]")?.getBoundingClientRect();
-            const pane=document.querySelector("[data-video-workspace-heading]")?.getBoundingClientRect();
+            const pane=(document.querySelector("[data-video-workspace-heading]")?.getClientRects().length
+              ?document.querySelector("[data-video-workspace-heading]")
+              :document.querySelector('[data-video-quick-section="1"]'))?.getBoundingClientRect();
             return {navBottom:nav?.bottom,paneTop:pane?.top,width:document.documentElement.scrollWidth,
               viewport:document.documentElement.clientWidth};
           });
