@@ -80,7 +80,8 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
  assert.match(studio,/playAudioTrack\(id\);setAttachedAudio\(\{kind:"preset",id\}\)/);
- assert.match(studio,/audioMatches\.filter\(track=>track\.kind==="melody"\)\.slice\(0,3\)/);
+ assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
+ assert.match(studio,/kind:"melody",mood:"all",pace:"all"/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
  assert.match(css,/\[data-video-quick-section="1"\]\{order:3/);
