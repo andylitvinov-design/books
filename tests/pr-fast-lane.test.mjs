@@ -994,3 +994,21 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
   assert.ok(source.includes('recover-missing-required-ci:'));
   assert.ok(source.includes('recover-interrupted-core:'));
 });
+
+test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
+  assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
+  assert.match(coreSection,/^    name: hh-core-verified$/m);
+  assert.match(coreSection,/^    needs: \[scope, code\]$/m);
+  assert.match(coreSection,/^    if: always\(\)$/m);
+  assert.match(coreSection,/^    timeout-minutes: 3$/m);
+  assert.match(coreSection,/\[\[ "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == skipped \]\]/);
+  assert.match(coreSection,/PR_DRAFT: \$\{\{ github\.event\.pull_request\.draft \}\}/);
+  assert.doesNotMatch(coreSection,/ci-specialist-aggregate\.mjs|gh api|checkout@v4/);
+  // A green Core result alone must NOT remove the old release specialist gate.
+  assert.match(source,/^  release-ready:/m);
+  assert.match(source,/ci-specialist-aggregate\.mjs/);
+});
