@@ -34,6 +34,11 @@ jobs:
     steps:
       # This privileged workflow executes trusted base/default-branch code only.
       # Never checkout or execute code from the PR head with this token.
+      - name: Checkout trusted default-branch merge policy
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
       - name: Verify live PR and completed exact-head CI
         id: ready
         uses: actions/github-script@v7
@@ -201,6 +206,10 @@ jobs:
                 blocked.conclusion + " for PR #" + number);
               return;
             }
+            const baseEvidence=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
+            const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,
+              verifiedRunBase:()=>baseEvidence.coreRunBase(coreRun,pr,fullRepo,coreRun.check_suite_id)});
+            if(!freshness.ok){log('SKIP '+freshness.reason+' for PR #'+number);return;}
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");

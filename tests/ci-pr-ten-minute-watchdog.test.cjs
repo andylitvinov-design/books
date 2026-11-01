@@ -743,7 +743,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   const code=native.slice(begin+'          script: |\n'.length,end).split('\n')
     .map(line=>line.startsWith('            ')?line.slice(12):line).join('\n');
   const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-  const preflight=new AsyncFunction('github','core','context',code);
+  const preflight=new AsyncFunction('github','core','context','require',code);
   const full='andylitvinov-design/books', head='a'.repeat(40), base='b'.repeat(40);
   const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
     base:{ref:'codex/public-book-library',sha:base},
@@ -783,7 +783,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
     const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
       payload:{pull_request:pr}};
     await preflight(gh,{info:message=>notes.push(message),
-      setOutput:(key,value)=>outputs[key]=value},context);
+      setOutput:(key,value)=>outputs[key]=value},context,()=>({assessBaseFreshness:async()=>({ok:true})}));
     return {ok:outputs.eligible==='true',calls,notes};
   }
   const valid=await decide([current,[prior]],[101,101]);

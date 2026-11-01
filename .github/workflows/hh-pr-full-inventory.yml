@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Checkout trusted default-branch merge policy
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
       - name: Full pagination and guarded native auto-merge
         uses: actions/github-script@v7
         env:
@@ -37,6 +42,7 @@ jobs:
           script: |
             const {owner, repo} = context.repo;
             const PROD="codex/public-book-library", fullRepo=owner+"/"+repo;
+            const baseEvidence=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
             const skip=k=>skipped.set(k,(skipped.get(k)||0)+1);
             const found=new Map(); let pages=0;
@@ -146,6 +152,9 @@ jobs:
                 if(live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
                   skip("NOT_MERGEABLE");continue;
                 }
+                const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,
+                  verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,check:checks.get('hh-core-verified')})});
+                if(!freshness.ok){skip(freshness.reason);continue;}
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
@@ -165,7 +174,8 @@ jobs:
                  skip("CHANGED_BEFORE_ARM");continue;
                }
                // Never rely on a stale success while the full inventory was being scanned.
-               if(!assess(await latestChecks(c.head)).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
+               const freshChecks=await latestChecks(c.head);
+               if(!assess(freshChecks).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
                const comments=await github.paginate(github.rest.issues.listComments,{
                  owner,repo,issue_number:c.number,per_page:100
                });
@@ -210,6 +220,9 @@ jobs:
                    Date.parse(l.expires_at||"")>Date.now()))){
                  skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
                }
+               const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,
+                 verifiedRunBase:()=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,check:freshChecks.get('hh-core-verified')})});
+               if(!freshness.ok){skip(freshness.reason);continue;}
                attempts++;
                const result=await exec.getExecOutput("gh",[
                  "pr","merge",String(c.number),"--repo",fullRepo,"--auto",
