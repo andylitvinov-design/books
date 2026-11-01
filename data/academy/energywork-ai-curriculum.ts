@@ -31,7 +31,7 @@ export type EnergyworkTestimonial = {
 export type EnergyworkSlide = {
   id: string;
   phase: EnergyworkPhase;
-  kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
+  kind: "welcome" | "lesson" | "audio-intro" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
   testimonials?: EnergyworkTestimonial[];
   title: Localized;
   body: Localized;
@@ -262,6 +262,10 @@ const commonSlides: EnergyworkSlide[] = [
       l("Explore images and feelings", "Исследуем образы и чувства"),
       l("Remember one special image", "Запоминаем один особенный образ"),
     ] },
+  { id: "flight-audio", phase: "flight", kind: "audio-intro", introAudioKey: "flight", image: image.sun,
+    title: l("Andrey's audio welcome", "Аудиоприветствие Андрея"),
+    body: l("Listen to an optional personal introduction before the Sun meditation, or go straight to the video. Nothing starts automatically.",
+      "Перед медитацией «Полёт к Солнцу» можно прослушать личное аудиовведение Андрея или сразу перейти к видео. Автозапуска нет.") },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Flight to the Sun · guided meditation", "Полёт к Солнцу · медитация"),
     body: l("Follow the original guided meditation in English. Pause or continue at your own pace.",
@@ -335,6 +339,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Andrey introduces Reiki Yggdrasil", "Андрей представляет Рейки Иггдрасиль"),
       body: l("Watch the lesson introduction. The original meditation follows on its own screen.",
         "Посмотрите введение к уроку. Оригинальная медитация — на следующем отдельном слайде.") },
+    { id: "ygg-audio", phase: "yggdrasil", kind: "audio-intro", introAudioKey: "yggdrasil", image: image.tree,
+      title: l("Andrey's Yggdrasil audio welcome", "Аудиоприветствие Андрея к Рейки Иггдрасиль"),
+      body: l("An optional audio introduction before the guided meditation. Continue even if it has not been published yet.",
+        "По желанию прослушайте личное введение перед медитацией. Если запись пока не опубликована, просто продолжите.") },
     { id: "ygg-02", phase: "yggdrasil", kind: "video", videoKey: "reiki-yggdrasil",
       title: l("Reiki Yggdrasil · guided meditation", "Рейки Иггдрасиль · медитация"),
       body: l("Follow the original Reiki Yggdrasil guided meditation in English.",
@@ -400,6 +408,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Andrey introduces Tantra Reiki", "Андрей представляет Тантра Рейки"),
       body: l("Watch the introduction, then continue to the separate guided meditation.",
         "Посмотрите вводное видео, затем переходите к отдельной медитации.") },
+    { id: "tan-audio", phase: "tantra", kind: "audio-intro", introAudioKey: "tantra", image: image.tantra,
+      title: l("Andrey's Tantra Reiki audio welcome", "Аудиоприветствие Андрея к Тантра Рейки"),
+      body: l("A short optional introduction before the guided meditation. Listening is your choice.",
+        "Короткое личное введение перед медитацией. Прослушивание — по желанию.") },
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
       title: l("Tantra Reiki · guided meditation", "Тантра Рейки · медитация"),
       body: l("Practice with the original English Tantra Reiki meditation.",
@@ -454,6 +466,10 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Andrey introduces Kundalini Reiki", "Андрей представляет Кундалини Рейки"),
       body: l("Watch the lesson introduction before the separate guided meditation.",
         "Сначала посмотрите введение, затем откройте отдельную медитацию.") },
+    { id: "kun-audio", phase: "kundalini", kind: "audio-intro", introAudioKey: "kundalini", image: image.kundalini,
+      title: l("Andrey's Kundalini Reiki audio welcome", "Аудиоприветствие Андрея к Кундалини Рейки"),
+      body: l("An optional audio greeting before the original guided meditation. Continue without listening if you prefer.",
+        "Аудиоприветствие перед оригинальной медитацией. Можно перейти дальше без прослушивания.") },
     { id: "kun-02", phase: "kundalini", kind: "video", videoKey: "kundalini-reiki",
       title: l("Kundalini Reiki · guided meditation", "Кундалини Рейки · медитация"),
       body: l("Follow the original guided meditation in English, at your own pace.",
