@@ -159,12 +159,33 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 async function run({github, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
-  const all = await listOpen(github,owner,repo);
-  const prod = all.filter(p=>p.base?.ref===PROD);
-  const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
-  const selected = selectCandidates(review,now);
-  const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
-    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
+  let prod,openCount,inventoryMode='graphql';
+  try {
+    const inventory=await queryInventory(github,owner,repo);
+    prod=inventory.production;openCount=inventory.open;
+  }catch(e){
+    inventoryMode='rest-fallback';
+    log('Fast inventory unavailable; REST fallback: '+e.message);
+    const all=await listOpen(github,owner,repo);
+    prod=all.filter(p=>p.base?.ref===PROD);openCount=all.length;
+  }
+  const review=prod.filter(p=>!p.draft &&
+    p.head?.repo?.full_name===owner+'/'+repo &&
+    /^[a-f0-9]{40}$/.test(p.head?.sha||''));
+  const quick={DIRTY:0,BEHIND:0,RED:0,ARMED:0,GREEN_UNARMED:0,PENDING:0,MISSING:0};
+  if(inventoryMode==='graphql')for(const p of review)quick[classifyQuick(p)]++;
+  // Failed CI gets priority, but rotating the rest prevents long-lived PR starvation.
+  const eligible=review.filter(p=>!['DIRTY','BEHIND'].includes(p.mergeStateStatus) &&
+    classifyQuick(p)!=='ARMED' && classifyQuick(p)!=='GREEN_UNARMED');
+  const red=eligible.filter(p=>classifyQuick(p)==='RED')
+    .sort((a,b)=>Date.parse(b.updated_at||0)-Date.parse(a.updated_at||0)).slice(0,6);
+  const rotated=selectCandidates(eligible,now,14,4);
+  const selected=[...new Map([...red,...rotated].map(p=>[p.number,p])).values()];
+  const summary={open:openCount,production:prod.length,eligibleToInspect:review.length,
+    inventoryMode,quickGreen:quick.GREEN_UNARMED,quickRed:quick.RED,
+    dirty:quick.DIRTY,behind:quick.BEHIND,quickPending:quick.PENDING,
+    alreadyArmed:quick.ARMED,inspected:0,inspectionLimit:0,rateLimitRemaining:null,
+    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,stalePendingCi:0,coreFailures:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
     dryRun,hasMergeToken};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
@@ -175,11 +196,16 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     active = a.data.total_count;
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
-  const ciRoom = Number.isFinite(active) && Number.isFinite(queued) && active+queued < 20;
+  const ciRoom=Number.isFinite(active)&&Number.isFinite(queued)&&active+queued<20;
   summary.blockedByCapacity=!ciRoom;
-  log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
+  const budget=await reserveApiBudget(github,log);
+  summary.rateLimitRemaining=budget.remaining;
+  summary.inspectionLimit=budget.deep;
+  log('FULL_INVENTORY open='+openCount+' production='+prod.length+
+    ' mode='+inventoryMode+' deepCandidates='+selected.length+' deepBudget='+budget.deep+
+    ' coreRemaining='+budget.remaining+' activeRuns='+active+' queuedRuns='+queued);
   let handoffs = 0;
-  for (const pr of selected) {
+  for (const pr of selected.slice(0,budget.deep)) {
     summary.inspected++;
     let checks;
     try {
@@ -203,9 +229,15 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
     const latest=coreRuns[0];
     if (!latest) {summary.missingCore++;continue;}
-    if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
+    if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {
+      summary.pendingCi++;
+      if (now-Date.parse(latest.created_at)>60*MINUTE) summary.stalePendingCi++;
+      continue;
+    }
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
+    // Base change/conflicts require restacking; they are not evidence of code defects.
+    if(pr.mergeStateStatus==='DIRTY'||pr.mergeStateStatus==='BEHIND')continue;
     if (now-Date.parse(latest.updated_at || latest.created_at) < 15*MINUTE) continue;
     let jobs=null;
     try {jobs=await listJobs(github,owner,repo,latest.id);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
@@ -222,7 +254,9 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
       catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
     }
   }
-  if (summary.greenUnarmed && hasMergeToken) {
+  // Fast GraphQL observes ALL green PRs. Existing coordinator rechecks exact release-ready.
+  summary.greenUnarmed+=quick.GREEN_UNARMED;
+  if (summary.greenUnarmed && hasMergeToken && (budget.remaining===null||budget.remaining>API_RESERVE+30)) {
     try {
       const info=(await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
         owner,repo,workflow_id:FULL,per_page:10})).data;
