@@ -70,7 +70,7 @@ test('website consultation remains accessible and manual WhatsApp/email are neve
   const simple=read('components/app/messages-simple-inbox.jsx')
   const portal=read('components/app/practice-request-conversation.jsx')
   assert.match(simple,/<PracticeRequestConversation key=\{selected\.id\} inline autoOpen/)
-  assert.match(simple,/requestKind!=='public'/)
+  assert.match(simple,/inMessagesTab\(selected,'chats'\)\s*\?\s*<PracticeRequestConversation/)
   assert.match(simple,/app\/practice\?panel=clients&requestId=/)
   assert.match(simple,/selected\.item\.replyChannel==='whatsapp'/)
   assert.match(simple,/selected\.item\.replyChannel==='email'/)

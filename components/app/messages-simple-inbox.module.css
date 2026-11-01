@@ -41,6 +41,7 @@
 .chatHolder{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .chatHolder[hidden]{display:none!important}
 .requestPane{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:auto;padding:15px;background:#fefbf7;gap:15px}
+.requestPane[hidden]{display:none!important}
 .requestBubble{align-self:flex-start;max-width:min(90%,570px);border:1px solid #eadfd6;border-radius:14px 14px 14px 5px;background:#fff;padding:14px 16px;overflow-wrap:anywhere;white-space:pre-wrap}
 .requestBubble small{font-size:11px;color:#8d8179}
 .requestBubble p{margin:7px 0 0;line-height:1.55;font-size:14px}
@@ -256,4 +257,101 @@
  .shell[data-embedded="true"] .avatar{width:42px;height:42px}
  .shell[data-embedded="true"] .personHead strong{font-size:13px}
  .shell[data-embedded="true"] .sourceTag{font-size:9px}
+}
+
+
+/* Owner-approved client list and compact mobile conversation detail — 31 Oct.
+   Only visual presentation changes: keep original account-bound CRM/direct data. */
+.shell[data-embedded="true"] .person,
+.shell[data-embedded="true"] .personSelected{
+ min-height:102px;padding:12px 13px;gap:11px;margin-bottom:10px;
+ border-radius:17px;border-color:#e5e8df;align-items:center;
+ box-shadow:0 3px 14px #43563e0b;
+}
+.shell[data-embedded="true"] .avatar{width:49px;height:49px}
+.shell[data-embedded="true"] .personText{gap:4px}
+.shell[data-embedded="true"] .personHead{align-items:baseline;min-width:0}
+.shell[data-embedded="true"] .personHead strong{
+ flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ font-size:14px;line-height:1.28;
+}
+.shell[data-embedded="true"] .preview{
+ font-size:11px;line-height:1.35;color:#778278;
+ -webkit-line-clamp:1;
+}
+.shell[data-embedded="true"] .sourceTag{
+ font-size:10px;line-height:1.2;padding:3px 8px;
+ border-radius:999px;background:#f1f5ef;color:#2a7860;
+}
+.shell[data-embedded="true"] .threadFlag{font-size:10px;padding:4px 9px}
+.shell[data-embedded="true"] .personBar{
+ background:#fffdfa;border-bottom:1px solid #e5e8df;
+ min-height:59px;gap:9px;padding:8px 10px;
+}
+.shell[data-embedded="true"] .back{
+ display:flex;align-items:center;justify-content:center;
+ width:44px;min-width:44px;height:44px;
+ border-radius:14px;border:1px solid #dee9df;
+ background:#f8faf5;color:#216a53;
+}
+.shell[data-embedded="true"] .back:focus-visible{outline:3px solid #208a69;outline-offset:2px}
+.shell[data-embedded="true"] .cardButton{min-height:42px}
+@media(max-width:700px){
+ .shell[data-embedded="true"] .person,
+ .shell[data-embedded="true"] .personSelected{min-height:99px;padding:11px 12px;gap:9px}
+ .shell[data-embedded="true"] .avatar{width:47px;height:47px}
+ .shell[data-embedded="true"] .personHead strong{font-size:13px}
+ .shell[data-embedded="true"] .personHead time{font-size:10px}
+ .shell[data-embedded="true"] .personLabel strong{font-size:14px}
+ .shell[data-embedded="true"] .personBar .cardButton{padding:7px 10px}
+}
+@media(max-width:354px){
+ .shell[data-embedded="true"] .person,
+ .shell[data-embedded="true"] .personSelected{padding:10px;gap:8px}
+ .shell[data-embedded="true"] .avatar{width:43px;height:43px}
+ .shell[data-embedded="true"] .personHead strong{font-size:12.5px}
+ .shell[data-embedded="true"] .back{width:42px;min-width:42px;height:42px}
+}
+
+/* Full-screen mobile conversations, like Telegram/WhatsApp: the website and
+   Orders/Clients navigation stay behind the selected conversation. Only the
+   history scrolls; the real Send composer remains inside the visual viewport. */
+@media(max-width:700px){
+ .shell[data-detail-open="true"] .window,
+ .shell[data-embedded="true"][data-detail-open="true"] .window{
+  box-sizing:border-box;display:block;position:fixed;z-index:4000;
+  top:var(--hh-mobile-window-top,0px);inset-inline:0;
+  width:100%;height:var(--hh-mobile-window-height,100dvh);
+  max-height:none;min-height:0;margin:0;padding-top:env(safe-area-inset-top);
+  border:0;border-radius:0;box-shadow:none;overflow:hidden;background:#fffdfa;
+ }
+ .shell[data-detail-open="true"] .window .people{display:none}
+ .shell[data-detail-open="true"] .window .detail{
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+  width:100%;height:100%;overflow:hidden;background:#fffdfa
+ }
+ .shell[data-detail-open="true"] .window .personBar{
+  flex:0 0 56px;height:56px;min-height:56px;gap:8px;
+  padding:6px 9px;border-radius:0;border-bottom:1px solid #e8e7dd;
+  box-shadow:0 1px 5px #2446320a
+ }
+ .shell[data-detail-open="true"] .window .back{min-width:44px;width:44px;height:44px}
+ .shell[data-detail-open="true"] .window .personLabel strong{font-size:15px}
+ .shell[data-detail-open="true"] .window .personLabel small{font-size:11px}
+ .shell[data-detail-open="true"] .window .cardButton{min-height:42px}
+ .shell[data-detail-open="true"] .window .chatHolder{
+  display:flex;flex:1;min-height:0;overflow:hidden
+ }
+ .shell[data-detail-open="true"] .window .requestPane{
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="false"] .chatHolder{
+  padding-bottom:env(safe-area-inset-bottom)
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="false"] .requestPane{
+  padding-bottom:calc(12px + env(safe-area-inset-bottom))
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="true"] .personBar{
+  flex-basis:50px;height:50px;min-height:50px;padding-top:3px;padding-bottom:3px
+ }
 }
