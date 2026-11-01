@@ -9,6 +9,11 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
  ]){const page=await browser.newPage({viewport:{width,height:844},isMobile:true,hasTouch:true});
   const writes=[];await page.route('**/*',route=>{const r=route.request();let u=new URL(r.url());if(!['GET','HEAD'].includes(r.method()))writes.push(`${r.method()} ${u.pathname}`);return u.origin==='http://127.0.0.1:3100'&&['GET','HEAD'].includes(r.method())?route.continue():route.abort();});
   await page.goto(`http://127.0.0.1:3100/${locale}/holistic-support/mandala`,{waitUntil:'domcontentloaded',timeout:90000});
+  // The approved mobile Studio keeps advanced first-video controls collapsed.
+  // Open the real disclosure before asserting its hydrated renderer, never waive QA.
+  const advanced=page.locator('[data-video-first-video-advanced]');
+  await advanced.locator('summary').click({timeout:20000});
+  assert.equal(await advanced.getAttribute('open'),'',engine+'/'+locale+' advanced video disclosure opened');
   await page.locator('[data-first-free-video][data-first-video-hydrated="true"]').waitFor({state:'visible',timeout:60000});
   if(engine==='chromium'&&locale==='ru'){
     const first=page.locator('[data-first-free-video]');

@@ -316,6 +316,7 @@ const REVIEWED_HEIC_2566_DELTA = new Map([
   ['scripts/ci-public-services-plan.mjs','M'],
   ['tests/ci-public-services-plan.test.mjs','M'],
   ['scripts/verify-holistic-mandala-browser.mjs','M'],
+  ['scripts/verify-hypno-wave-browser.mjs','M'],
 ]);
 function exactHeic2566(env,rows) {
   if (env.GITHUB_HEAD_REF !== 'fix/mandala-single-accordion-editor-20261029' ||
