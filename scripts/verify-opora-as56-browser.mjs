@@ -3,7 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaAs59Day } from '../lib/inner-growth/opora-as59-seven-skills.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -39,8 +40,12 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale)
-    const support = oporaExperienceSupport(5,locale)
+    const t = words[locale], edition = oporaAs59Day(5,locale)
+    // The current V7 lesson displays persisted AS-5.9 wording; compare the
+    // hydrated page with that exact authored edition, not archived AS-5.6 copy.
+    assert.ok(edition && edition.practice && edition.purpose)
+    const brief = edition.practice
+    const support = {title:edition.purposeTitle, body:edition.purpose}
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
@@ -115,7 +120,7 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(support.body)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
       await click(t.next)
