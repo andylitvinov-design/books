@@ -670,6 +670,16 @@ const runEngine = async ([engine, browserType]) => {
         // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
         await themeDisclosure.locator("summary").click();
         await expect(themeDisclosure).not.toHaveAttribute("open","");
+        // The diagnostic banner lives in the server-rendered page AFTER the
+        // large client Video Studio. Next streaming may finish the client panel
+        // before its following sibling. Wait for the actual reachable link,
+        // never accept its absence or substitute an unrelated CTA.
+        assert.equal(new URL(page.url()).pathname,`/${locale}/holistic-support/mandala`,
+          "editor interactions must not navigate away from the canonical Studio");
+        const diagnosticEntry=page.locator("[data-video-diagnostic-banner] a[href$='/services/free-situation-review']");
+        await expect(diagnosticEntry,
+          "original free diagnostic CTA below the editor must exist and be visible")
+          .toBeVisible({timeout:15000});
         const layout=await page.evaluate(()=>{
           const root=document.querySelector("[data-video-quick-builder]");
           const header=root?.querySelector("[data-video-mandala-hero]");
