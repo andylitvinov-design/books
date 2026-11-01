@@ -441,6 +441,7 @@ try {
     }
     pass('Messenger-only: EN/RU/ES private no-store/noindex headers; public menu matrices deferred to public QA')
   }
+  if (!messengerOnly) {
   const owner = await browser.newContext(common)
   await owner.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
   const admin = await owner.newPage()
@@ -628,6 +629,81 @@ try {
   }
   assert.deepEqual(errors, [])
   pass('No public or private browser JavaScript errors')
+  } else {
+    // The old owner UI harness below still models the retired v1 admin cookie.
+    // Actual owner authentication now requires a verified Google/Supabase bridge
+    // plus a persisted v2 admin session. Never re-enable the old bypass to
+    // satisfy a test. Messenger-only PRs are instead required to prove the
+    // current private/legacy boundaries and both independent client sessions.
+    const privateMarker = 'SYNTHETIC-PRIVATE-MESSENGER-IA-DO-NOT-LEAK'
+    const previewId = randomUUID()
+    await store.save({
+      id: previewId, clientId: a.id, kind: 'recommendation', status: 'active',
+      patientName: 'Synthetic Private Report', dateIssued: '2026-10-13',
+      recommendationType: 'homeopathy', languagePreference: 'ru',
+      analysis: privateMarker, additionalNotes: 'Private synthetic notes',
+      internalNotes: 'SYNTHETIC-PRIVATE-OWNER-ONLY',
+      items: [{ remedySlug: 'colchicum-autumnale', itemType: 'homeopathy' }],
+    })
+    const retiredCookie = createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url')
+    const legacyOwner = await browser.newContext(common)
+    await legacyOwner.addCookies([{
+      name: 'prescriptions_admin', value: retiredCookie,
+      domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true,
+      sameSite: 'Strict',
+    }])
+    const deniedLegacy = await legacyOwner.request.get(origin + `/admin/documents/${previewId}?locale=ru`, { maxRedirects: 0 })
+    assert.equal(deniedLegacy.status(), 307, 'Retired admin cookie MUST NOT grant owner access')
+    assert.ok(!(await deniedLegacy.text()).includes(privateMarker))
+    const leakedPdf = await publicContext.request.get(origin + `/admin/api/documents/${previewId}/pdf?locale=ru&preview=1`, { maxRedirects: 0 })
+    assert.equal(leakedPdf.status(), 404, 'Anonymous PDF request MUST deny saved records')
+    assert.ok(!(await leakedPdf.text()).includes(privateMarker))
+    const leakedViewer = await publicContext.request.get(origin + `/admin/documents/${previewId}/session-preview?locale=ru`, { maxRedirects: 0 })
+    assert.equal(leakedViewer.status(), 307, 'Anonymous private client page preview MUST redirect')
+    assert.ok(!(await leakedViewer.text()).includes(privateMarker))
+    pass('Messenger-only: retired admin cookie denied; real saved report, private PDF and session preview remain inaccessible to guests')
+
+    const ca = await browser.newContext({ ...common, viewport: { width: 390, height: 844 } })
+    const cb = await browser.newContext({ ...common, viewport: { width: 390, height: 844 } })
+    const pa = await ca.newPage(), pb = await cb.newPage()
+    pa.on('pageerror', error => errors.push(error.message))
+    pb.on('pageerror', error => errors.push(error.message))
+    const exchangeA = pa.waitForResponse(response => response.url().endsWith('/api/client-access') && response.request().method() === 'POST')
+    await go(pa, `/en/client/${links.a.selector}#${links.a.secret}`)
+    assert.equal((await exchangeA).status(), 204, 'Client A verified fragment exchange')
+    await expect(pa.getByRole('heading', { name: 'Welcome, Synthetic Client A', exact: true })).toBeVisible()
+    await expect(pa).toHaveURL(origin + `/en/client/${links.a.selector}`)
+    const exchangeB = pb.waitForResponse(response => response.url().endsWith('/api/client-access') && response.request().method() === 'POST')
+    await go(pb, `/ru/client/${links.b.selector}#${links.b.secret}`)
+    assert.equal((await exchangeB).status(), 204, 'Client B verified fragment exchange')
+    await expect(pb.getByRole('heading', { name: 'Здравствуйте, Synthetic Client B', exact: true })).toBeVisible()
+    await expect(pb).toHaveURL(origin + `/ru/client/${links.b.selector}`)
+    const crossClient = await cb.request.get(origin + `/en/client/${links.a.selector}/assessments/${pair[0].id}`)
+    assert.equal(crossClient.status(), 404, 'Client B MUST NOT open Client A private records')
+    assert.ok(!(await crossClient.text()).includes(supplied.originalResult))
+    const anonClient = await publicContext.request.get(origin + `/en/client/${links.a.selector}/assessments/${pair[0].id}`)
+    assert.equal(anonClient.status(), 404, 'Anonymous browser MUST NOT open Client A private records')
+    assert.ok(!(await anonClient.text()).includes(supplied.originalResult))
+    assert.equal(await pa.evaluate(() => localStorage.length + sessionStorage.length), 0, 'No private browser local/session storage')
+    await rotateCabinetAccess(store, a.id, environment)
+    await go(pa, '/en/client')
+    await revokeCabinetAccess(store, b.id)
+    await go(pb, '/ru/client')
+    pass('Messenger-only: isolated EN/RU clients, 204 fragment exchanges, cross-client 404, zero private storage, rotation and revocation')
+
+    secondBrowser = await webkit.launch()
+    const safari = await secondBrowser.newContext({ ...common, viewport: { width: 390, height: 844 } })
+    await safari.addCookies([{
+      name: 'prescriptions_admin', value: retiredCookie,
+      domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true,
+      sameSite: 'Strict',
+    }])
+    const safariDenied = await safari.request.get(origin + `/admin/documents/${previewId}/session-preview?locale=ru`, { maxRedirects: 0 })
+    assert.equal(safariDenied.status(), 307, 'WebKit must also deny retired admin credentials')
+    assert.ok(!(await safariDenied.text()).includes(privateMarker))
+    assert.deepEqual(errors, [])
+    pass('Messenger-only: WebKit retired-owner denial; no client browser JavaScript errors')
+  }
   results.push({ status: 'BLOCKED', message: 'Deployed Preview/Production private-storage configuration and real-data isolation are not inspected by this synthetic harness.' })
 } catch (error) {
   results.push({ status: 'FAIL', message: sanitize(error.message) })
