@@ -30,7 +30,14 @@ test("six original meditation directions share one mobile player across EN/RU/ES
   assert.match(ui,/meditationCategory === "meaning" \? filtered\.filter\(video => video\.program === "sun"\)/);
   assert.match(ui,/meditationCategoryRelated: "Близкие оригинальные практики Солнца/);
   assert.match(ui,/data-support-meditation-category-related role="status"/);
-  assert.match(ui,/setTheme\("all"\); setProgram\("all"\); setMaster\("all"\); setGoalSelection\(null\); setSelectedId\(null\); setPlaying\(false\)/);
+  const start = ui.indexOf("const chooseMeditationCategory = (value: MeditationCategory) => {");
+  const end = ui.indexOf("const scrollMeditationCategories = ", start);
+  assert.ok(start > 0 && end > start, "real meditation-category handler is present");
+  const handler = ui.slice(start,end);
+  assert.match(handler,/setTheme\("all"\); setProgram\("all"\); setMaster\("all"\); setSelectedId\(null\); setPlaying\(false\)/,
+    "category switch resets playback and source filters");
+  assert.doesNotMatch(handler,/setGoalSelection\(null\)/,
+    "switching original videos must retain the accepted goal, currency, amounts and format choices");
   assert.equal((ui.match(/<iframe\b/g)||[]).length,1,"only the canonical video player");
   assert.match(ui,/youtube-nocookie\.com\/embed/);
 });

@@ -695,7 +695,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const chooseMeditationCategory = (value: MeditationCategory) => {
     setMeditationCategoryOverride(value);
     // A new primary direction must not inherit stale Programme/Master filters.
-    setTheme("all"); setProgram("all"); setMaster("all"); setGoalSelection(null); setSelectedId(null); setPlaying(false);
+    // Catalogue filters must preserve accepted personal goals, entered amounts and currency.
+    setTheme("all"); setProgram("all"); setMaster("all"); setSelectedId(null); setPlaying(false);
   };
   const scrollMeditationCategories = () => {
     const rail = meditationCategoryRef.current;
