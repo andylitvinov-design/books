@@ -73,7 +73,8 @@ test('Watchdog dispatches from durable CI and repair queue only when a slot exis
   assert.ok(s.includes('(summary.ciBootstrapQueued || ciQueueBacklog) && ciRoom'));
   assert.ok(s.includes('summary.conflictLabelsQueued || repairQueueBacklog'));
   assert.ok(s.includes("inputs:{dry_run:'false'}"));
-  assert.ok(s.includes("inputs:{pr_number:'0',dry_run:'false'}"));
+  assert.ok(s.includes("inputs:{pr_number:String(availableRepair?.number || 0)"));
+  assert.ok(s.includes("expected_sha:availableRepair?.head?.sha || ''"));
 });
 
 test('successful Core event has a separate rate-bounded free-slot wakeup',()=>{
