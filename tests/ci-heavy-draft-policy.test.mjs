@@ -54,7 +54,12 @@ test('production post-merge push and explicit manual verification are not disabl
 test('short CI contract tests run even when expensive browser gates are draft-skipped', () => {
   const guard = read('hh-pr-sweep-guard.yml');
   assert.match(guard, /tests\/ci-heavy-draft-policy\.test\.mjs/);
-  assert.match(guard, /node --test tests\/pr-sweep-guard\.test\.mjs tests\/ci-heavy-draft-policy\.test\.mjs/);
+  const command = guard.match(/^\s*-\s*run: node --test ([^\n]+)/m)?.[1];
+  assert.ok(command, 'fast Guard must execute its own unit command');
+  for (const name of ['tests/pr-sweep-guard.test.mjs', 'tests/required-gate-policy.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs']) {
+    assert.ok(command.split(/\s+/).includes(name), name+' must execute in Guard CI');
+  }
   assert.match(guard, /^  pull_request:/m);
 });
 
