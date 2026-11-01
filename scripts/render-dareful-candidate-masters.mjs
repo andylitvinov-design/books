@@ -10,7 +10,7 @@ import {resolve,join,dirname} from "node:path";
 import {spawnSync} from "node:child_process";
 import {createHash} from "node:crypto";
 import {fileURLToPath} from "node:url";
-import {CANDIDATE_FILE,validateCandidateManifest} from "./preview-dareful-candidates.mjs";
+import {CANDIDATE_FILE,CANDIDATE_WAVE2_FILE,validateCandidateManifest} from "./preview-dareful-candidates.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const output=resolve(root,"artifacts/dareful-wave-masters");
 const license="https://creativecommons.org/licenses/by/4.0/";
@@ -50,18 +50,18 @@ export function validateDraftMediaSource(source,manifest){
    source.sourcePage!=="https://dareful.com/"+source.id+"/")throw Error("untrusted_video_source");
  return true;
 }
-export function renderCandidateDrafts(){
- const manifest=JSON.parse(readFileSync(CANDIDATE_FILE,"utf8"));
+export function renderCandidateDrafts({sourceFile=CANDIDATE_FILE,directory=output}={}){
+ const manifest=JSON.parse(readFileSync(sourceFile,"utf8"));
  validateCandidateManifest(manifest);
- mkdirSync(output,{recursive:true});
+ mkdirSync(directory,{recursive:true});
  const approved=JSON.parse(readFileSync(resolve(root,"data/video-catalog/scene-taxonomy.json"),"utf8")).scenes;
  const reserved=new Set(approved.map(s=>s.id));
  const results=[];
  for(const source of manifest.sources){
    validateDraftMediaSource(source,manifest);
    if(reserved.has(source.id))throw Error("candidate_already_registered_"+source.id);
-   const mp4=join(output,source.id+".mp4");
-   const poster=join(output,source.id+".jpg");
+   const mp4=join(directory,source.id+".mp4");
+   const poster=join(directory,source.id+".jpg");
    run("ffmpeg",["-hide_banner","-loglevel","error","-nostdin","-y",
      "-rw_timeout","18000000","-i",source.mediaUrl,
      "-vf","fps=24,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,eq=saturation=0.92,format=yuv420p,fade=t=in:st=0:d=0.22,fade=t=out:st=4.6:d=0.4",
@@ -83,15 +83,15 @@ export function renderCandidateDrafts(){
    qualityGate:"Actual decoded frames + H.264 physical output, manual editorial and license attribution still required",
    sourceCount:results.length,
    approvedForPublication:false,clipMetadata:results};
- writeFileSync(join(output,"report.json"),JSON.stringify(report,null,2)+"\n");
- writeFileSync(join(output,"README.md"),
+ writeFileSync(join(directory,"report.json"),JSON.stringify(report,null,2)+"\n");
+ writeFileSync(join(directory,"README.md"),
    "# Video Studio · reviewed-source moving MP4 drafts\n\n"+
    "These are edited 5-second H.264 drafts, not live videos, and are not listed in public catalog.\n"+
    "Review the footage, attribution and final suitability before owner approval.\n"+
    "Creator: Joel Holland / Dareful. License: "+license+"\n");
- return {drafts:results.length,dir:output,readyForEditorReview:true,published:false};
+ return {drafts:results.length,dir:directory,readyForEditorReview:true,published:false};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- try{console.log(JSON.stringify(renderCandidateDrafts(),null,2))}
+ try{console.log(JSON.stringify(renderCandidateDrafts(process.argv.includes("--wave2")?{sourceFile:CANDIDATE_WAVE2_FILE,directory:resolve(root,"artifacts/dareful-wave2-masters")}:undefined),null,2))}
  catch(e){console.error("Draft real MP4 rendering failed: "+e.message);process.exitCode=1}
 }

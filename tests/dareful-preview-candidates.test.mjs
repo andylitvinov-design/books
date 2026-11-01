@@ -29,3 +29,19 @@ test("preview mechanism cannot publish raw stock or mark masters approved",()=>{
  assert.match(script,/contact_sheet_needs_human_review/);
  assert.doesNotMatch(script,/importFreeStockScene|update_ref|create_pull_request|public\/videos\/holistic-house/);
 });
+
+test("second wave references four additional licensed sources and explicit new tree shot intents",()=>{
+ const next=JSON.parse(readFileSync(new URL("../data/video-catalog/dareful-verified-candidate-wave2-20261101.json",import.meta.url),"utf8"));
+ assert.equal(validateCandidateManifest(next),true);
+ assert.equal(next.approvedForPublication,false);
+ assert.equal(next.sources.length,4);
+ const oldIds=new Set(manifest.sources.map(s=>s.id));
+ const oldMedia=new Set(manifest.sources.map(s=>s.mediaUrl));
+ for(const source of next.sources){
+   assert.equal(source.visualReviewRequired,true);
+   assert.ok(!oldIds.has(source.id));
+   assert.ok(!oldMedia.has(source.mediaUrl));
+   assert.ok(source.targetScenarioId&&source.targetShot>=1&&source.targetShot<=4);
+   assert.ok(source.visualMotif);
+ }
+});

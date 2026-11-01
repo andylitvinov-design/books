@@ -21,3 +21,12 @@ test("draft renderer emits real H264 motion and editorial-only artifacts",()=>{
  assert.match(src,/libx264/);
  assert.doesNotMatch(src,/public\/videos\/holistic-house\/film-collection-v3|importFreeStockScene|git push|update_ref/);
 });
+
+test("second candidate wave remains owner-unapproved and limited to trusted Dareful Mux hosts",()=>{
+ const next=JSON.parse(read("data/video-catalog/dareful-verified-candidate-wave2-20261101.json"));
+ assert.equal(next.approvedForPublication,false);
+ for(const source of next.sources){
+   assert.equal(validateDraftMediaSource(source,next),true);
+   assert.equal(source.visualReviewRequired,true);
+ }
+});

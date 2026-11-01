@@ -4,6 +4,7 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'data/video-catalog/dareful-verified-candidate-wave-20261101.json'
+      - 'data/video-catalog/dareful-verified-candidate-wave2-20261101.json'
       - 'scripts/preview-dareful-candidates.mjs'
       - 'scripts/render-dareful-candidate-masters.mjs'
       - 'tests/dareful-draft-master-contract.test.mjs'
@@ -51,5 +52,36 @@ jobs:
         with:
           name: hh-dareful-editorial-mp4-drafts-${{ github.run_id }}
           path: artifacts/dareful-wave-masters/
+          if-no-files-found: warn
+          retention-days: 7
+
+  candidate-contact-sheets-wave2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate the second candidate wave and licensing allowlist
+        run: node --test tests/dareful-preview-candidates.test.mjs tests/dareful-draft-master-contract.test.mjs
+      - name: Generate a second wave of real nine-frame contact sheets
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          node scripts/preview-dareful-candidates.mjs --wave2
+      - name: Export four five-second H264 editorial draft MP4s
+        run: node scripts/render-dareful-candidate-masters.mjs --wave2
+      - name: Upload wave-two contact sheets and MP4 drafts for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-wave2-editorial-drafts-${{ github.run_id }}
+          path: |
+            artifacts/dareful-wave2-previews/
+            artifacts/dareful-wave2-masters/
           if-no-files-found: warn
           retention-days: 7

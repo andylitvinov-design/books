@@ -12,6 +12,7 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 import {createHash} from "node:crypto";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 export const CANDIDATE_FILE=join(root,"data/video-catalog/dareful-verified-candidate-wave-20261101.json");
+export const CANDIDATE_WAVE2_FILE=join(root,"data/video-catalog/dareful-verified-candidate-wave2-20261101.json");
 const output=join(root,"artifacts","dareful-wave-previews");
 const license="https://creativecommons.org/licenses/by/4.0/";
 function vettedUrl(value,host,pattern){
@@ -50,13 +51,13 @@ function ffmpegPreview(source,destination){
  ],{cwd:root,encoding:"utf8",timeout:90000,maxBuffer:250000});
  return command.status===0?null:String(command.stderr||command.error||"preview_failed").slice(0,500);
 }
-export async function previewCandidates(){
- const manifest=JSON.parse(await readFile(CANDIDATE_FILE,"utf8"));
+export async function previewCandidates({sourceFile=CANDIDATE_FILE,directory=output}={}){
+ const manifest=JSON.parse(await readFile(sourceFile,"utf8"));
  validateCandidateManifest(manifest);
- await mkdir(output,{recursive:true});
+ await mkdir(directory,{recursive:true});
  const results=[];
  for(const source of manifest.sources){
-  const destination=join(output,source.id+".jpg");
+  const destination=join(directory,source.id+".jpg");
   let error=ffmpegPreview(source,destination);
   let size=0,sha256=null;
   if(!error){
@@ -77,17 +78,17 @@ export async function previewCandidates(){
    disclaimer:"Contact sheets do not prove permission to use people, brands or safety-sensitive visual details. Review before approval.",
    license,attribution:"Joel Holland / Dareful; CC BY 4.0; images adapted into contact sheets",
    images:results,approvedForPublication:false};
- await writeFile(join(output,"report.json"),JSON.stringify(report,null,2)+"\n");
- await writeFile(join(output,"README.md"),
+ await writeFile(join(directory,"report.json"),JSON.stringify(report,null,2)+"\n");
+ await writeFile(join(directory,"README.md"),
    "# Dareful footage editorial review — NOT PUBLISHED\n\n"+
    "These are contact sheets of nine real-video frames, **not approved masters**.\n"+
    "Check each for recognizable people, logos, suitability, actual movement and duplicated content.\n"+
    "All media remains pending until reviewed and subsequently imported through the licensed importer.\n\n"+
    "License: "+license+"\nCreator: Joel Holland / Dareful (modified contact sheet).\n\n"+
    results.map(r=>"- "+r.id+" — "+r.status+" — "+r.sourcePage).join("\n")+"\n");
- return {readyForReview:results.filter(r=>!r.error).length,failed:results.filter(r=>r.error).length,output};
+ return {readyForReview:results.filter(r=>!r.error).length,failed:results.filter(r=>r.error).length,output:directory};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
- previewCandidates().then(value=>console.log(JSON.stringify(value)))
+ previewCandidates(process.argv.includes("--wave2")?{sourceFile:CANDIDATE_WAVE2_FILE,directory:join(root,"artifacts","dareful-wave2-previews")}:undefined).then(value=>console.log(JSON.stringify(value)))
    .catch(error=>{console.error("Dareful preview rejected: "+error.message);process.exitCode=1});
 }
