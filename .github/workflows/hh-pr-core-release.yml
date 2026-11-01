@@ -96,6 +96,7 @@ jobs:
                   tests/ci-specialist-aggregate.test.mjs|\
                   tests/ci-specialist-wait.test.mjs|\
                   tests/ci-workflow-globs.test.mjs|\
+                  tests/workflow-next-route-filters.test.mjs|\
                   tests/pr-sweep-guard.test.mjs|\
                   tests/ci-heavy-draft-policy.test.mjs) ;;
                 *) ci_only=false ;;
@@ -153,6 +154,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Assert fast-lane workflow contracts
         run: node --test tests/pr-fast-lane.test.mjs
+      - name: Verify specialist ownership and Messenger isolation on CI-policy changes
+        if: needs.scope.outputs.ci_only == 'true'
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
         shell: bash
         env:

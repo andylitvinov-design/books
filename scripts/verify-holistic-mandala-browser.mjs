@@ -432,7 +432,10 @@ const runEngine = async ([engine, browserType]) => {
         await expect(mainPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
         await mainPlay.click();
         await expect(mainPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
-        await quick.locator("[data-video-quick-hero-play]").click();
+        const secondaryHeaderPlay=quick.locator("[data-video-quick-hero-play]");
+        assert.equal(await secondaryHeaderPlay.isVisible(),false,
+          "the approved mock has ONE visible Play on the actual Canvas, no duplicate banner player");
+        await mainPlay.click();
         await expect(mainPlay).toHaveAttribute("aria-pressed","true",{timeout:10000});
         await mainPlay.click();
         await expect(mainPlay).toHaveAttribute("aria-pressed","false",{timeout:10000});
@@ -486,10 +489,15 @@ const runEngine = async ([engine, browserType]) => {
         }
         await expect(livePreview.locator("video")).toHaveAttribute("src",expectedAlternateMaster,
           {timeout:15000});
+        const themeDisclosure=quick.locator("[data-video-theme-advanced]");
+        assert.equal(await themeDisclosure.getAttribute("open"),null,
+          "the detailed six visual topics are accessible but collapsed under the four easy goals");
+        await themeDisclosure.locator("summary").click();
+        await expect(themeDisclosure).toHaveAttribute("open","");
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
+        await page.locator('[data-video-director-goal-controls] [data-auto-video-input]').fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -532,33 +540,40 @@ const runEngine = async ([engine, browserType]) => {
         await expect(actualAffirmations).not.toBeChecked({timeout:10000});
         // Owner reference: compact first screen, genuine hero Play, 44px targets,
         // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
+        await themeDisclosure.locator("summary").click();
+        await expect(themeDisclosure).not.toHaveAttribute("open","");
         const layout=await page.evaluate(()=>{
           const root=document.querySelector("[data-video-quick-builder]");
-          const header=root?.querySelector("header");
-          const brand=root?.querySelector("nav");
+          const header=root?.querySelector("[data-video-mandala-hero]");
+          const brand=root?.querySelector(".unused-brand-selector")||
+            root?.querySelector("nav[aria-label='Holistic House']");
           const order=root?.querySelector("[data-video-order-bar]");
-          const goals=root?.querySelector("[data-video-quick-section='1']");
+          const goalHost=root?.querySelector("[data-video-director-goal-controls]");
           const extras=root?.querySelector("[data-video-quick-extras]");
           const diagnostic=document.querySelector("[data-video-diagnostic-banner]");
           const box=node=>node?.getBoundingClientRect();
           return {hero:box(header)?.height,brand:box(brand)?.height,
-            themes:[...goals?.querySelectorAll("[data-video-quick-theme]")||[]].map(node=>box(node)?.width),
+            goals:[...goalHost?.querySelectorAll("[data-auto-video-goal]")||[]]
+              .filter(node=>node.getClientRects().length).map(node=>box(node)?.width),
+            secondaryHeaderVisible:!!root?.querySelector("[data-video-quick-hero-play]")?.getClientRects().length,
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?
               getComputedStyle(diagnostic).display!=="none":false};
         });
-        assert.ok(layout.hero<=215 && layout.hero>=130,
-          engine+" "+locale+" "+width+"px first-screen hero height "+JSON.stringify(layout));
-        assert.ok(layout.brand>=40 && layout.brand<=65,
+        assert.ok(layout.hero<=205 && layout.hero>=90,
+          engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
+        assert.ok(layout.brand>=40 && layout.brand<=75,
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
-        assert.ok(layout.themes.length===6 && layout.themes.every(n=>n>=44),
-          engine+" "+locale+" "+width+"px scannable topic cards "+JSON.stringify(layout));
+        assert.ok(layout.goals.length===4 && layout.goals.every(n=>n>=44),
+          engine+" "+locale+" "+width+"px four scannable goal cards "+JSON.stringify(layout));
+        assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
         assert.equal(layout.diagnosticVisible,false,"marketing banner must not push down iPhone editor");
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
-        assert.ok(await heroPlay.isEnabled());
+        assert.equal(await heroPlay.isVisible(),false);
+        assert.ok(await quick.locator("[data-video-preview-toggle]").isEnabled());
         const extras=quick.locator("[data-video-quick-extras]");
         await extras.locator("summary").click();
         await expect(extras).toHaveAttribute("open","");
@@ -573,8 +588,8 @@ const runEngine = async ([engine, browserType]) => {
           engine+" "+locale+" "+width+"px quick UI overflow "+JSON.stringify(quickOverflow));
         assert.ok(quickOverflow.cards.every(rect=>rect.width<=width+1&&rect.x>=-3));
         const touchTargets=await quick.locator(
-          '[data-video-quick-theme], [data-video-practice-pick], [data-video-quick-scene], [data-video-personal-affirmations], [data-video-quick-generate]'
-        ).evaluateAll(nodes=>nodes.map(el=>({
+          '[data-auto-video-goal], [data-video-practice-pick], [data-video-quick-scene], [data-video-personal-affirmations], [data-video-quick-generate]'
+        ).evaluateAll(nodes=>nodes.filter(el=>el.getClientRects().length>0).map(el=>({
           width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,
         })));
         assert.ok(touchTargets.every(rect=>rect.width>=44&&rect.height>=44),
@@ -674,7 +689,8 @@ const runEngine = async ([engine, browserType]) => {
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
-        assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
+        assert.equal(await hero.locator("p").count(),1,
+          "the owner-approved mock keeps one short editorial line on top of the real video");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
         assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
@@ -707,37 +723,39 @@ const runEngine = async ([engine, browserType]) => {
         const hierarchy=await page.evaluate(()=>{
           const top=selector=>document.querySelector(selector)?.getBoundingClientRect().top;
           return {
-            // Owner-approved theme → ONE Canvas → six controls → gold program CTA
-            // → styles → real phrases and soundtrack → optional detailed library.
+            // Screenshot-accurate REAL UX: hero → six workspaces → 4 goals
+            // → music previews → original Director → honest future result.
             preview:[
-              '[data-video-quick-section="1"]',
               "[data-video-mandala-hero]",
               "[data-video-quick-controls]",
+              '[data-video-quick-section="1"]',
+              "[data-video-quick-audio-choices]",
+              "[data-auto-video-director]",
+              "[data-video-result-empty]"
+            ].map(top),
+            extended:[
               "[data-video-therapy-banner]",
               '[data-video-quick-section="4"]',
               "[data-video-quick-phrases]",
-              "[data-video-quick-audio-choices]",
               "[data-video-scene-library]",
               "[data-video-quick-tier]",
               "[data-video-quick-personal]",
               "[data-video-order-bar]"
             ].map(top),
-            // Existing detailed Support/diagnostic features stay available
-            // independently below the fast public editor.
             support:[
-              "[data-video-daily-picks]",
-              "[data-video-support-layout]",
-              "[data-video-category-rail]",
-              "[data-video-preview-choices]",
-              "[data-video-audio-section]",
-              "[data-video-hypnosis-section]"
+              "[data-video-daily-picks]","[data-video-support-layout]",
+              "[data-video-category-rail]","[data-video-preview-choices]",
+              "[data-video-audio-section]","[data-video-hypnosis-section]"
             ].map(selector=>Boolean(document.querySelector(selector)))
           };
         });
         assert.ok(hierarchy.preview.every(Number.isFinite),
-          engine+" "+locale+" "+width+"px approved quick flow contains all visible sections");
+          engine+" "+locale+" "+width+"px screenshot primary sections exist");
         for(let i=1;i<hierarchy.preview.length;i++)assert.ok(hierarchy.preview[i]>hierarchy.preview[i-1],
-          engine+" "+locale+" "+width+"px visible quick flow order "+i+": "+hierarchy.preview);
+          engine+" "+locale+" "+width+"px screenshot order "+i+": "+hierarchy.preview);
+        assert.ok(hierarchy.extended.every(Number.isFinite)&&
+          hierarchy.extended.every(y=>y>hierarchy.preview.at(-1)),
+          "all old editor tools remain accessible below the new fast flow");
         // Detailed Support editor is intentionally inside a CLOSED <details>.
         // Its bounding boxes are 0px, so validate DOM structure, not invisible
         // visual geometry, without opening it or skipping any functionality.
@@ -1812,18 +1830,20 @@ const runEngine = async ([engine, browserType]) => {
         // Keep the full original Chromium/WebKit recorder & audio E2E intact.
         if (locale === "ru" && width === 390) {
           const auto=page.locator("[data-auto-video-director]");
+          const goalPanel=page.locator("[data-video-director-goal-controls]");
           await auto.waitFor({state:"visible",timeout:12000});
-          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+          await goalPanel.locator("[data-auto-video-input]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await goalPanel.locator("[data-auto-video-goal]").count(),6,
             "six accessible one-tap goals, no mandatory 49-question intake");
           // Owner-reported iPhone regression: focus must not zoom, trailing
           // whitespace must survive, user intent must change the real proposal,
           // and one of the alternative film cards must be selectable.
-          const typedGoal=auto.locator("[data-auto-video-input]");
+          const typedGoal=goalPanel.locator("[data-auto-video-input]");
           await typedGoal.fill("Любовь ");
           await typedGoal.pressSequentially("и доверие");
           assert.equal(await typedGoal.inputValue(),"Любовь и доверие",
             "goal input must preserve the space between two words");
-          await auto.locator("[data-auto-video-suggest]").click();
+          await goalPanel.locator("[data-auto-video-suggest]").click();
           await expect(auto.locator("[data-auto-video-matched-theme]")).toContainText("Отношения");
           const alternatives=auto.locator("[data-auto-video-option]");
           assert.ok(await alternatives.count()>=2,"at least two genuine approved alternative story choices");
@@ -1844,7 +1864,10 @@ const runEngine = async ([engine, browserType]) => {
             "Auto Video Director must appear below the existing Music & Voice block");
 
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
-          await auto.locator('[data-auto-video-goal="calm"]').click();
+          const moreGoals=goalPanel.locator("[data-auto-video-more-goals]");
+          await moreGoals.locator("summary").click();
+          await expect(moreGoals).toHaveAttribute("open","");
+          await goalPanel.locator('[data-auto-video-goal="calm"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
             "goal gives four actual source scenes");
