@@ -2353,7 +2353,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
           const blob=await encodeLocalWebCodecsMp4({
-            canvas,seconds:duration,frameRate:Math.min(20,framesPerSecond),
+            // Safari WebKit 26 often falls behind H.264/AAC muxing at 20 fps on
+            // portrait Canvas. Keep real-time storyboard PTS and audible AAC,
+            // but bound encoder input to a smooth, device-safe 12 fps.
+            canvas,seconds:duration,frameRate:Math.min(12,framesPerSecond),
             audio:files.length?{files,volume:soundVolume}:undefined,
             shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
             onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)

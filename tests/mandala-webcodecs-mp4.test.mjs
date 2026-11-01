@@ -31,6 +31,8 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
   assert.match(helper,/video_encoder_timeline_drift/);
+  assert.match(studio,/frameRate:Math\.min\(12,framesPerSecond\)/,
+    "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
   assert.match(helper,/video_output_not_mp4/);
