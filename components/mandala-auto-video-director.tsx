@@ -27,7 +27,7 @@ type Props={
   audioAttached?:boolean;audioTrackLabel?:string;onOpenAudio?:()=>void;
   onGoalChange:(value:string)=>void;
   onCategoryChange?:(theme:VideoTheme)=>void;
-  onContinue?:()=>void;
+  onContinue?:()=>void;onClarify?:()=>void;helpOpen?:boolean;
   onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
@@ -127,7 +127,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onCategoryChange,onContinue,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
+ audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onCategoryChange,onContinue,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -263,8 +263,11 @@ export function MandalaAutoVideoDirector({
      <h3><Leaf size={19} aria-hidden="true"/>
        {locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}</h3>
      <button type="button" data-auto-video-clarify
-       disabled={disabled} aria-expanded={refineOpen}
-       onClick={()=>setRefineOpen(open=>!open)}>
+       disabled={disabled} aria-expanded={onClarify?helpOpen:refineOpen}
+       onClick={()=>{
+         if(onClarify){onClarify();return;}
+         setRefineOpen(open=>!open);
+       }}>
        <Sparkles size={16} aria-hidden="true"/>
        <span>{locale==="ru"?"Я помогу: разберём проблему и определим запрос. Free.":
          locale==="es"?"Te ayudo a aclarar tu petición. Gratis.":

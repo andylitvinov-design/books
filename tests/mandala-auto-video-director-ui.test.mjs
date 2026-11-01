@@ -184,3 +184,22 @@ test("mock actions are connected: four goal images, 3×2 text themes, four scena
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
 });
+
+test("Free help opens the ONE production AI Director without adding a second player or hidden paid action",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.equal((studio.match(/<MandalaVideoDirectorChat/g)||[]).length,1,
+   "the existing #2913 AI chat is preserved exactly once");
+ assert.match(studio,/data-video-director-chat-details/);
+ assert.match(studio,/open=\{directorChatOpen\}/);
+ assert.match(studio,/onToggle=\{event=>setDirectorChatOpen\(event\.currentTarget\.open\)\}/);
+ assert.match(studio,/onClarify=\{\(\)=>\{/);
+ assert.match(studio,/setDirectorChatOpen\(true\)/);
+ assert.match(director,/aria-expanded=\{onClarify\?helpOpen:refineOpen\}/);
+ assert.match(director,/if\(onClarify\)\{onClarify\(\);return;\}/);
+ assert.match(css,/\.directorChatDetails:not\(\[open\]\)\{display:none!important\}/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+ assert.match(studio,/onCreate=\{createQuickVideo\}/);
+ assert.match(studio,/onConfirm=\{\(\{scenario\}\)=>\{/);
+ assert.match(studio,/scenario\.readyToExecute/);
+ assert.match(studio,/onGoalChange=\{next=>\{setWish\(next\.slice\(0,800\)\)/);
+});

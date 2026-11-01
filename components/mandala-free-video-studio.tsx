@@ -1642,6 +1642,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
+  const [directorChatOpen,setDirectorChatOpen] = useState(false);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -3437,54 +3438,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
-        {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
-            Visual styling reuses the approved Messenger pattern without importing CRM data. */}
-        <MandalaVideoDirectorChat
-          locale={locale} goal={wish} theme={theme}
-          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
-          renderOptions={{quality,brightness,volumePercent:soundVolume}}
-          disabled={recording||preparing} canCreate={canGenerate}
-          rendering={recording||preparing} renderProgress={progress}
-          resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
-          resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
-          onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
-          onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
-          onConfirm={({scenario})=>{
-            // The ONLY executable boundary: one validated scenario -> existing
-            // MP4 timeline, audio selection, on-screen text, Canvas and MediaRecorder.
-            // An AI string never becomes a guessed media URL or paid render.
-            if(uploadedAudio||attachedAudio?.kind==="file"){
-              setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
-                :locale==="es"?"Configura primero la voz añadida en el panel de audio."
-                :"Please review your existing voice recording in the audio settings first.");
-              return false;
-            }
-            if(!scenario.readyToExecute||scenario.version!=="hh-executable-video-scenario-v1")
-              return false;
-            const ok=applyAutoFilm(scenario.presetId,
-              scenario.durationSeconds as 10|15|20|30|60,
-              scenario.edit,scenario.aspect as Aspect);
-            if(!ok)return false;
-            const soundtrack=scenario.audio.trackId as AmbientMusic;
-            chooseMusic(soundtrack);
-            setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
-            setAudioAuto(false);setSpeed(scenario.rendering.motion as Speed);
-            setSoundVolume(scenario.audio.volumePercent);
-            setQuality(scenario.rendering.quality as Quality);
-            setBrightness(scenario.rendering.brightness as Brightness);
-            // Stage captions come from scenario.shots in the verified film
-            // plan. Disable the other two overlay tracks to avoid duplicate
-            // affirmations or text unrelated to the user's approved cut.
-            setCaptionMode("none");
-            setAffirmations(current=>({...current,enabled:false,selected:[]}));
-            setPreviewPlaying(false);
-            return true;
-          }}
-          onCreate={createQuickVideo}
-          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
-          onOpenEditor={()=>openQuickDetailed("video-settings")}
-          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
-          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
         <div className={videoStyles.quickBenefits} aria-label={approvedMobileCopy[locale].introTitle}>
           {approved.benefits.map((benefit,index)=>{
             const Icon=[Sparkles,Heart,Leaf,Music2][index];
@@ -3534,6 +3487,68 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
         </section>
+        {/* Original verified AI Director from #2913: open only from the free-help
+            chip, keep the default iPhone design and a single MediaRecorder. */}
+        <details className={videoStyles.directorChatDetails}
+          data-video-director-chat-details data-workspace-section="video"
+          open={directorChatOpen}
+          onToggle={event=>setDirectorChatOpen(event.currentTarget.open)}>
+          <summary><Sparkles size={17} aria-hidden="true"/>
+            {locale==="ru"?"ИИ-помощник — уточнить ваш запрос":
+              locale==="es"?"Asistente IA — aclarar tu petición":
+              "AI assistant — refine your brief"}
+            <ChevronDown size={17} aria-hidden="true"/>
+          </summary>
+        {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
+            Visual styling reuses the approved Messenger pattern without importing CRM data. */}
+        <MandalaVideoDirectorChat
+          locale={locale} goal={wish} theme={theme}
+          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          renderOptions={{quality,brightness,volumePercent:soundVolume}}
+          disabled={recording||preparing} canCreate={canGenerate}
+          rendering={recording||preparing} renderProgress={progress}
+          resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
+          resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
+          onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
+          onConfirm={({scenario})=>{
+            // The ONLY executable boundary: one validated scenario -> existing
+            // MP4 timeline, audio selection, on-screen text, Canvas and MediaRecorder.
+            // An AI string never becomes a guessed media URL or paid render.
+            if(uploadedAudio||attachedAudio?.kind==="file"){
+              setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
+                :locale==="es"?"Configura primero la voz añadida en el panel de audio."
+                :"Please review your existing voice recording in the audio settings first.");
+              return false;
+            }
+            if(!scenario.readyToExecute||scenario.version!=="hh-executable-video-scenario-v1")
+              return false;
+            const ok=applyAutoFilm(scenario.presetId,
+              scenario.durationSeconds as 10|15|20|30|60,
+              scenario.edit,scenario.aspect as Aspect);
+            if(!ok)return false;
+            const soundtrack=scenario.audio.trackId as AmbientMusic;
+            chooseMusic(soundtrack);
+            setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
+            setAudioAuto(false);setSpeed(scenario.rendering.motion as Speed);
+            setSoundVolume(scenario.audio.volumePercent);
+            setQuality(scenario.rendering.quality as Quality);
+            setBrightness(scenario.rendering.brightness as Brightness);
+            // Stage captions come from scenario.shots in the verified film
+            // plan. Disable the other two overlay tracks to avoid duplicate
+            // affirmations or text unrelated to the user's approved cut.
+            setCaptionMode("none");
+            setAffirmations(current=>({...current,enabled:false,selected:[]}));
+            setPreviewPlaying(false);
+            return true;
+          }}
+          onCreate={createQuickVideo}
+          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
+          onOpenEditor={()=>openQuickDetailed("video-settings")}
+          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
+          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
+
+        </details>
 
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
@@ -3923,6 +3938,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
+          helpOpen={directorChatOpen}
+          onClarify={()=>{
+            setDirectorChatOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.querySelector("[data-video-director-chat-details]")?.scrollIntoView({
+                behavior:"smooth",block:"nearest"
+              })));
+          }}
           onShowAll={()=>{
             setShowAdvancedVideo(true);
             window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
