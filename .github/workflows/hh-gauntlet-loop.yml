@@ -1,4 +1,4 @@
-name: Holistic House Gauntlet offline safety gate
+name: Holistic House Gauntlet free-model safety and contract gate
 
 on:
   pull_request:
@@ -54,4 +54,5 @@ jobs:
         run: |
           npx eslint scripts/benchmarking/hh-gauntlet-loop.mjs lib/benchmarking/hh-gauntlet-loop.mjs tests/hh-gauntlet-loop.test.mjs
           npx tsc --noEmit
-      # No OpenCode CLI, API key, live POST, migrations, deployments or paid calls in CI.
+      # Never invoke a model in the contract job: repeatable, zero-provider baseline.
+
