@@ -47,6 +47,16 @@ test('deep triage obtains a pinned release-ready app from effective branch rules
   assert.throws(()=>requiredGateApp([rule([{context:'release-ready',integration_id:1},{context:'release-ready',integration_id:2}])]),/REQUIRED_GATE/);
 });
 
+test('an explicitly released lease cannot block a new owner until its old expiry',()=>{
+  const now=Date.parse('2026-10-31T19:01:00Z');
+  const lease=makeLease({owner:'agent-a',head_sha:sha('a'),base_sha:sha('b'),now});
+  const comment=(state)=>({id:11,created_at:'2026-10-31T19:01:00Z',body:renderLease({...lease,...state})});
+  assert.ok(activeLease([comment({state:'active'})],now));
+  assert.equal(activeLease([comment({state:'released_after_atomic_commit',last_action:'release'})],now),null);
+  assert.equal(activeLease([comment({last_action:'release'})],now),null);
+  assert.ok(activeLease([comment({state:'released_after_atomic_commit',last_action:'heartbeat'})],now));
+});
+
 test('route-deep rechecks live heads and never attributes an old failure to a changed PR',()=>{
   const dir=mkdtempSync(join(tmpdir(),'hh-sweep-deep-'));
   try {
@@ -374,7 +384,7 @@ test('Private Audio reuses unconditional production Core TS/build while keeping 
     'tests/session-media-sdk.test.mjs',
     'Fixture lint and private media tests',
   ]) assert.ok(source.includes(required), 'private-owner/media gate removed: ' + required);
-  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -403,7 +413,7 @@ test('Practitioner presentations retain all real contracts on production PRs and
     'tests/practice-public-alias.test.mjs',
   ]) assert.ok(source.includes(item), 'Missing actual practitioner contract: '+item);
   assert.ok(source.includes("github.event.pull_request.draft == false"));
-  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+  assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
@@ -413,8 +423,8 @@ test('Practitioner visual editor skips Draft work, reuses Core TS/Next and retai
   const core = read('hh-pr-core-release.yml');
   const dollar = String.fromCharCode(36);
   const expectedEvents = 'types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
-  const prGroup = 'group: practice-visual-services-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
-  const prCancel = 'cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}";
+  const prGroup = 'group: practice-visual-services-'+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const prCancel = 'cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
   const draftGate = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   const coreReuse = 'if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   assert.ok(source.includes(expectedEvents), 'Draft→Ready must trigger the full real practice suite');

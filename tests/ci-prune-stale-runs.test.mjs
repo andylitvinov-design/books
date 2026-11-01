@@ -27,8 +27,8 @@ test('never cancel new SHA, production push, running jobs, unrelated or ambiguou
     { pull_requests: [] }, { head_branch: 'other' },
   ]) assert.equal(eligible(run(data), pr(), ctx), false, JSON.stringify(data));
   assert.equal(eligible(run(), pr({ base: { ref: 'main' } }), ctx), false);
-  assert.equal(eligible(run(), pr({ state: 'closed' }), ctx), true);
-  assert.equal(eligible(run({ head_sha: 'new' }), pr({ state: 'closed' }), ctx), true);
+  assert.equal(eligible(run(), pr({ state: 'closed' }), ctx), false);
+  assert.equal(eligible(run({ head_sha: 'new' }), pr({ state: 'closed' }), ctx), false);
 });
 
 test('re-read exact live run and PR before cancellation; cap and dry-run', async () => {
@@ -65,4 +65,10 @@ test('elevated GitHub token only used for trusted production checkout, not PR HE
   assert.match(yaml, /^  pull_request:/m);
   assert.match(yaml, /if: github\.event_name == 'pull_request'/);
   assert.match(yaml, /github\.event_name == 'push'/);
+});
+
+test('cleanup concurrency isolates PRs and never cancels production push runs', () => {
+  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  assert.ok(yaml.includes("group: hh-ci-prune-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
+  assert.ok(yaml.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
 });

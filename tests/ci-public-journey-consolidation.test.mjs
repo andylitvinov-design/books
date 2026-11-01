@@ -5,7 +5,6 @@ import { planPublicJourneys, planFromGitDiff } from '../scripts/ci-public-journe
 
 const full = {wave1:true, wave2:true};
 const source = readFileSync(new URL('../.github/workflows/hh-public-journey-wave1.yml', import.meta.url), 'utf8');
-const wave2 = readFileSync(new URL('../.github/workflows/hh-public-journey-toronto-wave2.yml', import.meta.url), 'utf8');
 
 test('exact change routing retains individual journeys and fails closed for shared or unknown files', () => {
   assert.deepEqual(planPublicJourneys(['app/[locale]/contact/page.tsx']), {wave1:true,wave2:false});
@@ -20,7 +19,6 @@ test('exact change routing retains individual journeys and fails closed for shar
   assert.deepEqual(planPublicJourneys(['app/[locale]/toronto/page.tsx','lib/security/roles.ts']), full);
   assert.deepEqual(planPublicJourneys([]), full);
   assert.deepEqual(planPublicJourneys([null]), full);
-  assert.deepEqual(planPublicJourneys(['.github/workflows/hh-public-journey-toronto-wave2.yml']), full);
 });
 
 test('missing or failed real git diff never skips browser checks', () => {
@@ -38,7 +36,7 @@ test('successor preserves both original real browsers with one local build and o
     'tests/public-pathway-toronto.test.mjs',
     'app/\\[locale\\]/contact/**',
     'app/\\[locale\\]/toronto/**',
-    '.github/workflows/hh-public-journey-toronto-wave2.yml']) {
+    '.github/workflows/hh-public-journey-wave1.yml']) {
     assert.ok(source.includes(x), 'Successor omits scope/coverage ' + x);
   }
   assert.equal((source.match(/run: npm run build/g)||[]).length, 1);
@@ -50,6 +48,10 @@ test('successor preserves both original real browsers with one local build and o
   assert.match(source, /draft == false/);
   assert.match(source, /workflow_dispatch:/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
-  // Old workflow stays live until the trusted-base retirement phase.
-  assert.match(wave2,/node scripts\/verify-public-pathway-toronto-mobile\.mjs/);
+  assert.match(source, /^  push:/m, 'Post-merge audit runs full real-browser journeys');
+  for(const name of ['Build exact candidate once for both real-browser suites', 'Install Chromium and WebKit once for both journeys', 'Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server']) {
+    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'ordinary PR defers expensive build/browser, but post-merge and manual keep: '+name);
+  }
+  assert.match(source, /workflow_dispatch:/, 'Manual full matrix remains available');
 });
