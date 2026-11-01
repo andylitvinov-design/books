@@ -93,3 +93,9 @@ test('IA browser acceptance verifies the global My Space dialog on public pages'
   assert.match(source, /home-personal-space-dialog/)
   assert.doesNotMatch(source, /all other public routes retain the direct Cabinet link/)
 })
+
+test('mobile menu keeps a 44px touch target at narrow widths', () => {
+  const css = readFileSync(new URL('../app/holistic-house-home.css', import.meta.url), 'utf8')
+  assert.doesNotMatch(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*40px/)
+  assert.match(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*44px;\s*min-width:\s*44px/)
+})

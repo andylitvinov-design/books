@@ -138,7 +138,9 @@ async function verifyPublicHeaderMatrix(page, engine) {
     await expect(locator).toBeVisible()
     const box = await locator.boundingBox()
     const { width, height } = page.viewportSize()
-    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
+    const fits = box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44
+    if (!fits) console.error('IA_CONTROL_GEOMETRY', label, JSON.stringify({box, viewport:{width,height}}))
+    assert.ok(fits, label + ': visible 44px control must fit viewport')
   }
   for (const locale of ['en', 'ru', 'es']) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
