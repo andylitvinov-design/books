@@ -33,5 +33,10 @@ test('IA private meditation fast lane retains exact-merge check, owner/RLS and f
   assert.match(yaml,/npm run verify:ia-v2/);
   assert.match(yaml,/npm run native:check && npm run pwa:check/);
   assert.match(yaml,/run: npm run build/);
-  assert.match(yaml,/practitioner_meditation_only != 'true'/);
+  assert.match(yaml,/practitioner_meditation_only == 'true'/);
+  assert.match(yaml,/IA security, ownership and navigation contracts/);
+  assert.match(yaml,/Application, CRM and billing functional contracts/);
+  assert.match(yaml,/Guest test access and privacy contracts/);
+  assert.match(yaml,/Full unit inventory outside production PR/);
+  assert.doesNotMatch(yaml,/Full historical IA suite/);
 });
