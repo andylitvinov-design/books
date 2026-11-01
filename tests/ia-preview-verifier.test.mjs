@@ -58,3 +58,12 @@ test('IA owner browser uses the real verified bridge with loopback-only syntheti
   assert.match(source, /legacy admin cookie must remain unauthorized/)
   assert.match(source, /real verified practitioner bridge/)
 })
+
+
+test('IA isolated browser fixture migrates real Materials SQL before public feed without a stub', () => {
+  const setup = readFileSync(new URL('./helpers/app-db-setup.mjs', import.meta.url), 'utf8')
+  const material = setup.indexOf('sql/practitioner-material-library-20261015.sql')
+  const feed = setup.indexOf('20261018014000_hh_public_materials_library_feed.sql')
+  assert.ok(material > 0 && feed > material, 'run released table SQL before public feed metadata')
+  assert.ok(setup.includes('function assertIsolated()'), 'fixture must remain local-only')
+})
