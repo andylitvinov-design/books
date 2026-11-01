@@ -569,7 +569,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
-    if (now-Date.parse(latest.updated_at || latest.created_at) < 15*MINUTE) continue;
+    // Immediately hand verified source failures to Repair when capacity is idle.
+    // A delayed, infrastructure-only retry is still guarded by transientFailure().
     let jobs=null;
     try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
     if (ciRoom && summary.transientCiReruns < MAX_STALE_RUNS && transientFailure(latest,jobs,now)) {
