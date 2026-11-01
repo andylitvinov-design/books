@@ -1,4 +1,5 @@
 'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
 test('skip skipped and cancelled Watchdog callbacks before reserving any runner',()=>{
   const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
   assert.match(workflow,/workflow_run\.conclusion != 'cancelled'/);
@@ -7,7 +8,6 @@ test('skip skipped and cancelled Watchdog callbacks before reserving any runner'
   assert.match(workflow,/group: hh-control-tower-single-writer/);
   assert.match(workflow,/cancel-in-progress: false/);
 });
-const {test}=require('node:test'),assert=require('node:assert/strict');
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run}=require('../scripts/ci-pr-queue-dispatcher.cjs');
