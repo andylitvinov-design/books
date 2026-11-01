@@ -25,13 +25,14 @@ const cap=(active=0,queued=0)=>computeCapacity(
  [{status:'in_progress'}]);
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
- const calls={dispatched:[],reserved:[],read:[]};
+ const calls={dispatched:[],reserved:[],read:[],removed:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
   get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
-  createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};}
+  createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
+  removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}
  },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};}}},
  request:async()=>({data:{workflow_runs:recent}})};
  return {github,calls,capacityFn:async()=>cap(active,queued)};
@@ -166,6 +167,64 @@ test('deduplicates a worker lane within one cycle and refuses a stacked parent',
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
  assert.equal(y.dispatchAccepted,0);
+});
+test('resolved conflict label is cleared after two consistent SHA/base reads',async()=>{
+ const baseSha='b'.repeat(40),clean=pr(92,'conflict',{
+  mergeable:true,mergeable_state:'clean',
+  base:{ref:'codex/public-book-library',sha:baseSha}});
+ const f=fixture([clean]);
+ const result=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.staleConflictCleared,1);
+ assert.equal(f.calls.removed.length,1);
+ assert.equal(f.calls.removed[0].issue_number,92);
+ assert.equal(f.calls.removed[0].name,'hh:conflict-repair-needed');
+});
+test('rechecked moving head/base cannot delete a conflict label',async()=>{
+ const baseSha='b'.repeat(40),original=pr(92,'conflict',{
+  mergeable:true,mergeable_state:'clean',
+  base:{ref:'codex/public-book-library',sha:baseSha}});
+ for(const changed of [
+  {...original,head:{...original.head,sha:'c'.repeat(40)}},
+  {...original,base:{...original.base,sha:'d'.repeat(40)}},
+  {...original,mergeable:null,mergeable_state:'unknown'}
+ ]){
+  const f=fixture([original]);let calls=0;
+  f.github.rest.pulls.get=async()=>({data:++calls===1?original:changed});
+  const result=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn});
+  assert.equal(result.staleConflictCleared,0);
+  assert.equal(f.calls.removed.length,0);
+ }
+});
+test('unknown conflict status or active owner lease is never cleared',async()=>{
+ const clean=pr(92,'conflict',{mergeable:true,mergeable_state:'blocked',
+  base:{ref:'codex/public-book-library',sha:'b'.repeat(40)}});
+ const lease={schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,
+  state:'active',expires_at:new Date(NOW+3600_000).toISOString()};
+ const f=fixture([clean],{comments:{92:[{body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(lease)}]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(r.staleConflictCleared,0);
+ assert.equal(f.calls.removed.length,0);
+ const unknown=fixture([pr(92,'conflict',{mergeable:null,
+  mergeable_state:'unknown'})]);
+ const q=await run({github:unknown.github,core:core(),context,now:NOW,
+  capacityFn:unknown.capacityFn});
+ assert.equal(q.staleConflictCleared,0);
+ assert.equal(unknown.calls.removed.length,0);
+});
+test('stale conflict cleanup dry-run never changes PR labels',async()=>{
+ const clean=pr(92,'conflict',{mergeable:true,mergeable_state:'clean',
+  base:{ref:'codex/public-book-library',sha:'b'.repeat(40)}});
+ const f=fixture([clean]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  dryRun:true,capacityFn:f.capacityFn});
+ assert.equal(r.wouldClearStaleConflict,1);
+ assert.equal(r.staleConflictCleared,0);
+ assert.equal(f.calls.removed.length,0);
 });
 test('real conflict requires a fresh dirty merge state',async()=>{
  const plain=pr(9,'conflict');const f=fixture([plain],{});

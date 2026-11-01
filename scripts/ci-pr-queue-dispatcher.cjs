@@ -48,7 +48,8 @@ function planCandidates(prs,now){
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
-  inspected:0,dispatchAccepted:0,wouldDispatch:0,blocked:{},
+  inspected:0,dispatchAccepted:0,wouldDispatch:0,
+  staleConflictCleared:0,wouldClearStaleConflict:0,blocked:{},
   workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  const blocked=reason=>{summary.blocked[reason]=(summary.blocked[reason]||0)+1;};
@@ -111,9 +112,6 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
      !validPR(fresh)||laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
-  if(task.lane==='conflict'&&!(fresh.mergeable===false&&fresh.mergeable_state==='dirty')){
-   blocked('CONFLICT_NOT_VERIFIED');continue;
-  }
   let comments;
   try{
    comments=await readCompleteIssueComments(github,owner,repo,task.pr_number,limited);
@@ -121,6 +119,43 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }catch(err){blocked('OWNER_HISTORY_UNAVAILABLE');continue;}
   const status=reservationStatus(task,comments,now);
   if(status!=='FREE'){blocked(status);continue;}
+  if(task.lane==='conflict'&&!(fresh.mergeable===false&&fresh.mergeable_state==='dirty')){
+   // A resolved conflict label is only a stale work-queue hint. The legacy
+   // Repair Worker could clear it, but Control Tower never dispatches it to
+   // Repair unless it is DIRTY. Release it here after two authoritative
+   // exact-head/base reads and after verifying no other owner has the task.
+   const knownClean=fresh.mergeable===true &&
+     ['clean','blocked','behind'].includes(fresh.mergeable_state) &&
+     SHA.test(fresh.base?.sha||'') &&
+     fresh.labels?.some(l=>l.name==='hh:conflict-repair-needed') &&
+     !fresh.labels?.some(l=>l.name==='hh:repair-needed');
+   if(!knownClean){blocked('CONFLICT_NOT_VERIFIED');continue;}
+   let verified;
+   try{verified=(await limited('recheck-stale-conflict',()=>github.rest.pulls.get({
+    owner,repo,pull_number:task.pr_number}))).data;}
+   catch(err){blocked('STALE_CONFLICT_RECHECK_UNAVAILABLE');continue;}
+   if(!verified||!validPR(verified)||verified.head?.sha!==task.head_sha||
+      verified.base?.ref!==PROD||verified.base?.sha!==fresh.base.sha||
+      verified.mergeable!==true||
+      !['clean','blocked','behind'].includes(verified.mergeable_state)||
+      !verified.labels?.some(l=>l.name==='hh:conflict-repair-needed')||
+      verified.labels?.some(l=>l.name==='hh:repair-needed')){
+    blocked('STALE_CONFLICT_CHANGED');continue;
+   }
+   if(dryRun){summary.wouldClearStaleConflict++;continue;}
+   try{
+    await limited('clear-stale-conflict',()=>github.rest.issues.removeLabel({
+     owner,repo,issue_number:task.pr_number,name:'hh:conflict-repair-needed'
+    }));
+    summary.staleConflictCleared++;
+    log('CLEARED_STALE_CONFLICT #'+task.pr_number+' '+task.head_sha.slice(0,12));
+   }catch(err){
+    blocked(err?.status===404?'STALE_CONFLICT_ALREADY_CLEARED':
+      'STALE_CONFLICT_CLEAR_DENIED');
+    log('Stale conflict label cleanup #'+task.pr_number+': '+err.message);
+   }
+   continue;
+  }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
   if(task.lane==='repair'&&!comments.some(c=>String(c.body||'').includes(
