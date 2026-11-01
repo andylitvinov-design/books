@@ -208,12 +208,11 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();
    // All six suggestions write to the ONE shared wish and update real scene theme.
    const nextGoal=popularTopicCopy[locale][goalId as keyof typeof popularTopicCopy.ru]||item.labels[locale];
-   const categoryId=goalId==="connection"?"love":goalId==="calm"?"calm":
-     goalId==="stability"?"possibilities":"strength";
-   const nextTheme=videoGoalCategories.find(entry=>entry.id===categoryId)!.theme;
+   // The main four-card objective stays selected while the user refines a
+   // topic. A topic may target a more specific underlying licensed theme.
+   const nextTheme=item.theme as VideoTheme;
    onGoalChange(nextGoal);
    onCategoryChange?.(nextTheme);
-   setSelectedCategoryId(categoryId);
    setProposalContext({goal:nextGoal,theme:nextTheme});
    setSelectedGoalId(goalId);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
