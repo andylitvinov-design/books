@@ -1133,3 +1133,45 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
     ...good, id: 300 + i,
   })), live, event, 102), false, 'truncated current-head checks fail closed');
 });
+
+test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate synchronize triggers', () => {
+  const native = workflow('hh-native-auto-merge.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
+  assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review\]/);
+  assert.doesNotMatch(nativeEvents, /synchronize/,
+    'new source commits must not start an extra privileged native AutoMerge workflow');
+  assert.match(native, /^  workflow_run:\s*$/m);
+  assert.ok(native.includes("      - 'HH PR core release gate'"),
+    'successful exact-HEAD Core CI must still wake the trusted native listener');
+  const enable = native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
+    'the current source run association must not be weakened');
+  assert.ok(enable.includes("job.name === \"hh-core-verified\""),
+    'native merge must still verify real successful Core');
+  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
+    'retain actual legacy branch protection until admin migration');
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
+    'Core CI MUST still rerun for every source push');
+  assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
+});
+
+test('separate required specialist status cannot bypass full release-ready acceptance',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
+  assert.ok(special,'must publish a named independent specialist status');
+  assert.match(special,/^    name: hh-specialists-verified$/m);
+  assert.match(special,/^    needs: \[release-ready\]$/m);
+  assert.match(special,/^    if: always\(\)$/m);
+  assert.match(special,/^    timeout-minutes: 3$/m);
+  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + '{{ needs.release-ready.result }}'));
+  assert.ok(special.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
+  assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
+  const full=source.split(/^  release-ready:\s*$/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
+  assert.ok(full,'must retain real legacy specialist job');
+  assert.match(full,/ci-specialist-aggregate\.mjs/);
+  assert.match(full,/timeout-minutes: 45/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
