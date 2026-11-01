@@ -30,7 +30,10 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const file of PUBLIC_SOURCE_TESTS) {
     assert.match(source, new RegExp('node --test [^\\n]*' + file.replaceAll('.', '\\.')));
   }
-  assert.match(source, /npm run build > artifacts\/public-services-production\/build\.log/);
+  assert.match(source, /\.\/node_modules\/\.bin\/next build/);
+  for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
+    'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
+    'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -349,7 +352,8 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   const src = workflow('hh-public-services-production.yml');
   assert.match(src,/^  public-services:\s*$/m);
   assert.match(src,/id: scope/);
-  assert.match(src,/fetch-depth: 0/);
+  assert.match(src,/fetch-depth: 2/);
+  assert.match(src,/Verify bounded Public Services PR ancestry before impact routing/);
   assert.match(src,/steps.scope.outputs.browser/);
   assert.match(src,/steps.scope.outputs.build/);
   assert.match(src,/steps.scope.outputs.cases/);
@@ -855,4 +859,30 @@ test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full u
     assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
   }
   assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
+});
+
+test('Public Services performance guards preserve the exact-head and sensitive-browser gates', () => {
+  const src = workflow('hh-public-services-production.yml');
+  for (const fragment of [
+    'fetch-depth: 2',
+    'Verify bounded Public Services PR ancestry before impact routing',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'actions/cache/restore@v4',
+    'actions/cache/save@v4',
+    'hh-public-next-',
+    'steps.public_acceptance.outputs.build_ok',
+    'playwright install chromium webkit',
+    'smoke_engines',
+    'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build',
+  ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
+  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  for (const unsafe of ['app/api/payments/checkout/route.js',
+    'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
+    const plan = planPublicServicesChangedPaths([unsafe]);
+    assert.equal(plan.mode, 'full');
+    assert.equal(requiresPublicServicesHeavyPr(plan), true);
+  }
 });
