@@ -168,6 +168,9 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
   assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
   assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
   assert.match(studio, /data-video-original-fallback-download/);
+  assert.match(studio, /exportUnavailable && !result && originalFallbackMp4/);
+  assert.match(studio, /setExportUnavailable\(true\)/);
+  assert.match(studio, /setExportUnavailable\(false\)/);
   assert.match(studio, /holistic-house-original-scene\.mp4/);
   assert.match(studio, /Это НЕ ваш готовый фильм/);
   assert.match(studio, /duration, format, photo, captions and music were not applied/);
