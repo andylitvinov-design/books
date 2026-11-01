@@ -7,8 +7,9 @@
  */
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {mkdirSync, writeFileSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {mkdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs';
+import {resolve, join} from 'node:path';
+import {tmpdir} from 'node:os';
 
 const ORIGIN = 'https://holistichouse.vercel.app';
 const ARTIFACT = 'artifacts/benchmarking/first-video-live-export.json';
@@ -23,21 +24,26 @@ const row = {target: ORIGIN, engine: 'chromium', viewport: '390x844',
   paidVideoProviderUsed: false, aiPromptRequested: false,
   physicalIPhoneVerified: false, status: 'FAIL', blockedRequests: 0};
 
-function mediaTool(exe, args, input, maxBuffer = 1024 * 1024) {
-  const done = spawnSync(exe, args, {input, timeout: 30000, maxBuffer});
+function mediaTool(exe, args, maxBuffer = 1024 * 1024) {
+  // FFprobe and one-frame FFmpeg decoders may close pipe:0 before Node has
+  // written the whole media blob, producing EPIPE even with exit status 0.
+  // Always read a local ephemeral file instead; never upload its contents.
+  const done = spawnSync(exe, args, {timeout: 30000, maxBuffer});
   if (done.error || done.status !== 0) {
-    throw new Error(`LIVE_VIDEO_${exe.toUpperCase()}_FAILED:${done.status ?? done.error?.code}`);
+    const cause = done.error?.code || 'exit_' + done.status;
+    throw new Error(`LIVE_VIDEO_${exe.toUpperCase()}_FAILED:${cause}:` +
+      String(done.stderr || '').slice(0, 100));
   }
   return done.stdout;
 }
-function movingPixels(blob, at) {
-  return mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
+function movingPixels(mediaFile, at) {
+  return mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', mediaFile,
     '-ss', String(at), '-frames:v', '1', '-vf', 'scale=96:54,format=rgb24',
-    '-f', 'rawvideo', 'pipe:1'], blob, 200 * 1024);
+    '-f', 'rawvideo', 'pipe:1'], 200 * 1024);
 }
-function rmsPcm(blob) {
-  const pcm = mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
-    '-map', '0:a:0', '-t', '2', '-ar', '8000', '-ac', '1', '-f', 's16le', 'pipe:1'], blob,
+function rmsPcm(mediaFile) {
+  const pcm = mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', mediaFile,
+    '-map', '0:a:0', '-t', '2', '-ar', '8000', '-ac', '1', '-f', 's16le', 'pipe:1'],
     100 * 1024);
   const samples = Math.floor(pcm.length / 2);
   assert.ok(samples > 4000, 'AUDIO_TOO_SHORT');
@@ -54,6 +60,7 @@ async function downloadBytes(download) {
   return Buffer.concat(chunks);
 }
 let browser;
+let mediaDir;
 try {
   browser = await chromium.launch({headless: true, channel: 'chrome'});
   const context = await browser.newContext({
@@ -118,8 +125,11 @@ try {
     assert.deepEqual(bytes.subarray(0, 4), Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
       'NOT_REAL_WEBM');
   } else assert.equal(bytes.subarray(4, 8).toString(), 'ftyp', 'NOT_REAL_MP4');
+  mediaDir = mkdtempSync(join(tmpdir(), 'hh-live-video-probe-'));
+  const mediaFile = join(mediaDir, filename.endsWith('.webm') ? 'result.webm' : 'result.mp4');
+  writeFileSync(mediaFile, bytes);
   const probe = JSON.parse(mediaTool('ffprobe', ['-v', 'error', '-show_streams',
-    '-show_format', '-of', 'json', 'pipe:0'], bytes).toString());
+    '-show_format', '-of', 'json', mediaFile]).toString());
   const video = probe.streams.find(s => s.codec_type === 'video');
   const audio = probe.streams.find(s => s.codec_type === 'audio');
   assert.ok(video, 'ENCODED_VIDEO_STREAM_MISSING');
@@ -128,10 +138,10 @@ try {
   assert.equal(video.height, 1280, 'WRONG_PORTRAIT_HEIGHT');
   const seconds = Number(probe.format?.duration || video.duration || 0);
   assert.ok(seconds >= 17 && seconds <= 26, 'WRONG_VIDEO_DURATION');
-  const energy = rmsPcm(bytes);
+  const energy = rmsPcm(mediaFile);
   assert.ok(energy > 0.003, 'SOUNDTRACK_IS_SILENT');
-  const a = movingPixels(bytes, 1);
-  const b = movingPixels(bytes, 11);
+  const a = movingPixels(mediaFile, 1);
+  const b = movingPixels(mediaFile, 11);
   assert.equal(a.length, 96 * 54 * 3, 'FRAME_A_UNDECODABLE');
   assert.equal(b.length, a.length, 'FRAME_B_UNDECODABLE');
   let delta = 0;
@@ -152,6 +162,7 @@ try {
   process.exitCode = 1;
 } finally {
   await browser?.close();
+  if (mediaDir) rmSync(mediaDir, {recursive: true, force: true});
   mkdirSync('artifacts/benchmarking', {recursive: true});
   writeFileSync(resolve(ARTIFACT), JSON.stringify(row, null, 2) + '\n');
 }
