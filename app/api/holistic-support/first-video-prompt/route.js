@@ -31,7 +31,7 @@ export async function POST(request) {
   try {
     const config=getAppConfig();
     requireSameOrigin(request,config);
-    const input=validateBody(await readBody(request,6000));
+    const input=validateBody(await readBody(request,12000));
     try { buildFirstVideoPromptContext(input); }
     catch(error) {
       if(error instanceof Error && ["no_compatible_licensed_scenes","no_compatible_cinematic_scenes","unsupported_scene_exclusion"].includes(error.message))
