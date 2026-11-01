@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
@@ -266,6 +267,7 @@ export function CompactLeadCapture({
               onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <EnquiryAttributionChoice locale={locale} disabled={busy !== null} />
           <div className={styles.channelHeading}>
             <strong>{t.channelsTitle}</strong>
             <span>{t.channelsHint}</span>

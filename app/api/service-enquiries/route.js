@@ -27,7 +27,7 @@ export async function POST(request) {
       // never turn a saved lead into a browser-side error or leak private text.
       after(async () => {
         try {
-          const delivery = await dispatchPublicServiceEnquiryTelegram(config, result.id)
+          const delivery = await dispatchPublicServiceEnquiryTelegram(config, result.id, payload.operationId)
           if (delivery.attempted > 0 && delivery.accepted !== 1)
             console.error('HH_PUBLIC_ENQUIRY_OWNER_TG_UNCONFIRMED')
         } catch {

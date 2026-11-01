@@ -6,7 +6,21 @@ on:
       - 'lib/practitioners/daily-digest.mjs'
       - 'lib/analytics/public-page-traffic.mjs'
       - 'lib/analytics/enquiry-attribution.mjs'
+      - 'lib/analytics/enquiry-public-catalog.mjs'
       - 'lib/analytics/enquiry-attribution.d.mts'
+      - 'lib/practitioners/public-service-enquiry.js'
+      - 'lib/app/public-enquiry-telegram.js'
+      - 'app/api/service-enquiries/route.js'
+      - 'app/api/payments/talismans/checkout/route.js'
+      - 'components/enquiry-attribution-choice.tsx'
+      - 'components/compact-lead-capture.tsx'
+      - 'components/contact-channel-chooser.tsx'
+      - 'components/free-express-wizard.tsx'
+      - 'components/home-free-diagnosis-banner.tsx'
+      - 'components/services-hero-quick-request.tsx'
+      - 'components/taoist-talisman-cart.tsx'
+      - 'supabase/migrations/*public_enquiry_traffic_attribution*.sql'
+      - 'tests/public-enquiry-attribution-rls.integration.mjs'
       - 'lib/app/owner-enquiry-notice.mjs'
       - 'tests/enquiry-attribution.test.mjs'
       - 'tests/owner-enquiry-notice.test.mjs'
@@ -45,6 +59,34 @@ on:
 permissions:
   contents: read
 jobs:
+  enquiry-attribution-rls-postgres17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      HH_APP_TEST_RUNTIME: isolated
+      HH_ENQUIRY_ATTRIBUTION_RLS: synthetic-only
+      NODE_OPTIONS: --conditions=react-server
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Verify guest INSERT, RLS denial and attribution readback
+        run: node --test tests/public-enquiry-attribution-rls.integration.mjs
   offline-contracts:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

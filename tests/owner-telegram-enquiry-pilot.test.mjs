@@ -14,7 +14,7 @@ test('real public enquiry alerts are opt-in, owner-only, at-most-once and privac
  const policy=read('lib/app/client-telegram-policy.js')
  assert.match(route,/if \(result.saved === true\)/)
  assert.match(route,/after\(async \(\) =>/)
- assert.match(route,/dispatchPublicServiceEnquiryTelegram\(config, result.id\)/)
+ assert.match(route,/dispatchPublicServiceEnquiryTelegram\(config, result.id, payload.operationId\)/)
  assert.match(route,/HH_PUBLIC_ENQUIRY_OWNER_TG_UNCONFIRMED/)
  assert.match(dispatch,/telegramOwnerPilotReady\(env\)/)
  assert.match(dispatch,/\[enquiryId,PRACTITIONER_ID\]/)
@@ -43,6 +43,7 @@ function fixture({ready=true,targets=[{target_account_id:'owner',target_chat_has
  const events=[]
  const source=read('lib/app/public-enquiry-telegram.js').replace(/^import .*$/gm,'').replace(/export /g,'')+'; dispatchPublicServiceEnquiryTelegram'
  const transaction=async(_config,_actor,fn)=>fn({query:async(query,args)=>{
+  if(query.includes("set_config('hh.public_enquiry_operation'"))return {rows:[]}
   if(query.includes('notification_tg_public_enquiry_claim'))return {rows:targets}
   if(query.includes('notification_tg_public_enquiry_allowed'))return {rows:[{allowed}]}
   if(query.includes('notification_tg_public_enquiry_finish')){events.push(['finish',args[1]]);return {rows:[{ok:true}]}}
@@ -62,21 +63,21 @@ function fixture({ready=true,targets=[{target_account_id:'owner',target_chat_has
 test('off gate or missing/deduplicated target never reaches provider',async()=>{
  for(const input of [{ready:false},{targets:[]}]){
   const x=fixture(input)
-  const result=await x.fn({},uuid)
+  const result=await x.fn({},uuid,uuid)
   assert.equal(result.attempted,0)
   assert.deepEqual(x.events,[])
  }
 })
 test('verified consent recheck precedes a single fixed owner message',async()=>{
- const a=fixture(),r=await a.fn({},uuid)
+ const a=fixture(),r=await a.fn({},uuid,uuid)
  assert.equal(r.accepted,1)
  assert.deepEqual(a.events,[['send','enquiry'],['finish','accepted']])
- const b=fixture({allowed:false}),s=await b.fn({},uuid)
+ const b=fixture({allowed:false}),s=await b.fn({},uuid,uuid)
  assert.equal(s.attempted,0)
  assert.deepEqual(b.events,[['finish','suppressed']])
 })
 test('volume limit suppresses provider activity without duplicate retry',async()=>{
- const a=fixture({throttled:true}),r=await a.fn({},uuid)
+ const a=fixture({throttled:true}),r=await a.fn({},uuid,uuid)
  assert.equal(r.accepted,0)
  assert.deepEqual(a.events,[['finish','suppressed']])
 })
