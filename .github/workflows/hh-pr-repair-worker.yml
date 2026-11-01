@@ -9,6 +9,8 @@ on:
       - '.github/workflows/hh-pr-repair-worker.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
       - 'scripts/ci-pr-priority.cjs'
+      - '.github/hh-pr-directions.json'
+      - 'tests/ci-pr-direction-watcher.test.cjs'
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-repair-worker.test.cjs'
   workflow_dispatch:

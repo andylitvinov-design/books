@@ -1,0 +1,58 @@
+name: HH PR direction watcher
+on:
+  schedule:
+    - cron: '1,11,21,31,41,51 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview direction assignment without changing PR labels'
+        type: boolean
+        default: false
+        required: false
+      batch:
+        description: 'Bounded bootstrap continuation (0–11); never changes source code'
+        type: string
+        default: '0'
+        required: false
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-direction-watcher.yml'
+      - '.github/hh-pr-directions.json'
+      - 'scripts/ci-pr-priority.cjs'
+      - 'scripts/ci-pr-direction-watcher.cjs'
+      - 'tests/ci-pr-priority.test.cjs'
+      - 'tests/ci-pr-direction-watcher.test.cjs'
+permissions:
+  contents: read
+  actions: write
+  issues: write
+  pull-requests: read
+concurrency:
+  group: hh-pr-direction-watcher
+  cancel-in-progress: false
+jobs:
+  classify:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout trusted default-branch policy (never checkout a PR)
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check deterministic direction rules without network
+        run: |
+          node --check scripts/ci-pr-priority.cjs
+          node --check scripts/ci-pr-direction-watcher.cjs
+          node --test tests/ci-pr-priority.test.cjs tests/ci-pr-direction-watcher.test.cjs
+      - name: Read all open production PRs and reconcile direction labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-direction-watcher.cjs');
+            const dryRun=String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            await worker.run({github,core,context,dryRun});

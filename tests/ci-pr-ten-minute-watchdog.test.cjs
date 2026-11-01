@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -18,23 +18,23 @@ test('full pool is covered by rotating slices within sixteen 10-minute checks',(
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
-test('all P0 PRs receive fast inspection despite a large low-priority backlog',()=>{
+test('all P1 direction PRs receive fast inspection despite a large low-priority backlog',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1));
   const p0=Array.from({length:14},(_,i)=>i+20);
-  for(const number of p0)prs[number-1].labels=[{name:'hh:priority:p0'}];
+  for(const number of p0)prs[number-1].title='fix(video): renderer regression';
   const seen=new Set();
   for(let tick=0;tick<6;tick++){
     const picked=selectCandidates(prs,NOW+tick*600000);
     assert.ok(picked.length<=16);
-    const high=picked.filter(p=>p.labels?.some(l=>l.name==='hh:priority:p0'));
-    assert.ok(high.length>=4,'P0 backlog must occupy all four fast slots');
+    const high=picked.filter(p=>p.title?.includes('(video)'));
+    assert.ok(high.length>=4,'P1 direction backlog must occupy all four fast slots');
     for(const p of high)seen.add(p.number);
   }
-  assert.ok(p0.every(n=>seen.has(n)),'all P0s must be inspected within six cycles');
+  assert.ok(p0.every(n=>seen.has(n)),'all P1 direction PRs must be inspected within six cycles');
 });
-test('exact Core completion wake does not evict the top P0 while preserving fairness',()=>{
+test('exact Core completion wake does not evict the top P1 direction while preserving fairness',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1));
-  prs[69].labels=[{name:'hh:priority:p0'}];
+  prs[69].title='fix(video): customer Create is broken';
   const picked=selectCandidates(prs,NOW,12,4,159);
   assert.equal(picked[0].number,159);
   assert.equal(picked[1].number,70);
@@ -56,6 +56,15 @@ test('CI admission uses separate running and queued limits, not their sum',()=>{
   assert.equal(canRetryCi(20,0),false);
   assert.equal(canRetryCi(0,20),false);
   assert.equal(canRetryCi(Infinity,0),false);
+});
+test('Repair has an independently bounded lane when queued Core CI is saturated',()=>{
+  assert.equal(canRetryCi(16,43),false);
+  assert.equal(canDispatchRepair(16,43),true);
+  assert.equal(canDispatchRepair(17,79),true);
+  assert.equal(canDispatchRepair(18,1),false);
+  assert.equal(canDispatchRepair(0,80),false);
+  assert.equal(canDispatchRepair(Infinity,0),false);
+  assert.equal(canDispatchRepair(3,NaN),false);
 });
 test('merge state classifier distinguishes dirty, unknown and behind',()=>{
   assert.equal(classifyMergeState({mergeable:false,mergeable_state:'dirty'}),'DIRTY');
@@ -177,6 +186,29 @@ test('real DIRTY PR enters conflict queue without consuming Core CI requests',as
   assert.equal(dispatched,1);
   assert.equal(result.repairWorkerDispatched,1);
   assert.ok(result.apiRequests<=65);
+});
+test('Watchdog dispatches one Repair Worker despite a crowded regular CI queue',async()=>{
+  let dispatched=0;
+  const live={...pr(1992),state:'open',mergeable:false,
+    mergeable_state:'dirty',labels:[{name:'hh:conflict-repair-needed'}]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async({status})=>
+      ({data:{total_count:status==='queued'?43:16}})}
+  },request:async(route,args)=>{
+    if(route.includes('/dispatches')){
+      assert.equal(args.workflow_id,'hh-pr-repair-worker.yml');
+      assert.equal(args.inputs.dry_run,'false');
+      dispatched++;
+    }
+    return {data:{workflow_runs:[]}};
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.blockedByCapacity,true);
+  assert.equal(result.repairBlockedByCapacity,false);
+  assert.equal(result.repairQueueBacklog,1);
+  assert.equal(result.repairWorkerDispatched,1);
+  assert.equal(dispatched,1);
 });
 test('unknown mergeability is not treated as missing Core CI',async()=>{
   let checks=0;
@@ -996,4 +1028,17 @@ test('cron telemetry explicitly differentiates schedule from workflow dispatch',
   assert.ok(source.includes("['push','workflow_dispatch','schedule']"));
   assert.ok(source.includes("summary.cronHealth='NOT_PROBED'"));
   assert.ok(source.includes('HH_CRON_LIVENESS'));
+});
+
+test('highest available direction wins; manually owned PRs do not monopolize fast slots',()=>{
+  const prs=Array.from({length:170},(_,i)=>pr(i+1));
+  prs[9].title='fix(video): owner has manual merge conflict';
+  prs[9].labels=[{name:'hh:repair-manual'}];
+  prs[39].title='feat(voice): narrated therapeutic session';
+  const choice=selectCandidates(prs,NOW);
+  assert.equal(choice[0].number,40,'free P2 must beat held P1');
+  let audited=false;
+  for(let tick=0;tick<15;tick++)
+    if(selectCandidates(prs,NOW+tick*600000).some(p=>p.number===10))audited=true;
+  assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });

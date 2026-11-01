@@ -7,6 +7,10 @@ on:
       - 'scripts/ci-pr-slot-wakeup.cjs'
       - 'tests/ci-pr-slot-wakeup.test.cjs'
       - 'scripts/ci-pr-priority.cjs'
+      - 'scripts/ci-pr-direction-watcher.cjs'
+      - 'tests/ci-pr-direction-watcher.test.cjs'
+      - '.github/hh-pr-directions.json'
+      - '.github/workflows/hh-pr-direction-watcher.yml'
       - 'tests/ci-pr-priority.test.cjs'
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - '.github/workflows/hh-pr-full-inventory.yml'
@@ -42,6 +46,8 @@ jobs:
       - name: Syntax-check trusted watchdog and tests
         run: |
           node --check scripts/ci-pr-priority.cjs
+          node --check scripts/ci-pr-direction-watcher.cjs
+          node --check tests/ci-pr-direction-watcher.test.cjs
           node --check tests/ci-pr-priority.test.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-slot-wakeup.cjs
@@ -52,4 +58,4 @@ jobs:
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs
