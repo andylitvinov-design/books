@@ -523,9 +523,13 @@ test('legacy branch-check migration remains a single valid fail-closed step',()=
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
   assert.equal((source.match(/^          gh api "repos\/\$GH_REPO\/rulesets\/26269892"/gm)||[]).length,1);
   assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
-  assert.ok(source.includes("base64 --decode | grep '^    name: hh-core-verified$' >/dev/null || {"));
+  assert.ok(source.includes("grep -Fxq '    name: hh-core-verified'"));
+  assert.ok(source.includes("grep -Fxq '    name: hh-specialists-verified'"));
   assert.ok(!source.includes("base64 --decode | grep -q "));
   assert.ok(source.includes('"strict":false,"contexts":[],"checks"'));
+  assert.ok(source.includes('{"context":"hh-specialists-verified","app_id":15368}'));
+  assert.ok(source.includes('["hh-core-verified","hh-specialists-verified"]'));
+  assert.ok(source.includes('Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified'));
 });
 
 test('event-driven merge and inventory respect legacy protection until admin migration',()=>{
