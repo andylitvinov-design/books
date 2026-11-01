@@ -40,3 +40,24 @@ test("candidate sources have reviewed CC BY pages but cannot be published before
  }
  assert.equal(STOCK_POLICIES.dareful.license,q.licenseUrl);
 });
+
+test("each new goal-tree scene can be suggested for an exact visual beat, without becoming exportable", async()=>{
+ const {resolveEditorialTarget}=await import("../scripts/import-scenario-video-batch.mjs");
+ const {VIDEO_GOAL_SCENARIOS,VIDEO_GOAL_TOPICS}=await import("../lib/mandala/video-goal-taxonomy.mjs");
+ const chosen=VIDEO_GOAL_SCENARIOS.find(row=>row.id==="work-support-s1")||VIDEO_GOAL_SCENARIOS[0];
+ const topic=VIDEO_GOAL_TOPICS.find(row=>row.id===chosen.topicId);
+ const linked=resolveEditorialTarget(chosen.id,topic.legacyVideoTheme);
+ assert.equal(linked.kind,"unbound_goal_tree");
+ assert.equal(linked.sourceStatus,"unbound");
+ assert.deepEqual(linked.visualMotifs,chosen.visualMotifs);
+ assert.equal(linked.visualMotifs.length,4);
+ assert.throws(()=>resolveEditorialTarget(chosen.id,topic.legacyVideoTheme==="money"?"health":"money"),/cross_theme_target/);
+ assert.throws(()=>resolveEditorialTarget("made-up-story","health"),/unknown_target/);
+ const {loadActiveFilmPresets}=await import("../scripts/read-live-film-presets.mjs");
+ const old=loadActiveFilmPresets().presets[0];
+ assert.equal(resolveEditorialTarget(old.id,old.theme).kind,"legacy_montage");
+ const source=read("scripts/import-scenario-video-batch.mjs");
+ assert.match(source,/target_shot_1_to_4_required/);
+ assert.match(source,/expected_visual_motif_not_reviewed/);
+ assert.match(source,/candidate_only_not_bound/);
+});

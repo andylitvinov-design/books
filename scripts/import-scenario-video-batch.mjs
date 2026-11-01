@@ -17,6 +17,7 @@ import {validateFreeSceneBrief} from "../lib/mandala/free-stock-sources.mjs";
 import {auditScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
 import {importFreeStockScene} from "./import-free-stock-scene.mjs";
 import {loadActiveFilmPresets} from "./read-live-film-presets.mjs";
+import {VIDEO_GOAL_SCENARIOS,VIDEO_GOAL_TOPICS,VIDEO_STORY_MOTIFS} from "../lib/mandala/video-goal-taxonomy.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const pathFor=(name)=>resolve(root,"data/video-catalog",name);
 const registerPath=pathFor("free-stock-scenes.json");
@@ -25,12 +26,30 @@ const parse=path=>JSON.parse(readFileSync(path,"utf8"));
 const slug=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const text=x=>typeof x==="string"&&x.trim().length>0&&x.length<=200;
 const langs=o=>o&&["en","ru","es"].every(k=>text(o[k]));
-const motifsAllowed=new Set(["water","forest","dark","light","sky","sun","earth","flowers","mountain","shore","urban","abstract","people-free"]);
+const motifsAllowed=new Set(["water","forest","dark","light","sky","sun","earth","flowers","mountain","shore","urban","abstract","people-free",...Object.keys(VIDEO_STORY_MOTIFS)]);
 const paceAllowed=new Set(["slow","moderate","upbeat"]);
 const inDir=(base,path)=>{
   const rel=relative(base,path);
   return rel&&rel!==".."&&!rel.startsWith(".."+sep)&&!rel.startsWith(sep);
 };
+
+/**
+ * A reviewed clip may be suggested for an unbound goal-tree story without
+ * making that story export-ready or overwriting its four-beat narrative plan.
+ */
+export function resolveEditorialTarget(id,theme,presets=loadActiveFilmPresets().presets){
+ const film=presets.find(p=>p.id===id);
+ if(film){
+   if(film.theme!==theme)throw Error("cross_theme_target_scenario_"+id);
+   return {scenarioId:id,kind:"legacy_montage",theme,sourceStatus:"approved_preset"};
+ }
+ const story=VIDEO_GOAL_SCENARIOS.find(item=>item.id===id);
+ const topic=story&&VIDEO_GOAL_TOPICS.find(item=>item.id===story.topicId);
+ if(!story||!topic)throw Error("unknown_target_scenario_"+id);
+ if(topic.legacyVideoTheme!==theme)throw Error("cross_theme_target_scenario_"+id);
+ return {scenarioId:id,kind:"unbound_goal_tree",theme,
+   sourceStatus:"unbound",visualMotifs:story.visualMotifs.slice()};
+}
 
 export async function importScenarioMediaBatch(batchName,{apply=false}={}){
   if(!batchName)throw Error("batch_json_required");
@@ -59,9 +78,18 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
       throw Error("taxonomy_review_missing_"+brief.id);
     if(!brief.sources.every(s=>s.provider==="dareful"&&s.licenseId==="cc_by_4_0"))
       throw Error("batch_only_supports_reviewed_dareful_cc_by");
+    let editorialTarget=null;
     if(item.targetScenarioId){
-      const target=presets.find(p=>p.id===item.targetScenarioId&&p.theme===brief.theme);
-      if(!target)throw Error("missing_or_cross_theme_target_scenario_"+item.targetScenarioId);
+      editorialTarget=resolveEditorialTarget(item.targetScenarioId,brief.theme,presets);
+      if(editorialTarget.kind==="unbound_goal_tree"){
+        if(!Number.isInteger(item.targetShot)||item.targetShot<1||item.targetShot>4)
+          throw Error("target_shot_1_to_4_required_"+brief.id);
+        const motif=editorialTarget.visualMotifs[item.targetShot-1];
+        if(!extra.motifs.includes(motif))
+          throw Error("expected_visual_motif_not_reviewed_"+brief.id+"_"+motif);
+      }else if(item.targetShot!==undefined&&(!Number.isInteger(item.targetShot)||item.targetShot<1||item.targetShot>4)){
+        throw Error("invalid_target_shot_"+brief.id);
+      }
     }
     for(const source of brief.sources){
       if(usedPages.has(source.sourcePage))throw Error("duplicate_underlying_footage_"+source.sourcePage);
@@ -73,7 +101,7 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
       if(sourceHashes.has(hash))throw Error("duplicate_underlying_source_hash_"+hash);
       sourceHashes.add(hash);
     }
-    prepared.push({briefFile,brief,extra,targetScenarioId:item.targetScenarioId||null});
+    prepared.push({briefFile,brief,extra,editorialTarget,targetShot:item.targetShot||null});
   }
   if(!apply)return {mode:"dry-run",items:prepared.length,ids:prepared.map(x=>x.brief.id),
     rights:"Dareful CC BY 4.0, attribution required",filesChanged:0};
@@ -94,6 +122,15 @@ export async function importScenarioMediaBatch(batchName,{apply=false}={}){
       categories:[...new Set([record.theme,...item.extra.categories])],
       tags:record.tags,motifs:item.extra.motifs,pace:item.extra.pace,
       rightsReference:{kind:"dareful_cc_by_4_0",attribution:record.attribution},
+      // Editorial designation only. A full 4-shot story stays unbound until
+      // a separate four-asset plan is validated and explicitly approved.
+      editorialSuggestions:item.editorialTarget?[{
+        scenarioId:item.editorialTarget.scenarioId,
+        shot:item.targetShot,
+        expectedMotif:item.editorialTarget.kind==="unbound_goal_tree"
+          ?item.editorialTarget.visualMotifs[item.targetShot-1]:null,
+        status:"candidate_only_not_bound"
+      }]:[],
     };
     latest.scenes.push(newEntry);
     latest.count=latest.scenes.length;
