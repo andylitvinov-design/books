@@ -901,3 +901,43 @@ test('Video Studio #2938 routes exact reviewed editor files to Mandala without u
   ])assert.equal(planPublicServicesChangedPaths([...videoOnly,unsafe]).mode,'full',
     'new/checkout/consent code always retains real Public Services E2E: '+unsafe);
 });
+
+test('Video Studio language understanding #2938 is independently Mandala-reviewed; unrelated public-service APIs stay full',()=>{
+  const changed=[
+    'lib/mandala/video-chat-understanding.mjs',
+    'tests/video-chat-understanding.test.mjs',
+    'components/mandala-video-director-chat.tsx',
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scope=planPublicServicesChangedPaths(changed);
+  assert.deepEqual([scope.mode,scope.build,scope.browser,scope.cases],
+    ['contracts',false,false,'none']);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const v of ['tests/video-chat-understanding.test.mjs',
+    'node --test tests/video-chat-understanding.test.mjs',
+    'node --check lib/mandala/video-chat-understanding.mjs'])
+    assert.ok(mandala.includes(v),'independent specialist owns NLU: '+v);
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2938/merge',
+    GITHUB_HEAD_REF:'fix/video-studio-restore-approved-mobile-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,p])=>[st,p]).join(nul)+nul);
+    throw Error('unexpected git command '+args.join(' '));
+  });
+  const rows=changed.map(p=>[p.startsWith('lib/mandala/video-chat-understanding')||
+    p.startsWith('tests/video-chat-understanding')?'A':'M',p]);
+  assert.equal(run(rows).mode,'contracts');
+  for(const unknown of ['app/api/payments/checkout/route.js',
+    'app/api/holistic-support/video-chat-paid/route.js',
+    'lib/mandala/unreviewed-chat-server.mjs','middleware.ts']){
+    assert.equal(planPublicServicesChangedPaths([...changed,unknown]).mode,'full',unknown);
+    assert.equal(run([...rows,['A',unknown]]).mode,'full',unknown);
+  }
+  assert.equal(run([...rows.filter(r=>r[1]!=='tests/video-chat-understanding.test.mjs'),
+    ['D','tests/video-chat-understanding.test.mjs']]).mode,'full');
+});

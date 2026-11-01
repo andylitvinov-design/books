@@ -113,6 +113,9 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Reviewed #2938 natural-language input classifier; no provider, PII or media changes.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // Real LIVE Director Chat QA is owned by the independently required Chrome,
   // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
   '.github/workflows/hh-first-video-live-export.yml',
@@ -159,6 +162,9 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Fail closed for all other new routes, source and tests.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
   'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
   'tests/video-director-chat-live-acceptance.test.mjs',
