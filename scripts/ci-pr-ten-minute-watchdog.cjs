@@ -158,6 +158,51 @@ function coreRunForCurrentPR(r,pr) {
       p.head?.ref===pr.head.ref);
 }
 
+async function verifyCoreRunIdentity(r, pr, github, owner, repo, limited) {
+  // REST workflow_run.pull_requests[] is a mutable association: an old run
+  // can report a PR's *new* HEAD. Never use that association as SHA proof.
+  if (!coreRunForCurrentPR(r, pr)) return false;
+  if (r.head_sha === pr.head.sha) return true;
+  if (!/^[a-f0-9]{40}$/.test(r.head_sha || '')) return false;
+  try {
+    // A legitimate pull_request workflow can use GitHub's synthetic merge
+    // commit instead of source HEAD. The second immutable commit parent must
+    // equal the PR HEAD. A historical branch commit cannot pass this test.
+    const {data} = await limited('verify-synthetic-head', () =>
+      github.rest.git.getCommit({owner,repo,commit_sha:r.head_sha}));
+    return Array.isArray(data.parents) && data.parents.length===2 &&
+      data.parents[1]?.sha === pr.head.sha;
+  } catch(error) {
+    return false; // Unavailable Git data is not proof of a current CI run.
+  }
+}
+
+function makeOwnerBranchUpdater({token, fetcher, owner, repo}) {
+  if (typeof token !== 'string' || !token || typeof fetcher !== 'function')
+    throw Error('Missing dedicated owner token or fetcher');
+  return {request: async (route,args) => {
+    if (route !== 'PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch' ||
+        args?.owner !== owner || args?.repo !== repo ||
+        !Number.isSafeInteger(args?.pull_number) || args.pull_number < 1 ||
+        !/^[a-f0-9]{40}$/.test(args?.expected_head_sha || ''))
+      throw Error('Unauthorized owner-token API route or invalid exact HEAD');
+    const url = 'https://api.github.com/repos/'+encodeURIComponent(owner)+'/'+
+      encodeURIComponent(repo)+'/pulls/'+args.pull_number+'/update-branch';
+    const response = await fetcher(url,{
+      method:'PUT',
+      headers:{
+        Authorization:'Bearer '+token,
+        Accept:'application/vnd.github+json',
+        'Content-Type':'application/json',
+        'X-GitHub-Api-Version':'2022-11-28'
+      },
+      body:JSON.stringify({expected_head_sha:args.expected_head_sha})
+    });
+    if (response.status !== 202) throw Error('Owner-token branch update denied: HTTP '+response.status);
+    return {status:response.status};
+  }};
+}
+
 function hasActiveLease(comments, headSha, now) {
   for (const comment of comments) {
     const body = comment.body || '';
@@ -251,7 +296,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
-    staleHead:0,
+    staleHead:0,staleCoreRuns:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
     checkedAt:new Date(now).toISOString(),
@@ -341,10 +386,22 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }))).data;
     } catch(e) { log(`#${pr.number} CI run lookup unavailable: ${e.message}`); continue; }
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
+    // Pre-filter by metadata, then prove immutable SHA. The GitHub association
+    // can point a historical CI run at the newly updated PR.
     const coreRuns = runs.workflow_runs.filter(r=>coreRunForCurrentPR(r,pr))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
-    const latest=coreRuns[0];
-    if (!latest) {summary.missingCore++;continue;}
+    let latest=null;
+    for(const candidate of coreRuns.slice(0,3)) {
+      if (await verifyCoreRunIdentity(candidate,pr,github,owner,repo,limited)) {
+        latest=candidate;break;
+      }
+      if(budget.exhausted)break;
+    }
+    if (!latest) {
+      if(coreRuns.length) summary.staleCoreRuns++;
+      else summary.missingCore++;
+      continue;
+    }
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
@@ -389,4 +446,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,bootstrapLegacyCore,hasActiveLease};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunIdentity,makeOwnerBranchUpdater,bootstrapLegacyCore,hasActiveLease};
