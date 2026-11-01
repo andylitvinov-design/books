@@ -49,3 +49,13 @@ test('exactly one shared five-tab dock is reused on Messages and Practice panels
  const source=nav.match(/\{path:'/g)||[]
  assert.equal(source.length,5)
 })
+
+test('non-owner deep links select only a practitioner-scoped request and support browser navigation',()=>{
+ const ui=read('components/app/messages-client-requests.jsx')
+ assert.match(ui,/useSearchParams\(\)\.get\('requestId'\)/)
+ assert.match(ui,/requests\.some\(item=>normalizeMessagesRequestId\(item\.id\)===requestIdFromUrl\)/)
+ assert.match(ui,/setSelectedId\('request:'\+requestIdFromUrl\)/)
+ assert.match(ui,/window\.history\[replace\?'replaceState':'pushState'\]/)
+ assert.match(ui,/syncRequestUrl\('',\{replace:true\}\)/)
+ assert.doesNotMatch(ui,/app\/practice\?panel=clients&requestId=/)
+})
