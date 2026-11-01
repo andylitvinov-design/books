@@ -61,7 +61,25 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     const initiallyOpen = await nameDisclosure.getAttribute('open') !== null;
     let clicked = false;
     if (!initiallyOpen) {
-      await nameDisclosure.locator('summary').click();
+      const summary = nameDisclosure.locator('summary');
+      await summary.scrollIntoViewIfNeeded();
+      // Exactly one genuine pointer click, after React hydration and layout.
+      await summary.evaluate(async node => {
+        const key = Object.keys(node).find(name => name.startsWith('__reactProps$'));
+        if (typeof node[key]?.onClick !== 'function') throw new Error('OPTIONAL_NAME_NOT_HYDRATED');
+        let previous = null, stable = 0;
+        for (let frame = 0; frame < 45; frame++) {
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          if (!node.isConnected) throw new Error('OPTIONAL_NAME_REMOUNTED');
+          const box = node.getBoundingClientRect();
+          const current = [box.x,box.y,box.width,box.height];
+          stable = previous && current.every((v,i) => Math.abs(v-previous[i]) < 1) ? stable + 1 : 0;
+          if (stable >= 3) return;
+          previous = current;
+        }
+        throw new Error('OPTIONAL_NAME_UNSTABLE');
+      });
+      await summary.click();
       clicked = true;
     }
     const afterClick = await disclosureNode?.evaluate(node => ({open:node.open, connected:node.isConnected})).catch(() => null);
