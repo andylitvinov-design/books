@@ -497,8 +497,14 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(studio,/\{deepHypnoPane\}/);
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
-  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}custom:phrase,visibility:\["large"\]/,
-    "a chosen catalog phrase must enter the existing visible film caption track");
+  assert.match(studio,/onPhraseChoose=\{stageCatalogPhrase\}/,
+    "catalog picks must enter the draft-and-approve path, not the current movie");
+  assert.doesNotMatch(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}custom:phrase,visibility:\["large"\]/,
+    "picking a phrase must not bypass approval and invalidate the existing narration");
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/setStagedCustom\(cleaned\);setStagedSelection\(\[\]\)/);
+  assert.match(compact,/onChange\(next\)/,
+    "confirmed approval must remain the only way to apply the staged phrase");
   assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
