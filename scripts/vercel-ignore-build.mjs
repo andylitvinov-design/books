@@ -50,7 +50,7 @@ export function changedFilesBetween(previous, current, git = execFileSync) {
 export async function inspectGithubCompare(previous, current, fetcher = fetch) {
   if (!/^[a-f0-9]{40}$/i.test(previous ?? "") || !/^[a-f0-9]{40}$/i.test(current ?? ""))
     return { paths: null, reason: "invalid-sha" };
-  const uri = `https://api.github.com/repos/andylitvinov-design/books/compare/${previous}...${current}`;
+  const uri = `https://api.github.com/repos/andylitvinov-design/books/compare/${previous}...${current}?per_page=100`;
   try {
     const response = await fetcher(uri, {
       headers: {
@@ -61,10 +61,16 @@ export async function inspectGithubCompare(previous, current, fetcher = fetch) {
     });
     if (!response.ok) return { paths: null, reason: "github-http-" + (Number(response.status) || "unknown") };
     const data = await response.json();
-    if (data.base_commit?.sha !== previous || data.head_commit?.sha !== current || data.status !== "ahead")
+    // GitHub's compare REST response has no head_commit. The final entry in
+    // the complete paginated commits array is the tested target commit.
+    if (data.base_commit?.sha !== previous || data.status !== "ahead" || data.behind_by !== 0)
       return { paths: null, reason: "github-not-verified-ahead" };
-    if (!Array.isArray(data.files) || !Number.isInteger(data.ahead_by) || data.ahead_by < 1
-      || data.ahead_by > 200 || data.files.length >= 300 || data.files.length === 0)
+    if (!Array.isArray(data.commits) || !Number.isInteger(data.ahead_by)
+      || data.ahead_by < 1 || data.ahead_by > 100
+      || data.total_commits !== data.ahead_by || data.commits.length !== data.ahead_by
+      || data.commits.at(-1)?.sha !== current)
+      return { paths: null, reason: "github-commit-history-incomplete" };
+    if (!Array.isArray(data.files) || data.files.length >= 300 || data.files.length === 0)
       return { paths: null, reason: "github-unbounded-files-or-commits" };
     // Renames are ambiguous because the old path may be runtime code. Build.
     if (data.files.some(file => file.status === "renamed"
