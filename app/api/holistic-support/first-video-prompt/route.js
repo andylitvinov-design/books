@@ -63,6 +63,13 @@ export async function POST(request) {
         console.warn("HH_FIRST_VIDEO_FREE_PROVIDER_STATUS",JSON.stringify(result.diagnostics));
       throw unavailable(result.error);
     }
+    // Observability when a backup successfully rescued a failed model.
+    // Only coarse, allowlisted provider/model/status info; no user text, keys,
+    // prompt body or upstream response is logged or returned in JSON.
+    if(result.diagnostics?.length)
+      console.info("HH_FIRST_VIDEO_FREE_PROVIDER_RECOVERY",
+        JSON.stringify({provider:result.provider,model:result.model,
+          attempts:result.diagnostics}));
     // Explicit success allowlist: internal diagnostics never reach visitors.
     return NextResponse.json({prompt:result.prompt,provider:result.provider,
       model:result.model,mediaGenerated:false,localAssemblyOnly:true},
