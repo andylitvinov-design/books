@@ -216,25 +216,13 @@ jobs:
       # PR impact is independently classified as sensitive/high-risk. No
       # checkout, consent or unknown risk can bypass required real browser QA.
       - name: Cache exact Playwright Chromium and WebKit browsers
+        id: public_playwright_cache
         if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ms-playwright
-          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
-      - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
-        env:
-          HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/hh-public-services-tools
-          npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
-          if [[ "$HH_PUBLIC_BROWSER_ENGINES" == chromium ]]; then
-            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
-          else
-            # Full sensitive acceptance retains iPhone/WebKit and checkout QA.
-            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
-          fi
+          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-${{ steps.scope.outputs.engines == 'chromium' && 'chromium' || 'chromium-webkit' }}-pr-${{ github.event.pull_request.number || github.run_id }}
+      # Real browser installation overlaps production build in the gated step.
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       # Required fast checks cover actual contact consent, private handoff and
@@ -247,25 +235,76 @@ jobs:
         run: |
           echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
+        id: production_qa
         if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
+          HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
           printf 'case,status,seconds\n' > artifacts/public-services-production/timings.csv
           acceptance_started=$SECONDS
+          # Exact-version browser binaries and system packages are prepared in
+          # a separate /tmp prefix while npm runs its complete production build,
+          # including the existing prebuild lifecycle and safety contracts.
+          browser_pid=''
+          browser_started=$SECONDS
+          case "$HH_PUBLIC_BROWSER_ENGINES" in
+            chromium|"chromium webkit")
+              (
+                set -euo pipefail
+                mkdir -p /tmp/hh-public-services-tools
+                npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
+                if [[ "$HH_PUBLIC_BROWSER_ENGINES" == chromium ]]; then
+                  /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
+                else
+                  /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+                fi
+              ) > artifacts/public-services-production/playwright-install.log 2>&1 &
+              browser_pid=$!
+              ;;
+            none)
+              echo "No Playwright installation required for metrics-only execution"
+              ;;
+            *)
+              echo "::error::Unknown fail-closed Playwright engine scope: $HH_PUBLIC_BROWSER_ENGINES"
+              exit 1
+              ;;
+          esac
+          trap 'if [[ -n "$browser_pid" ]]; then kill "$browser_pid" 2>/dev/null || true; fi' EXIT
           build_started=$SECONDS
           build_code=0
           npm run build > artifacts/public-services-production/build.log 2>&1 || build_code=$?
           if (( build_code != 0 )); then
             printf 'next-production-build,FAIL,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+          else
+            printf 'next-production-build,PASS,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+          fi
+          browser_code=0
+          if [[ -n "$browser_pid" ]]; then
+            wait "$browser_pid" || browser_code=$?
+            browser_pid=''
+            printf 'playwright-install,%s,%s\n' "$([[ "$browser_code" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-browser_started))" >> artifacts/public-services-production/timings.csv
+            # Save only fully installed binaries, isolated by PR, version and
+            # browser engines. Failed browser acceptance must not erase the
+            # valid binary cache for the PR's next exact-head attempt.
+            if (( browser_code == 0 )); then
+              echo "browser_ready=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          if (( build_code != 0 )); then
             echo "::error::Public Services production build failed (exit $build_code)"
             tail -n 100 artifacts/public-services-production/build.log
             exit 1
           fi
-          printf 'next-production-build,PASS,%s\n' "$((SECONDS-build_started))" >> artifacts/public-services-production/timings.csv
+          if (( browser_code != 0 )); then
+            echo "::error::Public Services isolated Playwright installation failed (exit $browser_code)"
+            tail -n 100 artifacts/public-services-production/playwright-install.log
+            exit 1
+          fi
+          echo "Production build and exact Playwright browser preparation completed; neither acceptance stage was skipped."
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-public-services-next.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -385,3 +424,11 @@ jobs:
             artifacts/storefront-shop/
           retention-days: 7
           if-no-files-found: warn
+      # Save verified exact-version binaries even if UI assertions later fail.
+      # Cache keys are isolated per PR, browser engines, OS and tool version.
+      - name: Save verified per-PR Playwright browsers
+        if: ${{ !cancelled() && steps.production_qa.outputs.browser_ready == 'true' && steps.public_playwright_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-${{ steps.scope.outputs.engines == 'chromium' && 'chromium' || 'chromium-webkit' }}-pr-${{ github.event.pull_request.number || github.run_id }}
