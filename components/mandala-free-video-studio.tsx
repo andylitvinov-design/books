@@ -30,7 +30,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, retimeFreeFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -875,10 +875,17 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
   if(theme==="money")return getRealMoneyFilm(id as MoneySceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
-function compileFreeFilmPreset(preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect):CinematicStoryboard {
-  // Exactly four source-backed MP4 shots for every 10/15/20/30/60s free edit.
-  // Short source masters may loop; the preview must not claim new footage.
-  const timings=allocateFreeFilmTimeline(durationSeconds,preset.clips);
+function compileFreeFilmPreset(
+  preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect,
+  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]},
+):CinematicStoryboard {
+  // Reorder only these four approved real MP4 scenes, no invented source.
+  const clipIds=edit?.clipIds??preset.clips;
+  if(clipIds.length!==4||new Set(clipIds).size!==4||
+    clipIds.some(id=>!preset.clips.includes(id)))
+    throw Error("invalid_free_film_reorder");
+  const timings=allocateAdaptiveFilmTimeline(
+    durationSeconds,clipIds,edit?.durationSecondsByStage??null);
   const base=buildCinematicStoryboard({
     theme:preset.theme,locale,style:"nature",aspect,durationSeconds:20
   });
@@ -891,7 +898,7 @@ function compileFreeFilmPreset(preset:FreeFilmPreset,locale:VideoLocale,duration
       startSeconds:timing.startSeconds,durationSeconds:timing.durationSeconds,
       providerPrompt:""}; // No paid video provider or personal-data upload.
   });
-  return {...base,shotCount:4,version:FREE_FILM_PLAN_VERSION,durationSeconds,shots,
+  return {...base,shotCount:4,version:FREE_FILM_PLAN_VERSION,timelineMode:"adaptive",durationSeconds,shots,
     sceneChoices:shots.map((shot:{sceneId:string;theme:VideoTheme})=>({
       sceneId:shot.sceneId,theme:shot.theme,visualCue:preset.label.en
     })),
@@ -1788,7 +1795,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // a decorative image finishes loading in a different editor panel.
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,caption,affirmations,hypnoLight,
-    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>shot.sceneId),appliedStory]);
+    cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
@@ -2576,11 +2583,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   // Goal-first Auto Director uses the existing consented Free MP4 renderer, not paid video AI.
+  // Output framing changes must never discard a confirmed four-scene montage.
+  const changeVideoAspect=(nextAspect:Aspect)=>{
+    if(recording||preparing)return;
+    setAspect(nextAspect);
+    setCinematicPlan(plan=>plan?reframeCinematicPlan(plan,nextAspect) as CinematicStoryboard:null);
+  };
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
     setDuration(seconds);
     setCinematicPlan(plan=>{
       if(plan?.version===FREE_FILM_PLAN_VERSION)
-        return retimeFreeFilmPlan(plan,seconds) as CinematicStoryboard;
+        return retimeAdaptiveFilmPlan(plan,seconds) as CinematicStoryboard;
       if(plan?.version===FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION){
         const timing=allocateFreeFilmTimeline(seconds,plan.shots.map(shot=>shot.sceneId));
         return {...plan,durationSeconds:seconds,
@@ -2589,12 +2602,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return null;
     });
   };
-  const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,outputAspect:Aspect=aspect)=>{
-    if(recording||preparing)return;
+  const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]},
+    outputAspect:Aspect=aspect)=>{
+    if(recording||preparing)return false;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
-    if(!preset){setNotice(ui.videoUnavailable);return;}
+    if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
-      const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect);
+      const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
       setActiveFreeFilmPreset(preset.id);
       setTheme(preset.theme);setVideoCategory(preset.theme);
       if(preset.theme==="money")setMoneyScene(preset.clips[0] as MoneySceneId);
@@ -2610,8 +2625,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         document.querySelector("[data-auto-video-create]")?.scrollIntoView({
           behavior:"smooth",block:"nearest"
         })));
+      return true;
     }catch{
       setNotice(ui.videoUnavailable);
+      return false;
     }
   };
   const selectCategory=(next:VideoCategory)=>{
@@ -3156,7 +3173,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","square","landscape"] as Aspect[]).map((format,i)=>
                 <button type="button" key={format} data-video-aspect={format}
                   aria-pressed={aspect===format}
-                  onClick={()=>{setAspect(format);setCinematicPlan(null);}} onPointerUp={()=>{setAspect(format);setCinematicPlan(null);}}>
+                  onClick={()=>changeVideoAspect(format)}>
                   <span className={videoStyles.formatIcon} data-format={format} aria-hidden="true"/>
                   {["9:16","1:1","16:9"][i]}
                 </button>)}
@@ -3759,6 +3776,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
           clipLabel={freeFilmClipLabel}
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
+          onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
           canCreate={canGenerate} rendering={recording||preparing}/>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
@@ -4382,7 +4400,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","landscape","square"] as const).map((value,index)=>
                 <button type="button" key={value} data-video-quick-aspect={value}
                   disabled={recording||preparing} aria-pressed={aspect===value}
-                  onClick={()=>{setAspect(value);setCinematicPlan(null);}}>{["9:16","16:9","1:1"][index]}</button>)}
+                  onClick={()=>changeVideoAspect(value)}>{["9:16","16:9","1:1"][index]}</button>)}
             </div></fieldset>
             <fieldset><legend>{quick.length}</legend><div>
               {durations.map(value=><button type="button" key={value}
@@ -4620,7 +4638,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.catalogFilters} data-video-catalog-filters>
           <label><span>{ui.format}</span>
             <select data-video-advanced-aspect value={aspect} disabled={recording||preparing}
-              onChange={event=>setAspect(event.currentTarget.value as Aspect)}>
+              onChange={event=>changeVideoAspect(event.currentTarget.value as Aspect)}>
               <option value="portrait">9:16</option>
               <option value="square">1:1</option>
               <option value="landscape">16:9</option>
