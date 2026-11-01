@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, Zap, X } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
@@ -1608,6 +1608,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const resultVideoRef=useRef<HTMLVideoElement>(null);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
@@ -3080,10 +3081,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <nav className={videoStyles.quickBrandBar} aria-label="Holistic House">
           <Link href={"/"+locale+"/"} prefetch={false} className={videoStyles.quickBrandBack}
             aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
-            <ArrowRight size={20} aria-hidden="true"/>
+            <Leaf size={29} aria-hidden="true"/>
           </Link>
-          <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
-          <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
+          <span className={videoStyles.quickBrandIdentity}><strong>Holistic House</strong>
+            <small>{locale==="ru"?"Видеотерапия для гармоничной жизни":
+              locale==="es"?"Videoterapia para una vida en armonía":
+              "Video practices for a balanced life"}</small>
+          </span>
+          <Link href={"/"+locale+"/app"} prefetch={false} className={videoStyles.quickBrandProfile}
+            aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio":"My House"}>
+            <UserRound size={20} aria-hidden="true"/>
+          </Link>
         </nav>
         
         <header className={videoStyles.quickHeader}>
@@ -3131,6 +3139,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{locale==="ru"?"Выберите тему для видеотерапии":locale==="es"?"Elige un tema de videoterapia":"Choose your video-therapy theme"}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
+          <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
+          <details className={videoStyles.quickThemeAdvanced} data-video-theme-advanced>
+            <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
             {quickThemeOrder.map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
@@ -3153,6 +3164,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>;
             })}
           </div>
+          </details>
         </section>
 
 
@@ -3185,6 +3197,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             aria-label={layout.previewTitle}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
+        <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording}>
+          <h2>{locale==="ru"?"Откройте новую себя":locale==="es"?"Descubre una nueva versión de ti":"Discover a new you"}</h2>
+          <p>{locale==="ru"?"Видео для вдохновения и внутренней опоры":
+            locale==="es"?"Vídeos para inspirarte y sentir apoyo":"Video for inspiration and inner support"}</p>
+        </div>
+        <span className={videoStyles.heroDuration} aria-label={locale==="ru"?"Планируемая длительность":locale==="es"?"Duración prevista":"Planned duration"}>
+          00:{String(duration).padStart(2,"0")}
+        </span>
         {introVideoId ? (
           introPlaying ? (
             <div className={videoStyles.therapyIntroOverlay} data-video-therapy-intro="playing"
@@ -3447,22 +3467,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       <section className={videoStyles.quickMusicSection} data-workspace-section="audio" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
         <div className={videoStyles.quickSectionHeading}>
-          <h3 id="quick-music-heading"><Music2 size={19} aria-hidden="true"/>{locale==="ru"?"Музыка":locale==="es"?"Música":"Music"}</h3>
+          <h3 id="quick-music-heading"><Music2 size={19} aria-hidden="true"/>{locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal}
             onClick={()=>openQuickDetailed("video-audio")}><Mic size={15} aria-hidden="true"/>
-            {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</button>
+            {locale==="ru"?"Послушать все":locale==="es"?"Escuchar todas":"Listen to all"}</button>
         </div>
         <div className={videoStyles.quickMusicRail} role="group" aria-label={locale==="ru"?"Звуковые дорожки":locale==="es"?"Pistas de audio":"Audio tracks"}>
-          {audioMatches.slice(0,4).map(track=><button type="button" key={track.id}
-            data-video-quick-audio-track={track.id}
-            aria-pressed={attachedAudio?.kind==="preset"&&attachedAudio.id===track.id}
-            disabled={recording||preparing||micRecording} onClick={()=>{
-              const id=track.id as Exclude<AmbientMusic,"none">;
-              setAudioAuto(false);chooseMusic(id);setAttachedAudio({kind:"preset",id});
-            }}><Music2 size={16} aria-hidden="true"/><strong>{track.name[locale]}</strong>
-            <small>{track.detail[locale]}</small>
-            {attachedAudio?.kind==="preset"&&attachedAudio.id===track.id?<Check size={14} aria-hidden="true"/>:null}
-          </button>)}
+          {audioMatches.filter(track=>track.kind==="melody").slice(0,3).map((track,index)=>{
+            const id=track.id as Exclude<AmbientMusic,"none">;
+            const posters=[
+              "/videos/holistic-house/film-collection-v2/meadow-morning.jpg",
+              "/videos/holistic-house/film-collection-v2/wildflower-dance.jpg",
+              "/videos/holistic-house/film-collection-v2/calm-sea.jpg"
+            ];
+            const active=attachedAudio?.kind==="preset"&&attachedAudio.id===track.id;
+            return <button type="button" key={track.id} data-video-quick-audio-track={track.id}
+              data-video-music-featured={track.id} aria-pressed={active}
+              disabled={recording||preparing||micRecording}
+              onClick={()=>{setAudioAuto(false);playAudioTrack(id);setAttachedAudio({kind:"preset",id});}}>
+              {/* All artwork is from approved first-party video scene posters. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={posters[index]} alt="" loading="lazy"/>
+              <span className={videoStyles.quickMusicPlay}><Play size={16} fill="currentColor" aria-hidden="true"/></span>
+              <span className={videoStyles.quickMusicText}><strong>{track.name[locale]}</strong>
+                <small>{track.detail[locale]}</small></span>
+              {active?<Check className={videoStyles.quickMusicCheck} size={15} aria-hidden="true"/>:null}
+            </button>;
+          })}
         </div>
         {activeWorkspace==="audio" ? deepAudioPane : null}
       </section>
@@ -3473,11 +3504,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
           clipLabel={freeFilmClipLabel}
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
-          onApply={applyAutoFilm}/>
+          onApply={applyAutoFilm} onCreate={createQuickVideo}
+          canCreate={canGenerate} rendering={recording||preparing}/>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
-        <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
+        <h3>{playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")
+          :locale==="ru"?"Проверка видео":locale==="es"?"Verificación del vídeo":"Checking your video"}</h3>
         {result ? (
           <>
             {result.mode==="catalog"?<p className={videoStyles.warning}
@@ -3488,7 +3521,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
-            <video key={result.url} src={result.url} controls playsInline preload="auto"
+            <video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
               data-mandala-video-preview
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
@@ -3502,6 +3535,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
                   :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
+            {playbackStatus==="ready"&&result.mode!=="catalog"?<div className={videoStyles.resultMeta}>
+              <strong>{wish.trim().slice(0,60)||(locale==="ru"?"Моё персональное видео":locale==="es"?"Mi vídeo personal":"My personal video")}</strong>
+              <small>{result.extension.toUpperCase()} · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {Math.max(1,Math.round(result.bytes/1024))} KB</small>
+            </div>:null}
             {playbackStatus==="checking"?<p role="status" data-video-playback-check>
               {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
                 :locale==="es"?"Verificando. Si no aparece un fotograma, pulsa ▶."
@@ -3567,6 +3604,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
                   :" · "+result.extension.toUpperCase()+" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
               </a>
+              {result.mode!=="catalog" ? <button type="button" data-video-result-play
+                onClick={()=>{const player=resultVideoRef.current;
+                  if(player){player.scrollIntoView({behavior:"smooth",block:"nearest"});
+                    void player.play().catch(()=>setNotice(locale==="ru"?"Не удалось воспроизвести файл. Нажмите ▶ на видео.":locale==="es"?"No se pudo reproducir. Pulsa ▶ en el vídeo.":"Playback unavailable. Try ▶ on the video."));}
+                }}>
+                <Play size={17} fill="currentColor" aria-hidden="true"/>
+                {locale==="ru"?"Просмотреть":locale==="es"?"Ver":"Preview"}
+              </button>:null}
               {result.mode!=="catalog" ? <button type="button"
                 onClick={shareVideo} data-video-share>
                 <Share2 size={18} aria-hidden="true"/>{ui.share}
