@@ -1091,7 +1091,7 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-goal="recovery"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
-        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        await expect(page.locator("[data-video-affirmations-preview]")).toContainText(/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i,{timeout:15000});
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
