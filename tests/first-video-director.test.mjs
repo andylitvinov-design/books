@@ -684,7 +684,7 @@ test("Gemini and OpenRouter receive identical fully selected v1 creative brief w
   assert.equal(seen[0].context.effectiveFilters.caption,true);
   assert.equal(seen[0].context.effectiveFilters.avoid,"море");
   assert.equal(seen[0].context.localRendering.quality,"fullhd");
-  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"golden-harvest");
+  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"food-fruit-bowl");
   assert.ok(!seen[0].context.availableSceneChoices.some(x=>/cooking|dishes|kitchen/i.test(x.visualCue)));
 });
 
