@@ -148,6 +148,12 @@ jobs:
               owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
               ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
             });
+            // Classify open production PRs immediately on policy rollout; cron
+            // remains a ten-minute fallback, not the only activation path.
+            await github.rest.actions.createWorkflowDispatch({
+              owner,repo,workflow_id:'hh-pr-direction-watcher.yml',
+              ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
+            });
             core.info('HH_SCHEDULER_REPAIR: '+JSON.stringify(results));
             core.info('HH_WATCHDOG_LIVE_DISPATCH_ACCEPTED');
             await core.summary.addHeading('HH Scheduler activation')
