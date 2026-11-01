@@ -207,8 +207,8 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/data-free-film-compilation-catalog/);
   assert.match(src,/data-free-film-original-masters/);
   assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
-  assert.match(src,/if\(storyboard\?\.version===FREE_FILM_PLAN_VERSION\)/);
-  assert.match(src,/selected\.theme,selected\.sceneId as LocalSceneId,speed,brightness,stockShotVideo\)/);
+  assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
+  assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
   assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
     "all supported lengths use the verified four-shot timeline allocator");

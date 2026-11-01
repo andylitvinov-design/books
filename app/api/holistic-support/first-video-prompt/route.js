@@ -9,7 +9,7 @@ import { getAppConfig, requireSameOrigin } from "@/lib/app/config";
 import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { generateFreeFirstVideoPrompt, freeFirstVideoProviders } from "@/lib/mandala/first-video-free-providers.mjs";
-import { FIRST_VIDEO_PROMPT_ALLOWED_FIELDS, parseFirstVideoPromptInput } from "@/lib/mandala/first-video-prompt-contract.mjs";
+import { FIRST_VIDEO_PROMPT_ALLOWED_FIELDS, parseFirstVideoPromptInput, buildFirstVideoPromptContext } from "@/lib/mandala/first-video-prompt-contract.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +32,12 @@ export async function POST(request) {
     const config=getAppConfig();
     requireSameOrigin(request,config);
     const input=validateBody(await readBody(request,6000));
+    try { buildFirstVideoPromptContext(input); }
+    catch(error) {
+      if(error instanceof Error && ["no_compatible_licensed_scenes","no_compatible_cinematic_scenes","unsupported_scene_exclusion"].includes(error.message))
+        throw new AppError("VIDEO_PROMPT_NO_COMPATIBLE_SCENES",400);
+      throw error;
+    }
     // Only confirmed free-tier Gemini and free OpenRouter; no paid fallback.
     if(process.env.HH_FIRST_VIDEO_AI_ENABLED!=="true" ||
        !freeFirstVideoProviders(process.env).length)
