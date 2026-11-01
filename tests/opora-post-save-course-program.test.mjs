@@ -25,11 +25,11 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',receipt:'You made a little space for yourself.',
     start:"See what's next",map:'My course map',habit:'Keep OPORA close',
     configure:'Set it up',confidence:'I managed a little',week1:'Week 1: Find your supports',
     week2:'Week 2: Make it your own',finished:'Your 14 days are complete'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Вы уделили себе немного времени.',
     start:'Посмотреть, что дальше',map:'К карте курса',habit:'ОПОРА всегда под рукой',
     configure:'Настроить',confidence:'Получилось немного',week1:'Первая неделя: найти опору',
     week2:'Вторая неделя: свой опыт',finished:'Ваши 14 дней позади'},
