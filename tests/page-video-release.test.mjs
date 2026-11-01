@@ -57,3 +57,34 @@ test('compact defaults are limited to these eight published renders, not About o
   assert.doesNotMatch(block, /fd5fcead9b067f9a0649862675a38771|d4e55c984e54b40fbeb8a21f81d27694|2c251709aba74fd96ae8be43257a080b/);
   assert.match(player, /minimal=\{minimal \|\| minimalPageVideoIds\.has\(source\.heygenId \?\? ""\)\}/);
 });
+
+
+// Execute only the existing reporting blocks with a synthetic locator oracle.
+// This checks truthful evidence serialization, not actual browser playback.
+const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+async function run(script,{live=true,present=false,badIframe=false}={}) {
+ const source=readFileSync(new URL(`../scripts/${script}`, import.meta.url), 'utf8');
+ const pageScript=script==='verify-page-video-release.mjs';
+ const start=pageScript?source.indexOf('    const approvedRussian ='):source.indexOf('  let russianPresentationVerified =')>=0?source.indexOf('  let russianPresentationVerified ='):source.indexOf("  for (const home of ['/', '/ru']) {");
+ const end=pageScript?source.indexOf('  } catch (error)',start):source.indexOf('  // Regressions reported',start);
+ assert.ok(start>=0&&end>start);
+ let home='/ru',clicked=false;
+ const results=[];
+ const skippedResults=[];
+ function loc(selector,parent='') {const full=parent+' '+selector;return {full,locator:s=>loc(s,full),count:async()=> full.includes('home-presentation')?(home==='/ru'&&present?1:0):1,click:async()=>{clicked=true}};}
+ const page={locator:s=>loc(s)};
+ const expect=l=>({toHaveCount:async n=>{let actual=l.full.includes('home-intro')?0:l.full.includes('iframe')?0:l.full.includes('home-presentation')?(present?1:0):1;assert.equal(actual,n)},toHaveAttribute:async (name,value)=>{if(name==='src'){assert.ok(clicked);assert.match(badIframe ? 'https://www.youtube-nocookie.com/embed/WRONG_VIDEO?autoplay=1' : 'https://www.youtube-nocookie.com/embed/G0Db6yOCMto?autoplay=1', value)}},toBeEnabled:async()=>{assert.ok(present)}});
+ const fn=new AsyncFunction('page','expect','origin','live','results','engine','pageErrors','assert','navigate','pass','console','skippedResults',source.slice(start,end));
+ await fn(page,expect,live?'https://holistichouse.vercel.app':'http://127.0.0.1:3100',live,results,'synthetic',[],assert,async path=>{home=path},label=>results.push(`PASS: ${label}`),{log(){}},skippedResults);
+ if (!pageScript) {
+   assert.ok(!results.some(item => typeof item === 'string' && item.startsWith('SKIPPED:')), 'Skipped groups must not count as verified');
+   assert.match(source, /passed: results, skipped: skippedResults/);
+ }
+ return [...results, ...skippedResults];
+}
+for(const script of ['verify-page-video-release.mjs','verify-site-video-browser.mjs']) {
+ test(`${script}: absent live slot must not claim RU verified`,async()=>{const r=await run(script);if(typeof r[0]==='object'){assert.equal(r[0].approvedRussianPresentation,null);assert.equal(r[0].russianPresentationStatus,'skipped-live-slot-absent')}else{assert.ok(r.some(x=>x.startsWith('SKIPPED:')));assert.ok(!r.some(x=>x.startsWith('PASS:')&&/RU presentation/.test(x)))}});
+ test(`${script}: present slot reports only after click and exact iframe assertion`,async()=>{const r=await run(script,{present:true});assert.ok(r.some(x=>typeof x==='object'?x.approvedRussianPresentation===true:/PASS:.*RU presentation.*(?:verified|checked)/.test(x)))});
+ test(`${script}: absent local slot remains failure`,async()=>{await assert.rejects(run(script,{live:false}))});
+ test(`${script}: failed iframe remains failure, not success evidence`,async()=>{await assert.rejects(run(script,{present:true,badIframe:true}))});
+}
