@@ -28,7 +28,7 @@ const MAX_LEGACY_PROBES = 3;
 const MAX_LEGACY_BOOTSTRAPS = 1;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
-const {priorityFor,rankedCandidates} = require('./ci-pr-priority.cjs');
+const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -75,10 +75,13 @@ function boundedRestFallback(selected) {
 
 function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=null){
   if(!Array.isArray(prs)||!prs.length)return [];
-  const ranked=rankedCandidates(prs,now);
-  if(!ranked.length)return [];
+  // Fast slots are for PRs that are not on hold or already handed to
+  // an owner. A separate audit rotation still inventories every PR.
+  const ranked=rankedCandidates(prs.filter(pr=>isFreeFor(pr,'inspect')),now);
+  const inventory=rankedCandidates(prs,now);
+  if(!inventory.length)return [];
   const wake=Number.isSafeInteger(priorityNumber)
-    ?ranked.find(pr=>pr.number===priorityNumber):null;
+    ?inventory.find(pr=>pr.number===priorityNumber):null;
   const top=wake?[wake]:[];
   const chosen=new Set(top.map(pr=>pr.number));
   // Always keep the highest-impact PR visible even while a specific
@@ -112,7 +115,7 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
   }
   // Independent full-inventory round-robin. Every open PR is visited
   // within ceil(total / rotatedSize) cycles even when fast slots change.
-  const sorted=[...ranked].sort((a,b)=>a.number-b.number);
+  const sorted=[...inventory].sort((a,b)=>a.number-b.number);
   const offset=(Math.floor(now/(10*MINUTE))*rotatedSize)%sorted.length;
   const rotating=Array.from({length:Math.min(sorted.length,rotatedSize)},
     (_,i)=>sorted[(offset+i)%sorted.length]);
@@ -451,10 +454,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // require the current Watchdog tick to create a NEW label before waking
   // an idle worker: a previous handoff may have been interrupted.
   const hasLabel=(pr,name)=>(pr.labels||[]).some(l=>l.name===name);
-  const ciQueueBacklog=review.filter(p=>hasLabel(p,CI_BOOTSTRAP_LABEL) &&
-    !hasLabel(p,'hh:ci-bootstrap-attempted')).length;
-  const repairQueueBacklog=review.filter(p=>hasLabel(p,REPAIR_LABEL) ||
-    hasLabel(p,CONFLICT_LABEL)).length;
+  const ciQueueBacklog=review.filter(p=>isFreeFor(p,'ci')).length;
+  const availableRepair=selectNextAvailable(review,'repair',now);
+  const repairQueueBacklog=review.filter(p=>isFreeFor(p,'repair') ||
+    (isFreeFor(p,'inspect') && hasLabel(p,CONFLICT_LABEL))).length;
   const wake=context.eventName==='workflow_run' &&
     context.payload?.workflow_run?.event==='pull_request' &&
     context.payload.workflow_run.status==='completed'
@@ -479,6 +482,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }).join(' | ');
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
+    repairNext:availableRepair ?
+      '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
+      ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
@@ -746,7 +752,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         await limited('dispatch-repair-worker',()=>github.request(
           'POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
             owner,repo,workflow_id:'hh-pr-repair-worker.yml',ref:DEFAULT,
-            inputs:{pr_number:'0',dry_run:'false'}
+            inputs:{pr_number:String(availableRepair?.number || 0),
+              expected_sha:availableRepair?.head?.sha || '',dry_run:'false'}
           }));
         summary.repairWorkerDispatched++;
         log('DISPATCHED owner-guarded Repair Worker for source/conflict queue');
