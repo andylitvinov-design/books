@@ -1640,6 +1640,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -3220,6 +3221,61 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
         }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+      <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
+        <div className={videoStyles.phraseAudioHeading}>
+          <span><Mic size={23} aria-hidden="true"/></span>
+          <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
+            <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
+        </div>
+        <p className={videoStyles.phraseVoiceNotice}>{attachedAudio?.kind==="file"
+          ?locale==="ru"?"Ваша запись прикреплена. В итоговое видео входит одна выбранная звуковая дорожка.":locale==="es"?"Tu grabación está adjunta; se exporta una pista de audio.":"Your recording is attached; the video exports one audio track."
+          :locale==="ru"?"Готовые AI-голоса пока не подключены к экспорту. Можно записать свой голос или загрузить разрешённую аудиозапись.":locale==="es"?"Las voces de IA aún no se exportan. Puedes grabar o subir tu propia voz.":"AI voice presets are not yet export-ready. You can record or upload your own voice."}</p>
+        <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
+          onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
+            document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
+          <AudioLines size={20} aria-hidden="true"/>
+          {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
+          <ChevronDown size={18} aria-hidden="true"/>
+        </button>
+      </section>
+      <section className={videoStyles.phraseMusicSection} data-hypno-music>
+        <div className={videoStyles.phraseAudioHeading}>
+          <span><Music2 size={23} aria-hidden="true"/></span>
+          <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
+            <p>{locale==="ru"?"Выберите и прослушайте мелодии; отметка добавит их в видео.":locale==="es"?"Escucha y marca las pistas para incluirlas en el vídeo.":"Preview and tick a track to include it in the video."}</p></div>
+        </div>
+        <div className={videoStyles.phraseMusicList} role="group"
+          aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>
+          {featuredMelodies.slice(0,3).map(track=>{
+            const id=track.id as PresetId;
+            const checked=attachedPresetIds.includes(id);
+            const listening=samplePreviewId===id&&soundPreview;
+            return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
+              <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
+                aria-pressed={checked} disabled={recording||preparing||micRecording}
+                onClick={()=>toggleQuickMusic(id)}>
+                <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
+                <span>{track.name[locale]}</span>
+              </button>
+              <button type="button" className={videoStyles.phraseMusicPlay}
+                data-phrase-music-play={id} aria-pressed={listening}
+                aria-label={(listening?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                disabled={recording||preparing||micRecording}
+                onClick={()=>playQuickTrack(id)}>{listening
+                  ?<Pause size={20} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}</button>
+            </div>;
+          })}
+        </div>
+        <p className={videoStyles.phraseMusicStatus} aria-live="polite">
+          {attachedPresetIds.length?locale==="ru"?"Музыка добавлена к видео":locale==="es"?"Música añadida al vídeo":"Music attached to video"
+            :locale==="ru"?"Музыка не выбрана":locale==="es"?"No has elegido música":"No music selected"}
+        </p>
+      </section>
+      <details id="phrase-audio-settings" className={videoStyles.phraseAudioSettings}
+        open={phraseAudioExpanded} onToggle={event=>setPhraseAudioExpanded(event.currentTarget.open)}>
+        <summary>{locale==="ru"?"Запись голоса и расширенные аудионастройки":locale==="es"?"Grabación de voz y audio avanzado":"Voice recording and advanced audio"}<ChevronDown size={18} aria-hidden="true"/></summary>
+        {activeWorkspace==="phrases" ? deepAudioPane : null}
+      </details>
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
