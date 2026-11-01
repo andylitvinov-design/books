@@ -84,9 +84,10 @@ function latestByName(checks) {
 function gateIsGreen(checks) {
   if (!checks || checks.total_count > 100 || !Array.isArray(checks.check_runs)) return false;
   const entries = latestByName(checks.check_runs);
-  const gate = entries.get('release-ready');
+  const gate = entries.get('hh-core-verified');
   return Boolean(gate && gate.status === 'completed' && gate.conclusion === 'success' &&
     gate.app?.id === 15368 && ![...entries.values()].some(c =>
+      c.name !== 'release-ready' &&
       ['failure','cancelled','timed_out','action_required','startup_failure'].includes(c.conclusion)));
 }
 function classifyMergeState(pr) {
@@ -445,11 +446,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     }
     let checks;
     try {
-      // Query the exact release gate only: many specialist checks may exceed
+      // Query the verified Core gate only: many specialist checks may exceed
       // GitHub's first-page 100 limit. Full coordinator still validates ALL
       // required checks, rules and leases before native auto-merge.
       checks = (await limited('head-checks',()=>github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
-        check_name:'release-ready',per_page:100,filter:'latest'}))).data;
+        check_name:'hh-core-verified',per_page:100,filter:'latest'}))).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
     if (gateIsGreen(checks)) {
       if (!pr.auto_merge) summary.greenUnarmed++;
@@ -457,7 +458,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     }
     let runs;
     try {
-      // Restrict to the release gate: hundreds of specialist checks can share the same SHA.
+      // Restrict to Core workflow runs: hundreds of specialist checks can share the same SHA.
       runs = (await limited('core-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
         owner,repo,workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
         event:'pull_request',per_page:100
