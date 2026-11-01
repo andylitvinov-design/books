@@ -153,7 +153,7 @@ test('persistently inconsistent inventory fails closed',async()=>{
  let jobReads=0;
  const github={rest:{actions:{
   listWorkflowRunsForRepo:async({status})=>({data:status==='in_progress'?
-    {total_count:2,workflow_runs:[{id:1}]}:{total_count:0,workflow_runs:[]}}),
+    {total_count:4,workflow_runs:[{id:1}]}:{total_count:0,workflow_runs:[]}}),
   listJobsForWorkflowRun:async()=>{jobReads++;return {data:{total_count:0,jobs:[]}};}
  }}};
  const state=await snapshot(github,'andylitvinov-design','books');
@@ -186,8 +186,36 @@ test('incomplete job inventory stops without dispatch',async()=>{
  assert.equal(state.reason,'INCOMPLETE_JOB_INVENTORY');
 });
 
+
 test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
  assert.ok(wf.includes("github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer'"));
  assert.ok(wf.includes('cancel-in-progress: false'));
+});
+
+
+test('persistent small GitHub count discrepancy admits bounded Repair but not CI',async()=>{
+ let activeReads=0;
+ const github={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>{
+   if(status==='in_progress'){activeReads++;return {data:{total_count:2,
+     workflow_runs:[{id:1,name:'Core CI'}]}};}
+   return {data:{total_count:0,workflow_runs:[]}};
+  },
+  listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{id:10,status:'in_progress'}]}})
+ }}};
+ const state=await snapshot(github,'andylitvinov-design','books');
+ assert.equal(activeReads,2);
+ assert.equal(state.known,true);
+ assert.equal(state.inventoryConfidence,'BOUNDED_PARTIAL');
+ assert.equal(state.unknownActiveRuns,1);
+ assert.equal(state.conservativeJobPressure,9);
+ assert.equal(admission('repair',state),'ADMIT');
+ assert.equal(admission('ci',state),'PARTIAL_CAPACITY_CI_BLOCKED');
+});
+
+test('unknown runner reserve blocks Repair under conservative job pressure',()=>{
+ const state={...cap(10,0),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:2,
+   runningJobs:23,queuedJobs:1};
+ assert.equal(admission('repair',state),'JOBS_SATURATED');
 });

@@ -73,7 +73,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  try{capacity=await capacityFn(github,owner,repo);}catch(err){summary.reason='CAPACITY_UNVERIFIED: '+err.message;return finish();}
  if(!capacity?.known){summary.reason='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');return finish();}
  summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
-  runningJobs:capacity.runningJobs,queuedJobs:capacity.queuedJobs};
+  runningJobs:capacity.runningJobs,queuedJobs:capacity.queuedJobs,
+  inventoryConfidence:capacity.inventoryConfidence||'VERIFIED',
+  unknownActiveRuns:capacity.unknownActiveRuns||0,
+  unknownQueuedRuns:capacity.unknownQueuedRuns||0,
+  conservativeJobPressure:capacity.conservativeJobPressure??null};
  const usedWorkers=new Set();
  for(const task of candidates){
   if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
