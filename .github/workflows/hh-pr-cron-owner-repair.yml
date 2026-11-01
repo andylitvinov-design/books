@@ -31,7 +31,7 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const {owner,repo}=context.repo;
-            const incident=2965, marker='HH_CRON_OWNER_REPAIR_20261101';
+            const incident=2965, marker='HH_CRON_OWNER_REPAIR_20261101_V2';
             const issue=(await github.rest.issues.get({owner,repo,issue_number:incident})).data;
             if(issue.state!=='open')throw Error('Cron incident already closed; no actor repair');
             const comments=(await github.rest.issues.listComments({
@@ -81,18 +81,35 @@ jobs:
               body:'<!-- '+marker+' -->\nOne-time owner-token cron re-registration initiated for: '+
                 missing.map(r=>r.workflow_id).join(', ')+
                 '. This is an attempt, NOT proof of restored schedule delivery.'});
-            const ownerGithub=require('@actions/github').getOctokit(token);
+            // actions/github-script does not expose @actions/github as a
+            // workspace dependency. The Node 22 global fetch makes only the
+            // two narrowly allowlisted owner-authored workflow state calls.
+            // We never execute untrusted PR code or expose the token.
+            const ownerAction=async(workflow_id,action)=>{
+              if(!paths.includes(workflow_id)||!['disable','enable'].includes(action))
+                throw Error('Untrusted cron actor operation');
+              const url='https://api.github.com/repos/'+owner+'/'+repo+
+                '/actions/workflows/'+encodeURIComponent(workflow_id)+'/'+action;
+              const response=await fetch(url,{
+                method:'PUT',signal:AbortSignal.timeout(20000),
+                headers:{Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json',
+                  'X-GitHub-Api-Version':'2022-11-28'}
+              });
+              if(response.status!==204){
+                const body=await response.json().catch(()=>({}));
+                const error=new Error('Owner workflow '+action+' HTTP '+response.status+
+                  ': '+String(body.message||'denied').slice(0,150));
+                error.status=response.status;throw error;
+              }
+            };
             const results=[];
             for(const item of missing){
               let disabled=false,status='NOT_CHANGED';
               try{
-                await ownerGithub.rest.actions.disableWorkflow({
-                  owner,repo,workflow_id:item.workflow_id
-                });
+                await ownerAction(item.workflow_id,'disable');
                 disabled=true;
-                await ownerGithub.rest.actions.enableWorkflow({
-                  owner,repo,workflow_id:item.workflow_id
-                });
+                await ownerAction(item.workflow_id,'enable');
                 status='OWNER_REENABLED';
               }catch(error){
                 status='OWNER_REENABLE_DENIED_'+String(error.status||'unknown');
