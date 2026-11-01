@@ -286,10 +286,10 @@ const runEngine = async ([engine, browserType]) => {
             const original=page.locator("[data-video-original-fallback-download]");
             await expect(original).toBeVisible();
             const originalPath=await original.getAttribute("href");
-            assert.match(originalPath||"",/^\\/videos\\/holistic-house\\/[a-z0-9_-]+(?:\\/[a-z0-9_-]+)*\\.mp4$/,
+            assert.match(originalPath||"",/^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/,
               "recovery link must be a published first-party MP4, never private or external");
             assert.equal(await original.getAttribute("download"),"holistic-house-original-scene.mp4");
-            assert.match(await original.locator("..").innerText(),/не ваш готовый фильм/i,
+            assert.match(await page.locator("[data-video-original-fallback]").innerText(),/не ваш готовый фильм/i,
               "fallback must explicitly reject the false custom-film claim");
 
           }
