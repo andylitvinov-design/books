@@ -135,3 +135,24 @@ test('legacy bootstrap dry-run never mutates branches or comments',async()=>{
   assert.equal(ok,true);
   assert.equal(writes,0);
 });
+
+test('scheduled coordinator repairs the missing-Core legacy category at bounded capacity',async()=>{
+  const old={...pr(1801),state:'open',updated_at:new Date(NOW-9*60*60000).toISOString()};
+  let updates=0,comments=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[old]}),get:async()=>({data:{...old,mergeable:true,mergeable_state:'behind'}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;}}
+  },paginate:async()=>[],request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:0,workflow_runs:[]}};
+    return {data:{workflow_runs:[]}};
+  }};
+  const repairGithub={request:async()=>{updates++;return {status:202}}};
+  const result=await run({github,repairGithub,hasMergeToken:true,core:core(),context,now:NOW});
+  assert.equal(result.missingCore,1);
+  assert.equal(result.legacyCoreProbes,1);
+  assert.equal(result.legacyCoreBootstraps,1);
+  assert.equal(updates,1);
+  assert.equal(comments,1);
+});
