@@ -14,6 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 24;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
+const {taskFor}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -106,7 +107,7 @@ function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES){
   return [...first,...manual];
 }
 
-async function claim({github,core,context,number=0,expectedSha='',dryRun=false,hasToken=false,now=Date.now()}) {
+async function claim({github,core,context,number=0,expectedSha='',taskKey='',dryRun=false,hasToken=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
   const skip = reason => { log('SKIP ' + reason); return {status:'skipped',reason}; };
@@ -122,6 +123,8 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
   };
   if (fullRepo !== 'andylitvinov-design/books') return skip('WRONG_REPOSITORY');
   if (!dryRun && !hasToken) return skip('HH_AUTOMERGE_TOKEN_MISSING');
+  if(taskKey && (!/^[a-f0-9]{32}$/i.test(taskKey) || !SHA.test(expectedSha) ||
+      !Number.isSafeInteger(number) || number<1))return skip('INVALID_ADDRESSED_REPAIR_TASK');
   try {
   let candidates = [];
   // Watchdog explicitly targets the highest-priority eligible PR. If its
@@ -132,13 +135,17 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
       sort:'updated',direction:'asc',per_page:40}))));
   if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
   const queued=prioritizedRepairCandidates(found[0].data,found[1].data,now);
-  if (Number.isSafeInteger(number) && number > 0)
+  if(taskKey)candidates=[{number}];
+  else if (Number.isSafeInteger(number) && number > 0)
     candidates=[{number},...queued.filter(x=>x.number!==number)].slice(0,MAX_CANDIDATES);
   else candidates=queued;
   for (const item of candidates) {
     const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
     if (!eligible(pr,fullRepo) ||
         (expectedSha && item.number===number && pr.head.sha !== expectedSha)) continue;
+    if(taskKey && taskFor(pr,priorityFor(pr,now))?.task_key!==taskKey){
+      log('REFUSE_STALE_OR_FOREIGN_TASK #'+pr.number);continue;
+    }
     // If the branch is a parent of another open PR, never modify its history.
     const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1}))).data;
     if (!Array.isArray(children) || children.length) continue;

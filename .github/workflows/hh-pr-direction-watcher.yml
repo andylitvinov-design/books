@@ -27,7 +27,7 @@ permissions:
   contents: read
   actions: write
   issues: write
-  pull-requests: read
+  pull-requests: write
 concurrency:
   group: hh-pr-direction-watcher
   cancel-in-progress: false

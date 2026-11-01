@@ -20,6 +20,7 @@ const MAX_QUEUED = 6;
 const MAX_CANDIDATES = 5;
 const SHA = /^[a-f0-9]{40}$/i;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
+const {taskFor}=require('./ci-pr-task-state.cjs');
 
 function validBranch(branch) {
   return typeof branch === 'string' && branch.length <= 160 &&
@@ -41,7 +42,7 @@ function capacityAllows(active, queued) {
     active >= 0 && queued >= 0 && active < MAX_ACTIVE && queued < MAX_QUEUED;
 }
 
-async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now()}) {
+async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now(),prNumber=0,expectedSha='',taskKey=''}) {
   const {owner,repo}=context.repo;
   const fullRepo=owner+'/'+repo;
   const log=message=>core.info('HH_CI_WORKER: '+message);
@@ -104,6 +105,10 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     summary.reason='CI_QUEUE_BUSY';
     return writeSummary();
   }
+  if(taskKey && (!/^[a-f0-9]{32}$/i.test(taskKey) || !SHA.test(expectedSha) ||
+      !Number.isSafeInteger(prNumber) || prNumber<1)){
+    summary.reason='INVALID_ADDRESSED_CI_TASK';return writeSummary();
+  }
   let candidates;
   try{
     const response=await limited('queued-issues',()=>github.rest.issues.listForRepo({
@@ -115,7 +120,8 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     const eligible=response.data.filter(item=>item.pull_request &&
       !(item.labels||[]).some(label=>label.name===ATTEMPTED));
     // Three high-impact entries plus two rotating slots in each ten-minute cycle.
-    candidates=pickQueueCandidates(eligible,now,MAX_CANDIDATES,3);
+    candidates=taskKey ? eligible.filter(item=>item.number===prNumber).slice(0,1) :
+      pickQueueCandidates(eligible,now,MAX_CANDIDATES,3);
     summary.candidateIssues=candidates.length;
   }catch(error){
     summary.reason ||= 'QUEUE_UNAVAILABLE';
@@ -130,6 +136,11 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
         owner,repo,pull_number:issue.number
       }))).data;
       if(pr.number!==issue.number || !validPR(pr,fullRepo))continue;
+      if(taskKey && (pr.number!==prNumber||pr.head.sha!==expectedSha||
+         !pr.labels?.some(l=>l.name===QUEUED)||
+         taskFor(pr,priorityFor(pr,now))?.task_key!==taskKey)){
+        summary.reason='STALE_OR_FOREIGN_CI_TASK';continue;
+      }
       // Only complete absence of historical Core PR runs qualifies. Rerunning
       // stale/failed source code or creating a second bootstrap is forbidden.
       const history=(await limited('core-history',()=>github.request(
