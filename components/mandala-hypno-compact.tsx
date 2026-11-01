@@ -148,7 +148,6 @@ const ideaCopy={
  en:{title:"1. Idea",hint:"The central thought of your video",own:"My own idea (optional)",profile:"Suggest from my profile",update:"Update profile",apply:"Find phrases",gender:"Addressing",female:"Woman",male:"Man",variants:["I can manage","I am strong","I feel balanced","I welcome change"]},
  es:{title:"1. Idea",hint:"La idea central de tu vídeo",own:"Mi propia idea (opcional)",profile:"Según mi perfil",update:"Actualizar perfil",apply:"Elegir frases",gender:"Dirigido a",female:"Mujer",male:"Hombre",variants:["Puedo lograrlo","Soy fuerte","Estoy en armonía","Me abro al cambio"]},
 } as const;
-const hypnoMiniThemes:VideoTheme[]=["money","relationships","energy","goals"];
 type HypnoTestProposal={theme:VideoTheme;problemIndex:number;goal:VideoAffirmationGoal};
 const profileDirections:Record<string,HypnoTestProposal>={
  stress:{theme:"energy",problemIndex:0,goal:"rhythm"},
@@ -165,43 +164,26 @@ const profileDirections:Record<string,HypnoTestProposal>={
  boundaries:{theme:"relationships",problemIndex:1,goal:"boundaries"},
  relationships:{theme:"relationships",problemIndex:2,goal:"dialogue"}
 };
-function problemIndexFromNote(theme:VideoTheme,raw:string,fallback:number):number{
- const note=raw.toLocaleLowerCase().slice(0,160);
- const keywords:Record<VideoTheme,RegExp[]> = {
- energy:[/напряж|тревог|stress|tensi|anxi/i,/устал|утом|tired|fatig|cansad/i,/спеш|тороп|rush|prisa/i],
- money:[/цен|price|precio|cobr/i,/неопредел|uncertain|incertid/i,/сомнен|doubt|duda/i],
- relationships:[/отказ|отверг|reject|rechaz/i,/границ|boundar|límite/i,/разговор|конфликт|convers|conflict/i],
- goals:[/ясност|направлен|clarity|rumbo/i,/откладыв|procrast|posterg/i,/ошиб|mistake|error/i],
- life:[/перемен|change|cambio/i,/неопредел|uncertain|incertid/i,/радост|joy|alegr/i],
- health:[/перегруз|overload|sobrecarg/i,/сил|energy|fuerza/i,/напряж|stress|tensi/i],
- };
- const found=keywords[theme].findIndex(re=>re.test(note));
- return found>=0?found:fallback;
-}
-
 export function MandalaHypnoCompact({
-  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster,
+  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="",
   onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null;
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
-  const [problemNote,setProblemNote]=useState("");
-  const [goalNote,setGoalNote]=useState("");
+  const problemNote=requestText.slice(0,160);
+  const goalNote="";
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"gemini">("ready");
   const extraGoal=topicGoals[theme].includes(goalId)?goalId:topicGoals[theme][0];
-  const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
-  const goal=affirmationGoalCatalog[locale].find(item=>item.id===extraGoal) || affirmationGoalCatalog[locale][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
-  const [showHint,setShowHint]=useState(false);
   const [ideaIndex,setIdeaIndex]=useState(0);
   const [ownIdea,setOwnIdea]=useState("");
   const [gender,setGender]=useState<"female"|"male">("female");
@@ -213,7 +195,6 @@ export function MandalaHypnoCompact({
   const [length,setLength]=useState<"short"|"medium">("medium");
   const [generation,setGeneration]=useState(0);
   const [ownOpen,setOwnOpen]=useState(false);
-  const [filtersOpen,setFiltersOpen]=useState(false);
   const [ownText,setOwnText]=useState("");
   const [testProposal,setTestProposal]=useState<HypnoTestProposal|null>(null);
   const [testBusy,setTestBusy]=useState(false);
@@ -510,13 +491,6 @@ export function MandalaHypnoCompact({
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
         {open==="phrases"&&<div className={css.legacyEditor} id="hypno-phrase-options" data-hypno-phrase-editor>
-          {showHint&&<div className={css.testEntry}>
-            <p className={css.contextNote}>{ui.testsHelp}</p>
-            <div className={css.designFoot}>
-              <Link href={"/"+locale+"/tests"} prefetch={false}>{locale==="ru"?"Пройти тест":locale==="es"?"Hacer una prueba":"Take a test"}</Link>
-              <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
-            </div>
-          </div>}
           <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
