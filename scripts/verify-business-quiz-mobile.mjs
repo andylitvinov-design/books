@@ -11,8 +11,7 @@ if(!/^http:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(origin))
 const dir='artifacts/business-quiz-mobile'
 await mkdir(dir,{recursive:true})
 
-async function verify(browserType,locale,width){
-  const browser=await browserType.launch()
+async function verify(browserType,browser,locale,width){
   const page=await browser.newPage({
     viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,reducedMotion:'reduce',
   })
@@ -24,12 +23,19 @@ async function verify(browserType,locale,width){
     viewport:window.innerWidth,content:document.documentElement.scrollWidth,
   }))
   try{
-    const response=await page.goto(origin+'/'+locale+'/explore/business',{waitUntil:'networkidle',timeout:60000})
+    const response=await page.goto(origin+'/'+locale+'/explore/business',{waitUntil:'domcontentloaded',timeout:60000})
     assert.equal(response?.status(),200,label+': route')
     // CSS Modules hash class; assert via real img near the finder instead of class text.
     const finder=page.locator('[data-business-consultation-finder]')
     await finder.waitFor({state:'visible'})
     const image=page.locator('[data-topic-journey="business"] > section').first().locator('img').first()
+    // Wait for the actual critical image, not unrelated network quiescence.
+    // This preserves the rendered-portrait assertion at every viewport.
+    await image.waitFor({state:'visible',timeout:15000})
+    await page.waitForFunction(() => {
+      const img=document.querySelector('[data-topic-journey="business"] > section img')
+      return Boolean(img?.complete&&img?.naturalWidth>50)
+    },null,{timeout:15000})
     assert.ok(await image.evaluate(img=>img.complete&&img.naturalWidth>50),label+': authentic portrait')
     assert.equal(await page.locator('[data-topic-journey="business"] > section').first().locator('h1').count(),1)
     assert.equal(await finder.locator('[data-business-finder-step="need"]').count(),1)
@@ -107,11 +113,21 @@ async function verify(browserType,locale,width){
     assert.equal(new URL(page.url()).pathname,'/'+locale+'/services/free-situation-review')
     assert.deepEqual(errors,[],label+': no unhandled page errors')
     return label
-  }finally{await page.close();await browser.close()}
+  }finally{await page.close()}
 }
+// Keep each viewport in a fresh isolated Playwright context, but reuse the
+// underlying two browser processes instead of launching 15 times.
 const done=[]
-for(const locale of ['en','ru','es']){
-  for(const width of [320,375,390,430])done.push(await verify(webkit,locale,width))
-  done.push(await verify(chromium,locale,390))
+const browsers=new Map()
+try{
+  browsers.set(webkit,await webkit.launch())
+  browsers.set(chromium,await chromium.launch())
+  for(const locale of ['en','ru','es']){
+    for(const width of [320,375,390,430])
+      done.push(await verify(webkit,browsers.get(webkit),locale,width))
+    done.push(await verify(chromium,browsers.get(chromium),locale,390))
+  }
+}finally{
+  await Promise.all([...browsers.values()].map(browser=>browser.close()))
 }
 console.log('Business photo and service browser acceptance:',done.join(', '))
