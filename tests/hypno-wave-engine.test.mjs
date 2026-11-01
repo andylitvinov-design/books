@@ -154,7 +154,7 @@ test('canonical Wave v2 reads notes locally but Gemini remains enum-only and app
   const ui=readFileSync(new URL('../components/mandala-hypno-compact.tsx',import.meta.url),'utf8');
   const strategy=readFileSync(new URL('../app/api/holistic-support/hypno-strategy/route.js',import.meta.url),'utf8');
   for(const marker of [
-    'buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote',
+    'buildWaveNarrativeDraft({...localInput,currentText:problemNote,goalText:goalNote',
     'requestKey=JSON.stringify([waveInput,problemNote,goalNote])',
     'if(result.status==="safety_handoff")',
     'phrases:[],selected:[]',
