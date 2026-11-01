@@ -2330,8 +2330,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           setNotice(locale==="ru"?"Проверяем настоящий MP4 с вашим звуком.":
             locale==="es"?"Verificando el vídeo MP4 y su audio.":
               "Verifying the finished MP4 with your selected audio.");
-        }catch{
+        }catch(error){
           if(!controller.signal.aborted&&sourceRef.current===snapshotKey&&aliveRef.current){
+            // Log only a fixed diagnostic code: never expose a personal
+            // narration, image, prompt, stack trace or provider credential.
+            const reason=error instanceof Error?error.message:"";
+            const safeReasons=[
+              "webcodecs_not_supported","webcodecs_h264_unsupported",
+              "webcodecs_aac_unsupported","invalid_video_dimensions_or_timing",
+              "video_encoder_timeline_drift","video_encoder_too_slow",
+              "licensed_scene_frame_unavailable","narration_longer_than_video",
+              "audio_master_incomplete","audio_decode_invalid",
+              "video_output_size_invalid","video_output_not_mp4",
+            ];
+            const code=safeReasons.includes(reason)?reason:"unexpected_encoder_failure";
+            console.warn("HH_WEBKIT_MP4_EXPORT_FAILURE:"+code);
             setNotice(t.failed);setExportUnavailable(true);
           }
         }finally{

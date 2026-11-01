@@ -34,6 +34,7 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
   assert.match(helper,/video_output_not_mp4/);
+  assert.match(studio,/HH_WEBKIT_MP4_EXPORT_FAILURE:/);
   assert.match(helper,/await output\.cancel\(\)/);
 });
 test("Narration does not loop and actual user gain is mastered into AAC",()=>{
@@ -70,8 +71,11 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
   assert.match(helper,/webcodecs_aac_unsupported/);
   assert.match(studio,/!attachedAudio \|\| \(typeof AudioEncoder/);
   assert.match(studio,/typeof VideoFrame!=="undefined"/);
-  assert.match(helper,/codec:"mp4a\.40\.2"/);
-  assert.match(helper,/codec:"avc1\.42E01E"/);
+  assert.match(helper,/await canEncodeAudio\("aac",\{/);
+  assert.match(helper,/await canEncodeVideo\("avc",\{/);
+  assert.match(helper,/quality:new Quality\(\{bitrate:videoBitrate\}\)/);
+  assert.doesNotMatch(helper,/codec:"avc1\.42E01E"/,
+    "A fixed H.264 level 3.0 rejects portrait Full HD on some WebKit encoders");
   // Only user-selected soundtrack triggers the AAC track; no silent substitution.
   assert.match(helper,/audioBuffer&&audioSource/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);

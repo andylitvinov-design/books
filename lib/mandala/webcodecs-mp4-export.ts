@@ -4,7 +4,7 @@
  */
 import {
   AudioBufferSource, BufferTarget, CanvasSource, Mp4OutputFormat,
-  Output, Quality,
+  Output, Quality, canEncodeVideo, canEncodeAudio,
 } from "mediabunny";
 
 const SAMPLE_RATE=48000;
@@ -97,24 +97,27 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   if(!shouldContinue())throw new Error("export_cancelled");
   // Preflight BOTH actual codecs before waiting for the entire film. A failed
   // AAC codec must never produce a silent substitute for selected speech.
-  const h264=await VideoEncoder.isConfigSupported({
-    codec:"avc1.42E01E",width:canvas.width,height:canvas.height,
-    framerate:frameRate,bitrate:Math.min(4_000_000,Math.max(1_200_000,canvas.width*canvas.height*2.8)),
+  // Probe with Mediabunny's own encoding configuration, not a fixed
+  // avc1.42E01E (level 3.0) which cannot describe portrait Full HD.
+  // The preflight must match the CanvasSource and AudioBufferSource codecs.
+  const videoBitrate=Math.min(4_000_000,Math.max(1_200_000,canvas.width*canvas.height*2.8));
+  const h264=await canEncodeVideo("avc",{
+    width:canvas.width,height:canvas.height,frameRate,
+    quality:new Quality({bitrate:videoBitrate}),
   });
-  if(!h264.supported)throw new Error("webcodecs_h264_unsupported");
+  if(!h264)throw new Error("webcodecs_h264_unsupported");
   if(audio){
-    const aac=await AudioEncoder.isConfigSupported({
-      codec:"mp4a.40.2",sampleRate:SAMPLE_RATE,
-      numberOfChannels:1,bitrate:128000,
+    const aac=await canEncodeAudio("aac",{
+      sampleRate:SAMPLE_RATE,numberOfChannels:1,
+      quality:new Quality({bitrate:128000}),
     });
-    if(!aac.supported)throw new Error("webcodecs_aac_unsupported");
+    if(!aac)throw new Error("webcodecs_aac_unsupported");
   }
   if(!shouldContinue())throw new Error("export_cancelled");
   const target=new BufferTarget();
   const output=new Output({format:new Mp4OutputFormat(),target});
   const videoSource=new CanvasSource(canvas,{
-    codec:"avc", quality:new Quality({bitrate:Math.min(4_000_000,
-      Math.max(1_200_000,canvas.width*canvas.height*2.8))}),
+    codec:"avc", quality:new Quality({bitrate:videoBitrate}),
     keyFrameInterval:2,
   });
   output.addVideoTrack(videoSource);

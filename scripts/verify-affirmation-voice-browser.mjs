@@ -65,6 +65,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       page.on("request",req=>{if(req.url().includes("/api/holistic-support/voice"))requests.push({method:req.method(),url:req.url()});});
       page.on("requestfailed",req=>{if(req.url().includes("/api/holistic-support/voice"))errors.push("network:"+req.method()+":"+req.failure()?.errorText);});
       page.on("pageerror",e=>errors.push(e.message));
+      page.on("console",msg=>{
+        const code=msg.text();
+        if(code.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:"))errors.push(code);
+      });
       page.on("crash",()=>phase(engine,"page-crashed"));
       await page.route("**/api/holistic-support/voice",async route=>{
         const req=route.request();
@@ -185,7 +189,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               ? diagnosticError.message:"WebKit renderer did not respond"};
           }
           phase(engine,"recording-error-reported");
-          throw new Error(engine+" recorded video never became downloadable: "+JSON.stringify(uiState),{cause:error});
+          throw new Error(engine+" recorded video never became downloadable: "+
+            JSON.stringify({...uiState,encoderFailureCodes:errors.filter(item=>
+              item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
         phase(engine,"download-control-ready");
         const [download]=await Promise.all([
