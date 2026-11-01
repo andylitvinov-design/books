@@ -113,6 +113,21 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Exactly reviewed, consent- and license-gated Director Chat + executable cut.
+  // Dedicated Mandala CI owns source, schema, media provenance and real render.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/auto-video-director.mjs',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
   'components/mandala-video-mobile.module.css',
@@ -133,6 +148,20 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Exact additions from audited Video Director Chat. Unknown API/checkout
+  // additions remain FULL; no broad route or lib/mandala wildcard here.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
   'app/api/holistic-support/hypno-strategy/route.js',
   'components/mandala-hypnocorrection-mobile.module.css',
   'components/mandala-hypnocorrection-mobile.tsx',
