@@ -3,9 +3,7 @@
 # protection still requires it. Change only the required-status-check settings.
 name: HH migrate legacy required Core status
 on:
-  push:
-    branches: ['codex/bootstrap-books']
-    paths: ['.github/workflows/hh-migrate-legacy-core-check.yml']
+  # Manual one-time administration only. No failing runs on ordinary pushes.
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,11 +19,11 @@ jobs:
       - name: Require both existing Core and specialist gates before migrating legacy
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          GH_TOKEN: ${{ secrets.HH_BRANCH_ADMIN_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          [[ -n "$GH_TOKEN" ]] || { echo 'Missing repo-admin HH_AUTOMERGE_TOKEN; no settings changed' >&2; exit 1; }
+          [[ -n "$GH_TOKEN" ]] || { echo 'Missing one-time HH_BRANCH_ADMIN_TOKEN (Administration: write); no settings changed' >&2; exit 1; }
           before="$(mktemp)"
           policy="$(mktemp)"
           change="$(mktemp)"
