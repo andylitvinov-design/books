@@ -14,7 +14,7 @@ const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42,payload:{inputs:{}}};
 const pr=(number,lane='repair',extra={})=>({number,title:number===1?'fix(video): broken rendering':'feat(tests): updates',
- state:'open',draft:false,user:{login:'andylitvinov-design'},
+ state:'open',draft:false,mergeable:true,mergeable_state:'clean',user:{login:'andylitvinov-design'},
  base:{ref:'codex/public-book-library'},
  head:{ref:'branch-'+number,sha:SHA,repo:{full_name:'andylitvinov-design/books'}},
  labels:[{name:lane==='repair'?'hh:repair-needed':lane==='ci'?'hh:ci-needed':'hh:conflict-repair-needed'}],
@@ -481,4 +481,15 @@ test('expired active foreign lease cannot be stolen by a second worker',()=>{
   JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
  assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify(old)}],NOW),'FREE');
+});
+
+
+test('source dispatch requires verified current mergeability before reservation',async()=>{
+ for(const state of [{mergeable:null,mergeable_state:'unknown'},
+  {mergeable:true,mergeable_state:'unknown'}, {mergeable:false,mergeable_state:'blocked'}]){
+  const f=fixture([pr(99,'repair',state)],{comments:{99:[proof()]}});
+  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
 });

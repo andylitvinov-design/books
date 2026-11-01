@@ -3,6 +3,7 @@
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
+const {repairMode}=require('./ci-pr-repair-worker.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
@@ -174,6 +175,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     log('Stale conflict label cleanup #'+task.pr_number+': '+err.message);
    }
    continue;
+  }
+  // Do not reserve and start a worker that must reject unknown merge state.
+  // Use the worker's own classification and retain its independent recheck.
+  if(task.lane==='repair'&&!['lint','conflict'].includes(repairMode(fresh))){
+   blocked('SOURCE_MERGEABILITY_UNVERIFIED');continue;
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
