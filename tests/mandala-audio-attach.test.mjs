@@ -243,10 +243,10 @@ test("direct audio URL reveals its existing workspace instead of hidden advanced
   const s=read("components/mandala-free-video-studio.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
   assert.match(s,/const reveal=\(\)=>\{/);
-  assert.match(s,/if\(window\.location\.hash!==\"#video-audio\"\)return;/);
-  assert.match(s,/setActiveWorkspace\(\"audio\"\)/);
-  assert.match(s,/window\.addEventListener\(\"hashchange\",revealAudioDeepLink\)/);
-  assert.match(s,/window\.removeEventListener\(\"hashchange\",revealAudioDeepLink\)/);
+  assert.match(s,/"video-audio":"video"/);
+  assert.match(s,/setActiveWorkspace\(tab\)/);
+  assert.match(s,/window\.addEventListener\("hashchange",reveal\)/);
+  assert.match(s,/window\.removeEventListener\("hashchange",reveal\)/);
   assert.equal((s.match(/id=\"video-audio\"/g)||[]).length,1);
   assert.equal((s.match(/data-video-audio-mic\b/g)||[]).length,1);
   assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
