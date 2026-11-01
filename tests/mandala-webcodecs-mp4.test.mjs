@@ -61,3 +61,18 @@ test("WebKit export can be cancelled, and microphone speech is not looped",()=>{
   assert.match(studio,/nonLoop:true as const/);
   assert.match(helper,/gain\.gain\.linearRampToValueAtTime\(0,seconds\)/);
 });
+
+test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice AAC",()=>{
+  assert.match(helper,/supportsLocalWebCodecsMp4\(needsAudio=false\)/);
+  assert.match(helper,/!needsAudio \|\| \(/);
+  assert.match(helper,/if\(audio\)\{/);
+  assert.match(helper,/webcodecs_h264_unsupported/);
+  assert.match(helper,/webcodecs_aac_unsupported/);
+  assert.match(studio,/!attachedAudio \|\| \(typeof AudioEncoder/);
+  assert.match(studio,/typeof VideoFrame!=="undefined"/);
+  assert.match(helper,/codec:"mp4a\.40\.2"/);
+  assert.match(helper,/codec:"avc1\.42E01E"/);
+  // Only user-selected soundtrack triggers the AAC track; no silent substitution.
+  assert.match(helper,/audioBuffer&&audioSource/);
+  assert.match(studio,/if\(attachedAudio && !musicSession\)/);
+});
