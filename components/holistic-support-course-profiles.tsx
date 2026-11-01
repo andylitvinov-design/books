@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight, BookOpen, CheckCircle2, Coins, Compass,
-  Heart, HeartPulse, ListChecks, Sparkles,
+  Heart, HeartPulse, ListChecks, Sparkles, Wind,
 } from "lucide-react";
 
 import type { GoalSector, GoalSectorSnapshot } from "@/components/holistic-support-goal-filter";
@@ -12,13 +12,14 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { SupportMobileCourse } from "@/components/holistic-support-mobile";
 import styles from "./holistic-support-course-profiles.module.css";
 
-export type CourseProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
+export type CourseProfileSector = GoalSector;
 
 const profiles = [
   { id: "energy", Icon: HeartPulse },
   { id: "money", Icon: Coins },
   { id: "love", Icon: Heart },
   { id: "meaning", Icon: Compass },
+  { id: "stress", Icon: Wind },
 ] as const;
 
 const content = {
@@ -33,11 +34,13 @@ const content = {
         title: "Отношения и близость", description: "Исследуй качество контакта, доверие и то, какой поддержки тебе сейчас не хватает." },
       meaning: { label: "Профиль смыслов", short: "Смыслы", hint: "Ценности и направление",
         title: "Смыслы и направление жизни", description: "Проясни свои ценности, внутреннюю опору и то, куда хочется двигаться." },
+      stress: { label: "Антистресс", short: "Антистресс", hint: "Спокойствие и опора",
+        title: "Мягкое восстановление и спокойствие", description: "Отметь напряжение и выбери посильную цель. При желании продолжи курс «ОПОРА»." },
     },
     takeTest: "Пройти тест", fill: "Заполнить профиль", recommend: "Получить рекомендации",
     saved: "Принято", local: "Профиль на этом экране сохраняется только до закрытия страницы.",
     guidance: "Рекомендации строятся на твоих ответах, а не на диагнозе. Для персонального подбора сначала заполни профиль.",
-    academy: "Курсы Академии", reiki: "Бесплатный курс Рейки",
+    academy: "Курсы Академии", reiki: "Бесплатный курс Рейки", opora: "Курс «ОПОРА» · антистресс",
     others: "Другие обучающие программы", open: "Открыть курс", videos: "видео",
   },
   en: {
@@ -51,11 +54,13 @@ const content = {
         title: "Relationships and connection", description: "Reflect on trust, communication and the kind of support you need." },
       meaning: { label: "Meaning profile", short: "Meaning", hint: "Values and direction",
         title: "Meaning and life direction", description: "Explore your values, inner support and the direction you want to take." },
+      stress: { label: "Anti-stress profile", short: "Anti-stress", hint: "Calm & recovery",
+        title: "A gentler path to calm", description: "Reflect on stress, choose a manageable goal and explore the existing OPORA course at your own pace." },
     },
     takeTest: "Take a test", fill: "Fill in profile", recommend: "Get recommendations",
     saved: "Accepted", local: "This page keeps profile answers only until you leave.",
     guidance: "Suggestions reflect your answers, not a medical diagnosis. Fill in your profile before requesting personal recommendations.",
-    academy: "Academy courses", reiki: "Free Reiki course",
+    academy: "Academy courses", reiki: "Free Reiki course", opora: "OPORA · anti-stress course",
     others: "Other learning programmes", open: "Open course", videos: "videos",
   },
   es: {
@@ -69,11 +74,13 @@ const content = {
         title: "Relaciones y conexión", description: "Explora la confianza, la comunicación y el apoyo que necesitas." },
       meaning: { label: "Perfil de sentido", short: "Sentido", hint: "Valores y dirección",
         title: "Sentido y dirección de vida", description: "Aclara tus valores y el rumbo que quieres seguir." },
+      stress: { label: "Perfil antiestrés", short: "Antiestrés", hint: "Calma y recuperación",
+        title: "Un camino amable hacia la calma", description: "Reflexiona sobre la tensión, elige un objetivo alcanzable y explora el curso existente OPORA." },
     },
     takeTest: "Hacer un test", fill: "Completar perfil", recommend: "Ver recomendaciones",
     saved: "Aceptado", local: "Las respuestas de esta pantalla duran solo hasta salir de la página.",
     guidance: "Las sugerencias se basan en tus respuestas, no en un diagnóstico. Completa tu perfil para recibir recomendaciones.",
-    academy: "Cursos de la Academia", reiki: "Curso de Reiki gratuito",
+    academy: "Cursos de la Academia", reiki: "Curso de Reiki gratuito", opora: "OPORA · curso antiestrés",
     others: "Otros programas de aprendizaje", open: "Abrir curso", videos: "vídeos",
   },
 } as const;
@@ -130,6 +137,7 @@ export function HolisticSupportCourseProfiles({
     <div className={styles.extras} data-support-courses-panel>
       <p className={styles.localNote}><CheckCircle2 size={16} aria-hidden="true" />{t.local}</p>
       <nav className={styles.courseLinks} aria-label={t.academy}>
+        {active === "stress" ? <Link href={`/${locale}/courses/antistress`} prefetch={false} data-support-stress-course><BookOpen size={18} aria-hidden="true" />{t.opora}<ArrowRight size={17} aria-hidden="true" /></Link> : null}
         <Link href={`/${locale}/academy`} prefetch={false}><BookOpen size={18} aria-hidden="true" />{t.academy}<ArrowRight size={17} aria-hidden="true" /></Link>
         <Link href={`/${locale}/academy/reiki/tantra-reiki/discover`} prefetch={false}><Sparkles size={18} aria-hidden="true" />{t.reiki}<ArrowRight size={17} aria-hidden="true" /></Link>
       </nav>
