@@ -27,3 +27,13 @@ for(const [file,cron] of [
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
 });
+
+test('trusted default push re-enables schedules and dispatches one live watchdog',()=>{
+  const s=read('hh-pr-ten-minute-watchdog');
+  assert.ok(s.includes('reactivate-schedules-and-dispatch'));
+  assert.ok(s.includes('github.rest.actions.getWorkflow'));
+  assert.ok(s.includes('github.rest.actions.enableWorkflow'));
+  assert.ok(s.includes('github.rest.actions.createWorkflowDispatch'));
+  assert.ok(s.includes("inputs:{dry_run:'false'}"));
+  assert.ok(s.includes("github.event_name == 'push'"));
+});

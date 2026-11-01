@@ -93,3 +93,52 @@ jobs:
               hasMergeToken: Boolean(token),
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
+  reactivate-schedules:
+    name: reactivate-schedules-and-dispatch
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify active workflows, repair disabled schedules and start one real cycle
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo}=context.repo;
+            const paths=[
+              'hh-pr-ten-minute-watchdog.yml',
+              'hh-pr-ci-worker.yml',
+              'hh-pr-repair-worker.yml',
+              'hh-pr-full-inventory.yml'
+            ];
+            const results=[];
+            for(const path of paths){
+              const before=(await github.rest.actions.getWorkflow({
+                owner,repo,workflow_id:path
+              })).data;
+              if(before.state!=='active'){
+                core.warning('HH_SCHEDULER_REPAIR: '+path+' was '+before.state);
+                await github.rest.actions.enableWorkflow({owner,repo,workflow_id:path});
+              }
+              const after=(await github.rest.actions.getWorkflow({
+                owner,repo,workflow_id:path
+              })).data;
+              if(after.state!=='active')
+                throw Error('HH_SCHEDULER_REPAIR_NOT_ACTIVE: '+path+' '+after.state);
+              results.push({path,before:before.state,after:after.state});
+            }
+            // workflow_dispatch is a documented GITHUB_TOKEN recursion exception.
+            // This is ONE bootstrap per trusted workflow change, not every push.
+            await github.rest.actions.createWorkflowDispatch({
+              owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
+              ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
+            });
+            core.info('HH_SCHEDULER_REPAIR: '+JSON.stringify(results));
+            core.info('HH_WATCHDOG_LIVE_DISPATCH_ACCEPTED');
+            await core.summary.addHeading('HH Scheduler activation')
+              .addCodeBlock(JSON.stringify(results,null,2))
+              .addRaw('Live watchdog workflow_dispatch accepted (dry_run=false).')
+              .write();
