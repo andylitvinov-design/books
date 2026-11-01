@@ -162,10 +162,17 @@ jobs:
             const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
             })).data;
-            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
-                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
-                  job.status === "completed" && job.conclusion === "success")) {
-              log("SKIP current source missing verified Core job for PR #" + number);
+            function hasVerifiedCoreJobs(page){
+              if (!Array.isArray(page?.jobs) || !Number.isSafeInteger(page.total_count) ||
+                  page.total_count !== page.jobs.length || page.total_count > 100) return false;
+              return ["hh-core-verified","hh-specialist"].every(name=>{
+                const matching=page.jobs.filter(job=>job.name === name);
+                return matching.length === 1 && matching[0].status === "completed" &&
+                  matching[0].conclusion === "success";
+              });
+            }
+            if (!hasVerifiedCoreJobs(jobPage)) {
+              log("SKIP incomplete Core/Specialist evidence for PR #" + number);
               return;
             }
             // Support both verified protection states without bypassing the
@@ -181,9 +188,9 @@ jobs:
               log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
               return;
             }
-            if (oldRequired && !jobPage.jobs.some(job =>
-                job.name === "release-ready" && job.status === "completed" &&
-                job.conclusion === "success")) {
+            const legacyJobs=jobPage.jobs.filter(job=>job.name === "release-ready");
+            if (oldRequired && (legacyJobs.length !== 1 ||
+                legacyJobs[0].status !== "completed" || legacyJobs[0].conclusion !== "success")) {
               log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
               return;
             }
