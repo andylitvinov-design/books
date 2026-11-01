@@ -3,7 +3,7 @@
   "sourceTaxonomy": "PR #2949 — canonical five-category story taxonomy",
   "sourceAudio": "PR #2948 — 48 executable film presets × four original recordings",
   "rights": "first_party_original_recordings",
-  "notes": "Each of the 120 editorial scenarios receives four DIFFERENT real MP3s; no MP3 repeats within its category. The same first-party recording may be reused across DIFFERENT goal categories. These are audio-ready playlists, not proof that unbound video storyboards have licensed MP4s.",
+  "notes": "Each of the 120 editorial scenarios receives four DIFFERENT real MP3s; no MP3 repeats within its category. The same first-party recording may be reused across DIFFERENT goal categories. These are audio-ready playlists, not proof that unbound video storyboards have licensed MP4s. The first choice is mood-aware: calm piano for Body/Stress, tender harp for Love, flowing harp for Work and energizing marimba for Energy.",
   "categoryOrder": [
     "body",
     "business",
@@ -59,9 +59,9 @@
       },
       "audioIds": [
         "score-gentle-rest-1",
-        "score-morning-energy-2",
-        "score-rooted-freedom-3",
-        "score-water-and-breath-4"
+        "score-morning-energy-4",
+        "score-rooted-freedom-2",
+        "score-water-and-breath-3"
       ]
     },
     {
@@ -76,10 +76,10 @@
         "es": "Luz cálida"
       },
       "audioIds": [
-        "score-gentle-new-day-2",
-        "score-quiet-awakening-3",
-        "score-ocean-breath-4",
-        "score-coastal-renewal-1"
+        "score-gentle-new-day-1",
+        "score-quiet-awakening-4",
+        "score-ocean-breath-2",
+        "score-coastal-renewal-3"
       ]
     },
     {
@@ -94,10 +94,10 @@
         "es": "Ola suave"
       },
       "audioIds": [
-        "score-morning-energy-3",
+        "score-morning-energy-1",
         "score-rooted-freedom-4",
-        "score-water-and-breath-1",
-        "score-light-and-space-2"
+        "score-water-and-breath-2",
+        "score-light-and-space-3"
       ]
     },
     {
@@ -112,8 +112,8 @@
         "es": "Volver al cuerpo"
       },
       "audioIds": [
-        "score-quiet-awakening-4",
-        "score-ocean-breath-1",
+        "score-quiet-awakening-1",
+        "score-ocean-breath-4",
         "score-coastal-renewal-2",
         "score-natural-stillness-3"
       ]
@@ -131,9 +131,9 @@
       },
       "audioIds": [
         "score-rooted-freedom-1",
-        "score-water-and-breath-2",
-        "score-light-and-space-3",
-        "score-forest-morning-4"
+        "score-water-and-breath-4",
+        "score-light-and-space-2",
+        "score-forest-morning-3"
       ]
     },
     {
@@ -148,10 +148,10 @@
         "es": "Cielo sereno"
       },
       "audioIds": [
-        "score-ocean-breath-2",
-        "score-coastal-renewal-3",
-        "score-natural-stillness-4",
-        "score-flowing-vitality-1"
+        "score-ocean-breath-1",
+        "score-coastal-renewal-4",
+        "score-natural-stillness-2",
+        "score-flowing-vitality-3"
       ]
     },
     {
@@ -166,10 +166,10 @@
         "es": "Arrullo del bosque"
       },
       "audioIds": [
-        "score-water-and-breath-3",
+        "score-water-and-breath-1",
         "score-light-and-space-4",
-        "score-forest-morning-1",
-        "score-quiet-water-2"
+        "score-forest-morning-2",
+        "score-quiet-water-3"
       ]
     },
     {
@@ -184,8 +184,8 @@
         "es": "Noche junto al hogar"
       },
       "audioIds": [
-        "score-coastal-renewal-4",
-        "score-natural-stillness-1",
+        "score-coastal-renewal-1",
+        "score-natural-stillness-4",
         "score-flowing-vitality-2",
         "score-flowers-of-change-3"
       ]
@@ -203,9 +203,9 @@
       },
       "audioIds": [
         "score-light-and-space-1",
-        "score-forest-morning-2",
-        "score-quiet-water-3",
-        "score-fresh-light-4"
+        "score-forest-morning-4",
+        "score-quiet-water-2",
+        "score-fresh-light-3"
       ]
     },
     {
@@ -220,10 +220,10 @@
         "es": "Aire de montaña"
       },
       "audioIds": [
-        "score-natural-stillness-2",
-        "score-flowing-vitality-3",
-        "score-flowers-of-change-4",
-        "score-soft-reset-1"
+        "score-natural-stillness-1",
+        "score-flowing-vitality-4",
+        "score-flowers-of-change-2",
+        "score-soft-reset-3"
       ]
     },
     {
@@ -238,10 +238,10 @@
         "es": "Ola de respiración"
       },
       "audioIds": [
-        "score-forest-morning-3",
+        "score-forest-morning-1",
         "score-quiet-water-4",
-        "score-fresh-light-1",
-        "score-gentle-space-2"
+        "score-fresh-light-2",
+        "score-gentle-space-3"
       ]
     },
     {
@@ -256,8 +256,8 @@
         "es": "Respirar con los árboles"
       },
       "audioIds": [
-        "score-flowing-vitality-4",
-        "score-flowers-of-change-1",
+        "score-flowing-vitality-1",
+        "score-flowers-of-change-4",
         "score-soft-reset-2",
         "score-calm-recharge-3"
       ]
@@ -275,9 +275,9 @@
       },
       "audioIds": [
         "score-quiet-water-1",
-        "score-fresh-light-2",
-        "score-gentle-space-3",
-        "score-forest-balance-4"
+        "score-fresh-light-4",
+        "score-gentle-space-2",
+        "score-forest-balance-3"
       ]
     },
     {
@@ -292,10 +292,10 @@
         "es": "Facilidad de movimiento"
       },
       "audioIds": [
-        "score-flowers-of-change-2",
-        "score-soft-reset-3",
-        "score-calm-recharge-4",
-        "score-rooted-renewal-1"
+        "score-flowers-of-change-1",
+        "score-soft-reset-4",
+        "score-calm-recharge-2",
+        "score-rooted-renewal-3"
       ]
     },
     {
@@ -310,10 +310,10 @@
         "es": "Postura estable"
       },
       "audioIds": [
-        "score-fresh-light-3",
+        "score-fresh-light-1",
         "score-gentle-space-4",
-        "score-forest-balance-1",
-        "score-breathing-flow-2"
+        "score-forest-balance-2",
+        "score-breathing-flow-3"
       ]
     },
     {
@@ -328,8 +328,8 @@
         "es": "Contacto amable"
       },
       "audioIds": [
-        "score-soft-reset-4",
-        "score-calm-recharge-1",
+        "score-soft-reset-1",
+        "score-calm-recharge-4",
         "score-rooted-renewal-2",
         "score-gentle-breath-3"
       ]
@@ -347,9 +347,9 @@
       },
       "audioIds": [
         "score-gentle-space-1",
-        "score-forest-balance-2",
-        "score-breathing-flow-3",
-        "score-fresh-chapter-4"
+        "score-forest-balance-4",
+        "score-breathing-flow-2",
+        "score-fresh-chapter-3"
       ]
     },
     {
@@ -364,10 +364,10 @@
         "es": "Tiempo para mí"
       },
       "audioIds": [
-        "score-calm-recharge-2",
-        "score-rooted-renewal-3",
-        "score-gentle-breath-4",
-        "score-steady-activation-1"
+        "score-calm-recharge-1",
+        "score-rooted-renewal-4",
+        "score-gentle-breath-2",
+        "score-steady-activation-3"
       ]
     },
     {
@@ -382,10 +382,10 @@
         "es": "Una mano amable"
       },
       "audioIds": [
-        "score-forest-balance-3",
+        "score-forest-balance-1",
         "score-breathing-flow-4",
-        "score-fresh-chapter-1",
-        "score-gentle-rest-2"
+        "score-fresh-chapter-2",
+        "score-gentle-rest-3"
       ]
     },
     {
@@ -400,8 +400,8 @@
         "es": "Mi ritmo natural"
       },
       "audioIds": [
-        "score-rooted-renewal-4",
-        "score-gentle-breath-1",
+        "score-rooted-renewal-1",
+        "score-gentle-breath-4",
         "score-steady-activation-2",
         "score-gentle-new-day-3"
       ]
@@ -419,9 +419,9 @@
       },
       "audioIds": [
         "score-breathing-flow-1",
-        "score-fresh-chapter-2",
-        "score-gentle-rest-3",
-        "score-morning-energy-4"
+        "score-fresh-chapter-4",
+        "score-gentle-rest-2",
+        "score-morning-energy-3"
       ]
     },
     {
@@ -436,10 +436,10 @@
         "es": "Una postura abierta"
       },
       "audioIds": [
-        "score-gentle-breath-2",
-        "score-steady-activation-3",
-        "score-gentle-new-day-4",
-        "score-quiet-awakening-1"
+        "score-gentle-breath-1",
+        "score-steady-activation-4",
+        "score-gentle-new-day-2",
+        "score-quiet-awakening-3"
       ]
     },
     {
@@ -454,10 +454,10 @@
         "es": "Camino firme"
       },
       "audioIds": [
-        "score-fresh-chapter-3",
+        "score-fresh-chapter-1",
         "score-gentle-rest-4",
-        "score-morning-energy-1",
-        "score-rooted-freedom-2"
+        "score-morning-energy-2",
+        "score-rooted-freedom-3"
       ]
     },
     {
@@ -472,8 +472,8 @@
         "es": "Fuerza serena"
       },
       "audioIds": [
-        "score-steady-activation-4",
-        "score-gentle-new-day-1",
+        "score-steady-activation-1",
+        "score-gentle-new-day-4",
         "score-quiet-awakening-2",
         "score-ocean-breath-3"
       ]
@@ -492,8 +492,8 @@
       "audioIds": [
         "score-rooted-freedom-2",
         "score-open-horizon-3",
-        "score-inspiring-motion-4",
-        "score-forest-morning-1"
+        "score-inspiring-motion-1",
+        "score-forest-morning-4"
       ]
     },
     {
@@ -508,10 +508,10 @@
         "es": "Mañana clara"
       },
       "audioIds": [
-        "score-steady-foundation-3",
-        "score-coastal-renewal-4",
+        "score-steady-foundation-2",
+        "score-coastal-renewal-3",
         "score-find-my-way-1",
-        "score-financial-clarity-2"
+        "score-financial-clarity-4"
       ]
     },
     {
@@ -526,10 +526,10 @@
         "es": "Camino del dominio"
       },
       "audioIds": [
-        "score-open-horizon-4",
-        "score-inspiring-motion-1",
-        "score-forest-morning-2",
-        "score-clear-future-3"
+        "score-open-horizon-2",
+        "score-inspiring-motion-3",
+        "score-forest-morning-1",
+        "score-clear-future-4"
       ]
     },
     {
@@ -544,9 +544,9 @@
         "es": "Jornada equilibrada"
       },
       "audioIds": [
-        "score-coastal-renewal-1",
-        "score-find-my-way-2",
-        "score-financial-clarity-3",
+        "score-coastal-renewal-2",
+        "score-find-my-way-3",
+        "score-financial-clarity-1",
         "score-flowers-of-change-4"
       ]
     },
@@ -564,8 +564,8 @@
       "audioIds": [
         "score-inspiring-motion-2",
         "score-forest-morning-3",
-        "score-clear-future-4",
-        "score-gentle-resource-1"
+        "score-clear-future-1",
+        "score-gentle-resource-4"
       ]
     },
     {
@@ -580,10 +580,10 @@
         "es": "Orden y claridad"
       },
       "audioIds": [
-        "score-find-my-way-3",
-        "score-financial-clarity-4",
+        "score-find-my-way-2",
+        "score-financial-clarity-3",
         "score-flowers-of-change-1",
-        "score-first-light-2"
+        "score-first-light-4"
       ]
     },
     {
@@ -598,10 +598,10 @@
         "es": "Árbol de posibilidades"
       },
       "audioIds": [
-        "score-forest-morning-4",
-        "score-clear-future-1",
-        "score-gentle-resource-2",
-        "score-gentle-space-3"
+        "score-forest-morning-2",
+        "score-clear-future-3",
+        "score-gentle-resource-1",
+        "score-gentle-space-4"
       ]
     },
     {
@@ -616,9 +616,9 @@
         "es": "Apoyo financiero sereno"
       },
       "audioIds": [
-        "score-financial-clarity-1",
-        "score-flowers-of-change-2",
-        "score-first-light-3",
+        "score-financial-clarity-2",
+        "score-flowers-of-change-3",
+        "score-first-light-1",
         "score-collaboration-growth-4"
       ]
     },
@@ -636,8 +636,8 @@
       "audioIds": [
         "score-clear-future-2",
         "score-gentle-resource-3",
-        "score-gentle-space-4",
-        "score-focused-action-1"
+        "score-gentle-space-1",
+        "score-focused-action-4"
       ]
     },
     {
@@ -652,10 +652,10 @@
         "es": "Punto de atención"
       },
       "audioIds": [
-        "score-flowers-of-change-3",
-        "score-first-light-4",
+        "score-flowers-of-change-2",
+        "score-first-light-3",
         "score-collaboration-growth-1",
-        "score-rooted-renewal-2"
+        "score-rooted-renewal-4"
       ]
     },
     {
@@ -670,10 +670,10 @@
         "es": "Horizonte despejado"
       },
       "audioIds": [
-        "score-gentle-resource-4",
-        "score-gentle-space-1",
-        "score-focused-action-2",
-        "score-opportunity-horizon-3"
+        "score-gentle-resource-2",
+        "score-gentle-space-3",
+        "score-focused-action-1",
+        "score-opportunity-horizon-4"
       ]
     },
     {
@@ -688,9 +688,9 @@
         "es": "Ritmo de acción"
       },
       "audioIds": [
-        "score-first-light-1",
-        "score-collaboration-growth-2",
-        "score-rooted-renewal-3",
+        "score-first-light-2",
+        "score-collaboration-growth-3",
+        "score-rooted-renewal-1",
         "score-gentle-decision-4"
       ]
     },
@@ -708,8 +708,8 @@
       "audioIds": [
         "score-gentle-space-2",
         "score-focused-action-3",
-        "score-opportunity-horizon-4",
-        "score-fresh-chapter-1"
+        "score-opportunity-horizon-1",
+        "score-fresh-chapter-4"
       ]
     },
     {
@@ -724,10 +724,10 @@
         "es": "Encrucijada"
       },
       "audioIds": [
-        "score-collaboration-growth-3",
-        "score-rooted-renewal-4",
+        "score-collaboration-growth-2",
+        "score-rooted-renewal-3",
         "score-gentle-decision-1",
-        "score-warm-prosperity-2"
+        "score-warm-prosperity-4"
       ]
     },
     {
@@ -742,10 +742,10 @@
         "es": "Una elección consciente"
       },
       "audioIds": [
-        "score-focused-action-4",
-        "score-opportunity-horizon-1",
-        "score-fresh-chapter-2",
-        "score-first-step-3"
+        "score-focused-action-2",
+        "score-opportunity-horizon-3",
+        "score-fresh-chapter-1",
+        "score-first-step-4"
       ]
     },
     {
@@ -760,9 +760,9 @@
         "es": "La puerta abierta"
       },
       "audioIds": [
-        "score-rooted-renewal-1",
-        "score-gentle-decision-2",
-        "score-warm-prosperity-3",
+        "score-rooted-renewal-2",
+        "score-gentle-decision-3",
+        "score-warm-prosperity-1",
         "score-gentle-new-day-4"
       ]
     },
@@ -780,8 +780,8 @@
       "audioIds": [
         "score-opportunity-horizon-2",
         "score-fresh-chapter-3",
-        "score-first-step-4",
-        "score-new-opportunities-1"
+        "score-first-step-1",
+        "score-new-opportunities-4"
       ]
     },
     {
@@ -796,10 +796,10 @@
         "es": "Encuentro con oportunidades"
       },
       "audioIds": [
-        "score-gentle-decision-3",
-        "score-warm-prosperity-4",
+        "score-gentle-decision-2",
+        "score-warm-prosperity-3",
         "score-gentle-new-day-1",
-        "score-clear-direction-2"
+        "score-clear-direction-4"
       ]
     },
     {
@@ -814,10 +814,10 @@
         "es": "Crecimiento en el jardín"
       },
       "audioIds": [
-        "score-fresh-chapter-4",
-        "score-first-step-1",
-        "score-new-opportunities-2",
-        "score-rooted-freedom-3"
+        "score-fresh-chapter-2",
+        "score-first-step-3",
+        "score-new-opportunities-1",
+        "score-rooted-freedom-4"
       ]
     },
     {
@@ -832,9 +832,9 @@
         "es": "Luz del mañana"
       },
       "audioIds": [
-        "score-warm-prosperity-1",
-        "score-gentle-new-day-2",
-        "score-clear-direction-3",
+        "score-warm-prosperity-2",
+        "score-gentle-new-day-3",
+        "score-clear-direction-1",
         "score-steady-foundation-4"
       ]
     },
@@ -852,8 +852,8 @@
       "audioIds": [
         "score-first-step-2",
         "score-new-opportunities-3",
-        "score-rooted-freedom-4",
-        "score-open-horizon-1"
+        "score-rooted-freedom-1",
+        "score-open-horizon-4"
       ]
     },
     {
@@ -868,10 +868,10 @@
         "es": "Escenario tranquilo"
       },
       "audioIds": [
-        "score-gentle-new-day-3",
-        "score-clear-direction-4",
+        "score-gentle-new-day-2",
+        "score-clear-direction-3",
         "score-steady-foundation-1",
-        "score-coastal-renewal-2"
+        "score-coastal-renewal-4"
       ]
     },
     {
@@ -886,10 +886,10 @@
         "es": "Encuentro con el público"
       },
       "audioIds": [
-        "score-new-opportunities-4",
-        "score-rooted-freedom-1",
-        "score-open-horizon-2",
-        "score-inspiring-motion-3"
+        "score-new-opportunities-2",
+        "score-rooted-freedom-3",
+        "score-open-horizon-1",
+        "score-inspiring-motion-4"
       ]
     },
     {
@@ -904,9 +904,9 @@
         "es": "Salir con confianza"
       },
       "audioIds": [
-        "score-clear-direction-1",
-        "score-steady-foundation-2",
-        "score-coastal-renewal-3",
+        "score-clear-direction-2",
+        "score-steady-foundation-3",
+        "score-coastal-renewal-1",
         "score-find-my-way-4"
       ]
     },
@@ -923,9 +923,9 @@
       },
       "audioIds": [
         "score-forest-morning-3",
-        "score-fresh-light-4",
+        "score-fresh-light-2",
         "score-quiet-water-1",
-        "score-gentle-space-2"
+        "score-gentle-space-4"
       ]
     },
     {
@@ -940,10 +940,10 @@
         "es": "Río vivo"
       },
       "audioIds": [
-        "score-natural-stillness-4",
-        "score-flowers-of-change-1",
-        "score-calm-recharge-2",
-        "score-soft-reset-3"
+        "score-natural-stillness-3",
+        "score-flowers-of-change-2",
+        "score-calm-recharge-1",
+        "score-soft-reset-4"
       ]
     },
     {
@@ -958,9 +958,9 @@
         "es": "Una luz interior"
       },
       "audioIds": [
-        "score-fresh-light-1",
+        "score-fresh-light-3",
         "score-quiet-water-2",
-        "score-gentle-space-3",
+        "score-gentle-space-1",
         "score-breathing-flow-4"
       ]
     },
@@ -976,10 +976,10 @@
         "es": "Despertar de luz"
       },
       "audioIds": [
-        "score-flowers-of-change-2",
-        "score-calm-recharge-3",
-        "score-soft-reset-4",
-        "score-rooted-renewal-1"
+        "score-flowers-of-change-3",
+        "score-calm-recharge-2",
+        "score-soft-reset-1",
+        "score-rooted-renewal-4"
       ]
     },
     {
@@ -995,9 +995,9 @@
       },
       "audioIds": [
         "score-quiet-water-3",
-        "score-gentle-space-4",
+        "score-gentle-space-2",
         "score-breathing-flow-1",
-        "score-forest-balance-2"
+        "score-forest-balance-4"
       ]
     },
     {
@@ -1012,10 +1012,10 @@
         "es": "Primera luz"
       },
       "audioIds": [
-        "score-calm-recharge-4",
-        "score-soft-reset-1",
-        "score-rooted-renewal-2",
-        "score-steady-activation-3"
+        "score-calm-recharge-3",
+        "score-soft-reset-2",
+        "score-rooted-renewal-1",
+        "score-steady-activation-4"
       ]
     },
     {
@@ -1030,9 +1030,9 @@
         "es": "Jardín soleado"
       },
       "audioIds": [
-        "score-gentle-space-1",
+        "score-gentle-space-3",
         "score-breathing-flow-2",
-        "score-forest-balance-3",
+        "score-forest-balance-1",
         "score-fresh-chapter-4"
       ]
     },
@@ -1048,10 +1048,10 @@
         "es": "Una mañana posible"
       },
       "audioIds": [
-        "score-soft-reset-2",
-        "score-rooted-renewal-3",
-        "score-steady-activation-4",
-        "score-gentle-breath-1"
+        "score-soft-reset-3",
+        "score-rooted-renewal-2",
+        "score-steady-activation-1",
+        "score-gentle-breath-4"
       ]
     },
     {
@@ -1067,9 +1067,9 @@
       },
       "audioIds": [
         "score-breathing-flow-3",
-        "score-forest-balance-4",
+        "score-forest-balance-2",
         "score-fresh-chapter-1",
-        "score-morning-energy-2"
+        "score-morning-energy-4"
       ]
     },
     {
@@ -1084,10 +1084,10 @@
         "es": "Espacio para soñar"
       },
       "audioIds": [
-        "score-rooted-renewal-4",
-        "score-steady-activation-1",
-        "score-gentle-breath-2",
-        "score-gentle-new-day-3"
+        "score-rooted-renewal-3",
+        "score-steady-activation-2",
+        "score-gentle-breath-1",
+        "score-gentle-new-day-4"
       ]
     },
     {
@@ -1102,9 +1102,9 @@
         "es": "Campo de descubrimientos"
       },
       "audioIds": [
-        "score-forest-balance-1",
+        "score-forest-balance-3",
         "score-fresh-chapter-2",
-        "score-morning-energy-3",
+        "score-morning-energy-1",
         "score-gentle-rest-4"
       ]
     },
@@ -1120,10 +1120,10 @@
         "es": "Pintar con luz"
       },
       "audioIds": [
-        "score-steady-activation-2",
-        "score-gentle-breath-3",
-        "score-gentle-new-day-4",
-        "score-ocean-breath-1"
+        "score-steady-activation-3",
+        "score-gentle-breath-2",
+        "score-gentle-new-day-1",
+        "score-ocean-breath-4"
       ]
     },
     {
@@ -1139,9 +1139,9 @@
       },
       "audioIds": [
         "score-fresh-chapter-3",
-        "score-morning-energy-4",
+        "score-morning-energy-2",
         "score-gentle-rest-1",
-        "score-rooted-freedom-2"
+        "score-rooted-freedom-4"
       ]
     },
     {
@@ -1156,10 +1156,10 @@
         "es": "Centro estable"
       },
       "audioIds": [
-        "score-gentle-breath-4",
-        "score-gentle-new-day-1",
-        "score-ocean-breath-2",
-        "score-quiet-awakening-3"
+        "score-gentle-breath-3",
+        "score-gentle-new-day-2",
+        "score-ocean-breath-1",
+        "score-quiet-awakening-4"
       ]
     },
     {
@@ -1174,9 +1174,9 @@
         "es": "Llama tranquila"
       },
       "audioIds": [
-        "score-morning-energy-1",
+        "score-morning-energy-3",
         "score-gentle-rest-2",
-        "score-rooted-freedom-3",
+        "score-rooted-freedom-1",
         "score-light-and-space-4"
       ]
     },
@@ -1192,10 +1192,10 @@
         "es": "Una montaña interior"
       },
       "audioIds": [
-        "score-gentle-new-day-2",
-        "score-ocean-breath-3",
-        "score-quiet-awakening-4",
-        "score-coastal-renewal-1"
+        "score-gentle-new-day-3",
+        "score-ocean-breath-2",
+        "score-quiet-awakening-1",
+        "score-coastal-renewal-4"
       ]
     },
     {
@@ -1211,9 +1211,9 @@
       },
       "audioIds": [
         "score-gentle-rest-3",
-        "score-rooted-freedom-4",
+        "score-rooted-freedom-2",
         "score-light-and-space-1",
-        "score-water-and-breath-2"
+        "score-water-and-breath-4"
       ]
     },
     {
@@ -1228,10 +1228,10 @@
         "es": "Una puerta que se abre"
       },
       "audioIds": [
-        "score-ocean-breath-4",
-        "score-quiet-awakening-1",
-        "score-coastal-renewal-2",
-        "score-flowing-vitality-3"
+        "score-ocean-breath-3",
+        "score-quiet-awakening-2",
+        "score-coastal-renewal-1",
+        "score-flowing-vitality-4"
       ]
     },
     {
@@ -1246,9 +1246,9 @@
         "es": "Camino de cambio"
       },
       "audioIds": [
-        "score-rooted-freedom-1",
+        "score-rooted-freedom-3",
         "score-light-and-space-2",
-        "score-water-and-breath-3",
+        "score-water-and-breath-1",
         "score-forest-morning-4"
       ]
     },
@@ -1264,10 +1264,10 @@
         "es": "Comienza un jardín"
       },
       "audioIds": [
-        "score-quiet-awakening-2",
-        "score-coastal-renewal-3",
-        "score-flowing-vitality-4",
-        "score-natural-stillness-1"
+        "score-quiet-awakening-3",
+        "score-coastal-renewal-2",
+        "score-flowing-vitality-1",
+        "score-natural-stillness-4"
       ]
     },
     {
@@ -1283,9 +1283,9 @@
       },
       "audioIds": [
         "score-light-and-space-3",
-        "score-water-and-breath-4",
+        "score-water-and-breath-2",
         "score-forest-morning-1",
-        "score-fresh-light-2"
+        "score-fresh-light-4"
       ]
     },
     {
@@ -1300,10 +1300,10 @@
         "es": "Mi brújula"
       },
       "audioIds": [
-        "score-coastal-renewal-4",
-        "score-flowing-vitality-1",
-        "score-natural-stillness-2",
-        "score-flowers-of-change-3"
+        "score-coastal-renewal-3",
+        "score-flowing-vitality-2",
+        "score-natural-stillness-1",
+        "score-flowers-of-change-4"
       ]
     },
     {
@@ -1318,9 +1318,9 @@
         "es": "Árbol del sentido"
       },
       "audioIds": [
-        "score-water-and-breath-1",
+        "score-water-and-breath-3",
         "score-forest-morning-2",
-        "score-fresh-light-3",
+        "score-fresh-light-1",
         "score-quiet-water-4"
       ]
     },
@@ -1336,10 +1336,10 @@
         "es": "Encuentro con el futuro"
       },
       "audioIds": [
-        "score-flowing-vitality-2",
-        "score-natural-stillness-3",
-        "score-flowers-of-change-4",
-        "score-calm-recharge-1"
+        "score-flowing-vitality-3",
+        "score-natural-stillness-2",
+        "score-flowers-of-change-1",
+        "score-calm-recharge-4"
       ]
     },
     {
@@ -1354,9 +1354,9 @@
         "es": "Encuentro cálido"
       },
       "audioIds": [
-        "score-trust-in-time-4",
+        "score-trust-in-time-2",
         "score-soft-reset-1",
-        "score-rooted-renewal-2",
+        "score-rooted-renewal-4",
         "score-soft-boundaries-3"
       ]
     },
@@ -1372,10 +1372,10 @@
         "es": "Acercarnos"
       },
       "audioIds": [
-        "score-gentle-space-1",
-        "score-kind-connection-2",
-        "score-forest-balance-3",
-        "score-fresh-chapter-4"
+        "score-gentle-space-2",
+        "score-kind-connection-1",
+        "score-forest-balance-4",
+        "score-fresh-chapter-3"
       ]
     },
     {
@@ -1391,9 +1391,9 @@
       },
       "audioIds": [
         "score-soft-reset-2",
-        "score-rooted-renewal-3",
+        "score-rooted-renewal-1",
         "score-soft-boundaries-4",
-        "score-gentle-breath-1"
+        "score-gentle-breath-3"
       ]
     },
     {
@@ -1408,10 +1408,10 @@
         "es": "Luz entre nosotros"
       },
       "audioIds": [
-        "score-kind-connection-3",
-        "score-forest-balance-4",
-        "score-fresh-chapter-1",
-        "score-warm-connection-2"
+        "score-kind-connection-2",
+        "score-forest-balance-1",
+        "score-fresh-chapter-4",
+        "score-warm-connection-3"
       ]
     },
     {
@@ -1426,9 +1426,9 @@
         "es": "Puente de confianza"
       },
       "audioIds": [
-        "score-rooted-renewal-4",
+        "score-rooted-renewal-2",
         "score-soft-boundaries-1",
-        "score-gentle-breath-2",
+        "score-gentle-breath-4",
         "score-gentle-new-day-3"
       ]
     },
@@ -1444,10 +1444,10 @@
         "es": "Apoyo amable"
       },
       "audioIds": [
-        "score-forest-balance-1",
-        "score-fresh-chapter-2",
-        "score-warm-connection-3",
-        "score-gentle-rest-4"
+        "score-forest-balance-2",
+        "score-fresh-chapter-1",
+        "score-warm-connection-4",
+        "score-gentle-rest-3"
       ]
     },
     {
@@ -1463,9 +1463,9 @@
       },
       "audioIds": [
         "score-soft-boundaries-2",
-        "score-gentle-breath-3",
+        "score-gentle-breath-1",
         "score-gentle-new-day-4",
-        "score-trust-and-space-1"
+        "score-trust-and-space-3"
       ]
     },
     {
@@ -1480,10 +1480,10 @@
         "es": "Dos orillas"
       },
       "audioIds": [
-        "score-fresh-chapter-3",
-        "score-warm-connection-4",
-        "score-gentle-rest-1",
-        "score-rooted-freedom-2"
+        "score-fresh-chapter-2",
+        "score-warm-connection-1",
+        "score-gentle-rest-4",
+        "score-rooted-freedom-3"
       ]
     },
     {
@@ -1498,9 +1498,9 @@
         "es": "Resplandor del corazón"
       },
       "audioIds": [
-        "score-gentle-breath-4",
+        "score-gentle-breath-2",
         "score-gentle-new-day-1",
-        "score-trust-and-space-2",
+        "score-trust-and-space-4",
         "score-quiet-awakening-3"
       ]
     },
@@ -1516,10 +1516,10 @@
         "es": "Jardín florecido"
       },
       "audioIds": [
-        "score-warm-connection-1",
-        "score-gentle-rest-2",
-        "score-rooted-freedom-3",
-        "score-open-hearted-4"
+        "score-warm-connection-2",
+        "score-gentle-rest-1",
+        "score-rooted-freedom-4",
+        "score-open-hearted-3"
       ]
     },
     {
@@ -1535,9 +1535,9 @@
       },
       "audioIds": [
         "score-gentle-new-day-2",
-        "score-trust-and-space-3",
+        "score-trust-and-space-1",
         "score-quiet-awakening-4",
-        "score-coastal-renewal-1"
+        "score-coastal-renewal-3"
       ]
     },
     {
@@ -1552,10 +1552,10 @@
         "es": "Puerta del corazón"
       },
       "audioIds": [
-        "score-gentle-rest-3",
-        "score-rooted-freedom-4",
-        "score-open-hearted-1",
-        "score-water-and-breath-2"
+        "score-gentle-rest-2",
+        "score-rooted-freedom-1",
+        "score-open-hearted-4",
+        "score-water-and-breath-3"
       ]
     },
     {
@@ -1570,9 +1570,9 @@
         "es": "Círculo de luz"
       },
       "audioIds": [
-        "score-trust-and-space-4",
+        "score-trust-and-space-2",
         "score-quiet-awakening-1",
-        "score-coastal-renewal-2",
+        "score-coastal-renewal-4",
         "score-calm-together-3"
       ]
     },
@@ -1588,10 +1588,10 @@
         "es": "Mi espacio"
       },
       "audioIds": [
-        "score-rooted-freedom-1",
-        "score-open-hearted-2",
-        "score-water-and-breath-3",
-        "score-forest-morning-4"
+        "score-rooted-freedom-2",
+        "score-open-hearted-1",
+        "score-water-and-breath-4",
+        "score-forest-morning-3"
       ]
     },
     {
@@ -1607,9 +1607,9 @@
       },
       "audioIds": [
         "score-quiet-awakening-2",
-        "score-coastal-renewal-3",
+        "score-coastal-renewal-1",
         "score-calm-together-4",
-        "score-natural-stillness-1"
+        "score-natural-stillness-3"
       ]
     },
     {
@@ -1624,10 +1624,10 @@
         "es": "Encontrar equilibrio"
       },
       "audioIds": [
-        "score-open-hearted-3",
-        "score-water-and-breath-4",
-        "score-forest-morning-1",
-        "score-welcoming-heart-2"
+        "score-open-hearted-2",
+        "score-water-and-breath-1",
+        "score-forest-morning-4",
+        "score-welcoming-heart-3"
       ]
     },
     {
@@ -1642,9 +1642,9 @@
         "es": "Reflejo amable"
       },
       "audioIds": [
-        "score-coastal-renewal-4",
+        "score-coastal-renewal-2",
         "score-calm-together-1",
-        "score-natural-stillness-2",
+        "score-natural-stillness-4",
         "score-flowers-of-change-3"
       ]
     },
@@ -1660,10 +1660,10 @@
         "es": "Cuidarme"
       },
       "audioIds": [
-        "score-water-and-breath-1",
-        "score-forest-morning-2",
-        "score-welcoming-heart-3",
-        "score-quiet-water-4"
+        "score-water-and-breath-2",
+        "score-forest-morning-1",
+        "score-welcoming-heart-4",
+        "score-quiet-water-3"
       ]
     },
     {
@@ -1679,9 +1679,9 @@
       },
       "audioIds": [
         "score-calm-together-2",
-        "score-natural-stillness-3",
+        "score-natural-stillness-1",
         "score-flowers-of-change-4",
-        "score-trust-in-time-1"
+        "score-trust-in-time-3"
       ]
     },
     {
@@ -1696,10 +1696,10 @@
         "es": "Hogar interior"
       },
       "audioIds": [
-        "score-forest-morning-3",
-        "score-welcoming-heart-4",
-        "score-quiet-water-1",
-        "score-gentle-space-2"
+        "score-forest-morning-2",
+        "score-welcoming-heart-1",
+        "score-quiet-water-4",
+        "score-gentle-space-3"
       ]
     },
     {
@@ -1714,9 +1714,9 @@
         "es": "Puente de palabras"
       },
       "audioIds": [
-        "score-natural-stillness-4",
+        "score-natural-stillness-2",
         "score-flowers-of-change-1",
-        "score-trust-in-time-2",
+        "score-trust-in-time-4",
         "score-soft-reset-3"
       ]
     },
@@ -1732,10 +1732,10 @@
         "es": "Escuchar con cuidado"
       },
       "audioIds": [
-        "score-welcoming-heart-1",
-        "score-quiet-water-2",
-        "score-gentle-space-3",
-        "score-kind-connection-4"
+        "score-welcoming-heart-2",
+        "score-quiet-water-1",
+        "score-gentle-space-4",
+        "score-kind-connection-3"
       ]
     },
     {
@@ -1751,9 +1751,9 @@
       },
       "audioIds": [
         "score-flowers-of-change-2",
-        "score-trust-in-time-3",
+        "score-trust-in-time-1",
         "score-soft-reset-4",
-        "score-rooted-renewal-1"
+        "score-rooted-renewal-3"
       ]
     },
     {
@@ -1768,10 +1768,10 @@
         "es": "Conversación a la luz"
       },
       "audioIds": [
-        "score-quiet-water-3",
-        "score-gentle-space-4",
-        "score-kind-connection-1",
-        "score-forest-balance-2"
+        "score-quiet-water-2",
+        "score-gentle-space-1",
+        "score-kind-connection-4",
+        "score-forest-balance-3"
       ]
     },
     {
@@ -1787,9 +1787,9 @@
       },
       "audioIds": [
         "score-rooted-renewal-1",
-        "score-soft-boundaries-2",
-        "score-gentle-rest-3",
-        "score-gentle-new-day-4"
+        "score-soft-boundaries-4",
+        "score-gentle-rest-2",
+        "score-gentle-new-day-3"
       ]
     },
     {
@@ -1804,10 +1804,10 @@
         "es": "Agua tranquila"
       },
       "audioIds": [
-        "score-gentle-breath-2",
-        "score-fresh-chapter-3",
-        "score-warm-connection-4",
-        "score-quiet-awakening-1"
+        "score-gentle-breath-1",
+        "score-fresh-chapter-4",
+        "score-warm-connection-2",
+        "score-quiet-awakening-3"
       ]
     },
     {
@@ -1822,10 +1822,10 @@
         "es": "Círculo protector"
       },
       "audioIds": [
-        "score-soft-boundaries-3",
+        "score-soft-boundaries-1",
         "score-gentle-rest-4",
-        "score-gentle-new-day-1",
-        "score-trust-and-space-2"
+        "score-gentle-new-day-2",
+        "score-trust-and-space-3"
       ]
     },
     {
@@ -1840,8 +1840,8 @@
         "es": "Aquí y ahora"
       },
       "audioIds": [
-        "score-fresh-chapter-4",
-        "score-warm-connection-1",
+        "score-fresh-chapter-1",
+        "score-warm-connection-4",
         "score-quiet-awakening-2",
         "score-rooted-freedom-3"
       ]
@@ -1859,9 +1859,9 @@
       },
       "audioIds": [
         "score-gentle-rest-1",
-        "score-gentle-new-day-2",
-        "score-trust-and-space-3",
-        "score-water-and-breath-4"
+        "score-gentle-new-day-4",
+        "score-trust-and-space-2",
+        "score-water-and-breath-3"
       ]
     },
     {
@@ -1876,10 +1876,10 @@
         "es": "Cinco sentidos"
       },
       "audioIds": [
-        "score-warm-connection-2",
-        "score-quiet-awakening-3",
-        "score-rooted-freedom-4",
-        "score-open-hearted-1"
+        "score-warm-connection-1",
+        "score-quiet-awakening-4",
+        "score-rooted-freedom-2",
+        "score-open-hearted-3"
       ]
     },
     {
@@ -1894,10 +1894,10 @@
         "es": "Exhalación suave"
       },
       "audioIds": [
-        "score-gentle-new-day-3",
+        "score-gentle-new-day-1",
         "score-trust-and-space-4",
-        "score-water-and-breath-1",
-        "score-coastal-renewal-2"
+        "score-water-and-breath-2",
+        "score-coastal-renewal-3"
       ]
     },
     {
@@ -1912,8 +1912,8 @@
         "es": "Volver al ahora"
       },
       "audioIds": [
-        "score-quiet-awakening-4",
-        "score-rooted-freedom-1",
+        "score-quiet-awakening-1",
+        "score-rooted-freedom-4",
         "score-open-hearted-2",
         "score-natural-stillness-3"
       ]
@@ -1931,9 +1931,9 @@
       },
       "audioIds": [
         "score-trust-and-space-1",
-        "score-water-and-breath-2",
-        "score-coastal-renewal-3",
-        "score-calm-together-4"
+        "score-water-and-breath-4",
+        "score-coastal-renewal-2",
+        "score-calm-together-3"
       ]
     },
     {
@@ -1948,10 +1948,10 @@
         "es": "Cerrar el día"
       },
       "audioIds": [
-        "score-rooted-freedom-2",
-        "score-open-hearted-3",
-        "score-natural-stillness-4",
-        "score-forest-morning-1"
+        "score-rooted-freedom-1",
+        "score-open-hearted-4",
+        "score-natural-stillness-2",
+        "score-forest-morning-3"
       ]
     },
     {
@@ -1966,10 +1966,10 @@
         "es": "Tarde tranquila"
       },
       "audioIds": [
-        "score-water-and-breath-3",
+        "score-water-and-breath-1",
         "score-coastal-renewal-4",
-        "score-calm-together-1",
-        "score-quiet-water-2"
+        "score-calm-together-2",
+        "score-quiet-water-3"
       ]
     },
     {
@@ -1984,8 +1984,8 @@
         "es": "Volver a mí"
       },
       "audioIds": [
-        "score-open-hearted-4",
-        "score-natural-stillness-1",
+        "score-open-hearted-1",
+        "score-natural-stillness-4",
         "score-forest-morning-2",
         "score-welcoming-heart-3"
       ]
@@ -2003,9 +2003,9 @@
       },
       "audioIds": [
         "score-coastal-renewal-1",
-        "score-calm-together-2",
-        "score-quiet-water-3",
-        "score-flowers-of-change-4"
+        "score-calm-together-4",
+        "score-quiet-water-2",
+        "score-flowers-of-change-3"
       ]
     },
     {
@@ -2020,10 +2020,10 @@
         "es": "Dejar la carga"
       },
       "audioIds": [
-        "score-natural-stillness-2",
-        "score-forest-morning-3",
-        "score-welcoming-heart-4",
-        "score-soft-reset-1"
+        "score-natural-stillness-1",
+        "score-forest-morning-4",
+        "score-welcoming-heart-2",
+        "score-soft-reset-3"
       ]
     },
     {
@@ -2038,10 +2038,10 @@
         "es": "Una ola suave"
       },
       "audioIds": [
-        "score-calm-together-3",
+        "score-calm-together-1",
         "score-quiet-water-4",
-        "score-flowers-of-change-1",
-        "score-trust-in-time-2"
+        "score-flowers-of-change-2",
+        "score-trust-in-time-3"
       ]
     },
     {
@@ -2056,8 +2056,8 @@
         "es": "Espacio para aflojarse"
       },
       "audioIds": [
-        "score-forest-morning-4",
-        "score-welcoming-heart-1",
+        "score-forest-morning-1",
+        "score-welcoming-heart-4",
         "score-soft-reset-2",
         "score-gentle-space-3"
       ]
@@ -2075,9 +2075,9 @@
       },
       "audioIds": [
         "score-quiet-water-1",
-        "score-flowers-of-change-2",
-        "score-trust-in-time-3",
-        "score-forest-balance-4"
+        "score-flowers-of-change-4",
+        "score-trust-in-time-2",
+        "score-forest-balance-3"
       ]
     },
     {
@@ -2092,10 +2092,10 @@
         "es": "Apoyo en el camino"
       },
       "audioIds": [
-        "score-welcoming-heart-2",
-        "score-soft-reset-3",
-        "score-gentle-space-4",
-        "score-kind-connection-1"
+        "score-welcoming-heart-1",
+        "score-soft-reset-4",
+        "score-gentle-space-2",
+        "score-kind-connection-3"
       ]
     },
     {
@@ -2110,10 +2110,10 @@
         "es": "Mirada serena"
       },
       "audioIds": [
-        "score-flowers-of-change-3",
+        "score-flowers-of-change-1",
         "score-trust-in-time-4",
-        "score-forest-balance-1",
-        "score-rooted-renewal-2"
+        "score-forest-balance-2",
+        "score-rooted-renewal-3"
       ]
     },
     {
@@ -2128,8 +2128,8 @@
         "es": "Estar presente"
       },
       "audioIds": [
-        "score-soft-reset-4",
-        "score-gentle-space-1",
+        "score-soft-reset-1",
+        "score-gentle-space-4",
         "score-kind-connection-2",
         "score-gentle-breath-3"
       ]
@@ -2147,9 +2147,9 @@
       },
       "audioIds": [
         "score-trust-in-time-1",
-        "score-forest-balance-2",
-        "score-rooted-renewal-3",
-        "score-soft-boundaries-4"
+        "score-forest-balance-4",
+        "score-rooted-renewal-2",
+        "score-soft-boundaries-3"
       ]
     },
     {
@@ -2164,10 +2164,10 @@
         "es": "Raíces profundas"
       },
       "audioIds": [
-        "score-gentle-space-2",
-        "score-kind-connection-3",
-        "score-gentle-breath-4",
-        "score-fresh-chapter-1"
+        "score-gentle-space-1",
+        "score-kind-connection-4",
+        "score-gentle-breath-2",
+        "score-fresh-chapter-3"
       ]
     },
     {
@@ -2182,10 +2182,10 @@
         "es": "Lugar tranquilo"
       },
       "audioIds": [
-        "score-forest-balance-3",
+        "score-forest-balance-1",
         "score-rooted-renewal-4",
-        "score-soft-boundaries-1",
-        "score-gentle-rest-2"
+        "score-soft-boundaries-2",
+        "score-gentle-rest-3"
       ]
     },
     {
@@ -2200,8 +2200,8 @@
         "es": "Luz amable"
       },
       "audioIds": [
-        "score-kind-connection-4",
-        "score-gentle-breath-1",
+        "score-kind-connection-1",
+        "score-gentle-breath-4",
         "score-fresh-chapter-2",
         "score-warm-connection-3"
       ]
