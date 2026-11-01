@@ -69,7 +69,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
-    repos:{getCommit:async()=>({data:{parents:[{sha:SHA}]}})},
+    repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
@@ -309,6 +309,16 @@ test('synthetic CI merge SHA is valid only if its commit has current PR HEAD par
     parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})}}};
   assert.equal(await verifyCoreRunOnExactHead({github:newGithub,owner:'andylitvinov-design',
     repo:'books',pr:candidate,run,limited}),true);
+  const wrongOrder={rest:{repos:{getCommit:async()=>({data:{
+    parents:[{sha:SHA},{sha:'a'.repeat(40)}]}})}}};
+  assert.equal(await verifyCoreRunOnExactHead({github:wrongOrder,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,run,limited}),false,
+    'current source HEAD cannot be the first synthetic merge parent');
+  const extraParent={rest:{repos:{getCommit:async()=>({data:{
+    parents:[{sha:'a'.repeat(40)},{sha:SHA},{sha:'d'.repeat(40)}]}})}}};
+  assert.equal(await verifyCoreRunOnExactHead({github:extraParent,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,run,limited}),false,
+    'synthetic merge must have exactly two ordered parents');
   assert.equal(await verifyCoreRunOnExactHead({github:{},owner:'andylitvinov-design',
     repo:'books',pr:candidate,run:{...run,head_sha:SHA},limited}),true);
 });
