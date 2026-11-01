@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, run} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, run} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -12,9 +12,9 @@ const pr = number => ({
 const core = () => ({info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 const context = {repo:{owner:'andylitvinov-design',repo:'books'}};
 
-test('full pool is covered by rotating slices within six 10-minute checks',()=>{
+test('full pool is covered by rotating slices within sixteen 10-minute checks',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1)), numbers=new Set();
-  for(let tick=0;tick<6;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
+  for(let tick=0;tick<16;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
@@ -25,6 +25,13 @@ test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
   assert.equal(gateIsGreen({...gate,total_count:101}),false);
   assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,{id:2,name:'browser',conclusion:'failure'}]}),false);
 });
+test('CI admission uses separate running and queued limits, not their sum',()=>{
+  assert.equal(canRetryCi(12,12),true);
+  assert.equal(canRetryCi(18,40),false);
+  assert.equal(canRetryCi(20,0),false);
+  assert.equal(canRetryCi(0,20),false);
+  assert.equal(canRetryCi(Infinity,0),false);
+});
 test('retry only first-attempt infrastructure failures after cooldown',()=>{
   const r={status:'completed',run_attempt:1,conclusion:'failure',created_at:new Date(NOW-60*60000).toISOString(),
     updated_at:new Date(NOW-40*60000).toISOString()};
@@ -34,19 +41,20 @@ test('retry only first-attempt infrastructure failures after cooldown',()=>{
   assert.equal(transientFailure({...r,updated_at:new Date(NOW-5*60000).toISOString()},[{conclusion:'timed_out'}],NOW),false);
 });
 test('green unarmed PR dispatches existing protected coordinator, not a direct merge',async()=>{
-  let dispatched=0;
+  let dispatched=0, targeted=false;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(99)]})},
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
-    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}})}
+    checks:{listForRef:async(arg)=>{targeted=arg.check_name==='release-ready';return {data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
   },request:async(route)=>{if(route.includes('dispatches')) dispatched++;return {data:{workflow_runs:[]}};}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.greenUnarmed,1);
   assert.equal(result.mergeCoordinatorDispatched,1);
   assert.equal(dispatched,1);
+  assert.equal(targeted,true);
 });
 test('CI overload blocks retries, but code failures are handed to Repair once',async()=>{
-  let reruns=0,comments=0;
+  let reruns=0,comments=0,labels=0;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(98)]})},
     actions:{
@@ -55,7 +63,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
-    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;}}
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
@@ -70,85 +78,45 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(result.transientCiReruns,0);
   assert.equal(reruns,0);
   assert.equal(comments,1);
+  assert.equal(labels,1);
+  assert.equal(result.activeActions,18);
+  assert.equal(result.queuedActions,32);
 });
 
-
-test('GraphQL fast inventory covers all production PRs with two pages',async()=>{
-  let page=0;
-  const source=Array.from({length:101},(_,i)=>({
-    number:i+1,isDraft:false,createdAt:'2026-10-31T00:00:00Z',
-    updatedAt:'2026-11-01T00:00:00Z',headRefOid:('a'.repeat(39)+(i%10)),
-    headRefName:'fix/'+(i+1),headRepository:{nameWithOwner:'andylitvinov-design/books'},
-    mergeStateStatus:i===0?'DIRTY':'BLOCKED',
-    autoMergeRequest:null,statusCheckRollup:{state:i===0?'FAILURE':'PENDING'}
-  }));
-  const github={graphql:async(q,args)=>{
-    assert.ok(q.includes('statusCheckRollup'));
-    const nodes=page++===0?source.slice(0,100):source.slice(100);
-    return {repository:{all:{totalCount:105},production:{
-      totalCount:101,pageInfo:{hasNextPage:page===1,endCursor:page===1?'next':null},nodes
-    }}};
+test('rate-reserve stops deep checks and no merge dispatch is sent',async()=>{
+  let checks=0;
+  const github={rest:{
+    pulls:{list:async()=>({headers:{'x-ratelimit-remaining':'0'},data:[pr(66)]})},
+    actions:{listWorkflowRunsForRepo:async()=>{throw Error('capacity must be skipped');}},
+    checks:{listForRef:async()=>{checks++;throw Error('checks must be skipped');}}
   }};
-  const {queryInventory,classifyQuick}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
-  const result=await queryInventory(github,'andylitvinov-design','books');
-  assert.equal(page,2);assert.equal(result.open,105);
-  assert.equal(result.production.length,101);
-  assert.equal(classifyQuick(result.production[0]),'DIRTY');
-});
-test('shared API budget reserves room for other workflows',async()=>{
-  const {reserveApiBudget}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
-  const mock=n=>({rest:{rateLimit:{get:async()=>({data:{resources:{core:{remaining:n}}}})}}});
-  assert.equal((await reserveApiBudget(mock(900),()=>{})).deep,22);
-  assert.equal((await reserveApiBudget(mock(390),()=>{})).deep,10);
-  assert.equal((await reserveApiBudget(mock(340),()=>{})).deep,0);
-});
-test('merge conflict and outdated base are not source-code repair failures',()=>{
-  const {classifyQuick}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
-  assert.equal(classifyQuick({mergeStateStatus:'DIRTY',rollup:'FAILURE'}),'DIRTY');
-  assert.equal(classifyQuick({mergeStateStatus:'BEHIND',rollup:'FAILURE'}),'BEHIND');
-  assert.equal(classifyQuick({mergeStateStatus:'CLEAN',rollup:'FAILURE'}),'RED');
-  assert.equal(classifyQuick({mergeStateStatus:'CLEAN',rollup:'SUCCESS',auto_merge:{enabledAt:'now'}}),'ARMED');
-});
-test('bulk green PR triggers only existing guarded coordinator without N+1 API',async()=>{
-  let deep=0,dispatches=0;
-  const graphql=async()=>({repository:{all:{totalCount:1},production:{
-    totalCount:1,pageInfo:{hasNextPage:false,endCursor:null},nodes:[{
-      number:87,isDraft:false,createdAt:'2026-11-01T00:00:00Z',
-      updatedAt:'2026-11-01T00:00:00Z',headRefOid:SHA,headRefName:'fix/87',
-      headRepository:{nameWithOwner:'andylitvinov-design/books'},mergeStateStatus:'CLEAN',
-      autoMergeRequest:null,statusCheckRollup:{state:'SUCCESS'}
-    }]}}});
-  const github={graphql,rest:{
-    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
-    rateLimit:{get:async()=>({data:{resources:{core:{remaining:900}}}})},
-    checks:{listForRef:async()=>{deep++;throw Error('unnecessary per-head CI')}}
-  },request:async(route)=>{if(route.includes('dispatches'))dispatches++;return {data:{workflow_runs:[]}};}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
-  assert.equal(result.inventoryMode,'graphql');
-  assert.equal(result.quickGreen,1);
-  assert.equal(result.mergeCoordinatorDispatched,1);
-  assert.equal(dispatches,1);
-  assert.equal(deep,0);
-});
-test('GraphQL failure falls back to safe REST, without direct merge',async()=>{
-  const github={graphql:async()=>{throw Error('GraphQL temporarily unavailable')},rest:{
-    pulls:{list:async()=>({data:[]})},
-    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
-    rateLimit:{get:async()=>({data:{resources:{core:{remaining:850}}}})}
-  }};
-  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
-  assert.equal(result.inventoryMode,'rest-fallback');
-  assert.equal(result.open,0);
+  assert.equal(result.apiRateLimited,true);
+  assert.equal(result.apiBudgetReason,'GITHUB_RATE_RESERVE');
+  assert.equal(result.apiRequests,1);
+  assert.equal(result.inspected,0);
+  assert.equal(checks,0);
   assert.equal(result.mergeCoordinatorDispatched,0);
 });
+test('bounded rotation inventories all open PRs while limiting detailed calls',async()=>{
+  const all=Array.from({length:179},(_,i)=>pr(i+1));
+  const github={rest:{
+    pulls:{list:async({page})=>({data:all.slice((page-1)*100,page*100)})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false,dryRun:true});
+  assert.equal(result.open,179);
+  assert.ok(result.inspected<=16);
+  assert.ok(result.apiRequests<=65);
+});
 
 
-test('Core CI belongs to PR via association even with synthetic merge SHA',async()=>{
+test('Core CI is matched via source PR association, not workflow synthetic SHA',async()=>{
   const github={rest:{
     pulls:{list:async()=>({data:[pr(55)]})},
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:1}})},
-    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'queued',conclusion:null}]}})},
-    rateLimit:{get:async()=>({data:{resources:{core:{remaining:850}}}})}
+    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'queued'}]}})}
   },request:async(route,args)=>{
     if(args?.workflow_id==='hh-pr-core-release.yml'){
       assert.equal(args.branch,'test-55');
@@ -166,14 +134,12 @@ test('Core CI belongs to PR via association even with synthetic merge SHA',async
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
   assert.equal(result.pendingCi,1);
   assert.equal(result.missingCore,0);
-  assert.equal(result.stalePendingCi,0);
 });
-test('Core CI with wrong PR association is rejected',async()=>{
+test('CI run from a previous source HEAD does not authorize retry',async()=>{
   const github={rest:{
     pulls:{list:async()=>({data:[pr(55)]})},
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
-    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
-    rateLimit:{get:async()=>({data:{resources:{core:{remaining:850}}}})}
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
   },request:async(route,args)=>({data:{total_count:1,workflow_runs:[{
     name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),
     head_branch:'test-55',pull_requests:[{number:55,head:{sha:'f'.repeat(40),ref:'test-55'}}],

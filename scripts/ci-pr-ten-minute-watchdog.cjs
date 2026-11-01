@@ -13,11 +13,12 @@ const MINUTE = 60_000;
 const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
-const MAX_DEEP = 22;
-const API_RESERVE = 350;
-const MAX_HISTORY = 30;
+const REPAIR_LABEL = 'hh:repair-needed';
+// Preserve per-repository API quota for event-driven merge / CI workflows.
+const MAX_API_CALLS = 65;
+const MIN_RATE_REMAINING = 100;
 
-function selectCandidates(prs, now, rotatedSize = 36, urgentSize = 8) {
+function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
   if (!sorted.length) return [];
   const offset = (Math.floor(now / (10 * MINUTE)) * rotatedSize) % sorted.length;
@@ -39,6 +40,12 @@ function gateIsGreen(checks) {
     gate.app?.id === 15368 && ![...entries.values()].some(c =>
       ['failure','cancelled','timed_out','action_required','startup_failure'].includes(c.conclusion)));
 }
+function canRetryCi(active, queued) {
+  // Running and queued runs are different resources; do not conflate them.
+  // Allow two bounded retries when both pools are below their independent caps.
+  return Number.isSafeInteger(active) && Number.isSafeInteger(queued) &&
+    active >= 0 && queued >= 0 && active < 20 && queued < 20;
+}
 function transientFailure(run, jobs, now) {
   if (!run || run.status !== 'completed' || run.run_attempt !== 1 ||
       now - Date.parse(run.updated_at || run.created_at || 0) < 15 * MINUTE ||
@@ -52,91 +59,36 @@ function transientFailure(run, jobs, now) {
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
 }
 
-
-/**
- * One GraphQL page per 100 production PRs exposes their latest aggregate CI
- * status and merge blockers. Merge rights remain in the existing guard.
- */
-async function queryInventory(github, owner, repo) {
-  if (typeof github.graphql !== 'function') throw Error('graphql-unavailable');
-  const query =
-    'query($owner:String!,$repo:String!,$cursor:String) {' +
-    ' repository(owner:$owner,name:$repo) {' +
-    ' all:pullRequests(states:OPEN,first:1){totalCount}' +
-    ' production:pullRequests(states:OPEN,baseRefName:"codex/public-book-library",' +
-    ' first:100,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}) {' +
-    ' totalCount pageInfo{hasNextPage endCursor}' +
-    ' nodes { number isDraft createdAt updatedAt headRefOid headRefName' +
-    ' headRepository{nameWithOwner} mergeStateStatus' +
-    ' autoMergeRequest{enabledAt} statusCheckRollup{state} } } } }';
-  const rows=[];
-  let cursor=null,total=null,allTotal=null,seen=0;
-  for(let page=0;page<MAX_HISTORY;page++){
-    const result=await github.graphql(query,{owner,repo,cursor});
-    const data=result?.repository,prs=data?.production;
-    if(!prs||!Array.isArray(prs.nodes)||!Number.isInteger(prs.totalCount)||
-        !Number.isInteger(data.all?.totalCount)) throw Error('graphql-incomplete');
-    if(total!==null&&(total!==prs.totalCount||allTotal!==data.all.totalCount))
-      throw Error('graphql-inventory-changed');
-    total=prs.totalCount;allTotal=data.all.totalCount;seen+=prs.nodes.length;
-    for(const p of prs.nodes){
-      if(!Number.isInteger(p.number)||!/^[a-f0-9]{40}$/i.test(p.headRefOid||''))
-        continue;
-      rows.push({number:p.number,draft:p.isDraft,created_at:p.createdAt,
-        updated_at:p.updatedAt,auto_merge:p.autoMergeRequest,
-        mergeStateStatus:p.mergeStateStatus,rollup:p.statusCheckRollup?.state||'EXPECTED',
-        head:{sha:p.headRefOid,ref:p.headRefName,
-          repo:{full_name:p.headRepository?.nameWithOwner}},base:{ref:PROD}});
-    }
-    if(!prs.pageInfo?.hasNextPage){
-      if(seen!==total)throw Error('graphql-pagination-incomplete');
-      return {open:allTotal,production:rows};
-    }
-    if(!prs.pageInfo.endCursor||prs.pageInfo.endCursor===cursor)
-      throw Error('graphql-pagination-cursor');
-    cursor=prs.pageInfo.endCursor;
-  }
-  throw Error('graphql-pagination-bound');
-}
-function classifyQuick(pr){
-  if(pr.mergeStateStatus==='DIRTY')return 'DIRTY';
-  if(pr.mergeStateStatus==='BEHIND')return 'BEHIND';
-  if(pr.rollup==='FAILURE'||pr.rollup==='ERROR')return 'RED';
-  if(pr.rollup==='SUCCESS')return pr.auto_merge?'ARMED':'GREEN_UNARMED';
-  if(pr.rollup==='PENDING')return 'PENDING';
-  return 'MISSING';
-}
-async function reserveApiBudget(github,log){
-  try{
-    const result=await github.rest.rateLimit.get();
-    const remaining=result.data.resources?.core?.remaining;
-    if(!Number.isSafeInteger(remaining))throw Error('missing-core-rate');
-    return {remaining,deep:Math.max(0,Math.min(MAX_DEEP,Math.floor((remaining-API_RESERVE)/4)))};
-  }catch(e){
-    log('API budget unavailable, deep limit 8: '+e.message);
-    return {remaining:null,deep:8};
-  }
-}
-
-async function listOpen(github, owner, repo) {
+async function listOpen(github, owner, repo, limited) {
   const all = [];
   for (let page = 1; page <= 30; page++) {
-    const {data} = await github.rest.pulls.list({owner, repo, state:'open', per_page:100, page});
+    const {data} = await limited('list-open',()=>github.rest.pulls.list({owner, repo, state:'open', per_page:100, page}));
     if (!Array.isArray(data)) throw Error('Incomplete open PR page '+page);
     all.push(...data);
     if (data.length < 100) return all;
   }
   throw Error('Open PR inventory exceeded 3000; refusing partial inventory');
 }
-async function listJobs(github, owner, repo, id) {
-  const {data} = await github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:id, per_page:100, filter:'latest'});
+async function listJobs(github, owner, repo, id, limited) {
+  const {data} = await limited('core-jobs',()=>github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:id, per_page:100, filter:'latest'}));
   return data.total_count <= 100 ? data.jobs : null;
 }
 
-async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log) {
+async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
-  const comments = await github.paginate(github.rest.issues.listComments, {owner,repo,issue_number:pr.number,per_page:100});
-  if (comments.length > 1000 || comments.some(c => (c.body || '').includes(marker))) return false;
+  // Limit comment pagination. If it cannot be checked completely, do not
+  // duplicate a repair claim on an older exact HEAD.
+  const comments=[];
+  for(let page=1;page<=3;page++){
+    const {data}=await limited('repair-comments',()=>github.rest.issues.listComments({
+      owner,repo,issue_number:pr.number,per_page:100,page
+    }));
+    if(!Array.isArray(data)) return false;
+    comments.push(...data);
+    if(data.length<100) break;
+    if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
+  }
+  if(comments.some(c=>(c.body||'').includes(marker)))return false;
   const failed = (jobs || []).filter(j=>j.conclusion === 'failure').map(j=>j.name).slice(0,7);
   const body = `${marker}
 **PR Control Tower: требуется исправление исходного кода**
@@ -151,65 +103,96 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     `Do not delete required checks or force-merge. This is a handoff to existing Repair workers, `+
     `**not** a claim that source code has already been fixed.
 `;
-  if (!dryRun) await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body});
-  log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} source repair for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
+  if (!dryRun) {
+    await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,body}));
+    // A durable GitHub label makes this a discoverable Repair queue; it does not
+    // claim to launch a paid/unconfigured AI coder. Failure must not lose handoff.
+    if (!(pr.labels || []).some(label => label.name === REPAIR_LABEL)) {
+      try {
+        try {
+          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
+        } catch (error) {
+          if (error.status !== 404 && error.status !== 422) throw error;
+          // Repository may not have the label yet. Create once, then assign.
+          try {
+            await limited('repair-label-create',()=>github.rest.issues.createLabel({owner,repo,name:REPAIR_LABEL,
+              color:'d93f0b',description:'Current PR HEAD needs source-code repair after CI failure'}));
+          } catch (createError) {
+            if (createError.status !== 422) throw createError;
+          }
+          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
+        }
+      } catch (error) { log(`#${pr.number} Repair label unavailable: ${error.message}`); }
+    }
+  }
+  log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} repair handoff (not an AI coding run) for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
   return true;
 }
 
 async function run({github, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
-  let prod,openCount,inventoryMode='graphql';
-  try {
-    const inventory=await queryInventory(github,owner,repo);
-    prod=inventory.production;openCount=inventory.open;
-  }catch(e){
-    inventoryMode='rest-fallback';
-    log('Fast inventory unavailable; REST fallback: '+e.message);
-    const all=await listOpen(github,owner,repo);
-    prod=all.filter(p=>p.base?.ref===PROD);openCount=all.length;
-  }
-  const review=prod.filter(p=>!p.draft &&
-    p.head?.repo?.full_name===owner+'/'+repo &&
-    /^[a-f0-9]{40}$/.test(p.head?.sha||''));
-  const quick={DIRTY:0,BEHIND:0,RED:0,ARMED:0,GREEN_UNARMED:0,PENDING:0,MISSING:0};
-  if(inventoryMode==='graphql')for(const p of review)quick[classifyQuick(p)]++;
-  // Failed CI gets priority, but rotating the rest prevents long-lived PR starvation.
-  const eligible=review.filter(p=>!['DIRTY','BEHIND'].includes(p.mergeStateStatus) &&
-    classifyQuick(p)!=='ARMED' && classifyQuick(p)!=='GREEN_UNARMED');
-  const red=eligible.filter(p=>classifyQuick(p)==='RED')
-    .sort((a,b)=>Date.parse(b.updated_at||0)-Date.parse(a.updated_at||0)).slice(0,6);
-  const rotated=selectCandidates(eligible,now,14,4);
-  const selected=[...new Map([...red,...rotated].map(p=>[p.number,p])).values()];
-  const summary={open:openCount,production:prod.length,eligibleToInspect:review.length,
-    inventoryMode,quickGreen:quick.GREEN_UNARMED,quickRed:quick.RED,
-    dirty:quick.DIRTY,behind:quick.BEHIND,quickPending:quick.PENDING,
-    alreadyArmed:quick.ARMED,inspected:0,inspectionLimit:0,rateLimitRemaining:null,
-    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,stalePendingCi:0,coreFailures:0,
+  const budget={requests:0,remaining:null,exhausted:false,reason:null};
+  const limited=async(name,operation)=>{
+    if(budget.exhausted||budget.requests>=MAX_API_CALLS){
+      budget.exhausted=true;
+      budget.reason ||= 'LOCAL_REQUEST_BUDGET';
+      throw Error('HH_API_BUDGET_EXHAUSTED: '+name);
+    }
+    budget.requests++;
+    try{
+      const result=await operation();
+      const remaining=result?.headers?.['x-ratelimit-remaining'];
+      if(remaining!==undefined&&Number.isFinite(Number(remaining))){
+        budget.remaining=Number(remaining);
+        if(budget.remaining<MIN_RATE_REMAINING){
+          budget.exhausted=true;
+          budget.reason='GITHUB_RATE_RESERVE';
+          log('PAUSE GitHub API: remaining='+budget.remaining);
+        }
+      }
+      return result;
+    }catch(error){
+      if([403,429].includes(error?.status)&&/rate.limit|abuse|secondary/i.test(String(error?.message))){
+        budget.exhausted=true;
+        budget.reason='GITHUB_RATE_LIMIT';
+      }
+      throw error;
+    }
+  };
+  const all=await listOpen(github,owner,repo,limited);
+  const prod = all.filter(p=>p.base?.ref===PROD);
+  const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
+  const selected = selectCandidates(review,now);
+  const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
+    greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
-    dryRun,hasMergeToken};
+    activeActions:null,queuedActions:null,checkedAt:new Date(now).toISOString(),
+    dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
   let active = Infinity, queued = Infinity;
   try {
     const [a,q] = await Promise.all(['in_progress','queued'].map(status =>
-      github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:1})));
+      limited('ci-capacity',()=>github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:1}))));
     active = a.data.total_count;
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
-  const ciRoom=Number.isFinite(active)&&Number.isFinite(queued)&&active+queued<20;
+  const ciRoom = canRetryCi(active,queued);
+  summary.activeActions = Number.isFinite(active) ? active : null;
+  summary.queuedActions = Number.isFinite(queued) ? queued : null;
   summary.blockedByCapacity=!ciRoom;
-  const budget=await reserveApiBudget(github,log);
-  summary.rateLimitRemaining=budget.remaining;
-  summary.inspectionLimit=budget.deep;
-  log('FULL_INVENTORY open='+openCount+' production='+prod.length+
-    ' mode='+inventoryMode+' deepCandidates='+selected.length+' deepBudget='+budget.deep+
-    ' coreRemaining='+budget.remaining+' activeRuns='+active+' queuedRuns='+queued);
+  log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let handoffs = 0;
-  for (const pr of selected.slice(0,budget.deep)) {
+  for (const pr of selected) {
+    if(budget.exhausted) break;
     summary.inspected++;
     let checks;
     try {
-      checks = (await github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,per_page:100,filter:'latest'})).data;
+      // Query the exact release gate only: many specialist checks may exceed
+      // GitHub's first-page 100 limit. Full coordinator still validates ALL
+      // required checks, rules and leases before native auto-merge.
+      checks = (await limited('head-checks',()=>github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+        check_name:'release-ready',per_page:100,filter:'latest'}))).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
     if (gateIsGreen(checks)) {
       if (!pr.auto_merge) summary.greenUnarmed++;
@@ -218,68 +201,63 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     let runs;
     try {
       // Restrict to the release gate: hundreds of specialist checks can share the same SHA.
-      runs = (await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+      runs = (await limited('core-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
         owner,repo,workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
         event:'pull_request',per_page:100
-      })).data;
+      }))).data;
     } catch(e) { log(`#${pr.number} CI run lookup unavailable: ${e.message}`); continue; }
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
     const coreRuns = runs.workflow_runs.filter(r => r.name===CORE_NAME &&
       r.head_branch===pr.head.ref && r.event==='pull_request' &&
-      // For pull_request workflows GitHub often stores a synthetic merge SHA
-      // in run.head_sha, different from the PR source HEAD. Validate the
-      // run's exact PR association instead of falsely reporting missing CI.
+      // GitHub pull_request runs can report a synthetic merge SHA, not the
+      // source PR HEAD. The PR association is authoritative for this lease.
       (r.pull_requests||[]).some(p => p.number===pr.number &&
         p.head?.sha===pr.head.sha && p.head?.ref===pr.head.ref))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
     const latest=coreRuns[0];
     if (!latest) {summary.missingCore++;continue;}
-    if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {
-      summary.pendingCi++;
-      if (now-Date.parse(latest.created_at)>60*MINUTE) summary.stalePendingCi++;
-      continue;
-    }
+    if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
-    // Base change/conflicts require restacking; they are not evidence of code defects.
-    if(pr.mergeStateStatus==='DIRTY'||pr.mergeStateStatus==='BEHIND')continue;
     if (now-Date.parse(latest.updated_at || latest.created_at) < 15*MINUTE) continue;
     let jobs=null;
-    try {jobs=await listJobs(github,owner,repo,latest.id);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
+    try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
     if (ciRoom && summary.transientCiReruns < MAX_STALE_RUNS && transientFailure(latest,jobs,now)) {
       if (!dryRun) {
         try {
-          await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id});
+          await limited('retry-failed-ci',()=>github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id}));
         } catch(e) { log(`CI retry #${pr.number} failed: ${e.message}`);continue; }
       }
       summary.transientCiReruns++;
       log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if (handoffs < MAX_HANDOFFS && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log)) {handoffs++;summary.sourceRepairQueued++;} }
+      try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
       catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
     }
   }
-  // Fast GraphQL observes ALL green PRs. Existing coordinator rechecks exact release-ready.
-  summary.greenUnarmed+=quick.GREEN_UNARMED;
-  if (summary.greenUnarmed && hasMergeToken && (budget.remaining===null||budget.remaining>API_RESERVE+30)) {
+  if (summary.greenUnarmed && hasMergeToken) {
     try {
-      const info=(await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-        owner,repo,workflow_id:FULL,per_page:10})).data;
+      const info=(await limited('merge-coordinator-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+        owner,repo,workflow_id:FULL,per_page:10}))).data;
       const recent=info.workflow_runs || [];
       const busy=recent.some(r=>['queued','in_progress','waiting','requested'].includes(r.status));
       const justRan=recent.some(r=>now-Date.parse(r.created_at)<20*MINUTE);
       if (!busy&&!justRan) {
-        if (!dryRun) await github.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
-          owner,repo,workflow_id:FULL,ref:DEFAULT});
+        if (!dryRun) await limited('dispatch-guarded-merge',()=>github.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
+          owner,repo,workflow_id:FULL,ref:DEFAULT}));
         summary.mergeCoordinatorDispatched++;
         log(`${dryRun?'WOULD_DISPATCH':'DISPATCHED'} guarded native merge coordinator for ${summary.greenUnarmed} unarmed-green PR(s)`);
       } else log(`Full merge coordinator already active/recent; no duplicate dispatch`);
     } catch(e) {log('Merge coordinator dispatch unavailable: '+e.message);}
   } else if (summary.greenUnarmed&&!hasMergeToken) log('Green PRs exist, but dedicated HH_AUTOMERGE_TOKEN absent: audit-only to avoid suppressed production events');
-  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\n');
+  summary.apiRequests=budget.requests;
+  summary.apiRateLimited=budget.exhausted;
+  summary.apiRemaining=budget.remaining;
+  summary.apiBudgetReason=budget.reason;
+  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\\n');
   log(report.replaceAll('\n','; '));
   await core.summary.addHeading('HH PR 10-minute watchdog').addCodeBlock(report).write();
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,queryInventory,classifyQuick,reserveApiBudget};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi};
