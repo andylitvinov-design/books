@@ -30,7 +30,9 @@ jobs:
   reconcile:
     # Skipped successful Core callbacks do not contend for the real worker lease.
     concurrency:
-      group: hh-pr-ten-minute-watchdog
+      # Each failed-Core PR has an independent exact-branch lease. Periodic
+      # reconciliation has its own lane, so event storms cannot replace it.
+      group: hh-pr-ten-minute-watchdog-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || 'periodic' }}
       cancel-in-progress: false
     if: >-
       github.repository == 'andylitvinov-design/books' &&

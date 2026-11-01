@@ -424,7 +424,13 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       (!linked.length || linked.some(item=>item.number===p.number)));
     if(matches.length===1)priorityNumber=matches[0].number;
   }
-  const selected = selectCandidates(review,now,12,4,priorityNumber);
+  // A failed-Core event is a *targeted wakeup*. Scanning sixteen unrelated PRs
+  // on each event multiplies API traffic and starves the real ten-minute sweep.
+  // Only scheduled/manual runs perform the rotating full-inventory sample.
+  // Missing/ambiguous event association fails closed, never guesses a PR.
+  const selected = wake
+    ? (priorityNumber===null ? [] : review.filter(p=>p.number===priorityNumber))
+    : selectCandidates(review,now);
   const priorityTop=selected.slice(0,4).map(pr=>{
     const priority=priorityFor(pr,now);
     return '#'+pr.number+' '+priority.tier+'('+priority.score+': '+priority.source+')';

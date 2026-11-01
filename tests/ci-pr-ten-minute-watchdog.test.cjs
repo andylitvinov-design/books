@@ -912,3 +912,43 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
     {id:33,run_attempt:1},[],false,log,limited),true);
   assert.equal(written,1);assert.equal(labeled,1);
 });
+
+test('failed-Core event only inspects the associated PR; periodic still rotates',async()=>{
+  const first=pr(401),second=pr(402);
+  let graphQLSource='';
+  const github={
+    graphql:async query=>{
+      graphQLSource=query;
+      return {repository:{p401:{
+        number:401,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+        mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+        headRefName:first.head.ref,headRefOid:first.head.sha,
+        headRepository:{nameWithOwner:'andylitvinov-design/books'},
+        autoMergeRequest:null
+      }},rateLimit:{remaining:4000}};
+    },
+    rest:{
+      pulls:{list:async()=>({data:[first,second]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+    },
+    request:async(route,args)=>args.workflow_id==='hh-pr-core-release.yml'
+      ? {data:{total_count:0,workflow_runs:[]}}
+      : {data:{workflow_runs:[]}}
+  };
+  const wake={...context,eventName:'workflow_run',payload:{workflow_run:{
+    event:'pull_request',status:'completed',head_branch:first.head.ref,
+    pull_requests:[{number:first.number}]
+  }}};
+  const outcome=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(outcome.inspected,1);
+  assert.equal(outcome.missingCore,1);
+  assert.match(graphQLSource,/p401:pullRequest/);
+  assert.ok(!graphQLSource.includes('p402:pullRequest'));
+});
+test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
+  const fs=require('node:fs');
+  const source=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  assert.ok(source.includes("github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || 'periodic'"));
+  assert.ok(source.includes('cancel-in-progress: false'));
+});
