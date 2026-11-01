@@ -2143,7 +2143,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ? await startUploadedAudio(attachedAudio.file,soundVolume)
         : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
         : attachedAudio?.kind==="presets" ? await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
-      if(attachedAudio && !musicSession) {
+      if(attachedAudio && !musicSession && !useWebCodecs) {
         setMusicWarning(ui.soundUnavailable);
         setNotice(ui.soundUnavailable);
         setExportUnavailable(true);
