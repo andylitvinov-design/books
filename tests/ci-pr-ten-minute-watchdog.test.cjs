@@ -976,6 +976,27 @@ test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()
   assert.ok(source.includes('cancel-in-progress: false'));
 });
 
+test('cron health never treats successful manual dispatch as scheduled health',()=>{
+  const {assessCronHealth}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  assert.deepEqual(assessCronHealth({total_count:0,workflow_runs:[]},NOW,35),
+    {state:'UNOBSERVED',last:null});
+  const recent=new Date(NOW-8*60000).toISOString();
+  const fresh=assessCronHealth({total_count:1,workflow_runs:[{created_at:recent}]},NOW,35);
+  assert.equal(fresh.state,'HEALTHY');assert.equal(fresh.ageMinutes,8);
+  const late=assessCronHealth({total_count:1,workflow_runs:[
+    {created_at:new Date(NOW-40*60000).toISOString()}]},NOW,35);
+  assert.equal(late.state,'STALE');
+  assert.equal(assessCronHealth(null,NOW,35).state,'UNKNOWN');
+  assert.equal(assessCronHealth({total_count:1,workflow_runs:[]},NOW,35).state,'UNKNOWN');
+});
+test('cron telemetry explicitly differentiates schedule from workflow dispatch',()=>{
+  const fs=require('node:fs');
+  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(source.includes("event:'schedule',per_page:1"));
+  assert.ok(source.includes("['push','workflow_dispatch','schedule']"));
+  assert.ok(source.includes("summary.cronHealth='NOT_PROBED'"));
+  assert.ok(source.includes('HH_CRON_LIVENESS'));
+});
 
 test('highest available direction wins; manually owned PRs do not monopolize fast slots',()=>{
   const prs=Array.from({length:170},(_,i)=>pr(i+1));
