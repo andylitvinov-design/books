@@ -55,12 +55,14 @@ jobs:
                pullRule.parameters?.required_review_thread_resolution!==true)
               throw Error("Production ruleset not verified");
             const methods=new Set(pullRule.parameters?.allowed_merge_methods||[]);
-            // Both protection layers must agree; optional release-ready is obsolete.
+            // Transition-safe: legacy release-ready remains mandatory until an
+            // admin-scoped token can replace it. A ruleset with [] is not enough.
             const protectedBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
             const legacy=protectedBranch.protection?.required_status_checks?.contexts;
             if(!protectedBranch.protected||!Array.isArray(legacy)||
-               !legacy.includes("hh-core-verified")||legacy.includes("release-ready"))
-              throw Error("LEGACY_CORE_PROTECTION_NOT_MIGRATED");
+               legacy.includes("hh-core-verified")===legacy.includes("release-ready"))
+              throw Error("UNRECOGNIZED_LEGACY_PROTECTION");
+            const legacyReleaseMandatory=legacy.includes("release-ready");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
@@ -79,6 +81,11 @@ jobs:
             function assess(names){
               if(!names)return {ok:false,reason:"INCOMPLETE_CHECKS"};
               const rows=[...names.entries()],gate=names.get("hh-core-verified");
+              const legacyGate=names.get("release-ready");
+              if(legacyReleaseMandatory&&(!legacyGate||
+                 legacyGate.status!=="completed"||legacyGate.conclusion!=="success"||
+                 legacyGate.app?.slug!=="github-actions"))
+                return {ok:false,reason:"LEGACY_REQUIRED_RELEASE_NOT_GREEN"};
               // Legacy optional check is not evidence of a current product defect.
               if(rows.some(([name,c])=>name!=="release-ready"&&red.has(c.conclusion)))
                 return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};

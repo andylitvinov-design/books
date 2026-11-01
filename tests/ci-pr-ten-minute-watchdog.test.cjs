@@ -527,3 +527,15 @@ test('legacy branch-check migration remains a single valid fail-closed step',()=
   assert.ok(!source.includes("base64 --decode | grep -q "));
   assert.ok(source.includes('"strict":false,"contexts":[],"checks"'));
 });
+
+test('event-driven merge and inventory respect legacy protection until admin migration',()=>{
+  const {readFileSync}=require('node:fs');
+  const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+  assert.ok(native.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'));
+  assert.ok(native.includes('job.name === "release-ready" && job.status === "completed"'));
+  assert.ok(native.includes('job.name === "hh-core-verified"'));
+  assert.ok(hourly.includes('const legacyReleaseMandatory=legacy.includes("release-ready")'));
+  assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
+});

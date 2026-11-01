@@ -150,15 +150,23 @@ jobs:
               log("SKIP current source missing verified Core job for PR #" + number);
               return;
             }
-            // The ruleset is optional but legacy branch protection may still
-            // demand release-ready. No ARM before its audited migration.
+            // Support both verified protection states without bypassing the
+            // old required status while the admin token is still insufficient.
             const branchProtection = (await github.rest.repos.getBranch({
               owner, repo, branch: "codex/public-book-library"
             })).data;
             const required = branchProtection.protection?.required_status_checks?.contexts;
+            const oldRequired = Array.isArray(required) && required.includes("release-ready");
+            const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
             if (!branchProtection.protected || !Array.isArray(required) ||
-                !required.includes("hh-core-verified") || required.includes("release-ready")) {
-              log("SKIP legacy branch protection migration unverified for PR #" + number);
+                (oldRequired === coreRequired)) {
+              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+              return;
+            }
+            if (oldRequired && !jobPage.jobs.some(job =>
+                job.name === "release-ready" && job.status === "completed" &&
+                job.conclusion === "success")) {
+              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||
