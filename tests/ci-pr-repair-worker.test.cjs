@@ -1,11 +1,12 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
 const pr=(extra={})=>({number:11,state:'open',draft:false,user:{login:owner},
+  mergeable:true,mergeable_state:'blocked',
   base:{ref:'codex/public-book-library'},head:{ref:'fix/pr-11',sha,
     repo:{full_name:owner+'/'+repo}},labels:[{name:'hh:repair-needed'}],...extra});
 const sourceFiles=[{filename:'lib/a.ts',status:'modified'}];
@@ -15,7 +16,7 @@ function fixture(options={}){
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
-      listComments:async()=>({data:options.comments||[]}),
+      listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
       createComment:async()=>{log.comments++},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async()=>{}},
@@ -60,7 +61,7 @@ test('dry run and absent owner token never claim or modify source',async()=>{
   }
 });
 test('conflicting source is assigned to owner but never unsafe-merged',async()=>{
-  const f=fixture({pr:pr({labels:[{name:'hh:conflict-repair-needed'}]})});
+  const f=fixture({pr:pr({mergeable:false,mergeable_state:'dirty',labels:[{name:'hh:conflict-repair-needed'}]})});
   const r=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(r.status,'manual_conflict');
   assert.equal(f.log.comments,2);
@@ -136,7 +137,7 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
     lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
   assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
-  const f=fixture({comments:[{body:wrap(old)}]});
+  const f=fixture({comments:[{body:wrap(old)},{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
@@ -164,4 +165,39 @@ test('candidate queues deduplicate double-labelled pull requests',()=>{
     [{number:2606,pull_request:{}}],
     [{number:2606,pull_request:{}},{number:1421,pull_request:{}}],
     1800000000000).map(x=>x.number),[2606,1421]);
+});
+
+test('current mergeability overrides stale conflict labels for exact-head source repair',async()=>{
+  const f=fixture({pr:pr({labels:[{name:'hh:repair-needed'},
+    {name:'hh:conflict-repair-needed'}],mergeable:true,mergeable_state:'blocked'})});
+  core.outputs={};
+  assert.equal(repairMode(pr({mergeable:false,mergeable_state:'dirty',
+    labels:[{name:'hh:repair-needed'}]})),'conflict');
+  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+  assert.equal(result.status,'claimed');
+  assert.equal(core.outputs.strategy,'lint');
+  assert.equal(f.log.comments,1);
+});
+test('a source label without a trusted receipt for exact HEAD never edits newer code',async()=>{
+  const f=fixture({comments:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
+  assert.equal(hasVerifiedSourceHandoff([{body:'not verified'}],sha),false);
+  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+  assert.equal(result.status,'skipped');
+  assert.equal(f.log.comments,0);
+});
+test('ambiguous current mergeability fails closed',async()=>{
+  const f=fixture({pr:pr({mergeable:null,mergeable_state:'unknown'})});
+  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+  assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
+});
+test('resolved conflict-only label is cleared after a second exact-head live verification',async()=>{
+  const f=fixture({pr:pr({mergeable:true,mergeable_state:'clean',
+    labels:[{name:'hh:conflict-repair-needed'}]})});
+  let cleared=0;
+  f.github.rest.issues.removeLabel=async args=>{
+    assert.equal(args.issue_number,11);assert.equal(args.name,'hh:conflict-repair-needed');cleared++;
+  };
+  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+  assert.equal(result.status,'skipped');
+  assert.equal(cleared,1);assert.equal(f.log.comments,0);
 });
