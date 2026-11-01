@@ -7,6 +7,7 @@ import { mandalaAudioTracks, recommendMandalaAudio } from "../lib/mandala/audio-
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio = read("components/mandala-free-video-studio.tsx");
 const audioSource = read("lib/mandala/local-video-music.ts");
+const authoredFive = new Set(["warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path"]);
 
 function audioApi() {
   const compiled = ts.transpileModule(audioSource,{
@@ -19,23 +20,24 @@ function audioApi() {
   return exports;
 }
 
-test("13 original soundtrack presets have distinct site-local playable masters matching the video export source",async()=>{
-  assert.equal(mandalaAudioTracks.length,13);
-  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,13);
+test("39 original first-party soundtracks: 34 deterministic PCM masters and five scored WAV originals",async()=>{
+  assert.equal(mandalaAudioTracks.length,39);
+  assert.equal(new Set(mandalaAudioTracks.map(t=>t.id)).size,39);
   const api=audioApi();
   for(const track of mandalaAudioTracks){
-    assert.ok(["tones","pulse","nature"].includes(track.kind),track.id);
+    assert.ok(["tones","pulse","nature","melody"].includes(track.kind),track.id);
     assert.ok(["slow","steady","active"].includes(track.pace),track.id);
     assert.ok(track.themes.length && track.moods.length,track.id);
     for(const lang of ["en","ru","es"]) {
       assert.ok(track.name[lang]&&track.detail[lang],track.id+" "+lang);
     }
-    const blob=api.createAmbientPreviewWav(track.id);
-    const file=Buffer.from(await blob.arrayBuffer());
     const path=api.presetAudioUrl(track.id);
     assert.equal(path,"/audio/mandala/"+track.id+".wav");
     const published=readFileSync(new URL("../public"+path,import.meta.url));
-    assert.deepEqual(file,published,track.id+" preview bytes equal export bytes");
+    const file=authoredFive.has(track.id)
+      ?published:Buffer.from(await api.createAmbientPreviewWav(track.id).arrayBuffer());
+    if (!authoredFive.has(track.id))
+      assert.deepEqual(file,published,track.id+" preview bytes equal export PCM bytes");
     assert.equal(file.toString("ascii",0,4),"RIFF");
     assert.equal(file.toString("ascii",8,12),"WAVE");
     assert.equal(file.readUInt16LE(20),1);
@@ -52,7 +54,7 @@ test("13 original soundtrack presets have distinct site-local playable masters m
 test("smart selection ranks the current theme rather than inventing profile or test data",()=>{
   for(const theme of ["energy","money","relationships","goals","life","health"]){
     const recommended=recommendMandalaAudio({theme});
-    assert.equal(recommended.length,13);
+    assert.equal(recommended.length,39);
     assert.ok(recommended[0].themes.includes(theme),theme+" should have relevant first pick");
   }
   assert.equal(recommendMandalaAudio({theme:"money"})[0].id,"prosperity");
@@ -87,5 +89,6 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(css,/\.audioFileInput\{position:absolute!important/);
   assert.match(css,/@media\(max-width:380px\)/);
   assert.ok(studio.includes("Под вашу тему")&&studio.includes("For your video theme")&&studio.includes("Para el tema elegido"));
-  assert.doesNotMatch(studio+audioSource,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
+  assert.doesNotMatch(studio+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
+  assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });

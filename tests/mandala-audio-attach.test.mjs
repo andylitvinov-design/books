@@ -90,10 +90,10 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
   assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
-test("sound-only covers reuse 13 real local first-party illustration files",()=>{
+test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
   const covers=[...styles.matchAll(/\.audioTrackRow\[data-audio-id="([a-z-]+)"\] \.audioTileGlyph\{background-image:url\('([^']+)'\)\}/g)];
-  assert.equal(covers.length,13,"all thirteen site audio sounds have honest illustrative cover art");
-  assert.equal(new Set(covers.map(x=>x[1])).size,13);
+  assert.equal(covers.length,39,"all 39 site audio sounds have explicit illustrative cover art");
+  assert.ok(new Set(covers.map(x=>x[1])).size>=13,"retain diverse existing cover scenes");
   for(const [,id,url] of covers){
     assert.match(url,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.jpg$/);
     assert.ok(existsSync(new URL("../public"+url,import.meta.url)),id+" first-party cover must exist");
