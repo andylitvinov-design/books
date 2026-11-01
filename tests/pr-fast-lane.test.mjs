@@ -390,7 +390,12 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   ]) {
     assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
   }
-  assert.match(ia, /run: npm run test:unit/);
+  assert.match(ia, /name: IA security, ownership and navigation contracts/);
+  assert.match(ia, /run: npm run test:app/);
+  for (const file of ['ia-v2.test.mjs', 'ia-v2-loopback-proxy.test.mjs', 'ia-public-navigation-diagnostics.test.mjs', 'app-auth-pkce.integration.mjs', 'app-migration-contract.test.mjs', 'app-guest-report-migration.test.mjs', 'app-http-security.test.mjs', 'prescriptions.test.mjs', 'prescription-access.test.mjs', 'client-account-document-save.test.mjs', 'practitioner-private-relay.test.mjs', 'admin-login-security.test.mjs', 'remote-support-privacy-contract.test.mjs', 'client-session-recorder-auth.test.mjs', 'practitioner-preview-auth.test.mjs', 'admin-auth-refresh.test.mjs', 'oauth-public-pages.test.mjs', 'public-security-headers.test.mjs', 'crm-security-contract.test.mjs', 'session-delivery-security.test.mjs', 'practice-telegram-auth-fetch.test.mjs', 'crm-consent.test.mjs', 'manual-billing-security.test.mjs', 'public-tests-auth-transparency.test.mjs']) {
+    assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
+  }
+  assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
   assert.match(ia, /run: npm run build/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
