@@ -1,0 +1,62 @@
+name: HH First Video LIVE · encoded file acceptance
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/benchmarking/first-video-live-export.mjs'
+      - '.github/workflows/hh-first-video-live-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-live-video-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
+jobs:
+  anonymous-encoded-video:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate safe standalone browser test syntax
+        run: node --check scripts/benchmarking/first-video-live-export.mjs
+      - name: Install pinned isolated headless browser only
+        timeout-minutes: 5
+        env:
+          npm_config_ignore_scripts: 'true'
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/hh-live-video-browser" \
+            --no-audit --no-fund --no-package-lock --ignore-scripts \
+            playwright@1.63.0
+          "$RUNNER_TEMP/hh-live-video-browser/node_modules/.bin/playwright" install --with-deps --only-shell chromium
+      - name: Verify media inspection utilities
+        run: |
+          set -euo pipefail
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffprobe -version | head -n 1
+      - name: Actual guest LIVE wish → 20s video → download → ffprobe/audio/motion
+        timeout-minutes: 3
+        env:
+          HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
+        run: node scripts/benchmarking/first-video-live-export.mjs
+      - name: Preserve only anonymous capability and failure summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-first-video-live-encoded-evidence
+          path: artifacts/benchmarking/first-video-live-export.json
+          retention-days: 2
+          if-no-files-found: warn
