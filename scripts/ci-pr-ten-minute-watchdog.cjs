@@ -563,6 +563,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     active = a.data.total_count;
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
+  // Central dispatcher, when enabled by the trusted workflow, owns handoffs.
+  const centralDispatch=process.env.HH_CONTROL_TOWER_ENABLED==='true';
   const ciRoom = canRetryCi(active,queued);
   const repairRoom = canDispatchRepair(active,queued);
   summary.activeActions = Number.isFinite(active) ? active : null;
@@ -777,7 +779,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Dispatch the no-cost CI worker as soon as a new missing-Core queue item
   // appears. A ten-minute scheduled worker remains the fallback. Never send
   // duplicate dispatches when the worker is already running or very recent.
-  if((summary.ciBootstrapQueued || ciQueueBacklog) && ciRoom && hasMergeToken && !budget.exhausted && !dryRun){
+  if(!centralDispatch && (summary.ciBootstrapQueued || ciQueueBacklog) && ciRoom && hasMergeToken && !budget.exhausted && !dryRun){
     try {
       const response=(await limited('ci-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -800,7 +802,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Repair is a real separate default-branch workflow, not merely a label.
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
-  if ((summary.sourceRepairQueued || summary.conflictLabelsQueued || repairQueueBacklog) &&
+  if (!centralDispatch && (summary.sourceRepairQueued || summary.conflictLabelsQueued || repairQueueBacklog) &&
       hasMergeToken && repairRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(

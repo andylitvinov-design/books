@@ -62,6 +62,7 @@ jobs:
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          HH_CONTROL_TOWER_ENABLED: 'true'
         with:
           # High-frequency reads use GITHUB_TOKEN, not the scarce merge PAT.
           github-token: ${{ github.token }}

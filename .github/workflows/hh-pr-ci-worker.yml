@@ -10,6 +10,15 @@ on:
         type: boolean
         default: false
         required: false
+      pr_number:
+        type: string
+        default: '0'
+      expected_sha:
+        type: string
+        default: ''
+      task_key:
+        type: string
+        default: ''
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -118,6 +127,9 @@ jobs:
             }:null;
             await run({
               github,core,context,sourceGit,
+              prNumber:Number(context.payload.inputs?.pr_number || 0),
+              expectedSha:String(context.payload.inputs?.expected_sha || ''),
+              taskKey:String(context.payload.inputs?.task_key || ''),
               dryRun:context.eventName==='push' ||
                 String(context.payload.inputs?.dry_run ?? 'false')==='true'
             });

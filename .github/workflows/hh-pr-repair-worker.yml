@@ -23,6 +23,10 @@ on:
         description: 'Optional exact PR HEAD SHA lease'
         type: string
         default: ''
+      task_key:
+        description: 'Addressed queue task identity; exact-head verified by worker'
+        type: string
+        default: ''
       dry_run:
         description: 'Audit only; no claim or source writes'
         type: boolean
@@ -68,6 +72,7 @@ jobs:
             await worker.claim({github,core,context,
               number:Number.isSafeInteger(requested)?requested:0,
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
+              taskKey:String(context.payload.inputs?.task_key || ''),
               dryRun:context.eventName==='push' || String(context.payload.inputs?.dry_run ?? 'false')==='true',
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
   fix:

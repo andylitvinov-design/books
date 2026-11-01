@@ -1,0 +1,93 @@
+name: HH PR Control Tower queue dispatcher
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_run:
+    workflows:
+      - 'HH PR 10-minute watchdog'
+      - 'HH PR source Repair Worker'
+      - 'HH zero-cost PR CI worker'
+    types: [completed]
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-queue-dispatcher.yml'
+      - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-task-state.cjs'
+      - 'scripts/ci-pr-capacity.cjs'
+      - 'tests/ci-pr-control-tower.test.cjs'
+  pull_request:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - 'scripts/ci-pr-task-state.cjs'
+      - 'scripts/ci-pr-capacity.cjs'
+      - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'tests/ci-pr-control-tower.test.cjs'
+      - '.github/workflows/hh-pr-queue-dispatcher.yml'
+      - 'scripts/ci-pr-ci-worker.cjs'
+      - 'scripts/ci-pr-repair-worker.cjs'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Audit queue only; no labels, reservations or worker dispatch'
+        type: boolean
+        default: true
+        required: false
+permissions:
+  contents: read
+  actions: write
+  issues: write
+  pull-requests: write
+concurrency:
+  group: hh-control-tower-single-writer
+  cancel-in-progress: false
+jobs:
+  contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate queue contracts without secrets
+        run: |
+          node --check scripts/ci-pr-task-state.cjs
+          node --check scripts/ci-pr-capacity.cjs
+          node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --test tests/ci-pr-control-tower.test.cjs
+  dispatch:
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout only trusted default branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate source contracts without a provider token
+        run: |
+          node --check scripts/ci-pr-task-state.cjs
+          node --check scripts/ci-pr-capacity.cjs
+          node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --test tests/ci-pr-control-tower.test.cjs
+      - name: Select one bounded PR worker per free lane and record a task receipt
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-queue-dispatcher.cjs');
+            const input=String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            // Trust checks inside run() and exact-HEAD check before each mutation.
+            // Push is audit-only; cron and completed trusted worker events are live.
+            await run({github,core,context,
+              dryRun:context.eventName==='push'||input});
