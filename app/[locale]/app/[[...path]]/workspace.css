@@ -1760,3 +1760,12 @@
     padding: 0 !important;
   }
 }
+
+/* The protected practitioner panels use the real Messenger dock. Avoid
+   covering the native keyboard or the service wizard Save/Continue dock. */
+@media(max-width:760px){
+  .hh-app.hh-app--practice-inner:has(input:focus,textarea:focus) .hh-mobile-app-nav,
+  .hh-app.hh-app--practice-inner:has([data-service-slide-editor]) .hh-mobile-app-nav{
+    display:none!important
+  }
+}

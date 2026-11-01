@@ -25,3 +25,6 @@ No API, RLS, CRM schema, auth, credentials, payment, provider or client-data cha
 
 ## Additional verified Reiki filter root cause
 The mobile Reiki filter forcibly switched `.bottomNav` from `fixed` to `static`, which physically moved the menu away from the viewport bottom. Its filter now reserves bottom scroll padding instead; rendered Chromium/WebKit test requires fixed positioning, a visible-viewport bottom match, and a reachable Apply action. Other open six-tab AI changes (#2974/#2975) must preserve this fix when they merge. #2940 owns the separate protected Practice shared dock; its `workspace.css` edits overlap and require reconciliation.
+
+## Private Practice navigation parity — independent of stacked #2940
+The protected `/app/practice?panel=` pages now reuse `MessagesBottomNavigation`, with the same five tab labels and exact active section as the messenger. `Заявки` stays inside Practice request management; the main chat remains `Сообщения`. The protected service editor continues to hide the main dock when its genuine Save/Continue dock is present or the software keyboard is open. This ports only the independent menu correction from stacked PR #2940; its separate request routing and consent flows are **not** copied or reimplemented. Resolve duplicate code hunks in #2940 upon retargeting after #2856.

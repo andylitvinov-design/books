@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import {Bell,BookOpen,ChevronLeft,ClipboardList,Home,Leaf,UserRound} from 'lucide-react'
+import {Bell,ChevronLeft,Leaf} from 'lucide-react'
+import MessagesBottomNavigation from './messages-bottom-navigation'
 import showcaseStyles from '../practice-showcase.module.css'
 
 // One visual navigation shared by the EXISTING protected practice panels.
@@ -41,10 +42,6 @@ const WORDS={
  },
 }
 const PANELS=new Set(['requests','clients','materials','profile','analytics','services','more','crm','marketing','events','express-reports'])
-const TAB_ITEMS=[
- {key:'home',Icon:Home},{key:'practice',Icon:Leaf},{key:'requests',Icon:ClipboardList},
- {key:'materials',Icon:BookOpen},{key:'profile',Icon:UserRound},
-]
 export function PracticeInnerHeader({locale='en',panel,requests=[],onBack,onNavigate}){
  if(!PANELS.has(panel))return null
  const t=WORDS[locale]||WORDS.en
@@ -74,21 +71,9 @@ export function PracticeInnerHeader({locale='en',panel,requests=[],onBack,onNavi
   </button>
  </header>
 }
-export function PracticeInnerBottomNavigation({locale='en',panel,onBack,onNavigate,onOpenMaterials}){
+// Requests are an internal Practice filter; the main third tab remains Chat.
+export function PracticeInnerBottomNavigation({locale='en',panel}){
  if(!PANELS.has(panel))return null
- const t=WORDS[locale]||WORDS.en
- return <nav className="hh-practice-inner-dock" data-practice-inner-dock
-  aria-label={locale==='ru'?'Навигация кабинета':locale==='es'?'Navegación de práctica':'Practice navigation'}>
-  {TAB_ITEMS.map(({key,Icon})=>{
-   const selected=key==='practice'?(!['requests','materials','profile'].includes(panel)):
-     key==='requests'?panel==='requests':key==='materials'?panel==='materials':key==='profile'?panel==='profile':false
-   const child=<><Icon aria-hidden="true" size={22}/><span>{t[key]}</span></>
-   return key==='home'
-     ? <Link key={key} href={locale==='en'?'/':'/'+locale} prefetch={false}>{child}</Link>
-     : <button key={key} type="button" aria-current={selected?'page':undefined}
-         onClick={key==='practice'?onBack:key==='materials'?()=>onOpenMaterials('courses'):()=>onNavigate(key)}>
-         {child}
-       </button>
-  })}
- </nav>
+ const activeSection=panel==='materials'?'materials':panel==='profile'?'profile':'practice'
+ return <MessagesBottomNavigation locale={locale} activeSection={activeSection}/>
 }

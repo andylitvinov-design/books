@@ -60,3 +60,15 @@ test('iPhone web docks are fixed to the page bottom with safe areas and keyboard
   assert.match(messagesCss, /data-detail-open="true"/)
   assert.doesNotMatch(showcase, /fakeMessenger|newCrmStore|sendOneMessengerMessage\(/)
 })
+
+test('protected Practice panels reuse the private Messages dock without a Requests tab',()=>{
+ const protectedNav=read('components/app/practice-inner-navigation.jsx')
+ const dock=read('components/app/messages-bottom-navigation.jsx')
+ const protectedCss=read('app/[locale]/app/[[...path]]/workspace.css')
+ assert.match(protectedNav,/<MessagesBottomNavigation locale=\{locale\} activeSection=\{activeSection\}\/>/)
+ assert.match(protectedNav,/panel==='materials'\?'materials':panel==='profile'\?'profile':'practice'/)
+ assert.doesNotMatch(protectedNav,/data-practice-inner-dock/)
+ assert.match(dock,/const active=path===activeSection/)
+ assert.match(protectedCss,/hh-app--practice-inner:has\(\[data-service-slide-editor\]\) \.hh-mobile-app-nav/)
+ assert.match(protectedCss,/hh-app--practice-inner:has\(input:focus,textarea:focus\) \.hh-mobile-app-nav/)
+})
