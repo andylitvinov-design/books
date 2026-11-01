@@ -113,6 +113,9 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Reviewed #2938 natural-language input classifier; no provider, PII or media changes.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // PR #2970: fixed, public-read-only phrase dictionary + UI under the
   // independently required Mandala specialist's schema/RLS/locale contracts.
   // This exact-file allowlist does NOT include payments, auth, general APIs,
@@ -152,6 +155,11 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
+  // Approved four-goal/six-topic Video Studio is verified by Mandala specialist.
+  // Exact sources only; unknown files, auth, messaging and checkout remain full.
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
   'tests/cinematic-studio.test.mjs',
@@ -170,6 +178,9 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Fail closed for all other new routes, source and tests.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // The exact reviewed 2970 addition set. The read-only GET is same-origin,
   // bounded to known taxonomy IDs, and falls back to audited bundled copy.
   // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.

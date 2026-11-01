@@ -14,10 +14,10 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/Психокоррекция/);
+ assert.match(studio,/Фразы поддержки и аудиогид/);
  assert.match(studio,/Гипноэффекты/);
- assert.match(studio,/Курсы и медитации/);
- assert.match(studio,/pro:\{tab:"PRO",title:"Герои и кинорежиссура"/);
+ assert.match(studio,/Курс практик/);
+ assert.match(studio,/pro:\{tab:"PRO генерация",title:"PRO генерация"/);
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
@@ -39,6 +39,7 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  }
  assert.match(studio,/data-workspace-section="practices"/);
  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
@@ -133,4 +134,18 @@ test("free personal video starts before the separate diagnostic marketing CTA",(
  const studioPos=page.indexOf("<MandalaMeditationClient");
  const promoPos=page.indexOf("styles.slimDiagnostic");
  assert.ok(studioPos>=0&&promoPos>studioPos);
+});
+
+test("final approved six tabs lead to exactly one real workspace each",()=>{
+  const expected=['tab:"Стиль видео"','tab:"Фразы поддержки"','tab:"Гипноэффект"',
+    'tab:"Курс практик"','tab:"PRO генерация"','tab:"Монтаж"'];
+  for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
+  assert.match(studio,/data-video-quick-control=\{item.id\}/);
+  assert.match(studio,/setActiveWorkspace\(item.id\)/);
+  assert.match(studio,/data-video-topic-section/);
+  assert.match(studio,/data-video-director-goal-controls/);
+  assert.match(studio,/data-video-director-topic-controls/);
+  assert.match(studio,/data-video-phrase-audio-shortcut/);
+  assert.match(studio,/data-video-final-editor/);
+  assert.match(studio,/data-video-audio-details/);
 });

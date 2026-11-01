@@ -88,6 +88,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // the visible Phrases workspace. The deprecated legacy disclosure is
       // intentionally hidden; tests must not click an invisible summary.
       await page.locator('[data-video-quick-control="video"]').click();
+      const advancedToggle=page.locator("[data-video-advanced-toggle]");
+      if(await advancedToggle.isVisible() && await advancedToggle.getAttribute("aria-expanded")==="false")
+        await advancedToggle.click();
       const musicSettings=page.locator("[data-video-audio-details]");
       await musicSettings.waitFor({state:"visible",timeout:25000});
       // A previously opened disclosure must not be toggled closed. Exercise
@@ -154,12 +157,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"offline-remix-ready");
       assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
       await page.locator('[data-video-quick-control="video"]').click();
+      await page.locator('[data-video-quick-control="editor"]').click();
+      const generate=page.locator("[data-video-quick-generate]");
+      await expect(generate).toBeVisible({timeout:30000});
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
       // Wait for actual capture readiness; an enabled button must not silently
       // prime an unloaded HD source and require a second user click.
-      const generate=page.locator("[data-video-quick-generate]");
       if(engine==="chromium"||engine==="webkit") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{

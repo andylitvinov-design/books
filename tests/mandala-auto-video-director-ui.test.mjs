@@ -1,5 +1,4 @@
 import test from "node:test";
-// Run iPhone decoder-gesture tests in Mandala's required focused CI.
 import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -8,7 +7,7 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
 const policy=readFileSync(new URL("../lib/mandala/auto-video-director.mjs",import.meta.url),"utf8");
 
-test("Auto Director is below the soundtrack and above the playable file in the existing studio",()=>{
+test("Auto Director reuses the one studio renderer and precedes the real result",()=>{
  assert.ok(studio.includes("<MandalaAutoVideoDirector"));
  assert.ok(studio.indexOf('data-video-quick-audio-choices') < studio.indexOf("<MandalaAutoVideoDirector"));
  assert.ok(studio.indexOf("<MandalaAutoVideoDirector") < studio.indexOf('id="personal-video-result"'));
@@ -68,8 +67,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/,
    "the same interactive goal controls move to the theme card; no second goal state");
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
- assert.match(director,/primaryGoalIds=new Set\(\["confidence","connection","fresh-start","stability"\]\)/);
- assert.match(director,/data-auto-video-more-goals/,"other goals remain available");
+ assert.match(director,/const videoGoalCategories=\[/);
+ assert.match(director,/data-auto-video-category=\{item.id\}/);
+ assert.match(director,/data-auto-video-topic-panel/);
+ assert.match(director,/popularTopicOrder\[selectedCategoryId\]\.map/);
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
@@ -78,13 +79,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/data-auto-video-create/);
  assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
  assert.match(studio,/canCreate=\{canStartSelectedFilm\}/,
-   "Create stays tappable even when soundtrack attachment or photo rights need confirmation");
+   "The real iPhone Create control must remain tappable for audio/photo consent");
  assert.match(studio,/createFeedback=\{preparing\|\|exportUnavailable\?notice:""\}/,
-   "decoder timeout and export errors appear alongside the iPhone Create button");
+   "real decoder/preparation errors remain visible beside the Create action");
  assert.match(studio,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
-   "iPhone native players are decoded after Create is tapped, never via a permanently disabled button");
- assert.match(director,/\{!canCreate&&!disabled\?<p className=\{css\.notice\}>\{t\.blocked\}<\/p>:null\}/,
-   "an audio/rights block must not masquerade as a still-loading video scene");
+   "the four approved MP4s must prime after a user tap");
  assert.match(studio,/data-video-result-empty/);
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
@@ -94,13 +93,14 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
+ assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed film assigns a real first-party soundtrack only when auto-music is enabled");
  assert.match(studio,/theme:audioTheme,kind:"melody",wish/);
- assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed auto-film assigns a real soundtrack");
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
  assert.match(css,/\[data-video-quick-section="1"\]\{order:3/);
- assert.match(css,/\[data-video-quick-audio-choices\]\{order:4/);
+ assert.match(css,/\[data-video-topic-section\]\{order:4/);
+ assert.match(css,/data-active-workspace="phrases"/);
  assert.match(css,/\[data-auto-video-director\]\{order:5/);
  assert.match(css,/\[data-video-result\]/);
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
@@ -115,9 +115,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Видео","Фразы","Эффекты","Практики","PRO","Монтаж"],
-  en:["Video","Phrases","Effects","Practice","PRO","Edit"],
-  es:["Vídeo","Frases","Efectos","Prácticas","PRO","Montaje"],
+  ru:["Стиль видео","Фразы поддержки","Гипноэффект","Курс практик","PRO генерация","Монтаж"],
+  en:["Video style","Support phrases","Hypno effect","Practice course","PRO generation","Montage"],
+  es:["Estilo vídeo","Frases de apoyo","Efecto hipno","Curso práctico","Generación PRO","Montaje"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -151,4 +151,73 @@ test("the selected real soundtrack is synchronized with the original central Can
    "retain the existing one user-gesture audio player");
  assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\);\s*setPreviewPlaying\(true\)/,
    "Play never starts audio during export");
+});
+
+// Regression from #2900: four real preview cards must appear before the first click.
+test("approved home displays a source-backed example before rendering",()=>{
+ assert.match(director,/recommendAutoVideo\(\{goal,locale,fallbackTheme:theme,presets,scenes\}\)/);
+ assert.match(director,/const videoGoalCategories=\[/);
+ assert.match(director,/const popularTopicOrder=\{/);
+ assert.match(director,/data-auto-video-topic-panel/);
+ assert.match(director,/data-auto-video-category=\{item.id\}/);
+ assert.match(director,/data-auto-video-preview-example/);
+ assert.match(director,/data-auto-video-story-options/);
+ assert.match(director,/data-auto-video-storyboard/);
+ assert.match(director,/data-auto-video-confirm/);
+ assert.match(director,/data-auto-video-create/);
+});
+
+test("mock actions are connected: four goal images, 3×2 text themes, four scenarios, real support/audio continuation",()=>{
+ const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
+ assert.match(css,/\.goalPanel \.goalChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(director,/scenePoster\(item.poster\)/,"goals show real licensed catalog artwork");
+ for(const id of ["confidence","connection","fresh-start","stability","calm","vitality"])
+   assert.match(director,new RegExp('(?:\\b|")'+id+'(?:\\b|")'));
+ assert.match(director,/onCategoryChange\?\.\(nextTheme\)/);
+ const topicHandler=director.slice(director.indexOf("const chooseReadyGoal="),
+   director.indexOf("const chooseCategory="));
+ assert.ok(topicHandler.includes("const nextTheme=item.theme as VideoTheme"));
+ assert.doesNotMatch(topicHandler,/setSelectedCategoryId\(/,
+   "choosing a topic must not silently replace the selected high-level goal");
+ assert.match(director,/onGoalChange\(nextGoal\)/);
+ assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:value/);
+ assert.match(director,/onContinue\?\.\(\)/);
+ assert.match(studio,/onContinue=\{\(\)=>\{/);
+ assert.match(studio,/setActiveWorkspace\("phrases"\)/);
+ assert.match(studio,/data-video-phrase-audio-shortcut/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
+ assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+ assert.match(studio,/data-video-advanced-toggle/);
+});
+
+test("Free help opens the ONE production AI Director without adding a second player or hidden paid action",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.equal((studio.match(/<MandalaVideoDirectorChat/g)||[]).length,1,
+   "the existing #2913 AI chat is preserved exactly once");
+ assert.match(studio,/data-video-director-chat-details/);
+ assert.match(studio,/open=\{directorChatOpen\}/);
+ assert.match(studio,/onToggle=\{event=>setDirectorChatOpen\(event\.currentTarget\.open\)\}/);
+ assert.match(studio,/onClarify=\{\(\)=>\{/);
+ assert.match(studio,/setDirectorChatOpen\(true\)/);
+ assert.match(director,/aria-expanded=\{onClarify\?helpOpen:refineOpen\}/);
+ assert.match(director,/if\(onClarify\)\{onClarify\(\);return;\}/);
+ assert.match(css,/\.directorChatDetails:not\(\[open\]\)\{display:none!important\}/);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+ assert.match(studio,/onCreate=\{createQuickVideo\}/);
+ assert.match(studio,/onConfirm=\{\(\{scenario\}\)=>\{/);
+ assert.match(studio,/scenario\.readyToExecute/);
+ assert.match(studio,/onGoalChange=\{next=>\{setWish\(next\.slice\(0,800\)\)/);
+});
+
+test("audio guidance remains actionable from both the compact Video screen and Support Phrases",()=>{
+ const style=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/if\(anchor==="video-audio"\|\|anchor==="voice-studio"\|\|anchor==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
+ assert.match(studio,/if\(hash==="video-audio"\|\|hash==="voice-studio"\|\|hash==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
+ assert.match(studio,/activeWorkspace==="video" \? deepAudioPane : null/);
+ assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane : null/);
+ assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
+ assert.match(studio,/data-video-phrase-audio-shortcut/);
+ assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
 });

@@ -123,6 +123,9 @@ test("approved compact audio mock has one real player/microphone and no duplicat
     "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
   assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
   assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
@@ -235,6 +238,9 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   // The old production CSS hid the quick selector exactly when the native player existed.
   assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
   assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
   assert.match(studio,/flushSync\(\(\)=>\{setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);

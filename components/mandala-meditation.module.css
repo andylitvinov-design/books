@@ -240,7 +240,7 @@
 /* Keep the video editor in the approved mobile Support shell, rather than
    returning to the site's older marketing header and bottom navigation. */
 @media (max-width: 640px) {
-  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .page { background: linear-gradient(155deg,#fbf9f2,#f7f5eb 52%,#f2ecdd); }
   .siteHeaderWrap { display: none; }
   .workshop { width: calc(100% - 12px); padding-top: 5px; padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
 }

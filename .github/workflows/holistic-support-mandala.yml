@@ -23,6 +23,7 @@ on:
       - 'components/mandala-video-director-chat*'
       - 'tests/video-chat-ai.test.mjs'
       - 'tests/video-chat-intent.test.mjs'
+      - 'tests/video-chat-understanding.test.mjs'
       - 'tests/first-video-director.test.mjs'
       - 'tests/first-video-licensed-render.test.mjs'
       - 'components/mandala-video-affirmations*'
@@ -124,7 +125,7 @@ jobs:
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
@@ -154,6 +155,11 @@ jobs:
         run: node scripts/generate-scenario-melodies.mjs && node scripts/generate-scenario-melodies.mjs --check
       - name: Verify 48 scenarios each have four real unique music files
         run: node --test tests/mandala-scenario-audio.test.mjs
+      - name: Video chat conversational intent contracts (RU/EN/ES)
+        run: |
+          node --check lib/mandala/video-chat-understanding.mjs
+          node --test tests/video-chat-understanding.test.mjs
+          npx --no-install eslint lib/mandala/video-chat-understanding.mjs
       - name: Video phrase catalog deterministic content and security contracts
         run: |
           node --check lib/mandala/video-phrase-catalog.mjs
@@ -181,18 +187,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -201,7 +207,7 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -225,11 +231,11 @@ jobs:
             node scripts/benchmarking/first-video-live-export.mjs
           # The voice release path requires dual-engine real encoded-audio QA.
           # The long all-workspaces Mandala suite remains available manually.
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [[ "$GITHUB_HEAD_REF" == fix/video-* || "$GITHUB_HEAD_REF" == codex/perf-video-studio-* || "$GITHUB_HEAD_REF" == codex/hypno-third-workspace-* ]]; then
             node scripts/verify-holistic-mandala-browser.mjs
           fi
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
+        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
@@ -250,7 +256,7 @@ jobs:
   # the closest supported CI platform to iPhone Safari. Never mock a download.
   # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-')) }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-')) }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:

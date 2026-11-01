@@ -79,7 +79,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\}/,
     "Create is enabled once all four licensed MP4 source URLs exist; decoding occurs on tap");
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
-    "all four iPhone MP4s must start loading synchronously on the trusted Create tap");
+    "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
@@ -103,8 +103,8 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/onGoalChange\(event\.currentTarget\.value\)/,
-    "typing updates the same local state without remote upload");
+  assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
+    "typing updates the same local state and real source-backed proposal without remote upload");
   assert.match(s,/data-video-personal-affirmations/);
   assert.match(s,/enabled:!current\.enabled/);
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
@@ -216,7 +216,7 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
   assert.match(src,/if\(!\(await filmPreparation\)\)/,
-    "a failed decoder preflight must never yield an incomplete four-scene movie");
+    "a failed decoded-source check must never output a partial four-scene movie");
   assert.match(src,/allocateAdaptiveFilmTimeline\(/,
     "Auto Director uses the verified adaptive four-stage timeline");
   assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
