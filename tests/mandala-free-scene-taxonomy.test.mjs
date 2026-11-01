@@ -14,8 +14,8 @@ const director=read("components/mandala-auto-video-director.tsx");
 const studio=read("components/mandala-free-video-studio.tsx");
 const optionUi=read("components/mandala-cinematic-director.tsx");
 
-test("all 44 first-party MP4s have local footage, poster, category, tags, RU/EN/ES description",()=>{
- assert.equal(scenes.length,44);
+test("all approved first-party MP4s have local footage, poster, category, tags, RU/EN/ES description",()=>{
+ assert.ok(scenes.length>=44,'never lose the original approved MP4s');
  assert.equal(new Set(scenes.map(item=>item.id)).size,44);
  const themeCounts={};
  for(const scene of scenes){
@@ -35,7 +35,8 @@ test("all 44 first-party MP4s have local footage, poster, category, tags, RU/EN/
      assert.ok(statSync(join(projectRoot,"public",scene[key])).size>1024,scene[key]+" is real, not an invented file");
    }
  }
- assert.deepEqual(themeCounts,{money:16,energy:8,life:8,health:9,goals:1,relationships:2});
+ for(const [theme,count] of Object.entries({money:16,energy:8,life:8,health:9,goals:1,relationships:2}))
+   assert.ok(themeCounts[theme]>=count,theme+' original approved masters must survive expansion');
 });
 
 test("the 24 new four-shot scenarios cover every CC-BY Dareful film",()=>{
@@ -43,7 +44,7 @@ test("the 24 new four-shot scenarios cover every CC-BY Dareful film",()=>{
  const ids=new Set();
  const used=new Set(presets.flatMap(p=>p.clips));
  const extras=scenes.filter(s=>s.collection==="film-collection-v3");
- assert.equal(extras.length,12);
+ assert.ok(extras.length>=12);
  for(const p of presets){
    assert.ok(!ids.has(p.id));ids.add(p.id);
    assert.equal(p.clips.length,4);

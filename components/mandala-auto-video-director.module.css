@@ -229,3 +229,14 @@
 .montageReplace select:disabled{color:#8a998d;background:#f4f6f4}
 .montageReplace select:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
 @media(max-width:730px){.montageRow{grid-template-columns:minmax(0,1fr)}}
+
+.melodyPanel{margin:10px 0 12px}
+.melodyChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.melodyChoices button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:42px;
+  padding:8px 6px;border:1px solid #b8cfbf;border-radius:10px;background:#fff;color:#254b3b;
+  font:600 12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer;overflow-wrap:anywhere}
+.melodyChoices button[aria-pressed="true"]{border-color:#a58036;background:#fff0c9}
+.melodyChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.melodyChoices button:disabled{opacity:.56;cursor:not-allowed}
+.melodyHint{font:500 11px/1.4 system-ui,-apple-system,sans-serif;color:#61766a;margin:5px 0 0}
+@media(max-width:570px){.melodyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -184,7 +184,7 @@ const studioCopy = {
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
     brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Original instrumental music",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"22 original instrumental melodies (piano, harp, flute, strings and more), plus 17 optional sound textures. Original music, no third-party streaming. Add your own recording if you prefer.",
+    originalAudio:"Four distinct instrumental scores for each of 48 video stories (192 recordings), plus 24 original WAV melodies, four classical themes and 17 sound textures. All first-party recordings; add your own audio file if you prefer.",
     openAudioDirect:"Open soundtrack directly",retryAudio:"Retry playback",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
@@ -224,7 +224,7 @@ const studioCopy = {
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
     brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Красивая инструментальная музыка",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"22 авторские инструментальные мелодии: фортепиано, арфа, флейта, струны и другие. Ещё 17 звуковых фактур доступны дополнительно. Без внешнего стриминга.",
+    originalAudio:"Четыре отдельные инструментальные мелодии для каждого из 48 сценариев (192 записи), плюс 24 авторские WAV-мелодии, четыре классические темы и 17 звуковых фактур. Можно добавить свой аудиофайл.",
     openAudioDirect:"Открыть аудиофайл отдельно",retryAudio:"Повторить",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
@@ -264,7 +264,7 @@ const studioCopy = {
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
     brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Melodías instrumentales",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"22 melodías instrumentales originales de piano, arpa, flauta y cuerdas, más 17 texturas opcionales. Sin streaming externo.",
+    originalAudio:"Cuatro piezas instrumentales distintas por cada uno de los 48 escenarios (192 grabaciones), más 24 melodías WAV originales, cuatro temas clásicos y 17 texturas opcionales. Puedes añadir tu audio.",
     openAudioDirect:"Abrir el archivo de audio",retryAudio:"Reintentar",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
@@ -873,7 +873,7 @@ const FREE_FILM_CLIP_THEMES:Record<string,VideoTheme> = Object.fromEntries(
   FREE_FILM_CATALOG.filter(scene=>scene.status==="approved").map(scene=>[scene.id,scene.theme])
 ) as Record<string,VideoTheme>;
 function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string}|null {
-  if(theme==="money")return getRealMoneyFilm(id as MoneySceneId);
+  if(theme==="money")return getRealMoneyFilm(id as MoneySceneId)||getThemedRealFilm(theme,id as LocalSceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
 function compileFreeFilmPreset(
@@ -3998,6 +3998,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ?(locale==="ru"?"Не прикреплён":locale==="es"?"Sin adjuntar":"Not attached")
             :appliedAudioName}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
+          audioTrackId={attachedAudio?.kind==="preset"?attachedAudio.id:null}
+          onPickAudio={id=>{
+            const matched=[...mandalaAudioTracks,...classicalAudioTracks,
+              ...FREE_FILM_PRESETS.flatMap(film=>scenarioAudioTracks(film.id))]
+              .find(track=>track.id===id&&track.kind==="melody");
+            if(!matched)return;
+            const chosenId=matched.id as PresetId;
+            setAudioAuto(false);chooseMusic(chosenId);
+            setAttachedAudio({kind:"preset",id:chosenId});
+            if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
+          }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}

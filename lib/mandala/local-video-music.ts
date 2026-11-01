@@ -4,7 +4,7 @@
  * Only started from an explicit user Create click and attached to that export.
  */
 export type ExpandedAudioPreset = "soft-piano" | "kalimba" | "harp" | "flute" | "celesta" | "strings" | "marimba" | "lullaby" | "handpan" | "forest" | "stream" | "waterfall" | "fireplace" | "night" | "birdsong" | "singing-bowl" | "wind-chimes" | "crystal" | "cosmos" | "soft-beat" | "earth-drum";
-export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path";
+export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path" | "ode-to-joy" | "greensleeves";
 /** Individually mastered first-party MP3 for each approved video scenario. */
 export type ScenarioAudioPreset = `score-${string}-${1|2|3|4}` |
   "classic-ode-to-joy" | "classic-fur-elise" | "classic-greensleeves" | "classic-twinkle";
@@ -69,6 +69,8 @@ const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset>, readonly
   "heart-harmony":[174.61,220.00,261.63,329.63],
   "quiet-stars":[146.83,174.61,220.00,293.66],
   "bright-path":[164.81,196.00,246.94,329.63],
+  "ode-to-joy":[130.81,164.81,196.00,261.63],
+  "greensleeves":[110.00,164.81,220.00,261.63],
 };
 
 // On iOS a Web Audio graph uses the ringer-silenced "ambient" session by
@@ -502,6 +504,8 @@ export const ORIGINAL_MELODY_IDS = [
   "marimba",
   "lullaby",
   "handpan",
+  "ode-to-joy",
+  "greensleeves",
 ] as const;
 export function isMelodyPreset(preset: AmbientMusic): boolean {
   return isScenarioAudioPreset(preset) || ORIGINAL_MELODY_IDS.some(id => id===preset);
