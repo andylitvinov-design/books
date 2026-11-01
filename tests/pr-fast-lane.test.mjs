@@ -911,7 +911,7 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
 
 test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
   const source = workflow('hh-native-auto-merge.yml');
-  const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
+  const enable = source.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable, 'missing event-driven enable job');
   assert.match(source, /^  workflow_run:\s*$/m);
   const workflowRun=source.split('  workflow_run:\n')[1]?.split('    types: [completed]')[0];
@@ -943,7 +943,7 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
 
 test('event-driven AutoMerge zero-required fallback remains normal protected exact-base merge only', () => {
   const source = workflow('hh-native-auto-merge.yml');
-  const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
+  const enable = source.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable, 'missing trusted event-driven AutoMerge');
   assert.ok(enable.includes('core.setOutput("base", pr.base.sha);'));
   assert.ok(enable.includes('PR_BASE_SHA: ${{ steps.ready.outputs.base }}'));
@@ -991,10 +991,27 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
   assert.ok(readOnly.includes('coreRun.conclusion !== "success"'));
   assert.ok(readOnly.includes('expectedHead !== pr.head.sha'));
   assert.ok(source.includes('1) merge_option=--merge'));
-  assert.ok(source.includes('recover-missing-required-ci:'));
+  assert.ok(!source.includes('recover-missing-required-ci:'), 'legacy recovery must not consume API budget');
   assert.ok(source.includes('recover-interrupted-core:'));
 });
 
+test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
+  assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
+  assert.match(coreSection,/^    name: hh-core-verified$/m);
+  assert.match(coreSection,/^    needs: \[scope, code\]$/m);
+  assert.match(coreSection,/^    if: always\(\)$/m);
+  assert.match(coreSection,/^    timeout-minutes: 3$/m);
+  assert.match(coreSection,/\[\[ "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == skipped \]\]/);
+  assert.match(coreSection,/PR_DRAFT: \$\{\{ github\.event\.pull_request\.draft \}\}/);
+  assert.doesNotMatch(coreSection,/ci-specialist-aggregate\.mjs|gh api|checkout@v4/);
+  // A green Core result alone must NOT remove the old release specialist gate.
+  assert.match(source,/^  release-ready:/m);
+  assert.match(source,/ci-specialist-aggregate\.mjs/);
+});
 
 test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
   const native = workflow('hh-native-auto-merge.yml');
