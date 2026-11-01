@@ -2711,6 +2711,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // from the previous tab can steal the next pointer's click target.
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
+
+  // Incoming /mandala#video-audio links used to land inside closed advanced
+  // settings. Reveal the SAME audio workspace before scrolling to its real
+  // library; never create a second player or start playback/recording.
+  useEffect(()=>{
+    const revealAudioDeepLink=()=>{
+      if(window.location.hash!=="#video-audio")return;
+      const requestedPath=window.location.pathname+window.location.search+window.location.hash;
+      setActiveWorkspace("audio");
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+        if(window.location.pathname+window.location.search+window.location.hash!==requestedPath)return;
+        document.getElementById("video-audio")?.scrollIntoView({
+          behavior:"instant" as ScrollBehavior,block:"start",
+        });
+      }));
+    };
+    revealAudioDeepLink();
+    window.addEventListener("hashchange",revealAudioDeepLink);
+    return()=>window.removeEventListener("hashchange",revealAudioDeepLink);
+  },[]);
+
   const openQuickDetailed=(anchor:string)=>{
     if(activeWorkspace){
       const workspace=anchor==="video-audio"?"audio":anchor==="video-hypnosis"?"psychocorrection":"video";
