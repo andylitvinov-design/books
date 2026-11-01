@@ -1789,8 +1789,10 @@ const runEngine = async ([engine, browserType]) => {
           const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
-          await page.locator('[data-video-quick-duration="15"]').click();
-          await expect(page.locator('[data-video-quick-duration="15"]')).toHaveAttribute("aria-pressed","true");
+          // The legacy quick-duration control is intentionally in a collapsed
+          // details panel. Exercise the actually visible Video workspace button.
+          await page.locator('[data-video-duration="15"]').click();
+          await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
           assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
             "duration changes must retain the four selected MP4 sources");
