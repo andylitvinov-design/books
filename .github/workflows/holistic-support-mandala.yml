@@ -32,6 +32,8 @@ on:
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/benchmarking/video-scene-match.mjs'
+      - 'tests/video-scene-match.test.mjs'
       - 'scripts/verify-hypno-wave-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
@@ -66,6 +68,7 @@ on:
       - 'tests/mandala-sound.test.mjs'
       - 'tests/mandala-native-audio-files.test.mjs'
       - 'tests/mandala-smart-audio.test.mjs'
+      - 'scripts/generate-mandala-melodies.mjs'
       - 'tests/mandala-audio-attach.test.mjs'
       - 'tests/meditation-filters.test.mjs'
       - 'tests/meditation-narration.test.mjs'
@@ -118,8 +121,13 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Check browser acceptance script syntax before slow production build
         run: node --check lib/mandala/loved-voices.mjs && node --check lib/mandala/loved-voice-provider.mjs && node --check app/api/holistic-support/loved-voices/route.js && node --check scripts/verify-loved-voices-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
+      # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
+      # Generate locally before source/asset parity checks; production npm run
+      # build has the identical prebuild hook.
+      - name: Generate original first-party melody masters
+        run: node scripts/generate-mandala-melodies.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/loved-voices-core.test.mjs tests/loved-voices-entry.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs
+        run: node --test tests/loved-voices-core.test.mjs tests/loved-voices-entry.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/video-scene-match.test.mjs
       - name: Stories and Characters exact source acceptance
         run: |
           if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then

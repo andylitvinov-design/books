@@ -40,7 +40,6 @@ on:
       - 'data/academy/meditation-filter-facets-20261028.json'
       - '.github/workflows/hh-profile-axis-matching.yml'
       - 'components/app/test-explorer-visual.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
