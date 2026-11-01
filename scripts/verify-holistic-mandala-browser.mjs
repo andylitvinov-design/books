@@ -623,6 +623,17 @@ const runEngine = async ([engine, browserType]) => {
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
         assert.ok(layout.goals.length===4 && layout.goals.every(n=>n>=44),
           engine+" "+locale+" "+width+"px four scannable goal cards "+JSON.stringify(layout));
+        const moreGoals=quick.locator('[data-auto-video-more-goals]');
+        const additionalChoices=moreGoals.locator('[data-auto-video-goal]');
+        assert.equal(await additionalChoices.count(),2,"both nonprimary goals remain accessible");
+        assert.equal(await additionalChoices.evaluateAll(nodes=>nodes.filter(el=>el.getClientRects().length).length),0,
+          "closed More goals must hide both optional choices");
+        await moreGoals.locator("summary").click();
+        await expect(moreGoals).toHaveAttribute("open","");
+        assert.equal(await additionalChoices.evaluateAll(nodes=>nodes.filter(el=>el.getClientRects().length).length),2,
+          "user opening More goals reveals precisely two additional choices");
+        await moreGoals.locator("summary").click();
+        await expect(moreGoals).not.toHaveAttribute("open","");
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");

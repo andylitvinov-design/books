@@ -64,6 +64,8 @@
   color:#15533e;box-shadow:inset 0 0 0 1px #297d60}
 .extraGoals{border:0;margin:0;font-size:11px;color:#3b7861}
 .extraGoals summary{min-height:24px;cursor:pointer;display:inline-flex;align-items:center}
+/* Explicitly hide choices in closed details; author display:grid can override user-agent hiding. */
+.extraGoals:not([open])>.goalChoices{display:none}
 .extraGoals[open] .goalChoices{margin-top:5px}
 .goalPanel .entry{display:block;margin-top:0;min-width:0}
 .goalPanel .goal{display:block;min-width:0;margin:0}

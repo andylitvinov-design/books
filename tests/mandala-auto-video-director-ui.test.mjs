@@ -68,6 +68,8 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.match(director,/primaryGoalIds=new Set\(\["confidence","connection","fresh-start","stability"\]\)/);
  assert.match(director,/data-auto-video-more-goals/,"other goals remain available");
+ assert.match(autoCss,/\.extraGoals:not\(\[open\]\)>\.goalChoices\{display:none\}/,
+   "closed More goals must hide extra choice buttons despite author grid styling");
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
