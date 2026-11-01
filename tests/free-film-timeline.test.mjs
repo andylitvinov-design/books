@@ -32,3 +32,15 @@ test("Studio uses the same four-shot timeline and never indexes nonexistent clip
   assert.match(slice,/providerPrompt:""/);
   assert.doesNotMatch(slice,/preset\.clips\[i\]/);
 });
+
+test('retiming a four-scene plan preserves selected scenes and metadata', async () => {
+  const {retimeFreeFilmPlan} = await import('../lib/mandala/free-film-timeline.mjs');
+  const plan = {durationSeconds:20, shots:['a','b','c','d'].map((sceneId,i)=>({sceneId,theme:'energy',startSeconds:i*5,durationSeconds:5}))};
+  for (const duration of FREE_FILM_DURATIONS) {
+    const result = retimeFreeFilmPlan(plan,duration);
+    assert.equal(result.durationSeconds,duration);
+    assert.deepEqual(result.shots.map(s=>s.sceneId),['a','b','c','d']);
+    assert.deepEqual(result.shots.map(s=>s.theme),['energy','energy','energy','energy']);
+    assert.equal(result.shots.at(-1).startSeconds+result.shots.at(-1).durationSeconds,duration);
+  }
+});
