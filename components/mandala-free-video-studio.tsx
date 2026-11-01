@@ -1800,6 +1800,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? moneyScenes.slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getRealMoneyFilm(item.id).poster}))
     : otherVideoScenes[theme].slice(0,5).map(item=>({id:item.id,label:item.label[locale],symbol:item.symbol,poster:getThemedRealFilm(theme,item.id)?.poster||null}));
   const jobRef = useRef<Job | null>(null);
+  // Same cancellation authority for the Safari H.264/AAC encoder.
+  const webCodecJobRef = useRef<AbortController|null>(null);
   const firstVideoRequestRef=useRef(false);
   useEffect(()=>{
     if(!result||!firstVideoRequestRef.current)return;
@@ -1904,6 +1906,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         micRef.current=null;
       }
       aliveRef.current = false;
+      webCodecJobRef.current?.abort();
       const job = jobRef.current;
       if (job) {
         stopJob(job, true);
@@ -2003,6 +2006,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!document.hidden) return;
       const job = jobRef.current;
       if (job) stopJob(job, true);
+      webCodecJobRef.current?.abort();
       setNotice(ui.noStorage);
     };
     document.addEventListener("visibilitychange", onBackground);
@@ -2049,6 +2053,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useLayoutEffect(() => {
     const job=jobRef.current;
     if (job) stopJob(job, true);
+    webCodecJobRef.current?.abort();
     setResult(null);
     setNotice("");
     setExportUnavailable(false);
@@ -2129,13 +2134,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // No autoplay: paint a still scene, and animate only while a visitor
   // deliberately chooses preview. Throttle to ~12 fps on mobile Safari.
   useEffect(() => {
-    if (!source || jobRef.current) return;
+    if (!source || jobRef.current || webCodecJobRef.current || recording) return;
     let cancelled = false;
     let animation = 0;
     let startedAt = 0;
     let lastFrame = -1000;
     void loadSceneImage(source).then(image => {
-      if (cancelled || jobRef.current) return;
+      if (cancelled || jobRef.current || webCodecJobRef.current) return;
       if(usingFreeFilmCompilation&&!freeFilmReady)return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -2153,7 +2158,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const previewFps=window.innerWidth<=600
         ? (previewCores<=2?12:previewCores>=6?24:18):24;
       const draw = (now: number) => {
-        if (cancelled || jobRef.current) return;
+        if (cancelled || jobRef.current || webCodecJobRef.current) return;
         if (!startedAt) startedAt = now;
         if (now - lastFrame >= 1000 / previewFps && !document.hidden) {
           const elapsed=(now-startedAt)/1000;
@@ -2173,10 +2178,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       animation = window.requestAnimationFrame(draw);
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
-  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory]);
+  }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, recording, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory]);
 
   async function createVideo(preferWebm = false, forceMp4ForRetry = false) {
-    if (!canGenerate || !source || jobRef.current || preparingRef.current) return;
+    if (!canGenerate || !source || jobRef.current || webCodecJobRef.current || preparingRef.current) return;
     stopSoundPreview();
     stopMovieSound();
     const snapshot=source;
@@ -2276,6 +2281,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const framesPerSecond=baselineFramesPerSecond === 25 || (phone && cores<=2)
         ? baselineFramesPerSecond : suggestedFps;
       if(useWebCodecsMp4){
+        const controller=new AbortController();
+        webCodecJobRef.current=controller;
         // Safari's entire H.264/AAC export runs locally with WebCodecs. The
         // user-selected first-party scene, narration and filters remain here.
         setPreparing(false);
@@ -2294,8 +2301,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const blob=await encodeLocalWebCodecsMp4({
             canvas,seconds:duration,frameRate:Math.min(20,framesPerSecond),
             audio:files.length?{files,volume:soundVolume}:undefined,
-            shouldContinue:()=>aliveRef.current&&sourceRef.current===snapshotKey,
-            onProgress:p=>{if(aliveRef.current&&sourceRef.current===snapshotKey)
+            shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
+            onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
               setProgress(Math.min(99,p));},
             renderFrame:time=>{
               const frame=freeFilmVideoAt(time);
@@ -2318,10 +2325,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale==="es"?"Verificando el vídeo MP4 y su audio.":
               "Verifying the finished MP4 with your selected audio.");
         }catch{
-          if(sourceRef.current===snapshotKey&&aliveRef.current){
+          if(!controller.signal.aborted&&sourceRef.current===snapshotKey&&aliveRef.current){
             setNotice(t.failed);setExportUnavailable(true);
           }
         }finally{
+          if(webCodecJobRef.current===controller)webCodecJobRef.current=null;
           if(aliveRef.current)setRecording(false);
         }
         return;
@@ -2630,7 +2638,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function attachSelectedAudio(){
     if(recording||preparing||micRecording||audioDurationInvalid)return;
     if(uploadedAudio&&!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
-    if(uploadedAudio)setAttachedAudio({kind:"file",id:uploadedAudio.url,file:uploadedAudio.file});
+    if(uploadedAudio)setAttachedAudio({kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,
+      // Locally recorded microphone speech is not a looping soundtrack.
+      ...(/^my-voice\./i.test(uploadedAudio.file.name)?{nonLoop:true as const}:{})});
     else if(music!=="none")setAttachedAudio({kind:"preset",id:music});
     else setAttachedAudio(null);
     setMusicWarning("");
@@ -3851,6 +3861,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onCancel={()=>{
             const job=jobRef.current;
             if(job)stopJob(job,true);
+            webCodecJobRef.current?.abort();
             firstVideoRequestRef.current=false;
           }}/>
         </details>
@@ -4966,6 +4977,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.generate} onClick={()=>{
             const job=jobRef.current;
             if(job)stopJob(job,true);
+            webCodecJobRef.current?.abort();
             setNotice("");
           }}><X size={20} aria-hidden="true"/>{ui.cancel} · {progress}%</button>
         </div>
