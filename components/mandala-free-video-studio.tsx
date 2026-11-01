@@ -3601,8 +3601,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>)}
           </div>
           <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
-          {activeWorkspace==="video" ? deepVideoPane : null}
-          {activeWorkspace==="video" ? deepVideoDirectorPane : null}
+          
         </section>
         <div data-workspace-section="video">
         {/* Compact first-video tool follows the third Style section,
@@ -3643,7 +3642,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}><span aria-hidden="true">“</span>{phrase}</button>)}
         </div>
         {activeWorkspace==="phrases" ? deepHypnoPane : null}
-        {activeWorkspace==="psychocorrection" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
+
+      </section>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
+        data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
+        {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
           <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={setHypnoLight}
@@ -3662,7 +3665,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onOpenMeditation={()=>{
-              setActiveWorkspace("courses");setStudioMode("pump");
+              setActiveWorkspace("practices");setStudioMode("therapy");
               window.requestAnimationFrame(()=>document.querySelector('[data-video-meditation-course-panel]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
             }}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
@@ -3724,7 +3727,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </div>;
           })}
         </div>
-        {activeWorkspace==="audio" ? deepAudioPane : null}
+        <details data-video-audio-details className={videoStyles.quickExtras}>
+          <summary>{locale==="ru"?"Все мелодии и голос":locale==="es"?"Todos los sonidos y voz":"All soundtracks and voice"}</summary>
+          {activeWorkspace==="video" ? deepAudioPane : null}
+        </details>
       </section>
         <MandalaAutoVideoDirector
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
@@ -4190,10 +4196,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 "Available story motifs are applied to preview and video export.");
             }}/>
 
+          {activeWorkspace==="pro" ? deepVideoDirectorPane : null}
         </section>
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
-        <details className={videoStyles.quickExtras} data-workspace-section="video" data-video-quick-extras>
+        <details className={videoStyles.quickExtras} data-workspace-section="editor" data-video-quick-extras>
           <summary><strong>{approved.extra}</strong><ChevronDown size={20} aria-hidden="true"/></summary>
           <div className={videoStyles.quickExtraActions}>
             <button type="button" onClick={()=>openQuickDetailed("video-settings")}>
@@ -4233,7 +4240,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               focus={meditationFocus} disabled={recording||preparing}/>
           </div>
         </section> : null}
-        <div className={videoStyles.quickOrderBar} data-video-order-bar>
+        <div className={videoStyles.quickOrderBar} data-workspace-section="video" data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{selectedDraftPrice===null?practiceCopy.noQuote:
@@ -4251,9 +4258,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <span style={{width:progress+"%"}}/></div>:null}
         {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
-        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
+        <p className={videoStyles.quickPrivacy} data-workspace-section="video"><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
-          data-video-quick-therapy disabled={recording||preparing}
+          data-workspace-section="video" data-video-quick-therapy disabled={recording||preparing}
           onClick={()=>{setActiveWorkspace("practices");setStudioMode("therapy");setQuickDetailedOpen(true);
             setTherapyJumpRequested(true);}}>
           <HandHeart size={18} aria-hidden="true"/>{practiceType==="video"?quick.therapy:quick.therapy}
@@ -4639,12 +4646,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      {activeWorkspace!=="audio" ? deepAudioPane : null}
-      {activeWorkspace!=="psychocorrection" ? deepHypnoPane : null}
-      {activeWorkspace!=="video" ? deepVideoDirectorPane : null}
       <details className={videoStyles.extraControls} data-video-extra-settings>
         <summary>{layout.extraSettings}</summary>
-      {activeWorkspace!=="video" ? deepVideoPane : null}
       </details>
       {photoUrl&&!backgroundOnly&&!photoConsent?<p role="status" className={videoStyles.warning}>{ui.consentHelp}</p>:null}
 
