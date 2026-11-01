@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -519,4 +519,34 @@ test('cohort report rejects fabricated dates, duplicate PRs and false merge rece
   assert.match(script,/PR_COHORT_INCOMPLETE_PAGINATION/);
   assert.match(script,/state=all&sort=created&direction=desc/);
   assert.match(script,/completeness:'PR_CREATED_DAY_EXHAUSTIVE'/);
+});
+
+
+test('dirty PRs with shared paths are grouped as candidates, never proven common hunks',()=>{
+  const a=(number,files,more={})=>({number,state:'open',draft:false,mergeable:false,
+    base:{ref:'codex/public-book-library',sha:sha('b')},head:{sha:sha(String(number))},files,...more});
+  const found=groupDirtyPrFiles([a(1,['components/a.jsx','test/a']),a(2,['components/a.jsx']),
+    a(3,['lib/security/auth.mjs','components/a.jsx']),a(4,['lib/security/auth.mjs'])]);
+  assert.deepEqual(found.groups.map(g=>[g.file,g.blocked_pr_count]),[
+    ['components/a.jsx',3],['lib/security/auth.mjs',2]]);
+  assert.equal(found.groups[0].verification,'SHARED_FILE_CANDIDATE_ONLY_NOT_CONFIRMED_HUNK');
+  assert.equal(found.groups[1].sensitive,true);
+  assert.equal(found.auto_merge_authorized,false);
+  assert.equal(groupDirtyPrFiles([a(1,['common']),a(2,['common'],{base:{ref:'codex/public-book-library',sha:sha('c')}})]).groups.length,0);
+  assert.throws(()=>groupDirtyPrFiles([a(1,['a']),a(1,['b'])]),/DUPLICATE/);
+});
+
+test('canonical resolution is reusable only for identical 3-way blobs and non-sensitive paths',()=>{
+  const conflict=(path,three=sha('3'))=>({path,stage1:sha('1'),stage2:sha('2'),stage3:three});
+  const source={base_sha:sha('b'),head_sha:sha('a'),conflicts:[conflict('src/page.tsx')],
+    resolved_blobs:[{path:'src/page.tsx',blob_sha:sha('4')}]};
+  const target={base_sha:sha('b'),head_sha:sha('c'),conflicts:[conflict('src/page.tsx')]};
+  assert.equal(planSameConflictResolutionReuse(source,target).action,'REUSE_CANDIDATE');
+  assert.equal(planSameConflictResolutionReuse(source,{...target,base_sha:sha('d')}).action,'HOLD');
+  assert.equal(planSameConflictResolutionReuse(source,{...target,conflicts:[conflict('src/page.tsx',sha('5'))]}).reason,'CONFLICT_PREIMAGES_DIFFER');
+  assert.equal(planSameConflictResolutionReuse({...source,resolved_blobs:[]},target).reason,'RESOLUTION_BLOBS_INCOMPLETE');
+  const privatePath='lib/security/auth.mjs';
+  assert.equal(planSameConflictResolutionReuse({...source,conflicts:[conflict(privatePath)],
+    resolved_blobs:[{path:privatePath,blob_sha:sha('4')}]},
+    {...target,conflicts:[conflict(privatePath)]}).reason,'SENSITIVE_FIX_REQUIRES_INDEPENDENT_REVIEW');
 });

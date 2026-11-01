@@ -4,7 +4,8 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
+import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
   if (!token) throw Error('GH_TOKEN or GITHUB_TOKEN required for route');
@@ -13,7 +14,7 @@ async function collectRouteSnapshot(repo, token) {
     repository(owner:$owner,name:$name) {
       pullRequests(first:100,after:$cursor,states:OPEN,baseRefName:"codex/public-book-library",orderBy:{field:CREATED_AT,direction:DESC}) {
         totalCount pageInfo { hasNextPage endCursor }
-        nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName headRefOid }
+        nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName baseRefOid headRefOid }
       }
     }
   }`;
@@ -31,7 +32,7 @@ async function collectRouteSnapshot(repo, token) {
     total=prs.totalCount;
     rows.push(...prs.nodes.map(pr=>({number:pr.number,created_at:pr.createdAt,state:'open',draft:pr.isDraft,
       mergeable:pr.mergeable==='MERGEABLE' ? true : pr.mergeable==='CONFLICTING' ? false : null,
-      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},base:{ref:pr.baseRefName}})));
+      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},base:{ref:pr.baseRefName,sha:pr.baseRefOid}})));
     if (!prs.pageInfo.hasNextPage) {
       if (rows.length!==total) throw Error('SWEEP_CHANGED_DURING_READ');
       return {rows,observed:Date.now(),total};
@@ -55,17 +56,18 @@ async function reportDeepRoutes(repo,token) {
   const snapshot=await collectRouteSnapshot(repo,token);
   const root='https://api.github.com/repos/'+repo;
   const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'};
-  let remaining=Infinity;
+  let remaining=Infinity,restReads=0;
   async function get(path) {
     if (remaining<500) throw Error('SWEEP_RATE_RESERVE');
     const response=await fetch(root+path,{headers,signal:AbortSignal.timeout(20000)});
+    restReads++;
     const value=response.headers.get('x-ratelimit-remaining');
     if (value!==null && Number.isFinite(Number(value))) remaining=Math.min(remaining,Number(value));
     if (!response.ok) throw Error('SWEEP_GITHUB_HTTP_'+response.status);
     return response.json();
   }
   const rules=()=>get('/rules/branches/'+encodeURIComponent('codex/public-book-library'));
-  const appId=requiredGateApp(await rules());
+  const policy=resolveRequiredGatePolicy(await rules());
   const preliminary=routeSweep(snapshot.rows,snapshot.observed);
   const wanted=new Set(preliminary.unknown.map(item=>item.number));
   const candidates=snapshot.rows.filter(row=>wanted.has(row.number) && /^[a-f0-9]{40}$/.test(row.head?.sha || ''));
@@ -76,22 +78,86 @@ async function reportDeepRoutes(repo,token) {
       const row=candidates[next++];
       if (!row) return;
       try {
-        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,get('/commits/'+row.head.sha+'/check-runs?check_name=release-ready&filter=latest&per_page=100'));
-        const result=await headReads.get(row.head.sha);
-        evidence.set(row.number,{head:row.head.sha,...assessRequiredGate({head:row.head.sha,appId,checks:result.check_runs,total:result.total_count})});
+        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,(async () => {
+          // The normal path uses ONE API read, reserving expensive per-name
+          // queries for commits with >100 checks or incomplete pagination.
+          const whole=await get('/commits/'+row.head.sha+'/check-runs?filter=latest&per_page=100');
+          const complete=observationsFromCompletePage(policy,whole);
+          if (complete) return complete;
+          return Promise.all(policy.contexts.map(async context => {
+            const result=await get('/commits/'+row.head.sha+'/check-runs?check_name='+encodeURIComponent(context)+'&filter=latest&per_page=100');
+            return {context,total_count:result.total_count,check_runs:result.check_runs};
+          }));
+        })());
+        const observations=await headReads.get(row.head.sha);
+        evidence.set(row.number,{head:row.head.sha,...assessRequiredGates({head:row.head.sha,policy,observations})});
       } catch(error) {
         errors.push({number:row.number,error:String(error?.message || error)});
       }
     }
   }
   await Promise.all(Array.from({length:Math.min(4,candidates.length)},()=>worker()));
-  if (requiredGateApp(await rules())!==appId) throw Error('REQUIRED_GATE_RULE_CHANGED');
+  if (JSON.stringify(resolveRequiredGatePolicy(await rules()))!==JSON.stringify(policy)) throw Error('REQUIRED_GATE_RULE_CHANGED');
   // Re-list so changed heads and newly opened PRs are never attributed old evidence.
   const fresh=await collectRouteSnapshot(repo,token);
   const routed=refineStaleRoutes(fresh.rows,evidence,fresh.observed);
   console.log(JSON.stringify({repo,observed_at:new Date(fresh.observed).toISOString(),total:fresh.total,
     ...routed,deep_checks_attempted:candidates.length,unique_heads_read:headReads.size,deep_read_errors:errors,
+    required_policy_mode:policy.mode,required_contexts:policy.contexts,deep_rest_api_reads:restReads,
     root_grouping:'UNCLASSIFIED_REQUIRES_CONFIRMED_REGISTRY_EVIDENCE',merge_authorized:false},null,2));
+}
+
+
+
+// Independent read-only diagnostic; unlike route-deep it is valid even while
+// the production ruleset has zero required check contexts.
+async function reportConflictRoutes(repo,token) {
+  const first=await collectRouteSnapshot(repo,token);
+  const dirty=first.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
+  const sample=dirty.slice(0,35), collected=new Map(), errors=[];
+  const root='https://api.github.com/repos/'+repo;
+  const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+token,
+    'X-GitHub-Api-Version':'2022-11-28'};
+  let cursor=0;
+  async function worker(){
+    for (;;) {
+      const row=sample[cursor++]; if(!row)return;
+      try {
+        const files=[];
+        for(let page=1;page<=6;page++) {
+          const res=await fetch(root+'/pulls/'+row.number+'/files?per_page=100&page='+page,
+            {headers,signal:AbortSignal.timeout(20000)});
+          if(!res.ok)throw Error('CONFLICT_FILES_HTTP_'+res.status);
+          const chunk=await res.json();
+          if(!Array.isArray(chunk)||chunk.some(f=>typeof f?.filename!=='string'))
+            throw Error('CONFLICT_FILE_PAGE_INVALID');
+          files.push(...chunk.map(f=>f.filename));
+          if(chunk.length<100)break;
+          if(page===6)throw Error('CONFLICT_FILE_PAGE_LIMIT');
+        }
+        collected.set(row.number,files);
+      }catch(e){errors.push({number:row.number,error:String(e.message||e)});}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(3,sample.length)},()=>worker()));
+  const second=await collectRouteSnapshot(repo,token);
+  const current=new Map(second.rows.map(p=>[p.number,p]));
+  const valid=[],moved=[];
+  for(const pr of sample) {
+    const now=current.get(pr.number);
+    if(!now || now.head?.sha!==pr.head.sha || now.base?.sha!==pr.base.sha ||
+        now.mergeable!==false || now.base?.ref!==pr.base.ref) {
+      moved.push(pr.number);
+      continue;
+    }
+    valid.push({...pr,files:collected.get(pr.number)});
+  }
+  const groups=groupDirtyPrFiles(valid);
+  console.log(JSON.stringify({repo,observed_at:new Date().toISOString(),
+    total_open:first.total,dirty_total:dirty.length,sampled:sample.length,
+    omitted_due_to_cap:Math.max(0,dirty.length-sample.length),moved_during_scan:moved,
+    read_errors:errors,root_evidence:'CANDIDATE_CHANGED_PATHS_REQUIRES_GIT_MERGE_TREE_STAGE_PROOF',
+    ...groups},null,2));
 }
 
 // Daily CLI reuses this EXISTING script and makes no GitHub writes.
@@ -133,12 +199,12 @@ const [operation = 'inspect', repo = '', numberStr = '', owner = ''] = process.a
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 const now = Date.now();
 const prNumber = Number(numberStr);
-if (operation === 'route' || operation === 'route-deep') {
+if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
-    console.error('usage: node scripts/pr-sweep-guard.mjs route|route-deep owner/repo');
+    console.error('usage: node scripts/pr-sweep-guard.mjs route|route-deep|route-conflicts owner/repo');
     process.exitCode=2;
   } else {
-    try { await (operation==='route' ? reportRoutes(repo,token) : reportDeepRoutes(repo,token)); }
+    try { await (operation==='route' ? reportRoutes(repo,token) : operation==='route-deep' ? reportDeepRoutes(repo,token) : reportConflictRoutes(repo,token)); }
     catch(error) { console.error(String(error?.message || error)); process.exitCode=2; }
   }
 } else if (operation === 'daily') {
