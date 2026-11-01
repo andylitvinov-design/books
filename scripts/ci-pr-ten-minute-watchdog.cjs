@@ -15,6 +15,7 @@ const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
 const REPAIR_LABEL = 'hh:repair-needed';
 const CONFLICT_LABEL = 'hh:conflict-repair-needed';
+const CI_BOOTSTRAP_LABEL = 'hh:ci-needed';
 const MAX_CONFLICT_HANDOFFS = 2;
 // Preserve per-repository API quota for event-driven merge / CI workflows.
 const MAX_API_CALLS = 65;
@@ -346,6 +347,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   const selected = selectCandidates(review,now);
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
+    ciBootstrapQueued:0,ciWorkerDispatched:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
@@ -467,7 +469,22 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
     const coreRuns = runs.workflow_runs.filter(r=>coreRunForCurrentPR(r,pr))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
-    if (!coreRuns.length) {summary.missingCore++;continue;}
+    if (!coreRuns.length) {
+      summary.missingCore++;
+      // Only PRs with NO historical Core workflow runs can be sent to the
+      // one-shot CI worker. Existing red/stale source belongs to Repair.
+      if (runs.total_count === 0 && summary.ciBootstrapQueued < 1 && !budget.exhausted) {
+        const queued = await ensureQueueLabel(github,owner,repo,live,
+          CI_BOOTSTRAP_LABEL,'One-time legacy CI needed; no Core PR history',
+          '0e8a16',dryRun,limited,log);
+        if (queued) {
+          summary.ciBootstrapQueued++;
+          log((dryRun?'WOULD_QUEUE':'QUEUED')+
+            ' legacy Core CI worker for #'+live.number+' HEAD '+live.head.sha.slice(0,12));
+        }
+      }
+      continue;
+    }
     let latest=null;
     // Check at most the three newest candidate runs to stay under API budget.
     for(const candidate of coreRuns.slice(0,3)) {
@@ -499,6 +516,29 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
       catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
     }
+  }
+  // Dispatch the no-cost CI worker as soon as a new missing-Core queue item
+  // appears. A ten-minute scheduled worker remains the fallback. Never send
+  // duplicate dispatches when the worker is already running or very recent.
+  if(summary.ciBootstrapQueued && !budget.exhausted && !dryRun){
+    try {
+      const response=(await limited('ci-worker-recent',()=>github.request(
+        'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+          owner,repo,workflow_id:'hh-pr-ci-worker.yml',per_page:5
+        }))).data;
+      const previous=response.workflow_runs||[];
+      const busy=previous.some(r=>['queued','in_progress','waiting','requested'].includes(r.status));
+      const justRan=previous.some(r=>now-Date.parse(r.created_at)<3*MINUTE);
+      if(!busy&&!justRan&&!budget.exhausted){
+        await limited('dispatch-ci-worker',()=>github.request(
+          'POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
+            owner,repo,workflow_id:'hh-pr-ci-worker.yml',ref:DEFAULT,
+            inputs:{dry_run:'false'}
+          }));
+        summary.ciWorkerDispatched++;
+        log('DISPATCHED bounded CI worker for new legacy Core queue item');
+      } else log('CI worker active/recent or API reserve low; schedule will retry');
+    }catch(error){log('CI worker dispatch unavailable; schedule fallback: '+error.message);}
   }
   if (summary.greenUnarmed && hasMergeToken) {
     try {
