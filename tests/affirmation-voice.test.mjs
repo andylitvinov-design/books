@@ -96,3 +96,13 @@ test("six-voice affirmation editor is visible in the Phrases workspace rather th
   assert.doesNotMatch(browser,/advanced\.locator\(":scope > summary"\)\.click/,
     "do not test inaccessible old controls");
 });
+
+test("three women and three men use original voices, never autoplay on selection",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ const styles=read("components/mandala-affirmation-voice.module.css");
+ for(const marker of ['data-video-affirmation-voice-select','data-video-affirmation-gender={id}',
+  'data-video-affirmation-voice-card={v.id}','VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender)',
+  'setVoiceId(id==="female"?"maya":"mark")'])assert.ok(ui.includes(marker),marker);
+ assert.match(styles,/\.voiceCards\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(ui,/autoPlay/);
+});

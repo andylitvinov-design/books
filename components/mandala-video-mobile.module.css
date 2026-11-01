@@ -2539,3 +2539,7 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+/* Unified actual TTS selector below approved phrase rows, inside the numbered voice card. */
+.studio[data-active-workspace="phrases"] .phraseVoiceSection [data-video-affirmation-voice]{margin:5px 0;padding:13px;border:1px solid #e0e8df;border-radius:14px;background:#fffefa}
+.studio[data-active-workspace="phrases"] .phraseVoiceSection .phraseVoiceNotice{font-size:clamp(13px,3.7vw,15px);line-height:1.4}

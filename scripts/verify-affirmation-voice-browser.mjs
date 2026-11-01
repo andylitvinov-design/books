@@ -117,7 +117,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
-      assert.equal(await page.locator("[data-video-affirmation-voice-select] option").count(),6);
+      const chooser=page.locator("[data-video-affirmation-voice-select]");
+      assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
+      await chooser.locator('[data-video-affirmation-gender="male"]').click();
+      assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
+      await chooser.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
@@ -140,6 +145,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
+      assert.equal(await page.locator('[data-hypno-music] [data-phrase-music-attach]').first().isDisabled(),true,
+        "standalone music cannot silently replace mixed narration WAV");
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
@@ -239,6 +246,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
+      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
+        "unapproved phrase cannot invalidate existing sound");
+      await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       await page.locator('[data-video-quick-control="video"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);

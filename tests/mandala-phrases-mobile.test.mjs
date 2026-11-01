@@ -51,7 +51,7 @@ test("voice and music are consecutive, reuse canonical sound attach/play functio
   assert.equal((studio.match(/const deepAudioPane =/g)||[]).length,1);
   assert.match(studioCss,/\.phraseVoiceSection,\.phraseMusicSection/);
   assert.match(studioCss,/\.phraseMusicList\{display:grid;gap:9px/);
-  assert.match(studio,/AI voice presets are not yet export-ready/);
+  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
 });
 
 test("single approved phrases workspace with voice/music before the final Create action",()=>{
@@ -61,4 +61,18 @@ test("single approved phrases workspace with voice/music before the final Create
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
   assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}>[\s\S]*?data-hypno-voice[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
+});
+
+test("the six-voice chooser appears once below approved phrases and soundtrack cannot erase TTS",()=>{
+ const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),studio.indexOf('data-workspace-section="effects"'));
+ assert.match(section,/data-hypno-voice[\s\S]*data-hypno-music/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
+ assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
+ assert.match(studio,/activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\)/);
+ assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/);
+ assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
+ assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);
+ assert.match(phrases,/setCustomDraft\(custom\)/);
+ assert.match(phrases,/if\(readyDraft\|\|customDraft!==null\)/);
 });
