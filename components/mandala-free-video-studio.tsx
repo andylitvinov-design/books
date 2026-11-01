@@ -2792,18 +2792,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   const openQuickDetailed=(anchor:string)=>{
     const tab:StudioWorkspace=anchor==="video-audio"?"video":
-      anchor==="video-hypnosis"?"phrases":anchor==="video-hypnocorrection-mobile"?"effects":
+      anchor==="video-hypnosis"?"phrases":
+      anchor==="video-hypnocorrection-mobile"?"effects":
       anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
     setStudioMode(tab==="practices"?"therapy":"pump");
     setQuickDetailedOpen(true);
-    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+    const token=++quickNavTokenRef.current;
+    const path=window.location.pathname+window.location.search;
+    const desired="#"+anchor;
+    const current=()=>token===quickNavTokenRef.current &&
+      window.location.pathname+window.location.search===path;
+    const setLocation=(push:boolean)=>{
+      if(!current()||window.location.hash===desired)return;
+      if(push)window.history.pushState(window.history.state,"",path+desired);
+      else window.history.replaceState(window.history.state,"",path+desired);
+    };
+    setLocation(true);
+    setQuickNavTarget(anchor);
+    const jump=()=>{
+      if(!current())return;
+      setLocation(false);
       if(anchor==="video-audio")
         document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
       document.getElementById(anchor)?.scrollIntoView({
         behavior:"instant" as ScrollBehavior,block:"nearest",
       });
-    }));
+    };
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
   };
   const applyFirstVideoDraft=(
     draft:{plan:CinematicStoryboard;wish:string;theme:VideoTheme;aspect:Aspect;durationSeconds:20|30|60},
