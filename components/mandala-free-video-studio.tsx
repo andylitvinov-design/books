@@ -4652,6 +4652,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :locale==="es"?"Crear voz desde texto · 6 voces RU/EN"
           :"Generate voice from text · 6 RU/EN voices"}</summary>
         <MandalaCloudVoiceStudio locale={locale}
+          sourceText={currentAffirmationSpeech} sourceIsPublic
           onAudioReady={attachMeditationNarration}
           onAudioInvalidated={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.nonLoop?null:current)}/>
