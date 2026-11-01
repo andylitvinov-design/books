@@ -100,11 +100,14 @@ export function MandalaAutoVideoDirector({
  audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
- const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
- const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>(null);
+ // A licensed four-shot sample is visible before any click; no recording begins automatically.
+ const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(()=>
+   recommendAutoVideo({goal:goal.trim()||AUTO_VIDEO_GOALS.find(item=>item.id==="connection")?.labels[locale]||"",
+     goalId:goal.trim()?null:"connection",locale,fallbackTheme:theme,presets,scenes}));
+ const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>({goal,theme});
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
- const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const [selectedGoalId,setSelectedGoalId]=useState<string|null>(goal.trim()?null:"connection");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
@@ -234,6 +237,10 @@ export function MandalaAutoVideoDirector({
    </div>
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
+     {!goal.trim()?<p className={css.demoNote} data-auto-video-preview-example>
+       {locale==="ru"?"Пример сценария · выберите тему или напишите цель":locale==="es"
+         ?"Historia de ejemplo · elige o escribe tu objetivo":"Sample storyboard · choose or write your goal"}
+     </p>:null}
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
        {selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}

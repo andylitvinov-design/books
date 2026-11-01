@@ -141,32 +141,33 @@ const translations = {
 const workspaceCopy = {
  ru:{
   video:{tab:"Видео",title:"Видео и аудио",desc:"Сюжеты, музыка и быстрые параметры видео."},
-  phrases:{tab:"Фразы",title:"Персональные фразы · Психокоррекция",desc:"Опишите ситуацию, выберите и утвердите подходящие слова поддержки."},
-  effects:{tab:"Эффекты",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты; экспериментальные опции отмечены."},
-  practices:{tab:"Практики",title:"Курсы и медитации",desc:"Личная медитация и программа восьми образных практик."},
-  pro:{tab:"PRO",title:"Герои и кинорежиссура",desc:"Персонажи, личные сюжеты и расширенные параметры."},
-  editor:{tab:"Монтаж",title:"Редактор и монтаж",desc:"Порядок и длительность сцен, текст и доступные настройки звука."}
+  phrases:{tab:"Коррекция",title:"Персональные фразы · Психокоррекция",desc:"Опишите ситуацию, выберите и утвердите подходящие слова поддержки."},
+  effects:{tab:"Терапия",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты; экспериментальные опции отмечены."},
+  practices:{tab:"Курсы",title:"Курсы и медитации",desc:"Личная медитация и программа восьми образных практик."},
+  pro:{tab:"Герои",title:"Герои и кинорежиссура",desc:"Персонажи, личные сюжеты и расширенные параметры."},
+  editor:{tab:"Музыка",title:"Музыка, голос и монтаж",desc:"Настройте музыкальные дорожки, голос и переходы между сценами."}
  },
  en:{
   video:{tab:"Video",title:"Video & audio",desc:"Film stories, music and quick video settings."},
-  phrases:{tab:"Phrases",title:"Personal phrases",desc:"Explore your goal; review and approve supportive wording."},
-  effects:{tab:"Effects",title:"Optional audiovisual effects",desc:"Gentle visuals and sound, with experimental features labelled."},
-  practices:{tab:"Practice",title:"Courses & meditations",desc:"A personal meditation and eight-session practice plan."},
-  pro:{tab:"PRO",title:"Characters & cinematic direction",desc:"Characters, personal scenes and advanced settings."},
-  editor:{tab:"Edit",title:"Final montage",desc:"Clip order and timing, captions and available audio settings."}
+  phrases:{tab:"Correction",title:"Personal phrases",desc:"Explore your goal; review and approve supportive wording."},
+  effects:{tab:"Therapy",title:"Optional audiovisual effects",desc:"Gentle visuals and sound, with experimental features labelled."},
+  practices:{tab:"Courses",title:"Courses & meditations",desc:"A personal meditation and eight-session practice plan."},
+  pro:{tab:"Heroes",title:"Characters & cinematic direction",desc:"Characters, personal scenes and advanced settings."},
+  editor:{tab:"Music",title:"Music, voice & montage",desc:"Adjust soundtracks, narration and film transitions."}
  },
  es:{
   video:{tab:"Vídeo",title:"Vídeo y audio",desc:"Escenas, música y ajustes básicos."},
-  phrases:{tab:"Frases",title:"Frases personales",desc:"Explora tu objetivo y aprueba frases de apoyo."},
-  effects:{tab:"Efectos",title:"Efectos audiovisuales opcionales",desc:"Imagen y sonido suaves con opciones experimentales identificadas."},
-  practices:{tab:"Prácticas",title:"Cursos y meditaciones",desc:"Una meditación y un plan personal de ocho prácticas."},
-  pro:{tab:"PRO",title:"Personajes y cine",desc:"Personajes, historias y ajustes avanzados."},
-  editor:{tab:"Montaje",title:"Edición final",desc:"Orden y tiempo de escenas, texto y audio disponible."}
+  phrases:{tab:"Corrección",title:"Frases personales",desc:"Explora tu objetivo y aprueba frases de apoyo."},
+  effects:{tab:"Terapia",title:"Efectos audiovisuales opcionales",desc:"Imagen y sonido suaves con opciones experimentales identificadas."},
+  practices:{tab:"Cursos",title:"Cursos y meditaciones",desc:"Una meditación y un plan personal de ocho prácticas."},
+  pro:{tab:"Héroes",title:"Personajes y cine",desc:"Personajes, historias y ajustes avanzados."},
+  editor:{tab:"Música",title:"Música, voz y montaje",desc:"Ajusta pistas de audio, voz y transiciones."}
  }
 } as const;
+// Restore the approved six-tile visual order without changing workspace IDs or deep links.
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"phrases",Icon:HeartPulse},{id:"effects",Icon:Sparkles},
- {id:"practices",Icon:Leaf},{id:"pro",Icon:UserRound},{id:"editor",Icon:SlidersHorizontal}
+ {id:"video",Icon:Film},{id:"editor",Icon:Music2},{id:"pro",Icon:Heart},
+ {id:"effects",Icon:HandHeart},{id:"phrases",Icon:SlidersHorizontal},{id:"practices",Icon:Leaf}
 ] as const;
 
 const studioCopy = {
@@ -4017,9 +4018,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <h3 id="video-result-empty-title">{locale==="ru"?"Готовое видео":
             locale==="es"?"Vídeo listo":"Finished video"}</h3>
         </div>
-        <p>{locale==="ru"?"Выберите сценарий и нажмите «Создать выбранное видео». Здесь появятся настоящий файл, просмотр и сохранение.":
-          locale==="es"?"Elige una historia y crea el vídeo. Aquí aparecerán el archivo, su vista previa y la opción de guardarlo.":
-          "Choose a story and create the video. Your playable file, preview and save option will appear here."}</p>
+        <div className={videoStyles.resultEmptyPreview} data-video-result-example>
+          {/* First-party licensed poster; explicitly not an exported personal video. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
+          <span>{locale==="ru"?"ПРИМЕР · видео ещё не создано":locale==="es"?"EJEMPLO · vídeo pendiente":"EXAMPLE · video pending"}</span>
+        </div>
+        <p>{locale==="ru"?"Подтвердите сценарий и создайте ролик. После проверки файла здесь появятся просмотр и сохранение.":
+          locale==="es"?"Confirma una historia y crea el vídeo. Aparecerán reproducir y guardar tras verificar el archivo.":
+          "Confirm a storyboard and create your film. Play and Save appear after file verification."}</p>
       </section>:null}
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="practices" id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
@@ -4319,6 +4326,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <h3><SlidersHorizontal size={20} aria-hidden="true"/>
               {locale==="ru"?"Редактор готового видеопроекта":locale==="es"?"Editor del vídeo":"Your film editor"}</h3>
           </div>
+          {activeWorkspace==="editor" ? <div className={videoStyles.musicEditorPane} data-video-music-editor>
+            {deepAudioPane}
+          </div> : null}
           {activeWorkspace==="editor" ? deepVideoPane : null}
           <div className={videoStyles.editorTimeline} data-video-editor-timeline>
             <strong>{locale==="ru"?"Порядок и длительность сцен":locale==="es"?

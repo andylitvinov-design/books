@@ -2481,3 +2481,28 @@
 @media (max-width:430px){
  .studio .quickVideoNav button{hyphens:none;overflow-wrap:normal}
 }
+
+
+/* Owner-approved iPhone first slide: compact header/nav, music and real-media result. */
+.musicEditorPane{min-width:0;display:grid;gap:8px;margin:0 0 12px}
+.resultEmptyPreview{display:grid;grid-template-columns:112px minmax(0,1fr);gap:9px;align-items:center;min-width:0}
+.resultEmptyPreview img{grid-column:1;width:112px;height:67px;object-fit:cover;border-radius:9px}
+.resultEmptyPreview span{grid-column:2;color:#697e70;font:750 10px/1.25 Arial,sans-serif;letter-spacing:.025em}
+@media(max-width:759px){
+ .studio .quickBuilder>.quickBrandBar{min-height:51px;padding:2px 5px}
+ .studio .quickBrandIdentity strong{font-size:20px}
+ .studio .quickVideoNav{margin:4px 0 0;gap:4px}
+ .studio .quickVideoNav button{min-height:53px;border-radius:10px;gap:3px;padding:5px 2px;font-size:clamp(9px,2.45vw,11px);line-height:1.12}
+ .studio .quickVideoNav button svg{width:17px;height:17px}
+ .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 10px 11px!important;gap:5px}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{padding:9px 8px;gap:4px}
+ .studio .quickMusicRail{grid-auto-columns:minmax(174px,47%);gap:6px;padding:1px 1px 3px}
+ .studio .quickMusicRail .quickMusicItem{grid-template-columns:51px 43px minmax(0,1fr);grid-template-rows:56px;min-height:64px;padding:3px;gap:3px}
+ .studio .quickMusicRail .quickMusicPoster{width:51px;height:56px}
+ .studio .quickMusicRail .quickMusicPlay{min-width:42px;min-height:42px;width:42px;height:42px}
+ .studio .resultEmpty{padding:10px;gap:7px}
+}
+@media(max-width:355px){
+ .studio .quickVideoNav button{font-size:8px;letter-spacing:-.02em;overflow-wrap:anywhere}
+ .studio .quickMusicRail{grid-auto-columns:174px}
+}

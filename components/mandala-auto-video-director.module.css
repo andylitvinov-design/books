@@ -229,3 +229,21 @@
 .montageReplace select:disabled{color:#8a998d;background:#f4f6f4}
 .montageReplace select:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
 @media(max-width:730px){.montageRow{grid-template-columns:minmax(0,1fr)}}
+
+/* Real four-scene sample remains visibly distinct from a completed render. */
+.demoNote{margin:0 0 6px;color:#678074;font:700 11px/1.25 Arial,sans-serif}
+@media(max-width:570px){
+ .root{padding:10px 9px;box-shadow:0 3px 12px #2b503017}
+ .head{display:flex;align-items:center;gap:7px}
+ .head h3{font-size:15px}
+ .head p{font-size:10px;line-height:1.3}
+ .result{margin-top:7px;padding-top:7px}
+ .storyChoices{gap:5px;margin:5px 0 8px}
+ .storyChoices button{min-height:116px}
+ .storyPoster{aspect-ratio:1.3}
+ .shots{gap:6px;margin:4px 0 7px}
+ .shots li:not(:last-child)::after{right:-8px}
+ .goalPanel .goalChoices{gap:6px}
+ .goalPanel .goalChoices button{min-height:44px;font-size:clamp(11px,3vw,13px)}
+ .goalPanel .goalActions button{min-height:44px}
+}

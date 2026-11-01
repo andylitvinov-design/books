@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","effects","practices","pro","editor"]);
+ assert.deepEqual(ids,["video","editor","pro","effects","phrases","practices"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -133,4 +133,13 @@ test("free personal video starts before the separate diagnostic marketing CTA",(
  const studioPos=page.indexOf("<MandalaMeditationClient");
  const promoPos=page.indexOf("styles.slimDiagnostic");
  assert.ok(studioPos>=0&&promoPos>studioPos);
+});
+
+test("mock's six first-row labels lead to original workspaces and the music editor",()=>{
+ for(const label of ['tab:"Видео"','tab:"Музыка"','tab:"Герои"','tab:"Терапия"','tab:"Коррекция"','tab:"Курсы"'])
+   assert.ok(studio.includes(label),"missing approved mobile label "+label);
+ assert.match(studio,/data-video-music-editor/);
+ assert.match(studio,/\{deepAudioPane\}/);
+ assert.match(css,/\.resultEmptyPreview\{/);
+ assert.match(studio,/data-video-result-example/);
 });

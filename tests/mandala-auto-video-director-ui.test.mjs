@@ -142,3 +142,14 @@ test("the selected real soundtrack is synchronized with the original central Can
  assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;\s*if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume\);\s*setPreviewPlaying\(true\)/,
    "Play never starts audio during export");
 });
+
+// Regression from #2900: four real preview cards must appear before the first click.
+test("approved home displays a source-backed example before rendering",()=>{
+ assert.match(director,/recommendAutoVideo\(\{goal:goal\.trim\(\)\|\|AUTO_VIDEO_GOALS/);
+ assert.match(director,/goalId:goal\.trim\(\)\?null:"connection"/);
+ assert.match(director,/data-auto-video-preview-example/);
+ assert.match(director,/data-auto-video-story-options/);
+ assert.match(director,/data-auto-video-storyboard/);
+ assert.match(director,/data-auto-video-confirm/);
+ assert.match(director,/data-auto-video-create/);
+});
