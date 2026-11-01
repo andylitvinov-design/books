@@ -1633,6 +1633,36 @@ const runEngine = async ([engine, browserType]) => {
           assert.match(await director.locator('[data-director-storyboard] h4').innerText(),/30 сек/);
         }
 
+        if(locale==="ru"&&width===390){
+          const oldTheme=await page.locator('[data-video-quick-theme][aria-pressed="true"]').first()
+            .getAttribute("data-video-quick-theme");
+          await page.locator('[data-video-quick-control="characters"]').click();
+          const characters=page.locator('[data-video-stories-characters]');
+          await characters.waitFor({state:"visible",timeout:12000});
+          assert.equal(await characters.locator('[data-story-addon-tab]').count(),5,
+            "one approved five-category catalog opens in existing Characters workspace");
+          const concept=characters.locator('[data-story-addon-id="C02"]');
+          await concept.click();
+          assert.equal(await characters.locator('[data-video-story-addons-apply]').isDisabled(),true,
+            "planned AI characters cannot be charged or applied");
+          await concept.click();
+          for(const id of ["C01","S01","L02"])
+            await characters.locator('[data-story-addon-id="'+id+'"]').click();
+          await characters.locator('[data-story-addon-tab="symbol"]').click();
+          await characters.locator('[data-story-addon-id="O01"]').click();
+          assert.equal(await characters.locator('[data-video-story-addons-apply]').isEnabled(),true,
+            "available original symbols and licensed MP4s apply for zero XP");
+          await characters.locator('[data-video-story-addons-apply]').click();
+          await page.waitForFunction(()=>
+            document.querySelector('[data-video-quick-theme="life"]')?.getAttribute("aria-pressed")==="true",
+            undefined,{timeout:12000});
+          assert.match(await characters.innerText(),/0 XP/);
+          await characters.locator('[data-story-addons-selected] button').click();
+          await characters.locator('[data-video-story-addons-apply]').click();
+          await page.locator('[data-video-quick-control="video"]').click();
+          if(oldTheme)await page.locator('[data-video-quick-theme="'+oldTheme+'"]').click();
+        }
+
         const focus = page.locator("button[aria-pressed][class*='focusButton']");
         await focus.click();
         try {
