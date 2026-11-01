@@ -239,16 +239,6 @@ jobs:
           HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
         run: |
           node --conditions=react-server tests/helpers/app-db-setup.mjs
-          node --conditions=react-server --input-type=module <<'JS'
-          import { readFile } from 'node:fs/promises';
-          import { adminClient } from './tests/helpers/app-db-setup.mjs';
-          const db = await adminClient();
-          try {
-            for (const file of ['20261017170000_hh_service_reviews.sql', '20261028143352_hh_catalog_star_ratings_20261028.sql']) {
-              await db.query(await readFile('supabase/migrations/' + file, 'utf8'));
-            }
-          } finally { await db.end(); }
-          JS
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |

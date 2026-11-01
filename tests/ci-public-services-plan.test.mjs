@@ -599,3 +599,13 @@ test('browser CI verifies signed-out 401 responses and rejects unmocked API writ
   assert.ok(!source.includes('responseEvidence.push(response.json()'),
     'Body reads after browser resource closure are not reliable evidence');
 });
+
+test('public browser fixture applies each real review migration once',()=>{
+  const yaml=workflow('hh-public-services-production.yml');
+  const setup=readFileSync(new URL('./helpers/app-db-setup.mjs',import.meta.url),'utf8');
+  assert.match(yaml,/node --conditions=react-server tests\/helpers\/app-db-setup\.mjs/);
+  for(const file of ['20261017170000_hh_service_reviews.sql','20261028143352_hh_catalog_star_ratings_20261028.sql']) {
+    assert.equal(setup.split(file).length-1,1,'fixture must apply '+file+' once');
+    assert.ok(!yaml.includes(file),'workflow must not reapply '+file);
+  }
+});
