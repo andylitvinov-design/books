@@ -77,3 +77,14 @@ test("Auto Director is after the actual music section and has four tappable alte
   assert.match(director,/aria-pressed=\{chosen\.id===item\.id\}/);
   assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
 });
+
+test("Six visible Video Studio tabs stay in one compact row and goal CTAs reuse lower director",()=>{
+  const css=read("components/mandala-video-mobile.module.css");
+  assert.ok(studio.includes("compactWorkspaceTabs[locale][item.id]"));
+  assert.ok(css.includes(".studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr))"));
+  assert.ok(!css.includes(".studio .quickVideoNav{grid-template-columns:repeat(3"));
+  assert.ok(studio.includes("data-video-quick-propose"));
+  assert.ok(studio.includes("data-video-quick-goal-edit"));
+  assert.ok(studio.includes('querySelector<HTMLButtonElement>("[data-auto-video-suggest]")'));
+  assert.ok(studio.includes('querySelector<HTMLInputElement>("[data-first-video-wish]")'));
+});
