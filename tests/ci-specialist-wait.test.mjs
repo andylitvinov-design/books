@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -101,4 +101,33 @@ test('sensitive PR stays pinned when base advances during specialist execution',
   };
   await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/);
   assert.equal(reads,2);
+});
+
+test('CI distinguishes current HEAD, production advance, merge conflict and draft PR states', () => {
+  assert.equal(classifyPrState(pr,ctx,true),null);
+  assert.equal(classifyPrState({...pr,draft:true},ctx,true),'PR_DRAFT');
+  assert.equal(classifyPrState({...pr,head:{...pr.head,sha:'c'.repeat(40)}},ctx,true),'PR_HEAD_CHANGED');
+  assert.equal(classifyPrState({...pr,base:{...pr.base,sha:'d'.repeat(40)}},ctx,true),'PRODUCTION_BASE_CHANGED');
+  assert.equal(classifyPrState({...pr,base:{...pr.base,sha:'d'.repeat(40)}},ctx,false),null);
+  assert.equal(classifyPrState({...pr,mergeable_state:'dirty'},ctx,true),'MERGE_CONFLICT');
+  assert.equal(classifyPrState({...pr,base:{...pr.base,ref:'codex/bootstrap-books'}},ctx,true),'WRONG_PRODUCTION_TARGET');
+});
+
+test('CI groups observable dispatch/check symptoms but never treats matching symptoms as proven fixes', () => {
+  const missing=diagnoseAggregateError(new Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:'+
+    JSON.stringify({missing:['.github/workflows/hh-public-services-production.yml'],pending:[]})));
+  assert.equal(missing.category,'WORKFLOW_NOT_TRIGGERED');
+  assert.deepEqual(missing.symptomKeys,['missing/.github/workflows/hh-public-services-production.yml']);
+  const queued=diagnoseAggregateError(new Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:'+
+    JSON.stringify({queued:['.github/workflows/ia-v2.yml:queued']})));
+  assert.equal(queued.category,'RUNNER_QUEUE');
+  assert.deepEqual(queued.symptomKeys,['queued/.github/workflows/ia-v2.yml']);
+  const failed=diagnoseAggregateError(new Error('SPECIALIST_FAILED:'+
+    JSON.stringify({failed:['.github/workflows/ia-v2.yml:failure']})));
+  assert.equal(failed.category,'SPECIALIST_FAILED');
+  assert.deepEqual(failed.symptomKeys,['failed/.github/workflows/ia-v2.yml']);
+  assert.equal(diagnoseAggregateError(new Error('ZERO_JOB_WORKFLOW:.github/workflows/ia-v2.yml')).category,'WORKFLOW_JOBLESS');
+  assert.equal(diagnoseAggregateError(new Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED')).category,'BASE_ADVANCED');
+  assert.equal(diagnoseAggregateError(new Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED')).category,'HEAD_ADVANCED');
+  assert.equal(diagnoseAggregateError(new Error('UNVERIFIED_MERGE_CHECKOUT')).category,'CHECKOUT_UNVERIFIED');
 });
