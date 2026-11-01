@@ -470,7 +470,28 @@ export async function startUploadedAudio(
 
 
 export const ORIGINAL_MELODY_IDS = [
-  "warm-morning","wings-of-light","heart-harmony","quiet-stars","bright-path",
+  "warm-morning",
+  "wings-of-light",
+  "heart-harmony",
+  "quiet-stars",
+  "bright-path",
+  "harmony",
+  "prosperity",
+  "energy",
+  "love",
+  "meditation",
+  "focus",
+  "grounding",
+  "sunrise",
+  "soft-piano",
+  "kalimba",
+  "harp",
+  "flute",
+  "celesta",
+  "strings",
+  "marimba",
+  "lullaby",
+  "handpan",
 ] as const;
 export function isMelodyPreset(preset: AmbientMusic): boolean {
   return ORIGINAL_MELODY_IDS.some(id => id===preset);
