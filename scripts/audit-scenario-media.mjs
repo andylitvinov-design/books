@@ -10,6 +10,7 @@ import {createHash} from "node:crypto";
 import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {auditScenarioMedia,planDedicatedScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
+import {createScenarioAcquisitionQueue} from "../lib/mandala/scenario-media-acquisition.mjs";
 import {SONGS,SAMPLE_RATE,DURATION_SECONDS} from "./generate-mandala-melodies.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const load=name=>JSON.parse(readFileSync(resolve(root,name),"utf8"));
@@ -51,6 +52,7 @@ const audioAbsent=SONGS.map(song=>song.id).filter(id=>{
 audit.audioMastersExpected=SONGS.length;
 audit.audioMastersMissing=audioAbsent;
 const plan=planDedicatedScenarioMedia(presetData.presets,sceneData.scenes);
+const queue=args.has("--queue")?createScenarioAcquisitionQueue(presetData.presets,sceneData.scenes):null;
 if(args.has("--apply")){
   if(audit.errors.length||!plan.ready||audioAbsent.length)
     throw Error("media_not_ready_for_dedicated_rebalance");
@@ -58,7 +60,7 @@ if(args.has("--apply")){
   writeFileSync(resolve(root,presetsPath),JSON.stringify(next,null,2)+"\n");
   audit.dedicatedRebalanceApplied=true;
 }
-if(args.has("--json"))console.log(JSON.stringify({...audit,...(args.has("--plan")?{plan}:{})},null,2));
+if(args.has("--json")||args.has("--queue"))console.log(JSON.stringify(args.has("--queue")?queue:{...audit,...(args.has("--plan")?{plan}:{})},null,2));
 else {
   console.log("Video Studio | "+audit.scenarios+" scenarios | "+audit.approvedScenes+
     " MP4 masters | "+audit.requiredSlots+" shot slots");
