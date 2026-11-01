@@ -984,5 +984,8 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   prs[39].title='feat(voice): narrated therapeutic session';
   const choice=selectCandidates(prs,NOW);
   assert.equal(choice[0].number,40,'free P2 must beat held P1');
-  assert.ok(choice.some(p=>p.number===10),'held P1 remains in fair audit rotation eventually');
+  let audited=false;
+  for(let tick=0;tick<15;tick++)
+    if(selectCandidates(prs,NOW+tick*600000).some(p=>p.number===10))audited=true;
+  assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
