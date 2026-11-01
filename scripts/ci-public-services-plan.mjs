@@ -131,6 +131,40 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   'tests/meditation-course-enquiry.test.mjs',
   'tests/meditation-regeneration.test.mjs',
 ]);
+// Fail-closed reviewed guest reply delta (#2856): contacts must remain private
+// in the separate operator CRM. This exact known change needs real EN/RU/ES
+// consultation/consent browser QA and all auth/CRM/IA/Core privacy checks,
+// but not 11 unrelated store, business, reiki or talisman journeys.
+const REVIEWED_GUEST_REPLY_PATHS=new Set([
+  '.github/workflows/hh-messages-wellness-v2.yml',
+  '.github/workflows/ia-v2.yml',
+  'components/app/messages-contact-card.jsx',
+  'components/app/messages-simple-inbox.jsx',
+  'components/app/public-enquiry-contact.jsx',
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'lib/practitioners/public-service-enquiry.js',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+]);
+const REVIEWED_GUEST_REPLY_ADDITIONS=new Set([
+  'components/app/public-enquiry-reply.jsx',
+  'components/app/public-enquiry-reply.module.css',
+  'lib/practitioners/public-enquiry-reply-links.mjs',
+  'tests/public-enquiry-reply-handoff.test.mjs',
+]);
+const REVIEWED_GUEST_CI_POLICY=new Set([
+  'scripts/ci-public-services-plan.mjs',
+  'tests/ci-public-services-plan.test.mjs',
+]);
+function exactReviewedGuestReply(files) {
+  const changed=files.filter(file=>!REVIEWED_GUEST_CI_POLICY.has(file));
+  return changed.length===REVIEWED_GUEST_REPLY_PATHS.size &&
+    changed.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)) &&
+    files.every(file=>REVIEWED_GUEST_REPLY_PATHS.has(file)||
+      REVIEWED_GUEST_CI_POLICY.has(file));
+}
+
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
 // The Ideas/Coaching source owner checks these exact files. Public Services
 // must still run its real Ideas browser when the shared mobile QA harness
@@ -178,6 +212,14 @@ export function planPublicServicesChangedPaths(files) {
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
+  }
+  if(exactReviewedGuestReply(files)) {
+    // Keep actual Chromium/WebKit service consent, EN/RU/ES and a real
+    // production build mandatory. Unknown, payment, auth, mixed changes still
+    // run the complete 13-journey browser matrix.
+    return {mode:'focused',reason:'EXACT_PRIVATE_GUEST_REPLY',
+      build:true,browser:true,metrics:false,
+      cases:'verify-public-services-production.mjs,verify-home-consultation-first-screen.mjs'};
   }
   const selected = new Set();
   let performance = false;
@@ -268,7 +310,7 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (status !== 'M' && !(status === 'A' &&
         (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+         MANDALA_REVIEWED_ADDITIONS.has(file) || REVIEWED_GUEST_REPLY_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
