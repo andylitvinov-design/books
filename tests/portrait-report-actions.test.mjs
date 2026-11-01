@@ -8,7 +8,9 @@ import { profileCompletionRecommendations } from '../lib/profile/summary.js'
 
 const source = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-function completedState(id = 'test-result', date = '2026-10-16T14:00:00.000Z') {
+const recentTime = daysAgo => new Date(Date.now() - daysAgo * 86400000).toISOString()
+
+function completedState(id = 'test-result', date = recentTime(2)) {
   const definition = getAssessmentDefinition('hh-current-state', 'v2', 'en')
   const answers = Object.fromEntries(definition.questions.map(q => [q.id, 5]))
   return { id, measurementAt: date, ...scoreAssessment(definition, answers) }
@@ -35,10 +37,19 @@ test('portrait suggestions only use verified saved measurements, never missing o
   assert.deepEqual(measured.growth, [])
 })
 
+test('source-verified but older-than-14-day scores never appear as fresh portrait rays', () => {
+  const stale = buildPortraitRecommendations([completedState('stale-but-valid', recentTime(15))], 'en')
+  assert.equal(stale.measuredCount, 0)
+  assert.deepEqual(stale.measurements, [])
+  assert.deepEqual(stale.strengths, [])
+  assert.deepEqual(stale.growth, [])
+  assert.equal(stale.rejectedCount, 0, 'expired valid results are stale, not forged')
+})
+
 test('unverified later results cannot be used as current portrait strengths or weaknesses', () => {
-  const old = completedState('old', '2026-10-14T14:00:00.000Z')
+  const old = completedState('old', recentTime(3))
   const tampered = {
-    ...completedState('invalid-latest', '2026-10-17T14:00:00.000Z'),
+    ...completedState('invalid-latest', recentTime(1)),
     contentHash: 'invalid-identity',
   }
   const model = buildPortraitRecommendations([old, tampered], 'en')
@@ -58,30 +69,59 @@ test('already completed questionnaire is not recommended to fill a different pro
   }
 })
 
-test('Reports portrait places all three actions after photo and before ray chooser; targets are reachable', () => {
-  const workspace = source('components/app/app-workspace.jsx')
-  const visual = source('components/app/test-explorer-visual.jsx')
-  const reports = workspace.slice(workspace.indexOf('function PortfolioPage('), workspace.indexOf('function ProfileOverview('))
-  assert.match(visual, /portraitActions = null/)
-  assert.match(visual, /\{portrait && !compact && portraitActions\}/)
-  assert.ok(visual.indexOf('{portrait && !compact && portraitActions}') < visual.indexOf('className={styles.portraitControls}'))
-  assert.match(reports, /data-testid="portrait-completion-action"/)
-  assert.match(reports, /data-testid="portrait-analyses-action"/)
-  assert.match(reports, /setAnalysisScrollRequest/)
-  assert.match(reports, /getElementById\('hh-portrait-analyses'\)/)
-  assert.match(reports, /<PortraitAnalyses results=\{data.results \|\| \[\]\} locale=\{locale\} \/>/)
-  assert.ok(reports.indexOf('<PortraitAnalyses ') < reports.indexOf('<DevelopmentProgram '), 'Analyses stays immediately after the portrait, not buried below reports')
-  assert.doesNotMatch(reports, /getElementById\('hh-insights-title'\)/)
-  assert.match(reports, /data-testid="portrait-recommendations-action"/)
-  assert.match(reports, /profile=missing/)
-  assert.match(reports, /setRecommendationScrollRequest/)
-  assert.match(reports, /scrollIntoView/)
-  assert.match(reports, /<PortraitRecommendations results=\{data.results \|\| \[\]\} locale=\{locale\} \/>/)
-  const guidance = source('components/app/portrait-recommendations.jsx')
-  assert.match(guidance, /id="hh-portrait-recommendations"/)
-  assert.match(guidance, /What your questionnaires report/)
-  assert.match(guidance, /Choose your own focus/)
-  assert.match(guidance, /app\/results\//)
+test('Reports gives axes and source-backed tests their own mini tabs, with Goals linked to the saved programme', () => {
+  const workspace=source('components/app/app-workspace.jsx')
+  const visual=source('components/app/test-explorer-visual.jsx')
+  const actions=source('components/app/portrait-test-quick-actions.jsx')
+  const helper=source('lib/profile/portrait-test-suggestions.js')
+  const css=source('components/app/portrait-test-quick-actions.module.css')
+  const inline=source('app/[locale]/app/[[...path]]/insights-compact.css')
+  const programme=source('components/app/development-program.jsx')
+  const reports=workspace.slice(workspace.indexOf('function PortfolioPage('),workspace.indexOf('function ProfileOverview('))
+  assert.match(reports,/const \[portraitTab, setPortraitTab\] = useState\('goals'\)/)
+  assert.match(reports,/portraitTests=\{\(\{ selectedSector, selectedAxes \}\) =>/)
+  assert.match(reports,/<PortraitTestList locale=\{locale\} sector=\{selectedSector\}/)
+  assert.match(reports,/selectedAxes=\{selectedAxes\} entriesByKey=\{entriesByKey\}/)
+  assert.match(reports,/<PortraitTestQuickActions locale=\{locale\}/)
+  assert.match(reports,/activeTab=\{portraitTab\} onTabChange=\{setPortraitTab\}/)
+  assert.match(reports,/id="hh-portrait-panel-analyses" role="tabpanel"/)
+  assert.match(reports,/id="hh-portrait-panel-recommendations" role="tabpanel"/)
+  assert.match(reports,/hidden=\{portraitTab !== 'analyses'\}/)
+  assert.match(reports,/hidden=\{portraitTab !== 'recommendations'\}/)
+  assert.equal((reports.match(/<PortraitAnalyses /g)||[]).length,1)
+  assert.equal((reports.match(/<PortraitRecommendations /g)||[]).length,1)
+  assert.match(visual,/data-testid="portrait-view-switch"/)
+  assert.match(visual,/portraitView === 'axes' && selectedSector !== 'goal' && <section/)
+  assert.match(visual,/portraitView === 'tests' && selectedSector !== 'goal' && <section/)
+  assert.match(visual,/data-testid="portrait-chart-options"/)
+  assert.match(visual,/data-chart-mode=\{key\}/)
+  assert.match(visual,/portraitTests\(\{ selectedSector, selectedAxes: chosenForProfile, portrait \}\)/)
+  assert.match(visual,/portraitSectorReadouts\(portrait, checkedRays\)/)
+  assert.match(visual,/data-portrait-raw-score=\{ray\.axis\}/)
+  assert.match(actions,/role="group"/)
+  assert.match(actions,/data-testid="portrait-goals-action"/)
+  assert.doesNotMatch(actions,/data-testid="portrait-completion-action"/)
+  assert.match(actions,/href="#hh-development-program"/)
+  assert.match(actions,/data-testid="portrait-analyses-action"/)
+  assert.match(actions,/data-testid="portrait-recommendations-action"/)
+  assert.match(actions,/data-testid="portrait-profile-test-catalogue"/)
+  assert.match(actions,/data-portrait-test-kind=\{value\}/)
+  assert.match(actions,/aria-pressed=\{kind === value\}/)
+  assert.match(actions,/data-completed=\{item\.completed\}/)
+  assert.match(actions,/listPortraitProfileTests\(/)
+  assert.match(helper,/entry\.rightsStatus === 'cleared'/)
+  assert.match(actions,/data-testid=\{'portrait-take-test-' \+ item\.key\}/)
+  assert.match(actions,/const draft = runs\.find/)
+  assert.match(actions,/await appFetch\('runs'/)
+  assert.match(actions,/router\.push\('\/' \+ locale \+ '\/app\/runs\/'/)
+  assert.match(programme,/appFetch\('development-goals'/)
+  assert.match(programme,/hh:open-development-goals/)
+  assert.match(css,/\.kindTabs/)
+  assert.match(css,/\.completed/)
+  assert.match(css,/prefers-reduced-motion:reduce/)
+  assert.match(inline,/\.hh-portrait-inline-panel\[hidden\]\{display:none!important\}/)
+  assert.match(inline,/\.hh-portrait-quick-actions\[role="group"\]/)
+  assert.match(source('components/app/portrait-recommendations.jsx'),/id="hh-portrait-recommendations"/)
 })
 
 test('profile completion route is an in-account prioritized list, not a public generic explorer', () => {

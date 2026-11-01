@@ -2,6 +2,7 @@ name: Holistic House CRM source checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: [codex/public-book-library]
     paths:
       - 'lib/crm/**'
@@ -20,6 +21,7 @@ on:
       - 'app/[locale]/contact/**'
       - 'tests/public-contact-page.test.mjs'
       - 'components/app/crm-business-enquiries.*'
+      - 'components/app/crm-opportunities.*'
       - 'supabase/migrations/*business_consulting*'
       - 'tests/business-website-enquiry.test.mjs'
       - 'app/api/app/crm/**'
@@ -39,16 +41,32 @@ on:
       - 'app/[locale]/email-preferences/**'
       - 'supabase/migrations/*crm_email*'
       - 'tests/crm-*.test.mjs'
+      - 'components/app/crm-lead-triage.*'
+      - 'app/api/app/crm/leads/**'
       - 'tests/compact-google-lead-entry.test.mjs'
       - 'lib/app/enquiry-auth-redirect.js'
       - 'tests/practitioner-client-crm.test.mjs'
+      - 'tests/practitioner-private-relay.test.mjs'
+      - 'lib/practitioners/relay-privacy.mjs'
       - 'tests/practitioner-crm-tasks.test.mjs'
       - 'tests/practitioner-client-work-queue.test.mjs'
       - 'tests/practitioner-conversation-state.test.mjs'
       - 'tests/practitioner-message-send.integration.mjs'
+      - 'tests/practitioner-message-chain.test.mjs'
+      - 'lib/practitioners/conversation-policy.js'
+      - 'supabase/migrations/*close_terminal_practitioner_chats*'
       - 'lib/practitioners/request-tasks.js'
       - 'lib/practitioners/conversation-state.js'
       - 'lib/practitioners/repository.js'
+      - 'lib/practitioners/express-report-*.js'
+      - 'lib/app/express-report-*.js'
+      - 'lib/app/express-report-*.mjs'
+      - 'app/api/free-express/claim/**'
+      - 'components/free-express-google-claim.module.css'
+      - 'components/app/practice-express-reports.*'
+      - 'tests/express-report-delivery.test.mjs'
+      - 'tests/practitioner-express-reports.test.mjs'
+      - 'supabase/migrations/*express_report_claimed_enquiry*'
       - 'lib/practitioners/task-policy.js'
       - 'app/api/app/practitioner-request-tasks/**'
       - 'components/app/practitioner-request-tasks.*'
@@ -59,27 +77,51 @@ on:
       - 'lib/app/notification-contract.js'
       - 'lib/practitioners/client-*.js'
       - 'app/api/app/practitioner-client-messages/**'
+      - 'lib/practitioners/direct-*.js'
+      - 'lib/practitioners/direct-*.mjs'
+      - 'components/app/direct-message-inbox.*'
+      - 'app/[locale]/app/messages/**'
+      - 'components/app/messages-simple-inbox.jsx'
+      - 'components/app/messages-bottom-navigation.jsx'
+      - 'tests/messages-approved-entry.test.mjs'
+      - 'tests/messages-orders-clients.test.mjs'
+      - 'tests/messages-simple-inbox.test.mjs'
+      - 'tests/messages-inbox-*.test.mjs'
+      - 'app/api/app/direct-messages/**'
+      - 'app/api/masters/**/shared-audio/**'
+      - 'supabase/migrations/*practitioner_direct_media*'
+      - 'tests/practitioner-direct-message*.test.mjs'
       - 'components/app/practitioner-client-profiles.*'
       - 'components/app/practice-request-conversation.*'
+      - 'lib/practitioners/request-media.js'
+      - 'supabase/migrations/*request_bound_voice_media*'
+      - 'tests/practitioner-request-voice.test.mjs'
       - 'components/app/practice-workspace.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/messenger-notification-settings.*'
       - 'lib/app/messenger-notification-*.js'
       - 'app/api/app/notification-channels/**'
       - 'supabase/migrations/*messenger_pending_contacts*'
       - 'tests/messenger-notification-subscriptions.test.mjs'
       - 'docs/notifications/MESSENGER_SUBSCRIPTIONS_V1_20261020.md'
+      - 'components/consultation-choice-capture.tsx'
+      - 'components/contact-channel-chooser.tsx'
+      - 'tests/service-paid-consultation-enquiry-offer.test.mjs'
       - 'docs/crm/**'
       - '.github/workflows/hh-crm-source-check.yml'
   workflow_dispatch:
+
+concurrency:
+  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 permissions:
   contents: read
 
 jobs:
   crm:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,33 +130,100 @@ jobs:
           cache: npm
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
+      - name: SalesBot strict flow simulator and owner API contract
+        run: node --test tests/crm-salesbot-flow.test.mjs
+      - name: SalesBot owner-only operator draft suggestions (no automatic dispatch)
+        run: node --test tests/crm-salesbot-operator-assist.test.mjs
+      - name: Lint SalesBot operator-assist contract and UI
+        run: npx eslint lib/crm/salesbot-operator.mjs components/app/crm-salesbot-assist.jsx tests/crm-salesbot-operator-assist.test.mjs
+      - name: Read-only owner Telegram BotFather identity and webhook preflight
+        run: node --conditions=react-server --test tests/crm-telegram-preflight.test.mjs
+      - name: Verify owner-only Telegram pilot link without recipient disclosure
+        run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
+      - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
+        run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs
+      - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
+        run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
+      - name: Lint localized express review channel entry and strict WhatsApp marker
+        run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
+      - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
+        run: node --test tests/crm-telegram-script-preview.test.mjs
+      - name: Lint canonical Telegram script viewer and its parity tests
+        run: npx eslint components/app/crm-telegram-diagnostic-script.jsx lib/crm/telegram-diagnostic-v2.mjs tests/crm-telegram-script-preview.test.mjs
+      - name: Lint Telegram V2 pure conversation and CRM private persistence
+        run: npx eslint lib/crm/telegram-diagnostic-v2.mjs lib/crm/telegram-diagnostic.mjs lib/crm/messenger-webhook.js lib/crm/messenger-provider.js lib/crm/messenger-store.js components/app/crm-messenger.jsx components/app/crm-telegram-photo.jsx tests/crm-telegram-natural-conversation-v2.test.mjs
+      - name: Telegram message-attached inline buttons, callback signature and webhook admission
+        run: node --conditions=react-server --test tests/crm-telegram-inline-buttons.test.mjs
+      - name: Lint Telegram inline keyboard and callback handler
+        run: npx eslint lib/crm/telegram-inline-buttons.mjs tests/crm-telegram-inline-buttons.test.mjs
+      # The identical CRM diagnostic test already executes in the Telegram conversation regression step.
+      - name: Verify signed second-account Telegram pilot invite and privacy gates
+        run: node --test tests/crm-telegram-second-pilot.test.mjs
+      - name: Lint Telegram diagnostic runtime, owner photo proxy and public entry
+        run: npx eslint lib/crm/telegram-diagnostic.mjs app/api/app/crm/messenger/photo/route.js app/api/public/telegram-diagnostic/route.js components/telegram-diagnostic-entry.tsx tests/crm-telegram-diagnostic.test.mjs
+      - name: SalesBot clean-room step editor unit and tamper checks
+        run: node --test tests/crm-salesbot-feature-editor.test.mjs tests/crm-salesbot-jsx-syntax.test.mjs
+      - name: Lint SalesBot editor and strict import policy
+        run: npx eslint lib/crm/salesbot-editor.mjs tests/crm-salesbot-feature-editor.test.mjs
+      - name: Lint new SalesBot owner UI and deterministic runtime
+        run: npx eslint lib/crm/salesbot-flow.mjs components/app/crm-salesbot.jsx app/api/app/crm/salesbot/route.js tests/crm-salesbot-flow.test.mjs
+      - name: Verify encrypted owner SalesBot drafts, revisions and negative access
+        run: node --conditions=react-server --test tests/crm-salesbot-drafts.integration.mjs
+      - name: Verify opt-in-only internal SalesBot events, encrypted runs, owner wait/resume and no sending
+        run: node --conditions=react-server --test tests/crm-salesbot-internal-runtime.test.mjs
+      - name: Lint scoped internal SalesBot execution and owner controls
+        run: npx eslint lib/crm/salesbot-internal-runtime.js lib/crm/salesbot-internal-store.js components/app/crm-salesbot-internal-runs.jsx tests/crm-salesbot-internal-runtime.test.mjs
+      - name: Lint SalesBot draft storage, private API and UI
+        run: npx eslint lib/crm/salesbot-store.js components/app/crm-salesbot-drafts.jsx app/api/app/crm/salesbot/drafts/route.js tests/crm-salesbot-drafts.integration.mjs
+      - name: Universal opportunities owner scope, signed paging, transitions, idempotency and history
+        run: node --conditions=react-server --test tests/crm-opportunities.test.mjs
+      - name: Lint opportunity lifecycle, store, protected API and mobile page
+        run: npx eslint lib/crm/opportunity-contract.mjs lib/crm/opportunity-pagination.mjs lib/crm/opportunity-store.js components/app/crm-opportunities.jsx app/api/app/crm/opportunities/route.js tests/crm-opportunities.test.mjs
+      - name: Deal booking request schedules one owner-only task without external send
+        run: node --conditions=react-server --test tests/crm-deal-booking-followups.test.mjs
+      - name: Lint deal booking task integration
+        run: npx eslint lib/crm/opportunity-store.js lib/crm/workflow-store.js components/app/crm-workflow.jsx components/app/crm-opportunities.jsx tests/crm-deal-booking-followups.test.mjs
+      - name: Business pipeline stage integrity, owner actions and visual contract
+        run: node --test tests/crm-business-pipeline.test.mjs
+      - name: Lint business pipeline flow and accessible board
+        run: npx eslint --ext .js,.jsx,.mjs lib/crm/business-pipeline.mjs components/app/crm-business-enquiries.jsx components/app/crm-manager.jsx tests/crm-business-pipeline.test.mjs
       - name: Compact enquiry and OAuth return policy
         run: node --test tests/compact-google-lead-entry.test.mjs tests/crm-public-registration.test.mjs tests/contact-channel-chooser.test.mjs tests/organic-event-referrals.test.mjs
+      - name: Check persisted public €50/€100 consultation offer
+        run: node --test tests/service-paid-consultation-enquiry-offer.test.mjs
       - name: Verify consent, ownership, actions and fail-closed client requests
-        run: node --test tests/business-enquiry-reply-handoffs.test.mjs tests/business-enquiry-reply-channel.test.mjs tests/client-contact-phone.test.mjs tests/crm-consent.test.mjs tests/crm-integration-diagnostics.test.mjs tests/crm-communications-hub.test.mjs tests/crm-security-contract.test.mjs tests/crm-public-registration.test.mjs tests/public-service-enquiries.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-sms.test.mjs tests/crm-workflow.test.mjs tests/crm-lead-triage.test.mjs tests/crm-followup-pagination.test.mjs tests/crm-workday.test.mjs tests/crm-workday-ui.test.mjs tests/crm-activity.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-owner-ops.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs tests/public-contact-page.test.mjs tests/practitioner-client-crm.test.mjs tests/practitioner-crm-tasks.test.mjs tests/practitioner-client-work-queue.test.mjs tests/practitioner-conversation-state.test.mjs tests/messenger-notification-subscriptions.test.mjs
+        run: node --test tests/business-enquiry-reply-handoffs.test.mjs tests/business-enquiry-reply-channel.test.mjs tests/client-contact-phone.test.mjs tests/crm-consent.test.mjs tests/crm-integration-diagnostics.test.mjs tests/crm-communications-hub.test.mjs tests/crm-security-contract.test.mjs tests/public-service-enquiries.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs tests/crm-sms.test.mjs tests/crm-workflow.test.mjs tests/crm-lead-triage.test.mjs tests/crm-lead-guardian.test.mjs tests/crm-followup-pagination.test.mjs tests/crm-workday.test.mjs tests/crm-workday-ui.test.mjs tests/crm-activity.test.mjs tests/crm-phone.test.mjs tests/crm-contact-maintenance.test.mjs tests/crm-owner-ops.test.mjs tests/crm-messenger.test.mjs tests/business-website-enquiry.test.mjs tests/public-contact-page.test.mjs tests/practitioner-client-crm.test.mjs tests/practitioner-private-relay.test.mjs tests/practitioner-crm-tasks.test.mjs tests/practitioner-client-work-queue.test.mjs tests/practitioner-conversation-state.test.mjs tests/messenger-notification-subscriptions.test.mjs
       - name: Verify UTF-8 envelopes and concurrent in-app message sends
-        run: node --conditions=react-server --test tests/practitioner-message-send.integration.mjs
+        run: node --conditions=react-server --test tests/practitioner-message-send.integration.mjs tests/practitioner-message-chain.test.mjs
+      - name: Verify per-request private voice, RLS, same-origin upload and encrypted attachment binding
+        run: node --test tests/practitioner-request-voice.test.mjs
+      - name: Lint request-bound audio service and streaming endpoints
+        run: npx eslint --ext .js,.jsx lib/practitioners/request-media.js lib/practitioners/client-messages.js components/app/practice-request-conversation.jsx app/api/app/practitioner-client-messages/route.js app/api/app/practitioner-client-messages/media/route.js 'app/api/app/practitioner-client-messages/media/[assetId]/route.js'
+      - name: Approved Messenger default entry, orders fallback, CRM and private inbox
+        run: node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs
+      - name: Native member-to-practitioner media inbox, encryption and outsider-denial
+        run: node --conditions=react-server --test tests/practitioner-direct-messages.test.mjs tests/practitioner-direct-message-synthetic.test.mjs tests/direct-message-media-transport.test.mjs
+      - name: Lint member inbox backend, privacy route and EN/RU/ES UI
+        run: npx eslint lib/practitioners/direct-message-policy.mjs lib/practitioners/direct-messages.js components/app/direct-message-inbox.jsx components/app/direct-voice-recorder.jsx app/api/app/direct-messages/route.js 'app/api/app/direct-messages/media/[assetId]/route.js' 'app/api/app/direct-messages/media/[assetId]/upload/route.js' 'app/api/masters/[slug]/shared-audio/[assetId]/route.js' 'app/[locale]/app/messages/page.tsx'
       - name: Validate practitioner CRM JSX explicitly
         run: npx eslint lib/business-consulting/reply-handoffs.js components/app/business-enquiry-other-reply.jsx components/app/business-enquiry-sms-reply.jsx lib/business-consulting/reply-policy.js 'app/[locale]/contact/page.tsx' lib/app/client-phone-policy.js lib/app/client-phone-repository.js app/api/app/contact-phone/route.js components/app/client-contact-phone.jsx lib/business-consulting/contact-import.js --ext .js,.jsx components/app/practitioner-client-profiles.jsx components/app/practitioner-request-tasks.jsx components/app/practice-request-conversation.jsx lib/practitioners/client-work-queue.js lib/practitioners/conversation-state.js
       - name: Lint changed CRM runtime and UI
-        run: npx eslint lib/crm/sms-text.js lib/crm/sms-setup.js lib/crm/sms-status.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx components/app/crm-sms-setup.jsx lib/crm/repository.js lib/practitioners/public-service-enquiry.js lib/practitioners/public-service-enquiry-input.mjs components/contact-channel-chooser.tsx components/app/public-enquiry-contact.jsx lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/route.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-messages-navigation.jsx components/app/crm-integration-diagnostics.jsx lib/crm/integration-readiness.js components/app/crm-lead-triage.jsx app/api/app/crm/leads/route.js components/app/crm-contact-editor.jsx lib/crm/contact-edit.js lib/crm/contact-pagination.js lib/crm/contact-search.js lib/crm/contact-csv.js lib/crm/contact-operations-store.js app/api/app/crm/search/route.js app/api/app/crm/export/route.js components/app/crm-export-tools.jsx components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx components/app/crm-workflow.jsx components/app/crm-contact-activity.jsx lib/crm/activity-pagination.js lib/crm/activity-history-store.js app/api/app/crm/activity/route.js lib/crm/workflow.js lib/crm/workflow-store.js lib/crm/followup-pagination.js app/api/app/crm/followups/route.js lib/crm/workday.js app/api/app/crm/contact/route.js lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-store.js lib/crm/messenger-webhook.js app/api/app/crm/messenger/route.js 'app/api/app/crm/messenger/webhook/[provider]/route.js' components/app/crm-messenger.jsx lib/business-consulting/intake-policy.js lib/business-consulting/enquiry-store.js app/api/services/business-consulting/route.js components/app/crm-business-enquiries.jsx components/business-website-enquiry.tsx lib/practitioners/client-profile-groups.js lib/practitioners/client-work-queue.js lib/practitioners/conversation-state.js lib/practitioners/repository.js lib/practitioners/client-messages.js app/api/app/practitioner-client-messages/route.js components/app/practitioner-client-profiles.jsx components/app/practice-request-conversation.jsx lib/practitioners/task-policy.js lib/practitioners/request-tasks.js app/api/app/practitioner-request-tasks/route.js components/app/practitioner-request-tasks.jsx lib/app/notification-contract.js lib/app/client-message-push.js lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx
+        run: npx eslint lib/crm/sms-text.js lib/crm/sms-setup.js lib/crm/sms-status.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx components/app/crm-sms-setup.jsx lib/crm/repository.js lib/practitioners/public-service-enquiry.js lib/practitioners/public-service-enquiry-input.mjs components/contact-channel-chooser.tsx components/app/public-enquiry-contact.jsx lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js lib/crm/sms.js lib/crm/sms-store.js lib/crm/sms-dispatch.js app/api/app/crm/route.js app/api/app/crm/sms/webhook/route.js components/app/crm-sms-tools.jsx app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-messages-navigation.jsx components/app/crm-integration-diagnostics.jsx lib/crm/integration-readiness.js components/app/crm-lead-triage.jsx app/api/app/crm/leads/route.js components/app/crm-contact-editor.jsx lib/crm/contact-edit.js lib/crm/contact-pagination.js lib/crm/contact-search.js lib/crm/contact-csv.js lib/crm/contact-operations-store.js app/api/app/crm/search/route.js app/api/app/crm/export/route.js components/app/crm-export-tools.jsx components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx components/app/crm-workflow.jsx components/app/crm-contact-activity.jsx lib/crm/activity-pagination.js lib/crm/activity-history-store.js app/api/app/crm/activity/route.js lib/crm/workflow.js lib/crm/workflow-store.js app/api/app/crm/leads/route.js components/app/crm-lead-triage.jsx lib/crm/followup-pagination.js app/api/app/crm/followups/route.js lib/crm/workday.js app/api/app/crm/contact/route.js lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-store.js lib/crm/messenger-webhook.js app/api/app/crm/messenger/route.js 'app/api/app/crm/messenger/webhook/[provider]/route.js' components/app/crm-messenger.jsx lib/business-consulting/intake-policy.js lib/business-consulting/enquiry-store.js app/api/services/business-consulting/route.js components/app/crm-business-enquiries.jsx components/business-website-enquiry.tsx lib/practitioners/relay-privacy.mjs lib/practitioners/client-profile-groups.js lib/practitioners/client-work-queue.js lib/practitioners/conversation-state.js lib/practitioners/conversation-policy.js lib/practitioners/repository.js lib/practitioners/client-messages.js app/api/app/practitioner-client-messages/route.js components/app/practitioner-client-profiles.jsx components/app/practice-request-conversation.jsx lib/practitioners/task-policy.js lib/practitioners/request-tasks.js app/api/app/practitioner-request-tasks/route.js components/app/practitioner-request-tasks.jsx lib/app/notification-contract.js lib/app/client-message-push.js lib/app/messenger-notification-policy.js lib/app/messenger-notification-repository.js app/api/app/notification-channels/route.js components/app/messenger-notification-settings.jsx components/app/app-workspace.jsx
+      - name: Linked free enquiry, secure report send and neutral inbox delivery contracts
+        run: node --test tests/express-report-delivery.test.mjs tests/practitioner-express-reports.test.mjs
+      - name: Lint express report account ownership and notification routes
+        run: npx eslint --ext .js,.jsx,.mjs lib/practitioners/express-report-repository.js lib/practitioners/express-report-contracts.js lib/app/express-report-notice.mjs lib/app/express-report-telegram-dispatch.js lib/app/client-telegram-transport.js app/api/free-express/claim/route.js 'app/api/app/[...path]/route.js' components/app/practice-express-reports.jsx components/app/practitioner-client-profiles.jsx components/app/practice-workspace.jsx components/app/crm-manager.jsx components/app/direct-message-inbox.jsx tests/express-report-delivery.test.mjs
+      - name: Free review signed Google claim without enabling gated v2 media
+        run: node --test tests/free-express-google-claim.test.mjs
+      - name: Lint secured free review Google claim UI and account route
+        run: npx eslint components/free-express-google-claim.tsx components/contact-channel-chooser.tsx components/personal-express-enquiry.tsx app/api/free-express/claim/route.js app/api/service-enquiries/route.js lib/practitioners/free-express-google-claim.mjs tests/free-express-google-claim.test.mjs
       - name: Check notification worker syntax
         run: node --check public/course-notifications-sw.js
 
-  # Run Next production build independently of older application unit suites.
-  # This protects a CRM release even when unrelated app tests are red.
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install pinned packages
-        run: npm ci --no-audit --no-fund
-      - name: Production Next.js build
+      # Full production TS/build on a Ready PR is enforced once by mandatory Core.
+      # Standalone manual dispatch still performs its own production bundle.
+      - name: Independent Next build for manual CRM acceptance
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'

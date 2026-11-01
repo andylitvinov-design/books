@@ -39,13 +39,17 @@ test("free landings explain benefits before closing with one short capture", () 
   const hero = landing.indexOf('aria-labelledby="free-entry-title"');
   const outcome = landing.indexOf('id="what-you-get"');
   const process = landing.indexOf('id="how-it-works"');
-  const video = landing.indexOf('<ServiceVideoShowcase');
+  const video = landing.indexOf('data-free-review-intro-video');
+  const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
-  assert.ok(hero > 0 && hero < outcome && outcome < process && process < video && video < final);
-  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
+  assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
+    "A separate video introduction and three visible reviews belong to the same landing");
+  assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
-  assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
-    "Generic overview video is retained for the written-review service");
+  assert.match(landing, /data-free-review-intro-video/);
+  assert.match(landing, /data-featured-free-review-testimonials/);
+  assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.doesNotMatch(landing, /<ServiceVideoShowcase topic="overview"/);
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -64,7 +68,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "See your situation from a fresh perspective", "Взгляните на свою ситуацию", "Mira tu situación",
+    "Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.", "Revisión personal exprés gratuita con Andrey.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -73,28 +77,23 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
+  for (const phrase of ["Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.",
+    "Revisión personal exprés gratuita con Andrey.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
+  assert.match(read("components/free-diagnosis-offers.tsx"), /30 MIN · €50/, "The paid 30-minute option remains €50");
+  assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
-test("the real free drawing questionnaire remains reachable and keeps answers local until deliberate copy", () => {
+test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
-  for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
-  assert.match(intake, /<form onSubmit=/);
-  assert.match(intake, /<textarea required/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /setPrepared\(true\)/);
-  assert.match(intake, /Nothing has been sent/);
-  assert.match(intake, /aria-live="polite"/);
-  assert.match(intake, /<ContactChannelChooser/);
-  assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
+  assert.match(intake, /\/coaching\/intake\?topic=/);
+  assert.match(intake, /Sign in to save an encrypted private draft/);
+  assert.match(intake, /Saving does not send it to a coach/);
+  assert.match(intake, /Keep the photo on your device/);
+  assert.doesNotMatch(intake, /<form|<textarea|navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
@@ -107,9 +106,11 @@ test("new DAO and situation footer submits a consented contact to the existing p
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
   assert.match(capture, /contactConsent: true/);
   assert.match(capture, /result\?\.saved !== true/);
-  assert.match(capture, /setReference\(result.referenceCode\)/);
-  assert.match(capture, /Please do not enter health details/);
-  assert.doesNotMatch(capture, /whatsappEnquiryUrl|encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
+  assert.match(capture, /setReference\(committedReference\)/);
+  assert.match(capture, /committedReference = result.referenceCode/);
+  assert.match(capture, /Please don\x27t enter health details/);
+  assert.match(capture, /request: t\.message \+ " " \+ t\.reference \+ ": " \+ referenceCode/);
+  assert.doesNotMatch(capture, /encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
   assert.match(captureCss, /:focus-visible/);
   assert.match(captureCss, /@media\(max-width:600px\)/);
 });
@@ -122,9 +123,64 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.situationHero/);
+  assert.match(css, /\.situationScene/);
+  assert.match(css, /max-height:730px/);
+  assert.match(css, /aspect-ratio:16\/9/);
   assert.match(css, /:focus-visible/);
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale === "es" \? "en" : locale\} variant="all" \/>/);
+  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
+  assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
+  assert.match(landing, /data-review-stories/);
+  assert.match(css, /\.reviewBenefitsList/);
+  assert.match(css, /\.reviewProcess/);
+  assert.match(css, /\.reviewApproach/);
+  assert.match(landing, /id="how-i-review"/);
+});
+
+
+test("express review WebKit reveal stays immediately below its button throughout the animation", () => {
+  const expressCss = read("components/personal-express-enquiry.module.css");
+  const express = read("components/personal-express-enquiry.tsx");
+  assert.match(express, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
+  assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
+  assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
+    "Visual translateY moves an expanded in-flow region above its reveal button in WebKit before animation settles");
+});
+
+test("mobile browser acceptance taps the entire focus card and validates the native radio and unchanged consent", () => {
+  const script = read("scripts/verify-free-review-live-mobile.mjs");
+  const widget = read("components/personal-express-enquiry.tsx");
+  const css = read("components/personal-express-enquiry.module.css");
+  assert.match(widget, /<label className=\{styles\.choice\} data-express-focus=\{area\}/);
+  assert.match(widget, /type="radio" name="express-review-focus" value=\{area\}/);
+  assert.match(widget, /checked=\{focus === area\} onChange=\{\(\) => setFocus\(area\)\}/);
+  // WebKit can skip the nested radio's forwarded change after tapping the
+  // label; a single label click must also update the controlled focus.
+  assert.match(widget, /onClick=\{\(\) => \{ if \(!focusLocked\) setFocus\(area\); \}\}/);
+  // Validate a single real click, not retries or programmatic radio selection.
+  assert.match(script, /async function tapFocusAndVerify\(page, enquiry, focus\)/);
+  assert.match(script, /const card = enquiry\.locator\('\[data-express-focus=/);
+  assert.match(script, /await card\.tap\(\)/, "mobile acceptance must use a native touch tap");
+  assert.doesNotMatch(script, /await card\.click\(/, "mouse click is not a native touch gesture");
+  assert.match(script, /radio instanceof HTMLInputElement && radio\.checked/);
+  assert.match(script, /card\?\.getAttribute\("data-selected"\) === "true"/);
+  assert.match(script, /waitForFunction\(/);
+  for (const focus of ["energy", "situation"]) {
+    assert.ok(script.includes('await tapFocusAndVerify(page, enquiry, "' + focus + '")'),
+      "One label tap eventually checks the native radio and its selected card: " + focus);
+  }
+  assert.match(script, /engine === "webkit" && locale === "es"/);
+  assert.match(script, /width === 320 \|\| width === 430/);
+  assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
+    "Do not emulate tapping a moving 19px radio dot on WebKit");
+  assert.match(script, /"changing the focus cannot silently opt the user in"/);
+  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });

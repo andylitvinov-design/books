@@ -17,9 +17,9 @@
 .library-back-link { display: inline-flex; align-items: center; min-height: 40px; color: #70442d; font-size: 13px; margin: 8px 0; }
 .site-navigation [data-nav-item][aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
 .library-shell a:focus-visible, .ia222-bottom-navigation a:focus-visible, .assessment-section a:focus-visible, .assessment-section button:focus-visible { outline: 2px solid #70442d; outline-offset: 4px; }
-.ia222-bottom-navigation { height: auto; grid-template-columns: repeat(6,minmax(0,1fr)); }
+.ia222-bottom-navigation { height: auto; grid-template-columns: repeat(7,minmax(0,1fr)); }
 .ia222-bottom-navigation a { min-width: 0; min-height: 52px; }
-.ia222-bottom-navigation span { white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+.ia222-bottom-navigation span { white-space: normal; overflow-wrap: normal; text-wrap: balance; text-align: center; line-height: 1.15; }
 body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0px) !important; }
 .assessment-section { margin: 30px 0; border-top: 1px solid #ded5c9; padding-top: 24px; }
 .assessment-section h2, .assessment-reading h1 { font-family: var(--font-serif); }
@@ -49,9 +49,22 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 .assessment-notice { padding: 14px 18px; background: #f2eade; border-radius: 12px; line-height: 1.6; }
 @media (max-width: 767px) {
   .ia222-bottom-navigation { padding: 5px max(4px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
-  .ia222-bottom-navigation a { padding: 3px 1px; gap: 3px; }
-  .ia222-bottom-navigation a svg { width: 22px; height: 22px; }
-  .ia222-bottom-navigation a span { font-size: clamp(9px,2.5vw,11px); white-space: nowrap; overflow-wrap: normal; }
+  .ia222-bottom-navigation a { padding: 4px 1px; gap: 2px; min-height: 58px; }
+  .ia222-bottom-navigation a svg { width: 19px; height: 19px; }
+  /* Six accessible destinations, two-line names and 44px+ tap targets. */
+  .ia222-bottom-navigation a span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-width: 100%;
+    font-size: clamp(9px,2.25vw,10.5px);
+    line-height: 1.13;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: none;
+    text-wrap: balance;
+    overflow: hidden;
+  }
   body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,76px) !important; }
   body:has(.ia222-bottom-navigation) :is(input,textarea,button,a) { scroll-margin-bottom: calc(var(--ia222-bottom-height,76px) + 24px); }
   /* iOS Safari lifts position:fixed bars when the software keyboard opens.
@@ -74,8 +87,8 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   }
 }
 @media (max-width: 600px) {
-  .ia222-bottom-navigation { grid-template-columns: repeat(6,minmax(0,1fr)); }
-  .ia222-bottom-navigation a { min-height: 52px; }
+  .ia222-bottom-navigation { grid-template-columns: repeat(7,minmax(0,1fr)); }
+  .ia222-bottom-navigation a { min-height: 58px; }
   .library-shell { padding-inline: 10px; padding-top: 10px; }
   .library-media-switch { width: 100%; margin-top: 8px; }
   .library-media-switch a { min-height: 38px; font-size: 12px; }

@@ -58,14 +58,14 @@ function publicPage(tree, locale) {
     assert.equal(selector, '[data-sitewide-personal-review-banner]'); return locator(locale === 'es' ? [] : [jsx('aside', {})])
   } }
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact Tests and My House destinations and active Tests', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and Psychic Alchemy destinations with active My Profile', async () => {
   for (const path of ['/client', '/client/tests']) await assertPublicDiscoveryChrome(publicPage(mobile(locale, '/' + locale + path), locale), expect, locale)
   for (const path of ['/client/session', '/client/personal-selector', '/client/tests/hidden']) assert.equal(mobile(locale, '/' + locale + path), null)
   if (locale !== 'es') assert.equal(mobile(locale, '/' + locale + '/app/portrait'), null)
   assert.equal(mobile(locale, '/admin'), null)
 })
 for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplicate']) test('public mobile proof rejects ' + fault, async () => {
-  const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'tests')
+  const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'profile')
   if (fault === 'wrongName') target.props.children = 'My tests'
   if (fault === 'wrongHref') target.props.href = '/en/client'
   if (fault === 'wrongActive') target.props['data-nav-item'] = 'cabinet'
@@ -76,34 +76,35 @@ for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplic
 const workspace = read('components/app/app-workspace.jsx')
 const model = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const documentReader', workspace.indexOf('const nav = [')))
 const start = workspace.indexOf('<nav className="hh-mobile-app-nav"'), end = workspace.indexOf('</nav>', start) + '</nav>'.length
-const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users, House } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
+const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { Activity, UserRound, ClipboardList, BarChart3, BookOpen, Users, House, MessageCircle, SlidersHorizontal } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
 const { PrivateNav } = compile(privateSource, { './copy': { COPY } })
 const desktopStart = workspace.indexOf('<nav className="hh-nav"')
 const desktopEnd = workspace.indexOf('</nav>', desktopStart) + '</nav>'.length
 assert.ok(desktopStart >= 0, 'actual desktop navigation exists')
 const { PrivateNav: DesktopNav } = compile(privateSource.slice(0, privateSource.indexOf('return (')) + 'return (' + workspace.slice(desktopStart, desktopEnd) + '); }', { './copy': { COPY } })
-for (const locale of ['en', 'ru']) test(locale + ' actual shared private model preserves five exact destinations and current-page aliases', async () => {
-  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results']) {
+for (const locale of ['en', 'ru']) test(locale + ' actual shared private model preserves seven desktop and five mobile destinations with current-page aliases', async () => {
+  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'progress', 'course', 'practice', 'messages', 'settings', 'history', 'reports', 'monitoring', 'results']) {
     const tree = Renderer({ locale, page })
     const target = { locator(selector) { assert.equal(selector, 'nav.hh-nav:visible, nav.hh-mobile-app-nav:visible'); return locator([tree]) } }
-    await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page })
+    await assertCabinetPrimaryNavigation(target, expect, { locale, current: page })
   }
 })
 for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
-  const tree = PrivateNav({ locale: 'en', page: 'portrait' }), all = links(tree)
-  if (fault === 'wrongHomeAria') all[5].props['aria-label'] = 'Go home'
-  if (fault === 'missingHome') all[5].type = 'div'
-  if (fault === 'wrongHomeHref') all[5].props.href = '/en'
-  if (fault === 'wrongHomeLabel') all[5].props.children = 'Homepage'
+  const page = fault === 'wrongCurrent' ? 'practice' : 'portrait'
+  const tree = PrivateNav({ locale: 'en', page }), all = links(tree)
+  if (fault === 'wrongHomeAria') all[0].props['aria-label'] = 'Go home'
+  if (fault === 'missingHome') all[0].type = 'div'
+  if (fault === 'wrongHomeHref') all[0].props.href = '/en'
+  if (fault === 'wrongHomeLabel') all[0].props.children = 'Homepage'
   if (fault === 'wrongLabel') all[1].props.children = 'My tests'
-  if (fault === 'wrongHref') all[4].props.href = '/en/app/settings'
-  if (fault === 'wrongCurrent') all[0].props['aria-current'] = undefined
+  if (fault === 'wrongHref') all[4].props.href = '/en/app/incorrect'
+  if (fault === 'wrongCurrent') all[1].props['aria-current'] = undefined
   if (fault === 'extraLink') tree.props.children.push(jsx('a', { href: '/en/app/other', children: 'Other' }))
   const target = { locator: () => locator(fault === 'twoVisibleBars' ? [tree, tree] : [tree]) }
-  await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { current: 'portrait' }))
+  await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { current: page }))
 })
 
-test('core exercises accepted private labels, five private destinations and mobile Home navigation and compact account picker', () => {
+test('core exercises accepted private labels, seven desktop and five mobile destinations and mobile Home navigation and compact account picker', () => {
   const core = read('scripts/verify-app-r1.mjs')
   assert.ok(core.includes("toHaveText(locale==='ru'?'Отчёты':'Reports')"))
   assert.ok(core.includes("const practice=page.locator('.hh-master-header-link')"))

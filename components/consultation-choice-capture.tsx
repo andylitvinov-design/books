@@ -22,7 +22,7 @@ const copy = {
   en: {
     eyebrow: "PERSONAL CONSULTATIONS · WITH ANDREY",
     freeTitle: "Start with a free drawing assessment",
-    freeLead: "Choose a topic, complete a coaching form and send a handwritten drawing. I'll reply with a written assessment.",
+    freeLead: "Choose a topic and prepare your questionnaire privately. Keep your drawing on your device until a secure handoff is agreed for the written review.",
     personalTitle: "A free drawing assessment of your situation",
     personalLead: "Choose a topic and complete the coaching form and hand drawing. I'll send a personal written report. Live sessions are paid separately.",
     readingTitle: "Explore your situation through a drawing",
@@ -61,7 +61,7 @@ const copy = {
     freeRequest: "I would like the free coaching-form and handwritten-drawing assessment with a written report.",
     serviceRequest: "Hello Andrey!",
     messageNote: "Choose WhatsApp or Telegram for your paid-session request. Nothing is sent until you press Send.",
-    freeNote: "Next: fill out the coaching form, draw on paper and send both via WhatsApp. This is not a free call.",
+    freeNote: "Do not send private answers, drawings or test results through messengers. Use the private questionnaire and agree a secure handoff. This is not a free call.",
     writtenReport: "Personal written report",
     paidHint: "Paid sessions: €50 / 30 min · €100 / 60 min",
     serviceNote: "This is an enquiry, not a confirmed booking or payment. Rates: €50 / 30 min or €100 / 60 min.",
@@ -74,7 +74,7 @@ const copy = {
   ru: {
     eyebrow: "ЛИЧНЫЕ КОНСУЛЬТАЦИИ · С АНДРЕЕМ",
     freeTitle: "Бесплатная диагностика по рисунку",
-    freeLead: "Выберите тему, заполните коучинг-форму и отправьте рисунок ручкой. Я пришлю письменный отчёт.",
+    freeLead: "Выберите тему и подготовьте анкету приватно. Рисунок оставьте на устройстве до согласования защищённой передачи для письменного разбора.",
     personalTitle: "Бесплатная диагностика по рисунку",
     personalLead: "Выберите тему, заполните анкету и сделайте рисунок. Вы получите письменный разбор. Живые консультации оплачиваются отдельно.",
     readingTitle: "Исследуйте ситуацию через рисунок",
@@ -113,7 +113,7 @@ const copy = {
     freeRequest: "Хочу бесплатную диагностику по коучинг-форме и рисунку с письменным отчётом.",
     serviceRequest: "Здравствуйте, Андрей!",
     messageNote: "Выберите WhatsApp или Telegram для платной сессии. Сообщение отправится только после вашего подтверждения.",
-    freeNote: "Далее: заполните коучинг-форму, нарисуйте на бумаге и отправьте материалы через WhatsApp. Это не бесплатный созвон.",
+    freeNote: "Не отправляйте личные ответы, рисунки и результаты тестов в мессенджеры. Используйте приватную анкету и согласуйте защищённую передачу. Это не бесплатный созвон.",
     writtenReport: "Персональный письменный отчёт",
     paidHint: "Платные сессии: €50 / 30 мин · €100 / 60 мин",
     serviceNote: "Это запрос, а не запись или оплата. Стоимость: €50 за 30 минут или €100 за 60 минут.",
@@ -126,7 +126,7 @@ const copy = {
   es: {
     eyebrow: "CONSULTAS PERSONALES · CON ANDREY",
     freeTitle: "Evaluación gratuita mediante dibujo",
-    freeLead: "Elige un tema, completa el formulario de coaching y envía un dibujo a mano. Recibirás un informe escrito.",
+    freeLead: "Elige un tema y prepara tu formulario en privado. Conserva el dibujo en tu dispositivo hasta acordar una entrega segura para la revisión escrita.",
     personalTitle: "Evaluación gratuita de tu situación mediante dibujo",
     personalLead: "Elige un tema, completa el formulario y dibuja a mano. Recibirás un informe escrito; las sesiones en directo son de pago.",
     readingTitle: "Explora tu situación mediante un dibujo",
@@ -165,7 +165,7 @@ const copy = {
     freeRequest: "Solicito evaluación gratuita del formulario de coaching y dibujo a mano con informe escrito.",
     serviceRequest: "Hola Andrey.",
     messageNote: "Elige WhatsApp o Telegram para la consulta de pago. Solo se envía cuando confirmas Enviar.",
-    freeNote: "Siguiente: rellena el formulario de coaching, dibuja en papel y envía ambos por WhatsApp. No es una llamada gratuita.",
+    freeNote: "No envíes respuestas privadas, dibujos ni resultados por mensajería. Usa el formulario privado y acuerda una entrega segura. No es una llamada gratuita.",
     writtenReport: "Informe escrito personal",
     paidHint: "Sesiones de pago: €50 / 30 min · €100 / 60 min",
     serviceNote: "Es una consulta, no una reserva ni un pago. Tarifas: €50 / 30 minutos o €100 / 60 minutos.",
@@ -189,6 +189,7 @@ export function ConsultationChoiceCapture({
   sitewide = false,
   wiseEnabled = false,
   paypalPersonalEnabled = false,
+  onSiteContact = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
@@ -197,6 +198,7 @@ export function ConsultationChoiceCapture({
   sitewide?: boolean;
   wiseEnabled?: boolean;
   paypalPersonalEnabled?: boolean;
+  onSiteContact?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -275,6 +277,7 @@ export function ConsultationChoiceCapture({
         <ContactChannelChooser
           locale={locale}
           whatsappUrl={whatsappUrl}
+          publicServiceTitle={t.serviceOptions[serviceChoice]}
           className={styles.action}
           event="service_request_start"
           attributes={{ "data-consultation-action": serviceChoice }}
@@ -341,9 +344,16 @@ export function ConsultationChoiceCapture({
         <div className={styles.secondary}>
           {isPaidRequest ? <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}><ShieldCheck size={14} aria-hidden="true" />{t.otherPath}</Link>
             : !isService ? <Link prefetch={false} href={"/" + locale + "/services"}><ShieldCheck size={14} aria-hidden="true" />{t.paidHint}</Link> : null}
-          <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
-            <Send size={14} aria-hidden="true" />{t.telegram}
-          </AcquisitionEventLink>
+          {onSiteContact ? (
+            <Link prefetch={false} href={"/" + locale + "/contact"} data-contact-channel="site">
+              <Send size={14} aria-hidden="true" />
+              {locale === "ru" ? "Связаться на Holistic House" : locale === "es" ? "Contactar en Holistic House" : "Contact on Holistic House"}
+            </Link>
+          ) : (
+            <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
+              <Send size={14} aria-hidden="true" />{t.telegram}
+            </AcquisitionEventLink>
+          )}
         </div>
       </div>
       <p className={styles.disclaimer}>{isPaidRequest ? t.serviceNote : t.safeguard}</p>

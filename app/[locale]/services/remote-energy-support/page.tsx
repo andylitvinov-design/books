@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import Link from "next/link";
+import { ServiceReviews } from "@/components/service-reviews";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
-import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
+import { listRemoteEnergySupportMasters } from "@/lib/practitioners/public-remote-support-masters";
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isPublicLocale(locale)) return { title: "Not found" };
   return {
     metadataBase: metadataBaseFor(),
-    title: (locale === "ru" ? "Дистанционная энергетическая поддержка" : locale === "es" ? "Apoyo energético a distancia" : "Remote energy support") + " | Holistic House",
+    title: (locale === "ru" ? "Энергетическая поддержка цели" : locale === "es" ? "Apoyo energético para tu objetivo" : "Energy support for your goal") + " | Holistic House",
     description: locale === "ru"
-      ? "Выберите формат, мастера и предпочтительное время дистанционной практики. Заявка подтверждается мастером."
+      ? "Сначала опишите запрос, затем выберите специалиста Рейки, узнайте стоимость и отправьте заявку на удобное время."
       : locale === "es"
-        ? "Elige el formato, profesional y horario preferido. El profesional confirmará la solicitud."
-        : "Choose a practitioner, type of remote practice and preferred time. Requests are subject to practitioner confirmation.",
+        ? "Describe tu intención, consulta profesionales Reiki con precios publicados y solicita un horario."
+        : "Describe the support you need, browse real Reiki practitioners and published prices, then request a preferred time.",
     alternates: {
       canonical: `/${locale}/services/remote-energy-support`,
       languages: {
@@ -41,28 +41,38 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const { practitioner } = await searchParams;
-  let records: PublicPractitioner[] = [];
-  try {
-    records = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
-  } catch {
-    // Only actual published, eligible service offerings can accept a booking request.
-  }
-  const masters: EnergySupportMaster[] = records.flatMap((record) =>
-    record.services
-      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual")
-      .map((service) => ({
-        slug: record.slug,
-        name: record.profile.displayName || record.profile.name || service.practitionerName,
-        title: record.profile.professionalTitle || "",
-        photo: record.profile.photoPath || "",
-        serviceId: service.id,
-        methods: service.methods?.length ? service.methods : ["Reiki / energywork"],
-      }))
-  );
+  let masters: EnergySupportMaster[] = [];
+  try { masters = await listRemoteEnergySupportMasters(locale); }
+  catch { /* Explicitly empty fallback keeps the standalone page usable when the directory is offline. */ }
+  // The public listing carries the existing service ID. Never guess a master
+  // from a private request or display another practitioner's reviews.
+  const selectedMaster = masters.find(item => item.slug === practitioner);
+  const reviewMaster = selectedMaster || (masters.length === 1 ? masters[0] : null);
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale}/>
       <RemoteEnergySupportBooking locale={locale as "en" | "ru" | "es"} masters={masters} preferredPractitioner={practitioner || ""}/>
+      {reviewMaster ? (
+        <section className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6" data-remote-energy-review>
+          <ServiceReviews serviceId={reviewMaster.serviceId} locale={locale} verifiedOnly />
+        </section>
+      ) : masters.length > 0 ? (
+        <section className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6" aria-label={
+          locale === "ru" ? "Отзывы об энергоподдержке" : locale === "es" ? "Opiniones del apoyo energético" : "Energy support reviews"
+        }>
+          <h2 className="mb-3 text-xl font-semibold">
+            {locale === "ru" ? "Отзывы о мастерах" : locale === "es" ? "Opiniones de profesionales" : "Practitioner reviews"}
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {masters.map(item => (
+              <Link key={item.serviceId} className="rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-rose-900 underline"
+                href={`/${locale}/services/${encodeURIComponent(item.slug)}/remote-energy-support#reviews`}>
+                {item.name} · {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

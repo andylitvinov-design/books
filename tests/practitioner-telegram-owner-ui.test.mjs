@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {Script} from 'node:vm'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('setup page requires owner session and only displays safe status',()=>{
@@ -83,7 +84,8 @@ test('manual owner report does not require paid or free model credentials',()=>{
  assert.ok(start>0&&end>start)
  assert.match(gate,/canCheck&&state\.pairing==='paired'&&state\.telegram_enabled/)
  assert.doesNotMatch(gate,/provider\.|geminiFreeConfirmed|mistralKeyPresent/)
- assert.match(page,/Send available daily report now/)
+ assert.match(page,/SendDailyCouncilButton/)
+ assert.match(read('app/admin/telegram-setup/send-daily-council-button.jsx'),/Send available daily report now/)
  const startAction=action.indexOf('export async function sendDailyCouncilReportAction')
  const endAction=action.indexOf('export async function saveOwnerFreeProviderAction',startAction)
  const send=action.slice(startAction,endAction)
@@ -91,5 +93,36 @@ test('manual owner report does not require paid or free model credentials',()=>{
  assert.match(send,/resolvedOwnerTelegramEnv\(config\)/)
  assert.match(send,/deliverArchivedCouncilReports\(config,\{env:aiEnv\}\)/)
  assert.match(send,/result.status==='model_setup_required'/)
+ assert.match(send,/result.status==='partially_accepted'/)
+ assert.match(page,/council_partial:/)
+ assert.match(page,/Реальные статусы Gemini и Mistral/)
+ assert.doesNotMatch(page,/another day's recovery/)
+ assert.match(page,/recovery of another date is still unconfirmed/)
  assert.doesNotMatch(send,/modelSettings\(|council_missing_keys|GEMINI_FREE_TIER_CONFIRMED/)
+})
+
+test('owner status copy parses as valid JavaScript even when no JSX bundler runs',()=>{
+ const page=read('app/admin/telegram-setup/page.js')
+ const begin=page.indexOf('const resultNotes={')
+ const end=page.indexOf('\n}\n\nexport default',begin)
+ assert.ok(begin>=0&&end>begin)
+ assert.doesNotThrow(()=>new Script(page.slice(begin,end+2)))
+ const actions=read('app/admin/telegram-setup/actions.js')
+ assert.match(actions,/else if\(result\.status==='already_claimed'\)outcome='council_duplicate'/)
+ assert.doesNotMatch(actions,/already_claimed'outcome/)
+})
+
+test('mobile Council send has an immediate progress label and returns to the tapped section',()=>{
+ const page=read('app/admin/telegram-setup/page.js')
+ const actions=read('app/admin/telegram-setup/actions.js')
+ const button=read('app/admin/telegram-setup/send-daily-council-button.jsx')
+ assert.match(page,/id="daily-council-report"/)
+ assert.match(page,/acceptedToday/)
+ assert.match(page,/SendDailyCouncilButton/)
+ assert.match(page,/!acceptedToday&&!activeSendingToday/)
+ assert.match(button,/useFormStatus/)
+ assert.match(button,/disabled=\{disabled\|\|pending\}/)
+ assert.match(button,/Sending report…/)
+ assert.match(actions,/#daily-council-report/)
+ assert.match(page,/https:\/\/t\.me\/Andydotbot/)
 })

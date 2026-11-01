@@ -25,11 +25,19 @@ export async function POST(request) {
       throw new AppError('ACCOUNT_CHANGED',409)
     if(!practitionerEmailAllowed(actor))throw new AppError('ACCESS_DENIED',403)
     const input=await readBody(request,768)
-    onlyKeys(input,['cursor'])
+    onlyKeys(input,['cursor','autoPlan'])
     if(input.cursor!==undefined&&input.cursor!==null&&typeof input.cursor!=='string')
       throw new AppError('INVALID_LEAD_CURSOR',400)
-    const result=await createCrmRepository(config).withOwner(actor,
-      store=>store.listUnplannedLeadsPage(input.cursor??null))
+    if(input.autoPlan!==undefined&&typeof input.autoPlan!=='boolean')
+      throw new AppError('INVALID_LEAD_AUTOPLAN',400)
+    if(input.autoPlan===true&&input.cursor!==null&&input.cursor!==undefined)
+      throw new AppError('INVALID_LEAD_AUTOPLAN',400)
+    const result=await createCrmRepository(config).withOwner(actor,async store=>{
+      // Explicit owner POST only, never an anonymous intake write or GET.
+      const automatic=input.autoPlan===true?await store.autoPlanWebsiteLeadReplies():null
+      return {...await store.listUnplannedLeadsPage(input.cursor??null),
+        autoPlanned:automatic?.planned??0}
+    })
     return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
   }catch(error) {
     const safe=safeError(error)

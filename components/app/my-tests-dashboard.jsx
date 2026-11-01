@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { CheckCircle2, ChevronDown, ClipboardList, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
+import { buildPortraitRecommendations } from '@/lib/profile/portrait-recommendations'
+import { PersonalAxisMatches } from './personal-axis-matches'
 import { ClientReportActions } from './client-report-actions'
 import styles from './my-tests-dashboard.module.css'
 
@@ -38,6 +40,7 @@ export function MyTestsDashboard({
   const [showGuidance, setShowGuidance] = useState(false)
   const progress = rows.length ? Math.min(100, Math.max(0, Math.round(completed / rows.length * 100))) : 0
   const recommendation = nextPersonalRecommendation({ results: results || [], snapshot, locale })
+  const axisModel = showGuidance ? buildPortraitRecommendations(results || [], locale) : null
 
   return <section className={styles.dashboard} aria-label={c.kicker} data-my-tests-dashboard>
     <div className={styles.inner}>
@@ -91,6 +94,7 @@ export function MyTestsDashboard({
         <p>{recommendation.reason}</p>
         {recommendation.observation && <p>{recommendation.observation}</p>}
         {recommendation.reflection && <p>{recommendation.reflection}</p>}
+        <PersonalAxisMatches measurements={axisModel?.measurements || []} locale={locale} />
         <small>{c.notMedical}</small>
       </aside>}
 

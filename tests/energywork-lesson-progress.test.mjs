@@ -11,10 +11,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 63)
-  assert.deepEqual(sequence.slice(2,9), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
-  assert.equal(ranges[0].start, 2, "Two introductory slides are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [8, 14, 16, 14, 9])
+  assert.equal(sequence.length, 68)
+  assert.deepEqual(sequence.slice(3,11), ["flight-01","flight-audio","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
+  assert.equal(ranges[0].start, 3, "Teacher welcome video and two welcome screens are outside lesson 1")
+  assert.deepEqual(ranges.map(range => range.count), [8, 16, 18, 16, 7])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
@@ -29,8 +29,8 @@ test("The visible slide counter uses five real lesson lengths and a separate int
 
 test("A single checkpoint action saves before advancing and does not promise guest saving", () => {
   assert.doesNotMatch(learner, /data-energywork-save-progress|saveAndLeave/);
-  assert.match(learner, /saveAndContinue: "Save progress & continue"/);
-  assert.match(learner, /saveAndContinue: "Сохранить прогресс и продолжить"/);
+  assert.match(learner, /saveAndContinue: "Save my lesson and continue"/);
+  assert.match(learner, /saveAndContinue: "Сохранить урок и продолжить"/);
   assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
   assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
   // Revisited unchanged slides skip duplicate writes; changed slides must persist before moving on.
@@ -50,18 +50,20 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
-  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/)
+  assert.match(learner, /async function jumpToSlide\(id: string\)/)
 })
 
 
-test("The actual first lesson renders its final practice and congratulations before the consented save gate", () => {
+test("Lesson 1 finishes directly on the inline consented save milestone", () => {
   const curriculum = read("data/academy/energywork-ai-curriculum.ts");
   const expected = energyworkSequence();
   const reportIndex = expected.indexOf("flight-04");
   const practiceIndex = expected.indexOf("flight-03");
   const doneIndex = expected.indexOf("flight-done");
-  const saveIndex = expected.indexOf("flight-save");
-  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex && doneIndex < saveIndex);
-  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/);
-  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/);
+  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex);
+  assert.equal(expected[doneIndex + 1], "tan-01");
+  assert.ok(!expected.includes("flight-save"));
+  assert.match(curriculum, /slide\.phase === "flight"/);
+  assert.match(learner, /data-reiki-first-lesson-consent/);
+  assert.match(learner, /saveLessonOneToCabinet\("continue"\)/);
 });

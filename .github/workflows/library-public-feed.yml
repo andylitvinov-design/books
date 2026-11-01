@@ -1,11 +1,14 @@
 name: Library public feed focused verification
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/library-feed.tsx'
       - 'components/library-feed.module.css'
       - 'components/library-hub.tsx'
+      - 'data/academy/greek-video-series.ts'
+      - 'tests/greek-video-series.test.mjs'
       - 'components/practitioner-materials-cabinet.jsx'
       - 'components/practitioner-materials-cabinet.module.css'
       - 'app/[locale]/library/page.tsx'
@@ -15,6 +18,9 @@ on:
       - 'components/ideas-discovery.tsx'
       - 'components/ideas-discovery.module.css'
       - 'lib/ideas-guidance.mjs'
+      - 'lib/ideas-preview-rotation.mjs'
+      - 'lib/ideas-preview-rotation.d.mts'
+      - 'tests/ideas-preview-rotation.test.mjs'
       - 'lib/ideas-guidance.d.mts'
       - 'data/ideas-aphorisms.json'
       - 'tests/ideas-aphorisms-catalog.test.mjs'
@@ -34,8 +40,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Superseded PR heads must not spend 35 minutes on redundant browser jobs.
+# workflow_dispatch runs remain independent.
+concurrency:
+  group: hh-library-feed-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   isolated-build:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -51,12 +63,13 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Test Library feed, existing book reference, and owner materials isolation
-        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs
+        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs tests/greek-video-series.test.mjs
       - name: Lint changed TypeScript and JavaScript sources
-        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js
+        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx data/academy/greek-video-series.ts components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs lib/ideas-preview-rotation.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js
       - name: Production-mode Next build (no Vercel Preview created)
         run: npm run build
       - name: TypeScript type verification
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Install isolated browser engines (no service data or production network)
         run: |
@@ -74,6 +87,7 @@ jobs:
           npx --no-install next start --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-server.log 2>&1 & APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 65); do
+            echo "Library browser readiness attempt ${i}/65"
             if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then break; fi
             sleep 2
           done

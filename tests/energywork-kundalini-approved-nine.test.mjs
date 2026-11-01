@@ -35,7 +35,7 @@ const previousIds = ['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-
 test('Lesson three contains exactly nine approved questions in the requested order', () => {
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS, ids)
-  assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [8,14,16,14,9])
+  assert.deepEqual(energyworkLessonRanges().map(({ count }) => count), [7,15,17,15,6])
   assert.equal(energyworkSequence().length, 63)
   for (let i = 0; i < original.length; i++) {
     const start = curriculum.indexOf('id: "' + ids[i] + '"')

@@ -116,7 +116,7 @@ test('reuse from saved audio to a course is owner-only, quota-bound and separate
  assert.match(practice,/data-general-audio-library/)
 })
 test('storage migration broadens two private buckets, not public Reiki media',()=>{
- const migration=read('supabase/migrations/20261022141000_hh_private_phone_audio_materials.sql')
+ const migration=read('supabase/migrations/20261022144036_hh_private_phone_audio_materials_20261022.sql')
  assert.match(migration,/practitioner_materials_payload/)
  assert.match(migration,/kind IN \('image','video','audio'\)/)
  assert.match(migration,/20000000/)

@@ -1,11 +1,15 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import {ArrowLeft, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
+import CrmTelegramPhoto from './crm-telegram-photo'
+import MessagesContactCard from './messages-contact-card'
+import CrmSalesbotAssist from './crm-salesbot-assist'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
     select:'Select a conversation',reply:'Your reply',send:'Send reply',refresh:'Refresh',loading:'Loading conversations…',
-    pending:'Connection requires official provider credentials.',connect:'Connect',connected:'Registered in CRM · test delivery',none:'Not configured',
+    pending:'Connection requires official provider credentials.',connect:'Connect',pilotStart:'Start owner pilot in Telegram',guestInviteTitle:'Test from a second Telegram account',guestInviteNote:'Copy this private 15-minute invitation and open it in your other Telegram account. One invited tester at a time; no public launch.',guestInviteCopy:'Copy test invitation',guestInviteCopied:'Invitation copied',pilotSteps:'In your own Telegram chat: Start → /agree → /situation → short non-sensitive question → /skip. Refresh Messages here after each step. Use /stop to end contact.',verifyBot:'Verify Telegram bot',botVerified:'Telegram identity verified',botStates:{connected:'Webhook connected',not_set:'Webhook not configured',in_use_elsewhere:'Webhook belongs to another app — do not replace',unknown:'Webhook status unknown'},connected:'Registered in CRM · test delivery',none:'Not configured',
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
@@ -14,7 +18,7 @@ const copy={
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
-    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
+    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',pilotStart:'Начать личный тест в Telegram',guestInviteTitle:'Проверить со второго Telegram-аккаунта',guestInviteNote:'Скопируйте личное приглашение на 15 минут и откройте во втором аккаунте. Только один дополнительный тестовый чат; публичный запуск выключен.',guestInviteCopy:'Копировать приглашение',guestInviteCopied:'Ссылка скопирована',pilotSteps:'В своём чате Telegram: Старт → /agree → /situation → краткий вопрос без чувствительных данных → /skip. Затем обновите «Сообщения» в CRM. /stop прекращает переписку.',verifyBot:'Проверить Telegram-бота',botVerified:'Telegram-бот подтверждён',botStates:{connected:'Webhook подключён',not_set:'Webhook ещё не настроен',in_use_elsewhere:'Webhook принадлежит другому приложению — не заменять',unknown:'Статус webhook не определён'},connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
@@ -23,7 +27,7 @@ const copy={
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
-    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
+    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',pilotStart:'Iniciar prueba personal en Telegram',guestInviteTitle:'Probar desde otra cuenta de Telegram',guestInviteNote:'Copia esta invitación privada de 15 minutos y ábrela desde tu segunda cuenta. Solo una cuenta adicional, sin lanzamiento público.',guestInviteCopy:'Copiar invitación',guestInviteCopied:'Invitación copiada',pilotSteps:'En tu chat personal: Inicio → /agree → /situation → pregunta breve sin datos sensibles → /skip. Actualiza Mensajes después. /stop detiene el contacto.',verifyBot:'Verificar bot de Telegram',botVerified:'Identidad del bot verificada',botStates:{connected:'Webhook conectado',not_set:'Webhook sin configurar',in_use_elsewhere:'Webhook pertenece a otra aplicación — no reemplazar',unknown:'Estado del webhook desconocido'},connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
@@ -94,6 +98,8 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+// Photo-only Telegram events carry a private attachment, not display text.
+const photoOnlyMessage=/^\[(?:Voluntary photo attached for private review|Additional voluntary photo|Client portrait photo, shared voluntarily for private review|ME-GOAL-OBSTACLE drawing, shared voluntarily for private review|Additional voluntary drawing\/photo)\]$/
 function mergeThreadPages(older=[],fresh=[]){
   const index=new Map(older.map(thread=>[thread.id,thread]))
   for(const thread of fresh)index.set(thread.id,thread)
@@ -165,6 +171,7 @@ const quickReplies={
   ],
 }
 const workflowErrors={
+  TELEGRAM_BOT_IDENTITY_MISMATCH:{en:'This token belongs to a different Telegram bot. Check the dedicated BotFather token.',ru:'Этот токен принадлежит другому боту. Проверьте токен в BotFather.',es:'El token pertenece a otro bot. Comprueba el token dedicado en BotFather.'},
   PRIVATE_CONTENT_BLOCKED:{en:'Remove private report links or medical details.',ru:'Уберите приватные ссылки и медицинские сведения.',es:'Elimina enlaces privados o datos médicos.'},
   NOTE_DAILY_LIMIT:{en:'Daily limit of internal notes reached.',ru:'Достигнут суточный лимит заметок.',es:'Límite diario de notas alcanzado.'},
   CRM_FOLLOWUP_LIMIT:{en:'This contact has too many open tasks.',ru:'У этого контакта слишком много открытых задач.',es:'Este contacto tiene demasiadas tareas pendientes.'},
@@ -190,10 +197,11 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange,conversationOnly=false,onPortraitFound}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const [botCheck,setBotCheck]=useState(null)
   const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
   const pendingNote=useRef(null)
@@ -209,6 +217,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   const [threadsBusy,setThreadsBusy]=useState(false)
   const [messagesBusy,setMessagesBusy]=useState(false)
   const [needsReplyOnly,setNeedsReplyOnly]=useState(false)
+  const [showSettings,setShowSettings]=useState(false)
+  const [showFilters,setShowFilters]=useState(false)
+  const [showTools,setShowTools]=useState(false)
+  const [showQuickReplies,setShowQuickReplies]=useState(false)
+  const [showContactCard,setShowContactCard]=useState(false)
+  useEffect(()=>{onOpenChange?.(Boolean(active))},[active,onOpenChange])
+  useEffect(()=>{
+    if(!showSettings)return
+    const onEscape=event=>{if(event.key==='Escape')setShowSettings(false)}
+    document.addEventListener('keydown',onEscape)
+    return()=>document.removeEventListener('keydown',onEscape)
+  },[showSettings])
   const load=useCallback(async(threadId='',signal,{threadsBefore=null,messagesBefore=null}={})=>{
     const params=new URLSearchParams()
     if(threadId)params.set('thread',threadId)
@@ -218,8 +238,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
       headers:{'X-HH-Account-Id':accountId},signal})
     if(!result.ok)throw new Error('UNAVAILABLE')
-    return result.json()
-  },[accountId])
+    const page=await result.json()
+    if(!threadsBefore&&!messagesBefore&&Array.isArray(page.threads))
+      onThreadsLoaded?.({loading:false,error:false,threads:page.threads,
+        partial:Boolean(page.nextThreadsCursor)})
+    return page
+  },[accountId,onThreadsLoaded])
   useEffect(()=>{
     if(!accountId)return
     const ctrl=new AbortController()
@@ -227,14 +251,29 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     pendingNote.current=null
     pendingFollowup.current=null
     activeRef.current=''
-    setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('')
-    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
+    setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('');setBotCheck(null)
+    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false);setShowContactCard(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
+      if(ctrl.signal.aborted)return
       if(!activeRef.current)setData(result)
-    }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
+      // Full CRM opens an unread conversation; compact Messenger opens the
+      // conversation list first. Neither mode sends to a provider on open.
+      if(initialThreadId){
+        if(activeRef.current!==initialThreadId)void selectThread(initialThreadId)
+      }else if(!activeRef.current&&!compact){
+        const next=result.threads?.find(item=>item.needsReply||Number(item.unreadCount)>0)||
+          result.threads?.[0]
+        if(next?.id)void selectThread(next.id)
+      }
+    }).catch(e=>{
+      if(e.name!=='AbortError'&&!activeRef.current){
+        setError('unavailable')
+        onThreadsLoaded?.({loading:false,error:true,threads:[],partial:false})
+      }
+    })
     return ()=>ctrl.abort()
-  },[accountId,load])
+  },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
   async function copyWebhook(channel){
     const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
     if(!url)return
@@ -268,6 +307,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
+    setShowTools(false);setShowQuickReplies(false);setShowContactCard(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -280,10 +320,20 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           nextThreadsCursor:previous?.nextThreadsCursor===undefined
             ?result.nextThreadsCursor:previous.nextThreadsCursor,
         }))
+        // Portraits remain behind the existing authenticated CRM photo proxy.
+        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
     }catch{if(activeRef.current===id)setError('unavailable')}
     finally{if(activeRef.current===id)setThreadLoading(false)}
+  }
+  function backToList(){
+    activeRef.current=''
+    setActive('');setText('');setStatus('');setThreadLoading(false)
+    setShowTools(false);setShowQuickReplies(false)
+    pendingRequest.current=null
   }
   async function loadMoreThreads(){
     const cursor=data?.nextThreadsCursor,selectedId=activeRef.current
@@ -409,14 +459,30 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
-  return <section className={styles.panel} aria-labelledby="crm-messenger-title">
-    <header className={styles.top}>
-      <div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>
-      <button type="button" className={styles.plainButton} disabled={busy} onClick={()=>refresh()}>{t.refresh}</button>
-    </header>
-    {data&&data.accounts?.length===0&&
+  return <section className={conversationOnly?styles.detailOnly:styles.panel} aria-label={t.title}
+    data-compact={compact||undefined}>
+    {!conversationOnly&&<header className={styles.top}>
+      {!compact&&<div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>}
+      <div className={styles.topActions}>
+        {compact&&<button type="button" className={styles.settingsButton}
+          aria-expanded={showSettings} aria-controls="hh-crm-channel-settings"
+          onClick={()=>setShowSettings(value=>!value)}>
+          <Settings2 size={16} aria-hidden="true"/>{t.channels}
+          <span>{data?.accounts?.filter(item=>item.connected).length||0}/4</span>
+        </button>}
+        <button type="button" aria-label={t.refresh} className={styles.plainButton}
+          disabled={busy} onClick={()=>refresh()}>
+          {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
+        </button>
+      </div>
+    </header>}
+    {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
-    <details className={styles.channels}>
+    {!conversationOnly&&(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
+      {compact&&<button type="button" className={styles.closeSettings}
+        onClick={()=>setShowSettings(false)} aria-label={lang==='ru'?'Закрыть настройки':lang==='es'?'Cerrar ajustes':'Close settings'}>
+        <X size={18} aria-hidden="true"/></button>}
+    <details className={styles.channels} open={compact}>
       <summary>{t.channels} · {data?.accounts?.filter(item=>item.connected).length||0}/4 · {setupText[lang].instructions}</summary>
       <div className={styles.channelGrid}>
         {(data?.channels||['telegram','whatsapp','instagram','messenger'].map(channel=>({channel,providerConfigured:false,missingKeys:[]}))).map(channel=>{
@@ -431,6 +497,42 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           return <div className={styles.channel} key={channel.channel}>
             <strong>{names[channel.channel]}</strong>
             <span>{statusLabel}</span>
+            {channel.channel==='telegram'&&ok&&isPilot&&channel.pilotLinks?.[lang]&&
+              <div className={styles.pilotStart}>
+                <a href={channel.pilotLinks[lang]} target="_blank"
+                  rel="noopener noreferrer nofollow" referrerPolicy="no-referrer"
+                  className={styles.pilotAction}>{t.pilotStart}</a>
+                <p>{t.pilotSteps}</p>
+              </div>}
+            {channel.channel==='telegram'&&ok&&isPilot&&data?.guestInvites?.[lang]?.url&&
+              <div className={styles.guestPilot}>
+                <strong>{t.guestInviteTitle}</strong>
+                <p>{t.guestInviteNote}</p>
+                <button type="button" className={styles.guestPilotButton}
+                  onClick={async()=>{
+                    try{
+                      await navigator.clipboard.writeText(data.guestInvites[lang].url)
+                      setCopiedChannel('guest-pilot')
+                    }catch{setCopiedChannel('')}
+                  }}>
+                  {copiedChannel==='guest-pilot'?t.guestInviteCopied:t.guestInviteCopy}
+                </button>
+                <small>{new Intl.DateTimeFormat(lang,{
+                  timeStyle:'short',timeZone:'America/Toronto'
+                }).format(new Date(data.guestInvites[lang].expiresAt))}</small>
+              </div>}
+            {channel.channel==='telegram'&&<button type="button" className={styles.copyButton}
+              disabled={busy||missing.length>0||!channel.enabled}
+              onClick={async()=>{
+                setBotCheck(null)
+                const checked=await action('verify_telegram',{channel:'telegram'})
+                if(checked?.verified===true)setBotCheck(checked)
+              }}>{t.verifyBot}</button>}
+            {channel.channel==='telegram'&&botCheck?.verified&&<p role="status">
+              {t.botVerified} · @{botCheck.username} ·
+              {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}
+              {botCheck.webhookDeliveryError?' · '+t.botStates.unknown:''}
+            </p>}
             {!ok&&<button type="button" disabled={busy||!channel.providerConfigured}
               onClick={()=>action('connect',{channel:channel.channel})}>{t.connect}</button>}
             <details className={styles.channelGuide}>
@@ -461,24 +563,39 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
         })}
       </div>
     </details>
+    </div>}
     {!data&&!error&&<p role="status" className={styles.notice}>{t.loading}</p>}
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
-    {data&&<div className={styles.layout}>
-      <div className={styles.list} aria-label={t.customers}>
-        <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small></div>
+    {data&&<div className={conversationOnly?styles.detailLayout:styles.layout}
+      data-chat-open={Boolean(selected)}>
+      {!conversationOnly&&<div className={styles.list} aria-label={t.customers}>
+        <div className={styles.listHead}>
+          <strong>{t.customers} <span className={styles.listCount}>{threads.length}</span></strong>
+          {compact?<button type="button" className={styles.filterButton}
+            aria-label={lang==='ru'?'Фильтры переписок':lang==='es'?'Filtrar conversaciones':'Conversation filters'}
+            aria-expanded={showFilters} aria-controls="hh-crm-filter-options"
+            onClick={()=>setShowFilters(value=>!value)}><SlidersHorizontal size={16} aria-hidden="true"/>
+            {(unreadOnly||needsReplyOnly||channelFilter!=='all')&&<span aria-hidden="true">•</span>}
+          </button>:<small>{t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small>}
+        </div>
         <div className={styles.inboxFilters}>
-          <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-            aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
-            placeholder={lang==='ru'?'Поиск клиента…':lang==='es'?'Buscar cliente…':'Search client…'} />
-          <select aria-label={lang==='ru'?'Канал сообщений':lang==='es'?'Canal de mensajes':'Message channel'}
-            value={channelFilter} onChange={event=>setChannelFilter(event.target.value)}>
-            <option value="all">{t.all}</option>
-            {Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-          </select>
-          <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
-            {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
-          <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
-            {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
+          <label className={styles.searchField}>
+            <Search size={17} aria-hidden="true"/>
+            <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+              aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
+              placeholder={lang==='ru'?'Поиск клиента…':lang==='es'?'Buscar cliente…':'Search client…'} />
+          </label>
+          {(!compact||showFilters)&&<div className={styles.filtersExtra} id="hh-crm-filter-options">
+            <select aria-label={lang==='ru'?'Канал сообщений':lang==='es'?'Canal de mensajes':'Message channel'}
+              value={channelFilter} onChange={event=>setChannelFilter(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+            </select>
+            <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
+              {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
+            <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
+              {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
+          </div>}
         </div>
         {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет совпадений среди загруженных диалогов. Можно загрузить ещё.':lang==='es'?'No hay coincidencias entre los diálogos cargados. Puedes cargar más.':'No matching loaded conversations. You can load more.'}</p>}
         {visibleThreads.map(thread=><button type="button" key={thread.id}
@@ -495,18 +612,28 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           disabled={threadsBusy||busy} onClick={loadMoreThreads}>
           {threadsBusy?t.loading:t.loadThreads}
         </button>}
-      </div>
-      <div className={styles.conversation}>
-        {!selected?<p className={styles.empty}>{t.select}</p>:<>
-          <div className={styles.chatHeader}>
-            <div className={styles.chatIdentity}>
+      </div>}
+      <div className={conversationOnly?styles.detailConversation:styles.conversation}>
+        {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
+          <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
+            item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
+              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
+          {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
+            {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
+              aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
+              <ArrowLeft size={19} aria-hidden="true"/></button>}
+            {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
-            </div>
-            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
-          </div>
-          <div className={styles.contactActions}>
+            </div>}
+            {selected.unreadCount>0&&<button disabled={busy} type="button"
+              className={styles.plainButton} aria-label={t.read} title={t.read}
+              onClick={()=>action('read',{threadId:selected.id})}>
+              <CheckCheck size={18} aria-hidden="true"/>
+              <span className={styles.readLabel}>{t.read}</span>
+            </button>}
+          </div>}
+          {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
               <select value={selected.lifecycle} disabled={busy||threadLoading}
                 onChange={event=>changeStage(event.target.value)}>
@@ -515,10 +642,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
                 <option value="archived">{w.archived}</option>
               </select>
             </label>
-            <span className={styles.smallHint}>{selected.suppressed?
+            <button type="button" className={styles.profileAction} onClick={()=>setShowContactCard(true)}>
+              {lang==='ru'?'Карточка':lang==='es'?'Ficha':'Client card'}
+            </button>
+            {compact&&<button type="button" className={styles.toolsButton}
+              aria-expanded={showTools} aria-controls="hh-crm-conversation-tools"
+              onClick={()=>setShowTools(value=>!value)}>
+              {lang==='ru'?'Действия':lang==='es'?'Acciones':'Actions'}
+            </button>}
+            {!compact&&<span className={styles.smallHint}>{selected.suppressed?
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
-              w.overview}</span>
-          </div>
+              w.overview}</span>}
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -527,12 +662,15 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
-              <p>{m.text}</p>
+              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
+              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+                accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
+                purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
           </div>
-          <div className={styles.workflowActions}>
+          {!conversationOnly&&(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
             <details className={styles.actionDetails}>
               <summary>{w.followups} · {(data?.followups||[]).length}</summary>
               <div className={styles.actionBody}>
@@ -574,27 +712,51 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
                 <button type="button" disabled={busy||!noteText.trim()} onClick={saveNote}>{w.saveNote}</button>
               </div>
             </details>
-          </div>
+          </div>}
           <div className={styles.compose}>
-            <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            <div className={styles.quickReplies} role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
+            <label className={conversationOnly?styles.srOnly:undefined} htmlFor="crm-messenger-compose">{t.reply}</label>
+            {compact&&!conversationOnly&&<button type="button" className={styles.repliesToggle}
+              aria-expanded={showQuickReplies} aria-controls="hh-crm-quick-replies"
+              onClick={()=>setShowQuickReplies(value=>!value)}>
+              {lang==='ru'?'Шаблоны':lang==='es'?'Respuestas rápidas':'Quick replies'}
+            </button>}
+            {!conversationOnly&&(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
+              role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
               {quickReplies[lang].map(item=><button type="button" key={item.label}
                 disabled={busy||threadLoading||!selected.reply.ok}
-                onClick={()=>{pendingRequest.current=null;setText(item.text)}}>{item.label}</button>)}
-            </div>
+                onClick={()=>{pendingRequest.current=null;setText(item.text);setShowQuickReplies(false)}}>{item.label}</button>)}
+            </div>}
+            {(conversationOnly||compact)&&status&&<p className={styles.composeNotice} role="status">{status}</p>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
-              maxLength={1200} rows={3} onChange={e=>{
+              maxLength={1200} rows={conversationOnly?2:compact?1:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={t.manual}/>
-            <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
+              }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
+            <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
+              type="button" onClick={send} aria-label={t.send}>
+              {conversationOnly||compact?<Send size={20} aria-hidden="true"/>:t.send}
+            </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
+            {selected.reply.ok&&<div className={styles.salesbotAssistSlot}>
+              <CrmSalesbotAssist key={`${accountId}:${selected.id}`} accountId={accountId}
+                threadId={selected.id} locale={lang} disabled={busy||threadLoading}
+                iconOnly={conversationOnly}
+                onInsert={draft=>{
+                  // Nothing is sent here; the owner must review and press Send.
+                  if(activeRef.current!==selected.id||busy||threadLoading||!selected.reply.ok)return false
+                  if(text.trim()&&!window.confirm(lang==='ru'?'Заменить текущий черновик?':
+                    lang==='es'?'¿Reemplazar el borrador actual?':'Replace your current draft?'))return false
+                  pendingRequest.current=null
+                  setText(draft)
+                  return true
+                }}/>
+            </div>}
           </div>
         </>}
       </div>
     </div>}
-    {status&&<p role="status" className={styles.notice}>{status}</p>}
-    <p className={styles.disclaimer}>{t.manual}</p>
+    {!conversationOnly&&!compact&&status&&<p role="status" className={styles.notice}>{status}</p>}
+    {!compact&&!conversationOnly&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }

@@ -6,11 +6,15 @@ import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
+import { AcademyTraditionCoachingLanding } from "@/components/academy-tradition-coaching-landing";
+import { traditionBySlug } from "@/lib/personal-coaching/traditions";
 import { PublicGrowthCourses } from "@/components/public-growth-courses";
 import PublicPractitionerCourses from "@/components/public-practitioner-courses";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
 import { PrinciplesOfEnergywork, KundaliniFreeInitiation } from "@/components/principles-of-energywork";
 import { EnergyworkAiLearner } from "@/components/energywork-ai-learner";
+import { EgyptianPriesthoodLanding } from "@/components/egyptian-priesthood-course";
+import { EgyptianPriesthoodLearner } from "@/components/egyptian-priesthood-learner";
 import { TempleStudies } from "@/components/temple-studies";
 import { templeLegacyAnchors } from "@/data/academy/temple-studies-curriculum";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
@@ -27,7 +31,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { seoMetaForAcademyRoute } from "@/data/academy/seo-overrides";
 import type { PublicLocale } from "@/lib/public-locales";
 
-type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[]; start?: string | string[] }> };
+type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[]; start?: string | string[]; lesson?: string | string[] }> };
 
 const directionPath: Record<string, AcademyDirectionId> = { reiki: "reiki", mysteries: "mysteries", symbolic: "symbolic", applied: "applied", path: "school", archive: "archive" };
 const prefixCopy: Record<string, Record<PublicLocale, { title: string; description: string }>> = {
@@ -54,6 +58,10 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  if (routeKey(slug) === "coaching/egyptian") return traditionBySlug("egyptian")?.name[locale] || "Egyptian Goal Planning";
+  if (routeKey(slug) === "coaching/greek") return traditionBySlug("greek")?.name[locale] || "Greek Goal Planning";
+  if (routeKey(slug) === "egyptian-priesthood") return locale === "ru" ? "Египетское жречество — видеокурс Осириса" : locale === "es" ? "Sacerdocio egipcio — curso de Osiris" : "Egyptian Priesthood — Osiris Video Course";
+  if (routeKey(slug) === "egyptian-priesthood/learn") return locale === "ru" ? "Египетское жречество — обучение" : locale === "es" ? "Sacerdocio egipcio — aprender" : "Egyptian Priesthood — Learning Journey";
   if (routeKey(slug) === "free-ai-courses") return locale === "ru" ? "Бесплатные ИИ-курсы" : locale === "es" ? "Cursos de IA gratuitos" : "Free AI Courses";
   if (routeKey(slug) === "principles-of-energywork/learn") return locale === "ru" ? "Практик Рейки — бесплатный интерактивный курс" : locale === "es" ? "Reiki Practitioner — curso interactivo gratis" : "Reiki Practitioner — free interactive course";
   if (routeKey(slug) === "principles-of-energywork") return locale === "ru" ? "Бесплатный курс «Практик Рейки»: обучение и инициация" : locale === "es" ? "Curso gratis Reiki Practitioner: estudio e iniciación" : "Free Course Reiki Practitioner: Study & Initiation";
@@ -89,7 +97,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "principles-of-energywork/learn"
+  const ancientCourse = routeKey(slug) === "coaching/egyptian" ? traditionBySlug("egyptian")
+    : routeKey(slug) === "coaching/greek" ? traditionBySlug("greek") : null;
+  const description = ancientCourse ? ancientCourse.description[locale]
+    : routeKey(slug) === "egyptian-priesthood" || routeKey(slug) === "egyptian-priesthood/learn"
+    ? locale === "ru" ? "Египетское жречество: 7 оригинальных видеоуроков Андрея Литвинова по циклу Осириса, короткие практики, рефлексия и переход к египетским мистериям."
+      : locale === "es" ? "Sacerdocio egipcio: siete vídeos originales en ruso del ciclo de Osiris, prácticas y reflexiones." : "Egyptian Priesthood: seven original Russian-language Osiris video lessons by Andrey Litvinov, reflection and historical study."
+    : routeKey(slug) === "principles-of-energywork/learn"
     ? locale === "ru" ? "Бесплатный интерактивный курс «Практик Рейки»: пять уроков, авторские медитации и практические задания." : locale === "es" ? "Curso interactivo gratis Reiki Practitioner: cinco lecciones, meditaciones originales y ejercicios." : "Free Reiki Practitioner study course: five lessons, original guided meditations and practical exercises."
     : routeKey(slug) === "free-ai-courses"
     ? locale === "ru" ? "Бесплатные образовательные курсы Holistic House: ОПОРА Антистресс, 14 занятий и личный прогресс в кабинете." : locale === "es" ? "Cursos gratuitos de Holistic House: OPORA Antiestrés, 14 lecciones y seguimiento personal." : "Free Holistic House courses: OPORA Stress Relief, 14 lessons, guided practices and your private course progress."
@@ -131,7 +145,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: metadataBaseFor(),
     title: resolvedTitle,
     description: resolvedDescription,
-    ...(routeKey(slug) === "principles-of-energywork/learn" ? { robots: { index: false, follow: false } } : {}),
+    ...(["principles-of-energywork/learn", "egyptian-priesthood/learn"].includes(routeKey(slug)) ? { robots: { index: false, follow: false } } : {}),
     alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, "x-default": "/en/academy" + languageSuffix } },
     ...(tantraFreeInitiation || referralLanding ? {
       openGraph: {
@@ -166,6 +180,14 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "coaching/egyptian") return <AcademyTraditionCoachingLanding locale={locale} slug="egyptian" />;
+  if (key === "coaching/greek") return <AcademyTraditionCoachingLanding locale={locale} slug="greek" />;
+  if (key === "egyptian-priesthood") return <EgyptianPriesthoodLanding locale={locale} />;
+  if (key === "egyptian-priesthood/learn") {
+    const rawLesson = Array.isArray(query.lesson) ? query.lesson[0] : query.lesson;
+    const lesson = rawLesson && /^[1-7]$/.test(rawLesson) ? Number(rawLesson) : undefined;
+    return <EgyptianPriesthoodLearner locale={locale} initialDay={lesson} />;
+  }
   if (key === "free-ai-courses") return <><PublicGrowthCourses locale={locale} /><PublicPractitionerCourses locale={locale} /></>;
   if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
   if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} />;

@@ -10,8 +10,12 @@ const css = read("components/home-explore-sections.module.css");
 test("all three home locales show a unified photo-left section directory instead of tall text-only cards", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
-  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(spanish, /<HomeExploreSections locale="es" \/>/);
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/);
+  assert.match(spanish, /<HomeMoreDisclosure locale="es" \/>/);
+  assert.match(more, /data-home-topic-filters/);
+  assert.match(more, /data-home-topic-filter="temple"/);
+  assert.match(more, /ssr: false/);
   for (const source of [home, spanish]) assert.doesNotMatch(source, /service-home-start-card/);
   assert.match(component, /data-home-start data-home-sections="photo-left"/);
   assert.match(component, /id="start-here"/);
@@ -33,6 +37,7 @@ test("every key section has an actual route and approved local photo", () => {
     ["academy", "/academy", "reiki-approved-sunrise-v3.webp"],
     ["business", "/explore/business", "andy-about.png"],
     ["ideas", "/books", "books-library.webp"],
+    ["temple", "/holistic-support", "ideas-zen-landscape.svg"],
   ]) {
     assert.ok(component.includes('id: "' + id + '"'), id + " section missing");
     assert.ok(component.includes('path: "' + path + '"'), id + " route missing");
@@ -57,6 +62,7 @@ test("each site destination explains the benefit and CTA in EN, RU and ES", () =
   assert.equal((component.match(/academy: \{ eyebrow:/g) || []).length, 3);
   assert.equal((component.match(/business: \{ eyebrow:/g) || []).length, 3);
   assert.equal((component.match(/ideas: \{ eyebrow:/g) || []).length, 3);
+  assert.equal((component.match(/temple: \{ eyebrow:/g) || []).length, 3);
   for (const locale of segments) assert.ok(component.includes(locale), "Missing " + locale);
   assert.match(component, /without a live call/);
   assert.match(component, /sin llamada/);

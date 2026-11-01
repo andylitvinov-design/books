@@ -96,7 +96,7 @@ test('existing iOS/Android PWA remains same Holistic House app; no test-only APK
     assert.equal(x.name,'Holistic House')
     assert.equal(x.id,'/en/app')
     assert.equal(x.display,'standalone')
-    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/consultations')))
+    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/messages')))
   }
   const ui=read('components/app/post-signup-install-offer.jsx')
   assert.doesNotMatch(ui,/\.apk|testflight|app-store|play\.google|google-services\.json|HH_FCM/)
@@ -128,4 +128,14 @@ test('post-signup report Save offers install only for the matching new active ac
   assert.match(offer,/context!=='saved'/)
   assert.match(offer,/context==='saved'/)
   assert.doesNotMatch(offer,/sessionStorage|localStorage|PushManager|Notification\.requestPermission/)
+})
+
+test('Cabinet install control reuses the pre-login browser prompt and respects native shells',()=>{
+  const panel=read('components/app/install-holistic-house.jsx')
+  assert.match(panel,/onPwaInstallPrompt\(event=>setOffer\(Boolean\(event\)\)\)/)
+  assert.match(panel,/requestPwaInstallation\(\)/)
+  assert.doesNotMatch(panel,/window\.addEventListener\('beforeinstallprompt'/)
+  assert.match(panel,/window\.Capacitor\?\.isNativePlatform\?\.\(\)===true/)
+  assert.match(panel,/navigator\.maxTouchPoints>1/)
+  assert.match(panel,/appinstalled/)
 })

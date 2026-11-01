@@ -61,11 +61,20 @@ try {
       });
       try {
         await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+        // The approved home UI defers its conversation guide until the
+        // visitor explicitly opens the question disclosure. Do not force
+        // mounting or load private chat code before the visitor asks.
+        const disclosure = page.locator('[data-home-more-deferred="true"]');
+        await expect(disclosure).toHaveCount(1);
+        await expect(disclosure).not.toHaveAttribute("open", "");
+        await expect(page.locator("[data-home-conversation-guide]")).toHaveCount(0);
+        await disclosure.locator("summary").click();
+        await expect(disclosure).toHaveAttribute("open", "");
         const guide = page.locator("[data-home-conversation-guide]");
-        await expect(guide).toHaveCount(1);
+        await expect(guide).toHaveCount(1, { timeout: 10000 });
         await expect(guide).toBeVisible();
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
-        await expect(guide.locator("div[class*=quickChoices] button")).toHaveCount(3);
+        await expect(guide.locator("[data-home-guide-needs] a")).toHaveCount(6);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
@@ -82,11 +91,135 @@ try {
         const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "true");
-        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeVisible();
-        await expect(diagnosis.locator('input[name="contact"]')).toBeVisible();
+        const requestPanel = diagnosis.locator("[data-home-diagnosis-request]");
+        await expect(requestPanel).toBeVisible();
+        await expect(requestPanel.locator('input[type="text"]')).toBeVisible();
+        await expect(requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]')).toBeVisible();
+        await expect(requestPanel.locator('button[data-home-diagnosis-channel="telegram"]')).toBeVisible();
+        assert.equal(await requestPanel.evaluate(node => node.parentElement?.getAttribute("class")?.includes("panel")),
+          true, "Messenger selection must remain inside the same banner card");
+        if (width === 390 && scenario.locale === "en" && scenario.text === scenarios[0].text) {
+          // Browser-real save/failure behaviour, but strictly synthetic API and
+          // fake popup: never submit a production lead or open external providers.
+          const registrations = [];
+          let failOnce = true;
+          await page.route("**/api/service-enquiries", async route => {
+            const payload = JSON.parse(route.request().postData() || "{}");
+            registrations.push(payload);
+            if (failOnce) {
+              failOnce = false;
+              return route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"CRM_UNAVAILABLE"}' });
+            }
+            return route.fulfill({ status: 201, contentType: "application/json",
+              body: '{"saved":true,"referenceCode":"HH-AABBCCDDEEFF"}' });
+          });
+          await page.evaluate(() => {
+            const qa = { opened: 0, closed: 0, destination: "" };
+            window.__homeMessengerQA = qa;
+            window.open = () => {
+              qa.opened++;
+              const popup = { opener: null, closed: false, location: {
+                replace: destination => { qa.destination = destination; },
+              }, close() { qa.closed++; popup.closed = true; } };
+              return popup;
+            };
+          });
+          await requestPanel.locator('input[type="text"]').fill("qa.home@example.test");
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[role="alert"]')).toContainText("Please agree");
+          assert.equal(registrations.length, 0, "No CRM request before explicit reply consent");
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          // Real visitor taps the consent text; the independent label forwards
+          // exactly one click to its named input, on touch and mouse.
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[role="alert"]')).toBeVisible();
+          assert.equal(await requestPanel.locator("[data-lead-saved]").count(), 0,
+            "500 must never be a CRM success");
+          const failed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
+          assert.deepEqual(failed, { opened: 1, closed: 1, destination: "" },
+            "Failed save closes popup without connecting to a messenger");
+          await requestPanel.locator('button[data-home-diagnosis-channel="telegram"]').click();
+          await expect(requestPanel.locator("[data-lead-saved]")).toContainText("HH-AABBCCDDEEFF");
+          assert.equal(registrations.length, 2);
+          assert.deepEqual(registrations[0], registrations[1],
+            "Transport retry keeps the same idempotent contact request");
+          assert.equal(registrations[1].contact.email, "qa.home@example.test");
+          assert.equal(registrations[1].contactConsent, true);
+          assert.equal(registrations[1].sourcePath, "/en/services/free-situation-review");
+          const confirmed = await page.evaluate(() => ({ ...window.__homeMessengerQA }));
+          assert.equal(confirmed.opened, 2);
+          assert.equal(confirmed.closed, 1);
+          const link = new URL(confirmed.destination);
+          assert.equal(link.hostname, "t.me");
+          assert.equal(link.pathname, "/AndyTherapist");
+          assert.match(link.searchParams.get("text") || "", /HH-AABBCCDDEEFF/);
+          assert.doesNotMatch(confirmed.destination, /qa\.home@example\.test/,
+            "Contact must never go into WhatsApp/Telegram URL");
+          const whatsapp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
+          const telegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
+          await expect(whatsapp).toBeVisible();
+          await expect(telegram).toBeVisible();
+          const waMessage = new URL(await whatsapp.getAttribute("href")).searchParams.get("text");
+          assert.equal(waMessage, link.searchParams.get("text"), "Both providers get identical safe draft");
+          for (const button of [whatsapp, telegram]) {
+            await button.click({ trial: true, timeout: 8000 });
+            const rect = await button.boundingBox();
+            assert.ok(rect && rect.width >= 100 && rect.height >= 44, "Mobile messenger link must be tappable");
+            assert.ok(rect.x >= -1 && rect.x + rect.width <= width + 1, "Messenger fits 390px iPhone");
+          }
+          await diagnosis.screenshot({
+            path: "artifacts/home-conversation/" + engineName + "-inline-messenger-390.png",
+            animations: "disabled",
+          });
+        }
+        if (width === 430 && scenario.locale === "ru" && scenario.text === scenarios[1].text) {
+          // A provider handoff error after the server ACK must not retract an
+          // already committed CRM lead. No live contact or external send.
+          const payloads = [];
+          await page.route("**/api/service-enquiries", async route => {
+            payloads.push(JSON.parse(route.request().postData() || "{}"));
+            return route.fulfill({ status: 201, contentType: "application/json",
+              body: '{"saved":true,"referenceCode":"HH-FFEEDDCCBBAA"}' });
+          });
+          await page.evaluate(() => {
+            const qa = { opened: 0, closed: 0, attempted: 0 };
+            window.__homeHandoffFailureQA = qa;
+            window.open = () => {
+              qa.opened++;
+              const popup = {
+                opener: null, closed: false,
+                location: { replace() { qa.attempted++; throw new Error("SIMULATED_SAFARI_HANDOFF_BLOCK"); } },
+                close() { qa.closed++; popup.closed = true; },
+              };
+              return popup;
+            };
+          });
+          await requestPanel.locator('input[type="text"]').fill("qa-failed-handoff@example.test");
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[data-lead-saved]')).toContainText("HH-FFEEDDCCBBAA");
+          await expect(requestPanel.locator('[role="alert"]')).toContainText(
+            "Заявка сохранена, но мессенджер не открылся");
+          assert.equal(payloads.length, 1, "A failed handoff cannot reinsert a saved lead");
+          assert.equal(payloads[0].contact.email, "qa-failed-handoff@example.test");
+          assert.deepEqual(await page.evaluate(() => ({ ...window.__homeHandoffFailureQA })),
+            { opened: 1, closed: 1, attempted: 1 });
+          const safeWhatsApp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
+          const safeTelegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
+          await expect(safeWhatsApp).toBeVisible();
+          await expect(safeTelegram).toBeVisible();
+          assert.match(await safeWhatsApp.getAttribute("href") || "", /HH-FFEEDDCCBBAA/);
+          assert.doesNotMatch(await safeTelegram.getAttribute("href") || "", /qa-failed-handoff/);
+        }
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "false");
-        await expect(diagnosis.locator("[data-compact-lead-form]")).toBeHidden();
+        await expect(requestPanel).toBeHidden();
         const geometry = await guide.evaluate(node => {
           const rect = node.getBoundingClientRect();
           return { left: rect.left, right: rect.right, viewport: window.innerWidth };
@@ -96,7 +229,7 @@ try {
         const visualFit = await page.evaluate(() => {
           const masthead = document.querySelector(".house-home--services > .house-header--services");
           const hero = document.querySelector("[data-home-conversation-guide] [class*=intro]");
-          const firstTile = document.querySelector("[data-home-conversation-guide] [class*=quickChoices] button:first-child");
+          const firstTile = document.querySelector('[data-home-conversation-guide] [data-home-guide-need="stress"]');
           if (!masthead || !hero || !firstTile) return null;
           const mastheadBox = masthead.getBoundingClientRect();
           const heroBox = hero.getBoundingClientRect();
@@ -111,24 +244,42 @@ try {
         });
         assert.ok(visualFit && visualFit.headerInside && visualFit.headerContentFits && visualFit.heroTitleInside,
           scenario.locale + "/" + width + " masthead or pine hero overflows: " + JSON.stringify(visualFit));
-        assert.ok(visualFit.starterTileHeight >= 72, "Ideas-style quick start must stay easy to tap");
+        assert.ok(visualFit.starterTileHeight >= 70, "Quick request cards must stay easy to tap");
         assert.equal(visualFit.starterTileColor, "rgb(7, 78, 80)", "Evergreen featured topic must match Ideas");
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
         }
-        await expect(guide.locator("[data-home-guide-filters] button")).toHaveCount(5);
-        const testsLabel={en:"Free tests",ru:"Бесплатные тесты",es:"Pruebas gratis"}[scenario.locale];
-        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:testsLabel,exact:true}).click();
-        await expect(guide.locator('[data-home-guide-browse-offer="tests"]')).toBeVisible();
-        await expect(guide.locator("[data-home-guide-browse-offer]")).toHaveCount(1);
-        const testsHref=scenario.locale==="es"?"/en/client/tests":"/"+scenario.locale+"/client/tests";
-        await expect(guide.locator('[data-home-guide-browse-offer="tests"] a')).toHaveAttribute("href",testsHref);
-        const allLabel={en:"All",ru:"Всё",es:"Todo"}[scenario.locale];
-        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:allLabel,exact:true}).click();
-        assert.ok(await guide.locator("[data-home-guide-browse-offer]").count()<=3,"Only three inline offers");
-        if(width===390){
+        const lang = scenario.locale;
+        const needLinks = {
+          stress: "/" + lang + "/courses/antistress",
+          relationships: "/" + lang + "/services/free-situation-review",
+          direction: "/" + lang + "/books",
+          business: "/" + (lang === "ru" ? "ru" : "en") + "/app/business",
+          resources: "/" + lang + "/services/dao-health-profile",
+          reiki: "/" + lang + "/academy/reiki/free-practitioner-course",
+        };
+        for (const [id, href] of Object.entries(needLinks)) {
+          const card = guide.locator('[data-home-guide-need="' + id + '"]');
+          await expect(card).toBeVisible();
+          await expect(card).toHaveAttribute("href", href);
+          assert.ok((await card.locator("small").innerText()).trim().length >= 5,
+            "Every need must identify its helpful site category");
+        }
+        const boardFit = await guide.evaluate(node => {
+          const grid = node.querySelector("[data-home-guide-needs]");
+          return {
+            height: node.getBoundingClientRect().height,
+            sectionOverflows: node.scrollHeight > node.clientHeight + 2,
+            categoryOverflows: Boolean(grid && grid.scrollWidth > grid.clientWidth + 2),
+            columns: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
+          };
+        });
+        assert.ok(boardFit.height <= 610 && !boardFit.sectionOverflows && !boardFit.categoryOverflows,
+          lang + "/" + width + " six-card board must fit within one 820px screen without internal scrolling: " + JSON.stringify(boardFit));
+        assert.equal(boardFit.columns, 2, "Phone needs grid must have two columns");
+        if (width === 390) {
           await guide.scrollIntoViewIfNeeded();
-          await page.screenshot({path:`artifacts/home-conversation/${engineName}-${scenario.locale}-advisor.png`});
+          await page.screenshot({path: `artifacts/home-conversation/${engineName}-${scenario.locale}-needs.png`});
         }
         await guide.locator("[data-home-guide-launcher]").click();
         const dialog = guide.locator("[data-home-guide-dialog]");
@@ -182,13 +333,71 @@ try {
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
           await dialog.getByRole("button", { name: scenario.reset }).click();
         }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Natural two-question route and real local reply, including WebKit.
+          await question.fill("Хочу любви");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Встретить близкого человека",
+          }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Начать общение",
+          })).toBeVisible();
+          const replyLayout = await guide.locator("[data-home-guide-choices]").evaluate(node =>
+            ({ clipped: node.scrollWidth > node.clientWidth + 1 }));
+          assert.equal(replyLayout.clipped, false, "Conversation suggestion chips fit 390px");
+          await question.fill("Боюсь первой написать");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Спасибо");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Другие варианты");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+          await question.fill("Мне кажется, что я как будто невидима для других людей");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await guide.getByRole("button", { name: scenario.reset }).click();
+        }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Unknown input is never transmitted. Only explicit consent + a
+          // curated category creates an outgoing feedback event.
+          const observed = [];
+          await page.route("**/api/home-guide/quality", async route => {
+            observed.push(route.request().postDataJSON());
+            await route.fulfill({ status: 201, contentType: "application/json",
+              body: JSON.stringify({ saved: true }) });
+          });
+          await question.fill("Непонятные жужжалки и абракадабра");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[role="log"]')).toContainText("Я пока не совсем понял");
+          const optin = guide.locator("[data-home-guide-quality-consent] input");
+          await expect(optin).not.toBeChecked();
+          assert.equal(observed.length, 0);
+          await optin.check();
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Работа и бизнес",
+          }).click();
+          await expect.poll(() => observed.length).toBe(1);
+          assert.deepEqual(observed[0], {
+            category: "business", signal: "clarified", locale: "ru", consent: true,
+          });
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.getByRole("button", { name: scenario.reset }).click();
+        }
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
-        // Full-width first-screen CTA should handle the written question directly.
-        await guide.locator("#home-guide-entry-question").fill(scenario.text);
+        // Chat is a separate button: the full composer only appears in the modal.
+        await expect(guide.locator("#home-guide-entry-question")).toHaveCount(0);
         await guide.locator("[data-home-guide-launcher]").click();
         await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
+        await dialog.locator("textarea").fill(scenario.text);
+        await dialog.getByRole("button", { name: scenario.send }).click();
         await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
         await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
         await page.keyboard.press("Escape");

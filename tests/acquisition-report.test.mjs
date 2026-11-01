@@ -135,7 +135,10 @@ test('campaign builder rejects arbitrary URLs, contact details, secrets and unsu
 })
 
 test('admin report remains discoverable, responsive and isolated from public/private analytics', () => {
-  assert.match(read('components/practitioner-cabinet.jsx'), /href:'\/admin\/acquisition'/)
+  // The released cabinet routes marketing through the existing My Practice hub.
+  assert.ok(read('components/practitioner-cabinet.jsx').includes("href={'/'+locale+'/app/practice?panel=marketing'}"))
+  assert.match(read('components/app/practice-workspace.jsx'), /destination:'acquisition'/)
+  assert.match(read('lib/app/practitioner-access.js'), /acquisition:\s*'\/admin\/acquisition'/)
   assert.match(read('lib/public-analytics.ts'), /PUBLIC_ANALYTICS_AVAILABLE\s*=\s*false/)
   const page = read('app/admin/acquisition/page.jsx')
   for (const label of ['Not measured', 'Не измеряется', 'No medido', 'America/Toronto']) assert.ok((page + read('lib/acquisition/report.js')).includes(label))
@@ -149,11 +152,12 @@ test('admin report remains discoverable, responsive and isolated from public/pri
 test('actual middleware gives the new private route no-store, noindex and isolated CSP', async () => {
   const source = read('middleware.ts')
     .replace("from 'next/server'", `from ${JSON.stringify(moduleUrl('next/server.js'))}`)
+    .replace("from './lib/app/admin-auth-refresh'", `from ${JSON.stringify(sourceUrl('lib/app/admin-auth-refresh.js'))}`)
     .replace("from './lib/canonical-redirect'", `from ${JSON.stringify(sourceUrl('lib/canonical-redirect.js'))}`)
   const { middleware } = await import(compiledModule(source))
   const { NextRequest } = await import('next/server.js')
   for (const query of ['', '?lang=ru&days=30', '?lang=es&days=1']) {
-    const response = middleware(new NextRequest('https://holistichouse.vercel.app/admin/acquisition' + query))
+    const response = await middleware(new NextRequest('https://holistichouse.vercel.app/admin/acquisition' + query))
     assert.equal(response.headers.get('Cache-Control'), 'private, no-store, max-age=0, must-revalidate')
     assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow, noarchive')
     assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')

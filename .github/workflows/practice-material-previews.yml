@@ -28,6 +28,8 @@ on:
       - 'lib/practitioners/course-*'
       - 'supabase/migrations/*practitioner_course_builder*'
       - 'tests/practitioner-course-builder.test.mjs'
+      - 'tests/practitioner-course-quick-start.test.mjs'
+      - 'tests/practitioner-course-visual-canvas.test.mjs'
       - 'components/app/practice-materials.module.css'
       - 'components/app/practice-report-materials.jsx'
       - 'lib/practitioners/material-preview.js'
@@ -38,8 +40,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: practice-material-previews-${{ github.ref }}
-  cancel-in-progress: true
+  group: practice-material-previews-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   unit-types-build:
     runs-on: ubuntu-latest
@@ -56,7 +58,7 @@ jobs:
       # NODE_ENV=production must not omit TypeScript, ESLint or Next build tooling.
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Thumbnail URL safety and media source allowlist
-        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-materials-action-first.test.mjs tests/practice-v4-visual-parity.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs tests/course-slide-recorder.test.mjs tests/practice-video-composer-compact.test.mjs tests/practitioner-video-materials.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-approved-dashboard.test.mjs tests/practice-single-owner-cabinet.test.mjs
+        run: node --test tests/practice-material-preview-url.test.mjs tests/practice-materials-action-first.test.mjs tests/practice-v4-visual-parity.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-approved-v4-ui.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practitioner-course-visual-canvas.test.mjs tests/course-slide-recorder.test.mjs tests/practice-video-composer-compact.test.mjs tests/practitioner-video-materials.test.mjs tests/practice-single-screen-workspace.test.mjs tests/practice-approved-dashboard.test.mjs tests/practice-single-owner-cabinet.test.mjs
       - name: Phone audio regression - mobile formats, library, client reports and course reuse
         run: |
           node --test \
@@ -66,7 +68,7 @@ jobs:
             tests/client-session-owner-audio-upload.test.mjs \
             tests/practice-private-report-materials.test.mjs
       - name: ESLint of changed interactive panels
-        run: npx --no-install eslint components/app/practice-workspace.jsx components/app/practice-materials.jsx
+        run: npx --no-install eslint components/app/practice-workspace.jsx components/app/practice-materials.jsx components/app/practitioner-course-builder.jsx components/public-practitioner-course-player.jsx lib/practitioners/course-contracts.js lib/practitioners/course-repository.js
       - name: TypeScript regression
         run: npx --no-install tsc --noEmit
       - name: Production Next.js build

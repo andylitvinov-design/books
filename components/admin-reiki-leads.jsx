@@ -15,6 +15,7 @@ const TEXT = {
     started:'Лид 1 · Начало обучения', applied:'Лид 2 · Запрос на инициацию',
     learning:'Обучается', completed:'Завершил(а)', letter:'Письмо о личной инициации',
     answers:'Ответы, отзывы и материалы', none:'Пока нет сохранённых ответов',
+    photo:'Фото участника для инициации', photoUnavailable:'Не удалось загрузить фото. Повторите.', photoMissing:'К заявке фото не прикреплено.', photoShow:'Открыть защищённое фото', photoReload:'Обновить ссылку на фото', photoLoading:'Загружаем фото…',
     noLead:'Пока нет лидов. Они появятся после согласия ученика на передачу материалов.',
     error:'Не удалось загрузить заявки. Проверьте доступ и состояние базы.',
     status:'Статус', updated:'Обновлено', source:'Курс', noLetter:'Письмо ещё не отправлено',
@@ -33,6 +34,7 @@ const TEXT = {
     started:'Lead 1 · Course started', applied:'Lead 2 · Initiation requested',
     learning:'Learning', completed:'Completed', letter:'Personal initiation letter',
     answers:'Lesson answers and meditation feedback', none:'No saved answers yet',
+    photo:'Learner photo for initiation', photoUnavailable:'Photo could not be loaded. Please retry.', photoMissing:'This application has no attached photo.', photoShow:'View protected photo', photoReload:'Refresh photo link', photoLoading:'Loading photo…',
     noLead:'No leads yet. A lead appears only when a learner consents to sharing their materials.',
     error:'Unable to load requests. Check access and database readiness.',
     status:'Status', updated:'Updated', source:'Course', noLetter:'No initiation letter submitted',
@@ -71,6 +73,49 @@ function CourseAnswers({ answers, locale, copy }) {
     <p className={styles.footnote}>{copy.use}</p>
   </details>
 }
+function ApplicationPhoto({ application, copy }) {
+  const [photoUrl, setPhotoUrl] = useState(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoError, setPhotoError] = useState(false)
+  if (!application) return null
+  async function loadPhoto() {
+    if (photoBusy || !application.hasPhoto) return
+    setPhotoBusy(true)
+    setPhotoError(false)
+    try {
+      const response = await fetch('/admin/reiki-leads/data?photo=' + encodeURIComponent(application.id),
+        { cache:'no-store', credentials:'same-origin' })
+      if (!response.ok) throw new Error('PHOTO_UNAVAILABLE')
+      const data = await response.json()
+      if (!data.photoUrl || new URL(data.photoUrl).protocol !== 'https:')
+        throw new Error('PHOTO_UNAVAILABLE')
+      setPhotoUrl(data.photoUrl)
+    } catch {
+      setPhotoUrl(null)
+      setPhotoError(true)
+    } finally { setPhotoBusy(false) }
+  }
+  return <section className={styles.letter} data-reiki-crm-initiation-photo>
+    <h3>{copy.photo}</h3>
+    {!application.hasPhoto ? <p>{copy.photoMissing}</p> : <>
+      {photoUrl ? <div className={styles.photoPreview}>
+        <a href={photoUrl} target="_blank" rel="noopener noreferrer"
+          referrerPolicy="no-referrer" aria-label={copy.photo}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photoUrl} alt={copy.photo} loading="lazy"
+            referrerPolicy="no-referrer" onError={() => { setPhotoUrl(null); setPhotoError(true) }} />
+        </a>
+      </div> : null}
+      <button type="button" className={styles.photoAction} disabled={photoBusy}
+        onClick={() => { void loadPhoto() }}
+        aria-label={photoUrl ? copy.photoReload : copy.photoShow}>
+        {photoBusy ? copy.photoLoading : photoUrl ? copy.photoReload : copy.photoShow}
+      </button>
+      {photoError ? <p role="alert">{copy.photoUnavailable}</p> : null}
+    </>}
+  </section>
+}
+
 function LeadStatus({ lead, label, copy, busy, update }) {
   if (!lead) return null
   return <div className={styles.stage}>
@@ -224,6 +269,8 @@ export default function AdminReikiLeads() {
           {group.application?.reason?<section className={styles.letter}>
             <h3>{copy.letter}</h3><blockquote>{group.application.reason}</blockquote>
           </section>:null}
+          {group.application ? <ApplicationPhoto key={group.application.id}
+            application={group.application} copy={copy}/> : null}
           <CourseAnswers answers={snapshot?.answers} locale={locale} copy={copy}/>
         </article>
       }):<p className={styles.muted}>{search?copy.emptySearch:copy.noLead}</p>}

@@ -1,22 +1,42 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("approved Ideas design keeps question, submit button and three touch-sized choices on one mobile row", () => {
+test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
-  assert.match(ui, /<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
-  assert.match(ui, /<button type="submit" className=\{styles\.submit\}>/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("dao"\)\}/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("aphorisms"\)\}/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("personal"\)\}/);
-  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.actions \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.action \{ flex-direction: column;[\s\S]*?min-height: 72px/);
-  assert.match(css, /\.submit \{ width: 100%; min-height: 46px/);
+  const hub = read("components/tests-coaching-switchboard.tsx");
+  assert.match(ui, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=/);
+  for (const path of ["profile", "temple", "coaching", "support"]) assert.ok(hub.includes("data-tests-coaching-path={key}"), path);
+  assert.match(hub, /const pathOrder: Path\[\] = \["profile", "temple", "coaching", "support"\]/);
+  assert.match(ui, /<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
+  assert.match(ui, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
+  assert.match(ui, /<nav className=\{styles\.exploreLinks\} aria-label=\{t\.exploreMore\} data-ideas-explore>/);
+  assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.exploreLink\}/);
+  assert.match(ui, /data-ideas-explore-coaching/);
+  assert.match(ui, /<a href="#temple-insights"/);
+  assert.match(ui, /data-ideas-explore-temple/);
+  assert.match(ui, /<h2 id="temple-insights" className=\{styles\.templeHeading\}>/);
+  for (const label of ["Explore Coaching Options", "Explore Temple Insights", "Выбрать коучинг", "Исследовать храмовые подсказки", "Explorar opciones de coaching", "Explorar reflexiones del templo"]) {
+    assert.ok(ui.includes(label), "Localized CTA missing: " + label);
+  }
+  assert.doesNotMatch(ui, /styles\.actionLabel|styles\.actions|aria-pressed=\{activeMode\}/);
+  assert.match(css, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.exploreLink\{[\s\S]*?min-height:76px/);
+  assert.match(css, /\.exploreIcon\{/);
+  assert.match(css, /\.exploreCopy strong\{/);
+  assert.match(css, /font-variant-emoji:text/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.exploreLink\{[\s\S]*?min-height:80px/);
+  assert.ok(ui.indexOf("data-ideas-explore>") < ui.indexOf("data-ideas-hero-utility"),
+    "Explore cards appear before privacy and free-test utility text");
+  assert.match(ui, /t\.taoOverline/);
+  assert.match(ui, /<Compass size=\{18\} \/>/);
+  assert.match(ui, /<BookOpen size=\{18\} \/>/);
+  assert.match(css, /\.templeHeading\{[\s\S]*?scroll-margin-top:95px/);
+  assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /\.question textarea \{ min-height: 47px;[\s\S]*?font-size: 16px/);
-  assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
 });
@@ -40,6 +60,16 @@ test("asking a question reveals only a Daoist paragraph and Expand all; full 64-
   assert.match(css, /\.expandDao \{[\s\S]*?min-height: 44px/);
   assert.match(css, /\.daoDetails \{/);
   assert.match(css, /\.daoProse \{/);
+});
+
+test("expanded Dao interpretation has no redundant read or draw-another actions in RU/EN/ES", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  assert.match(ui, /<div className=\{styles\.daoReading\} data-ideas-dao-reading>/);
+  assert.match(ui, /<DaoOfferCards locale=\{answerLocale\}/);
+  assert.doesNotMatch(ui, /answerCopy\.(?:card|again)|styles\.hexagramActions|RefreshCw/);
+  assert.doesNotMatch(ui, /Прочитать толкование|Другой символ|Read interpretation|Draw another|Leer interpretación|Otro símbolo/);
+  assert.doesNotMatch(css, /\.hexagramActions/);
 });
 
 test("first screen shows an explicitly marked educational example, never a made-up personal answer", () => {
@@ -83,9 +113,10 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
   assert.match(ui, /t\.daoPromoReading\.title/);
   assert.match(ui, /t\.daoPromoGift\.title/);
-  assert.match(ui, /\/services\/free-consultation#intro-request/);
+  assert.match(ui, /\/services\/free-consultation#free-diagnosis-options/);
   assert.match(ui, /\/services\/free-situation-review#request-free-review/);
-  assert.match(intro, /id="intro-request"/);
+  assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
+  assert.match(read("components/free-diagnosis-offers.tsx"), /id="free-diagnosis-options"/);
   assert.match(free, /FreeEntryLanding locale=\{locale\} kind="situation"/);
   for (const text of ["Получите персональное даосское гадание", "Get a personal Daoist reading", "Recibe una lectura taoísta personal", "ПОДАРОК · БЕСПЛАТНО", "FREE GIFT", "REGALO · GRATIS"]) {
     assert.ok(ui.includes(text), "missing localized offer: " + text);
@@ -141,11 +172,14 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     '<DaoOfferCards locale={answerLocale}',
   ]), "actual results must show aphorism rows above Dao, then offers");
   assert.ok(isOrdered(preview, [
-    '<AphorismTiles items={getIdeasAphorismMatches("growth"',
+    '<AphorismTiles items={previewAphorisms}',
     '<DaoInsightPanel entry={exampleHexagram}',
     '<DaoOfferCards locale={locale}',
   ]), "educational preview must follow the same order");
   assert.match(css, /\.relatedAphorisms \.aphorisms \{ grid-template-columns:minmax\(0,1fr\); overflow:visible; \}/);
+  assert.match(css, /\.root \.results\{padding:2px;border-radius:12px\}/);
+  assert.match(css, /\.root \.relatedAphorisms\{padding:4px;border-radius:12px\}/);
+  assert.match(css, /\.root \.aphorisms li\{width:100%;padding:10px 9px\}/);
   assert.match(css, /\.relatedAphorisms \+ \.daoQuick/);
   assert.match(ui, /data-ideas-order-button="reading"/);
   assert.match(ui, /data-ideas-order-button="gift"/);
@@ -162,4 +196,48 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     assert.equal(ui.split(key + ":").length - 1, 3, "EN/RU/ES copy: " + key);
   }
   assert.doesNotMatch(ui, /fetch\(/, "Ideas question must remain in-browser");
+});
+
+
+test("Ideas example rotates on client mount, keeping private question matching intact", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  assert.match(ui, /data-ideas-preview-ready=\{previewReady \? "" : undefined\}/);
+  assert.match(ui, /data-ideas-aphorism-id=\{item\.id\}/);
+  assert.match(ui, /setPreviewAphorisms\(rotateIdeasPreviewAphorisms\(locale\)\)/);
+  assert.match(ui, /getIdeasAphorismMatches\(question, answerLocale, result\.topic\)/);
+});
+
+
+test("Ideas has one compact photographic question banner and two choices immediately beneath", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  const catalog = read("data/assessments/catalog.js");
+  assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
+  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{isHolistic \? holisticIntro\[locale\]\.choose : t\.choose\}>/);
+  assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.submit\}/);
+  assert.ok(ui.includes("data-ideas-free-coaching"));
+  assert.ok(ui.includes("data-ideas-free-test"));
+  assert.match(ui, /aria-expanded=\{showSuggestedTests\} aria-controls="ideas-filtered-tests"/);
+  assert.match(ui, /onPointerUp=\{event => \{ if \(event\.pointerType === "touch"\) openFreeTestsOnTouch\(\); \}\}/);
+  assert.match(ui, /onClick=\{event => openFreeTestsOnClick\(event\.detail\)\}/);
+  assert.match(ui, /detail > 0 && performance\.now\(\) - lastTouchFreeTestRef\.current < 650/);
+  assert.match(css, /scroll-margin-block-end:calc\(116px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(css, /touch-action:manipulation/);
+  assert.match(ui, /data-ideas-test-start=\{key\}/);
+  assert.match(ui, /client\?startTests=hh-current-state/);
+  assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);
+  for (const label of ["Get free coaching session", "Пройти бесплатную коуч-сессию", "Sesión gratuita de coaching"]) assert.ok(ui.includes(label));
+  assert.ok(ui.includes('const coachingHref = "/" + locale + "/coaching"'));
+  assert.ok(ui.includes('testLink: "Or explore a free test"'));
+  assert.match(css, /\.hero::before \{[\s\S]*?ideas-pine-sharp\.avif/);
+  assert.match(css, /\.freeTestLink \{/);
+  assert.ok(statSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)).size > 8000, "The scenic asset must retain enough detail for mobile");
+  assert.match(css, /\.hero::after \{[\s\S]*?linear-gradient/);
+  assert.match(css, /saturate\(1\.08\)/);
+  assert.match(css, /\.heading \{\s*display: block;[\s\S]*?background: transparent/);
+  assert.match(css, /\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(ui, /testOverline: "Self-guided · €0"/);
+  assert.match(ui, /ask: "Get free Taoist insight"/);
+  assert.match(css, /\.testPicker\[hidden\] \{ display: none; \}/);
+  assert.match(css, /@media \(max-width: 360px\)[\s\S]*?\.testButton/);
 });

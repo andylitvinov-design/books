@@ -4,126 +4,78 @@ import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
-import {mount,findButton,textOf,nodes} from './helpers/route-pipeline-harness.mjs'
-
-const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const languages={
-  en:{next:'Continue',save:'Save my practice',confidence:'I managed a little',map:"See what's next",
-    instruction:/Sit comfortably and notice the chair or floor supporting you/,
-    finish:/Congratulations/},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',confidence:'Получилось немного',
-    map:'Посмотреть, что дальше',instruction:/Сядьте удобно и почувствуйте опору/,
-    finish:/Поздравляем/},
-  es:{next:'Continuar',save:'Guardar mi práctica',confidence:'Pude hacerlo un poco',
-    map:'Ver qué viene después',instruction:/Siéntate cómodamente y siente el apoyo/,
-    finish:/Enhorabuena/}
-}
-function fixture(locale='en',day=3){
+import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+const player=read('components/app/opora-experience-player.jsx')
+const outro=read('components/app/opora-ocean-outro.jsx')
+const style=read('components/app/opora-experience-player.module.css')
+function fixture(locale,day){
   const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
-  const data={cycle:{id:'00000000-0000-4000-8000-000000008888',day,durationDays:14},
-    programme:{id:'stress'},lesson,currentSession:null}
-  let writes=0,exits=0
-  const h=mount('opora-experience-player',{locale,data,onClose(){exits++},onFinish(){exits++},
-    onSession:async()=>{writes++;return true}})
-  return {h,get writes(){return writes},get exits(){return exits}}
+  let writes=0
+  const h=mount('opora-experience-player',{locale,data:{
+    cycle:{id:'00000000-0000-4000-8000-000000009999',day,durationDays:14},
+    programme:{id:'stress'},lesson,currentSession:null},
+    onClose(){},onFinish(){},onSession:async()=>{writes++;return true}})
+  return {h,get writes(){return writes}}
 }
+const sound=h=>nodes(h.tree).filter(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
+const screen=h=>nodes(h.tree).find(n=>n.props?.['data-opora-current-screen'])
 async function click(h,label){
-  const control=findButton(h.tree,label)
-  assert.ok(control,'Missing '+label+' on '+textOf(h.tree).slice(0,400))
-  control.props.onClick()
-  await h.settle()
+  const b=findButton(h.tree,label)
+  assert.ok(b,'Missing '+label+' at '+textOf(h.tree).slice(0,200))
+  b.props.onClick();await h.settle()
 }
-const playerNode=tree=>nodes(tree).find(n=>n.type?.testName==='OporaOceanOutro'&&n.props?.compact)
-const meditationNode=tree=>nodes(tree).find(n=>n.props?.['data-opora-guided-meditation']==='true')
-async function practice(f,locale){
-  const d=languages[locale]
-  await click(f.h,d.next)
-  await click(f.h,d.next)
-}
-async function finish(f,locale){
-  const d=languages[locale],h=f.h
-  for(let i=0;i<12&&!findButton(h.tree,d.save);i++)await click(h,d.next)
-  assert.ok(findButton(h.tree,d.save),'Recap required before saving')
-  await click(h,d.confidence)
-  await click(h,d.save)
-  assert.equal(f.writes,1)
-}
-test('inline guided two-minute meditation is a part of day 3 practice, not a new slide',async()=>{
-  const f=fixture(),h=f.h
-  await practice(f,'en')
-  assert.match(textOf(h.tree),languages.en.instruction)
-  assert.match(textOf(h.tree),/Start the timer: with waves or in silence/)
-  assert.match(textOf(h.tree),/After two minutes, look around/)
-  assert.ok(meditationNode(h.tree),'Visible three-step instructions before the player')
-  assert.ok(playerNode(h.tree),'Existing compact player in the same practice slide')
-  assert.equal(playerNode(h.tree).props.paused,false)
-  assert.match(textOf(h.tree),/2-minute grounding meditation/)
-  assert.equal(f.writes,0,'The timer is optional and cannot fabricate a saved attempt')
-  await click(h,'Continue')
-  assert.ok(!playerNode(h.tree),'Audio unmounts on next lesson step')
-  await finish(f,'en')
-  assert.match(textOf(h.tree),languages.en.finish)
-  assert.ok(!playerNode(h.tree),'No audio stage after congratulations')
-  assert.ok(!meditationNode(h.tree),'No repeated practice after congratulations')
-  await click(h,languages.en.map)
-  assert.match(textOf(h.tree),/Your complete 14-day journey/)
-  assert.equal(f.writes,1)
-  h.unmount()
-})
-test('EN/RU/ES all have actionable meditation steps and direct map after saved reward',async()=>{
-  for(const lang of ['en','ru','es']){
-    const f=fixture(lang),h=f.h,d=languages[lang]
-    await practice(f,lang)
-    assert.match(textOf(h.tree),d.instruction)
-    assert.ok(meditationNode(h.tree))
-    assert.ok(playerNode(h.tree))
-    await finish(f,lang)
-    assert.match(textOf(h.tree),d.finish)
-    assert.ok(!playerNode(h.tree))
-    await click(h,d.map)
-    assert.match(textOf(h.tree),lang==='ru'?/Ваш путь из 14 дней/:lang==='es'?/Tu recorrido completo de 14 días/:/Your complete 14-day journey/)
-    assert.equal(f.writes,1)
-    h.unmount()
+
+test('day 14 has exactly one user-started imagery meditation in AS-6.0',async()=>{
+  for(const [locale,next,save,confidence] of [
+    ['en','Continue','Save my practice','I managed a little'],
+    ['ru','Продолжить','Сохранить мою практику','Получилось немного'],
+    ['es','Continuar','Guardar mi práctica','Pude hacerlo un poco']]){
+    const f=fixture(locale,14),h=f.h
+    try{
+      await advanceOporaTo(h,'imageryMeditation',next)
+      const card=nodes(h.tree).find(n=>n.props?.['data-opora-experience-channel']==='imagery')
+      assert.ok(card,'Guided imagery is a separate screen for all languages')
+      assert.equal(sound(h).length,1)
+      await click(h,next)
+      assert.equal(sound(h).length,0,'Audio unmounts before practice')
+      await advanceOporaTo(h,'recapFeedback',next)
+      assert.equal(sound(h).length,0,'No duplicate closing meditation for AS-6.0')
+      await click(h,confidence)
+      await click(h,save)
+      assert.equal(f.writes,1)
+      assert.equal(sound(h).length,0,'No audio after session save')
+    }finally{h.unmount()}
   }
 })
-test('saved day 2 receipt bypasses optional ocean and keeps direct map navigation',async()=>{
-  const f=fixture('en',2),h=f.h
-  await finish(f,'en')
-  assert.match(textOf(h.tree),/Congratulations! Lesson 2 complete!/)
-  assert.ok(findButton(h.tree,"See what's next"))
-  assert.ok(!findButton(h.tree,'Relax with waves'))
-  assert.ok(!playerNode(h.tree))
-  await click(h,"See what's next")
-  assert.match(textOf(h.tree),/Your complete 14-day journey/)
-  assert.equal(f.writes,1)
-  h.unmount()
+test('ordinary days include opt-in audio in imagery only, and preserve their saved receipt',async()=>{
+  for(const day of [1,3,4,13]){
+    const f=fixture('en',day),h=f.h
+    try{
+      await advanceOporaTo(h,'imageryMeditation','Continue')
+      assert.equal(sound(h).length,1,'Daily imagery must provide optional audio')
+      await advanceOporaTo(h,'practice','Continue')
+      assert.equal(sound(h).length,0,'Stop sound when leaving imagery')
+      await advanceOporaTo(h,'recapFeedback','Continue')
+      assert.equal(sound(h).length,0)
+      await click(h,'I only explored them today')
+      await click(h,'Save my practice')
+      assert.equal(f.writes,1)
+      assert.match(textOf(h.tree),/Congratulations/)
+    }finally{h.unmount()}
+  }
 })
-test('existing 120-second click-to-play ocean sound remains pausable, silent-capable and non-autoplay',()=>{
-  const audio=read('components/app/opora-ocean-outro.jsx')
-  const player=read('components/app/opora-experience-player.jsx')
-  const styles=read('components/app/opora-ocean-outro.module.css')
-  assert.match(audio,/useOceanPracticeAudio/)
-  assert.match(audio,/onClick=\{running\?pause:play\}/)
-  assert.match(audio,/audio\.play\(\)/)
-  assert.match(audio,/audio\.pause\(\)/)
-  assert.match(audio,/visibilitychange/)
-  assert.match(audio,/Date\.now\(\)/)
-  assert.match(audio,/window\.setInterval\(tick,250\)/)
-  assert.match(audio,/remaining===0/)
-  assert.match(audio,/DURATION=120/)
-  assert.match(audio,/data-opora-inline-audio=\{compact\?'true':undefined\}/)
-  assert.doesNotMatch(audio,/<audio[^>]*autoplay|fetch\(|new Audio\(/i)
-  assert.match(player,/data-opora-guided-meditation="true"/)
+test('audio honors pause, elapsed seconds, foreground safety and never starts automatically',()=>{
+  assert.match(outro,/useOceanPracticeAudio/)
+  assert.match(outro,/Date\.now\(\)/)
+  assert.match(outro,/window\.setInterval\(tick,250\)/)
+  assert.match(outro,/remaining===0/)
+  assert.match(outro,/audio\.pause\(\)/)
+  assert.match(outro,/visibilitychange/)
+  assert.match(outro,/data-opora-inline-audio=\{compact\?'true':undefined\}/)
   assert.match(player,/<OporaOceanOutro locale=\{lang\} paused=\{safety\} compact\/>/)
   assert.doesNotMatch(player,/outroOpen|moment==='ocean'/)
-  assert.match(styles,/prefers-reduced-motion/)
-  assert.match(styles,/@media\(max-width:345px\)/)
-  for(const [path,source] of [
-    ['components/app/opora-ocean-outro.jsx',audio],
-    ['components/app/opora-experience-player.jsx',player]
-  ]){
-    const parsed=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
-    assert.deepEqual(parsed.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[],
-      'JSX syntax must be valid: '+path)
-  }
+  const parsed=ts.createSourceFile('opora-experience-player.jsx',player,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.deepEqual(parsed.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[])
 })

@@ -52,25 +52,33 @@ async function verify(browserType,locale,width){
     assert.equal(await page.locator('[data-business-service-card]').count(),3,label+': first three services')
     if(snap)await page.screenshot({path:dir+'/01-photo-and-three-choices.png',fullPage:false})
 
-    // One answer immediately returns an approved €50/30-minute format.
+    // Every answer reveals BOTH paths: an actual free questionnaire and a consented personal session.
     await page.locator('[data-business-need="income"]').click()
     await page.locator('[data-business-finder-result]').waitFor({state:'visible'})
+    assert.equal(await page.locator('[data-business-result-path]').count(),2,label+': two visible paths')
+    const freeCta=page.locator('[data-business-finder-start="free-review"]')
     const cta=page.locator('[data-business-finder-start="website-form"]')
+    assert.equal(await freeCta.getAttribute('href'),'/'+locale+'/services/free-situation-review?topic=business')
+    assert.equal(await freeCta.getAttribute('data-business-finder-context'),null)
     assert.equal(await cta.getAttribute('href'),'#business-direct-request')
     assert.equal(await cta.getAttribute('data-business-direct-option'),'express')
-    const ctaBox=await cta.boundingBox()
-    assert.ok(ctaBox&&ctaBox.height>=44,label+': request button touch target')
-    if(width<=430)assert.ok(ctaBox.y+ctaBox.height<770,label+': recommendation CTA visible first fold')
-    if(snap)await page.screenshot({path:dir+'/02-recommended-service.png',fullPage:false})
+    for(const [name,link] of [['free',freeCta],['paid',cta]]){
+      const box=await link.boundingBox()
+      assert.ok(box&&box.height>=44,label+': '+name+' 44px touch target')
+      if(width<=430)assert.ok(box.y+box.height<770,label+': '+name+' CTA above fixed bottom navigation')
+    }
+    if(snap)await page.screenshot({path:dir+'/02-free-and-paid.png',fullPage:false})
     await cta.click()
     const form=page.locator('[data-business-website-enquiry]')
     await form.waitFor({state:'visible'})
     assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'express')
+    assert.ok((await form.locator('textarea').inputValue()).trim(),label+': selected need shown for review')
     await page.locator('[data-business-finder-result] summary').click()
-    await page.locator('[data-business-format-choice="free"]').click()
-    assert.equal(await cta.getAttribute('data-business-direct-option'),'free')
+    await page.locator('[data-business-format-choice="full"]').click()
+    assert.equal(await cta.getAttribute('data-business-direct-option'),'full')
+    assert.equal(await freeCta.getAttribute('href'),'/'+locale+'/services/free-situation-review?topic=business')
     await cta.click()
-    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'free')
+    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'full')
     await page.locator('[data-business-finder-reset]').click()
     assert.equal(await page.locator('[data-business-need]').count(),3)
 
@@ -92,6 +100,11 @@ async function verify(browserType,locale,width){
     assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'full')
     const after=await measure()
     assert.ok(after.content<=after.viewport+1,label+': after interactions no horizontal overflow')
+    // Follow the real free link (no lead submission), not a simulated client-side redirect.
+    await page.locator('[data-business-need="clarity"]').click()
+    await page.locator('[data-business-finder-start="free-review"]').click()
+    await page.waitForURL('**/'+locale+'/services/free-situation-review?topic=business',{timeout:30000})
+    assert.equal(new URL(page.url()).pathname,'/'+locale+'/services/free-situation-review')
     assert.deepEqual(errors,[],label+': no unhandled page errors')
     return label
   }finally{await page.close();await browser.close()}

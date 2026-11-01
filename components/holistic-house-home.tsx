@@ -1,16 +1,18 @@
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
-import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
-import { HomeConversationGuide } from "@/components/home-conversation-guide";
-import { ServicesSolutions } from "@/components/services-solutions";
-import { HomeExploreSections } from "@/components/home-explore-sections";
-import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
-import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
+import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
+import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
+import { HomePresentationVideoSection } from "@/components/home-presentation-video-section";
+import { FreeMobileAppBanner } from "@/components/free-mobile-app-banner";
+
+
+
+
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -25,8 +27,6 @@ const copy = {
     heroPrimary: "Получить бесплатный разбор",
     heroBook: "Запросить консультацию · от €50",
     heroSecondary: "Пройти бесплатные тесты",
-    videoKicker: "Короткое знакомство",
-    videoTitle: "О Holistic House за полминуты",
     aboutKicker: "Лично об Андрее",
     aboutIntro: "Я работаю с индивидуальными и групповыми практиками с 2002 года. Образы, системные расстановки и архетипические подходы помогают нам внимательнее исследовать ваш запрос. Принимаю запросы онлайн и в Торонто.",
     aboutAction: "Подробнее об Андрее",
@@ -40,8 +40,6 @@ const copy = {
     heroPrimary: "Get a free written review",
     heroBook: "Request a consultation · from €50",
     heroSecondary: "Take free self-checks",
-    videoKicker: "A short introduction",
-    videoTitle: "Holistic House in half a minute",
     aboutKicker: "Meet your practitioner",
     aboutIntro: "I have been facilitating personal and group development since 2002. My work draws on guided imagery, systemic constellations and archetypal approaches to explore your individual question. I offer sessions in Toronto and online.",
     aboutAction: "More about Andrey",
@@ -49,12 +47,9 @@ const copy = {
   },
 } as const;
 
-type HolisticHouseHomeProps = {
-  locale?: Locale;
-  introVideoContent?: ReactNode;
-};
+type HolisticHouseHomeProps = { locale?: Locale };
 
-export function HolisticHouseHome({ locale = "en", introVideoContent }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale = "en" }: HolisticHouseHomeProps) {
   const text = copy[locale];
   const entry = LOCAL_ACQUISITION[locale];
 
@@ -69,65 +64,12 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
-      <HomeFreeDiagnosisBanner locale={locale} />
-      <HomeConversationGuide locale={locale} />
-      <details className="service-home-more" id="more-directions">
-        <summary>{locale === "ru" ? "Все направления и услуги" : "All programmes and services"} <span aria-hidden="true">↓</span></summary>
-      <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
-        <div className="service-home-hero-photo" aria-hidden="true">
-          <StaticPortrait
-            src="/images/holistic-house/andy-about.png"
-            alt=""
-            fill
-            sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px"
-          />
-        </div>
-        <div className="service-home-hero-copy">
-          <p className="service-home-kicker">{entry.hero.eyebrow}</p>
-          <h1 id="house-title"><span>{text.heroTitle}</span></h1>
-          <p className="service-home-intro">{text.heroIntro}</p>
-          <div className="service-home-actions">
-            <AcquisitionEventLink
-              className="service-home-button service-home-button--primary"
-              href={`/${locale}/services#consultation`}
-              event="service_view"
-              attributes={{ "data-hero-cta": "paid-sessions" }}
-              prefetch={false}>
-              {text.heroBook}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
-            <AcquisitionEventLink
-              className="service-home-button service-home-button--secondary"
-              href={`/${locale}/services/free-situation-review`}
-              event="service_request_start"
-              attributes={{ "data-hero-cta": "free-written-review" }}
-              prefetch={false}>
-              {text.heroPrimary}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
-          </div>
-          <AcquisitionEventLink
-            className="service-home-selfcheck-link"
-            href={`/${locale}/client/tests`}
-            event="self_check_start"
-            attributes={{ "data-hero-cta": "free-tests" }}
-            prefetch={false}>
-            {text.heroSecondary}<span aria-hidden="true">→</span>
-          </AcquisitionEventLink>
-          <p className="service-home-offer-note">
-            {locale === "ru"
-              ? "Бесплатный формат — анкета, рисунок и личный письменный отчёт; звонок не входит. Личные сессии оплачиваются отдельно."
-              : "The free option includes a form, drawing and personal written report—not a live call. One-to-one sessions are separate."}
-          </p>
-        </div>
-      </section>
-
-      <ServicesSolutions locale={locale} variant="home" />
-      <HomepageTopicJourneys locale={locale} />
-      <TestSelectionCourseBanner locale={locale} />
-
-      <HomeExploreSections locale={locale} />
-      </details>
-
-      {introVideoContent}
+      <HomeMoreDisclosure locale={locale} />
+      <HomeFeaturedWorkspace locale={locale} />
+      <Suspense fallback={null}>
+        <HomePresentationVideoSection locale={locale} />
+      </Suspense>
+      <FreeMobileAppBanner locale={locale} />
 
       <PersonalTestimonials locale={locale} variant="home" />
 

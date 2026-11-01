@@ -2,18 +2,23 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
+import PracticeExpressReports from './practice-express-reports'
 import PracticeMaterials from './practice-materials'
+import {PracticeInnerHeader,PracticeInnerBottomNavigation} from './practice-inner-navigation'
 import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
 import PublicEnquiryContact from './public-enquiry-contact'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
+import RemoteGoalPhoto from './remote-goal-photo'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
+import PracticePublicAlias from './practice-public-alias'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
@@ -157,19 +162,37 @@ export function PracticeEntry({data,locale}){
     <p className="hh-kicker">{ru?'Для специалистов':'For practitioners'}</p>
     <h2>{practice?(ru?'Моя практика':'My Practice'):(ru?'Вы практик?':'Are you a practitioner?')}</h2>
     <p>{practice?(ru?'Управляйте публичным профилем, услугами и заявками в том же аккаунте.':'Manage your public profile, services and requests from the same Account.'):(ru?'Предложите свои услуги через Holistic House. Публикация проходит модерацию.':'Offer your services through Holistic House. Public profiles are moderated before publication.')}</p>
-    <Link className="hh-primary" href={'/'+locale+'/app/practice'} prefetch={false}>{practice?(ru?'Открыть My Practice':'Open My Practice'):(ru?'Стать мастером':'Become a Master')}</Link>
+    <Link className="hh-primary" href={'/'+locale+'/practice'} prefetch={false}>{practice?(ru?'Открыть My Practice':'Open My Practice'):(ru?'Стать мастером':'Become a Master')}</Link>
   </section>
 }
 
-export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
+export default function PracticeWorkspace({locale,ownerTools=null,accountId=null,showcaseEntry=false}){
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[selectedExpressRequestId,setSelectedExpressRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false),[meditationType,setMeditationType]=useState(''),[meditationPickerOpen,setMeditationPickerOpen]=useState(false),[creationGoal,setCreationGoal]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='materials'){
+      setActivePanel('materials')
+      if(params.get('materialTab')==='courses'&&params.get('create')==='1'){
+        setProCourseStart(true)
+        const meditation=params.get('meditation')
+        if(['audio','video'].includes(meditation))setMeditationType(meditation)
+      }
+    }
+    if(params.get('panel')==='services'){
+      setActivePanel('services')
+      if(params.get('create')==='1'){
+        const starter=params.get('starter')
+        setProStarter(['session','intro','workshop','diagnostic','energy','personal','reiki'].includes(starter)?starter:'')
+        setNewServiceRequest(current=>current+1)
+      }
+    }
+    // The public practitioner showroom passes only allowlisted panel choices.
+    if(['profile','requests','analytics','events'].includes(params.get('panel')))setActivePanel(params.get('panel'))
     if(params.get('panel')==='marketing')setActivePanel('marketing')
+    if(params.get('panel')==='express-reports')setActivePanel('express-reports')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')
     if(params.get('panel')==='clients'){
@@ -207,6 +230,45 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   async function act(fn,{rethrow=false}={}){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message);if(rethrow)throw e}finally{setBusy(false)}}
   const d=DASHBOARD_COPY[ru?'ru':'en']
   const isOwner=Boolean(ownerTools)
+  const creationCopy=ru?{
+    eyebrow:'ВАША ПРАКТИКА',title:'Что хотите предложить людям?',subtitle:'Начните с одного предложения — остальное можно добавить позже.',
+    service:'Разместить услугу',serviceDetail:'Сессия, диагностика или персональная поддержка',
+    reiki:'Создать услугу Рейки',reikiDetail:'Поддержка · инициация · курс, цены и сертификаты',
+    meditation:'Добавить медитацию',meditationDetail:'Запись голоса или видео для ваших клиентов',
+    audio:'Аудиомедитация',audioDetail:'Записать или загрузить аудио',
+    video:'Видеомедитация',videoDetail:'Загрузить видео',
+    safety:'Черновик сохраняется приватно. Публикация — только после вашего подтверждения.',
+    limit:'Лимит услуг достигнут',
+    registration:'Сначала завершите оформление профиля мастера и первой услуги. После активации откроется выбранный редактор.',
+  }:locale==='es'?{
+    eyebrow:'TU PRÁCTICA',title:'¿Qué quieres compartir?',subtitle:'Empieza con una propuesta. Puedes añadir más después.',
+    service:'Publicar un servicio',serviceDetail:'Sesión, diagnóstico o apoyo personal',
+    reiki:'Crear servicio Reiki',reikiDetail:'Apoyo · iniciación · curso, precios y certificados',
+    meditation:'Añadir una meditación',meditationDetail:'Audio o vídeo para tus clientes',
+    audio:'Meditación en audio',audioDetail:'Grabar o subir un audio',
+    video:'Meditación en vídeo',videoDetail:'Subir un vídeo',
+    safety:'Empiezas con un borrador privado. La publicación requiere tu confirmación.',
+    limit:'Has alcanzado tu límite de servicios',
+    registration:'Completa primero tu perfil profesional y envía el primer servicio. Después se abrirá el editor elegido.',
+  }:{
+    eyebrow:'YOUR PRACTICE',title:'What would you like to share?',subtitle:'Start with one offering. You can always add more later.',
+    service:'List a service',serviceDetail:'A session, personal review or one-to-one support',
+    reiki:'Create Reiki service',reikiDetail:'Support · initiation · course, prices & certificates',
+    meditation:'Add a meditation',meditationDetail:'Share a guided audio or video practice',
+    audio:'Audio meditation',audioDetail:'Record or upload your audio',
+    video:'Video meditation',videoDetail:'Upload a guided video',
+    safety:'Start with a private draft. Nothing goes public without your confirmation.',
+    limit:'Service limit reached',
+    registration:'Complete your practitioner profile and submit your first service. Your chosen editor will open once the practice is activated.',
+  }
+  useEffect(()=>{
+    if(!data?.practiceActivated||!creationGoal)return
+    // Registration already creates the first service; do not open a duplicate draft.
+    if(['service','reiki'].includes(creationGoal)){
+      if(!data.services?.length)addService(creationGoal==='reiki'?'reiki':'')
+    } else startMeditation(creationGoal)
+    setCreationGoal('')
+  },[data?.practiceActivated,creationGoal])
   const marketingTools=[
     {destination:'growth',icon:Megaphone,title:'Growth Studio',description:ru?'Публикации, черновики и ручной календарь.':locale==='es'?'Publicaciones, borradores y calendario manual.':'Posts, drafts and manual calendar.'},
     {destination:'seo',icon:BarChart3,title:ru?'SEO и поиск':locale==='es'?'SEO y búsqueda':'SEO & search',description:ru?'Проверенные данные поиска и индексации.':locale==='es'?'Búsqueda e indexación verificadas.':'Verified search and indexing data.'},
@@ -229,10 +291,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       if(typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('/admin'))throw new Error('OPEN_UNAVAILABLE')
       // Select an allowed lesson only after the server authorizes this owner route.
       const safeLesson=['flight','tantra','kundalini','yggdrasil','initiation'].includes(lesson)?lesson:null
+      const safeTradition=['egyptian','greek'].includes(lesson)?lesson:null
       const destinationUrl=destination==='reikiCourse'&&safeLesson&&
         result.redirectUrl==='/admin/materials/courses/reiki-practitioner'
         ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')+(mode==='record'?'&mode=record':'')
-        :result.redirectUrl
+        :destination==='coachingAudio'&&result.redirectUrl==='/admin/materials/coaching'&&safeTradition
+          ?result.redirectUrl+'/'+safeTradition+'?lang='+(['ru','es'].includes(locale)?locale:'en')
+          :result.redirectUrl
       window.location.assign(destinationUrl)
     } catch {
       setError(d.ownerError);setBusy(false)
@@ -245,27 +310,65 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     if(materialType)url.searchParams.set('materialTab',materialType)
     window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
   }
+  function openExpressReportFor(request){
+    if(!request?.id || !(request.accountRequest===true || request.reportEligible===true))return
+    setSelectedExpressRequestId(request.id)
+    choosePanel('express-reports')
+  }
   function choosePanel(panel){
     setActivePanel(panel)
     setPanelRoute(panel)
     setError('')
   }
   function closePanel(){
+    // Every inner screen returns to the same public practitioner mock-up,
+    // including guests, rather than revealing the former Cabinet dashboard.
+    if(showcaseEntry){window.location.assign('/'+locale+'/practice');return}
     setActivePanel(null)
+    setProCourseStart(false)
+    setMeditationType('')
     setPanelRoute(null)
     setError('')
   }
   function openMaterialsPanel(tab){
+    setProCourseStart(false)
+    setMeditationType('')
     setActivePanel('materials')
     setMaterialTab(tab)
     setMaterialShortcut(current=>({tab,nonce:current.nonce+1}))
     setPanelRoute('materials',tab)
     setError('')
   }
-  function addService(){
+  function addService(starter=''){
+    setProStarter(typeof starter==='string'?starter:'')
     setActivePanel('services')
     setPanelRoute('services')
     setNewServiceRequest(current=>current+1)
+    setError('')
+  }
+  function startService(starter=''){
+    if(!data?.practiceActivated){
+      setCreationGoal(starter==='reiki'?'reiki':'service')
+      document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+      return
+    }
+    if(data.serviceQuota?.canAdd===false){setError('SERVICE_LIMIT_REACHED');return}
+    addService(starter)
+  }
+  function startMeditation(kind){
+    if(!['audio','video'].includes(kind))return
+    if(!data?.practiceActivated){
+      setCreationGoal(kind)
+      document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+      return
+    }
+    setProCourseStart(true)
+    setMeditationType(kind)
+    setMaterialTab('courses')
+    setActivePanel('materials')
+    setMaterialShortcut(current=>({tab:'courses',nonce:current.nonce+1}))
+    setPanelRoute('materials','courses')
+    setMeditationPickerOpen(false)
     setError('')
   }
   if(!data)return <section className="hh-practice-dashboard" aria-busy={!error}>
@@ -279,7 +382,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
-  const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
+  const openRequests=requests.filter(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
@@ -328,7 +431,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const readySteps=setupSteps.filter(step=>step.done).length
   async function shareProfile(){
     if(!profileLive){choosePanel('profile');return}
-    const url=window.location.origin+'/'+locale+'/masters/'+p.slug
+    const publicPath=p.publicAlias
+      ? (locale==='en'?'/m/':'/'+locale+'/m/')+p.publicAlias
+      : '/'+locale+'/masters/'+p.slug
+    const url='https://holistichouse.vercel.app'+publicPath
     setShareNotice('')
     try{
       if(navigator.share){await navigator.share({title:'Holistic House',url});setShareNotice(ru?'Открыто меню отправки.':'Sharing menu opened.');return}
@@ -342,10 +448,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else if(index===1)choosePanel('services')
     else shareProfile()
   }
-  return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined} data-practice-one-screen>
+  return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined}
+    data-practice-one-screen data-practice-design="unified-20261028" data-practice-showcase-inner={showcaseEntry||undefined}>
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
-        <Link href={'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
+        <Link href={showcaseEntry?'/'+locale+'/practice':'/'+locale+'/app'} prefetch={false}>{t.personal}</Link>
         <ChevronRight aria-hidden="true" />
         <strong>{d.breadcrumb}</strong>
       </nav>
@@ -359,7 +466,45 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    
+    {!activePanel&&<section className="hh-practice-first-actions" data-practice-create-first aria-label={creationCopy.title}>
+      <header className="hh-practice-first-actions-heading">
+        <span>{creationCopy.eyebrow}</span>
+        <h2>{creationCopy.title}</h2>
+        <p>{creationCopy.subtitle}</p>
+      </header>
+      <div className="hh-practice-first-actions-grid">
+        <button type="button" className="hh-practice-first-action is-service" data-create-practice-service
+          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={()=>startService()}>
+          <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{serviceQuota.canAdd||needsOnboarding?creationCopy.service:creationCopy.limit}</strong>
+            <small>{creationCopy.serviceDetail}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+        <button type="button" className="hh-practice-first-action is-reiki" data-create-practice-reiki
+          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={()=>startService('reiki')}>
+          <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{creationCopy.reiki}</strong>
+            <small>{creationCopy.reikiDetail}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+        <button type="button" className="hh-practice-first-action is-meditation" data-create-practice-meditation
+          aria-expanded={meditationPickerOpen} aria-controls="hh-practice-meditation-picker"
+          onClick={()=>setMeditationPickerOpen(open=>!open)}>
+          <span className="hh-practice-first-action-icon"><Headphones aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{creationCopy.meditation}</strong>
+            <small>{creationCopy.meditationDetail}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+      </div>
+      {meditationPickerOpen&&<div id="hh-practice-meditation-picker" className="hh-practice-meditation-picker" data-meditation-choice>
+        <button type="button" onClick={()=>startMeditation('audio')}><Headphones aria-hidden="true"/><span><strong>{creationCopy.audio}</strong><small>{creationCopy.audioDetail}</small></span><ChevronRight aria-hidden="true"/></button>
+        <button type="button" onClick={()=>startMeditation('video')}><Film aria-hidden="true"/><span><strong>{creationCopy.video}</strong><small>{creationCopy.videoDetail}</small></span><ChevronRight aria-hidden="true"/></button>
+      </div>}
+      <p className="hh-practice-first-actions-note"><CheckCircle2 aria-hidden="true"/>{creationCopy.safety}</p>
+    </section>}
+    {p&&!activePanel&&<PracticePublicAlias practitioner={p} locale={locale}
+      profileLive={profileLive} onSaved={load} />}
+
     {!needsOnboarding&&<section id="hh-practice-workspace-top" className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
       <div className="hh-practice-v4-grid">
         <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
@@ -367,6 +512,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </button>
         <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
           <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>window.location.assign('/'+(locale==='es'?'en':locale)+'/app/messages?section=clients&tab=chats')}>
+          <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
+          <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
         <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
           <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
@@ -387,9 +536,20 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <Plus aria-hidden="true"/><span>{ru?'Ещё':locale==='es'?'Más':'More'}</span>
         </button>
       </div>
-      {!activePanel&&<button type="button" className="hh-practice-v4-materials-cta" onClick={()=>openMaterialsPanel('courses')}>
-        <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
-      </button>}
+      {!activePanel&&<nav className="hh-practice-community-shortcuts" aria-label={ru?'Сообщество мастеров':locale==='es'?'Comunidad de mentores':'Mentor community'}>
+        <Link href={'/'+locale+'/masters'} prefetch={false}>
+          <UsersRound aria-hidden="true"/>
+          <span><strong>{ru?'Сообщество наставников':locale==='es'?'Comunidad de mentores':'Explore mentor community'}</strong>
+            <small>{ru?'Статьи и профили':locale==='es'?'Artículos y perfiles':'Articles & profiles'}</small></span>
+          <ChevronRight aria-hidden="true"/>
+        </Link>
+        <button type="button" onClick={()=>openMaterialsPanel('articles')}>
+          <FileText aria-hidden="true"/>
+          <span><strong>{ru?'Написать статью':locale==='es'?'Escribir artículo':'Write an article'}</strong>
+            <small>{ru?'Публикация после проверки':locale==='es'?'Publicación tras revisión':'Published after review'}</small></span>
+          <ChevronRight aria-hidden="true"/>
+        </button>
+      </nav>}
     </section>}
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
@@ -419,16 +579,20 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     </div>}
     {!needsOnboarding&&!activePanel&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} /></div>}
     {!needsOnboarding&&!activePanel&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
-      <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
+      <Link href={p.publicAlias?(locale==='en'?'/m/':'/'+locale+'/m/')+p.publicAlias:'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
       </Link>
       <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
     </p>}
     {!needsOnboarding&&!activePanel&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
-        {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{d.createReport}
-        </button>:<button type="button" aria-pressed={activePanel==='requests'}
+        {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
+          <FileText aria-hidden="true" />{ru?'Полный отчёт · мой':locale==='es'?'Informe completo · propietario':'Full report · owner only'}
+        </button>}
+        <button type="button" aria-pressed={activePanel==='express-reports'} onClick={()=>choosePanel('express-reports')}>
+          <FileText aria-hidden="true"/>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
+        </button>
+        {!isOwner&&<button type="button" aria-pressed={activePanel==='requests'}
           onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
         <button type="button" onClick={shareProfile}>
           <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
@@ -456,6 +620,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onClick={()=>choosePanel('events')} active={activePanel==='events'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
+          <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'}
+            description={ru?'Разбор ситуации без препаратов, в личный кабинет клиента.':locale==='es'?'Análisis sin remedios, en la cuenta del cliente.':'Private situation reviews without remedies.'}
+            onClick={()=>choosePanel('express-reports')} active={activePanel==='express-reports'}/>
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
             onClick={()=>openOwner('reports')} />}
           {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
@@ -475,13 +642,15 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </section>
       </details>
     </>}
-    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
+    {needsOnboarding? <div id="hh-practice-onboarding">{creationGoal&&<p className="hh-practice-registration-intent" role="status">{creationCopy.registration}</p>}<MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
+        <PracticeInnerHeader locale={locale} panel={activePanel} requests={requests}
+          onBack={closePanel} onNavigate={choosePanel}/>
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='express-reports'?(ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
         </div>
         {activePanel==='more'&&<div className="hh-practice-inline-more" data-practice-inline-more>
@@ -492,6 +661,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
               description={ru?'Growth Studio, SEO и кампании':'Growth Studio, SEO & campaigns'} onClick={()=>choosePanel('marketing')} />}
             {isOwner&&<PracticeTile Icon={UsersRound} title={ru?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
               description={ru?'Контакты и подписчики':'Contacts and subscribers'} onClick={()=>choosePanel('crm')} />}
+            <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
+              description={ru?'Приватный разбор ситуации, без гомеопатии':'Private situation review, without remedies'} onClick={()=>choosePanel('express-reports')} />
             {isOwner&&<PracticeTile Icon={FileText} title={d.createReport}
               description={ru?'Новый отчёт для клиента':'New client report'} onClick={()=>openOwner('report')} />}
             {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint} onClick={()=>openOwner('reports')} />}
@@ -512,14 +683,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} meditationType={meditationType} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSaveSitePresentation={video=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoPresentation:video},expectedRevision:p.revision}),{rethrow:true})}
            onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
         {activePanel==='services'&&<div id="hh-practice-services-view" className="hh-practice-inline-services">
-          <Services items={services} t={t} locale={locale} busy={busy} quota={serviceQuota} createRequest={newServiceRequest}
+          <Services items={services} t={t} locale={locale} busy={busy} quota={serviceQuota} createRequest={newServiceRequest} starter={proStarter}
         onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
         onSaveAndSubmit={(id,draft,expectedRevision)=>act(async()=>{
           const saved=await practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision})
@@ -537,23 +708,34 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
       </details>
         </div>}
+        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner} initialRequestId={selectedExpressRequestId} onOpenRequests={()=>choosePanel('requests')}/>}
         {activePanel==='analytics'&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics">
           <PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} />
         </div>}
         {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
 
+        {activePanel==='clients'&&isOwner&&
+          <Link href="/admin/personal-support" className="hh-practice-monthly-support-link" data-monthly-support-owner-link>
+            {locale==='ru'?'Месячное сопровождение · €200 — клиенты и встречи':locale==='es'?'Acompañamiento mensual · 200 € — clientes y sesiones':'Monthly support · €200 — clients and sessions'}
+            <ChevronRight aria-hidden="true"/>
+          </Link>}
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
             practitionerTasks={data.practitionerTasks||[]}
             practitionerTaskSummary={data.practitionerTaskSummary}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
+            freeExpressV2Enabled={data.freeExpressV2Enabled === true}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
+            onCreateReport={openExpressReportFor}
             focusRequestId={focusRequestId}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
-          <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
+          <CrmManager key={accountId} locale={locale} accountId={accountId}
+            publicEnquiries={requests.filter(item=>item.requestKind==='public')}
+            onOpenRequest={()=>choosePanel('requests')}
+            onCreateReport={openExpressReportFor}/>}
         {activePanel==='profile'&&<>
           <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
             onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
@@ -564,16 +746,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
               onDelete={id=>act(()=>practiceFetch('/credentials/'+id,{action:'delete'}))} />
           </details>
         </>}
-        {activePanel==='requests'&&<>
-          <div className="hh-practice-metrics">
-            <div><strong>{services.length}</strong><span>{d.servicesMetric}</span></div>
-            <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
-            <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
-          </div>
-          <Requests items={requests} t={t} locale={locale} busy={busy}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
-            onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
-        </>}
+        {activePanel==='requests'&&<Requests items={requests} services={services} t={t}
+          locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true}
+          isOwner={isOwner} accountId={accountId} onCreateReport={openExpressReportFor}
+          onOpenRequest={item=>{setFocusRequestId(item.id);choosePanel('clients')}}
+          onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
+          onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
+        <PracticeInnerBottomNavigation locale={locale} panel={activePanel}
+          onBack={closePanel} onNavigate={choosePanel} onOpenMaterials={openMaterialsPanel}/>
       </section>}
     {!needsOnboarding&&!activePanel&&<details className="hh-practice-v4-community">
       <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
@@ -742,33 +922,162 @@ function Credentials({items,t,busy,onCreate,onDelete}){
   <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onCreate({...v,expiresOn:v.expiresOn||null});setV({title:'',issuer:'',jurisdiction:'',reference:'',public:true,expiresOn:''})}}><h3>{t.add}</h3>
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
-function Services({items,locale,busy,quota,createRequest=0,onSave,onSaveAndSubmit,onPause}){
+function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onSaveAndSubmit,onPause}){
   const canAdd=quota?.canAdd!==false
   const ru=locale==='ru'
   return <>
     {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':locale==='es'?'Hobby gratis: has alcanzado el límite de 10 servicios. Puedes editar los existentes.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
-    <MyServicesDashboard items={items} locale={locale} quota={quota} createRequest={createRequest}
-      renderEditor={item=><SimpleServiceEditor key={item?.id||'new'} item={item} locale={locale} busy={busy}
-        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause}/>} />
+    <MyServicesDashboard items={items} locale={locale} quota={quota} busy={busy} createRequest={createRequest}
+      renderEditor={(item,onDirtyChange,onMediaBusyChange)=><SimpleServiceEditor key={item?item.id+':'+item.revision:'new'} item={item} starter={item?null:starter} locale={locale} busy={busy}
+        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
-function Requests({items,t,locale,busy,onStatus,onSaveContact}){
-  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted'].includes(item.status))?'open':'all')
-  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted'].includes(item.status):item.status===status))
-  const ru=t.requests==='Заявки'
-  return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
+function Requests({items,services=[],t,locale,busy,onStatus,onSaveContact,onCreateReport,onOpenRequest,enabled=false,isOwner=false,accountId}){
+  const [proposals,setProposals]=useState({})
+  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
+  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
+  const ru=locale==='ru',es=locale==='es'
+  const newCount=items.filter(item=>item.status==='requested').length
+  const workCount=items.filter(item=>['contacted','reschedule_proposed','confirmed','booked','in_progress'].includes(item.status)).length
+  const doneCount=items.filter(item=>['completed','closed'].includes(item.status)).length
+  const labels={
+    en:{requested:'New',contacted:'Discussing',reschedule_proposed:'Time proposed',confirmed:'Confirmed',
+      booked:'Booked',in_progress:'In progress',completed:'Completed',closed:'Closed',declined:'Declined'},
+    ru:{requested:'Новая',contacted:'Уточнение',reschedule_proposed:'Предложено время',confirmed:'Подтверждена',
+      booked:'Записан',in_progress:'В работе',completed:'Завершена',closed:'Закрыта',declined:'Отклонена'},
+    es:{requested:'Nueva',contacted:'En diálogo',reschedule_proposed:'Hora propuesta',confirmed:'Confirmada',
+      booked:'Reservada',in_progress:'En curso',completed:'Terminada',closed:'Cerrada',declined:'Rechazada'}
+  }[locale]||{}
+  const lang=locale==='es'?'es':locale==='ru'?'ru':'en'
+  return <section className="hh-section hh-inner-requests" data-practice-inner-requests>
+    <div className="hh-inner-request-stats" aria-label={ru?'Настоящие показатели заявок':es?'Solicitudes reales':'Actual request counts'}>
+      {[[newCount,ru?'Новые':es?'Nuevas':'New','new'],
+         [workCount,ru?'В работе':es?'En curso':'In progress','working'],
+         [doneCount,ru?'Завершены':es?'Terminadas':'Completed','done']].map(([value,label,kind])=>
+          <div key={kind} data-kind={kind}><strong>{value}</strong><small>{label}</small></div>)}
+    </div>
+    <div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
     <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
       <select value={status} onChange={event=>setStatus(event.target.value)} aria-label={ru?'Фильтр заявок':'Filter requests'}>
         <option value="open">{ru?'Требуют внимания':'Needs attention'}</option>
         <option value="requested">{ru?'Новые':'New requests'}</option>
         <option value="contacted">{ru?'Связались':'Contacted'}</option>
+        <option value="reschedule_proposed">{ru?'Предложен перенос':'Alternative time offered'}</option>
+        <option value="confirmed">{ru?'Подтверждённые':'Confirmed'}</option>
+        <option value="booked">{locale==='ru'?'Бронь подтверждена':locale==='es'?'Reserva confirmada':'Booked · awaiting payment'}</option>
+        <option value="in_progress">{ru?'В работе':'In progress'}</option>
+        <option value="completed">{ru?'Завершённые':'Completed'}</option>
+        <option value="declined">{ru?'Отклонённые':'Declined'}</option>
         <option value="closed">{ru?'Закрытые':'Closed'}</option>
         <option value="all">{ru?'Все заявки':'All requests'}</option>
       </select>
     </label>
-  </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
+  </div>
+    <div className="hh-inner-request-tabs" role="group" aria-label={ru?'Фильтр заявок':es?'Filtrar solicitudes':'Filter requests'}>
+      {[['all',ru?'Все':es?'Todas':'All'],
+        ['requested',ru?'Новые':es?'Nuevas':'New'],
+        ['open',ru?'Активные':es?'Activas':'Active'],
+        ['completed',ru?'Завершены':es?'Finalizadas':'Completed']].map(([value,label])=>
+         <button key={value} type="button" aria-pressed={status===value} onClick={()=>setStatus(value)}>
+          {label}{value==='requested'?' · '+newCount:''}
+         </button>)}
+    </div>
+    <p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}{x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
+    {visible.map(x=>{
+      const service=services.find(item=>item.id===x.serviceId)
+      const title=service?.localizedCopy?.[lang]?.title||service?.copy?.title||
+        x.serviceTitle||x.remoteBooking?.serviceTitle||(ru?'Индивидуальная услуга':es?'Servicio personal':'Personal service')
+      const person=x.contact?.displayName||x.contact?.name||
+        (typeof x.contact==='string'?x.contact:null)||(ru?'Клиент':es?'Cliente':'Client')
+      const state=labels[x.status]||x.status
+      const hasAmount=x.remoteBooking?.price!=null&&Number.isFinite(Number(x.remoteBooking.price))
+      const canReply=x.accountRequest===true||x.reportEligible===true
+      return <article className="hh-panel hh-inner-request-card" key={x.id} data-request-status={x.status}>
+        <div className="hh-inner-request-card-head">
+          <span className="hh-inner-request-avatar" aria-hidden="true">{String(person).trim().slice(0,1).toUpperCase()||'•'}</span>
+          <span className="hh-inner-request-identity"><strong>{person}</strong>
+            <small>{new Date(x.createdAt).toLocaleString(lang==='ru'?'ru-RU':lang==='es'?'es-ES':'en-CA')}</small>
+          </span>
+          <span className="hh-inner-request-state" data-status={x.status}>{state}</span>
+        </div>
+        <div className="hh-inner-request-service"><strong>{title}</strong>
+          <small>{x.remoteBooking
+             ?(ru?'Дистанционно':es?'A distancia':'Remote')+' · '+x.remoteBooking.duration+' min'
+             :ru?'Условия уточняются':es?'Condiciones por confirmar':'Details to confirm'}</small>
+          {hasAmount&&<b>{x.remoteBooking.price} {x.remoteBooking.currency||''}</b>}
+        </div>
+        <div className="hh-inner-request-actions">
+          <button type="button" onClick={()=>onOpenRequest?.(x)}>
+            {canReply?(ru?'Ответить':es?'Responder':'Reply'):(ru?'Открыть заявку':es?'Abrir solicitud':'Open request')}
+            <ChevronRight size={16} aria-hidden="true"/>
+          </button>
+          <small>{ru?'Заявка ≠ запись или оплата':es?'No es reserva ni pago':'Not booked or paid'}</small>
+        </div>
+        <details className="hh-inner-request-details">
+          <summary>{ru?'Подробности и действия':es?'Detalles y acciones':'Details and actions'} <ChevronRight size={16} aria-hidden="true"/></summary>
+          <div className="hh-inner-request-advanced"><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{enabled&&isOwner&&isOwnerFreeExpressRequest(x)
+        ?<FreeExpressOwnerCase request={x} locale={locale} accountId={accountId}/>
+        :x.message&&<p>{x.message}</p>}
+      <div className="hh-actions">
+        <button type="button" disabled={busy||!(x.accountRequest===true||x.reportEligible===true)}
+          onClick={()=>onCreateReport?.(x)}>
+          <FileText size={16} aria-hidden="true"/>{locale==='ru'?'Сформировать отчёт':locale==='es'?'Crear informe':'Create report'}
+        </button>
+        {x.requestKind==='public'&&!x.reportEligible&&
+          <small className="hh-fine">{locale==='ru'?'Доступно после сохранения заявки клиентом через Google.':locale==='es'?'Disponible cuando el cliente guarda su solicitud con Google.':'Available after the client saves this request with Google.'}</small>}
+      </div>
+      {x.remoteBooking&&<p className="hh-fine"><strong>{locale==='ru'?'Дистанционная поддержка цели':'Goal support'}</strong>
+        {' · '}{x.remoteBooking.duration} min · {x.remoteBooking.date} {x.remoteBooking.time} ({x.remoteBooking.timezone})
+        {' · '}{x.remoteBooking.price} {x.remoteBooking.currency}
+        {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
+        <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
+          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>}  {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+      {x.requestKind==='public'&&x.bookingSku&&['requested','contacted'].includes(x.status)&&
+        <label className="hh-fine" data-owner-confirm-public-booking>
+          {locale==='ru'?'Согласованное с клиентом время (ваш местный часовой пояс)':locale==='es'?'Hora acordada (tu zona horaria local)':'Agreed session time (your local timezone)'}
+          <input type="datetime-local" style={{display:'block',width:'min(100%,300px)',minHeight:44,marginTop:6}}
+            value={proposals[x.id]||''} disabled={busy} onChange={event=>setProposals(prev=>({...prev,[x.id]:event.target.value}))}/>
+          <button type="button" disabled={busy||!proposals[x.id]||!Number.isFinite(new Date(proposals[x.id]).getTime())}
+            onClick={()=>onStatus(x,undefined,{action:'confirm_booking',confirmedStartAt:new Date(proposals[x.id]).toISOString()})}>
+            {locale==='ru'?'Подтвердить согласованное время':locale==='es'?'Confirmar hora acordada':'Confirm agreed time'}
+          </button>
+          <small style={{display:'block'}}>{locale==='ru'?'Только после согласия клиента. Откроет кнопку оплаты в его защищённом браузере.':locale==='es'?'Solo después de acordarlo con el cliente. Activa su acceso al carrito.':'Only after agreeing with the client. Unlocks their signed booking link to the cart.'}</small>
+        </label>}
+      {x.requestKind==='public'&&x.status==='booked'&&x.bookingStartsAt&&
+        <p className="hh-fine" data-owner-public-booking-confirmed>
+          {locale==='ru'?'Подтверждённая запись':locale==='es'?'Reserva confirmada':'Confirmed booking'}:
+          {' '}{new Date(x.bookingStartsAt).toLocaleString(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA')}
+          {' · '}{x.bookingSku==='express-consultation-30'?'€50 / 30 min':'€100 / 60 min'}
+          {' · '}{locale==='ru'?'Оплата подтверждается отдельно':locale==='es'?'El pago se confirma por separado':'Payment must be verified separately'}
+        </p>}
+      {x.remoteBooking&&x.remoteBooking.proposed&&<p className="hh-fine">
+        {locale==='ru'?'Предложено новое время':'Alternative time offered'}:
+        {' '}{x.remoteBooking.proposed.date} {x.remoteBooking.proposed.time}
+        {' '}({x.remoteBooking.proposed.timezone}) ·
+        {' '}{locale==='ru'?'Ожидается согласие клиента':'Waiting for client acceptance'}
+      </p>}
+      {x.remoteBooking&&['requested','confirmed'].includes(x.status)&&<label className="hh-fine">
+        {locale==='ru'?'Предложить другое время (ваш местный часовой пояс)':'Suggest another time (your local timezone)'}
+        <input type="datetime-local" style={{display:'block',width:'min(100%,300px)',marginTop:6}}
+          value={proposals[x.id]||''} disabled={busy}
+          onChange={event=>setProposals(prev=>({...prev,[x.id]:event.target.value}))}/>
+        <button type="button" disabled={busy||!proposals[x.id]||!Number.isFinite(new Date(proposals[x.id]).getTime())}
+          onClick={()=>onStatus(x,undefined,{action:'propose_time',proposedStartAt:new Date(proposals[x.id]).toISOString()})}>
+          {locale==='ru'?'Отправить новое время':'Offer new time'}
+        </button>
+      </label>}
+      {x.remoteBooking&&<div className="hh-actions">
+        {x.status==='requested'&&<>
+          <button disabled={busy} onClick={()=>onStatus(x,'confirmed')}>{locale==='ru'?'Подтвердить время':'Confirm slot'}</button>
+          <button disabled={busy} onClick={()=>onStatus(x,'declined')}>{locale==='ru'?'Отклонить':'Decline'}</button>
+        </>}
+        {x.status==='confirmed'&&<>
+          <button disabled={busy} onClick={()=>onStatus(x,'in_progress')}>{locale==='ru'?'Начать сеанс':'Start session'}</button>
+          <button disabled={busy} onClick={()=>onStatus(x,'declined')}>{locale==='ru'?'Отменить до начала':'Decline before start'}</button>
+        </>}
+        {x.status==='in_progress'&&<button disabled={busy} onClick={()=>onStatus(x,'completed')}>{locale==='ru'?'Завершить сеанс':'Mark completed'}</button>}
+      </div>}</div></details></article>})}
   </section>
 }
 

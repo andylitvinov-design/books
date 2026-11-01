@@ -63,8 +63,10 @@ test('public course read uses published snapshot rather than pending draft',()=>
 })
 test('existing materials and Academy catalog use new builder without replacing Reiki',()=>{
  const material=read('components/app/practice-materials.jsx')
- assert.match(material,/<PractitionerCourseBuilder locale=\{locale\} accountId=\{accountId\} searchQuery=\{query\} isOwner=\{isOwner\} onOpenYoutube=\{isOwner\?onOpenYoutube:null\}\/>/)
+ assert.match(material,/<PractitionerCourseBuilder locale=\{locale\} accountId=\{accountId\} searchQuery=\{query\} startCreate=\{quickCreateCourse\} meditationType=\{meditationType\} isOwner=\{isOwner\} onOpenYoutube=\{isOwner\?onOpenYoutube:null\}\/>/)
  assert.match(material,/data-open-reiki-course-audio/)
+ assert.match(material,/quickCreateCourse=false/)
+ assert.match(read('components/app/practitioner-course-builder.jsx'),/startCreate=false/)
  assert.match(material,/data-practice-materials-courses-tab/)
  const academy=read('app/[locale]/academy/[[...slug]]/page.tsx')
  assert.match(academy,/<PublicPractitionerCourses locale=\{locale\}/)

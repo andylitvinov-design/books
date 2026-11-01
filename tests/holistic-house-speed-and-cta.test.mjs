@@ -14,7 +14,7 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.match(publicSource, /tags: \['holistic-house-published-site-videos'\]/);
   assert.match(publicSource, /toPublishedSiteVideo\(record\)/);
   assert.match(publicSource, /noStore\(\)/);
-  assert.match(publicSource, /if \(!getSiteVideoStore\(\)\)/);
+  assert.match(publicSource, /if \(!getPublicSiteVideoStore\(\)\)/);
   assert.match(publicSource, /return approvedBuiltInVideos\(\)/);
   assert.match(publicSource, /readStoredPublishedVideos\(\)/);
   assert.match(publicSource, /store\.list\(\{ timeoutMs: 1200 \}\)/);
@@ -22,7 +22,7 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   const storeSource = read('lib/site-videos/store.js');
   assert.match(storeSource, /async list\(options = \{\}\)/);
   assert.match(storeSource, /requestedTimeoutMs/);
-  assert.ok(publicSource.indexOf("if (!getSiteVideoStore())") < publicSource.indexOf("return await readStoredPublishedVideos()"), "storage-off must bypass the cross-request cache");
+  assert.ok(publicSource.indexOf("if (!getPublicSiteVideoStore())") < publicSource.indexOf("return await readStoredPublishedVideos()"), "storage-off must bypass the cross-request cache");
   assert.match(actions, /revalidateTag\('holistic-house-published-site-videos'\)/);
   assert.match(actions, /await store\.save\(record, input\.expectedRevision\)/);
   assert.ok(actions.indexOf("await store.save") < actions.indexOf("revalidateTag("));
@@ -31,41 +31,25 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage prioritizes personal enquiry while retaining accessible free review and tests", () => {
+test("homepage keeps one free-first journey and the original consented final enquiry", () => {
   const home = read("components/holistic-house-home.tsx");
+  const spanish = read("app/es/page.tsx");
+  const stage = read("components/home-featured-workspace.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Request a consultation · from €50"/);
-  assert.match(home, /heroBook: "Запросить консультацию · от €50"/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
-  assert.match(home, /className="service-home-button service-home-button--primary"/);
+  assert.match(home, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
+  assert.match(spanish, /<HomeFeaturedWorkspace locale="es" \/>/);
+  assert.match(stage, /data-home-offer-primary=\{offer\.id\}/);
+  for (const route of ["/client/tests","/services/free-situation-review","/academy/principles-of-energywork/learn",
+    "/services#consultation","/coaching"])
+    assert.ok(stage.includes(route), "Missing action route: "+route);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
-  for (const target of ['/client/tests','/services/free-situation-review','/academy/principles-of-energywork/learn']) assert.ok(freeCapture.includes(target));
-  assert.match(freeCapture, /href=\{href\}/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
-  assert.match(home, /className="service-home-offer-note"/);
-  assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
-  assert.match(home, /not a live call\. One-to-one sessions are separate/);
-  const landing = read("app/[locale]/services/free-situation-review/page.tsx");
-  const freeEntry = read("components/free-entry-landing.tsx");
-  // Free review now reuses the approved no-call, no-payment first-party landing;
-  // the former Alchemy panel and paid-format upsell no longer belong here.
-  assert.match(landing, /return <FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
-  assert.match(freeEntry, /"request-free-review"/);
-  assert.match(freeEntry, /id=\{captureId\}/);
-  assert.match(freeEntry, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(freeEntry, /No pressure to book a paid session/);
-  assert.doesNotMatch(home, /<FreeInsightsPaths/);
-  const firstScreen = home.indexOf('className="service-home-hero"');
-  const book = home.indexOf('"data-hero-cta": "paid-sessions"');
-  const free = home.indexOf('"data-hero-cta": "free-written-review"');
-  const tests = home.indexOf('"data-hero-cta": "free-tests"');
-  const belowFold = home.indexOf("<ServicesSolutions");
-  assert.ok(firstScreen < book && book < free && free < tests && tests < belowFold, "Personal enquiry is primary and free options remain accessible");
-  assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
+  assert.match(read("components/free-entry-landing.tsx"), /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.ok(home.indexOf("<HomeFeaturedWorkspace") < home.indexOf("<HomepageContactCta"));
+  assert.ok(spanish.indexOf("<HomeFeaturedWorkspace") < spanish.indexOf("<PublicConsultationCta"));
+  assert.doesNotMatch(home, /<HomeFreeDiagnosisBanner|service-home-hero/);
 });
 
 test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {
@@ -117,21 +101,19 @@ test('private Cabinet loads heavyweight tab modules on demand', () => {
 });
 
 
-test("hero H1 matches personal-session metadata, and optional free CTA stays clear across EN/RU/ES", () => {
-  const enRu = read("components/holistic-house-home.tsx");
+test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
+  const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  const seo = read("lib/home-seo.ts");
-  const css = read("app/holistic-house-home.css");
-  assert.match(seo, /Personal Sessions in Toronto & Online/);
-  assert.match(enRu, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
-  assert.match(enRu, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
-  assert.match(enRu, /heroBook: "Request a consultation · from €50"/);
-  assert.match(enRu, /heroBook: "Запросить консультацию · от €50"/);
-  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
-  assert.match(es, /Solicitar una consulta · desde €50/);
-  assert.match(es, /href="\/es\/services#consultation"/);
-  assert.match(css, /\.house-home--services \.service-home-paid-link \{/);
-  assert.match(css, /background: #0a7180/);
-  assert.match(css, /\.house-home--services \.service-home-paid-link:focus-visible/);
-  assert.doesNotMatch(enRu, /force-static|s-maxage/);
+  const stage = read("components/home-featured-workspace.tsx");
+  const css = read("components/home-featured-workspace.module.css");
+  assert.match(stage, /<h1 id="hh-home-features-title">/);
+  assert.match(stage, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
+  for (const heading of ["Explore your path at Holistic House","Ваш путь в Holistic House","Tu camino en Holistic House"])
+    assert.ok(stage.includes(heading));
+  assert.match(stage, /Request a session · from €50/);
+  assert.match(stage, /Заказать бесплатный письменный разбор/);
+  assert.match(stage, /This is a request for a written response, not a call/);
+  assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
+  assert.doesNotMatch(home, /force-static|s-maxage/);
+  assert.match(es, /<PublicConsultationCta locale="es" \/>/);
 });

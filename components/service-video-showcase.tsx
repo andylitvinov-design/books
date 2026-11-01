@@ -1,5 +1,6 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
-import { getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
+import { PublicVideoStarRating } from "@/components/public-video-star-rating";
+import { englishPsychotherapyLandingVideo, getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import styles from "./service-video-showcase.module.css";
 
@@ -22,6 +23,10 @@ const copy = {
       heading: "How systemic constellations work",
       context: "A short explanation of exploring roles, relationships and decisions through symbolic constellations.",
     },
+    "constellation-case": {
+      heading: "Business Constellations — see the approach",
+      context: "Andrey’s recording introduces symbolic systemic mapping. It is a method overview, not the free written review itself or a clinical diagnosis.",
+    },
     homeopathy: {
       heading: "My approach to homeopathy",
       context: "An educational overview of a complementary symbolic approach, not medical treatment or evidence of clinical effectiveness.",
@@ -38,12 +43,16 @@ const copy = {
       context: "Это общее видео о сочетании методов. Отдельного русскоязычного ролика именно об «Алхимии души» пока нет.",
     },
     hypnotherapy: {
-      heading: "О подходах к личной работе",
-      context: "Это общий русскоязычный ролик о выборе метода. Специальное объяснение гипнотерапии доступно на английском.",
+      heading: "Образная психотерапия — видео о подходе",
+      context: "Русскоязычное видео о психотерапии перед выбором формата личной сессии.",
     },
     constellations: {
       heading: "О подходах к личной работе",
       context: "Это общий русскоязычный ролик. Подробное видео о системных расстановках пока доступно на английском.",
+    },
+    "constellation-case": {
+      heading: "Системные расстановки — видео Андрея",
+      context: "Запись об исследовании ситуаций и ролей через символическую карту. Не подменяет сам бесплатный письменный разбор или медицинскую диагностику.",
     },
     homeopathy: {
       heading: "Мой подход к гомеопатии",
@@ -68,6 +77,10 @@ const copy = {
       heading: "Constelaciones sistémicas",
       context: "Breve explicación del método, con audio en inglés.",
     },
+    "constellation-case": {
+      heading: "Constelaciones sistémicas — vídeo de Andrey",
+      context: "Introducción al mapeo simbólico de situaciones y roles. No es la revisión escrita gratuita ni un diagnóstico médico.",
+    },
     homeopathy: {
       heading: "Mi enfoque de la homeopatía",
       context: "Vídeo educativo en inglés. No sustituye la atención médica.",
@@ -76,18 +89,22 @@ const copy = {
 } as const;
 
 export function ServiceVideoShowcase({
-  topic, locale, id = "service-video",
+  topic, locale, id = "service-video", variant = "default",
 }: {
   topic: ServiceVideoTopic;
   locale: ServiceVideoLocale;
   id?: string;
+  variant?: "default" | "psychotherapy-en";
 }) {
-  const video = getServiceVideoMedia(topic, locale);
+  const isEnglishPsychotherapy = variant === "psychotherapy-en" && locale === "en" && topic === "hypnotherapy";
+  const video = isEnglishPsychotherapy ? englishPsychotherapyLandingVideo : getServiceVideoMedia(topic, locale);
   const t = copy[locale];
-  const section = t[topic];
+  const section = isEnglishPsychotherapy
+    ? {heading: "Psychotherapy — a personal introduction", context: "Watch Andrey’s English-language introduction before deciding whether to request an individual session."}
+    : t[topic];
   return (
     <section className={styles.section} id={id} data-service-video={topic}
-      data-video-kind={video.general ? "general" : "method"} aria-labelledby={id + "-title"} lang={locale}>
+      data-video-kind={video.general ? "general" : "method"} data-psychotherapy-video={isEnglishPsychotherapy ? "en" : undefined} aria-labelledby={id + "-title"} lang={locale}>
       <div className={styles.intro}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h2 id={id + "-title"}>{section.heading}</h2>
@@ -96,6 +113,7 @@ export function ServiceVideoShowcase({
       <div className={styles.player}>
         <SiteVideoPlayer video={video.video} locale={locale}
           textLanguage={video.video.language} compact fallbackPoster={video.poster} />
+        <PublicVideoStarRating locale={locale} video={video.video} />
         {video.video.heygenId && (
           <a className={styles.original} href={siteVideoWatchUrl(video.video)}
             target="_blank" rel="noopener noreferrer">

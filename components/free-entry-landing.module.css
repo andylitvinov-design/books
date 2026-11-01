@@ -184,3 +184,307 @@
   .daoHero h1{font-size:29px}
   .daoBenefits li{font-size:10px}
 }
+
+.coachingLink{margin:12px 0 18px;display:flex;align-items:center}
+.coachingLink a{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:44px;padding:10px 15px;border-radius:11px;border:1px solid #b1d0c5;background:#eaf5f0;color:#155e66;text-decoration:none;font-size:13px;font-weight:750;line-height:1.35}
+.coachingLink a:hover{text-decoration:underline}
+.coachingLink a:focus-visible{outline:3px solid #e5a868;outline-offset:3px}
+
+
+/* Featured approved recording: responsive one-screen introduction on narrow phones. */
+.shortLead{display:none}
+.situationHero{grid-template-columns:minmax(0,1fr) minmax(0,1.02fr)}
+.situationHero .situationVideo{height:auto;min-height:0;aspect-ratio:16/9;align-self:center;border-radius:17px;background:#092d3e;box-shadow:0 10px 28px rgba(4,20,30,.22)}
+.situationVideo :global(.site-video-player){width:100%;height:100%;margin:0;overflow:hidden;border:0;border-radius:0;background:transparent;box-shadow:none}
+.situationVideo :global(.site-video-frame){width:100%;height:100%;aspect-ratio:16/9;border-radius:0;box-shadow:none}
+.situationVideo :global(.site-video-caption){display:none}
+.situationVideo :global(.site-video-fallback-poster){object-position:center 27%}
+.situationVideo :global(.site-video-play:focus-visible){outline:3px solid #ffcf8a;outline-offset:-4px}
+.videoSource{position:absolute;z-index:3;right:10px;top:10px;display:inline-flex;gap:6px;align-items:center;justify-content:center;min-height:32px;padding:6px 10px;border:1px solid rgba(255,255,255,.55);border-radius:9px;background:rgba(8,36,47,.84);color:#fff;font-size:11px;font-weight:750;text-decoration:none;line-height:1.2}
+.videoSource:hover{background:#185268}
+.videoSource:focus-visible{outline:3px solid #ffcf8a;outline-offset:2px}
+@media(max-width:850px){
+ .situationHero{grid-template-columns:minmax(0,1fr)}
+ .situationHero .situationVideo{max-width:720px;width:100%;height:auto;min-height:0}
+}
+@media(max-width:600px){
+ .situationHero{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;min-height:0;gap:10px;padding:11px 12px 13px;overflow:visible}
+ .situationHero .situationVideo{order:0;align-self:center;aspect-ratio:16/9;height:auto;min-height:0;flex:none;width:100%;max-width:100%;margin:0;border-radius:12px;overflow:hidden}
+ .situationHero .heroCopy{order:1;width:100%;max-width:none;padding:0 3px;align-self:auto}
+ .situationHero .eyebrow,.situationHero .badge,.situationHero .lead,.situationHero .promise,.situationHero .bulletList{display:none}
+ .situationHero h1{font-size:clamp(27px,7.4vw,34px);line-height:1.07;letter-spacing:-.035em;margin:0 0 7px;text-wrap:balance}
+ .situationHero .shortLead{display:block;margin:0 0 10px;color:#d8efea;font-size:12px;line-height:1.37}
+ .situationHero .actions{display:flex;gap:0;margin:0}
+ .situationHero .primary{width:100%;flex:none;min-height:43px;padding:10px 13px;font-size:13px}
+ .situationHero .secondary{display:none}
+ .situationHero .videoSource{right:7px;top:7px;min-height:44px;padding:8px 10px;font-size:10px}
+ .situationScene{min-height:0;align-content:start;gap:12px;padding:16px 14px}
+ .situationScene .sceneImage{height:clamp(95px,15svh,160px);min-height:0;flex:none}
+ .situationScene h2{font-size:clamp(25px,6.9vw,31px);margin-bottom:6px}
+ .situationScene .sectionLead{font-size:12px;line-height:1.38;margin-bottom:9px}
+ .situationScene .outcomeList article,.situationScene .steps li{padding:8px 0;gap:8px}
+ .situationScene .outcomeList h3,.situationScene .steps h3{font-size:18px}
+ .situationScene .outcomeList p,.situationScene .steps p{font-size:11px;line-height:1.35}
+}
+@media(max-width:600px) and (max-height:730px){
+ .situationHero{gap:7px;padding:9px 10px}
+ .situationHero .situationVideo{width:min(100%,300px);max-width:300px}
+ .situationHero h1{font-size:clamp(25px,7vw,30px);margin-bottom:5px}
+ .situationHero .shortLead{font-size:11px;line-height:1.28;margin-bottom:7px}
+ .situationHero .primary{min-height:44px}
+ .situationScene .sceneImage{height:85px}
+ .situationScene .sectionLead{margin-bottom:6px}
+ .situationScene .outcomeList article,.situationScene .steps li{padding:6px 0}
+}
+
+
+/* Keep the video title beside Play rather than beneath the circular control.
+   These offsets follow the existing minimal player's 56px/46px Play button. */
+.situationVideo :global(.site-video-poster-title){left:86px;right:12px;bottom:16px;max-width:calc(100% - 100px);font-size:clamp(15px,2vw,23px);line-height:1.15;pointer-events:none}
+@media(max-width:600px){
+ .situationVideo :global(.site-video-poster-title){left:72px;right:10px;bottom:14px;max-width:calc(100% - 82px);font-size:clamp(13px,3.6vw,16px)}
+}
+
+
+/* Narrow, short iPhones cannot fit a second decorative picture plus all three
+   meaningful outcomes between the fixed header and bottom bar. Keep EVERY
+   outcome and process sentence, and the interactive 16:9 hero video; only
+   omit the later illustrative images below 361px / 621px. */
+@media(max-width:360px) and (max-height:620px){
+  .situationScene .sceneImage{display:none}
+  .situationScene{gap:8px}
+}
+
+
+/* Benefits-first review landing 2026-10-25: warm editorial visuals, one idea per block. */
+.situationHero{background:linear-gradient(125deg,#352c28 0%,#59453a 60%,#745748 100%);border-color:#b69b84;box-shadow:0 18px 46px rgba(64,38,24,.16)}
+.situationHero .eyebrow{color:#f4d4b4}
+.situationHero .badge{background:#f0dbc5;color:#4f342a}
+.situationHero .promise{color:#ffe8d0}
+.situationHero .shortLead{color:#fff3e7}
+.situationHero .secondary{border-color:#dec3aa;color:#fff5ec}
+.situationHero .primary{background:#843e53}
+.situationHero .primary:hover{background:#a25167}
+.videoBadge{position:absolute;z-index:3;left:9px;top:9px;display:inline-flex;align-items:center;min-height:32px;padding:6px 9px;border:1px solid rgba(255,255,255,.5);border-radius:9px;background:rgba(41,33,28,.87);color:#fff;font-size:11px;font-weight:750;pointer-events:none}
+.reviewOutcome,.reviewProcess{display:grid;grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);gap:clamp(20px,4vw,52px);align-items:center;min-height:clamp(470px,56svh,640px);margin:0 0 13px;padding:clamp(20px,3vw,38px);border:1px solid #e5d7ca;border-radius:23px;background:#fffcf8;scroll-margin-top:80px}
+.reviewOutcomePhoto,.reviewProcessPhoto{position:relative;min-height:340px;height:100%;overflow:hidden;border-radius:18px;background:#dfd1c0}
+.reviewOutcomePhoto img,.reviewProcessPhoto img{object-fit:cover}
+.reviewOutcomeCopy,.reviewProcessCopy{min-width:0}
+.reviewOutcome .sectionLabel,.reviewProcess .sectionLabel{color:#95644f}
+.reviewOutcome h2,.reviewProcess h2{margin:0 0 10px;color:#503c32;font:400 clamp(30px,3.4vw,48px)/1.12 Georgia,'Times New Roman',serif;letter-spacing:-.03em}
+.reviewOutcome .sectionLead,.reviewProcess .sectionLead{margin-bottom:13px;color:#66584d;font-size:15px;line-height:1.48}
+.reviewBenefitsList{display:grid;gap:6px;margin:12px 0}
+.reviewBenefitsList article{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start;padding:11px 0;border-top:1px solid #ebdfd4}
+.reviewBenefitsList article span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#efe1d4;color:#825141;font-size:11px;font-weight:800}
+.reviewBenefitsList h3{margin:0 0 4px;font:400 23px/1.17 Georgia,'Times New Roman',serif;color:#4a342b}
+.reviewBenefitsList p{margin:0;color:#74675e;font-size:14px;line-height:1.42}
+.reviewCta{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:47px;margin-top:14px;padding:11px 16px;border-radius:12px;background:#843e53;color:#fff;text-decoration:none;font-size:14px;font-weight:750}
+.reviewCta:hover{background:#9d4a61}
+.reviewProcess{grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr);background:#f3ece3}
+.reviewSteps{display:grid;gap:11px;padding:0;margin:18px 0 0;list-style:none}
+.reviewSteps li{display:grid;grid-template-columns:29px minmax(0,1fr);align-items:start;gap:11px}
+.reviewSteps li>span{display:grid;place-items:center;width:27px;height:27px;border:1px solid #caac91;border-radius:50%;color:#754e3e;font-size:12px;font-weight:800}
+.reviewSteps strong{display:block;color:#4d382f;font-size:15px}
+.reviewSteps p{margin:4px 0 0;color:#665b51;font-size:13px;line-height:1.45}
+.reviewPrivacy{display:flex;align-items:start;gap:8px;margin:17px 0 0;color:#726559;font-size:11px;line-height:1.5}
+.reviewPrivacy svg{flex:none;margin-top:1px}
+.reviewStories{margin:13px 0 25px;overflow:hidden;border:1px solid #dac6b6;border-radius:16px;background:#fff9f3}
+.reviewStories>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:56px;padding:15px 18px;cursor:pointer;color:#684638;font-size:15px;font-weight:750;list-style:none}
+.reviewStories>summary::-webkit-details-marker{display:none}
+.reviewStories>summary svg{flex:none;transition:transform .15s ease}
+.reviewStories[open]>summary svg{transform:rotate(90deg)}
+.reviewStories[open]>summary{border-bottom:1px solid #e9d9cb}
+.reviewStories>section{margin:0 auto}
+@media(max-width:850px){
+ .reviewOutcome,.reviewProcess{grid-template-columns:1fr;min-height:0}
+ .reviewOutcomePhoto,.reviewProcessPhoto{min-height:0;height:240px}
+}
+@media(max-width:600px){
+ .situationHero .badge{display:inline-flex;font-size:10px;min-height:23px;margin-bottom:8px}
+ .situationHero .shortLead{font-size:13px;line-height:1.43;margin:0 0 11px}
+ .situationHero .heroCopy{display:flex;flex-direction:column}
+ .situationHero .heroCopy .badge{order:-1;align-self:flex-start}
+ .situationHero h1{font-size:clamp(29px,7.6vw,37px);line-height:1.08;margin:0 0 8px}
+ .situationHero .actions{gap:0}
+ .situationHero .primary{min-height:49px;font-size:14px}
+ .situationHero .situationVideo{width:100%;max-width:none}
+ .situationHero .videoBadge{min-height:29px;font-size:10px;left:7px;top:7px}
+ .reviewOutcome,.reviewProcess{display:flex;flex-direction:column;align-items:stretch;gap:14px;padding:17px 15px;margin-bottom:10px;border-radius:18px}
+ .reviewOutcomePhoto{width:100%;height:clamp(115px,17svh,190px);flex:none;border-radius:12px}
+ .reviewProcessPhoto{width:100%;height:clamp(100px,15svh,155px);flex:none;border-radius:12px;order:-1}
+ .reviewOutcome h2,.reviewProcess h2{font-size:clamp(28px,7.5vw,35px);line-height:1.1;margin-bottom:7px}
+ .reviewOutcome .sectionLead,.reviewProcess .sectionLead{font-size:13px;line-height:1.4;margin-bottom:10px}
+ .reviewBenefitsList{margin:0}
+ .reviewBenefitsList article{grid-template-columns:29px minmax(0,1fr);gap:9px;padding:8px 0}
+ .reviewBenefitsList article span{width:26px;height:26px;font-size:10px}
+ .reviewBenefitsList h3{font-size:20px;margin-bottom:1px}
+ .reviewBenefitsList p{font-size:13px;line-height:1.34}
+ .reviewCta{margin-top:10px;width:100%;min-height:47px;font-size:14px}
+ .reviewSteps{gap:10px;margin:10px 0 0}
+ .reviewSteps li{gap:9px}
+ .reviewSteps strong{font-size:14px}
+ .reviewSteps p{font-size:12px;line-height:1.38}
+ .reviewPrivacy{font-size:10px;line-height:1.42;margin-top:12px}
+ .reviewStories{margin:12px 0 18px}
+ .reviewStories>summary{font-size:13px;min-height:50px;padding:12px 14px}
+}
+@media(max-width:360px) and (max-height:620px){
+ .reviewOutcomePhoto,.reviewProcessPhoto{height:105px}
+ .reviewOutcome,.reviewProcess{gap:8px;padding:14px}
+ .reviewBenefitsList article{padding:6px 0}
+ .reviewProcess .sectionLead{margin-bottom:7px}
+}
+@media(prefers-reduced-motion:reduce){.reviewStories>summary svg{transition:none}}
+
+
+/* A personal explanation screen inside ONE express-review landing. */
+.reviewApproach{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:clamp(20px,4vw,46px);align-items:center;min-height:min(740px,calc(100svh - 142px));margin:0 auto 18px;padding:clamp(20px,4vw,46px);border:1px solid #decdbc;border-radius:24px;background:linear-gradient(125deg,#f5eee5,#fffaf4)}
+.reviewApproachCopy{min-width:0}
+.reviewApproach h2{margin:0 0 12px;color:#50382f;font:400 clamp(31px,3.5vw,48px)/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.03em}
+.reviewApproach .sectionLabel{color:#936d55}
+.reviewApproach .sectionLead{color:#715d50}
+.approachList{display:grid;gap:8px}
+.approachList article{display:grid;grid-template-columns:25px minmax(0,1fr);gap:11px;padding:13px 0;border-top:1px solid #dfcdbb}
+.approachList article:last-child{border-bottom:1px solid #dfcdbb}
+.approachList article>span{color:#9f5269;font-size:12px;font-weight:800}
+.approachList h3{margin:0 0 5px;color:#584036;font:400 clamp(19px,2.2vw,25px)/1.2 Georgia,'Times New Roman',serif}
+.approachList p{margin:0;color:#725c52;font-size:13px;line-height:1.55}
+.reviewApproachPhoto{position:relative;min-height:400px;height:100%;overflow:hidden;border-radius:20px;background:#debd9f}
+.reviewApproachPhoto img{object-fit:cover;object-position:50% 26%}
+@media(max-width:720px){
+ .reviewApproach{display:flex;flex-direction:column;align-items:stretch;gap:11px;min-height:calc(100svh - 150px);margin-bottom:10px;padding:16px 13px;border-radius:19px}
+ .reviewApproachPhoto{order:-1;flex:none;min-height:0;height:clamp(110px,17svh,175px);border-radius:12px}
+ .reviewApproach h2{font-size:clamp(26px,7vw,34px);margin-bottom:7px}
+ .reviewApproach .sectionLead{font-size:12px;line-height:1.43;margin-bottom:9px}
+ .approachList{gap:0}
+ .approachList article{grid-template-columns:20px minmax(0,1fr);gap:8px;padding:9px 0}
+ .approachList h3{font-size:17px;margin-bottom:3px}
+ .approachList p{font-size:11px;line-height:1.42}
+ .reviewApproach .reviewPrivacy{font-size:10px;margin-top:8px}
+}
+@media(max-width:360px) and (max-height:630px){.reviewApproachPhoto{height:76px}.reviewApproach{gap:7px;padding:12px 10px}.reviewApproach h2{font-size:25px}.approachList article{padding:7px 0}}
+
+/* Benchmark pilot: free self-test remains the direct path; leaving a contact is optional. */
+.testDirect{
+  width:min(900px,calc(100% - 24px));
+  margin:22px auto 16px;
+  padding:clamp(18px,3vw,30px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:clamp(14px,3vw,28px);
+  border:1px solid #d4e4d8;
+  border-radius:20px;
+  background:linear-gradient(120deg,#f1f6ef,#e7f0e7);
+  color:#284335;
+}
+.testDirectCopy{min-width:0;max-width:570px}
+.testDirectKicker{margin:0 0 8px;color:#547158;font-size:10px;line-height:1.4;font-weight:800;letter-spacing:.11em}
+.testDirect h2{margin:0 0 7px;color:#2b4939;font:400 clamp(24px,2.8vw,35px)/1.15 Georgia,'Times New Roman',serif;letter-spacing:-.025em}
+.testDirectCopy>p:not(.testDirectKicker){margin:0;color:#4b6050;font-size:13px;line-height:1.55}
+.testDirect .primary{flex:none;min-height:48px;max-width:280px}
+.testDirect a:focus-visible{outline:3px solid #92694a;outline-offset:4px}
+@media(max-width:600px){
+  .testDirect{flex-direction:column;align-items:stretch;gap:14px;margin:16px auto 12px;padding:17px 16px;border-radius:17px}
+  .testDirect h2{font-size:clamp(24px,6.8vw,30px)}
+  .testDirect .primary{max-width:none;width:100%;min-height:48px;font-size:14px}
+}
+
+
+/* EXPRESS VIDEO + TRUST, 2026-10-26: separate the face-to-camera introduction
+   from the hero. Reuse poster-first playback, never load 4 video iframes on page load. */
+.situationHero .heroVisual{
+  position:relative;min-height:315px;height:clamp(315px,40svh,500px);
+  max-height:540px;overflow:hidden;border-radius:18px;background:#e8cbb8;
+}
+.situationHero .heroVisual img{object-fit:cover;object-position:50% 22%}
+.situationHero .heroVisual figcaption{max-width:95%;font-size:13px;line-height:1.4}
+
+.reviewIntro{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);
+  gap:clamp(20px,4vw,46px);align-items:center;margin:0 0 14px;
+  padding:clamp(20px,3.6vw,42px);border:1px solid #dfcbb9;border-radius:23px;
+  background:linear-gradient(125deg,#fbf4eb 0%,#f4e5d4 100%);scroll-margin-top:90px;
+}
+.reviewIntroCopy{min-width:0}
+.reviewIntroCopy .sectionLabel{color:#966246}
+.reviewIntroCopy h2,.reviewSocialProof h2{
+  margin:0 0 13px;color:#48352d;font:400 clamp(30px,3.5vw,47px)/1.12 Georgia,'Times New Roman',serif;
+  letter-spacing:-.03em;text-wrap:balance;
+}
+.reviewIntroLead{margin:0;color:#594a40;font-size:clamp(14px,1.35vw,17px);line-height:1.6}
+.reviewIntroTakeaway{
+  display:flex;align-items:flex-start;gap:10px;margin:18px 0 2px;padding:12px 13px;
+  border-radius:13px;background:#fff9f1;color:#5a4337;font-size:14px;line-height:1.46;
+}
+.reviewIntroTakeaway svg{flex:none;margin-top:2px;color:#97516a}
+.reviewIntroMedia{min-width:0;align-self:center}
+.reviewIntroMedia :global(.site-video-player){margin:0;width:100%;border-radius:16px;background:#132936;overflow:hidden}
+.reviewIntroMedia :global(.site-video-frame){width:100%;aspect-ratio:16/9;min-height:0}
+.reviewIntroMedia :global(.site-video-play:focus-visible),
+.reviewPreviewCard :global(.site-video-play:focus-visible){outline:3px solid #eab982;outline-offset:-3px}
+.reviewIntroAudio{margin:10px 0 3px;color:#6c4f3d;font-size:12px;font-weight:800;line-height:1.4}
+.reviewIntroSourceNote{margin:0;color:#7b6758;font-size:12px;line-height:1.48}
+
+.reviewSocialProof{
+  margin:0 0 14px;padding:clamp(19px,3vw,36px);
+  border:1px solid #dfcbb9;border-radius:23px;background:#fffaf4;
+  scroll-margin-top:85px;
+}
+.reviewSocialProofHeader{max-width:730px;margin-bottom:19px}
+.reviewSocialProofHeader .sectionLabel{color:#956044}
+.reviewSocialProof h2{font-size:clamp(29px,3.2vw,43px);margin-bottom:8px}
+.reviewSocialProofHeader>p:last-child{margin:0;color:#756052;font-size:14px;line-height:1.55}
+.reviewPreviewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;align-items:start}
+.reviewPreviewCard{min-width:0;padding:10px;border:1px solid #e3d4c4;border-radius:17px;background:#fff;box-shadow:0 5px 16px rgba(66,38,24,.035)}
+.reviewAudioLabel{margin:0 0 8px;color:#805340;font-size:11px;font-weight:800;letter-spacing:.03em}
+.reviewPreviewCard :global(.site-video-player){width:100%;margin:0;border-radius:12px;overflow:hidden;background:#143141}
+.reviewPreviewCard :global(.site-video-frame){aspect-ratio:16/9}
+.reviewPreviewCard :global(.site-video-caption){padding:9px 10px 10px}
+.reviewPreviewCard :global(.site-video-title){font-size:16px;line-height:1.3}
+.reviewStoryDisclaimer{margin:13px 0 0;color:#817063;font-size:11px;line-height:1.4}
+.reviewIntro a:focus-visible,.reviewSocialProof a:focus-visible{outline:3px solid #b1734a;outline-offset:3px}
+
+@media(max-width:850px){
+  .situationHero .heroVisual{width:100%;max-width:100%;height:290px;min-height:0}
+  .reviewIntro{grid-template-columns:1fr;gap:18px}
+  .reviewIntroMedia{max-width:720px;width:100%}
+}
+@media(max-width:700px){
+  .reviewPreviewGrid{grid-template-columns:1fr;gap:11px}
+  .reviewPreviewCard{padding:10px}
+  .reviewPreviewCard :global(.site-video-title){font-size:17px}
+}
+@media(max-width:600px){
+  .situationHero .heroVisual{order:0;flex:none;width:100%;height:clamp(128px,20svh,176px);min-height:0;max-height:none;border-radius:12px}
+  .situationHero .heroVisual img{object-position:50% 22%}
+  .situationHero .heroVisual figcaption{display:none}
+  .reviewIntro,.reviewSocialProof{padding:17px 14px;margin-bottom:10px;border-radius:18px}
+  .reviewIntro{gap:14px}
+  .reviewIntroCopy h2,.reviewSocialProof h2{font-size:clamp(27px,7.3vw,35px);margin-bottom:8px}
+  .reviewIntroLead{font-size:13px;line-height:1.45}
+  .reviewIntroTakeaway{margin-top:11px;padding:10px;font-size:12px}
+  .reviewIntro .reviewCta{display:flex;width:100%;min-height:47px;font-size:13px;margin-top:11px}
+  .reviewIntroAudio{font-size:11px}
+  .reviewIntroSourceNote{font-size:11px}
+  .reviewSocialProofHeader{margin-bottom:13px}
+  .reviewSocialProofHeader>p:last-child{font-size:12px;line-height:1.43}
+  .reviewStoryDisclaimer{font-size:10px}
+}
+@media(max-width:360px){
+  .situationHero .heroVisual{height:120px}
+  .reviewIntro,.reviewSocialProof{padding:13px 11px}
+  .reviewIntroCopy h2,.reviewSocialProof h2{font-size:26px}
+  .reviewPreviewCard{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .reviewIntro *, .reviewSocialProof * {scroll-behavior:auto}
+}
+
+/* Keep the SEO /tests introduction readable at phone widths without
+   modifying the video-first situation or Dao flow. */
+@media(max-width:600px){
+  .page[data-free-entry-landing="tests"] .hero .lead{font-size:16px;line-height:1.45}
+}
+.testReviewLink{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;color:#24584b;font-size:14px;line-height:1.4;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.testReviewLink:hover{text-decoration-thickness:2px}

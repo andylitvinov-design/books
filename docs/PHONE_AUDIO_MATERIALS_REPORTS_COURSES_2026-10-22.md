@@ -45,7 +45,7 @@ phone/browser/provider playback checks pass.
   `hh-practitioner-course-media`. Private bucket status and RLS are unchanged.
   No file moves from client sessions, no public Storage policy, no automatic
   transcription, no notification payload with private data.
-- Migration: `supabase/migrations/20261022141000_hh_private_phone_audio_materials.sql`.
+- Migration: `supabase/migrations/20261022144036_hh_private_phone_audio_materials_20261022.sql`.
   Widening CHECKs are backwards compatible; file-size limits and existing
   MIME types remain; the old public YouTube-only publication constraint stays.
 - Server verifies status, ownership, exact file length, MIME, and magic bytes.
@@ -79,3 +79,7 @@ unsupported codec playback gracefully. Keep genuine client data out of tests.
 **Existing client-session delivery feature flag** `HH_CLIENT_DELIVERY_ENABLED`
 may remain OFF pending previously documented private-key and E2E release gates.
 Do not enable it merely to land these reusable-material improvements.
+
+## Production migration reconciliation · 2026-11-01
+
+The live Holistic House Supabase migration history already contains versions `20261022144036` (private phone audio materials) and `20261022144157` (private course WebM audio). Historical source is retained at the matching applied version filenames; the earlier local PR-only migration filenames `20261022141000` and `20261022144500` are deliberately NOT introduced as duplicate migrations. Both storage buckets remain private; do not reapply already recorded migrations. A real owner iPhone/Android upload and authorized cross-client access check remain necessary before claiming full LIVE acceptance.

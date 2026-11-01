@@ -137,9 +137,10 @@ export default function NotificationSettings({locale='en',compact=false,accountI
         {state.enabled&&<label>{c.hour}<select value={hour} onChange={e=>setHour(Number(e.target.value))}>
           {Array.from({length:14},(_,i)=>i+8).map(n=><option key={n} value={n}>{String(n).padStart(2,'0')}:00</option>)}
         </select></label>}</div>
-      <div className={styles.buttons}>{state.enabled?
-        <><button onClick={save} disabled={busy}>{c.save}</button>
-        <button onClick={testPush} disabled={busy}>{c.send}</button>
+      <div className={styles.buttons}>
+        <button onClick={save} disabled={busy}>{c.save}</button>
+        {state.enabled?
+        <><button onClick={testPush} disabled={busy}>{c.send}</button>
         <button className={styles.outline} onClick={disable} disabled={busy}><BellOff size={15}/>{c.disable}</button></>:
         <button onClick={enable} disabled={busy||!state.ready||!canPush()||needsHomeScreen()}><Bell size={15}/>{c.allow}</button>}
       </div>

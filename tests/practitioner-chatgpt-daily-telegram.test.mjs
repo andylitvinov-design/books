@@ -59,6 +59,8 @@ test('public archive reader reuses single fetch for Council and ChatGPT',async()
   const result=await fetchPublicDailyArchives(period,async(uri,opts)=>{
     requests++
     assert.match(String(uri),/\/issues\/242\/comments/)
+    assert.equal(new URL(uri).searchParams.get('since'),'2026-10-14T00:00:00Z')
+    assert.equal(new URL(uri).searchParams.get('per_page'),'100')
     assert.equal(opts.method,'GET')
     assert.equal(opts.headers.Authorization,undefined)
     return Response.json([comment()])
@@ -95,7 +97,8 @@ test('independent model source is attached only when provider response was genui
     sources:['GitHub public HTML facts'],outcomes:{gemini:'unavailable',mistral:'unavailable'},
     markdown:'NO ACTUAL AI'
   }})
-  assert.equal(fake.outcomes.gemini,'not_run')
+  assert.equal(fake.outcomes.gemini,'unavailable')
+  assert.match(fake.markdown,/Gemini: unavailable/)
   assert.ok(!fake.markdown.includes('NO ACTUAL AI'))
 })
 test('same existing private date receipt and cron handle ChatGPT, no new job or bot',()=>{
@@ -104,10 +107,75 @@ test('same existing private date receipt and cron handle ChatGPT, no new job or 
   assert.match(core,/fetchPublicDailyArchives\(/)
   assert.match(core,/composeChatgptTelegramReport\(entry.chatgpt/)
   assert.match(core,/model_setup_required/)
-  assert.match(core,/return \{status:'accepted'/)
+  assert.match(core,/status:'accepted',accepted:acceptedCount/)
   assert.match(core,/on conflict \(report_day\)/)
   assert.match(core,/practiceTelegramConfigured\(env\)/)
   assert.match(core,/sendOwnerDocument\(/)
   assert.deepEqual(config.crons.filter(c=>c.path.includes('council-archive-telegram')),
-    [{path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'}])
+    [{path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'}])
+})
+
+test('attempted API errors are preserved, not flattened to not_run when both fail',()=>{
+  const owner=pickPublicChatgptReports([comment()],period)[0]
+  const attempted={
+    sources:['GitHub public HTML facts'],
+    outcomes:{gemini:'error',mistral:'error'},
+    reviewStatus:{
+      gemini:{status:'error',model:'gemini-3.8-flash',reason:'HTTP 429'},
+      mistral:{status:'error',model:'mistral-small-2603',reason:'HTTP 403'}
+    },
+    markdown:'PUBLIC SCANNER LONG EVIDENCE NOT TO DUPLICATE'
+  }
+  const result=composeChatgptTelegramReport(owner,{councilReview:attempted})
+  assert.equal(result.outcomes.gemini,'error')
+  assert.equal(result.outcomes.mistral,'error')
+  assert.match(result.markdown,/Gemini: error · gemini-3.8-flash \(HTTP 429\)/)
+  assert.match(result.markdown,/Mistral: error · mistral-small-2603 \(HTTP 403\)/)
+  assert.ok(!result.markdown.includes(attempted.markdown))
+  assert.deepEqual(result.sources,['ChatGPT daily audit Issue #242'])
+})
+test('historical skipped is reported as skipped, never fake model response',()=>{
+  const owner=pickPublicChatgptReports([comment()],period)[0]
+  const result=composeChatgptTelegramReport(owner,{councilReview:{
+    sources:['GitHub public HTML facts'],
+    outcomes:{gemini:'skipped',mistral:'skipped'},
+    reviewStatus:{
+      gemini:{status:'skipped',model:'Gemini',reason:'HISTORICAL_BACKFILL_NO_INFERENCE'},
+      mistral:{status:'skipped',model:'Mistral',reason:'HISTORICAL_BACKFILL_NO_INFERENCE'}
+    },
+    markdown:'DO NOT INCLUDE A FAKE MODEL REVIEW'
+  }})
+  assert.equal(result.outcomes.gemini,'skipped')
+  assert.equal(result.outcomes.mistral,'skipped')
+  assert.match(result.markdown,/HISTORICAL_BACKFILL_NO_INFERENCE/)
+  assert.ok(!result.markdown.includes('DO NOT INCLUDE A FAKE MODEL REVIEW'))
+})
+
+test('owner Telegram shows live provider errors before an unmodified ChatGPT-only source note',()=>{
+  const original='Gemini/Mistral НЕ ЗАПРАШИВАЛИСЬ'
+  const content=audit+'\n\n'+original
+  const verified=pickPublicChatgptReports([comment({
+    body:'<!-- HH-CHATGPT-DAILY:'+day+' -->\n'+content+
+      '\n<!-- HH-CHATGPT-END -->'
+  })],period)[0]
+  assert.ok(verified)
+  const report=composeChatgptTelegramReport(verified,{councilReview:{
+    sources:['GitHub public HTML facts'],outcomes:{gemini:'error',mistral:'error'},
+    reviewStatus:{
+      gemini:{status:'error',model:'gemini-3.8-flash',reason:'timeout'},
+      mistral:{status:'error',model:'mistral-small-2603',reason:'HTTP 429'}
+    },markdown:'UNVERIFIED MODEL RESPONSE MUST NOT BE SHOWN'
+  }})
+  assert.equal(report.outcomes.gemini,'error')
+  assert.equal(report.outcomes.mistral,'error')
+  assert.ok(report.markdown.indexOf('## Итог отдельных этапов')>=0)
+  assert.ok(report.markdown.indexOf('Gemini: error · gemini-3.8-flash (timeout)')<
+    report.markdown.indexOf(original))
+  assert.ok(report.markdown.indexOf('Mistral: error · mistral-small-2603 (HTTP 429)')<
+    report.markdown.indexOf(original))
+  assert.match(report.markdown,/ТОЛЬКО к самостоятельному этапу ChatGPT/)
+  assert.match(report.markdown,/## Отчёт ChatGPT \(исходный самостоятельный этап\)/)
+  assert.equal(report.markdown.split(original).length-1,1)
+  assert.ok(report.markdown.includes(content))
+  assert.ok(!report.markdown.includes('UNVERIFIED MODEL RESPONSE MUST NOT BE SHOWN'))
 })

@@ -5,8 +5,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: app-r1-full-regression-${{ github.ref }}
-  cancel-in-progress: true
+  group: app-r1-full-regression-${{ github.run_id }}
+  cancel-in-progress: false
 jobs:
   compare:
     runs-on: ubuntu-latest

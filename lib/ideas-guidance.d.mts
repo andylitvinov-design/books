@@ -9,3 +9,5 @@ export declare function matchIdeasAphorismTheme(question: string, topic?: IdeasT
 export declare function getIdeasAphorismMatches(question: string, locale: "ru" | "en" | "es", topic?: IdeasTopic): IdeasAphorism[];
 export declare function getIdeasAphorisms(topic: IdeasTopic, locale: "ru" | "en" | "es"): string[];
 export declare function getIdeasFreeRecommendations(topic: IdeasTopic): IdeasFreeId[];
+export type IdeasStarterTestKey = "hh-current-state" | "hh-resource-pulse" | "hh-weekly-pulse" | "hh-monthly-profile" | "mini-ipip-20" | "gad-7";
+export declare function getIdeasTestSuggestions(question: string): { topic: IdeasTopic; matched: boolean; keys: IdeasStarterTestKey[]; focus: string[] };

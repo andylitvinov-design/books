@@ -1,31 +1,49 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, HeartHandshake, Quote, X, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
-import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
+import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
+import { stageRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
+import { TestsCoachingSwitchboard } from "@/components/tests-coaching-switchboard";
 
 type Mode = "dao" | "aphorisms" | "personal";
 type Offer = "reading" | "gift";
 type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: number };
-type DaoReading = { number: number; text: string; kind: "original" | "editorial" };
+type DaoReading = { number: number; text: string; kind: "original" | "editorial"; locale: "ru" | "en" };
 
 const copy = {
   ru: {
-    eyebrow: "ИДЕИ · ПОДСКАЗКИ ДЛЯ ВАС",
-    title: "Идеи",
-    lead: "Задайте вопрос, найдите вдохновение и практическую подсказку.",
+    eyebrow: "ИДЕИ И КОУЧИНГ",
+    title: "Идеи и коучинг",
+    lead: "Бесплатная коуч-сессия или даосская подсказка — выберите свой путь.",
     question: "О чём хотите спросить?",
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
-    ask: "Задать вопрос",
+    ask: "Получить бесплатную даосскую подсказку",
+    testOverline: "Самостоятельно · €0", test: "Пройти бесплатную коуч-сессию", testAria: "Выбрать модель бесплатной коуч-сессии", testLink: "Или подобрать бесплатный тест",
+    exploreMore: "Другие возможности", exploreCoaching: "Выбрать коучинг", exploreCoachingHint: "Модели и сессии", exploreTemple: "Исследовать храмовые подсказки", exploreTempleHint: "Символы и смыслы", taoOverline: "Символическая практика · €0", templeHeading: "Храмовые подсказки",
+    testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
+    testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
+    testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
+    testTitles: {
+      "hh-current-state": "Состояние сейчас",
+      "hh-resource-pulse": "Ресурс и внутренняя опора",
+      "hh-weekly-pulse": "Самочувствие за неделю",
+      "hh-monthly-profile": "Профиль месяца",
+      "mini-ipip-20": "Личностный baseline",
+      "gad-7": "Тревожность · GAD-7 · 7 вопросов",
+    },
     hexagramWord: "Гексаграмма", meaning: "Смысл", message: "Ключевая идея", step: "Практический шаг",
     expand: "Развернуть подсказку", aphorismsForYou: "Три афоризма для вас", sampleAphorisms: "Три афоризма · пример",
     attach: "Добавить текст из файла .txt или .md (только в браузере)",
@@ -61,8 +79,6 @@ const copy = {
     expandDao: "Развернуть всё", collapseDao: "Свернуть",
     originalReading: "Полное авторское толкование · русский оригинал", editorialReading: "Полное редакционное толкование · на русском",
     loadingReading: "Загружаем полное толкование…", unavailableReading: "Полное толкование не загрузилось. Откройте карточку гексаграммы.",
-    again: "Другой символ",
-    card: "Прочитать толкование",
     aphorismNote: "Подбор по смыслу вопроса: редакционные афоризмы, авторские переложения и исторические народные пословицы. Переводы пословиц смысловые, с указанием оригинала и проверяемого сборника.",
     more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", proverbSource: "Происхождение", originalLabel: "Оригинал", editorial: "Holistic House · авторский афоризм",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
@@ -93,13 +109,26 @@ const copy = {
     },
   },
   en: {
-    eyebrow: "IDEAS & GUIDANCE",
-    title: "Ideas",
-    lead: "Ask a question, get inspiration and practical guidance.",
+    eyebrow: "IDEAS & COACHING",
+    title: "Ideas & Coaching",
+    lead: "One question, two ways to explore it: free coaching or Taoist insight.",
     question: "What would you like guidance on?",
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
-    ask: "Get guidance",
+    ask: "Get free Taoist insight",
+    testOverline: "Self-guided · €0", test: "Get free coaching session", testAria: "Choose a free coaching session model", testLink: "Or explore a free test",
+    exploreMore: "More ways to explore", exploreCoaching: "Explore Coaching Options", exploreCoachingHint: "Methods and sessions", exploreTemple: "Explore Temple Insights", exploreTempleHint: "Symbols and reflections", taoOverline: "Symbolic reflection · €0", templeHeading: "Temple Insights",
+    testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
+    testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
+    testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
+    testTitles: {
+      "hh-current-state": "Current State Check",
+      "hh-resource-pulse": "Resources & Inner Support",
+      "hh-weekly-pulse": "Weekly Wellbeing Check-in",
+      "hh-monthly-profile": "Monthly Life Profile",
+      "mini-ipip-20": "Personality Baseline",
+      "gad-7": "Anxiety Deep Dive",
+    },
     hexagramWord: "Hexagram", meaning: "Meaning", message: "Key message", step: "Practical step",
     expand: "Expand the full insight", aphorismsForYou: "Three aphorisms for you", sampleAphorisms: "Three aphorisms · example",
     attach: "Add a .txt or .md file locally in this browser",
@@ -133,10 +162,8 @@ const copy = {
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     expandDao: "Expand all", collapseDao: "Show less",
-    originalReading: "Full author interpretation · in Russian", editorialReading: "Full editorial interpretation · in Russian",
+    originalReading: "Author interpretation · English editorial adaptation", editorialReading: "Full editorial reading · English adaptation",
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
-    again: "Draw another",
-    card: "Read interpretation",
     aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
     more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Provenance", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
@@ -167,13 +194,26 @@ const copy = {
     },
   },
   es: {
-    eyebrow: "IDEAS Y ORIENTACIÓN",
-    title: "Ideas",
-    lead: "Haz una pregunta, encuentra inspiración y orientación práctica.",
+    eyebrow: "IDEAS Y COACHING",
+    title: "Ideas y coaching",
+    lead: "Una pregunta, dos caminos: coaching gratuito o consejo taoísta.",
     question: "¿Sobre qué quieres una orientación?",
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
-    ask: "Pedir orientación",
+    ask: "Recibir consejo taoísta gratuito",
+    testOverline: "Autoguiado · €0", test: "Sesión gratuita de coaching", testAria: "Elegir un modelo de coaching gratuito", testLink: "O explorar un test gratuito",
+    exploreMore: "Más opciones para explorar", exploreCoaching: "Explorar opciones de coaching", exploreCoachingHint: "Métodos y sesiones", exploreTemple: "Explorar reflexiones del templo", exploreTempleHint: "Símbolos y reflexión", taoOverline: "Reflexión simbólica · €0", templeHeading: "Reflexiones del templo",
+    testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
+    testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
+    testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
+    testTitles: {
+      "hh-current-state": "Chequeo del estado actual",
+      "hh-resource-pulse": "Recursos y apoyo personal",
+      "hh-weekly-pulse": "Bienestar de la semana",
+      "hh-monthly-profile": "Perfil mensual de vida",
+      "mini-ipip-20": "Perfil inicial de personalidad",
+      "gad-7": "Ansiedad en profundidad · GAD-7",
+    },
     hexagramWord: "Hexagrama", meaning: "Significado", message: "Mensaje clave", step: "Paso práctico",
     expand: "Desplegar toda la orientación", aphorismsForYou: "Tres aforismos para ti", sampleAphorisms: "Tres aforismos · ejemplo",
     attach: "Añadir un archivo .txt o .md solo en este navegador",
@@ -209,8 +249,6 @@ const copy = {
     expandDao: "Desplegar todo", collapseDao: "Mostrar menos",
     originalReading: "Interpretación completa del autor · en ruso", editorialReading: "Interpretación editorial completa · en ruso",
     loadingReading: "Cargando interpretación completa…", unavailableReading: "No se pudo cargar la interpretación. Abre la página del hexagrama.",
-    again: "Otro símbolo",
-    card: "Leer interpretación",
     aphorismNote: "Aforismos originales y refranes tradicionales con su colección citada. Las traducciones expresan el sentido; las paráfrasis no son citas históricas literales.",
     more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", proverbSource: "Procedencia", originalLabel: "Original", editorial: "Holistic House · aforismo original",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
@@ -241,6 +279,76 @@ const copy = {
     },
   },
 } as const;
+
+// Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
+const templeIntro = {
+  en: { eyebrow: "TEMPLE & PSYCHIC INSIGHTS", title: "Temple Insights", lead: "Ask a question, find inspiration and receive a symbolic I Ching reflection. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
+  ru: { eyebrow: "ХРАМОВЫЕ И ИНТУИТИВНЫЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте вопрос, найдите вдохновение и получите символическую подсказку И-Цзин. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
+  es: { eyebrow: "REFLEXIONES DEL TEMPLO", title: "Reflexiones del templo", lead: "Haz una pregunta, encuentra inspiración y explora un símbolo del I Ching. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
+} as const;
+
+const holisticIntro = {
+  en: {
+    eyebrow: "HOLISTIC HOUSE · GUIDANCE FOR YOUR GOALS",
+    title: "Holistic Support",
+    lead: "Describe a goal or situation. Choose a free symbolic insight or request energy support from a practitioner.",
+    question: "Your goal or situation",
+    placeholder: "Your goal, question or situation…",
+    choose: "Choose how to get support",
+    ask: "Get a free symbolic insight",
+    energy: "Request energy support",
+    daoLead: "Ask one specific question and receive a free symbolic I Ching reflection. This is not a prediction.",
+    diagnostic: "Get a free diagnostic from the Master",
+    meditations: "Audio & video meditations",
+    talismans: "Talismans",
+    meditationsHint: "Find calm, clarity and inner balance.",
+    talismansHint: "Symbols for reflection and personal meaning.",
+    privacyShort: "Private in this browser · How it works",
+    privacy: "Your words stay in this tab. For energy support they pass only to the next page in temporary memory, not in a URL, cookie or analytics. You review any request before choosing to send it.",
+  },
+  ru: {
+    eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ ДЛЯ ЦЕЛЕЙ",
+    title: "Холистическая поддержка",
+    lead: "Опишите цель или ситуацию. Получите бесплатную символическую подсказку или запросите поддержку мастера.",
+    question: "Ваша цель или ситуация",
+    placeholder: "Какая у вас цель, ситуация или вопрос?",
+    choose: "Выберите вид поддержки",
+    ask: "Получить бесплатную подсказку",
+    energy: "Получить энергетическую поддержку",
+    daoLead: "Задайте конкретный вопрос и получите бесплатную символическую подсказку И-Цзин. Это не предсказание.",
+    diagnostic: "Получить бесплатную диагностику от мастера",
+    meditations: "Аудио- и видеомедитации",
+    talismans: "Талисманы",
+    meditationsHint: "Практики для спокойствия и ясности.",
+    talismansHint: "Символы для личных смыслов.",
+    privacyShort: "Приватно в браузере · Как это работает",
+    privacy: "Ваши слова остаются в этой вкладке. При выборе энергетической поддержки они передаются только на следующую страницу во временной памяти, без URL, cookies и аналитики. Заявка отправляется только после вашего согласия.",
+  },
+  es: {
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PARA TUS OBJETIVOS",
+    title: "Apoyo holístico",
+    lead: "Describe tu objetivo o situación. Recibe una reflexión simbólica gratuita o solicita apoyo energético.",
+    question: "Tu objetivo o situación",
+    placeholder: "Tu objetivo, situación o pregunta…",
+    choose: "Elige tu tipo de apoyo",
+    ask: "Recibir una reflexión gratuita",
+    energy: "Solicitar apoyo energético",
+    daoLead: "Plantea una pregunta concreta y recibe una reflexión simbólica gratuita del I Ching. No es una predicción.",
+    diagnostic: "Solicitar evaluación gratuita del maestro",
+    meditations: "Meditaciones de audio y vídeo",
+    talismans: "Talismanes",
+    meditationsHint: "Una pausa para encontrar calma y claridad.",
+    talismansHint: "Símbolos para la reflexión personal.",
+    privacyShort: "Privado en este navegador · Cómo funciona",
+    privacy: "Tus palabras permanecen en esta pestaña. Si eliges apoyo energético se transfieren a la página siguiente solo en memoria temporal, nunca en la URL, cookies ni analítica. Revisarás la solicitud antes de enviarla.",
+  },
+} as const;
+
+// Start a real, rights-cleared guest questionnaire, not a generic catalog.
+// /es/client does not host the guest runner yet; match the existing English fallback.
+function ideasQuickTestHref(locale: PublicLocale) {
+  return "/" + (locale === "es" ? "en" : locale) + "/client?startTests=hh-current-state";
+}
 
 function freeOfferHref(locale: PublicLocale, id: "review" | "tests" | "dao") {
   if (id === "tests") return "/" + (locale === "es" ? "en" : locale) + "/client/tests";
@@ -303,7 +411,7 @@ function AphorismTiles({ items, locale, heading }: {
       <h3 className={styles.aphorismHeading}><Quote size={24} aria-hidden="true" />{heading}</h3>
       <ol className={styles.aphorisms}>
         {items.map((item, index) => (
-          <li key={item.id}>
+          <li key={item.id} data-ideas-aphorism-id={item.id}>
             <span className={styles.number} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             <div className={styles.aphorismBody}>
               <p>{item.text}</p>
@@ -355,7 +463,7 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
             <>
               <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoReading.title}
                 title={t.requestTitle} lead={t.requestLead} />
-              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#intro-request"} prefetch={false}>
+              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#free-diagnosis-options"} prefetch={false}>
                 {t.fullService}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </>
@@ -389,23 +497,48 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   );
 }
 
-export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
+export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" | "holistic" | "holistic-dao" }) {
   const t = copy[locale];
+  const daoFocused = variant === "holistic-dao";
+  const isHolistic = variant === "holistic";
+  const isTemple = variant !== "ideas";
+  const intro = daoFocused
+    ? { ...holisticIntro[locale], title: t.dao, lead: holisticIntro[locale].daoLead, ask: t.ask }
+    : isHolistic ? holisticIntro[locale] : isTemple ? templeIntro[locale] : t;
+  const HeadingTag = variant === "temple" || daoFocused ? "h2" : "h1";
+  const router = useRouter();
   const [question, setQuestion] = useState("");
+  const [testPickerOpen, setTestPickerOpen] = useState(false);
   const [error, setError] = useState(false);
   const [attachmentError, setAttachmentError] = useState(false);
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
+  // Stable SSR example for hydration; a fresh, nonrepeating set is chosen on the client.
+  const [previewAphorisms, setPreviewAphorisms] = useState(() =>
+    getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3));
+  const [previewReady, setPreviewReady] = useState(false);
+  const previewLocaleRef = useRef<PublicLocale | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [openOffer, setOpenOffer] = useState<Offer | null>(null);
-  const [activeMode, setActiveMode] = useState<Mode>("dao");
   const [expandedDao, setExpandedDao] = useState(false);
   const [fullDaoReading, setFullDaoReading] = useState<DaoReading | null>(null);
   const [daoReadingError, setDaoReadingError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // WebKit may retarget the synthetic click to the fixed bottom navigation
+  // after an iPhone touch scrolls a focused textarea. Handle the real touch
+  // release while deduplicating the subsequent click, if WebKit emits one.
+  const lastTouchFreeTestRef = useRef(-Infinity);
+
+  useEffect(() => {
+    // Only public quote IDs are retained; the visitor's question never leaves React memory.
+    if (previewLocaleRef.current === locale) return;
+    previewLocaleRef.current = locale;
+    setPreviewAphorisms(rotateIdeasPreviewAphorisms(locale));
+    setPreviewReady(true);
+  }, [locale]);
 
   function choose(mode: Mode) {
-    setActiveMode(mode);
+    setTestPickerOpen(false);
     if (!question.trim()) {
       setError(false);
       textareaRef.current?.focus();
@@ -429,32 +562,37 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       return;
     }
     // Asking the question always opens the short Daoist answer first.
-    // The other two modes remain available through their own buttons.
+    // The Dao result already includes selected aphorisms and personal follow-up options.
     choose("dao");
   }
 
   useEffect(() => {
     const number = result?.mode === "dao" ? result.hexagram : undefined;
-    if (!expandedDao || !number || fullDaoReading?.number === number) return;
+    const readingLocale = detectIdeasQuestionLocale(question, locale) === "en" ? "en" : "ru";
+    if (!expandedDao || !number || (fullDaoReading?.number === number && fullDaoReading.locale === readingLocale)) return;
     const selectedNumber: number = number;
     let cancelled = false;
     async function loadReading() {
       try {
-        if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
+        let text: string | null | undefined;
+        if (readingLocale === "en") {
+          // Use a localized 64-card catalog even when the original was authored in Russian.
+          const { getDaoEnglishHexagramText } = await import("@/data/dao-hexagrams-en.mjs");
+          text = getDaoEnglishHexagramText(selectedNumber);
+        } else if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
           const { default: records } = await import("@/data/dao-hexagram-author.json");
-          const text = records.find(record => record.number === selectedNumber)?.text;
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "original" });
-            else setDaoReadingError(true);
-          }
+          text = records.find(record => record.number === selectedNumber)?.text;
         } else {
-          // The 52 full editorial readings are intentionally code-split.
+          // Keep the 52 full Russian editorial readings code-split.
           const { getDaoEditorialHexagramText } = await import("@/data/dao-hexagrams-editorial.mjs");
-          const text = getDaoEditorialHexagramText(selectedNumber);
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "editorial" });
-            else setDaoReadingError(true);
-          }
+          text = getDaoEditorialHexagramText(selectedNumber);
+        }
+        if (!cancelled) {
+          if (text) setFullDaoReading({
+            number: selectedNumber, text, locale: readingLocale,
+            kind: daoAuthorHexagramNumbers.includes(selectedNumber) ? "original" : "editorial",
+          });
+          else setDaoReadingError(true);
         }
       } catch {
         if (!cancelled) setDaoReadingError(true);
@@ -462,32 +600,72 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     }
     void loadReading();
     return () => { cancelled = true; };
-  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading]);
+  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading, question, locale]);
 
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
   const answerLocale = result ? detectIdeasQuestionLocale(question, locale) : locale;
   const answerCopy = copy[answerLocale];
   const topicLabel = result ? (result.matched ? answerCopy.topic[result.topic] : answerCopy.generic) : "";
-  const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
-  return (
-    <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
-      <div className={styles.heading}>
-        <div>
-          <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
-          <h1 id="ideas-title">{t.title}</h1>
-          <p className={styles.lead}>{t.lead}</p>
-        </div>
-        <span className={styles.decor} aria-hidden="true">✦</span>
-      </div>
+  const suggestedTests = getIdeasTestSuggestions(question);
+  const showSuggestedTests = testPickerOpen && Boolean(question.trim());
+  const guestLocale = locale === "es" ? "en" : locale;
+  const coachingHref = "/" + locale + "/coaching";
+  const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
 
-      <form className={styles.question} onSubmit={submitQuestion}>
-        <label htmlFor="ideas-question">{t.question}</label>
+  function openFreeTests() {
+    if (!question.trim()) {
+      setTestPickerOpen(false);
+      router.push(ideasQuickTestHref(locale));
+      return;
+    }
+    setTestPickerOpen(open => !open);
+  }
+  function openFreeTestsOnTouch() {
+    lastTouchFreeTestRef.current = performance.now();
+    openFreeTests();
+  }
+  function openFreeTestsOnClick(detail: number) {
+    // Pointer-up already handled this physical touch. Preserve mouse click,
+    // keyboard Enter/Space (detail=0), and screen-reader activation.
+    if (detail > 0 && performance.now() - lastTouchFreeTestRef.current < 650) return;
+    openFreeTests();
+  }
+  const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
+  useEffect(() => {
+    if (!result) return;
+    // The interpretation appears below the photo/selector. Make the actual
+    // answer visible on iPhone rather than appearing to do nothing after a tap.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector('[data-ideas-result]')?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth", block: "start",
+    });
+  }, [result]);
+  useEffect(() => {
+    if (!showSuggestedTests) return;
+    document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
+  }, [showSuggestedTests]);
+  const templeContent = (<>
+      {/* The shared Ideas controls remain unchanged. Only Temple groups its header,
+          question, actions and privacy within the approved scenic surface. */}
+      <div className={isTemple ? styles.templeScenic : styles.heroLayout}>
+      <div className={styles.hero} data-ideas-hero>
+        <div className={styles.heading}>
+          <div>
+            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{intro.eyebrow}</p>
+          <HeadingTag id="ideas-title">{intro.title}</HeadingTag>
+          <p className={styles.lead}>{intro.lead}</p>
+        </div>
+          <span className={styles.decor} aria-hidden="true">✦</span>
+        </div>
+
+        <form id="ideas-question-form" className={styles.question} onSubmit={submitQuestion}>
+        <label htmlFor="ideas-question">{isHolistic ? holisticIntro[locale].question : t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
           <textarea
             id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
-            placeholder={t.placeholder} value={question} aria-invalid={error || attachmentError}
+            placeholder={isHolistic ? holisticIntro[locale].placeholder : t.placeholder} value={question} aria-invalid={error || attachmentError}
             aria-describedby={error || attachmentError ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
             onChange={(event) => { setQuestion(event.target.value); setError(false); setAttachmentError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null); }}
           />
@@ -503,7 +681,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               try {
                 const excerpt = (await file.text()).trim();
                 setQuestion(current => [current, excerpt].filter(Boolean).join(" ").slice(0, 500));
-                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null);
+                setAttachmentError(false); setError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null); setTestPickerOpen(false);
                 textareaRef.current?.focus();
               } catch { setAttachmentError(true); }
             }}
@@ -513,26 +691,127 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <Paperclip size={20} aria-hidden="true" />
           </button>
         </div>
-        <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
-        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
-        <details className={styles.privacyDisclosure}>
-          <summary id="ideas-question-privacy">{t.privacyShort}</summary>
-          <p className={styles.privacy}>{t.privacy}</p>
-        </details>
-      </form>
-
-      <p className={styles.actionLabel}>{t.choose}</p>
-      <div className={styles.actions}>
-        <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
-          <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>
-        </button>
-        <button type="button" onClick={() => choose("aphorisms")} aria-pressed={activeMode === "aphorisms"} className={styles.action}>
-          <Quote aria-hidden="true" size={22} /><span>{t.aphorisms}</span>
-        </button>
-        <button type="button" onClick={() => choose("personal")} aria-pressed={activeMode === "personal"} className={styles.action}>
-          <Sprout aria-hidden="true" size={22} /><span>{t.personal}</span>
-        </button>
+       </form>
       </div>
+      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={isHolistic ? holisticIntro[locale].choose : t.choose}>
+        {!isTemple ? <Link href={coachingHref} prefetch={false} className={styles.submit}
+          onClick={() => stageIdeasCoachingQuestion(question)}
+          data-ideas-free-coaching aria-label={t.testAria}>
+          <ClipboardCheck size={20} aria-hidden="true" />
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.testOverline}</span>
+            <strong>{t.test}</strong>
+          </span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link> : null}
+        <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
+          <span className={styles.modeYin} aria-hidden="true">☯︎</span>
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.taoOverline}</span>
+            <strong>{intro.ask}</strong>
+          </span>
+          {isHolistic ? <ArrowRight size={19} aria-hidden="true" /> : null}
+        </button>
+        {variant === "temple" ? <Link
+          href={"/" + locale + "/coaching#free-diagnostic-start"}
+          className={styles.diagnosticAction}
+          data-ideas-personal-diagnostic
+          prefetch={false}
+        >
+          <ClipboardCheck size={19} aria-hidden="true" />
+          <span>{templeIntro[locale].diagnostic}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+        {isHolistic ? <Link
+          href={"/" + locale + "/services/remote-energy-support"}
+          className={styles.diagnosticAction}
+          data-ideas-energy-support
+          prefetch={false}
+          onClick={() => stageRemoteSupportLandingIntention(question)}
+        >
+          <HeartHandshake size={19} aria-hidden="true" />
+          <span>{holisticIntro[locale].energy}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+        {daoFocused ? <Link
+          href={"/" + locale + "/services/free-consultation#free-diagnosis-options"}
+          className={styles.diagnosticAction}
+          data-ideas-free-diagnostic prefetch={false}
+        >
+          <ClipboardCheck size={19} aria-hidden="true" />
+          <span>{holisticIntro[locale].diagnostic}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+      </div>
+      {!isTemple ? <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
+        <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
+          onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
+          <span className={styles.exploreIcon} aria-hidden="true"><Compass size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreCoaching}</strong>
+            <small>{t.exploreCoachingHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </Link>
+        <a href="#temple-insights" className={`${styles.exploreLink} ${styles.exploreTemple}`}
+          data-ideas-explore-temple>
+          <span className={styles.exploreIcon} aria-hidden="true"><BookOpen size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreTemple}</strong>
+            <small>{t.exploreTempleHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </a>
+      </nav> : null}
+      {!isHolistic ? renderHeroUtility() : null}
+      </div>
+      {isHolistic ? (
+        <>
+          <nav className={styles.holisticQuickCards} data-holistic-quick-cards aria-label={holisticIntro[locale].choose}>
+            <Link href="#meditation-practices" className={styles.holisticQuickLink} data-ideas-meditations>
+              <span className={styles.holisticCardIcon} aria-hidden="true"><Sun size={24} strokeWidth={1.6} /></span>
+              <strong>{holisticIntro[locale].meditations}</strong>
+              <span className={styles.holisticCardDescription}>{holisticIntro[locale].meditationsHint}</span>
+              <span className={styles.holisticCardArrow} aria-hidden="true"><ArrowRight size={19} /></span>
+            </Link>
+            <Link href="#talismans" className={styles.holisticQuickLink} data-ideas-talismans>
+              <span className={styles.holisticCardIcon} aria-hidden="true">◇</span>
+              <strong>{holisticIntro[locale].talismans}</strong>
+              <span className={styles.holisticCardDescription}>{holisticIntro[locale].talismansHint}</span>
+              <span className={styles.holisticCardArrow} aria-hidden="true"><ArrowRight size={19} /></span>
+            </Link>
+          </nav>
+          {renderHeroUtility()}
+        </>
+      ) : null}
+      <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
+        hidden={!showSuggestedTests} aria-label={t.testsTitle}>
+        <div className={styles.testPickerHeading}>
+          <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
+            {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
+          </div>
+          <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
+            aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+        </div>
+        <ul className={styles.testPickerList}>
+          {suggestedTests.keys.map(key => (
+            <li key={key}>
+              <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
+                className={styles.testPickerItem} data-ideas-test-start={key}>
+                <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href={suggestedTestBrowserHref} prefetch={false}
+          className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <p className={styles.testPickerNote}>{t.testsNote}</p>
+      </section>
+
+
+      {!daoFocused ? <h2 id="temple-insights" className={styles.templeHeading}>
+        <Sparkles size={15} aria-hidden="true" />{t.templeHeading}
+      </h2> : null}
 
       {result ? (
         <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
@@ -597,25 +876,14 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                       </div>
                     </div>
                     <div className={styles.daoReading} data-ideas-dao-reading>
-                      {fullDaoReading?.number === hexagram.number ? (
+                      {fullDaoReading?.number === hexagram.number && fullDaoReading.locale === (answerLocale === "en" ? "en" : "ru") ? (
                         <>
                           <p className={styles.tag}>{fullDaoReading.kind === "original" ? answerCopy.originalReading : answerCopy.editorialReading}</p>
-                          <div className={styles.daoProse} lang="ru">
+                          <div className={styles.daoProse} lang={fullDaoReading.locale}>
                             {fullDaoReading.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                           </div>
                         </>
                       ) : <p className={styles.daoReadingStatus} role="status">{daoReadingError ? answerCopy.unavailableReading : answerCopy.loadingReading}</p>}
-                    </div>
-                    <div className={styles.hexagramActions}>
-                      <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>
-                        {answerCopy.card}<ArrowRight size={16} aria-hidden="true" />
-                      </Link>
-                      <button type="button" onClick={() => {
-                        setExpandedDao(false);
-                        setFullDaoReading(null);
-                        setDaoReadingError(false);
-                        setResult({ ...result, hexagram: drawRandomHexagram() });
-                      }}><RefreshCw size={16} aria-hidden="true" />{answerCopy.again}</button>
                     </div>
                     <p className={styles.note}>{answerCopy.daoNote}</p>
                   </>
@@ -623,7 +891,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
               </div>
             </div>
           ) : null}
-          {result.mode === "dao" && hexagram ? (
+          {result.mode === "dao" && hexagram && !daoFocused ? (
             <DaoOfferCards locale={answerLocale} openOffer={openOffer}
               onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
           ) : null}
@@ -687,16 +955,44 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           ) : null}
           {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p> : null}
         </div>
-      ) : exampleHexagram ? (
-        <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
-          <AphorismTiles items={getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3)}
-            locale={locale} heading={t.sampleAphorisms} />
+      ) : exampleHexagram && !daoFocused ? (
+        <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}
+          data-ideas-preview-ready={previewReady ? "" : undefined}>
+          <AphorismTiles items={previewAphorisms} locale={locale} heading={t.sampleAphorisms} />
           <DaoInsightPanel entry={exampleHexagram} locale={locale} topic="resources" example />
           <p className={styles.note}>{t.previewNote}</p>
           <DaoOfferCards locale={locale} openOffer={openOffer}
             onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
         </div>
       ) : null}
+      </>);
+  function renderHeroUtility() {
+    return (
+      <div className={styles.heroUtility} data-ideas-hero-utility>
+        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
+        <div className={styles.utilityLinks}>
+          <details className={styles.privacyDisclosure}>
+            <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
+            <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
+          </details>
+          {!daoFocused && (isTemple ? (
+            <Link href={freeOfferHref(locale, "tests")} prefetch={false}
+              className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
+              {t.testLink}<ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          ) : (
+            <button type="button" className={styles.freeTestLink} data-ideas-free-test
+              aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+              onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
+              onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} data-holistic-entry={isHolistic ? "true" : undefined} lang={locale}>
+      {isTemple ? templeContent : <TestsCoachingSwitchboard locale={locale} templeContent={templeContent} />}
     </section>
   );
 }

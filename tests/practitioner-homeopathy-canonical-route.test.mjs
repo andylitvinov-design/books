@@ -29,7 +29,12 @@ test('My Practice and Services listing card destinations use the shared canonica
   const listing = read('components/master-network-explorer.tsx');
   assert.match(practice, /href=\{getPublicServiceDetailHref\(locale,item\.practitionerSlug,item\.slug\)\}/);
   assert.match(listing, /const detailsHref = getPublicServiceDetailHref\(locale, service\.practitionerSlug, service\.slug\)/);
-  assert.match(listing, /getPublicServiceDetailHref\(locale, master\.slug, master\.services\[0\]\.slug\)/);
+  // The mentor quick link must use the offer actually matched by active filters,
+  // not the practitioner's unrelated first service in catalogue order.
+  assert.match(listing, /const filteredServices = matchingMasterServices\(master, state\)/);
+  assert.match(listing, /const firstService = queryMatches\[0\] \|\| filteredServices\[0\]/);
+  assert.match(listing, /href=\{getPublicServiceDetailHref\(locale, master\.slug, firstService\.slug\)\}/);
+  assert.doesNotMatch(listing, /getPublicServiceDetailHref\(locale, master\.slug, master\.services\[0\]\.slug\)/);
 });
 
 test('legacy deep links redirect permanently only after published-service authorization check', () => {

@@ -1,67 +1,60 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("all homepage locales preserve personal-session priority and distinct free choices", () => {
-  const enRu = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  for (const source of [enRu, es]) {
-    assert.match(source, /service-home-button--primary/);
-    assert.match(source, /service-home-button--secondary/);
-    assert.match(source, /free-written-review/);
-    assert.match(source, /free-tests/);
-    assert.match(source, /paid-sessions/);
-    assert.ok(source.indexOf("service-home-button--primary") < source.indexOf("service-home-button--secondary"));
-    assert.doesNotMatch(source, /HomeFreePaths/);
-  }
-  assert.match(enRu, /Stuck in relationships, work or an important decision\?/);
-  assert.match(enRu, /Сложности в отношениях, работе или важном решении\?/);
-  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
+test("EN RU ES show free-first offers and paid requests with distinct CTA and detail actions", () => {
+  const offers = read("components/home-featured-workspace.tsx");
+  const css = read("components/home-featured-workspace.module.css");
+  assert.match(offers, /data-home-offer-primary=\{offer\.id\}/);
+  assert.match(offers, /data-home-offer-details=\{offer\.id\}/);
+  for (const token of ["Пройти курс Рейки бесплатно","Заказать бесплатный письменный разбор",
+    "Пройти коуч-сессию бесплатно","Request a session · from €50","Solicitar revisión escrita gratis"])
+    assert.ok(offers.includes(token), token);
+  assert.match(css, /\.offerPrimary \{ background: #742c42/);
+  assert.match(css, /min-height: 44px/);
 });
 
-test("photo-led service cards replace the duplicated free text cards on all homepage locales", () => {
+test("five early topic filters replace duplicated offer, test and My Space sections", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  const cards = read("components/services-solutions.tsx");
-  const offers = read("data/core-service-offers.ts");
-  const navigation = read("components/site-navigation.tsx");
+  const more = read("components/home-more-disclosure.tsx");
   for (const source of [home, es]) {
-    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths/);
-    assert.match(source, /service-home-hero/);
+    assert.match(source, /<HomeFeaturedWorkspace locale=/);
+    assert.match(source, /<HomeMoreDisclosure locale=/);
+    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths|<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|service-home-hero/);
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"), "Keep the photo hero first");
+    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"), "Topic choices belong immediately after the hero");
+    assert.equal((source.match(/<HomeMoreDisclosure/g) || []).length, 1, "One topic picker, no duplicate footer section");
   }
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(cards, /id=\{isHome \? "free-start" : undefined\}/);
-  assert.match(cards, /homepageMedia\[offer\.id\]/);
-  assert.match(cards, /data-core-service-id=\{offer\.id\}/);
-  for (const slug of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"]) {
-    assert.ok(offers.includes(slug), slug);
-  }
-  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />');
-  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Photo service cards must precede topic journeys");
-  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
-  assert.match(es, /className="service-home-actions" id="free-start"/);
-  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('<HomeExploreSections locale="es" />'));
-  assert.match(navigation, /#free-start/);
-  assert.match(home, /not a live call/);
-  assert.match(es, /no una llamada/);
+  for (const key of ["energy","love","business","services","courses"])
+    assert.ok(more.includes('data-home-topic-filter="' + key + '"'));
+  assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
+  const style = read("components/home-more-disclosure.module.css");
+  assert.match(style, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(style, /@media \(max-width: 640px\)/);
+  assert.match(style, /\.filters \.chip:nth-child\(3\) \{ grid-column: 1 \/ -1; \}/);
+  assert.match(style, /overflow-wrap: anywhere/);
+  assert.match(style, /:focus-visible/);
+  for (const phrase of ["Explore by topic", "Выберите тему", "Explora por tema"]) assert.ok(more.includes(phrase));
 });
 
-test("menu keeps the original full catalog but prioritizes free entry, services, About and Library", () => {
+test("main menu prioritizes Energy Love Business and retains full legacy catalogues", () => {
   const nav = read("components/site-navigation.tsx");
   assert.match(nav, /site-nav-free-entry/);
-  assert.match(nav, /item\.id === 'services'/);
-  assert.match(nav, /site-nav-about-entry/);
-  assert.match(nav, /site-library-entry/);
-  assert.match(nav, /site-main-menu-trigger__label/);
   assert.match(nav, /getCompactNavigation\(activeLocale\)/);
-  assert.match(nav, /menuItems\.map/);
+  assert.match(nav, /\['energy', 'love', 'business'\]/);
+  assert.match(nav, /id: 'services'/);
+  assert.match(nav, /id: 'academy'/);
+  assert.match(nav, /site-nav-about-entry/);
+  assert.match(nav, /site-main-menu-more/);
+  assert.match(nav, /mainMenuItems\.map/);
 });
 
-test("primary home CTA has stronger contrast and mobile introduction stays readable", () => {
-  const css = read("app/holistic-house-home.css");
-  assert.match(css, /\.service-home-button--primary \{ background: #742c42/);
-  assert.match(css, /\.service-home-intro \{ max-width: 76%; font-size: 16px/);
+test("final consented capture remains after seven stages", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const spanish = read("app/es/page.tsx");
+  assert.ok(home.indexOf("<HomeMoreDisclosure") < home.indexOf("<HomepageContactCta"));
+  assert.ok(spanish.indexOf("<HomeMoreDisclosure") < spanish.indexOf("<PublicConsultationCta"));
+  assert.match(read("components/homepage-contact-cta.tsx"), /data-home-contact-capture/);
 });

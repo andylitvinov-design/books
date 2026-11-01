@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 
+// Synthetic submissions must never target a deployed service, even if browser
+// interception fails or a service worker takes over a request.
+export function assertSyntheticLoopback(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error('SYNTHETIC_LOOPBACK_REQUIRED'); }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+    throw new Error('SYNTHETIC_LOOPBACK_REQUIRED');
+  }
+}
+
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
   await expect(chooser).toHaveCount(1);
@@ -55,6 +66,10 @@ export async function openContactChannelChooser(scope, expect) {
  * A messenger link cannot exist until an explicitly consented enquiry is saved.
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
+  // Choice changes reset the form in a React passive effect. Let that real
+  // rendering cycle settle before opening it, especially on mobile WebKit.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -75,7 +90,20 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
-  await form.locator('input[autocomplete="name"]').fill('Public QA Visitor');
+  // Name is optional and lives in a collapsed disclosure on current mobile UI.
+  // Exercise the real disclosure before typing; never force-fill a hidden input.
+  const nameDisclosure = form.locator('details:has(input[autocomplete="name"])');
+  const name = nameDisclosure.locator('input[autocomplete="name"]');
+  await expect(nameDisclosure).toHaveCount(1);
+  await expect(nameDisclosure).not.toHaveAttribute('open', '');
+  await nameDisclosure.locator('summary').click();
+  // A concurrent React refresh can replace the native disclosure immediately
+  // after its first click. Reopen it once if that actually happened.
+  if (!await name.isVisible() && !await nameDisclosure.evaluate(node => node.open)) {
+    await nameDisclosure.locator('summary').click();
+  }
+  await expect(name).toBeVisible();
+  await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
   await form.locator('input[type="checkbox"]').check();
@@ -94,5 +122,66 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   assert.doesNotMatch(prepared.whatsappUrl.searchParams.get('text')||'',
     /Public QA Visitor|enquiry-qa@example\.test/,'No synthetic contact data in a messenger URL');
   assert.match(prepared.whatsappUrl.searchParams.get('text')||'',/HH-ABCD1234EF56/);
+  return chooser;
+}
+
+
+/**
+ * Privacy-safe public compact capture contract.
+ * A consented synthetic phone request is fulfilled entirely by Playwright's
+ * in-memory route; no production CRM write or external WhatsApp/Telegram call.
+ */
+export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
+  const chooser = scope.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
+  await expect(chooser).toHaveCount(1);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  const submissions = [];
+  await page.route('**/api/service-enquiries', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    submissions.push(route.request().postDataJSON());
+    await route.fulfill({ status: 201, contentType: 'application/json',
+      body: JSON.stringify({ saved: true, referenceCode: 'HH-ABCD1234EF56' }) });
+  });
+
+  // The real click synchronously opens a placeholder popup before the async
+  // synthetic CRM response; intercept it locally to prevent provider visits.
+  await page.evaluate(() => {
+    window.open = () => ({
+      opener: null, closed: false,
+      location: { replace: () => {} },
+      close: () => {},
+    });
+  });
+
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const form = chooser.locator('form');
+  await expect(form).toBeVisible();
+  await expect(form.locator('input[type="email"]')).toHaveCount(0);
+  await form.locator('[data-phone-country-input] input[type="tel"]').fill('4165550123');
+  await form.locator('input[type="checkbox"]').check();
+  await form.locator('button[data-contact-channel-submit="whatsapp"]').click();
+
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
+  assert.equal(submissions.length, 1, 'One and only one synthetic consented request');
+  const payload = submissions[0];
+  assert.equal(payload.contactConsent, true);
+  assert.equal(payload.contact.email, '');
+  assert.equal(payload.contact.displayName, '');
+  assert.match(payload.contact.phone || '', /^\+[1-9][0-9]{7,14}$/);
+  assert.equal(payload.website, '');
+  assert.ok(payload.serviceTitle?.includes('Alchemy') || payload.serviceTitle?.includes('Алхимия')
+    || payload.serviceTitle?.includes('Alquimia'), 'The chosen service remains in the request');
+  assert.match(payload.operationId || '', /^[a-f0-9-]{36}$/i);
+  assert.ok(typeof payload.description === 'string', 'Only a non-sensitive service-format label may accompany this request');
+  const prepared = await assertPreparedContactChannels(chooser, expect);
+  assert.doesNotMatch(prepared.whatsappUrl.searchParams.get('text') || '',
+    /4165550123|Public QA Visitor|enquiry-qa@example\.test/i,
+    'Contact details never appear in external messenger draft');
+  assert.match(prepared.whatsappUrl.searchParams.get('text') || '', /HH-ABCD1234EF56/);
   return chooser;
 }

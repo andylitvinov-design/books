@@ -32,8 +32,9 @@ test("All five Yggdrasil and four independently sourced Tantra reviews are avail
   const tantra = curriculum.split("const tantraVoices:")[1].split("export const energyworkPhases")[0];
   assert.deepEqual([...tantra.matchAll(/id: "([^"]+)"/g)].map(match => match[1]),
     ["margaret", "olga", "litten", "tantra-level-1"]);
-  assert.match(curriculum, /Course reviews are NOT presented as reactions to this exact meditation recording/);
-  assert.match(curriculum, /Explore comments on the original video, then share your own experience/);
+  assert.match(curriculum, /These are supplied examples, not independently verified YouTube comments/);
+  assert.match(curriculum, /Published learner experiences from the course, not this exact recording/);
+  assert.match(curriculum, /Three anonymous examples from Kundalini Reiki sessions with other practitioners, not reviews of this exact video/);
 });
 
 test("Buttons switch quotes without navigating away or touching required student feedback", () => {
@@ -45,7 +46,7 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /<MeditationVoices key=\{slide\.id\}/);
   assert.match(learner, /aria-live="polite" aria-atomic="true"/);
   assert.match(learner, /t\.voicesSource/);
-  assert.match(learner, /t\.voicesComments/);
+  assert.doesNotMatch(learner, /showVideoComments|voicesComments/, "No review screen should expose a Video comments CTA");
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/);
   assert.match(browser, /Next switches quote in place/);
   assert.match(browser, /Previous restores quote/);
@@ -56,6 +57,11 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /styles\.voicesReferences/);
   assert.match(learner, /styles\.voiceDotActive/);
   assert.match(learner, /voicesArt = slide\.kind === "voices"/);
+  assert.match(css, /A 30px visual circle with a full 44px tap target on iPhone/);
+  const mobileReview = css.slice(css.indexOf("/* REIKI FULL TESTIMONIALS V1"));
+  assert.match(mobileReview, /\.voicesControls \{\s*margin: 6px auto 0;/);
+  assert.match(mobileReview, /inset: 7px;/);
+  assert.match(browser, /const hasSourceLink = id === "tan-voices" \|\| id === "ygg-voices"/);
 });
 
 test("Full original Tantra Reiki testimonials survive without excerpt truncation", () => {
@@ -79,14 +85,13 @@ test("Full original Tantra Reiki testimonials survive without excerpt truncation
   assert.match(tantra, /translated from Russian/);
 });
 
-test("Long reviews scroll inside a clearly labelled region on mobile", () => {
-  assert.match(learner, /data-review-scroll/);
-  assert.match(learner, /role="region" tabIndex=\{canScrollReview \? 0 : -1\}/);
-  assert.match(learner, /onScroll=\{updateReviewScroll\}/);
-  assert.match(learner, /ResizeObserver\(updateReviewScroll\)/);
-  assert.match(learner, /voicesScrollHint/);
-  assert.match(css, /\.voiceQuote p::-webkit-scrollbar/);
-  assert.match(css, /white-space:pre-line/);
-  assert.match(css, /max-height:min\(23dvh,210px\)/);
-  assert.match(browser, /scrollSize\.scrollHeight > scrollSize\.clientHeight/);
+test("Long reviews scroll inside a labelled, focusable region on mobile", () => {
+  assert.match(learner, /data-review-fulltext role="region" tabIndex=\{0\} aria-label=\{t\.voicesFullText\}/);
+  const fullReview = css.slice(css.indexOf("/* REIKI FULL TESTIMONIALS V1"));
+  assert.match(fullReview, /\.voiceQuote p \{\s*flex: 1 1 auto;[\s\S]*?max-height: none;/);
+  assert.match(fullReview, /overflow-y: auto;/);
+  assert.match(fullReview, /-webkit-overflow-scrolling: touch;/);
+  assert.match(fullReview, /white-space: pre-line;/);
+  assert.match(fullReview, /\.voiceQuote p::-webkit-scrollbar/);
+  assert.match(browser, /const first = await carousel\.locator\("blockquote p"\)\.innerText\(\)/);
 });

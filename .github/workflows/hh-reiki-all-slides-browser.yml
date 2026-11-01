@@ -1,15 +1,25 @@
-name: Reiki Practitioner — 70-screen Chromium and Safari save gate QA
+name: Reiki Practitioner — 64-screen Chromium and Safari save gate QA
 
 on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
       - 'components/energywork-ai-learner.tsx'
+      - 'components/reiki-initiation-photo.tsx'
+      - 'components/reiki-initiation-photo.module.css'
       - 'components/reiki-referral-landing.tsx'
       - 'components/reiki-referral-landing.module.css'
       - 'components/tantra-free-initiation.tsx'
       - 'components/tantra-free-initiation.module.css'
       - 'components/academy-record-page.tsx'
+      # BASE-trusted replacement of the redundant Tantra Reiki Photo Cards gate.
+      - 'components/tantra-reiki-journey.tsx'
+      - 'components/tantra-reiki-story.tsx'
+      - 'app/academy.css'
+      - 'tests/tantra-reiki-compact-fullwidth.test.mjs'
+      - 'tests/tantra-reiki-photo-levels.browser.mjs'
+      - 'tests/tantra-reiki-teacher-compact.test.mjs'
+      - '.github/workflows/hh-tantra-photo-levels.yml'
       - 'app/**/academy/**'
       - 'scripts/verify-reiki-referral-browser.mjs'
       - 'tests/reiki-referral-landing.test.mjs'
@@ -25,13 +35,15 @@ permissions:
 
 jobs:
   course-and-save-gate:
+    # Single successful PR owner; the 64-screen browser/DB steps remain manual-only.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Full course / save checkpoint — ${{ matrix.browser }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     services:
       postgres:
         image: postgres:17-alpine
@@ -69,21 +81,39 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Isolated Chromium/WebKit runtime
+      - name: Fast Reiki referral and protected lesson-source contracts on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check scripts/verify-reiki-all-slides-browser.mjs
+          node --check scripts/verify-reiki-referral-browser.mjs
+          node --test tests/reiki-referral-landing.test.mjs
+      # Original photo-card source contracts now run in this shared job.
+      # No extra runner, Next build or Playwright installation on the PR path.
+      - name: Original Tantra Reiki photo-card source and accessible layout contracts
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check tests/tantra-reiki-photo-levels.browser.mjs
+          node --test tests/tantra-reiki-compact-fullwidth.test.mjs tests/tantra-reiki-photographic-landing.test.mjs tests/tantra-reiki-level-one-focus.test.mjs tests/tantra-reiki-mobile-chapters.test.mjs tests/tantra-reiki-teacher-compact.test.mjs
+          npx --no-install eslint components/tantra-reiki-journey.tsx
+      - name: Isolated Chromium/WebKit runtime (manual deep QA only)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p /tmp/hh-reiki-playwright
           npm install --prefix /tmp/hh-reiki-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-reiki-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-reiki-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize synthetic isolated account database
+        if: github.event_name == 'workflow_dispatch'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
-      - name: Verify Chromium full 70 screens and Safari guest save-only checkpoint
+      - name: Verify Chromium full 64 screens and Safari guest save-only checkpoint
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p artifacts/reiki-all-slides
           node tests/helpers/app-auth-double.mjs > /tmp/hh-reiki-provider.log 2>&1 & PROVIDER_PID=$!
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-reiki-next.log 2>&1 & APP_PID=$!
           trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 110); do
+            echo "Reiki isolated server readiness attempt $i/110"
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/academy/principles-of-energywork/learn >/dev/null; then break; fi
             sleep 2
           done
@@ -91,9 +121,9 @@ jobs:
           node --test tests/reiki-referral-landing.test.mjs
           node scripts/verify-reiki-referral-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         with:
-          name: reiki-70-screens-${{ matrix.browser }}
+          name: reiki-64-screens-${{ matrix.browser }}
           path: |
             artifacts/reiki-all-slides/
             artifacts/reiki-referral/

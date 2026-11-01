@@ -26,15 +26,15 @@ test('one contact field and no name creates an unverified reply-only registratio
 })
 test('OAuth enquiry continuation cannot redirect to a private page or foreign website',()=>{
   for(const [locale,path] of [
-    ['en','/en/services'],['ru','/ru/academy/reiki/tantra-reiki'],
-    ['es','/es/services'],['en','/en/toronto'],
+    ['en','/en/services'],['ru','/ru/academy/reiki/tantra-reiki'],['en','/en/cart'],['ru','/ru/cart'],['es','/es/cart'],
+    ['es','/es/services'],['en','/en/toronto'],['en','/en/explore/business'],
   ])assert.equal(safeEnquiryReturnPath(path,locale),path)
   for(const path of [
     'https://evil.example/','//evil.example/en/services','/en/app/practice',
     '/en/client/report','/en/tests','/en/services?next=https://evil.example/',
     '/en/services#secret','/en/services/../api','/en/services/%2e%2e/api',
     '/en/services\\\\api','/en/services//api','/ru/services',
-    '/en/explore/business','/en',
+    '/en',
   ])assert.equal(safeEnquiryReturnPath(path,'en'),'','blocked: '+path)
 })
 test('Google entry uses existing PKCE and prefill, never silently submits a CRM lead',()=>{
@@ -45,8 +45,11 @@ test('Google entry uses existing PKCE and prefill, never silently submits a CRM 
   assert.match(src,/sessionStorage\.setItem\("hh-google-enquiry-return"/)
   assert.match(src,/fetch\("\/api\/app\/auth\/contact-profile"/)
   assert.match(src,/setGoogleReady\(true\)/)
-  assert.match(src,/method === "email" \? email\.trim\(\) : ""/)
-  assert.match(src,/method === "phone" \? cleanedPhone : ""/)
+  // Only legacy compact-phone enquiries are phone-only; cart and fixed Alchemy
+  // booking may use the actual verified Google email with explicit consent.
+  assert.match(src, /const usePhone = \(compactPhone && !bookingSku\) \|\| method === "phone"/)
+  assert.match(src, /email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : ""/)
+  assert.match(src, /if \(busy \|\| saved\) return;/)
   assert.match(src,/contactConsent: consent/)
   assert.match(src,/<details className=\{styles\.optionalName\}>/)
   assert.match(src,/<details className=\{styles\.privacy\}>/)

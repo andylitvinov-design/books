@@ -1,0 +1,99 @@
+name: Mentor Community publication and mobile acceptance
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/mentor-community-switch.*'
+      - 'components/community-service-highlights.*'
+      - 'components/master-network-explorer.tsx'
+      - 'components/master-network-explorer.module.css'
+      - 'tests/mentor-master-filters.test.mjs'
+      - 'components/practitioner-article-directory.tsx'
+      - 'components/practitioner-articles-public.module.css'
+      - 'app/[locale]/masters/page.tsx'
+      - 'app/[locale]/articles/page.tsx'
+      - 'lib/practitioners/article-repository.js'
+      - 'tests/mentor-community-v1.test.mjs'
+      - 'tests/helpers/seed-mentor-community-browser.mjs'
+      - 'scripts/verify-mentor-community-browser.mjs'
+      - '.github/workflows/mentor-community-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mentor-community-acceptance-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+jobs:
+  publication-and-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_APP_ENABLED: 'true'
+      HH_APP_PRODUCTION_APPROVED: 'false'
+      HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_GUEST_ENABLED: 'true'
+      HH_APP_REPORTS_ENABLED: 'true'
+      HH_APP_SUPABASE_URL: http://localhost:54329
+      HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      HH_APP_ALLOWED_ORIGINS: http://localhost:3100
+      HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-mentor-browser/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Existing moderation and community source tests
+        run: node --test tests/mentor-community-v1.test.mjs tests/practitioner-articles-v4.test.mjs tests/master-network-v3.test.mjs
+      - name: Focused linter and TypeScript check
+        run: |
+          npx --no-install eslint components/master-network-explorer.tsx components/mentor-community-switch.tsx components/community-service-highlights.tsx app/'[locale]'/articles/page.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
+          npx --no-install tsc --noEmit
+      - name: Chromium and WebKit for actual hydrated page verification
+        run: |
+          mkdir -p /tmp/hh-mentor-browser
+          npm install --prefix /tmp/hh-mentor-browser --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-mentor-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Initialize synthetic database and run real browser journey
+        run: |
+          mkdir -p artifacts/mentor-community
+          node --conditions=react-server tests/helpers/app-db-setup.mjs
+          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-mentor-next.log 2>&1 & APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for ((i=0; i<90; i++)); do
+            if curl --silent --fail http://127.0.0.1:3100/en/masters > /dev/null; then break; fi
+            sleep 2
+          done
+          HH_COMMUNITY_PHASE=empty HH_TEST_BROWSER=chromium node scripts/verify-mentor-community-browser.mjs
+          node --conditions=react-server tests/helpers/seed-mentor-community-browser.mjs
+          HH_COMMUNITY_PHASE=populated HH_TEST_BROWSER=chromium node scripts/verify-mentor-community-browser.mjs
+          HH_COMMUNITY_PHASE=populated HH_TEST_BROWSER=webkit node scripts/verify-mentor-community-browser.mjs
+      - name: Sanitized application errors only
+        if: always()
+        run: |
+          grep -Ei 'exception|error|failed|not_found|app_unavailable' /tmp/hh-mentor-next.log | tail -n 100 | sed -E 's#(postgres|postgresql)://[^ @]+#database://[redacted]#g' > artifacts/mentor-community/server-errors.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mentor-community-synthetic-mobile-qa
+          path: artifacts/mentor-community/
+          retention-days: 7

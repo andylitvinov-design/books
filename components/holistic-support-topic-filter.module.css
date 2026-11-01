@@ -1,0 +1,60 @@
+.root{margin:clamp(16px,2.4vw,28px) 0 22px;padding:clamp(16px,2.8vw,28px);border:1px solid #ddcbb9;border-radius:23px;background:linear-gradient(145deg,#f7f0e6,#fffaf5 70%);color:#403228;scroll-margin-top:80px}
+.heading{max-width:760px}
+.eyebrow{margin:0 0 7px;font:800 10px/1.45 Arial,Helvetica,sans-serif;letter-spacing:.14em;color:#896547}
+.heading h2{margin:0;font:400 clamp(28px,3.2vw,40px)/1.11 Georgia,"Times New Roman",serif;letter-spacing:-.025em;text-wrap:balance}
+.lead{margin:10px 0 17px;color:#68594f;font:14px/1.5 Arial,Helvetica,sans-serif}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:min(660px,100%);min-width:0}
+.tab{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:9px 10px;border:1px solid #d9c7b8;border-radius:14px;background:#fffcf8;color:#604534;font:700 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.tab:hover{border-color:#9d8067;background:#f7eadb}
+.tab[aria-selected="true"]{background:#674632;border-color:#674632;color:#fffaf1;box-shadow:0 4px 12px #67463225}
+.tab:focus-visible,.action:focus-visible{outline:3px solid #aa7656;outline-offset:3px}
+.panel{min-width:0;outline:none}
+.panel:focus-visible{outline:2px solid #ac8f73;outline-offset:5px;border-radius:5px}
+.topicHint{margin:15px 0 12px;color:#705949;font:500 13px/1.42 Arial,Helvetica,sans-serif}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.card{display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid #eadfd2;border-radius:17px;background:#fffdfa;box-shadow:0 5px 19px #6746320c}
+.photo{position:relative;flex:none;height:145px;background:#e3d2c0}
+.photo img{object-fit:cover;object-position:center}
+.cardBody{display:flex;flex:1;flex-direction:column;align-items:flex-start;min-width:0;padding:15px 15px 17px}
+.cardBody h3{margin:0 0 8px;font:400 clamp(19px,2.15vw,25px)/1.19 Georgia,"Times New Roman",serif;letter-spacing:-.014em;overflow-wrap:break-word}
+.cardBody p{margin:0 0 15px;color:#675a52;font:12.5px/1.52 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.action{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin-top:auto;padding:10px 13px;border:1px solid #d1b8a2;border-radius:11px;background:#eee0d1;color:#533725;text-decoration:none;font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.action:hover{background:#dec6b2;color:#39281e}
+.action svg{flex:none}
+.archiveNote{margin:12px 1px 0;color:#7b6b60;font:11.5px/1.5 Arial,Helvetica,sans-serif}
+@media(max-width:720px){
+  .root{padding:15px 12px 16px;border-radius:18px}
+  .eyebrow{font-size:9px}
+  .heading h2{font-size:29px}
+  .lead{font-size:12.5px;line-height:1.43}
+  .tabs{gap:6px}
+  .tab{min-height:45px;gap:5px;padding:7px 5px;border-radius:11px;font-size:11.7px}
+  .tab svg{width:15px;height:15px;flex:none}
+  .cards{grid-template-columns:minmax(0,1fr);gap:9px}
+  .card{display:grid;grid-template-columns:102px minmax(0,1fr);border-radius:13px}
+  .photo{height:100%;min-height:155px}
+  .cardBody{padding:12px 10px}
+  .cardBody h3{font-size:20px;margin-bottom:5px}
+  .cardBody p{font-size:11.5px;line-height:1.42;margin-bottom:7px}
+  .action{min-height:44px;padding:9px 10px;font-size:11.5px}
+  .topicHint{font-size:12px;margin:13px 0 10px}
+}
+@media(max-width:360px){
+  .root{padding:12px 9px}
+  .heading h2{font-size:26px}
+  .tabs{gap:4px}
+  .tab{gap:4px;padding:8px 3px;font-size:11px}
+  .card{grid-template-columns:87px minmax(0,1fr)}
+  .photo{min-height:156px}
+  .cardBody{padding:11px 8px}
+  .cardBody h3{font-size:18.5px}
+  .cardBody p{font-size:11.2px}
+  .action{padding:7px 8px}
+}
+@media(prefers-reduced-motion:reduce){.tab{transition:none}}
+
+.titleButton{display:inline;max-width:100%;padding:0;border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;letter-spacing:inherit;text-align:left}
+.titleButton:hover{text-decoration:underline;text-underline-offset:3px}
+.titleButton:focus-visible{outline:3px solid #aa7656;outline-offset:3px}
+button.action{cursor:pointer;font-family:Arial,Helvetica,sans-serif;text-align:left}
+button.action[aria-expanded="true"]{border-color:#83523d;background:#e3c9b5}

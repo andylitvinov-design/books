@@ -20,7 +20,9 @@ test("Andy portrait uses already-built responsive static variants on all audited
   const serviceCards = read("components/services-studio-offers.tsx");
   const portrait = read("components/static-portrait.tsx");
   assert.match(player, /<StaticPortrait className="site-video-poster" src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 2);
+  assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 1);
+  const spanish = read("app/es/page.tsx");
+  assert.equal((spanish.match(/<StaticPortrait\b/g) || []).length, 1, "Spanish About keeps one verified photo");
   assert.match(serviceHero, /\{ kind: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
   assert.match(serviceHero, /slide\.image === "\/images\/holistic-house\/andy-about\.png" \? \(/);
   assert.match(serviceHero, /<StaticPortrait src=(?:\{slide\.image\}|"\/images\/holistic-house\/andy-about\.png")/);
@@ -66,4 +68,20 @@ test("the image optimizer remains available for the book images that benefit fro
   assert.match(book, /bookCoverArtworkUrl\(book\.id, "\/media\/" \+ book\.mediaSeries/);
   assert.match(book, /unoptimized=\{hasBookCoverArtwork\(book\.id\)\}/);
   assert.match(config, /minimumCacheTTL: 2678400/);
+});
+
+test("homepage offer cards use verified 640px WebP instead of shipping the 2MB source photo", () => {
+  const home = read("components/home-featured-workspace.tsx");
+  const portrait = JSON.parse(read("data/static-portrait.json"));
+  const chosen = portrait.variants.find((item) => item.width === 640);
+  assert.ok(chosen, "static portrait build should include a 640px variant");
+  assert.ok(chosen.bytes < 104000, "the reusable card image should be under 104KB");
+  assert.equal(statSync(new URL("../public" + chosen.path, import.meta.url)).size, chosen.bytes);
+  for (const id of ["review", "course"]) {
+    assert.ok(home.includes('"' + id + '": "' + chosen.path + '"'),
+      id + " should reuse the verified portrait rather than a 2MB PNG");
+  }
+  assert.doesNotMatch(home, /"(?:review|course)": "\/images\/holistic-house\/andy-about\.png"/);
+  assert.match(home, /<Image src=\{photos\[offer\.id\]\} alt="" fill unoptimized loading="lazy"/,
+    "already compressed assets should avoid runtime Vercel transforms");
 });

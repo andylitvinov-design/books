@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {canReply,channelTransportReady,telegramPilotReady,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
+import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
@@ -281,7 +281,7 @@ test('v3 quick replies are neutral owner-selected drafts, not scheduled or auto-
   assert.match(ui,/ru:\[/)
   assert.match(ui,/es:\[/)
   assert.match(ui,/role="group" aria-label=\{lang==='ru'\?'Быстрые ответы'/)
-  assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\)\}\}/)
+  assert.match(ui,/onClick=\{\(\)=>\{pendingRequest\.current=null;setText\(item\.text\);setShowQuickReplies\(false\)\}\}/)
   assert.match(ui,/disabled=\{busy\|\|threadLoading\|\|!selected\.reply\.ok\}/)
   assert.doesNotMatch(ui,/setInterval\(|sendOneMessengerMessage\(/)
   assert.match(api,/action==='send'/)
@@ -354,9 +354,31 @@ test('idempotent outgoing reply key is bound to the original encrypted text and 
   assert.match(code,/openSealed\(existed\.body_ciphertext,messageContext\(actor\.id,existed\.id\),config\)/)
 })
 
+test('Telegram bot ID is derived safely from BotFather token and confirmed by getMe',()=>{
+  const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:VALID_FORMAT_FAKE_BOT_TOKEN_FOR_TEST',
+    HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'TEST_WEBHOOK_SECRET_2026',
+    HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'123456789'}
+  assert.equal(telegramBotBusinessId(env),'12345678')
+  assert.equal(channelTransportReady('telegram',env),true)
+  assert.deepEqual(messengerSetupStatus('telegram',env).missingKeys,[])
+  assert.equal(telegramBotBusinessId({...env,HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}),'12345678')
+  assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_TELEGRAM_BOT_ID:'87654321'}),false)
+  for(const invalid of ['', 'BOT_TOKEN_ONLY', 'abc:NOT_A_BOT_TOKEN', '12345678:short']){
+    assert.equal(telegramBotBusinessId({...env,HH_CRM_MSG_TELEGRAM_TOKEN:invalid}),null)
+  }
+  assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_TELEGRAM_TOKEN:'not-a-bot-token'}),false)
+  const provider=source('lib/crm/messenger-provider.js')
+  const webhook=source('lib/crm/messenger-webhook.js')
+  assert.match(provider,/String\(response\.result\.id\)!==telegramBotBusinessId\(env\)/)
+  assert.match(provider,/expectedUsername=String\(env\.HH_CRM_MSG_TELEGRAM_USERNAME/)
+  assert.match(provider,/String\(response\.result\.username\|\|''\)\.toLowerCase\(\)!==expectedUsername\.toLowerCase\(\)/)
+  assert.match(webhook,/const businessId=telegramBotBusinessId\(env\)/)
+  assert.match(webhook,/provider==='telegram'\?telegramBotBusinessId\(env\):null/)
+})
 test('pilot remains disabled by default and requires an exact allowlisted Telegram test chat',()=>{
   const basic={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'SYNTHETIC-TEST-ONLY',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_TEST_ONLY_BOT_TOKEN_xxxx',
     HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TEST_SECRET',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}
   assert.equal(telegramPilotReady(basic),false)
@@ -374,7 +396,7 @@ test('pilot remains disabled by default and requires an exact allowlisted Telegr
 })
 test('production full release gate and pilot gate are independent and never silently enable Meta',()=>{
   const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'SYNTHETIC',HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TOKEN',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_TEST_BOT_TOKEN_xxxx',HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TOKEN',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678',HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',
     HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'123456789'}
   assert.equal(channelTransportReady('telegram',{...env,HH_CRM_MSG_PRODUCTION_APPROVED:'false'}),true)
@@ -385,7 +407,7 @@ test('production full release gate and pilot gate are independent and never sile
 })
 test('read-only setup status shows ONLY missing key names, never tokens or account identifiers',()=>{
   const env={VERCEL_ENV:'production',HH_CRM_MSG_TELEGRAM_ENABLED:'true',
-    HH_CRM_MSG_TELEGRAM_TOKEN:'PROTECTED-SAMPLE-ONLY',
+    HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:PROTECTED_SAMPLE_ONLY_BOT_TOKEN',
     HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'PROTECTED_SAMPLE_SECRET',
     HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}
   const test=messengerSetupStatus('telegram',env)
@@ -425,4 +447,15 @@ test('Messenger owner console shows connected state and official setup without c
   assert.match(ui,/target="_blank" rel="noopener noreferrer"/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_TELEGRAM_TOKEN\s*=/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_META_APP_SECRET\s*=/)
+})
+
+test('CRM connections put verified owner bot first and explain optional CRM Inbox accurately',()=>{
+ const diag=source('components/app/crm-integration-diagnostics.jsx')
+ const manager=source('components/app/crm-manager.jsx')
+ assert.match(diag,/Telegram CRM Inbox \(separate\)/)
+ assert.match(diag,/CRM Telegram \(отдельный канал\)/)
+ assert.match(diag,/app\/settings#hh-telegram-connect/)
+ assert.match(diag,/Never reuse the same bot token with a different webhook/)
+ assert.ok(manager.indexOf('<CustomerTelegramBotSetup ') < manager.indexOf('<CrmIntegrationDiagnostics '),
+  'first show the reusable existing verified practice bot, then optional integrations')
 })

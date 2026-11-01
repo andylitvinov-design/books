@@ -11,6 +11,7 @@ on:
       - 'components/app/opora-experience-player.module.css'
       - 'tests/opora-midlesson-music.test.mjs'
       - 'tests/opora-ocean-outro.test.mjs'
+      - 'tests/opora-as56-experience-first.test.mjs'
       - 'public/audio/**'
       - 'scripts/generate-soft-ocean-melody.mjs'
       - 'package.json'
@@ -27,6 +28,7 @@ on:
       - 'components/app/opora-experience-player.module.css'
       - 'tests/opora-midlesson-music.test.mjs'
       - 'tests/opora-ocean-outro.test.mjs'
+      - 'tests/opora-as56-experience-first.test.mjs'
       - 'public/audio/**'
       - 'scripts/generate-soft-ocean-melody.mjs'
       - 'package.json'
@@ -38,8 +40,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: holistic-house-ocean-${{ github.ref }}
-  cancel-in-progress: true
+  group: holistic-house-ocean-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   verify-ocean-audio:
@@ -52,9 +54,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      # Course-navigation/receipt tests have a separate 17-slide migration lifecycle.
-      # Here only the shared sound engine and the three audio consumers are gated.
+      # Verify day-14 meditation placement, localizations and saved receipt lifecycle.
       - name: Generate the complete 96-second original score
         run: node scripts/generate-soft-ocean-melody.mjs
       - name: Verify full-length WAV and native media lifecycle across practice timers
-        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs tests/opora-ocean-outro.test.mjs
+        run: node --test tests/ocean-practice-audio.test.mjs tests/ocean-practice-audio-runtime.test.mjs tests/opora-midlesson-music.test.mjs tests/opora-ocean-outro.test.mjs tests/opora-as56-experience-first.test.mjs

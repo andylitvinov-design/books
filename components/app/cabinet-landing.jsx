@@ -8,6 +8,8 @@ import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
+import { TEST_DISCUSSION_INTENT_KEY } from '@/lib/assessments/test-result-discussion.mjs'
+import { GuestTestJourneyProgress } from '@/components/app/guest-test-journey-progress'
 import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -913,7 +915,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function saveToCabinet(selectedResult = guestResult) {
+  async function saveToCabinet(selectedResult = guestResult, discussAfterSave = false) {
     // React may pass a click event to the original result button; preserve that path.
     const resultToSave = selectedResult?.id ? selectedResult : guestResult
     if (!resultToSave || busy) return
@@ -925,6 +927,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         sourceId: resultToSave.id,
         operationId: crypto.randomUUID(),
       })
+      if (discussAfterSave) {
+        try { window.sessionStorage.setItem(TEST_DISCUSSION_INTENT_KEY, intent.id) }
+        catch { /* Storage can be blocked; the saved report still has its discussion button. */ }
+      }
       if (intent.signedIn) {
         window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
@@ -1002,6 +1008,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
+        <GuestTestJourneyProgress locale={locale} plan={activePlan}
+          definition={definition} answeredCount={answeredCount} phase={phase} />
         {phase === 'questions' && definition ? (
           <header className="cabinet-tests-heading cabinet-tests-heading--compact">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>
@@ -1174,6 +1182,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 <span className={guestActions.googleMark} aria-hidden="true">G</span>
                 <span>{c.save}</span>
                 <span className={guestActions.buttonArrow} aria-hidden="true">→</span>
+              </button>
+              <button type="button" className={guestActions.secondary} data-guest-discuss-test
+                disabled={busy} onClick={() => saveToCabinet(guestResult, true)}>
+                {locale === 'ru' ? 'Обсудить этот тест в Google-кабинете →'
+                  : locale === 'es' ? 'Comentar esta prueba en tu cuenta de Google →'
+                  : 'Discuss this test in your Google Cabinet →'}
               </button>
               <p className={guestActions.privacy}>{locale === 'ru'
                 ? 'Этот тест сохраняется в аккаунте только после вашего подтверждения.'

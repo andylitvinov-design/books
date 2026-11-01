@@ -1,3 +1,27 @@
+## 2026-10-25 — owner-excluded, consent-only landing-page/source breakdown (PR pending verification)
+
+**Separate from GA4/Meta:** external pixels and `PUBLIC_ANALYTICS_AVAILABLE=false` stay on privacy hold. A new, independent `hh_public_stats_consent=v1` choice on [Privacy](https://holistichouse.vercel.app/privacy) enables *only* anonymous public marketing page counts. Default: off. User can revoke or set `hh_public_stats_skip=1` in that browser; server also verifies the signed-in original site owner against `app.practitioners.trusted_auth_user_id` and drops those events, saving a persistent HttpOnly owner exclusion cookie. Signed-out traffic on an unfamiliar device cannot be reliably identified as the owner: opt that browser out explicitly. Do not blacklist an IP (shared/dynamic/mobile). This is **prospective**: old owner clicks cannot be removed from the already mixed historical counters.
+
+**Collection:** a client tracker on public EN/RU/ES marketing paths posts only `{path,source,event}` under same-origin POST with a strict server-enforced opt-in cookie. Events: first public entrance, route view, link/button click. `source` is from a closed taxonomy (Google organic/paid, Bing, Facebook/Instagram organic/paid, YouTube, Telegram, WhatsApp, partner/referral, direct, unknown). Raw UTM text, campaign IDs, query values, referrer URLs, IP, UA, visitor/session identifiers, private routes, assessment answers, messages and revenue are NOT stored in the reporting table. Same-origin + rate-limit + server owner exclusion, safe-path allowlist, no identifying cookies, no cross-device joining or uniqueness claims. Attribution is *approximate*, browser-provided and consent-limited; direct can include unknown traffic. CTA clicks are not received messages, bookings or payments.
+
+**Storage:** `app_private.public_page_source_daily` with `day,page_path,source,landings,page_views,action_clicks`. RLS + FORCE RLS, no anon/authenticated/service_role read/write, private backend-only access; existing daily housekeeping removes rows beyond **90 Toronto calendar days**. No new cron, API provider, paid subscription or campaign. Migration: `supabase/migrations/20261025175000_hh_public_page_source_daily.sql`. Before deploying app code, verify production DDL exists and backend grants/RLS. After publishing, test opt-out, owner-auth, non-consented 204, malicious path 400, real consented public event ingestion and read-only daily aggregation, phone widths, and exact deployment SHA.
+
+**Delivery:** existing **13:00 UTC daily owner Telegram** digest (not a second automation) now adds top **3 pages per period by recorded link/button clicks** for yesterday and seven completed Toronto days, each with registered page entrances and 2 most significant coarse sources (click-source counts when clicks exist, entrance-source counts otherwise). Distinguishes all-site stats from legacy public *service* CTA/impression counters. If there are no consented rows, says **no collected data**, not zero visitors. No genuine new report is declared delivered before a fresh provider Bot API receipt for a completed period.
+
+**Limits / rollback:** old 18–24 Oct 2026 traffic cannot be reconstructed or owner-deduplicated; GSC Wizard is subscription-blocked and Vercel Web Analytics not connected, so old landing/source ranking is unknown. This first-party opt-in will undercount non-consenting visits. Disable tracker/API if server errors occur; leave existing digest in a no-data mode. Never infer paid ROAS or unique users. Privacy review and authenticated/mobile provider E2E remain release gates.
+
+---
+
+## 2026-10-23 — morning Telegram site-click visibility; referral data remain unmeasured
+
+The existing **09:00 EDT / 08:00 EST Toronto** owner-only My Practice Telegram digest (13:00 UTC Vercel cron) now has a clearly scoped **Site** block. It sums only the already recorded public-service CTA events (order, WhatsApp and Telegram), for yesterday and seven completed Toronto days. These are **click events**, not people, total website clicks, received messages, leads, confirmed bookings or payments. It separately retains service-card impressions and true server-received public/private enquiry counts. No second bot, cron, sender, SQL table, identifier or paid service.
+
+**Traffic-source attribution and total page visits: NOT MEASURED.** The production `app_private.service_funnel_daily` table has only service/day counters and no referrer, UTM, channel, session or visit data. Vercel Web Analytics API returned `404 Web Analytics not found`; the linked GSC Wizard access currently returns `payment_required`. The site's Google Analytics privacy hold remains `PUBLIC_ANALYTICS_AVAILABLE=false`, and the Privacy analytics Allow control is disabled. The digest must show **no data** for Google/social/direct and unique visits, not synthetic zeros or guessed sources. Untrusted referrer/UTM fields are not passed into Telegram. The source section is intentionally a data-coverage indicator until an explicitly consent-reviewed first-party tracking design, source taxonomy, security and E2E is approved through [attribution issue #988](https://github.com/andylitvinov-design/books/issues/988).
+
+**Verification:** `node --test tests/practitioner-daily-telegram.test.mjs tests/practitioner-analytics-subscriptions.test.mjs tests/app-housekeeping-cron.test.mjs`; targeted CI, production deployment READY+SHA+alias and next **real** Telegram private send receipt independently required. A green build or a prepared Markdown message is not proof that a user received it.
+
+---
+
 ## 2026-10-21 — owner screenshots: Gemini Free Tier verified, Mistral key saved ≠ API access
 
 The owner sent Google AI Studio Projects screenshots showing **Free tier** with **Set up billing** (paid billing not activated on the shown projects), plus a Mistral Studio API Keys screen explicitly warning that the current organization might need a plan change **to use the API keys**. The owner already entered a Studio key on the signed Holistic House form. Production Supabase readback verified exactly one encrypted Studio key and Free-mode checkbox record; the Google Free Tier confirmation was then recorded based on the owner-supplied project screenshot and explicit instruction to complete the setup. Existing Gemini/Router credentials remain unchanged; no plain secrets were read.
@@ -188,3 +212,35 @@ Set `HH_PRACTICE_TG_ENABLED=false` on production, then redeploy to take effect. 
 ## Limitations
 
 This is one **owner** digest, not opt-in Telegram mail for every master. No cross-master disclosure. Monetary revenue is intentionally omitted until a verified payment/order source is approved.
+
+---
+
+## 2026-10-23 — ежедневная доставка при недоступности Gemini/Mistral (актуальный порядок)
+
+**Один существующий канал:** `@Andydotbot` → подтверждённый приватный Telegram владельца. **Один existing Vercel cron:** `/api/internal/council-archive-telegram` в 21:00 UTC. **Одна запись на Toronto date** в `app_private.council_telegram_deliveries`; никакого нового бота, расписания, платной модели, облачной базы или расхода на рекламу.
+
+Фактический read-only Supabase-аудит **до исправления** (2026-10-23):
+- 2026-10-20: `accepted`; `gemini=unavailable`, `mistral=unavailable`.
+- 2026-10-21: `accepted`; `chatgpt=ok`, `gemini=not_run`, `mistral=not_run`.
+- 2026-10-22: `failed`, без `report_markdown`, без `model_outcomes` (первый запуск). При этом в [issue #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242) есть достоверно размеченный ежедневный отчёт анонимного публичного HTML-сканера за 22 октября, но нет owner ChatGPT report за эту дату. Это доказывает пробел в доставке, но не точный HTTP/Telegram exception: серверный route поглощает причину ошибки в generic 503.
+
+**Исправление:** когда валиден GitHub Actions `HH-COUNCIL-DAILY` архив, он становится пригодным для честного отчёта даже без действующей модели и независимо от `HH-CHATGPT-DAILY` комментария. Совместно существующие независимые Gemini и Mistral проверки запускаются **только через действующие бесплатные/пользовательски подтверждённые ограничения**. Статус каждого ответа `ok` засчитывается только после настоящей верифицированной генерации. Если 0/2, заголовок «публичный HTML-аудит и статус Gemini / Mistral», с явным `NOT_AVAILABLE` без фальшивых рекомендаций от моделей. Если есть полноценный отчет ChatGPT, его содержание приоритетно, независимые реальные ответы прикладываются опционально. Одна дата — максимум одно Telegram `sendDocument` со статусом `accepted` от Telegram Bot API; повторы после `failed` не должны делать второй inference при наличии cached markdown.
+
+**Независимый статус API не равен доставке:** на production уже есть Google Gemini API key и OpenRouter key (защищённый Vercel env), а в `app_private.owner_ai_provider_settings` — зашифрованный Mistral Studio key и подтверждённые владельцем бесплатные режимы (readback: 1/1). Скриншот Mistral Studio от владельца предупреждал `Upgrade your pricing plan to use your API keys`: наличие ключа и флага Free не означает доступ к `GET /v1/models` или реальной генерации. Поэтому новый платный Mistral тариф, платный Gemini и другие платные fallback запрещены без отдельного согласия владельца.
+
+**E2E gates перед статусом COMPLETE:**
+1. Focused source tests, CI, production-branch merge, READY build and exact live alias SHA.
+2. Настоящий авторизованный ответ Gemini и Mistral (по отдельности) с `ok` в кэше daily report; если Mistral Studio возвращает 401/403, показать проверяемый блокер и не делать paid POST.
+3. Новый дневной `accepted` receipt и один документ в Telegram владельца, после чего подтверждение владельцем фактического получения. Статус `accepted` означает принятие Bot API, **не** доставку/прочтение пользователем. Нельзя вручную редактировать receipts вместо реального send.
+4. Сохранить RLS/FORCE RLS, отсутствие `anon/authenticated` SELECT на приватные owner/provider/delivery таблицы, не передавать данные CRM, клиентов, тестов, здоровья и secrets в отчёты/AI.
+
+Для владельца: [защищённое подключение и ручная проверка](https://holistichouse.vercel.app/admin/telegram-setup) · [Mistral Studio — проверить Free access](https://console.mistral.ai/) · [Google AI Studio — Free Tier](https://aistudio.google.com/app/projects). Открытые блокеры фиксировать в [AI Council #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242).
+
+### 2026-10-23 · Bounded recovery + owner-visible Gemini readiness (PR follow-up)
+
+- **Не пропускать вчерашний `failed`:** текущий день выбирается первым, затем максимум **одна** непринятая архивная дата за последние 7 дней в этом же вызове cron. У каждого дня своя `claim_token` и подтверждённый Telegram `accepted`, максимум два документа в день восстановления, без дублей для уже принятых дат.
+- Исторический день отправляется только по проверенным фактам GitHub HTML/HTTP, со статусами моделей `skipped / HISTORICAL_BACKFILL_NO_INFERENCE` и без повторного платного или бесплатного AI inference. Gemini/Mistral исследуют **только сегодняшний** архив; кодировка старых ответов никогда не выдаётся за новые результаты. Ошибка при второй отправке сохраняет `partially_accepted` и отдельный `failed` для следующей попытки; полученные первые квитанции не стираются.
+- GitHub issues comments за релевантный период запрашиваются с `since`/100, чтобы старые комментарии не вытесняли текущий дневной аудит при росте Issue #242.
+- Owner UI [Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup) теперь в дополнение к Mistral делает **только authenticated GET** метаданных Gemini `gemini-3.8-flash` и раздельно отображает `ready / unauthorized / rate_limited / unavailable`. Статус `ready` — **не** реальная генерация и не подтверждение Telegram доставки.
+- Функция cron допускает до 120 секунд на редкий восстановительный цикл, **только если такое время поддерживается реальным Vercel deployment**; запретов на платные модели/дублирующие cron это не отменяет.
+- Данные клиентских CRM, клинических тестов и секреты не используются; отдельные отправки пользователям не включены. Блокер Mistral при `GET /v1/models` без доступа к бесплатному Small остаётся владельческой/провайдерской зависимостью.

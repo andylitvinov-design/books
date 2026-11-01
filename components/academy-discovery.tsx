@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
 
 import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
 import { AcademyMyCourses } from "@/components/academy-my-courses";
@@ -13,11 +14,17 @@ import type { PublicEvent } from "@/data/public-events";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-discovery.module.css";
 
+export type AcademyArchiveButton = AcademyCourseItem & { archived?: boolean };
+const LEGACY_PREVIEW_COUNT = 8;
+
 const COPY = {
   en: {
     eyebrow: "HOLISTIC HOUSE · ACADEMY",
     title: "Find your learning path",
     description: "Explore Reiki, Temple Studies and stress relief. Start free or choose a full learning program.",
+    entryLead: "Start with a free lesson, explore a full course, or join a live workshop.",
+    entryPrompt: "How would you like to begin?",
+    finderPrompt: "Looking for a specific course?",
     videoTitle: "Explore video lessons",
     videoDescription: "Original lessons and guided practices organized by program and language.",
     searchLabel: "Find a learning course",
@@ -25,11 +32,19 @@ const COPY = {
     searchButton: "Find my course",
     browse: "Choose your course",
     catalogLabel: "ALL LEARNING PROGRAMMES",
-    count: "courses",
+    count: "learning options",
     results: "Matching learning options",
     paths: "EXPLORE THE ACADEMY",
     freeCourses: "Free Courses", freeDescription: "Short guided lessons you can begin today.",
+    coachingLabel: "PERSONAL COACHING · SEPARATE FROM COURSES",
+    coachingMethods: "Egyptian and Greek goal planning are available in the Coaching tab.",
+    coachingDisclosure: "Self-guided reflection · not a live appointment · private account history.",
+    coachingStart: "Start coaching",
     studyPrograms: "Study Programs", studyDescription: "Complete pathways, levels and original study materials.",
+    psimaster: "PsiMaster courses & videos", psimasterShort: "PsiMaster archive", psimasterDescription: "Original Russian-language programmes, now readable on Holistic House. Historical descriptions do not confirm current enrollment.",
+    psimasterVideos: "Original video courses", psimasterVideoDescription: "Open the preserved Russian lessons in their own course pages.",
+    historical: "Historical programme", archiveOnly: "Archive only", videoLesson: "Video lessons",
+    showAllLegacy: "Show all courses", showLessLegacy: "Show fewer",
     liveEvents: "Live Events", liveDescription: "Workshops and gatherings with confirmed dates.",
     noMatchesInGroup: "No matches in this section.",
     noLiveEvents: "No confirmed upcoming events yet. New workshops will appear when dates are published.",
@@ -44,6 +59,9 @@ const COPY = {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
     description: "Изучайте Рейки, храмовые практики и антистресс. Начните бесплатно или выберите полную программу.",
+    entryLead: "Начните с бесплатных уроков, выберите полную программу или посетите живую встречу.",
+    entryPrompt: "С чего хотите начать?",
+    finderPrompt: "Ищете определённый курс?",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Авторские уроки и практики, сгруппированные по программам и языкам записи.",
     searchLabel: "Поиск курсов",
@@ -51,11 +69,19 @@ const COPY = {
     searchButton: "Подобрать курс",
     browse: "Выберите свой курс",
     catalogLabel: "ВСЕ ПРОГРАММЫ ОБУЧЕНИЯ",
-    count: "курсов",
+    count: "материалов",
     results: "Подходящие варианты",
     paths: "НАПРАВЛЕНИЯ АКАДЕМИИ",
     freeCourses: "Бесплатные курсы", freeDescription: "Короткие занятия, которые можно начать прямо сейчас.",
+    coachingLabel: "ЛИЧНАЯ КОУЧ-СЕССИЯ · ОТДЕЛЬНО ОТ КУРСОВ",
+    coachingMethods: "Египетский и греческий коучинг — только во вкладке «Коучинг».",
+    coachingDisclosure: "Самостоятельная практика · не живая встреча · приватная история в кабинете.",
+    coachingStart: "Начать коучинг",
     studyPrograms: "Программы обучения", studyDescription: "Полные учебные маршруты, ступени и авторские материалы.",
+    psimaster: "Курсы и видео PsiMaster", psimasterShort: "Архив PsiMaster", psimasterDescription: "Русскоязычные программы из прежней Академии. Каждая кнопка открывает страницу на Holistic House; архивные описания не означают, что набор сейчас открыт.",
+    psimasterVideos: "Авторские видеокурсы", psimasterVideoDescription: "Сохранённые уроки на русском, доступные на отдельных страницах курсов.",
+    historical: "Историческая программа", archiveOnly: "Только архив", videoLesson: "Видеоуроки",
+    showAllLegacy: "Показать все курсы", showLessLegacy: "Свернуть список",
     liveEvents: "Живые встречи", liveDescription: "Семинары и мероприятия с подтверждёнными датами.",
     noMatchesInGroup: "В этой категории совпадений нет.",
     noLiveEvents: "Пока нет подтверждённых будущих мероприятий. Новые встречи появятся после согласования дат.",
@@ -70,6 +96,9 @@ const COPY = {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
     description: "Explora Reiki, Temple Studies y antiestrés. Empieza gratis o elige un programa completo.",
+    entryLead: "Empieza con un curso gratis, sigue un programa completo o asiste a un taller.",
+    entryPrompt: "¿Por dónde quieres empezar?",
+    finderPrompt: "¿Buscas un curso concreto?",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma original.",
     searchLabel: "Buscar cursos",
@@ -77,11 +106,19 @@ const COPY = {
     searchButton: "Buscar curso",
     browse: "Elige tu curso",
     catalogLabel: "TODOS LOS PROGRAMAS",
-    count: "cursos",
+    count: "opciones",
     results: "Opciones encontradas",
     paths: "EXPLORAR LA ACADEMIA",
     freeCourses: "Cursos gratis", freeDescription: "Lecciones breves que puedes comenzar hoy.",
+    coachingLabel: "COACHING PERSONAL · SEPARADO DE LOS CURSOS",
+    coachingMethods: "La planificación egipcia y griega está en la pestaña Coaching.",
+    coachingDisclosure: "Reflexión autoguiada · sin cita en vivo · historial privado en tu cuenta.",
+    coachingStart: "Empezar coaching",
     studyPrograms: "Programas de estudio", studyDescription: "Recorridos completos, niveles y materiales originales.",
+    psimaster: "Cursos y vídeos de PsiMaster", psimasterShort: "Archivo PsiMaster", psimasterDescription: "Programas históricos originales en ruso, ahora accesibles en Holistic House. Su archivo no implica inscripción abierta.",
+    psimasterVideos: "Videocursos originales", psimasterVideoDescription: "Abre las lecciones originales en ruso desde su propia página.",
+    historical: "Programa histórico", archiveOnly: "Solo archivo", videoLesson: "Videolecciones",
+    showAllLegacy: "Ver todos los cursos", showLessLegacy: "Mostrar menos",
     liveEvents: "Eventos en vivo", liveDescription: "Talleres y encuentros con fechas confirmadas.",
     noMatchesInGroup: "No hay coincidencias en esta sección.",
     noLiveEvents: "Aún no hay eventos próximos confirmados. Se publicarán cuando se confirmen las fechas.",
@@ -95,8 +132,10 @@ const COPY = {
 } as const;
 
 const SEARCH_KEYWORDS: Record<string, string> = {
+  "academy-free-personal-coaching": "coaching personal session Egyptian Greek Goal Planning египетское греческое планирование коучинг sesión coaching planificación egipcia griega",
   "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
   "academy-featured-principles-energywork": "free energywork principles basics reiki practitioner study initiation tantra kundalini yggdrasil энергетическая работа основы рейки практик обучение инициация курс gratuito iniciación aprendizaje",
+  "academy-featured-egypt-priesthood": "egypt egyptian osiris priesthood ancient temple egyptian mysticism egyptian gods египет жречество осирис жрецы видео курс мистерии egipto sacerdocio osiris",
   "academy-free-tantra-introduction": "tantra reiki level 1 free initiation тантра рейки первая ступень бесплатная инициация",
   "academy-free-yggdrasil-introduction": "reiki yggdrasil level 1 free initiation рейки иггдрасиль первая ступень",
   "academy-featured-yggdrasil": "dao yggdrasil reiki basic course training levels рейки иггдрасиль базовый курс",
@@ -190,22 +229,40 @@ export function AcademyDiscovery({
   locale,
   view,
   items,
+  coachingItem,
+  legacyCourses,
+  legacyVideos,
   label,
   events,
 }: {
   locale: PublicLocale;
   view: AcademyView;
   items: AcademyCourseItem[];
+  coachingItem: AcademyCourseItem;
+  legacyCourses: AcademyArchiveButton[];
+  legacyVideos: AcademyArchiveButton[];
   label: string;
   events: readonly PublicEvent[];
 }) {
   const t = COPY[locale];
   const [query, setQuery] = useState("");
+  const [showAllLegacy, setShowAllLegacy] = useState(false);
   const terms = useMemo(() => searchTerms(query), [query]);
   const matchedItems = useMemo(() => items.filter((item) =>
     matchesTerms([item.title, item.subtitle, item.description, SEARCH_KEYWORDS[item.id]].filter(Boolean).join(" "), terms),
   ), [items, terms]);
+  const matchedCoachingItem = useMemo(() =>
+    matchesTerms([coachingItem.title, coachingItem.subtitle, coachingItem.description, SEARCH_KEYWORDS[coachingItem.id]].filter(Boolean).join(" "), terms)
+      ? coachingItem : null,
+  [coachingItem, terms]);
+  const matchedLegacyCourses = useMemo(() => legacyCourses.filter((item) =>
+    matchesTerms([item.title, item.id, "psimaster psi master псимастер архив"].join(" "), terms),
+  ), [legacyCourses, terms]);
+  const matchedLegacyVideos = useMemo(() => legacyVideos.filter((item) =>
+    matchesTerms([item.title, item.id, "psimaster psi master псимастер видео"].join(" "), terms),
+  ), [legacyVideos, terms]);
   const isSearching = Boolean(query.trim());
+  const visibleLegacyCourses = isSearching || showAllLegacy ? matchedLegacyCourses : matchedLegacyCourses.slice(0, LEGACY_PREVIEW_COUNT);
   const freeItems = matchedItems.filter((item) => item.free);
   const studyItems = matchedItems.filter((item) => !item.free);
   const upcomingEvents = useMemo(() => {
@@ -225,10 +282,10 @@ export function AcademyDiscovery({
       COPY.en.liveEvents, COPY.ru.liveEvents, COPY.es.liveEvents,
     ].filter(Boolean).join(" "), terms),
   ), [upcomingEvents, terms]);
-  const resultCount = matchedItems.length + matchedEvents.length;
+  const resultCount = matchedItems.length + (matchedCoachingItem ? 1 : 0) + matchedLegacyCourses.length + matchedLegacyVideos.length + matchedEvents.length;
 
   function scrollToResults() {
-    const target = document.getElementById("academy-programs");
+    const target = document.getElementById("academy-course-results");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     target?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
   }
@@ -240,47 +297,100 @@ export function AcademyDiscovery({
 
   return (
     <>
-      <section className={styles.hero} aria-labelledby="academy-discovery-title">
-        <div className={styles.topline}>
-          <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
-          <DiscoverySectionTabs locale={locale} active="courses" />
-        </div>
-        <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>
-        <p className={styles.intro}>{view === "videos" ? t.videoDescription : t.description}</p>
-        {view === "programs" ? (
-          <form className={styles.form} role="search" onSubmit={submitSearch}>
-            <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
-            <input
-              id="academy-program-query"
-              type="search"
-              className={styles.search}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              maxLength={120}
-              placeholder={t.placeholder}
-              autoComplete="off"
-            />
-            <button className={styles.submit} type="submit">
-              {t.searchButton}<Search aria-hidden="true" size={19} />
-            </button>
-          </form>
-        ) : (
+      {view === "programs" ? (
+        <section className={styles.journeyHero} aria-labelledby="academy-discovery-title" data-academy-first-screen>
+          <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority
+            sizes="(max-width: 700px) 100vw, 1190px" className={styles.journeyBackdrop} />
+          <div className={styles.journeyShade} aria-hidden="true" />
+          <div className={styles.journeyInner}>
+            <p className={styles.journeyEyebrow}><Sparkles size={17} aria-hidden="true" />{t.eyebrow}</p>
+            <h1 id="academy-discovery-title">{t.title}</h1>
+            <p className={styles.journeyLead}>{t.entryLead}</p>
+            <h2 className={styles.journeyPrompt}>{t.entryPrompt}</h2>
+            <nav className={styles.quickPaths} aria-label={t.paths}>
+              <a className={styles.pathCard} href="#academy-free-courses" data-academy-path="free">
+                <span className={styles.pathPhoto}>
+                  <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><BookOpen size={18} aria-hidden="true" /></span>
+                  <strong>{t.freeCourses}</strong>
+                  <small>{t.freeDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+              <a className={styles.pathCard} href="#academy-study-programs" data-academy-path="study">
+                <span className={styles.pathPhoto}>
+                  <Image src="/academy/reiki-yggdrasil/source/temple-studies.png" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><GraduationCap size={18} aria-hidden="true" /></span>
+                  <strong>{t.studyPrograms}</strong>
+                  <small>{t.studyDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+              <a className={styles.pathCard} href="#academy-live-events" data-academy-path="events">
+                <span className={styles.pathPhoto}>
+                  <Image src="/images/holistic-house/video-posters/constellations-en-v1.webp" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><CalendarDays size={18} aria-hidden="true" /></span>
+                  <strong>{t.liveEvents}</strong>
+                  <small>{t.liveDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+            </nav>
+          </div>
+        </section>
+      ) : (
+        <section className={styles.hero} aria-labelledby="academy-discovery-title">
+          <div className={styles.topline}>
+            <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
+            <DiscoverySectionTabs locale={locale} active="courses" />
+          </div>
+          <h1 id="academy-discovery-title">{t.videoTitle}</h1>
+          <p className={styles.intro}>{t.videoDescription}</p>
           <Link className={styles.videoButton} href="#academy-video-courses">
             {t.videoLink}<ArrowRight aria-hidden="true" size={18} />
           </Link>
-        )}
-        {view === "programs" ? (
-          <nav className={styles.quickPaths} aria-label={t.paths}>
-            <a href="#academy-free-courses"><BookOpen size={16} aria-hidden="true" />{t.freeCourses}</a>
-            <a href="#academy-study-programs"><GraduationCap size={16} aria-hidden="true" />{t.studyPrograms}</a>
-            <a href="#academy-live-events"><CalendarDays size={16} aria-hidden="true" />{t.liveEvents}</a>
-          </nav>
-        ) : null}
-      </section>
+        </section>
+      )}
       {view === "programs" ? (
         <section className={styles.results} id="academy-programs" aria-label={label}>
           <AcademyMyCourses locale={locale} />
-          <div className={styles.listHeading}>
+          <div className={styles.finder} data-academy-course-finder>
+            <div className={styles.finderTop}>
+              <h2>{t.finderPrompt}</h2>
+              <DiscoverySectionTabs locale={locale} active="courses" />
+            </div>
+            <form className={styles.form} role="search" onSubmit={submitSearch}>
+              <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
+              <input
+                id="academy-program-query"
+                type="search"
+                className={styles.search}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                maxLength={120}
+                placeholder={t.placeholder}
+                autoComplete="off"
+              />
+              <button className={styles.submit} type="submit">
+                {t.searchButton}<Search aria-hidden="true" size={19} />
+              </button>
+            </form>
+            {legacyCourses.length || legacyVideos.length ? (
+              <a className={styles.archiveLink} href="#academy-psimaster-courses">
+                <Archive size={16} aria-hidden="true" />{t.psimasterShort}<ArrowRight size={15} aria-hidden="true" />
+              </a>
+            ) : null}
+          </div>
+          <div id="academy-course-results" className={styles.listHeading}>
             <div>
               <p className={styles.listKicker}>{t.catalogLabel}</p>
               <h2>{isSearching ? t.results : t.browse}</h2>
@@ -288,11 +398,28 @@ export function AcademyDiscovery({
             {isSearching ? (
               <button type="button" className={styles.reset} onClick={() => setQuery("")}>{t.reset}</button>
             ) : (
-              <span className={styles.count}>{items.length} {t.count}</span>
+              <span className={styles.count}>{items.length + legacyCourses.length + legacyVideos.length} {t.count}</span>
             )}
           </div>
           {isSearching && !resultCount ? <p className={styles.empty} role="status">{t.empty}</p> : null}
 
+          {matchedCoachingItem ? (
+            <section className={styles.coachingSpotlight} aria-labelledby="academy-personal-coaching-title" data-academy-coaching-session>
+              <Link className={styles.coachingSpotlightPhoto} href={coachingItem.courseHref ?? coachingItem.href} prefetch={false} aria-label={coachingItem.title}>
+                <Image src={coachingItem.image || "/images/holistic-house/report-lighthouse-coast.avif"} alt="" fill sizes="(max-width: 620px) 94px, 146px" />
+              </Link>
+              <div className={styles.coachingSpotlightBody}>
+                <span className={styles.coachingSpotlightLabel}>{t.coachingLabel}</span>
+                <h3 id="academy-personal-coaching-title">{coachingItem.title}</h3>
+                <p>{coachingItem.description}</p>
+                <p className={styles.coachingSpotlightMethods}>{t.coachingMethods}</p>
+                <small>{t.coachingDisclosure}</small>
+              </div>
+              <Link className={styles.coachingSpotlightCTA} href={coachingItem.courseHref ?? coachingItem.href} prefetch={false}>
+                {t.coachingStart}<ArrowRight aria-hidden="true" size={17} />
+              </Link>
+            </section>
+          ) : null}
           <section className={styles.categoryGroup} id="academy-free-courses" aria-labelledby="academy-free-courses-title">
             <div className={styles.categoryHeading}>
               <span className={styles.categoryNumber} aria-hidden="true">1</span>
@@ -321,9 +448,44 @@ export function AcademyDiscovery({
             ) : isSearching ? <p className={styles.categoryEmpty}>{t.noMatchesInGroup}</p> : null}
           </section>
 
+          {(matchedLegacyCourses.length > 0 || matchedLegacyVideos.length > 0) ? (
+            <section className={styles.categoryGroup} id="academy-psimaster-courses" aria-labelledby="academy-psimaster-courses-title">
+              <div className={styles.categoryHeading}>
+                <span className={styles.categoryNumber} aria-hidden="true">3</span>
+                <div className={styles.categoryHeadingCopy}>
+                  <h3 id="academy-psimaster-courses-title">{t.psimaster}</h3>
+                  <p>{t.psimasterDescription}</p>
+                </div>
+                <span className={styles.categoryCount}>{matchedLegacyCourses.length + matchedLegacyVideos.length}</span>
+              </div>
+              {matchedLegacyCourses.length > 0 ? (
+                <>
+                  <div id="academy-psimaster-course-grid">
+                    <AcademyCourseCardList locale={locale} items={visibleLegacyCourses} label={t.psimaster} />
+                  </div>
+                  {!isSearching && matchedLegacyCourses.length > LEGACY_PREVIEW_COUNT ? (
+                    <button type="button" className={styles.legacyToggle}
+                      aria-controls="academy-psimaster-course-grid" aria-expanded={showAllLegacy}
+                      onClick={() => setShowAllLegacy(!showAllLegacy)}>
+                      {showAllLegacy ? t.showLessLegacy : `${t.showAllLegacy} (${matchedLegacyCourses.length})`}
+                      <ChevronDown className={showAllLegacy ? styles.chevronUp : undefined} size={16} aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+              {matchedLegacyVideos.length > 0 ? (
+                <div className={styles.legacyVideos}>
+                  <h4>{t.psimasterVideos}</h4>
+                  <p>{t.psimasterVideoDescription}</p>
+                  <AcademyCourseCardList locale={locale} items={matchedLegacyVideos} label={t.psimasterVideos} />
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className={styles.categoryGroup} id="academy-live-events" aria-labelledby="academy-live-events-title">
             <div className={styles.categoryHeading}>
-              <span className={styles.categoryNumber} aria-hidden="true">3</span>
+              <span className={styles.categoryNumber} aria-hidden="true">{matchedLegacyCourses.length || matchedLegacyVideos.length ? "4" : "3"}</span>
               <div className={styles.categoryHeadingCopy}>
                 <h3 id="academy-live-events-title">{t.liveEvents}</h3>
                 <p>{t.liveDescription}</p>

@@ -15,14 +15,36 @@ on:
       - 'tests/spanish-test-topic-collections.test.mjs'
       - 'tests/public-test-match-paging.test.mjs'
       - 'tests/tantric-reflections.test.mjs'
+      - 'lib/profile/unified-profile.js'
+      - 'components/app/unified-profile-layers.jsx'
+      - 'components/app/unified-profile-layers.module.css'
+      - 'app/[locale]/personality-profiles/page.tsx'
+      - 'tests/unified-profile-layers.test.mjs'
+      - 'components/personality-profiles-builder.tsx'
+      - 'lib/profile/profile-scale-selection.js'
+      - 'tests/profile-test-taxonomy.test.mjs'
+      - 'tests/profile-construct-axes.test.mjs'
+      - 'tests/goal-profile-journey.test.mjs'
+      - 'lib/profile/goal-profile.js'
+      - 'scripts/audit-profile-construct-links.mjs'
+      - 'tests/profile-scale-hierarchy.test.mjs'
+      - 'tests/personality-profiles-focus-filter.test.mjs'
+      - 'components/personality-profiles-builder.module.css'
+      - 'components/app/cabinet-landing.jsx'
+      - 'components/app/guest-test-journey-progress.jsx'
+      - 'components/app/guest-test-journey-progress.module.css'
+      - 'lib/app/guest-test-journey.js'
+      - 'tests/personality-profiles-builder.test.mjs'
+      - 'tests/profile-test-course-journey.test.mjs'
+      - 'tests/guest-test-journey-progress.test.mjs'
       - '.github/workflows/hh-public-test-collections.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: hh-public-test-collections-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: hh-public-test-collections-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   collections-unit-build:
@@ -34,6 +56,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Source-only taxonomy / scorer identity coverage for every registered test
+        run: node scripts/audit-profile-construct-links.mjs --verify
       - name: Real collection membership, matching, standard cards and EN/RU/ES tests
         run: >-
           node --conditions=react-server --test
@@ -43,6 +67,15 @@ jobs:
           tests/spanish-test-topic-collections.test.mjs
           tests/public-love-search.test.mjs
           tests/tantric-reflections.test.mjs
+          tests/personality-profiles-builder.test.mjs
+          tests/personality-profiles-focus-filter.test.mjs
+          tests/profile-scale-hierarchy.test.mjs
+          tests/profile-test-taxonomy.test.mjs
+          tests/profile-construct-axes.test.mjs
+          tests/goal-profile-journey.test.mjs
+          tests/unified-profile-layers.test.mjs
+          tests/profile-test-course-journey.test.mjs
+          tests/guest-test-journey-progress.test.mjs
       - name: Lint modified application code
         run: >-
           npx --no-install eslint
@@ -51,7 +84,25 @@ jobs:
           lib/assessments/test-collection-membership.js
           lib/assessments/test-collections.js
           lib/assessments/test-explorer.js
+          lib/app/guest-test-journey.js
+          components/personality-profiles-builder.tsx
+          lib/profile/profile-scale-selection.js
+          lib/profile/goal-profile.js
+          tests/goal-profile-journey.test.mjs
+          tests/personality-profiles-focus-filter.test.mjs
+          tests/profile-scale-hierarchy.test.mjs
+          tests/profile-test-taxonomy.test.mjs
+          tests/profile-construct-axes.test.mjs
+          scripts/audit-profile-construct-links.mjs
+          components/app/unified-profile-layers.jsx
+          lib/profile/unified-profile.js
+          tests/unified-profile-layers.test.mjs
+          components/app/guest-test-journey-progress.jsx
+          components/app/cabinet-landing.jsx
+          tests/profile-test-course-journey.test.mjs
+          tests/guest-test-journey-progress.test.mjs
       - name: Verify Next.js production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'

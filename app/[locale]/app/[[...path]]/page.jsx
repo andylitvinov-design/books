@@ -17,23 +17,39 @@ export async function generateMetadata({ params, searchParams }) {
     portrait: locale === 'ru' ? 'Мои личные отчёты' : 'My personal reports',
     tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
     portfolio: locale === 'ru' ? 'Мои результаты' : 'My results',
+    progress: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress',
     course: locale === 'ru' ? 'Мои курсы' : 'My courses',
     business: locale === 'ru' ? 'Мой бизнес-курс на 90 дней' : 'My 90-day business programme',
+    coaching: path[1] === 'egyptian'
+      ? (locale === 'ru' ? 'Египетский коучинг' : 'Egyptian Goal Planning')
+      : path[1] === 'greek'
+        ? (locale === 'ru' ? 'Греческий коучинг' : 'Greek Goal Planning')
+        : (locale === 'ru' ? 'Личная коуч-сессия' : 'Personal Coaching Session'),
     labs: locale === 'ru' ? 'Мои лабораторные анализы' : 'My laboratory results',
+    videos: locale === 'ru' ? 'Мои видео' : 'My Videos',
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : '/holistic-house-app.webmanifest'),
+  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : locale === 'es' ? '/holistic-house-app-es.webmanifest' : '/holistic-house-app.webmanifest'),
   icons: { icon: '/icons/holistic-house-teal.svg', apple: '/holistic-house-icon/180' },
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
   }
 }
-export default async function AppPage({ params }) {
+export default async function AppPage({ params, searchParams }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
   // Personal reports are the first stop in the signed-in Cabinet.
   if (path.length === 0) redirect('/' + locale + '/app/portrait')
+  // A plain Practice tab/bookmark opens the approved practitioner dashboard,
+  // not the legacy personal Cabinet sign-in. Explicit editor panels keep their
+  // existing server-verified account scope, ownership and moderation checks.
+  if (path[0] === 'practice' && path.length === 1) {
+    const query = (await searchParams) || {}
+    const privateEditorIntent = ['panel','materialTab','create','starter','meditation','requestId']
+      .some(key => Object.hasOwn(query, key))
+    if (!privateEditorIntent) redirect('/' + locale + '/practice')
+  }
   // Backward-compatible saved-document links now open the exact original
   // report renderer, rather than an abbreviated dashboard item.
   if (path[0] === 'documents') {
@@ -43,7 +59,8 @@ export default async function AppPage({ params }) {
       redirect('/' + locale + '/app/document-view/' + path[1])
     }
   }
-  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','practice','analysis','documents','course','business','labs'].includes(path[0]) && path.length)) notFound()
+  if (path[0] === 'coaching' && path.length === 2 && !['egyptian','greek'].includes(path[1])) notFound()
+  if (path.length > 2 || (!['portrait','monitoring','tests','runs','results','history','consultations','settings','continue','reports','portfolio','progress','practice','analysis','documents','course','business','coaching','labs','videos'].includes(path[0]) && path.length)) notFound()
   // Existing Analysis bookmarks are permanently useful: open the merged report archive.
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a

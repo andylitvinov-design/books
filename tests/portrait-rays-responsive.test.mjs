@@ -9,7 +9,7 @@ import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.
 import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors,
+  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors, portraitSectorReadouts,
   portraitSectorMidAngle, portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
@@ -53,9 +53,10 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
       if (name === 'next/image') return { __esModule:true, default:'img' }
       if (name === '@/lib/assessments/test-explorer') return {TEST_EXPLORER_AXES,TEST_EXPLORER_AXIS_LABELS}
       if (name === '@/lib/assessments/portrait-ray-labels') return {layoutPortraitRayLabels}
+      if (name === './goal-profile-panel') return {GoalProfilePanel: () => null}
       if (name === '@/lib/assessments/portrait-sectors') return {
         PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
-        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,
+        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,portraitSectorReadouts,
         portraitSectorMidAngle,portraitFullCircleAngleForAxis,
       }
       if (name.endsWith('.module.css')) return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})}
@@ -72,19 +73,28 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
     render(){hook=0;return compiled.exports.TestExplorerVisual({locale,coverage,portrait})},
     measured,portrait,
     choose(key){
-      const control=sectors(this.render()).find(button=>button.props['data-portrait-sector']===key)
+      const control=key === 'all'
+        ? nodes(this.render(),'button',p=>p['data-portrait-sector-all']!==undefined)[0]
+        : sectors(this.render()).find(button=>button.props['data-portrait-sector']===key)
       assert.ok(control, 'missing category button: '+key)
       control.props.onClick()
       return this.render()
     },
+    view(key){
+      const tab=nodes(this.render(),'button',p=>p['data-portrait-view']===key)[0]
+      assert.ok(tab, 'missing portrait view: '+key)
+      tab.props.onClick()
+      return this.render()
+    },
+    openAxes(){return this.view('axes')},
   }
 }
 
-test('All is the first of five views and shows only measurement coverage, not averaged health percentages',()=>{
+test('All is the first of six views and labels actual original test values, not a domain average',()=>{
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     const tree=app.render()
-    assert.equal(sectors(tree).length,4)
+    assert.equal(sectors(tree).length,5)
     const all = nodes(tree,'button',p=>p['data-portrait-sector-all']!==undefined)
     assert.equal(all.length,1)
     assert.equal(all[0].props['aria-pressed'],true)
@@ -103,35 +113,73 @@ test('All is the first of five views and shows only measurement coverage, not av
     assert.equal(nodes(detail,'svg',p=>p['data-radar-layout']==='full-circle').length,1)
     assert.equal(anchors(detail).length,5)
     assert.equal(labels(detail).length,5)
-    assert.equal(rayOptions(detail).length,5)
-    assert.equal(rayInputs(detail).filter(input=>input.props.checked).length,5)
+    assert.equal(rayOptions(detail).length,0, 'chart is the default view')
+    const axes=app.openAxes()
+    assert.equal(rayOptions(axes).length,5)
+    assert.equal(rayInputs(axes).filter(input=>input.props.checked).length,5)
   }
 })
 
-test('All ray lengths equal the exact measured / total fraction of the 146-unit radius',()=>{
-  // The example values are 4/5, 2/3, 2/4 and 4/5, not normalized wellbeing scores.
+test('All selects a named latest verified test score, not measured-count coverage',()=>{
   const measured = ['stress','anxiety','sleep','energy','clarity','focus',
     'relationships','intimacy','mood','emotional_regulation','resource','meaning']
-  const expected = {body:4/5,work:2/3,relationships:2/4,growth:4/5}
   for(const locale of ['en','ru','es']){
     const app = harness(locale,measured)
-    const groups = nodes(app.render(),'g',p=>p['data-summary-sector']!==undefined)
+    // 4/5 measured in Body must NEVER show 4/5 as a pseudo sector score.
+    app.portrait.axes.stress.measuredAt='2026-10-22T12:00:00Z'
+    app.portrait.axes.stress.rawValue=1
+    app.portrait.axes.stress.max=5
+    app.portrait.axes.stress.percent=95
+    app.portrait.axes.energy.measuredAt='2026-10-23T12:00:00Z'
+    app.portrait.axes.energy.rawValue=3
+    app.portrait.axes.energy.max=5
+    app.portrait.axes.energy.percent=15
+    const tree=app.render()
+    const groups=nodes(tree,'g',p=>p['data-summary-sector']!==undefined)
     assert.equal(groups.length,4)
+    const body=groups.find(group=>group.props['data-summary-sector']==='body')
+    assert.equal(body.props['data-source-axis'],'energy')
+    const actual=nodes(body,'text',p=>p['data-summary-test-score']==='body')
+    assert.equal(actual.length,1)
+    assert.equal(actual[0].props.children,'3 / 5')
+    // The drawing position comes from the SAME saved test, not 4/5 coverage.
+    const ray=nodes(body,'line',p=>p.className==='radarRay')
+    assert.equal(ray.length,1)
+    assert.ok(Math.abs(Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)-146*.15)<1e-8)
+    assert.equal(nodes(body,'circle',p=>p.className==='radarPoint').length,1)
     for(const group of groups){
-      const key = group.props['data-summary-sector']
-      const ray = nodes(group,'line',p=>p.className==='radarRay')
-      const dot = nodes(group,'circle',p=>p.className==='radarPoint')
-      assert.equal(ray.length,1,key)
-      assert.equal(dot.length,1,key)
-      const length = Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)
-      assert.ok(Math.abs(length-146*expected[key])<1e-8,`${locale}: ${key} expected ${expected[key]*100}% radius, got ${length/146*100}%`)
-      assert.ok(Math.abs(Math.hypot(dot[0].props.cx-180,dot[0].props.cy-182)-length)<1e-8,key+' dot matches ray')
+      const axis=group.props['data-source-axis']
+      assert.ok(axis && app.portrait.axes[axis],locale+' '+group.props['data-summary-sector'])
+      const source=app.portrait.axes[axis]
+      const actual=nodes(group,'text',p=>p['data-summary-test-score']!==undefined)
+      assert.equal(actual[0].props.children,`${source.rawValue} / ${source.max}`)
+      assert.equal(nodes(group,'text',p=>p.className==='radarSummaryAxis').length,1)
+    }
+    const empty=harness(locale,[]).render()
+    for(const group of nodes(empty,'g',p=>p['data-summary-sector']!==undefined)){
+      assert.equal(group.props['data-source-axis'],'')
+      assert.equal(nodes(group,'line',p=>p.className==='radarRay').length,0)
+      assert.equal(nodes(group,'text',p=>p['data-summary-test-score']!==undefined)[0].props.children,'—')
     }
   }
-  const empty = harness('en',[]).render()
-  for(const group of nodes(empty,'g',p=>p['data-summary-sector']!==undefined)){
-    assert.equal(nodes(group,'line',p=>p.className==='radarRay').length,0)
-  }
+})
+
+test('detail charts label only actual raw test scores including descriptive values',()=>{
+  const app=harness('en',['stress','anxiety','energy'])
+  app.portrait.axes.stress.rawValue=1.5
+  app.portrait.axes.stress.max=5
+  app.portrait.axes.stress.percent=70
+  app.portrait.axes.energy.mode='descriptive'
+  app.portrait.axes.energy.percent=null
+  app.portrait.axes.energy.rawValue=2
+  app.portrait.axes.energy.max=4
+  const tree=app.choose('body')
+  const axis=key=>detailRays(tree).find(node=>node.props['data-detail-axis']===key)
+  assert.equal(nodes(axis('stress'),'text',p=>p['data-portrait-raw-score']==='stress')[0].props.children,'1.5 / 5')
+  assert.equal(nodes(axis('energy'),'text',p=>p['data-portrait-raw-score']==='energy')[0].props.children,'2 / 4')
+  assert.equal(nodes(axis('energy'),'line',p=>p.className==='radarRay').length,0)
+  assert.equal(nodes(axis('sleep'),'text',p=>p['data-portrait-raw-score']!==undefined).length,0)
+  assert.equal(nodes(axis('embodiment'),'text',p=>p['data-portrait-raw-score']!==undefined).length,0)
 })
 
 test('individual current and previous rays use the full 0–100 scale with no artificial minimum length',()=>{
@@ -167,7 +215,7 @@ test('each category shows all its own 3–5 scales, spaced over the FULL 360-deg
       assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,1)
       assert.equal(sectors(tree).find(b=>b.props['aria-pressed']).props['data-portrait-sector'],sector.key)
       assert.equal(detailRays(tree).length,sector.axes.length)
-      assert.equal(rayInputs(tree).length,sector.axes.length)
+      assert.equal(rayInputs(app.openAxes()).length,sector.axes.length)
       assert.equal(anchors(tree).length,sector.axes.length)
       assert.equal(labels(tree).length,sector.axes.length)
       assert.equal(nodes(tree,'svg',p=>p['data-active-portrait-sector']===sector.key).length,1)
@@ -188,7 +236,8 @@ test('each category shows all its own 3–5 scales, spaced over the FULL 360-deg
 
 test('user can opt out of one scale; switching categories preserves that preference',()=>{
   const app=harness('en')
-  const first=app.choose('body')
+  app.choose('body')
+  const first=app.openAxes()
   const bodyAxes=PORTRAIT_SECTORS[0].axes
   assert.equal(rayInputs(first).filter(input=>input.props.checked).length,bodyAxes.length)
   // Embodiment is not measured in the fixture but its axis and label are visible.
@@ -208,7 +257,8 @@ test('user can opt out of one scale; switching categories preserves that prefere
 test('without test results each category retains its axes and does not invent values',()=>{
   const app=harness('ru',[])
   for(const sector of PORTRAIT_SECTORS){
-    const tree=app.choose(sector.key)
+    app.choose(sector.key)
+    const tree=app.openAxes()
     assert.equal(labels(tree).length,sector.axes.length)
     assert.equal(anchors(tree).length,sector.axes.length)
     assert.ok(anchors(tree).every(node=>node.props['data-measured']===false))
@@ -221,7 +271,8 @@ test('without test results each category retains its axes and does not invent va
 test('missing scales keep actual test links and source data stays private',()=>{
   const app=harness('en')
   for(const sector of PORTRAIT_SECTORS){
-    const tree=app.choose(sector.key)
+    app.choose(sector.key)
+    const tree=app.openAxes()
     const missing=sector.axes.filter(axis=>!app.measured.includes(axis))
     assert.equal(testItLinks(tree).length,missing.length)
     for(const link of testItLinks(tree)){
@@ -237,7 +288,8 @@ test('measured rays show localized Details links to their exact result and score
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     for(const sector of PORTRAIT_SECTORS){
-      const tree=app.choose(sector.key)
+      app.choose(sector.key)
+      const tree=app.openAxes()
       const measured=sector.axes.filter(axis=>app.measured.includes(axis))
       assert.equal(detailsLinks(tree).length,measured.length)
       for(const link of detailsLinks(tree)){
@@ -277,14 +329,15 @@ test('the saved report honors the exact scale selected by the portrait Details l
   assert.match(compact,/focusedIndex >= 0 \? focusedIndex/)
 })
 
-test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
+test('mobile CSS keeps All plus five profiles in one row at 320px with 44px taps',()=>{
   const css=read('components/app/test-explorer.module.css')
-  const fresh=css.slice(css.lastIndexOf('/* Portrait v4:'))
+  const fresh=css.slice(css.lastIndexOf('/* Five life profiles plus All:'))
   assert.ok(fresh.length>1500)
   assert.match(fresh,/\.visual:not\(\.visualCompact\) \.portraitSectorGrid\{/)
-  assert.match(fresh,/grid-template-columns:minmax\(43px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.68fr\) repeat\(5,minmax\(44px,1fr\)\)/)
   assert.match(fresh,/@media\(max-width:440px\)\{/)
-  assert.match(fresh,/grid-template-columns:minmax\(39px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.68fr\) repeat\(5,minmax\(44px,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:minmax\(44px,\.64fr\) repeat\(5,minmax\(44px,1fr\)\)/)
   assert.match(fresh,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\)\{[\s\S]*?aspect-ratio:360 \/ 390/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\) > \.portraitRadar\{[\s\S]*?height:100%/)
@@ -293,11 +346,107 @@ test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
   assert.match(css,/\.portraitRayTestLink:focus-visible/)
 })
 
-test('Reports keeps the three quick actions right under the radar',()=>{
+test('Reports uses a thin Chart / Axes / Tests switch and preserves lower actions once',()=>{
   const src=read('components/app/test-explorer-visual.jsx')
-  assert.ok(src.indexOf('className={styles.portraitRadar}')<src.indexOf('{portrait && !compact && portraitActions}'))
-  assert.ok(src.indexOf('{portrait && !compact && portraitActions}')<src.indexOf('className={styles.portraitControls}'))
-  assert.match(src,/\{portrait && !compact && !allSectors && <section className=\{styles.portraitControls\}/)
+  const nav=src.indexOf('className={styles.portraitModeBar}')
+  const chooser=src.indexOf('className={styles.portraitControls}')
+  const radar=src.indexOf('className={styles.portraitRadar}')
+  const actions=src.indexOf('portraitActions({ selectedSector, portrait })')
+  assert.ok(nav>=0 && chooser>nav && radar>chooser && actions>radar,
+    'Axis chooser replaces the chart and stays immediately under its switch')
+  assert.match(src,/portraitView === 'axes' && selectedSector !== 'goal' && <section/)
+  assert.match(src,/hidden=\{Boolean\(portrait\) && \(portraitView !== 'chart' \|\| selectedSector === 'goal'\)\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
   assert.match(src,/data-portrait-sector-all/)
+  assert.match(src,/data-portrait-sector="goal"/)
+  assert.match(src,/selectedSector === 'goal' && <GoalProfilePanel/)
+})
+
+test('All overview changes with chosen axes without altering saved source measurements',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale,['stress','energy','clarity','relationships','mood'])
+    app.portrait.axes.energy.measuredAt='2026-10-26T12:00:00Z'
+    app.portrait.axes.stress.measuredAt='2026-10-25T12:00:00Z'
+    let all=app.render()
+    const source=tree=>nodes(tree,'g',p=>p['data-summary-sector']==='body')[0]
+    assert.equal(source(all).props['data-source-axis'],'energy')
+    const tabs=nodes(all,'button',p=>p['data-portrait-view']!=null)
+    assert.equal(tabs.length,3)
+    assert.equal(tabs[0].props['aria-selected'],true)
+    assert.equal(tabs[1].props['aria-selected'],false)
+    assert.match(JSON.stringify(tabs.map(t=>t.props.children)),locale==='ru' ? /График/ : locale==='es' ? /Gráfico/ : /Chart/)
+    const axes=app.openAxes()
+    assert.equal(nodes(axes,'div',p=>p.className==='modelStage')[0].props.hidden,true)
+    assert.equal(rayInputs(axes).length,17,'All exposes the full set of audited axes')
+    const options=nodes(axes,'div',p=>p['data-portrait-ray']==='energy')
+    assert.equal(options.length,1)
+    const energy=rayInputs(options[0])[0]
+    assert.equal(energy.props.checked,true)
+    energy.props.onChange()
+    all=app.view('chart')
+    assert.equal(source(all).props['data-source-axis'],'stress',
+      'the overview falls back to a different real measured axis when selected source is hidden')
+    assert.equal(nodes(all,'div',p=>p.className==='modelStage')[0].props.hidden,false)
+    assert.equal(app.portrait.axes.energy.rawValue,4.1,
+      'display filtering must not rewrite an assessment result')
+    const again=app.openAxes()
+    assert.equal(rayInputs(nodes(again,'div',p=>p['data-portrait-ray']==='energy')[0])[0].props.checked,false)
+  }
+})
+
+test('select all / clear all affect only the focused profile; empty overview is not a fake score',()=>{
+  const app=harness('en',['stress','energy','clarity','relationships','mood'])
+  app.choose('body')
+  let tree=app.openAxes()
+  const quick=nodes(tree,'div',p=>p.className==='portraitRayBulk')[0]
+  assert.ok(quick)
+  const buttons=nodes(quick,'button',()=>true)
+  assert.equal(buttons.length,2)
+  buttons[1].props.onClick()
+  tree=app.render()
+  assert.equal(rayInputs(tree).filter(input=>input.props.checked).length,0)
+  app.choose('all')
+  tree=app.view('chart')
+  const body=nodes(tree,'g',p=>p['data-summary-sector']==='body')[0]
+  assert.equal(body.props['data-source-axis'],'')
+  assert.equal(nodes(body,'line',p=>p.className==='radarRay').length,0)
+  const work=nodes(tree,'g',p=>p['data-summary-sector']==='work')[0]
+  assert.equal(work.props['data-source-axis'],'clarity',
+    'clearing Body does not erase scores or axes in Work')
+  tree=app.openAxes()
+  const allQuick=nodes(tree,'div',p=>p.className==='portraitRayBulk')[0]
+  nodes(allQuick,'button',()=>true)[0].props.onClick()
+  tree=app.view('chart')
+  assert.equal(nodes(tree,'g',p=>p['data-summary-sector']==='body')[0].props['data-source-axis'],'stress')
+})
+
+test('second-level axes selection drives the whole-wheel chart across all four life profiles',()=>{
+  const app=harness('en',['stress','sleep','focus','relationships','mood'])
+  app.choose('body')
+  const checked=app.openAxes()
+  const sleepOption=nodes(checked,'div',p=>p['data-portrait-ray']==='sleep')[0]
+  assert.ok(sleepOption)
+  rayInputs(sleepOption)[0].props.onChange()
+  app.view('chart')
+  assert.equal(nodes(app.render(),'button',p=>p['data-chart-mode']==='axes').length,0,
+    'optional wheel variants must not consume the first mobile frame')
+  app.view('chart') // A second tap on the selected Chart tab reveals its optional wheel choices.
+  const mode=nodes(app.render(),'button',p=>p['data-chart-mode']==='axes')[0]
+  assert.ok(mode)
+  mode.props.onClick()
+  const axes=app.render()
+  const svg=nodes(axes,'svg',p=>p['data-radar-mode']==='axes')[0]
+  assert.ok(svg,'selected-axes wheel replaces four-profile summary')
+  assert.equal(svg.props['data-active-portrait-sector'],'selected-axes')
+  const displayed=detailRays(svg).map(item=>item.props['data-detail-axis'])
+  assert.equal(displayed.length,16)
+  assert.ok(displayed.includes('focus') && displayed.includes('relationships') && displayed.includes('mood'),
+    'full-wheel mode keeps selected axes from Work, Relationships and Growth even with Body active')
+  assert.ok(!displayed.includes('sleep'),'the unchecked axis cannot reappear in the graph')
+  assert.equal(app.portrait.axes.sleep.rawValue,4.1,'hiding an axis is never a mutation of test data')
+  const missing=detailRays(svg).filter(item=>item.props['data-measured']===false)
+  assert.ok(missing.length>0,'unmeasured axes are shown without false values')
+  for(const item of missing){
+    assert.equal(nodes(item,'text',p=>p['data-portrait-raw-score']!==undefined).length,0)
+  }
 })

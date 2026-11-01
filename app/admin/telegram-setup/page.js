@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {uiLocaleCookie} from '@/lib/ui-locale'
+import {getTorontoCompletedPeriod} from '@/lib/practitioners/daily-digest.mjs'
 import {getAppConfig} from '@/lib/app/config'
 import {ownerTelegramSetupStatus} from '@/lib/practitioners/telegram-owner-setup'
 import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
@@ -14,6 +15,7 @@ import {
   checkTelegramConnectionAction,connectAndTestTelegramAction
 } from './actions'
 import styles from './telegram-setup.module.css'
+import {SendDailyCouncilButton} from './send-daily-council-button'
 
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -45,7 +47,8 @@ const resultNotes={
   identity_mismatch:{ru:'Имя бота или владельца чата не совпадает. Отправка заблокирована.',en:'Bot or private owner chat mismatch. Sending blocked.'},
   sender_disabled:{ru:'Отправка выключена на сервере.',en:'Server delivery switch is off.'},
   setup_unavailable:{ru:'Сервис проверки временно недоступен.',en:'Connection verification temporarily unavailable.'},
-  council_sent:{ru:'AI-отчёт принят Telegram. Проверь чат Dot.',en:'AI report accepted by Telegram. Check Dot.'},
+  council_sent:{ru:'Отчёт Holistic House принят Telegram. Реальные статусы Gemini и Mistral указаны внутри файла.',en:'Holistic House report accepted by Telegram. Genuine Gemini and Mistral statuses are in the file.'},
+  council_partial:{ru:'Один отчёт Telegram принял, но восстановление другой даты не подтверждено. Повтор возможен без дубля принятого дня.',en:'Telegram accepted one report; recovery of another date is still unconfirmed. Accepted days will not be duplicated.'},
   council_duplicate:{ru:'Этот отчёт уже отправлен или выполняется. Без дубля.',en:'Already sent or running. No duplicate.'},
   council_missing_keys:{ru:'Подтверди Gemini Free Tier и подключи бесплатный Mistral (OpenRouter или Studio Free mode).',en:'Confirm Gemini Free Tier and connect Mistral via OpenRouter free or Studio Free mode.'},
   council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
@@ -67,6 +70,7 @@ export default async function TelegramSetupPage({searchParams}){
   const lang=ru?'ru':'en'
   let provider={geminiKeyPresent:models.geminiKeyPresent,
     geminiFreeConfirmed:models.geminiFreeConfirmed,
+    geminiModelProbeStatus:'not_checked',
     mistralStudioKeyPresent:models.mistralDirectKeyPresent,
     mistralFreeConfirmed:models.mistralDirectFreeConfirmed,
     mistralStudioProbeStatus:'not_checked',
@@ -95,10 +99,16 @@ export default async function TelegramSetupPage({searchParams}){
     ?resultNotes.setup_unavailable[lang]
     :returned?.[lang]
   const canCheck=state.token_saved&&!unavailable
-  // The main ChatGPT daily report is always deliverable when archived:
-  // no Gemini/Mistral Free Tier attestation is required for Telegram transport.
+  const todayToronto=getTorontoCompletedPeriod().today
+  const councilToday=state.council?.date===todayToronto
+  const acceptedToday=councilToday&&state.council?.status==='accepted'
+  const activeSendingToday=councilToday&&state.council?.active_claim===true
+  const dailyResult=result.startsWith('council_')?displayResult:null
+  // Gemini/Mistral errors do not block an honest ChatGPT/public HTML report.
+  // A report accepted by Telegram today is never re-sent by the owner button.
+  // Stale >15 minute DB claims are retryable by the existing atomic receipt.
   const canCouncil=canCheck&&state.pairing==='paired'&&state.telegram_enabled&&
-    state.council?.status!=='sending'
+    !acceptedToday&&!activeSendingToday
   const canSend=canCheck&&state.telegram_enabled&&!state.test_accepted&&
     !['sending','uncertain'].includes(state.test)
 
@@ -125,7 +135,7 @@ export default async function TelegramSetupPage({searchParams}){
             <dd>{state.telegram_enabled?(ru?'Разрешена только после проверки получателя':'Only with verified recipient'):
               ru?'Выключена':'Disabled'}</dd></div>
         </dl>
-        {displayResult&&<p className={styles.result} role="status">{displayResult}</p>}
+        {displayResult&&!dailyResult&&<p className={styles.result} role="status">{displayResult}</p>}
         {state.test==='uncertain'&&<p className={styles.warning} role="status">
           {ru?'Предыдущий тест мог быть доставлен. Повтор заблокирован до проверки журнала.':
             'The previous attempt might have delivered. No repeat until reviewed.'}
@@ -177,17 +187,32 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
                 :ru?'API-ключ не подключён':'API key missing'
           }</strong></p>
+          {provider.geminiKeyPresent&&provider.geminiFreeConfirmed&&
+            <p className={provider.geminiModelProbeStatus==='ready'
+              ?styles.footnote:styles.warning} role="status">
+              {provider.geminiModelProbeStatus==='ready'
+                ?ru?'Gemini API: модель доступна по GET без генерации. Реальный ответ пока не проверен.':
+                  'Gemini API: model metadata confirmed by GET, with no inference. A real response is not yet verified.'
+                :provider.geminiModelProbeStatus==='unauthorized'
+                  ?ru?'Gemini API отклонил ключ (401/403). Проверь ключ Free Tier проекта.':
+                    'Gemini API rejected the key (401/403). Check the Free Tier project key.'
+                  :provider.geminiModelProbeStatus==='rate_limited'
+                    ?ru?'Gemini API ограничил запросы (429); генерация не запускалась.':
+                      'Gemini API rate-limited metadata (429); no generation was attempted.'
+                    :ru?'Gemini API: доступность модели пока не подтверждена. Платные запросы не запускаются.':
+                      'Gemini API: model access is not confirmed yet. No paid inference is attempted.'}
+            </p>}
           <p>Mistral · OpenRouter: <strong>{
             provider.mistralOpenRouterKeyPresent
-              ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':
-                'Key saved; :free model and price checked per run'
+              ?ru?'Ключ сохранён; допускается лишь Mistral :free с нулевой ценой':
+                'Key stored; only zero-priced Mistral :free can be requested'
               :ru?'Нет ключа':'No key'
           }</strong></p>
           <p>Mistral · Studio Free mode: <strong>{
             provider.mistralStudioKeyPresent
               ?provider.mistralFreeConfirmed
-                ?ru?'Ключ сохранён; Free mode подтверждён владельцем; доступность модели проверяется при запуске':
-                  'Key saved; owner-confirmed Free mode; model access checked per run'
+                ?ru?'Ключ сохранён; Free mode подтверждён, но API-доступ требует отдельной проверки':
+                  'Key stored; Free mode confirmed, actual API access checked separately'
                 :ru?'Ключ сохранён; требуется подтверждение Free mode без pay-as-you-go':
                   'Key saved; confirm Free mode with pay-as-you-go disabled'
               :ru?'Не подключён':'Not connected'
@@ -200,11 +225,11 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Проверка Mistral API: модель доступна по GET без расходов. Настоящая генерация ещё не проверена.':
                   'Mistral API: model accessible via read-only GET; actual generation still unverified.'
                 :provider.mistralStudioProbeStatus==='access_denied'
-                  ?ru?'Mistral API отклонил доступ (401/403). Ключ сохранён, но его наличие не означает разрешение API. Не подключай платный тариф.':
-                    'Mistral API denied access (401/403). The key is saved, but API access is not confirmed. No paid upgrade is needed.'
+                  ?ru?'Mistral API отклонил доступ (401/403). Ключ сохранён, но API не работает. Не оформляй платный тариф: проверим бесплатный OpenRouter.':
+                    'Mistral API denied access (401/403). The key is saved, but API access is not confirmed. Do not upgrade; only free OpenRouter is considered.'
                   :provider.mistralStudioProbeStatus==='rate_limited'
-                    ?ru?'Mistral API сообщил о лимите (429). Генерация не запускалась.':
-                      'Mistral API returned a rate limit (429). No generation was performed.'
+                    ?ru?'Mistral Studio: проверочный GET отклонён (429). Генерация не запускалась, бесплатный OpenRouter проверяется отдельно.':
+                      'Mistral Studio: read-only GET was rate-limited (429). No generation ran; a free OpenRouter route is checked separately.'
                     :provider.mistralStudioProbeStatus==='model_unavailable'
                       ?ru?'Текущий Mistral Workspace не предоставляет нужную модель Small. Платный fallback отключён.':
                         'The workspace does not expose a supported Small model. Paid fallback is disabled.'
@@ -212,8 +237,8 @@ export default async function TelegramSetupPage({searchParams}){
                         'Mistral API access is not yet verified. Read-only GET is used without inference.'}
             </p>}
           <p className={styles.footnote}>{
-            ru?'Аудиты выполняются только по публичным страницам; платные модели автоматически не используются.':
-              'Public-site evidence only. Paid model fallback is strictly disabled.'
+            ru?'Ключ Studio и план Free сами по себе не доказывают доступ к API. Если Mistral просит обновить тариф — не покупай: проверяем только бесплатный маршрут OpenRouter. Используем публичные данные.':
+              'A saved Studio key and Free plan do not prove API access. If Mistral asks you to upgrade, do not buy a plan: only a verified free OpenRouter route is considered. Public data only.'
           }</p>
           <div className={styles.ownerAiSetup}>
             <h3>{ru?'Подключение AI — один экран':'AI setup — one screen'}</h3>
@@ -302,11 +327,40 @@ export default async function TelegramSetupPage({searchParams}){
             {ru?'Можно отправить отчёт ChatGPT без подключения Mistral и Gemini. Ответы независимых моделей добавляются только после подтверждения бесплатных тарифов и реальной проверки API. Повтор того же отчёта не отправляется.':
               'You can send a ChatGPT report without Gemini or Mistral credentials. Independent model answers are included only after verified free-tier setup and real API responses. The same daily report cannot be resent.'}
           </p>
-          <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
-            <button type="submit" className={styles.primary} disabled={!canCouncil}>
-              {ru?'Отправить доступный отчёт сегодня':'Send available daily report now'}
-            </button>
-          </form>
+          <div id="daily-council-report" className={styles.sendPanel}>
+            {dailyResult&&<p className={styles.result} role="status">{dailyResult}</p>}
+            {acceptedToday
+              ?<div className={styles.sentNotice} role="status">
+                <strong>{ru?'Сегодняшний отчёт принят Telegram':'Today’s report was accepted by Telegram'}</strong>
+                <p>{'ChatGPT: '+state.council.chatgpt+' · Gemini: '+state.council.gemini+
+                  ' · Mistral: '+state.council.mistral}</p>
+                {(state.council.gemini!=='ok'||state.council.mistral!=='ok')&&
+                  <p>{ru?'Заключения моделей без подтверждённого ответа не включены. Отправка принятого отчёта не повторяется.':
+                    'Unconfirmed model responses were not included. An accepted daily report is never resent.'}</p>}
+                <a href="https://t.me/Andydotbot" target="_blank" rel="noopener noreferrer"
+                  className={styles.botLink}>
+                  {ru?'Открыть отчёт в @Andydotbot ↗':'Open report in @Andydotbot ↗'}
+                </a>
+              </div>
+              :<>
+                <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
+                  <SendDailyCouncilButton ru={ru} disabled={!canCouncil}/>
+                </form>
+                {!canCouncil&&<p className={styles.warning} role="status">
+                  {!canCheck
+                    ?ru?'Не удалось проверить состояние Telegram. Обнови страницу.':
+                      'Telegram status could not be checked. Refresh the page.'
+                    :!state.telegram_enabled
+                      ?ru?'Отправка Telegram отключена на сервере.':
+                        'Telegram sending is disabled on the server.'
+                      :state.pairing!=='paired'
+                        ?ru?'Сначала подтверди личный чат Telegram в верхнем блоке.':
+                          'Verify your private Telegram chat in the section above first.'
+                        :ru?'Отчёт уже отправляется. Обнови страницу для проверки результата.':
+                          'A report is already being sent. Refresh to check the result.'}
+                </p>}
+              </>}
+          </div>
           <div className={styles.setupLinks}>
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
               Gemini · Google AI Studio ↗</a>
