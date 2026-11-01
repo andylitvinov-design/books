@@ -130,10 +130,14 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
  const kind=item?.kind
  // An assigned master sees only the redacted contact alias. Platform owner
  // CRM access is a separate audited operator workflow, never a shared card field.
+ const publicRequest=kind==='request'&&item.item?.requestKind==='public'
  const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:
    kind==='business'?item.item:null
- const email=field(contact,'email'),phone=field(contact,'phone'),status=field(contact,'lifecycle','status')||field(item?.item,'status')
- const publicRequest=kind==='request'&&item.item?.requestKind==='public'
+ // Defense in depth: even if a future upstream public request gains contact
+ // fields, the shared master card must never render email or phone.
+ const email=publicRequest?'':field(contact,'email')
+ const phone=publicRequest?'':field(contact,'phone')
+ const status=field(contact,'lifecycle','status')||field(item?.item,'status')
  const masterSlug=kind==='direct'&&validSlug(item.peerMasterSlug)?item.peerMasterSlug:''
  const date=displayDate(item.at||item.item?.createdAt,lang)
  return <section className={styles.card} aria-label={t.title} data-messages-client-card data-kind={kind}>
