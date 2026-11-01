@@ -68,6 +68,23 @@ function safeFiles(items) {
 function writeOutputs(core, values) {
   for (const [k, v] of Object.entries(values)) core.setOutput(k, String(v));
 }
+// Always inspect actionable source repairs before manual-conflict claims.
+function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES) {
+  const eligible=items=>[...new Map((items || []).filter(i=>
+    i && i.pull_request && Number.isSafeInteger(i.number) && i.number>0)
+    .map(i=>[i.number,i])).values()];
+  const sourceItems=eligible(source), sourceIDs=new Set(sourceItems.map(i=>i.number));
+  const conflictItems=eligible(conflicts).filter(i=>!sourceIDs.has(i.number));
+  const rotate=(items,count)=>{
+    if(!items.length || count<=0)return [];
+    const offset=(Math.floor(now/600000)*MAX_CANDIDATES)%items.length;
+    return [...items.slice(offset),...items.slice(0,offset)].slice(0,count);
+  };
+  // A bounded conflict slot preserves fairness without starving safe fixes.
+  const sourceSlots=conflictItems.length?Math.max(1,max-1):max;
+  const first=rotate(sourceItems,sourceSlots);
+  return [...first,...rotate(conflictItems,max-first.length)];
+}
 async function claim({github,core,context,number=0,expectedSha='',dryRun=false,hasToken=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
@@ -92,10 +109,7 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
       limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
         sort:'updated',direction:'asc',per_page:40}))));
     if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
-    const all=[...new Map(found.flatMap(r=>r.data).filter(i=>i.pull_request)
-      .map(i=>[i.number,i])).values()];
-    const offset=all.length ? (Math.floor(now/600000)*MAX_CANDIDATES)%all.length : 0;
-    candidates=[...all.slice(offset),...all.slice(0,offset)].slice(0,MAX_CANDIDATES);
+    candidates=prioritizedRepairCandidates(found[0].data,found[1].data,now);
   }
   for (const item of candidates) {
     const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
@@ -214,4 +228,4 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
 }
-module.exports={claim,publish,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,PROD,SOURCE,CONFLICT,MARKER};

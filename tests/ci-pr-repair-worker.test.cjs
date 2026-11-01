@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,validBranch,validCandidate,activeSweepLease,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -140,4 +140,28 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
+});
+
+test('source repairs take priority over historical manual-only conflicts',()=>{
+  const source=[{number:2606,pull_request:{}}];
+  const conflicts=Array.from({length:30},(_,i)=>({number:1400+i,pull_request:{}}));
+  for(let i=0;i<12;i++){
+    const selected=prioritizedRepairCandidates(source,conflicts,1800000000000+i*600000);
+    assert.equal(selected[0].number,2606);
+    assert.ok(selected.length<=4);
+    assert.ok(selected.slice(1).every(x=>x.number>=1400&&x.number<1430));
+  }
+});
+test('conflict queue rotates fairly even when no source repairs exist',()=>{
+  const conflicts=Array.from({length:23},(_,i)=>({number:1400+i,pull_request:{}}));
+  const seen=new Set();
+  for(let i=0;i<7;i++)for(const item of prioritizedRepairCandidates([],conflicts,1800000000000+i*600000))
+    seen.add(item.number);
+  assert.equal(seen.size,23);
+});
+test('candidate queues deduplicate double-labelled pull requests',()=>{
+  assert.deepEqual(prioritizedRepairCandidates(
+    [{number:2606,pull_request:{}}],
+    [{number:2606,pull_request:{}},{number:1421,pull_request:{}}],
+    1800000000000).map(x=>x.number),[2606,1421]);
 });
