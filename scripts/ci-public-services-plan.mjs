@@ -53,6 +53,14 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // Independent Site Video CI policy and source-only E2E contracts cannot
+  // change public services runtime, consent or payment. Protected Core/actionlint
+  // and its exact-head Site Video job still validate these files.
+  '.github/workflows/site-video-browser.yml',
+  'scripts/ci-site-video-scope.mjs',
+  'tests/ci-site-video-scope.test.mjs',
+  'tests/site-video-admin-e2e-gate.test.mjs',
+  'tests/ci-heavy-draft-policy.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
