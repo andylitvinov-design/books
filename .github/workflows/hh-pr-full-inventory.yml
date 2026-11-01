@@ -55,8 +55,12 @@ jobs:
                pullRule.parameters?.required_review_thread_resolution!==true)
               throw Error("Production ruleset not verified");
             const methods=new Set(pullRule.parameters?.allowed_merge_methods||[]);
-            const required=ruleset.rules?.find(r=>r.type==="required_status_checks")?.parameters?.required_status_checks||[];
-            const releaseMandatory=required.some(r=>r.context==="release-ready");
+            // Both protection layers must agree; optional release-ready is obsolete.
+            const protectedBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+            const legacy=protectedBranch.protection?.required_status_checks?.contexts;
+            if(!protectedBranch.protected||!Array.isArray(legacy)||
+               !legacy.includes("hh-core-verified")||legacy.includes("release-ready"))
+              throw Error("LEGACY_CORE_PROTECTION_NOT_MIGRATED");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
@@ -74,18 +78,27 @@ jobs:
             const functional=/browser|database|guard-unit|contract|public-services|crm|verify|unit/i;
             function assess(names){
               if(!names)return {ok:false,reason:"INCOMPLETE_CHECKS"};
-              const rows=[...names.entries()],gate=names.get("release-ready");
-              const gateGreen=gate?.status==="completed"&&gate.conclusion==="success"&&gate.app?.slug==="github-actions";
+              const rows=[...names.entries()],gate=names.get("hh-core-verified");
+              // Legacy optional check is not evidence of a current product defect.
               if(rows.some(([name,c])=>name!=="release-ready"&&red.has(c.conclusion)))
                 return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};
               if(rows.some(([name,c])=>quality.test(name)&&c.status!=="completed"))
                 return {ok:false,reason:"FOCUSED_QA_RUNNING"};
-              if(gateGreen)return {ok:true,via:"CORE_GATE"};
-              if(releaseMandatory)return {ok:false,reason:"REQUIRED_RELEASE_READY_NOT_GREEN"};
+              if(!gate||gate.status!=="completed"||gate.conclusion!=="success"||
+                 gate.app?.slug!=="github-actions")
+                return {ok:false,reason:"CORE_NOT_VERIFIED"};
+              const specialist=names.get("hh-specialists-verified");
+              if(specialist){
+                if(specialist.status!=="completed"||specialist.conclusion!=="success")
+                  return {ok:false,reason:"SPECIALISTS_NOT_VERIFIED"};
+                return {ok:true,via:"CORE_AND_SPECIALISTS"};
+              }
+              // While old production Core still runs the legacy job, demand two
+              // independent successful build/functional checks plus safety checks.
               const green=rows.filter(([name,c])=>quality.test(name)&&c.conclusion==="success").map(([name])=>name);
               if(!green.some(name=>build.test(name))||!green.some(name=>functional.test(name)))
                 return {ok:false,reason:"INDEPENDENT_QA_NOT_VERIFIED"};
-              return {ok:true,via:"FOCUSED_QA"};
+              return {ok:true,via:"INDEPENDENT_QA"};
             }
             for(const pr of pending){
               try{
@@ -119,7 +132,7 @@ jobs:
                 if(live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
                   skip("NOT_MERGEABLE");continue;
                 }
-                if(qa.via==="FOCUSED_QA"){
+                if(qa.via==="INDEPENDENT_QA"){
                   const files=(await github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100})).data;
                   if(!Array.isArray(files)||files.length>=100){skip("ALT_QA_FILES_INCOMPLETE");continue;}
                   const sensitive=files.some(f=>/auth|security|privacy|consent|billing|payment|stripe|paypal|rls|supabase|secrets?|\/api\//i.test(f.filename));

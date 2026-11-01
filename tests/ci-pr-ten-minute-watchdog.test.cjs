@@ -19,10 +19,13 @@ test('full pool is covered by rotating slices within sixteen 10-minute checks',(
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
 test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
-  const gate={total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]};
+  const gate={total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]};
   assert.equal(gateIsGreen(gate),true);
   assert.equal(gateIsGreen({...gate,check_runs:[{...gate.check_runs[0],app:{id:9}}]}),false);
   assert.equal(gateIsGreen({...gate,total_count:101}),false);
+  assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,
+    {id:2,name:'release-ready',status:'completed',conclusion:'failure'}]}),true,
+    'obsolete optional release-ready does not invalidate verified Core');
   assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,{id:2,name:'browser',conclusion:'failure'}]}),false);
 });
 test('CI admission uses separate running and queued limits, not their sum',()=>{
@@ -51,7 +54,7 @@ test('green unarmed PR dispatches existing protected coordinator, not a direct m
   const github={rest:{
     pulls:{list:async()=>({data:[pr(99)]}),get:async()=>({data:{...pr(99),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
-    checks:{listForRef:async(arg)=>{targeted=arg.check_name==='release-ready';return {data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
+    checks:{listForRef:async(arg)=>{targeted=arg.check_name==='hh-core-verified';return {data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
   },request:async(route)=>{if(route.includes('dispatches')) dispatched++;return {data:{workflow_runs:[]}};}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.greenUnarmed,1);
@@ -68,7 +71,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
       listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'Build',conclusion:'failure',
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
-    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
+    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
