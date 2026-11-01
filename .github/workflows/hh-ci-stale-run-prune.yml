@@ -60,3 +60,8 @@ jobs:
           HH_CI_JOB_SAMPLE: '20'
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs
+      - name: Group unresolved PR merge-conflict candidates (read-only)
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
+

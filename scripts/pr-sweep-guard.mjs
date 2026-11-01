@@ -4,7 +4,7 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
 
 async function collectRouteSnapshot(repo, token) {
   if (!token) throw Error('GH_TOKEN or GITHUB_TOKEN required for route');
@@ -94,6 +94,59 @@ async function reportDeepRoutes(repo,token) {
     root_grouping:'UNCLASSIFIED_REQUIRES_CONFIRMED_REGISTRY_EVIDENCE',merge_authorized:false},null,2));
 }
 
+
+
+// Independent read-only diagnostic; unlike route-deep it is valid even while
+// the production ruleset has zero required check contexts.
+async function reportConflictRoutes(repo,token) {
+  const first=await collectRouteSnapshot(repo,token);
+  const dirty=first.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
+  const sample=dirty.slice(0,35), collected=new Map(), errors=[];
+  const root='https://api.github.com/repos/'+repo;
+  const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+token,
+    'X-GitHub-Api-Version':'2022-11-28'};
+  let cursor=0;
+  async function worker(){
+    for (;;) {
+      const row=sample[cursor++]; if(!row)return;
+      try {
+        const files=[];
+        for(let page=1;page<=6;page++) {
+          const res=await fetch(root+'/pulls/'+row.number+'/files?per_page=100&page='+page,
+            {headers,signal:AbortSignal.timeout(20000)});
+          if(!res.ok)throw Error('CONFLICT_FILES_HTTP_'+res.status);
+          const chunk=await res.json();
+          if(!Array.isArray(chunk)||chunk.some(f=>typeof f?.filename!=='string'))
+            throw Error('CONFLICT_FILE_PAGE_INVALID');
+          files.push(...chunk.map(f=>f.filename));
+          if(chunk.length<100)break;
+          if(page===6)throw Error('CONFLICT_FILE_PAGE_LIMIT');
+        }
+        collected.set(row.number,files);
+      }catch(e){errors.push({number:row.number,error:String(e.message||e)});}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(3,sample.length)},()=>worker()));
+  const second=await collectRouteSnapshot(repo,token);
+  const current=new Map(second.rows.map(p=>[p.number,p]));
+  const valid=[],moved=[];
+  for(const pr of sample) {
+    const now=current.get(pr.number);
+    if(!now || now.head?.sha!==pr.head.sha || now.base?.sha!==pr.base.sha ||
+        now.mergeable!==false || now.base?.ref!==pr.base.ref) {
+      moved.push(pr.number);
+      continue;
+    }
+    valid.push({...pr,files:collected.get(pr.number)});
+  }
+  const groups=groupDirtyPrFiles(valid);
+  console.log(JSON.stringify({repo,observed_at:new Date().toISOString(),
+    total_open:first.total,dirty_total:dirty.length,sampled:sample.length,
+    omitted_due_to_cap:Math.max(0,dirty.length-sample.length),moved_during_scan:moved,
+    read_errors:errors,root_evidence:'CANDIDATE_CHANGED_PATHS_REQUIRES_GIT_MERGE_TREE_STAGE_PROOF',
+    ...groups},null,2));
+}
+
 // Daily CLI reuses this EXISTING script and makes no GitHub writes.
 // The created-PR cohort is exact to Toronto calendar boundaries; it never
 // equates closing a PR, committing code or passing CI with delivery/LIVE.
@@ -133,12 +186,12 @@ const [operation = 'inspect', repo = '', numberStr = '', owner = ''] = process.a
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 const now = Date.now();
 const prNumber = Number(numberStr);
-if (operation === 'route' || operation === 'route-deep') {
+if (['route', 'route-deep', 'route-conflicts'].includes(operation)) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
-    console.error('usage: node scripts/pr-sweep-guard.mjs route|route-deep owner/repo');
+    console.error('usage: node scripts/pr-sweep-guard.mjs route|route-deep|route-conflicts owner/repo');
     process.exitCode=2;
   } else {
-    try { await (operation==='route' ? reportRoutes(repo,token) : reportDeepRoutes(repo,token)); }
+    try { await (operation==='route' ? reportRoutes(repo,token) : operation==='route-deep' ? reportDeepRoutes(repo,token) : reportConflictRoutes(repo,token)); }
     catch(error) { console.error(String(error?.message || error)); process.exitCode=2; }
   }
 } else if (operation === 'daily') {
