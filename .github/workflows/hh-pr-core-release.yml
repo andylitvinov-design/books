@@ -26,7 +26,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          # Scope needs only the synthetic merge and its two parents.
+          # Fetch older ancestry only when the tested production parent moved.
+          fetch-depth: 2
+      - name: Verify bounded shallow scope ancestry before PR routing
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'Missing exact PR event source/base SHA' >&2
+            exit 1
+          }
+          # Fail closed if GitHub did not check out its actual two-parent
+          # PR test merge. HEAD^1 is the tested production base, HEAD^2
+          # the unchanged PR head; no trust in arbitrary PR-supplied scripts.
+          tested_base="$(git rev-parse HEAD^1)"
+          tested_head="$(git rev-parse HEAD^2)"
+          [[ "$tested_head" == "$PR_HEAD_SHA" ]] || {
+            echo 'Shallow scope checkout has the wrong PR HEAD' >&2
+            exit 1
+          }
+          # Shallow depth 2 may truncate an old event base ancestor. Fetch
+          # at most 40 additional generations of only the exact tested base.
+          # Never accept disjoint or unverifiable ancestry.
+          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+            for extra in 8 32; do
+              git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
+              if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+                break
+              fi
+            done
+          fi
+          git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" || {
+            echo 'Event production base is not a proven ancestor of tested merge' >&2
+            exit 1
+          }
+          echo "Bounded shallow scope verified HEAD $tested_head and tested base $tested_base" >> "$GITHUB_STEP_SUMMARY"
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -92,6 +131,8 @@ jobs:
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
+                  scripts/ci-source-preflight.mjs|\
+                  tests/ci-source-preflight.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
@@ -150,12 +191,74 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 2
+      - name: Verify bounded shallow code ancestry before source preflight
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'Missing exact PR event source/base SHA' >&2
+            exit 1
+          }
+          # Fail closed if GitHub did not check out its actual two-parent
+          # PR test merge. HEAD^1 is the tested production base, HEAD^2
+          # the unchanged PR head; no trust in arbitrary PR-supplied scripts.
+          tested_base="$(git rev-parse HEAD^1)"
+          tested_head="$(git rev-parse HEAD^2)"
+          [[ "$tested_head" == "$PR_HEAD_SHA" ]] || {
+            echo 'Shallow scope checkout has the wrong PR HEAD' >&2
+            exit 1
+          }
+          # Shallow depth 2 may truncate an old event base ancestor. Fetch
+          # at most 40 additional generations of only the exact tested base.
+          # Never accept disjoint or unverifiable ancestry.
+          if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+            for extra in 8 32; do
+              git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
+              if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
+                break
+              fi
+            done
+          fi
+          git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" || {
+            echo 'Event production base is not a proven ancestor of tested merge' >&2
+            exit 1
+          }
+          echo "Bounded shallow scope verified HEAD $tested_head and tested base $tested_base" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify Source Preflight unit contracts
+        run: node --test tests/ci-source-preflight.test.mjs
+      - name: Source Preflight — syntax and TypeScript before costly Next build
+        id: source_preflight
+        shell: bash
+        env:
+          HH_PREFLIGHT_REPORT: ${{ runner.temp }}/hh-source-preflight.json
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            checked_base="$(git rev-parse HEAD^1)"
+          else
+            checked_base="$(git rev-parse HEAD)"
+          fi
+          args=(--base "$checked_base")
+          if [[ "${{ needs.scope.outputs.ci_only }}" != true ]]; then args+=(--full-types); fi
+          node scripts/ci-source-preflight.mjs "${args[@]}"
+      - name: Upload Source Preflight root diagnostics on failure
+        if: ${{ failure() && steps.source_preflight.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-source-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hh-source-preflight.json
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Assert fast-lane workflow contracts
         run: node --test tests/pr-fast-lane.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
@@ -199,7 +302,7 @@ jobs:
         # adds no coverage for workflow/router/test changes.
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
-  # First step of the guarded release-ready migration. This optional status
+  # Core component of the guarded release-ready migration. This status
   # checks Core prerequisites only; it never replaces specialist/security gates.
   hh-core-verified:
     name: hh-core-verified
@@ -235,8 +338,8 @@ jobs:
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
           echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
-  release-ready:
-    name: release-ready
+  hh-specialist:
+    name: hh-specialist
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
@@ -258,7 +361,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            echo 'Draft: core checks deferred; hh-specialist must remain red until Ready is fully validated.' >&2
             exit 1
           fi
           [[ "$SCOPE_RESULT" == success ]] || exit 1
@@ -336,4 +439,49 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
+  # Compatibility only: the classic branch rule may still require this name.
+  # Never return success when the new full specialist check is missing or red.
+  # Remove this legacy job in a separate PR ONLY after protection readback.
+  release-ready:
+    name: release-ready
+    needs: [hh-specialist]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Preserve legacy fail-closed status until admin switch
+        shell: bash
+        env:
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+        run: |
+          set -euo pipefail
+          [[ "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Migration not yet finalized; hh-specialist is not green.' >&2
+            exit 1
+          }
+          echo 'Legacy compatibility passed by delegated hh-specialist.' >> "$GITHUB_STEP_SUMMARY"
 
+  # Keep the pre-existing plural alias as a nonrequired compatibility context.
+  # It delegates to the real hh-specialist check; no duplicate expensive work.
+  hh-specialists-verified:
+    name: hh-specialists-verified
+    needs: [hh-specialist]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Require full specialist aggregate on the same Core workflow
+        env:
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Specialist validation missing, cancelled or failed; refusing a green status' >&2
+            exit 1
+          }
+          echo 'Full specialist aggregation succeeded; safe required status propagated.' >> "$GITHUB_STEP_SUMMARY"

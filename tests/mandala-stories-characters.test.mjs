@@ -58,9 +58,9 @@ test("one original video preview and export share the selected symbolic layer",(
   const c=read("components/mandala-stories-characters.tsx");
   const css=read("components/mandala-stories-characters.module.css");
   assert.match(s,/import \{ MandalaStoriesCharacters \}/);
-  assert.match(s,/data-workspace-section="characters"/);
+  assert.match(s,/data-workspace-section="pro"/);
   assert.match(s,/data-video-quick-control=\{item\.id\}/);
-  assert.match(s,/activeWorkspace==="characters"/);
+  assert.match(s,/activeWorkspace==="pro"/);
   assert.match(s,/<MandalaStoriesCharacters locale=\{locale\} theme=\{theme\}/);
   assert.equal((s.match(/<MandalaStoriesCharacters /g)||[]).length,1,"one catalog, same established workspace");
   assert.match(s,/setAppliedStory\(next\)/);
