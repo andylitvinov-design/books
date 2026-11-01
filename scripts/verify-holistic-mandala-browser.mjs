@@ -750,6 +750,51 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
           "original timing options remain in source; user edits the visible Editor");
         const workspaceQuick=quick.locator("[data-video-quick-controls]");
+        // Owner 1 Nov third-workspace screenshot: all four photo-led groups,
+        // three visible cards per row, one Create action, no duplicate renderer.
+        await workspaceQuick.locator('[data-video-quick-control="effects"]').click();
+        const effects=page.locator("[data-hypno-mobile]");
+        await expect(effects).toBeVisible({timeout:15000});
+        const intro=page.locator("[data-hypno-intro-slot]");
+        await expect(intro.locator("[data-hypno-wave]")).toBeVisible({timeout:12000});
+        assert.equal(await page.locator("[data-hypno-wave]").count(),1,
+          "Wave is moved above the existing real player, not duplicated");
+        const waveBox=await intro.locator("[data-hypno-wave]").boundingBox();
+        const playerBox=await page.locator("[data-video-mandala-hero]").boundingBox();
+        assert.ok(waveBox&&playerBox&&waveBox.y+waveBox.height<playerBox.y,
+          engine+" "+locale+" "+width+" Wave should precede player as in owner mock");
+        const groups=effects.locator("[data-hypno-group]");
+        assert.deepEqual(await groups.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hypno-group"))),
+          ["audio","visual","meditation","phrases"]);
+        for(const id of ["audio","visual","phrases"]){
+          const group=effects.locator('[data-hypno-group="'+id+'"]');
+          assert.equal(await group.locator("[data-hypno-card]").count(),3);
+          assert.equal(await group.locator("button[aria-expanded]").getAttribute("aria-expanded"),"true");
+          const cards=await group.locator("[data-hypno-card]").evaluateAll(nodes=>nodes.map(node=>{
+            const rect=node.getBoundingClientRect();return{x:rect.x,y:rect.y,width:rect.width};
+          }));
+          assert.ok(cards.every(card=>card.width>=55)&&
+            Math.max(...cards.map(card=>card.y))-Math.min(...cards.map(card=>card.y))<=2,
+            engine+" "+locale+" "+width+" cards must share one legible row: "+JSON.stringify(cards));
+        }
+        assert.equal(await effects.locator("[data-hypno-create]").count(),1);
+        assert.equal(await page.locator("[data-video-hero-create]").count(),0,
+          "Hypno uses the original renderer through ONE primary Create control");
+        const effectGeometry=await effects.evaluate(el=>({
+          width:el.getBoundingClientRect().width,viewport:document.documentElement.clientWidth,
+          pageWidth:document.documentElement.scrollWidth,
+        }));
+        assert.ok(effectGeometry.width<=effectGeometry.viewport+2&&
+          effectGeometry.pageWidth<=effectGeometry.viewport+2,
+          engine+" "+locale+" "+width+" hypno overflow: "+JSON.stringify(effectGeometry));
+        await intro.locator("[data-hypno-wave]").click();
+        await expect(effects.locator('[data-hypno-group="visual"] [role="switch"]').first())
+          .toHaveAttribute("aria-checked","true");
+        if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+          mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+          await captureSyntheticOverview(page,effects,
+            process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
+        }
         await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
         await expect(page.locator('[data-video-duration="30"]')).toBeVisible({timeout:15000});
         assert.equal(await page.locator("[data-video-aspect]").count(),3);

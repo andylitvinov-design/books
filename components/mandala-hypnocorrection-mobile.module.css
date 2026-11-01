@@ -47,3 +47,140 @@
 .privacy{margin:9px 3px 1px;color:#637c73;font-size:12px;line-height:1.4}
 @media(max-width:360px){.panel{padding:0}.groupHeader{gap:9px;padding:8px}.groupHeader>img{width:66px;height:61px}.feature{grid-template-columns:36px minmax(0,1fr) 48px;gap:8px;padding:8px;min-height:88px}.featureIcon{width:36px;height:36px}.featureText strong{font-size:17px}.featureText span{font-size:13.5px}.switch{width:48px;height:29px}.switch>span{width:23px;height:23px}.switch[data-on=true]>span{transform:translateX(19px)}}
 @media(prefers-reduced-motion:reduce){.panel *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* 1 Nov owner-approved THIRD workspace: photo-led four rows, all controls visible.
+   This applies only to the Hypnocorrection child, not other Studio workspaces. */
+.create{display:flex;justify-content:center;align-items:center;gap:14px;width:100%;
+  min-height:65px;padding:10px 16px;margin:11px 0 0;border:0;border-radius:15px;
+  background:linear-gradient(105deg,#0ba78c,#078c74 60%,#1ab5a0);color:white;
+  box-shadow:0 4px 14px #086f5d2e;text-align:left}
+.create>span{display:flex;flex-direction:column;gap:3px}
+.create strong{font:800 20px/1.13 Arial,sans-serif}
+.create small{font:500 13px/1.2 Arial,sans-serif;color:#e5fff5}
+.configureLink{display:none}
+.featurePoster{display:block;width:100%;height:48px;border-radius:9px;object-fit:cover}
+.meditationStart,.meditationOptions button{cursor:pointer}
+.meditationStart small,.meditationOptions small{display:block}
+
+@media(max-width:759px){
+  .panel{display:flex;flex-direction:column;gap:0;max-width:100%;min-width:0;margin:0;padding:0 1px}
+  .heading{order:0;margin:0 0 8px;padding:0}
+  .heading h3{font-size:clamp(26px,7vw,34px);line-height:1.12}
+  .heading p{font-size:clamp(13px,3.6vw,16px);line-height:1.3}
+  .wave{order:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;
+    align-items:center;padding:9px 10px;margin-bottom:10px;border-radius:15px}
+  .waveTop{min-width:0;gap:8px}
+  .waveTop>svg{width:26px;height:26px}
+  .waveTop strong{font-size:clamp(13px,3.8vw,17px);line-height:1.13}
+  .waveTop p{font-size:clamp(10px,2.85vw,12px);line-height:1.21}
+  .wave>button{width:auto;min-width:100px;min-height:44px;margin:0;padding:5px 10px;
+    font-size:clamp(12px,3.2vw,14px);border-radius:12px}
+  .wave>.note{grid-column:1/-1;margin:0}
+  .group{order:2;display:grid;grid-template-columns:clamp(100px,28%,123px) minmax(0,1fr);
+    align-items:stretch;gap:6px;min-width:0;margin:0 0 9px;padding:0;border:0;
+    border-radius:0;background:transparent;box-shadow:none;overflow:visible}
+  .groupHeader{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+    justify-content:flex-end;width:100%;min-height:170px;max-width:100%;padding:9px;
+    border-radius:14px;overflow:hidden;background:#204b47;color:#fff;text-align:left;
+    text-shadow:0 2px 5px #081714b3}
+  .groupHeader:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:linear-gradient(0deg,#081c1ac9 0%,#15302d33 68%,transparent)}
+  .groupHeader>img{position:absolute;inset:0;width:100%;height:100%;border-radius:0;
+    object-fit:cover;filter:saturate(1.12)}
+  .groupTitle{position:relative;z-index:1;width:100%;gap:5px}
+  .groupTitle strong{font:700 clamp(16px,4.6vw,21px)/1.09 Georgia,serif;
+    overflow-wrap:anywhere;color:#fff}
+  .groupTitle small{font:500 clamp(10px,2.7vw,12px)/1.24 Arial,sans-serif;color:#fff}
+  .chevron,.expanded{position:absolute;z-index:2;right:6px;top:7px;color:#fff;
+    filter:drop-shadow(0 1px 3px #10271f)}
+  .groupContent:not([hidden]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    align-content:start;gap:6px;min-width:0;padding:0}
+  .feature{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:38px 1fr;
+    gap:2px;align-items:start;min-width:0;min-height:170px;margin:0;
+    padding:7px 6px;border:1px solid #e6ebe2;border-radius:13px;
+    background:#fffefb;box-shadow:0 2px 10px #24463816}
+  .feature[data-photo=true]{grid-template-rows:50px 1fr}
+  .featurePoster{grid-column:1;grid-row:1;width:100%;height:49px;object-fit:cover;
+    border-radius:9px}
+  .featureIcon{grid-column:1;grid-row:1;width:30px;height:30px;border-radius:10px;
+    color:#087b75;background:transparent}
+  .featureIcon svg{width:27px;height:27px}
+  .featureText{grid-column:1;grid-row:2;display:flex;flex-direction:column;
+    align-items:stretch;min-height:0;width:100%;height:100%;text-align:left}
+  .featureText strong{font:800 clamp(11.5px,3.2vw,14px)/1.11 Arial,sans-serif;
+    color:#0c2b48;overflow-wrap:anywhere;hyphens:auto}
+  .featureText>span:not(.configureLink){font-size:clamp(10px,2.65vw,12px);line-height:1.18;
+    margin:5px 0 6px;color:#687b8d;overflow-wrap:anywhere}
+  .featureText .configureLink{display:flex;align-items:center;justify-content:center;gap:4px;
+    min-width:0;min-height:31px;width:100%;margin:auto 0 0;padding:3px 1px;
+    border-radius:9px;background:#f4f5ef;color:#16294b;
+    font:700 clamp(10px,2.7vw,12px)/1 Arial,sans-serif}
+  .configureLink svg{flex:none;width:13px;height:13px}
+  .switch{grid-column:1;grid-row:1;z-index:2;justify-self:end;align-self:start;
+    width:39px;height:25px;padding:2px}
+  .switch>span{width:21px;height:21px}
+  .switch[data-on=true]>span{transform:translateX(14px)}
+  .featureArrow{grid-column:1;grid-row:1;z-index:2;justify-self:end;align-self:start;
+    width:29px;height:29px;background:#ffffffdc;border-color:#d9e7dd}
+  .featureArrow svg{width:16px;height:16px}
+  .groupContent>.note,.groupContent>.settings{order:10;grid-column:1/-1;margin:0}
+  .group[data-hypno-group=meditation] .groupContent:not([hidden]){display:block}
+  .meditation{display:grid;gap:6px;min-height:170px;padding:0;border:0;
+    border-radius:0;background:transparent;text-align:left}
+  .meditationStart{display:grid;grid-template-columns:32px minmax(0,1fr) 20px;
+    align-items:center;gap:6px;width:100%;min-height:84px;padding:8px;
+    border:1px solid #ece5e0;border-radius:13px;background:#fffefa;text-align:left}
+  .meditationStart>svg{color:#7852da}
+  .meditationStart span{min-width:0}
+  .meditationStart strong{display:block;color:#101f3c;
+    font:800 clamp(12px,3.4vw,15px)/1.13 Arial,sans-serif}
+  .meditationStart small{margin-top:5px;color:#64788a;
+    font:500 clamp(10px,2.65vw,12px)/1.17 Arial,sans-serif}
+  .meditationOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .meditationOptions button{display:flex;flex-direction:column;align-items:flex-start;
+    gap:4px;min-height:80px;min-width:0;padding:7px 5px;border:1px solid #e6ece5;
+    border-radius:12px;background:#fffefa;text-align:left;color:#0e2a47}
+  .meditationOptions svg{color:#7651d8}
+  .meditationOptions strong{font:750 clamp(10px,2.6vw,12px)/1.1 Arial,sans-serif}
+  .meditationOptions small{font:500 clamp(9px,2.5vw,11px)/1.19 Arial,sans-serif;
+    color:#687b8d;overflow-wrap:anywhere}
+  .create{order:3;margin-top:5px}
+  .preview{order:4;min-height:43px;margin:5px 0 0;padding:5px 7px;
+    border:0;background:transparent;box-shadow:none;font-size:13px}
+  .privacy{order:5;font-size:11px}
+}
+@media(max-width:374px){
+  .wave{grid-template-columns:minmax(0,1fr)}
+  .wave>button{width:100%;min-height:44px}
+  .group{grid-template-columns:1fr}
+  .groupHeader{min-height:96px;flex-direction:row;align-items:flex-end}
+  .groupTitle strong{font-size:21px;overflow-wrap:normal}
+  .groupContent:not([hidden]){grid-template-columns:repeat(3,minmax(0,1fr))}
+  .feature{min-height:154px;padding:8px}
+  .featureText strong{font-size:13px}
+  .featureText>span:not(.configureLink){font-size:11px}
+  .meditation{min-height:0}
+  .meditationStart{min-height:80px}
+  .meditationOptions button{min-height:77px}
+}
+/* Preserve a true 44 × 44 CSS-pixel touch target for the compact iPhone switches.
+   The visible pill remains 44 × 26 inside the transparent button hit area. */
+@media(max-width:759px){
+  .switch{position:relative;display:flex;align-items:center;justify-content:flex-start;
+    width:44px;height:44px;padding:0;background:transparent;border-radius:14px}
+  .switch::before{content:"";position:absolute;top:9px;left:0;width:44px;height:26px;
+    border-radius:18px;background:#bdc3cc}
+  .switch[data-on=true]{background:transparent}
+  .switch[data-on=true]::before{background:#018d79}
+  .switch>span{position:relative;z-index:1;flex:none;margin-left:3px;
+    width:20px;height:20px;transform:none}
+  .switch[data-on=true]>span{transform:translateX(18px)}
+}
+
+/* The one real Hypnocorrection title + Wave is portaled ahead of the shared
+   original hero player only in the third workspace; no duplicate controls. */
+.intro{display:grid;gap:8px;min-width:0;width:100%;margin:0 0 5px;padding:1px 0;
+  font-family:Arial,Helvetica,sans-serif;color:#122c48}
+.intro *{box-sizing:border-box}
+.intro button:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
+.intro .wave{margin:0}
