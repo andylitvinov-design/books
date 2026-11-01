@@ -66,6 +66,42 @@ test('trusted initial dispatch drains backlog through bounded serial batches',as
   assert.equal(continued[0].workflow_id,'hh-pr-direction-watcher.yml');
   assert.deepEqual(continued[0].inputs,{dry_run:'false',batch:'1'});
 });
+test('isolated PR read error does not strand healthy bootstrap backlog',async()=>{
+  const items=Array.from({length:10},(_,i)=>pr(i+1,'feat(video): render'));
+  const f=fixture(items);
+  const oldGet=f.github.rest.pulls.get;
+  f.github.rest.pulls.get=async args=>{
+    if(args.pull_number===2)throw Error('Unexpected end of JSON input');
+    return oldGet(args);
+  };
+  const continued=[];
+  f.github.rest.actions={createWorkflowDispatch:async args=>{
+    continued.push(args);return {data:{},headers:{'x-ratelimit-remaining':'1400'}};
+  }};
+  const result=await run({github:f.github,core:core(),
+    context:{...context,eventName:'workflow_dispatch',
+      payload:{inputs:{dry_run:'false',batch:'0'}}},
+    now:NOW,maxUpdates:4});
+  assert.equal(result.errors,1);
+  assert.ok(result.updated>=1);
+  assert.equal(result.nextBatch,1,'a single bad PR must not freeze healthy PRs');
+  assert.equal(continued.length,1);
+  assert.equal(continued[0].inputs.batch,'1');
+});
+test('all failed batch does not create an endless bootstrap dispatch',async()=>{
+  const f=fixture(Array.from({length:6},(_,i)=>pr(i+1)));
+  f.github.rest.pulls.get=async()=>{throw Error('upstream read unavailable');};
+  let dispatched=0;
+  f.github.rest.actions={createWorkflowDispatch:async()=>{dispatched++;}};
+  const result=await run({github:f.github,core:core(),
+    context:{...context,eventName:'workflow_dispatch',
+      payload:{inputs:{dry_run:'false',batch:'0'}}},
+    now:NOW,maxUpdates:4});
+  assert.equal(result.updated,0);
+  assert.equal(result.errors,4);
+  assert.equal(result.nextBatch,null);
+  assert.equal(dispatched,0);
+});
 test('bootstrap never chains from schedule, dry-run, or after its hard cap',async()=>{
   const items=Array.from({length:50},(_,i)=>pr(i+1));
   for(const scenario of [

@@ -251,3 +251,85 @@ test('unknown runner reserve blocks Repair under conservative job pressure',()=>
    runningJobs:23,queuedJobs:1};
  assert.equal(admission('repair',state),'JOBS_SATURATED');
 });
+const {wakeDirectionWatcher,DIRECTION_IDLE_MS}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+const callback={...context,eventName:'workflow_run',payload:{workflow_run:{
+ name:'HH PR source Repair Worker',status:'completed',conclusion:'success',
+ repository:{full_name:'andylitvinov-design/books'}
+}}};
+function wakeFixture(items=[],opts={}){
+ const calls={list:[],dispatch:[]};
+ const github={rest:{actions:{
+  listWorkflowRuns:async arg=>{
+   calls.list.push(arg);
+   if(opts.failHistory)throw Error('GitHub read denied');
+   if(arg.status==='in_progress'||arg.status==='queued'){
+    return {data:{total_count:opts.activeStatus===arg.status?1:0,workflow_runs:[]}};
+   }
+   return {data:{total_count:opts.total??items.length,workflow_runs:items}};
+  },
+  createWorkflowDispatch:async arg=>{
+   calls.dispatch.push(arg);
+   if(opts.failDispatch)throw Error('Denied 403');
+   return {status:204};
+  }
+ }}};
+ return {github,calls};
+}
+test('event completion wakes trusted Direction Watcher exactly once after 11-minute idle',async()=>{
+ const f=wakeFixture([{created_at:new Date(NOW-DIRECTION_IDLE_MS-1000).toISOString(),
+   status:'completed'}]);
+ const result=await wakeDirectionWatcher({github:f.github,core:core(),context:callback,now:NOW});
+ assert.equal(result.decision,'EVENT_WAKE_ACCEPTED');
+ assert.equal(result.dispatchAccepted,true);
+ assert.equal(f.calls.dispatch.length,1);
+ assert.deepEqual(f.calls.dispatch[0],{
+  owner:'andylitvinov-design',repo:'books',
+  workflow_id:'hh-pr-direction-watcher.yml',ref:'codex/bootstrap-books',
+  inputs:{dry_run:'false',batch:'0'}
+ });
+ assert.deepEqual(f.calls.list.map(x=>x.status||'recent'),
+  ['recent','in_progress','queued']);
+});
+test('event wake skips recent or already queued watcher and issues no dispatch',async()=>{
+ for(const [items,opts,reason] of [
+  [[{created_at:new Date(NOW-5*60000).toISOString(),status:'completed'}],{},'RECENT_RUN'],
+  [[{created_at:new Date(NOW-DIRECTION_IDLE_MS-100).toISOString(),status:'queued'}],{},'WATCHER_ALREADY_RUNNING'],
+  [[{created_at:new Date(NOW-DIRECTION_IDLE_MS-100).toISOString(),status:'completed'}],
+   {activeStatus:'queued'},'WATCHER_ALREADY_RUNNING']
+ ]){
+  const f=wakeFixture(items,opts);
+  const actual=await wakeDirectionWatcher({github:f.github,core:core(),context:callback,now:NOW});
+  assert.equal(actual.decision,reason);
+  assert.equal(f.calls.dispatch.length,0);
+ }
+});
+test('event wake fails closed on missing/inconsistent status or API rejection',async()=>{
+ for(const [items,opts,reason] of [
+  [[{created_at:'',status:'completed'}],{},'UNKNOWN_RUN_STATE'],
+  [[{created_at:new Date(NOW-720000).toISOString(),status:'completed'}],
+   {total:0},'INCOMPLETE_HISTORY'],
+  [[],{failHistory:true},'HISTORY_UNAVAILABLE'],
+  [[],{failDispatch:true},'DISPATCH_UNAVAILABLE']
+ ]){
+  const f=wakeFixture(items,opts);
+  const actual=await wakeDirectionWatcher({github:f.github,core:core(),context:callback,now:NOW});
+  assert.equal(actual.decision,reason);
+  assert.equal(actual.dispatchAccepted,false);
+ }
+});
+test('event wake never acts during dry-run, push or untrusted workflow_run',async()=>{
+ for(const [ctx,dryRun] of [
+  [callback,true],
+  [context,false],
+  [{...callback,ref:'refs/heads/codex/public-book-library'},false],
+  [{...callback,payload:{workflow_run:{name:'foreign action',
+   status:'completed',repository:{full_name:'andylitvinov-design/books'}}}},false]
+ ]){
+  const f=wakeFixture([]);
+  const result=await wakeDirectionWatcher({github:f.github,core:core(),context:ctx,
+    dryRun,now:NOW});
+  assert.equal(result.decision,'NOT_ELIGIBLE');
+  assert.equal(f.calls.list.length,0);
+  assert.equal(f.calls.dispatch.length,0);
+ }
+});

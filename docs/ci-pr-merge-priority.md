@@ -44,3 +44,33 @@ No rank or stage label constitutes evidence of green CI.
 Actions job summary emits `byLevel`, `byMergePriority`, `byStage`, the
 backlog of labels awaiting sync, and write/API counts. Workflow dispatch with
 `dry_run=true` previews the queue without metadata changes.
+
+
+## Event-driven backup during GitHub cron outage
+
+GitHub may fail to deliver scheduled events even when the cron workflow is
+registered and active (tracked in issue #2965). The existing trusted
+`HH PR Control Tower queue dispatcher` therefore checks Direction Watcher
+history on actual completed Watchdog/CI/Repair events. It wakes the same
+single-writer Direction Watcher via `workflow_dispatch` only when:
+- the most recent run is over 11 minutes old (or no history exists);
+- no watcher run is queued, in progress or pending;
+- a fresh per-status GitHub Actions API read confirms no hidden active run;
+- the event is trusted and is not a dry-run.
+
+This is a best-effort **event-driven** fallback, not a guarantee of 10-minute
+wall-clock cadence when the repository is idle. The existing hourly Chat
+observer provides an independent slow fallback. Real `event=schedule` success
+is still required to resolve issue #2965; a successful event wake does not
+count as cron recovery. No external provider, PAT, source-branch push,
+new PR CI or branch-protection changes are required.
+
+
+## Partial API failure recovery
+
+The bootstrap label backfill is a bounded chain (up to 12 dispatch runs, at most
+18 metadata updates per run). A single malformed or transient GitHub PR
+response no longer blocks the **entire** queue while other PR updates succeed.
+Every error remains counted and visible in the job summary. The chain stops
+if a batch made zero confirmed updates, on API rate exhaustion, or at the
+hard dispatch limit; stale per-PR writes are still guarded by fresh PR reads.

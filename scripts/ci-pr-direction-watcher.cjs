@@ -248,9 +248,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   // from normal GitHub Actions recursion suppression. Concurrency serializes
   // the handoff; a hard batch limit, progress check, API reserve and no-op
   // on scheduled/push runs prevent an unbounded Actions event storm.
+  // One isolated REST/JSON error must not stop independent PRs progressing.
+  // Never chain if NO successful writes occurred, the API budget is paused,
+  // or the bounded 12-run bootstrap lease is exhausted.
   if(context.eventName==='workflow_dispatch' && !dryRun &&
-     summary.pending>0 && summary.updated>0 &&
-     summary.errors===0 && !summary.paused){
+     summary.pending>0 && summary.updated>0 && !summary.paused){
     const raw=String(context.payload?.inputs?.batch ?? '0');
     const batch=/^(?:0|[1-9][0-9]?)$/.test(raw)?Number(raw):NaN;
     if(!Number.isSafeInteger(batch)||batch>=MAX_BOOTSTRAP_BATCH){
