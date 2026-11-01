@@ -162,3 +162,16 @@ test("verified script is submitted through the only existing renderer and soundt
   assert.match(route,/freeFirstVideoProviders\(process\.env\)/);
   assert.doesNotMatch(route,/xpDebit|checkout|chargeCard/);
 });
+
+test("800-character creative brief retains late visual motifs, temporal ordering and exclusions",()=>{
+  const story="Долгий спокойный рассказ о целях. ".repeat(14)+"Сначала лес, затем горы, без моря.";
+  assert.ok(story.length>160&&story.length<=800);
+  const signals=visualSignalsFromGoal(story);
+  assert.deepEqual(signals.slice(0,2),["forest","mountains"]);
+  assert.equal(signals.includes("sea"),false);
+  const scenario=compileExecutableVideoScenario({...base,goal:story});
+  assert.equal(scenario.shots.length,4);
+  assert.throws(()=>compileExecutableVideoScenario({...base,goal:"д".repeat(801)}));
+  assert.deepEqual(visualSignalsFromGoal("Без моря хочу горы, затем солнце"),["mountains","sun"]);
+  assert.deepEqual(visualSignalsFromGoal("Primero el bosque, después las montañas"),["forest","mountains"]);
+});

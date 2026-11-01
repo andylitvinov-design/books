@@ -72,7 +72,7 @@ const copy={
   moodChoices:[["Suave","slow"],["Dinámico","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Horizontal 16:9","landscape"],["Cuadrado 1:1","square"]],
   musicChoices:[["Melodía suave","love"],["Meditación","meditation"],["Armonía","harmony"],["Sin música","none"]],phraseChoices:[["Sí, añadir","yes"],["No","no"]]},
 } as const;
-const initial=(goal:string):Draft=>({goal:goal.slice(0,160),mood:null,aspect:null,duration:null,music:null,phrases:null});
+const initial=(goal:string):Draft=>({goal:goal.replace(/\s+/gu," ").slice(0,800),mood:null,aspect:null,duration:null,music:null,phrases:null});
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
  renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
@@ -107,7 +107,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
    if(goal.trim()===draft.goal.trim()||!goal.trim())return;
-   setDraft(previous=>({...previous,goal:goal.slice(0,160)}));
+   setDraft(previous=>({...previous,goal:goal.replace(/\s+/gu," ").slice(0,800)}));
    setSymbolicAllowed(false);setAlternative(0);
    // A new goal entered outside the chat cannot inherit external-AI consent.
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
@@ -120,7 +120,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(!frame)return;
    let raf=0;
    const update=()=>{
-     const focus=frame.contains(document.activeElement)&&document.activeElement?.tagName==="INPUT";
+     const focus=frame.contains(document.activeElement)&&["INPUT","TEXTAREA"].includes(document.activeElement?.tagName||"");
      const mobile=window.innerWidth<=700;
      frame.dataset.composeActive=mobile&&focus?"true":"false";
      const visual=window.visualViewport;
@@ -236,7 +236,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    step==="music"?t.musicChoices:step==="phrases"?t.phraseChoices:[];
  const answer=(raw:string)=>{
    if(disabled)return;
-   const value=raw.trim().slice(0,160);
+   const value=raw.trim().replace(/\s+/gu," ").slice(0,800);
    if(!value)return;
    setInput("");addLine("user",value);
    cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
@@ -444,7 +444,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    </div>:null}
    <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <input value={input} onChange={(event:ChangeEvent<HTMLInputElement>)=>setInput(event.currentTarget.value)} maxLength={160} disabled={disabled}
+     <textarea rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
+       onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
+       maxLength={800} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>
      <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
    </form>

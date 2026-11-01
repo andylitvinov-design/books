@@ -82,3 +82,12 @@ test('inflected food and person requests require honest symbolic consent',()=>{
   }
   assert.equal(parseVideoChatIntent('Любовь и спокойствие').specificVisual,false);
 });
+
+test("chat intent reads 800-character visual request rather than truncating at 160",()=>{
+  const story="Длинная история. ".repeat(25)+"В конце горы, 30 секунд без музыки.";
+  assert.ok(story.length>160&&story.length<=800);
+  const interpreted=parseVideoChatIntent(story);
+  assert.equal(interpreted.text.length,story.length);
+  assert.equal(interpreted.duration,30);
+  assert.equal(interpreted.music,"none");
+});

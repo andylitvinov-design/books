@@ -50,3 +50,13 @@ test('chat question HTTP route enforces explicit user consent and shared free qu
   assert.match(route,/externalVideoGenerated:false/);
   assert.doesNotMatch(route,/console\.(?:log|warn|error)|wallet|creditDebit|paidRender/i);
 });
+
+test("consented external chat question can accept a longer fully described goal",async()=>{
+  const {parseVideoChatAiInput}=await import("../lib/mandala/video-chat-ai.mjs");
+  const goal="A gentle long story. ".repeat(25);
+  assert.ok(goal.length>160&&goal.length<800);
+  const input={consent:true,locale:"en",goal,step:"review",draft:{
+    mood:"slow",aspect:"portrait",duration:30,music:"none",phrases:false}};
+  assert.equal(parseVideoChatAiInput(input)?.goal,goal.trim());
+  assert.equal(parseVideoChatAiInput({...input,goal:"x".repeat(801)}),null);
+});

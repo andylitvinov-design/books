@@ -52,10 +52,10 @@
  background:#f4fcf6;color:#246853;cursor:pointer;font:750 13px/1.25 system-ui,sans-serif}
 .composer{display:flex;gap:7px;align-items:center;flex:none;min-height:69px;
  padding:9px 12px;border-top:1px solid var(--line);background:#fffefa}
-.composer input{flex:1;width:100%;min-width:0;min-height:45px;padding:0 6px;
+.composer textarea{flex:1;width:100%;min-width:0;min-height:45px;max-height:112px;resize:none;overflow-y:auto;padding:8px 6px;
  border:0;outline:0;border-radius:8px;background:transparent;color:#253c33;font-size:16px!important;
  line-height:1.35;font-family:inherit}
-.composer input::placeholder{color:#8a928d}
+.composer textarea::placeholder{color:#8a928d}
 .composer:focus-within{box-shadow:inset 0 2px 0 #16a8883d}
 .composerTool{border:1px solid #e3e7e0;background:#fff;color:#45816b}
 .send{border:0;background:#087d66;color:#fff}
@@ -64,7 +64,7 @@
 .foot span{flex:1;font-size:10px;line-height:1.4;color:#8a9189}
 .foot button{display:flex;align-items:center;gap:4px;min-height:32px;padding:4px 7px;
  background:transparent;border:0;color:#367f68;font-size:11px;font-weight:700;cursor:pointer}
-.window :is(button,input):focus-visible{outline:3px solid #13a58b;outline-offset:2px}
+.window :is(button,input,textarea):focus-visible{outline:3px solid #13a58b;outline-offset:2px}
 .window button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:700px){
  .window{height:min(570px,77dvh);min-height:420px;border-radius:17px;margin:9px 0 15px}
