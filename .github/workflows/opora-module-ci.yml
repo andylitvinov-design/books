@@ -121,9 +121,13 @@ jobs:
           /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
         run: node scripts/verify-opora-as56-browser.mjs
+      - name: Verify OPORA ready screen fits 320–430px iPhones and keeps Start visible with open picker
+        run: node scripts/verify-opora-course-ready-viewport.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: opora-as56-mobile-${{ matrix.browser }}-${{ github.run_id }}
-          path: artifacts/opora-as56-mobile/${{ matrix.browser }}/
+          path: |
+            artifacts/opora-as56-mobile/${{ matrix.browser }}/
+            artifacts/opora-ready-mobile/${{ matrix.browser }}/
           retention-days: 7
