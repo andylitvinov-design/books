@@ -290,6 +290,9 @@ jobs:
             if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
               git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
             fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
+            fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and

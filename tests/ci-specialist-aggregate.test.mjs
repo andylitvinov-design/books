@@ -1,3 +1,4 @@
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -1026,4 +1027,29 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
     ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
   ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
     'Own-module change must retain specialist ' + owner);
+});
+
+
+test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
+  const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
+  const compare = files => ({
+    status:'ahead', ahead_by:2, base_commit:{sha:base}, merge_base_commit:{sha:base},
+    head_commit:{sha:live}, files:files.map(filename=>({filename,status:'modified'})),
+  });
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['app/api/voice/route.ts']),true);
+  const forbidden = [
+    'docs/operations/CI_RELEASE_POLICY.md','docs/security/overview.md','docs/billing/overview.md',
+    'docs/guides/secret-rotation.md','.github/workflows/core.yml','components/mandala.tsx',
+    'package-lock.json','docs/../api.md',
+  ];
+  for (const filename of forbidden) {
+    assert.equal(safeDocumentationAdvance(compare([filename]),base,live,['app/api/voice/route.ts']),false,filename);
+  }
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['docs/guides/intro.md']),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),status:'diverged'},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),merge_base_commit:{sha:other}},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),head_commit:{sha:other}},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
 });
