@@ -131,7 +131,7 @@ const runEngine = async ([engine, browserType]) => {
             await deepPage.locator("[data-mandala-free-video]").waitFor({
               state:"visible",timeout:30000,
             });
-            await expect(deepPage.locator('[data-video-quick-control="audio"]'))
+            await expect(deepPage.locator('[data-video-quick-control="video"]'))
               .toHaveAttribute("aria-pressed","true",{timeout:20000});
             const audioPane=deepPage.locator("[data-video-audio-section]");
             await expect(audioPane).toBeVisible();
@@ -1750,7 +1750,7 @@ const runEngine = async ([engine, browserType]) => {
             .getAttribute("data-video-quick-theme");
           const priorFilmSources=await page.locator('[data-free-film-source]').evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute('data-free-film-source')));
-          await page.locator('[data-video-quick-control="characters"]').click();
+          await page.locator('[data-video-quick-control="pro"]').click();
           const characters=page.locator('[data-video-stories-characters]');
           await characters.waitFor({state:"visible",timeout:12000});
           assert.equal(await characters.locator('[data-story-addon-tab]').count(),5,
@@ -1827,7 +1827,7 @@ const runEngine = async ([engine, browserType]) => {
         const workspaceNav=page.locator("[data-video-quick-controls]");
         await workspaceNav.scrollIntoViewIfNeeded();
         const originalHash=await page.evaluate(()=>window.location.hash);
-        for (const id of ["video","audio","characters","psychocorrection","courses","hypnotherapy"]){
+        for (const id of ["video","phrases","effects","practices","pro","editor"]){
           const button=workspaceNav.locator('[data-video-quick-control="'+id+'"]');
           assert.equal(await button.count(),1,engine+" one tab for "+id);
           await button.click();
@@ -1850,17 +1850,18 @@ const runEngine = async ([engine, browserType]) => {
             engine+" "+locale+" "+width+" workspace horizontal overflow "+id);
         }
         // Advanced audio/phrase/photo editors really move into their selected workspaces.
-        await workspaceNav.locator('[data-video-quick-control="audio"]').click();
-        await expect(page.locator('[data-video-quick-builder] [data-video-audio-section]')).toBeVisible();
-        await workspaceNav.locator('[data-video-quick-control="psychocorrection"]').click();
-        await expect(page.locator('[data-video-quick-builder] [data-video-hypnosis-section]')).toBeVisible();
-        await workspaceNav.locator('[data-video-quick-control="characters"]').click();
-        await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="video"]').click();
+        await page.locator('[data-video-audio-details] summary').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-audio-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="phrases"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-hypnosis-section]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="pro"]').click();
+        await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
+        await workspaceNav.locator('[data-video-quick-control="editor"]').click();
         await expect(page.locator('[data-video-quick-builder] #video-settings')).toBeVisible();
-        await workspaceNav.locator('[data-video-quick-control="courses"]').click();
-        assert.equal(await page.locator('[data-workspace-section="courses"] a').count(),2);
-        await workspaceNav.locator('[data-video-quick-control="hypnotherapy"]').click();
+        await workspaceNav.locator('[data-video-quick-control="practices"]').click();
+        assert.ok(await page.locator('[data-workspace-section="practices"] a').count()>=2);
+        await workspaceNav.locator('[data-video-quick-control="practices"]').click();
         await expect(page.locator('[data-video-quick-builder] #guided-video-series')).toBeVisible();
 
         const overflow = await page.evaluate(() => {
@@ -1946,11 +1947,13 @@ const runEngine = async ([engine, browserType]) => {
             "duration changes must retain the four selected MP4 sources");
           // Verify an actual rendered montage with an attached soundtrack and
           // affirmations, rather than mistaking catalog media for an export.
-          await workspaceNav.locator('[data-video-quick-control="audio"]').click();
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          if(!(await page.locator('[data-video-audio-details]').getAttribute('open')))
+            await page.locator('[data-video-audio-details] summary').click();
           await page.locator('[data-video-audio-length="10"]').click();
           await page.locator('[data-video-music="warm-morning"]').click();
           await page.locator('[data-video-audio-attach]').click();
-          await workspaceNav.locator('[data-video-quick-control="psychocorrection"]').click();
+          await workspaceNav.locator('[data-video-quick-control="phrases"]').click();
           await page.locator('[data-hypno-overview-enable]').check();
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
           assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
