@@ -113,6 +113,44 @@ test('deduplicates a worker lane within one cycle and refuses a stacked parent',
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
  assert.equal(y.dispatchAccepted,0);
 });
+test('each actionable lane is considered even behind a large P1 conflict backlog',()=>{
+ const conflicts=Array.from({length:35},(_,i)=>pr(300+i,'conflict',{
+  title:'fix(video): production conflict',mergeable:false,mergeable_state:'dirty'
+ }));
+ const source=pr(11,'repair',{title:'feat(voice): source lint repair'});
+ const picked=planCandidates([...conflicts,source],NOW);
+ assert.equal(picked[0].pr_number,11,'source repair must be inspected first');
+ assert.ok(picked.some(x=>x.pr_number===300),'P1 conflict stays in the audit');
+ assert.equal(new Set(picked.map(x=>x.pr_number)).size,picked.length);
+ assert.ok(picked.length<=16);
+ const covered=new Set();
+ for(let tick=0;tick<5;tick++)
+  planCandidates([...conflicts,source],NOW+tick*600000)
+    .forEach(x=>covered.add(x.pr_number));
+ assert.ok(covered.size>20,'non-anchor PRs continue rotating');
+});
+test('available source Repair wins the shared worker before P1 manual conflicts',async()=>{
+ const conflicts=Array.from({length:25},(_,i)=>pr(300+i,'conflict',{
+  title:'fix(video): urgent conflict',mergeable:false,mergeable_state:'dirty'
+ }));
+ const source=pr(11,'repair',{title:'feat(voice): verified fix'});
+ const f=fixture([...conflicts,source],{comments:{11:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'11');
+ assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
+ assert.equal(r.blocked.LANE_ALREADY_SELECTED>0,true);
+});
+test('unverified source does not suppress a verified conflict handoff',async()=>{
+ const conflict=pr(300,'conflict',{title:'fix(video): urgent conflict',
+  mergeable:false,mergeable_state:'dirty'});
+ const source=pr(11,'repair',{title:'feat(voice): unverified source'});
+ const f=fixture([conflict,source]);
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.blocked.SOURCE_PROOF_MISSING,1);
+ assert.equal(r.dispatchAccepted,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'300');
+});
 test('real conflict requires a fresh dirty merge state',async()=>{
  const plain=pr(9,'conflict');const f=fixture([plain],{});
  let r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});

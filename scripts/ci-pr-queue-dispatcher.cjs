@@ -21,15 +21,27 @@ function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
  if(!ranked.length)return [];
- // Three high-impact entries plus rotating fairness candidates: low priority
- // cannot monopolize the queue, nor starve forever behind a long P1 backlog.
- const fast=ranked.slice(0,Math.min(3,ranked.length));
- const chosen=new Set(fast.map(x=>x.number));
- const rest=ranked.filter(x=>!chosen.has(x.number)).sort((a,b)=>a.number-b.number);
- const rotationSize=Math.min(MAX_INSPECT-fast.length,rest.length);
+ // Preserve the direction priority INSIDE each work lane, but try actual
+ // source repair before conflict-only handoff. Both share one Repair Worker;
+ // otherwise a P1 manual conflict can indefinitely starve a P2 source fix.
+ // CI has a separate worker and never consumes the Repair claim.
+ const chosen=new Set(),anchors=[];
+ for(const lane of ['repair','ci','conflict']){
+  const candidate=ranked.find(pr=>laneOf(pr)===lane);
+  if(candidate&&!chosen.has(candidate.number)){
+   anchors.push(candidate);chosen.add(candidate.number);
+  }
+ }
+ // Keep the three highest-priority PRs visible and independently rotate
+ // the remaining audit slots. Duplicates never waste inspection capacity.
+ const fast=ranked.filter(pr=>!chosen.has(pr.number)).slice(0,3);
+ for(const pr of fast)chosen.add(pr.number);
+ const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
+ const remaining=Math.max(0,MAX_INSPECT-anchors.length-fast.length);
+ const rotationSize=Math.min(remaining,rest.length);
  const offset=rest.length?(Math.floor(now/600000)*Math.max(1,rotationSize))%rest.length:0;
  const rotating=Array.from({length:rotationSize},(_,i)=>rest[(offset+i)%rest.length]);
- return [...fast,...rotating].map(pr=>taskFor(pr,priorityFor(pr,now)));
+ return [...anchors,...fast,...rotating].map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
