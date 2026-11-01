@@ -630,3 +630,57 @@ test('stale historical Core runs do not enter one-shot CI worker queue',async()=
   assert.equal(r.missingCore,1);
   assert.equal(r.ciBootstrapQueued,0);
 });
+
+
+test('watchdog queues one missing-Core PR and immediately dispatches bounded CI worker',async()=>{
+  const base=pr(2498);
+  const live={...base,state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
+  let labels=0,dispatches=0,coreQueries=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[base]}),get:async()=>({data:live})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    issues:{addLabels:async()=>{labels++;return {data:[]};}}
+  },request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml'){
+      coreQueries++;return {data:{total_count:0,workflow_runs:[]}};
+    }
+    if(args?.workflow_id==='hh-pr-ci-worker.yml'&&route.includes('dispatches')){
+      assert.equal(args.inputs.dry_run,'false');
+      dispatches++;return {status:204,data:{}};
+    }
+    if(args?.workflow_id==='hh-pr-ci-worker.yml')return {data:{workflow_runs:[]}};
+    throw Error('Unexpected API route '+route);
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(coreQueries,1);
+  assert.equal(labels,1);
+  assert.equal(dispatches,1);
+  assert.equal(result.missingCore,1);
+  assert.equal(result.ciBootstrapQueued,1);
+  assert.equal(result.ciWorkerDispatched,1);
+  assert.equal(result.mergeCoordinatorDispatched,0);
+});
+
+test('watchdog never redispatches a CI worker for already-queued PR',async()=>{
+  const base=pr(2499);
+  const live={...base,state:'open',mergeable:true,mergeable_state:'clean',
+    labels:[{name:'hh:ci-needed'}]};
+  let labels=0,dispatches=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[base]}),get:async()=>({data:live})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    issues:{addLabels:async()=>{labels++;}}
+  },request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:0,workflow_runs:[]}};
+    if(route.includes('dispatches'))dispatches++;
+    return {data:{workflow_runs:[]}};
+  }};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.missingCore,1);
+  assert.equal(result.ciBootstrapQueued,0);
+  assert.equal(result.ciWorkerDispatched,0);
+  assert.equal(labels,0);
+  assert.equal(dispatches,0);
+});

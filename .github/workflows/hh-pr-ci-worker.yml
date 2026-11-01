@@ -65,6 +65,9 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await result.json().catch(()=>({}));
+              const remaining=Number(result.headers.get('x-ratelimit-remaining'));
+              if(method==='GET' && Number.isFinite(remaining) && remaining<100)
+                throw Error('Dedicated owner token API reserve exhausted ('+remaining+')');
               if(!result.ok){
                 const error=new Error('Dedicated owner token HTTP '+result.status+': '+
                   String(data.message || 'request declined').slice(0,160));
@@ -80,8 +83,16 @@ jobs:
                    !Number.isSafeInteger(number) || number<1 ||
                    !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch) ||
                    branch.includes('..') || branch.includes('//') ||
-                   branch.endsWith('/'))throw Error('Unsafe legacy PR source ref');
+                   branch.includes('@{') || branch.endsWith('/') ||
+                   ['codex/bootstrap-books','codex/public-book-library'].includes(branch))
+                  throw Error('Unsafe legacy PR source ref');
                 const prefix='/repos/'+owner+'/'+repo;
+                const safeBranch=branch.split('/').map(encodeURIComponent).join('/');
+                // Verify owner token reserve and exact ref before creating
+                // any commit object. Non-force ref update is the final CAS.
+                const original=await callOwner('GET',prefix+'/git/ref/heads/'+safeBranch);
+                if(original?.ref!=='refs/heads/'+branch || original?.object?.sha!==sha)
+                  throw Error('Source branch changed before CI bootstrap');
                 const parent=await callOwner('GET',prefix+'/git/commits/'+sha);
                 if(!/^[a-f0-9]{40}$/i.test(parent?.tree?.sha || ''))
                   throw Error('No verified parent commit tree');
@@ -93,7 +104,6 @@ jobs:
                   throw Error('Source-preserving CI commit not accepted');
                 // No force: a concurrently changed branch rejects a stale
                 // update. This produces real pull_request.synchronize.
-                const safeBranch=branch.split('/').map(encodeURIComponent).join('/');
                 await callOwner('PATCH',prefix+'/git/refs/heads/'+safeBranch,{
                   sha:commit.sha,force:false
                 });

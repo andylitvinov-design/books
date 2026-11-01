@@ -9,6 +9,9 @@ on:
       - '.github/workflows/hh-pr-ci-worker.yml'
       - 'scripts/ci-pr-ci-worker.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
+      - '.github/workflows/hh-pr-ci-worker.yml'
+      - 'scripts/ci-pr-ci-worker.cjs'
+      - 'tests/ci-pr-ci-worker.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,5 +36,7 @@ jobs:
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-ci-worker.test.cjs
+          node --check scripts/ci-pr-ci-worker.cjs
+          node --check tests/ci-pr-ci-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs
+        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-ci-worker.test.cjs
