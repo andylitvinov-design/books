@@ -58,7 +58,7 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
-test('core Draft skips heavy checkout but cannot pass release-ready, and Ready restores full checks', () => {
+test('core Draft cannot pass hh-specialist or legacy release-ready, and Ready restores full checks', () => {
   const core = read('hh-pr-core-release.yml');
   assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
   assert.ok(core.includes("  merge_group:"));
@@ -68,8 +68,11 @@ test('core Draft skips heavy checkout but cannot pass release-ready, and Ready r
   assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
   assert.ok(core.includes("run: npm run build"));
-  const gate = core.split('  release-ready:')[1];
-  assert.ok(gate);
+  const gate = core.split('  hh-specialist:')[1]?.split('  release-ready:')[0];
+  assert.ok(gate, 'the real risk-routed specialist verifier must be a separate job');
+  const legacy = core.split('  release-ready:')[1]?.split('  hh-specialists-verified:')[0];
+  assert.ok(legacy?.includes('needs: [hh-specialist]'),
+    'legacy release-ready must stay fail-closed until GitHub admin migration');
   assert.ok(gate.includes("    if: always()"));
   assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
   assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
