@@ -80,6 +80,7 @@ jobs:
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/fast-static-ui-text.mjs|\
                   lib/ci/fast-ui-parser/package.json|\
@@ -198,6 +199,42 @@ jobs:
         # adds no coverage for workflow/router/test changes.
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
+  # First step of the guarded release-ready migration. This optional status
+  # checks Core prerequisites only; it never replaces specialist/security gates.
+  hh-core-verified:
+    name: hh-core-verified
+    needs: [scope, code]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Fail closed on missing, cancelled or failing required core jobs
+        shell: bash
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CODE_RESULT: ${{ needs.code.result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: core checks deferred; hh-core-verified must remain red until Ready is fully validated.' >&2
+            exit 1
+          fi
+          [[ "$SCOPE_RESULT" == success ]] || exit 1
+          if [[ "$DOCS_ONLY" == true ]]; then
+            [[ "$CODE_RESULT" == skipped ]] || exit 1
+          elif [[ "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
+            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || exit 1
+            echo "Trusted quick route $ROUTE: no Next.js build needed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            [[ "$CODE_RESULT" == success ]] || exit 1
+          fi
+          echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
   release-ready:
     name: release-ready
     needs: [scope, code]
@@ -289,6 +326,9 @@ jobs:
             git show "$HH_TRUSTED_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
             if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
               git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
+            fi
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/production-base-impact.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/production-base-impact.mjs"
             fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
