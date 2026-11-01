@@ -32,7 +32,7 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("data-auto-video-option={id}"));
  assert.ok(director.includes("aria-pressed={chosen.id===id}"));
  assert.ok(director.includes("proposalContext?.goal===goal"));
- assert.ok(studio.includes("setWish(next.slice(0,160))"),"accept trailing spaces while editing");
+ assert.ok(studio.includes("setWish(next.slice(0,800))"),"retain full 800-character context and trailing spaces while editing");
  assert.ok(!studio.includes("setWish(graphemeTrim(next))"),"do not trim the final word boundary");
  assert.ok(studio.includes("aspect={aspect}"),"retain user-selected aspect");
 });
@@ -105,9 +105,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Видео","Музыка","Герои","Терапия","Коррекция","Курсы"],
-  en:["Video","Music","Heroes","Therapy","Correction","Courses"],
-  es:["Vídeo","Música","Héroes","Terapia","Corrección","Cursos"],
+  ru:["Видео","Фразы","Эффекты","Практики","PRO","Монтаж"],
+  en:["Video","Phrases","Effects","Practice","PRO","Edit"],
+  es:["Vídeo","Frases","Efectos","Prácticas","PRO","Montaje"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){

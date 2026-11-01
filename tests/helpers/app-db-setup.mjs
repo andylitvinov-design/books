@@ -57,6 +57,12 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',import.meta.url),'utf8'))
 
+ // Apply actual released private Materials table and public Library feed SQL
+ // in the empty loopback CI fixture. Preserve backend-only grants and RLS;
+ // never construct a mock table or modify production schema.
+ await db.query(await readFile(new URL('../../sql/practitioner-material-library-20261015.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261018014000_hh_public_materials_library_feed.sql',import.meta.url),'utf8'))
+
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}
  }finally{await db.end()}}
