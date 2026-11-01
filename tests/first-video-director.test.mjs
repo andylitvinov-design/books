@@ -90,7 +90,7 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(route,/generateFreeFirstVideoPrompt/);
   const providers=readFileSync(new URL("../lib/mandala/first-video-free-providers.mjs",import.meta.url),"utf8");
   assert.match(providers,/FIRST_VIDEO_OPENROUTER_MODEL="openrouter\/free"/);
-  assert.match(providers,/FIRST_VIDEO_GEMINI_MODEL="gemini-3.1-flash-lite"/);
+  assert.match(providers,/FIRST_VIDEO_GEMINI_MODEL="gemini-3.5-flash-lite"/);
   assert.match(providers,/HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED/);
   assert.match(providers,/HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED/);
   assert.match(route,/consumeRate\(config/);
@@ -153,7 +153,7 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
   });
   assert.equal(one.provider,"gemini_free");
   assert.equal(calls.length,1);
-  assert.match(calls[0].url,/gemini-3\.1-flash-lite:generateContent/);
+  assert.match(calls[0].url,/gemini-3\.5-flash-lite:generateContent/);
   assert.ok(!JSON.stringify(calls[0].body).includes("openrouter/free"));
   calls=[];
   const two=await generateFreeFirstVideoPrompt(sample,env,async(url,options)=>{
@@ -181,7 +181,7 @@ test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models 
 });
 
 
-test("unavailable Gemini 3.1 Lite model falls back ONLY to current free-tier Gemini 3.5 Lite; failures stay private",async()=>{
+test("unavailable Gemini 3.5 Lite model falls back ONLY to confirmed free-tier Gemini 3.1 Lite; failures stay private",async()=>{
   const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
     await import("../lib/mandala/first-video-free-providers.mjs");
   const env={
@@ -202,14 +202,14 @@ test("unavailable Gemini 3.1 Lite model falls back ONLY to current free-tier Gem
   assert.equal(result.provider,"gemini_free");
   assert.equal(result.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
   assert.equal(called.length,2,"one 404 model fallback; no OpenRouter call");
-  assert.match(called[1].url,/gemini-3\.5-flash-lite:generateContent/);
+  assert.match(called[1].url,/gemini-3\.1-flash-lite:generateContent/);
   assert.ok(!JSON.stringify(called).includes("gemini-4-argon"));
   const unavailable=await generateFreeFirstVideoPrompt(input,env,async()=>({
     status:403,ok:false,text:async()=>JSON.stringify({error:{message:"never log an API key or private wish"}}),
   }));
   assert.equal(unavailable.error,"VIDEO_PROMPT_PROVIDER_UNAVAILABLE");
   assert.deepEqual(unavailable.diagnostics,[
-    {provider:"gemini_free",model:"gemini-3.1-flash-lite",reason:"http_403"},
+    {provider:"gemini_free",model:"gemini-3.5-flash-lite",reason:"http_403"},
     {provider:"openrouter_free",model:"openrouter/free",reason:"http_403"},
   ]);
   assert.ok(!JSON.stringify(unavailable).includes(input.wish));
@@ -255,8 +255,8 @@ test("fast free-text failover is budgeted, skips same-project quota retries, kee
     FIRST_VIDEO_TOTAL_BUDGET_MS,FIRST_VIDEO_PRIMARY_TIMEOUT_MS,
     FIRST_VIDEO_LEGACY_TIMEOUT_MS,FIRST_VIDEO_ROUTER_TIMEOUT_MS
   }=await import("../lib/mandala/first-video-free-providers.mjs");
-  assert.equal(FIRST_VIDEO_GEMINI_MODEL,"gemini-3.1-flash-lite");
-  assert.equal(FIRST_VIDEO_GEMINI_ALT_MODEL,"gemini-3.5-flash-lite");
+  assert.equal(FIRST_VIDEO_GEMINI_MODEL,"gemini-3.5-flash-lite");
+  assert.equal(FIRST_VIDEO_GEMINI_ALT_MODEL,"gemini-3.1-flash-lite");
   assert.ok(FIRST_VIDEO_TOTAL_BUDGET_MS<=12000);
   assert.ok(FIRST_VIDEO_PRIMARY_TIMEOUT_MS+FIRST_VIDEO_LEGACY_TIMEOUT_MS+
     FIRST_VIDEO_ROUTER_TIMEOUT_MS<=FIRST_VIDEO_TOTAL_BUDGET_MS);
@@ -291,10 +291,10 @@ test("fast free-text failover is budgeted, skips same-project quota retries, kee
   });
   assert.equal(legacy.provider,"gemini_free");
   assert.equal(legacy.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
-  assert.equal(legacyCalls.length,2,"model-incompatible 400 tries exactly one current free-tier 3.5 route");
+  assert.equal(legacyCalls.length,2,"model-incompatible 400 tries exactly one confirmed free-tier 3.1 route");
 });
 
-test("transient primary model 503 uses current free Gemini 3.5 Lite before OpenRouter",async()=>{
+test("transient primary model 503 uses confirmed free Gemini 3.1 Lite before OpenRouter",async()=>{
   const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
     await import("../lib/mandala/first-video-free-providers.mjs");
   const env={
@@ -315,7 +315,7 @@ test("transient primary model 503 uses current free Gemini 3.5 Lite before OpenR
   assert.equal(r.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
   assert.equal(r.provider,"gemini_free");
   assert.equal(calls.length,2);
-  assert.match(calls[1],/gemini-3\.5-flash-lite:generateContent/);
+  assert.match(calls[1],/gemini-3\.1-flash-lite:generateContent/);
 });
 
 test("real iPhone Safari 26 chooses WebM first; other browsers keep MP4 first",()=>{
@@ -410,4 +410,77 @@ test("quick 16:9, 9:16 and 1:1 buttons adjust the canonical director without sep
   assert.match(ui,/data-first-video-aspect/,"advanced format selector still shares current preferences");
   assert.match(css,/\.quickFormatButtons button\[aria-pressed="true"\]/);
   assert.ok(ui.indexOf("data-first-video-quick-aspect-group")<ui.indexOf("data-first-video-filters"));
+});
+
+test("LIVE regression: primary timeout must try distinct Gemini free model before unstable OpenRouter",async()=>{
+  const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_MODEL,FIRST_VIDEO_GEMINI_ALT_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-google-credential",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-openrouter-credential"};
+  const sample={locale:"ru",wish:"Горы и облака над долиной",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  assert.equal(FIRST_VIDEO_GEMINI_MODEL,"gemini-3.5-flash-lite");
+  assert.equal(FIRST_VIDEO_GEMINI_ALT_MODEL,"gemini-3.1-flash-lite");
+  const attempted=[];
+  const result=await generateFreeFirstVideoPrompt(sample,env,async (url,options)=>{
+    attempted.push(url);
+    assert.ok(options.signal instanceof AbortSignal,"each attempt is time-bounded");
+    if(attempted.length===1)throw Object.assign(new Error("synthetic timeout"),{name:"TimeoutError"});
+    return {status:200,ok:true,text:async()=>JSON.stringify({
+      candidates:[{content:{parts:[{text:"Медленные облака над открытыми горными вершинами. Четыре спокойных природных сцены, плавные переходы."}]}}],
+    })};
+  });
+  assert.equal(result.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
+  assert.deepEqual(result.diagnostics,[{provider:"gemini_free",model:FIRST_VIDEO_GEMINI_MODEL,reason:"timeout"}]);
+  assert.equal(attempted.length,2,"do not fall through to OpenRouter when second Gemini works");
+  assert.match(attempted[0],/gemini-3\.5-flash-lite/);
+  assert.match(attempted[1],/gemini-3\.1-flash-lite/);
+  assert.ok(!JSON.stringify(result.diagnostics).includes(sample.wish),"never log user text");
+});
+
+test("Gemini returns truncated or invalid response: try second Gemini, never leak secrets",async()=>{
+  const {generateFreeFirstVideoPrompt,FIRST_VIDEO_GEMINI_ALT_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-google-credential"};
+  const wish="Comida y paisajes";
+  let count=0;
+  const r=await generateFreeFirstVideoPrompt(
+    {locale:"es",wish,theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20},
+    env,async()=>{
+      count++;
+      return count===1?{ok:true,status:200,text:async()=>JSON.stringify({candidates:[]})}
+        :{ok:true,status:200,text:async()=>JSON.stringify({
+          candidates:[{content:{parts:[{text:"Cosecha dorada y jardines cálidos. Cuatro escenas reales de la naturaleza, sin imágenes de platos o cocina."}]}}],
+        })};
+    });
+  assert.equal(r.model,FIRST_VIDEO_GEMINI_ALT_MODEL);
+  assert.deepEqual(r.diagnostics.map(d=>d.reason),["invalid_text"]);
+  assert.ok(!JSON.stringify(r.diagnostics).includes(wish));
+  assert.equal(count,2);
+});
+
+test("401 and 403 are shared Google key failures: skip secondary Gemini and use independent free router",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-google-credential",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-openrouter-credential"};
+  for(const status of [401,403,429]){
+    let count=0;
+    const result=await generateFreeFirstVideoPrompt(
+      {locale:"en",wish:"Mountain sunrise",theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20},env,
+      async url=>{
+        count++;
+        if(count===1)return {ok:false,status};
+        assert.match(url,/openrouter\.ai/,"a Google account failure must not call another Gemini");
+        return {ok:true,status:200,text:async()=>JSON.stringify({
+          choices:[{message:{content:"Open mountain sky and gentle sunrise. Four real scenes with calm transitions and quiet light."}}],
+        })};
+      });
+    assert.equal(result.provider,"openrouter_free");
+    assert.equal(count,2);
+  }
 });
