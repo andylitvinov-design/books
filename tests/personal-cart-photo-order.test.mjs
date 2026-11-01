@@ -42,7 +42,7 @@ test("order requires successful consented backend save before displaying the pay
   assert.match(chooser, /data\.saved !== true/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries"/);
   assert.match(chooser, /body: JSON\.stringify\(\{[\s\S]*?contactConsent: consent/);
-  assert.match(api, /createPublicServiceEnquiry\(config, payload\)/);
+  assert.match(api, /createPublicServiceEnquiry\(config, payload, readPublicEnquiryAttribution\(request\)\)/);
   assert.match(crm, /app\.crm_contacts/);
   assert.doesNotMatch(cart, /localStorage|autoDebit|paymentIntent/);
 });
