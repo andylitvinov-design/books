@@ -16,6 +16,8 @@ const MAX_PATH_READS=5;
 const LABELS=[
   ...POLICY.directions.map(d=>({name:'hh:direction:'+d.id,color:'5319e7',
     description:'Auto-classified development direction: '+d.name})),
+  ...POLICY.directions.map(d=>({name:'hh:direction-override:'+d.id,color:'d4c5f9',
+    description:'Optional owner direction override (priority still inherited): '+d.name})),
   ...POLICY.levels.map(l=>({name:'hh:priority:'+l.id,
     color:['b60205','e99695','fbca04','0e8a16','c5def5'][l.id-1],
     description:'Inherited priority P'+l.id+' — '+l.name}))
