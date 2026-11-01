@@ -50,6 +50,12 @@ try {
     try {
       const response = await page.goto(origin + path, {waitUntil:"domcontentloaded",timeout:60000});
       assert.equal(response?.status(),200,locale+": first party route HTTP");
+      // A static server button can be visible before its React handler exists.
+      // Wait for genuine hydration before this synthetic tap; do not fake the click.
+      await page.waitForFunction(() => {
+        const button = document.querySelector('[data-support-tool="healing"]');
+        return Boolean(button && Object.keys(button).some(key => key.startsWith("__reactProps$")));
+      }, null, {timeout:30000});
       await page.locator('[data-support-tool="healing"]').click();
       const gallery = page.locator('[data-support-master-viewer][data-support-directory-kind="healing"]');
       await gallery.locator("[data-support-master-request]").waitFor();

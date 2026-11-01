@@ -35,7 +35,7 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ': public home must load');
           const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
           const paid = slider.locator('[data-home-first-screen-cta="paid"]');
-          const free = page.locator('[data-home-free-diagnosis-banner] [data-home-diagnosis-order]');
+          const free = page.locator('[data-home-module-action="review"]');
           await paid.waitFor({ state: 'visible', timeout: 30000 });
           await free.waitFor({ state: 'visible', timeout: 30000 });
           const [card, book, review] = await Promise.all([
@@ -52,28 +52,28 @@ for (const engine of [chromium, webkit]) {
           const paidHref = await paid.getAttribute('href');
           const freeHref = '/' + locale + '/services/free-situation-review';
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(await free.getAttribute('aria-expanded'), 'false',
-            label + ': free diagnosis opens the existing consent-gated inline form');
-          // The approved first carousel slide keeps the original photo, seven named
+          assert.equal(await free.getAttribute('href'), freeHref,
+            label + ': free analysis reaches the existing consent-gated service');
+          // The approved first carousel slide keeps the original photo, six named
           // section links and the priced consultation button on the first fold.
           const sectionNav = page.locator('[data-home-hero-nav="true"]');
           await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
           const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 7, label + ': seven plain text site sections');
+          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
           assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
           assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas', 'cabinet'];
-          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books', '/app'];
+          const keys = ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet'];
+          const suffixes = ['/explore/energy', '/explore/love', '/explore/business', '/client/tests', '/books', '/app'];
           for (let i = 0; i < keys.length; i++) {
             const link = sectionLinks.nth(i);
             assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
             assert.equal(await link.getAttribute('href'),
-              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : suffixes[i] ? '/' + locale + suffixes[i] : locale === 'en' ? '/' : '/' + locale,
+              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : '/' + locale + suffixes[i],
               label + ': real localized route for ' + keys[i]);
             const target = await link.boundingBox();
             assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
           }
-          assert.equal(await sectionLinks.nth(2).getAttribute('aria-current'), 'true', label + ': first services slide selected');
+          assert.equal(await sectionLinks.nth(0).getAttribute('aria-current'), 'true', label + ': first services slide selected');
           const [navBox, copyBox] = await Promise.all([
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
@@ -95,15 +95,21 @@ for (const engine of [chromium, webkit]) {
           // the visitor keeps the disclosure closed.
           if (width === 390) {
             const more = page.locator('[data-home-more-deferred="true"]');
-            assert.equal(await more.locator('[data-home-start]').count(), 0,
-              label + ': closed catalogue must not inflate initial SSR/RSC');
-            await more.locator('summary').first().click();
-            await page.locator('[data-home-start]').waitFor({ state: 'visible', timeout: 30000 });
-            assert.equal(await more.getAttribute('open'), '',
-              label + ': expanding reveals the existing section directory');
-            if (locale !== 'es') {
-              await page.locator('[data-core-service-id]').first().waitFor({ state: 'visible', timeout: 30000 });
+            assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
+              label + ': closed guidance must not inflate initial SSR/RSC');
+            for (const [key, path] of Object.entries({energy:'/explore/energy', love:'/explore/love',
+              business:'/explore/business', temple:'/temple-support', services:'/services', courses:'/academy'})) {
+              assert.equal(await page.locator('[data-home-topic-filter="' + key + '"]').getAttribute('href'),
+                '/' + locale + path, label + ': existing topic route for ' + key);
             }
+            await page.waitForFunction(() => {
+              const details = document.querySelector('[data-home-more-deferred="true"]');
+              return Boolean(details && Object.keys(details).some(key => key.startsWith('__reactProps$')));
+            }, null, {timeout:30000});
+            await more.locator('summary').first().click();
+            await more.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 30000 });
+            assert.equal(await more.getAttribute('open'), '',
+              label + ': expanding reveals the existing conversation guidance');
             await more.locator('summary').first().click();
             assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
           }

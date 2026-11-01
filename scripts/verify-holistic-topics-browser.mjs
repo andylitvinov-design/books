@@ -21,6 +21,8 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          // Route fixtures must not be intercepted by an installed service worker.
+          serviceWorkers: "block",
         });
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
@@ -59,6 +61,10 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + " HTTP status");
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
+          await page.waitForFunction(() => {
+            const tab = document.querySelector('[data-holistic-topic="business"]');
+            return Boolean(tab && Object.keys(tab).some(key => key.startsWith("__reactProps$")));
+          }, null, {timeout: 30000});
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
           let previousMeditationTitle = "";
           for (const topic of ["business", "love", "health"]) {
@@ -110,7 +116,13 @@ for (const engine of [chromium, webkit]) {
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          try { await finder.locator('#holistic-inline-results article').first().waitFor(); }
+          catch (error) {
+            console.error(JSON.stringify({ phase: "synthetic-consultation-directory", label,
+              selection: await finder.locator('[aria-pressed="true"]').allTextContents(),
+              results: (await finder.locator('#holistic-inline-results').innerText()).slice(0, 500), errors }));
+            throw error;
+          }
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();

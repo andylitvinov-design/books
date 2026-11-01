@@ -118,6 +118,14 @@ try {
       assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
       assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
         'No payment step before the CRM confirms an order')
+      // Contact form can be revealed before a React input handler is attached
+      // after the client-side cart route. Keep consent checked by the real user
+      // interaction rather than force-setting the DOM or masking a failure.
+      await page.waitForFunction(() => {
+        const checkbox = document.querySelector(
+          '[data-personal-service-cart] [data-cart-contact-form] input[type="checkbox"][required]');
+        return Boolean(checkbox && Object.keys(checkbox).some(key => key.startsWith("__reactProps$")));
+      }, null, {timeout:30000});
       await contactForm.locator('input[type="tel"]').fill('416 555 1234')
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Phone without reply-only opt-in is insufficient')
