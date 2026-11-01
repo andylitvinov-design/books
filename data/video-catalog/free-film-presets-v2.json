@@ -1,0 +1,487 @@
+{
+  "version": "hh-curated-free-films-v2",
+  "notes": "24 additional FOUR-SCENE compilations using only the 44 existing approved local MP4s; not newly filmed footage",
+  "count": 24,
+  "presets": [
+    {
+      "id": "financial-clarity",
+      "theme": "money",
+      "label": {
+        "ru": "Ясность в деньгах",
+        "en": "Financial clarity",
+        "es": "Claridad financiera"
+      },
+      "clips": [
+        "wealth-sunrise",
+        "golden-shield",
+        "clear-morning",
+        "path-to-goals"
+      ],
+      "focusTags": [
+        "focus",
+        "stability",
+        "clarity"
+      ]
+    },
+    {
+      "id": "gentle-resource",
+      "theme": "money",
+      "label": {
+        "ru": "Бережный ресурс",
+        "en": "Gentle resources",
+        "es": "Recursos con calma"
+      },
+      "clips": [
+        "golden-harvest",
+        "abundance-tree",
+        "flower-softening",
+        "abundance-circle"
+      ],
+      "focusTags": [
+        "safety",
+        "growth",
+        "rest"
+      ]
+    },
+    {
+      "id": "collaboration-growth",
+      "theme": "money",
+      "label": {
+        "ru": "Новые партнёрства",
+        "en": "New partnerships",
+        "es": "Nuevas alianzas"
+      },
+      "clips": [
+        "partners",
+        "garden-acceptance",
+        "soft-horizon",
+        "radiant-portal"
+      ],
+      "focusTags": [
+        "connection",
+        "trust",
+        "opportunity"
+      ]
+    },
+    {
+      "id": "opportunity-horizon",
+      "theme": "money",
+      "label": {
+        "ru": "Горизонт возможностей",
+        "en": "Opportunity horizon",
+        "es": "Horizonte de oportunidades"
+      },
+      "clips": [
+        "opportunity-falls",
+        "clear-morning",
+        "soft-horizon",
+        "prosperity-coast"
+      ],
+      "focusTags": [
+        "clarity",
+        "chance",
+        "goal"
+      ]
+    },
+    {
+      "id": "fresh-light",
+      "theme": "energy",
+      "label": {
+        "ru": "Свет и бодрость",
+        "en": "Fresh light",
+        "es": "Luz y vitalidad"
+      },
+      "clips": [
+        "clear-morning",
+        "solar-surge",
+        "sunbeam-flow",
+        "shore-breath"
+      ],
+      "focusTags": [
+        "energy",
+        "morning",
+        "clarity"
+      ]
+    },
+    {
+      "id": "calm-recharge",
+      "theme": "energy",
+      "label": {
+        "ru": "Спокойное восстановление",
+        "en": "Quiet recharge",
+        "es": "Recarga tranquila"
+      },
+      "clips": [
+        "lake-mist-dawn",
+        "shore-breath",
+        "mountain-air",
+        "clear-morning"
+      ],
+      "focusTags": [
+        "rest",
+        "breath",
+        "recovery"
+      ]
+    },
+    {
+      "id": "breathing-flow",
+      "theme": "energy",
+      "label": {
+        "ru": "Свободное дыхание",
+        "en": "Breathing flow",
+        "es": "Flujo de respiración"
+      },
+      "clips": [
+        "shore-breath",
+        "river-grounding",
+        "mountain-air",
+        "ocean-pulse"
+      ],
+      "focusTags": [
+        "breath",
+        "grounding",
+        "water"
+      ]
+    },
+    {
+      "id": "steady-activation",
+      "theme": "energy",
+      "label": {
+        "ru": "Плавное пробуждение",
+        "en": "Gentle activation",
+        "es": "Activación suave"
+      },
+      "clips": [
+        "clear-morning",
+        "desert-light",
+        "petal-hope",
+        "solar-surge"
+      ],
+      "focusTags": [
+        "energy",
+        "renewal",
+        "focus"
+      ]
+    },
+    {
+      "id": "flowers-of-change",
+      "theme": "life",
+      "label": {
+        "ru": "Цветение перемен",
+        "en": "Blossoms of change",
+        "es": "Flores del cambio"
+      },
+      "clips": [
+        "petal-hope",
+        "flower-softening",
+        "forest-renewal",
+        "wildflower-dance"
+      ],
+      "focusTags": [
+        "change",
+        "flowers",
+        "growth"
+      ]
+    },
+    {
+      "id": "gentle-space",
+      "theme": "life",
+      "label": {
+        "ru": "Время для себя",
+        "en": "Room to breathe",
+        "es": "Espacio para respirar"
+      },
+      "clips": [
+        "still-water",
+        "soft-horizon",
+        "coastal-freedom",
+        "meadow-morning"
+      ],
+      "focusTags": [
+        "freedom",
+        "calm",
+        "space"
+      ]
+    },
+    {
+      "id": "rooted-renewal",
+      "theme": "life",
+      "label": {
+        "ru": "Новая опора",
+        "en": "Renewed grounding",
+        "es": "Nuevo arraigo"
+      },
+      "clips": [
+        "forest-renewal",
+        "lone-tree",
+        "river-grounding",
+        "fern-awakening"
+      ],
+      "focusTags": [
+        "stability",
+        "roots",
+        "renewal"
+      ]
+    },
+    {
+      "id": "fresh-chapter",
+      "theme": "life",
+      "label": {
+        "ru": "Чистая страница",
+        "en": "A fresh chapter",
+        "es": "Un nuevo capítulo"
+      },
+      "clips": [
+        "clear-morning",
+        "petal-hope",
+        "soft-horizon",
+        "fern-awakening"
+      ],
+      "focusTags": [
+        "fresh",
+        "start",
+        "growth"
+      ]
+    },
+    {
+      "id": "quiet-water",
+      "theme": "health",
+      "label": {
+        "ru": "Тихая вода",
+        "en": "Quiet waters",
+        "es": "Aguas tranquilas"
+      },
+      "clips": [
+        "lake-mist-dawn",
+        "still-water",
+        "river-grounding",
+        "ocean-release"
+      ],
+      "focusTags": [
+        "calm",
+        "rest",
+        "stillness"
+      ]
+    },
+    {
+      "id": "soft-reset",
+      "theme": "health",
+      "label": {
+        "ru": "Мягкая перезагрузка",
+        "en": "Gentle reset",
+        "es": "Reinicio suave"
+      },
+      "clips": [
+        "flower-softening",
+        "morning-dew",
+        "petal-hope",
+        "desert-light"
+      ],
+      "focusTags": [
+        "rest",
+        "release",
+        "softness"
+      ]
+    },
+    {
+      "id": "forest-balance",
+      "theme": "health",
+      "label": {
+        "ru": "Баланс природы",
+        "en": "Nature balance",
+        "es": "Equilibrio natural"
+      },
+      "clips": [
+        "forest-renewal",
+        "mossy-stream",
+        "flower-softening",
+        "gentle-falls"
+      ],
+      "focusTags": [
+        "nature",
+        "forest",
+        "grounding"
+      ]
+    },
+    {
+      "id": "gentle-breath",
+      "theme": "health",
+      "label": {
+        "ru": "Дыхание и спокойствие",
+        "en": "Calm breathing",
+        "es": "Respiración serena"
+      },
+      "clips": [
+        "shore-breath",
+        "river-grounding",
+        "sea-breeze",
+        "lake-mist-dawn"
+      ],
+      "focusTags": [
+        "breath",
+        "calm",
+        "rest"
+      ]
+    },
+    {
+      "id": "welcoming-heart",
+      "theme": "relationships",
+      "label": {
+        "ru": "Открытое сердце",
+        "en": "An open heart",
+        "es": "Corazón abierto"
+      },
+      "clips": [
+        "garden-acceptance",
+        "heart-flow",
+        "flower-softening",
+        "meadow-morning"
+      ],
+      "focusTags": [
+        "love",
+        "tenderness",
+        "acceptance"
+      ]
+    },
+    {
+      "id": "trust-in-time",
+      "theme": "relationships",
+      "label": {
+        "ru": "Доверие и опора",
+        "en": "Trust and grounding",
+        "es": "Confianza y arraigo"
+      },
+      "clips": [
+        "river-grounding",
+        "garden-acceptance",
+        "lone-tree",
+        "heart-flow"
+      ],
+      "focusTags": [
+        "trust",
+        "grounding",
+        "connection"
+      ]
+    },
+    {
+      "id": "kind-connection",
+      "theme": "relationships",
+      "label": {
+        "ru": "Бережная близость",
+        "en": "Gentle connection",
+        "es": "Conexión amable"
+      },
+      "clips": [
+        "heart-flow",
+        "garden-acceptance",
+        "petal-hope",
+        "soft-horizon"
+      ],
+      "focusTags": [
+        "warm",
+        "love",
+        "connection"
+      ]
+    },
+    {
+      "id": "soft-boundaries",
+      "theme": "relationships",
+      "label": {
+        "ru": "Мягкие границы",
+        "en": "Gentle boundaries",
+        "es": "Límites amables"
+      },
+      "clips": [
+        "mountain-air",
+        "river-grounding",
+        "heart-flow",
+        "clear-morning"
+      ],
+      "focusTags": [
+        "boundaries",
+        "safety",
+        "trust"
+      ]
+    },
+    {
+      "id": "clear-future",
+      "theme": "goals",
+      "label": {
+        "ru": "Ясное будущее",
+        "en": "Clearer future",
+        "es": "Futuro más claro"
+      },
+      "clips": [
+        "soft-horizon",
+        "clear-morning",
+        "mountain-air",
+        "wealth-sunrise"
+      ],
+      "focusTags": [
+        "clarity",
+        "confidence",
+        "goals"
+      ]
+    },
+    {
+      "id": "first-light",
+      "theme": "goals",
+      "label": {
+        "ru": "Первый шаг к цели",
+        "en": "First step forward",
+        "es": "Primer paso adelante"
+      },
+      "clips": [
+        "meadow-morning",
+        "soft-horizon",
+        "sunbeam-flow",
+        "radiant-portal"
+      ],
+      "focusTags": [
+        "new",
+        "start",
+        "motivation"
+      ]
+    },
+    {
+      "id": "focused-action",
+      "theme": "goals",
+      "label": {
+        "ru": "Собранность и действие",
+        "en": "Focused action",
+        "es": "Acción enfocada"
+      },
+      "clips": [
+        "clear-morning",
+        "solar-surge",
+        "path-to-goals",
+        "soft-horizon"
+      ],
+      "focusTags": [
+        "focus",
+        "energy",
+        "progress"
+      ]
+    },
+    {
+      "id": "gentle-decision",
+      "theme": "goals",
+      "label": {
+        "ru": "Спокойный выбор",
+        "en": "Calm decision",
+        "es": "Decisión serena"
+      },
+      "clips": [
+        "lake-mist-dawn",
+        "lone-tree",
+        "soft-horizon",
+        "radiant-portal"
+      ],
+      "focusTags": [
+        "calm",
+        "confidence",
+        "choice"
+      ]
+    }
+  ]
+}

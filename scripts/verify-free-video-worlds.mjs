@@ -19,10 +19,14 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
     });
     const response = await page.goto(`${origin}/ru/holistic-support/mandala`, {waitUntil:'domcontentloaded'});
     assert.equal(response?.status(), 200);
+    await page.locator('[data-video-procedural-options] summary').click();
     await page.locator('[data-free-video-source="generated"]').click();
     const studio = page.locator('[data-free-video-generator]');
-    const canvas = studio.locator('[data-free-video-canvas]');
+    // The source generator now controls the ONE approved movie Canvas.
+    const canvas = page.locator('[data-mandala-cinematic-canvas]');
     await canvas.waitFor({state:'visible'});
+    assert.equal(await page.locator('[data-mandala-cinematic-canvas]').count(),1,'one actual renderer');
+    assert.equal(await studio.locator('canvas').count(),0,'no second miniature renderer');
     const hash = () => canvas.evaluate(el => {
       const pixels = el.getContext('2d').getImageData(0,0,el.width,el.height).data;
       let h = 2166136261;
@@ -40,14 +44,14 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
       frames.set(family, initial);
       await studio.locator('[data-free-video-play]').click();
       await page.waitForFunction(previous => {
-        const canvas = document.querySelector('[data-free-video-canvas]');
+        const canvas = document.querySelector('[data-mandala-cinematic-canvas]');
         const pixels = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
         let h=2166136261; for(let i=0;i<pixels.length;i+=43) h=Math.imul(h^pixels[i],16777619);
         return (h>>>0)!==previous;
       }, initial, {timeout:10000});
       const moving = await hash();
       await page.waitForFunction(previous => {
-        const canvas = document.querySelector('[data-free-video-canvas]');
+        const canvas = document.querySelector('[data-mandala-cinematic-canvas]');
         const pixels = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
         let h=2166136261; for(let i=0;i<pixels.length;i+=43) h=Math.imul(h^pixels[i],16777619);
         return (h>>>0)!==previous;
@@ -57,7 +61,7 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
       assert.equal(await hash(), initial, `${engine}/${family}: same seed and time must reproduce the frame`);
       await studio.locator('[data-free-video-variant]').click();
       await page.waitForFunction(previous => {
-        const canvas = document.querySelector('[data-free-video-canvas]');
+        const canvas = document.querySelector('[data-mandala-cinematic-canvas]');
         const pixels = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
         let h=2166136261; for(let i=0;i<pixels.length;i+=43) h=Math.imul(h^pixels[i],16777619);
         return (h>>>0)!==previous;

@@ -4,9 +4,28 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/ci/pr-sweep-guard.mjs'
+      - 'scripts/ci-quick-route.mjs'
+      - 'tests/ci-quick-route.test.mjs'
+      - 'lib/ci/specialist-aggregate.mjs'
+      - 'lib/ci/fast-static-ui-text.mjs'
+      - 'lib/ci/fast-ui-parser/**'
+      - 'tests/ci-fast-static-ui-text.test.mjs'
+      - 'scripts/ci-specialist-aggregate.mjs'
+      - 'scripts/ci-pr-readiness.mjs'
+      - 'tests/ci-specialist-aggregate.test.mjs'
+      - 'tests/ci-specialist-wait.test.mjs'
+      - '.github/workflows/hh-pr-core-release.yml'
       - 'scripts/pr-sweep-guard.mjs'
       - 'tests/pr-sweep-guard.test.mjs'
       - 'tests/ci-heavy-draft-policy.test.mjs'
+      - 'scripts/vercel-ignore-build.mjs'
+      - 'tests/ci-vercel-nonruntime.test.mjs'
+      - 'scripts/ci-heavy-impact.mjs'
+      - 'tests/ci-heavy-impact.test.mjs'
+      - '.github/workflows/hh-app-r1.yml'
+      - '.github/workflows/holistic-support-mandala.yml'
+      - '.github/workflows/hh-free-review-live-mobile.yml'
+      - '.github/workflows/ia-v2.yml'
       - '.github/workflows/assessment-range-mobile-browser.yml'
       - '.github/workflows/hh-benchmark-public-browser.yml'
       - '.github/workflows/hh-home-conversation.yml'
@@ -16,8 +35,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-pr-sweep-guard-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: hh-pr-sweep-guard-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   guard-unit:
     runs-on: ubuntu-24.04
@@ -29,4 +48,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs
+      - name: Install locked parser without lifecycle scripts
+        run: cp lib/ci/fast-ui-parser/parser-lock.json lib/ci/fast-ui-parser/package-lock.json && npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/pr-sweep-guard.test.mjs tests/ci-heavy-draft-policy.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-specialist-wait.test.mjs tests/ci-heavy-impact.test.mjs tests/ci-quick-route.test.mjs tests/ci-fast-static-ui-text.test.mjs tests/ci-vercel-nonruntime.test.mjs

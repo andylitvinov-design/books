@@ -2,6 +2,7 @@ name: HH Live Audio — safe pilot
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'docs/live-audio/**'
@@ -16,17 +17,19 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tests/live-audio-pilot.test.mjs'
+      - 'tests/ci-expensive-draft-ready-policy.test.mjs'
       - '.github/workflows/hh-live-audio-ci.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 concurrency:
-  group: hh-live-audio-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-live-audio-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   verify-live-audio:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -47,7 +50,7 @@ jobs:
       - name: Live Audio contracts and security guards
         run: |
           set -euo pipefail
-          node --test tests/live-audio-pilot.test.mjs
+          node --test tests/live-audio-pilot.test.mjs tests/ci-expensive-draft-ready-policy.test.mjs
           node --check lib/live-audio/policy.mjs
           node --check lib/live-audio/server.js
       - name: Targeted lint and full typecheck
@@ -63,7 +66,13 @@ jobs:
             'app/[locale]/live/page.tsx' \
             'app/[locale]/live/host/page.tsx' \
             middleware.ts next.config.ts
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "$HH_TARGET_BASE" != "codex/public-book-library" ]]; then
+            npx tsc --noEmit
+          else
+            echo 'Required Core release gate owns global TypeScript for production PRs'
+          fi
+        env:
+          HH_TARGET_BASE: ${{ github.event.pull_request.base.ref }}
       - name: Next production build — provider and recording disabled
         run: npm run build
       - name: Smoke 3 locale HTML and safe disabled status
@@ -74,6 +83,7 @@ jobs:
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 75); do
+            printf 'Live Audio local readiness attempt %s/75\n' "$i"
             if curl -fsS http://127.0.0.1:3100/api/live-audio/status > /tmp/hh-live-audio-status.json; then ready=1; break; fi
             sleep 2
           done

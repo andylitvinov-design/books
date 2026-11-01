@@ -1,6 +1,7 @@
 name: HH My Progress — private history and video marks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/my-progress.*'
@@ -9,8 +10,7 @@ on:
       - 'app/api/app/video-progress/route.js'
       - 'lib/app/my-progress.mjs'
       - 'lib/app/video-progress.js'
-      - 'app/**/app/**/page.jsx'
-      - 'components/app/app-workspace.jsx'
+      - 'app/**/app/my-progress/**'
       - 'tests/my-progress.test.mjs'
       - 'supabase/migrations/20261029013946_hh_my_progress_video_marks_20261028.sql'
       - '.github/workflows/hh-my-progress-release.yml'
@@ -28,10 +28,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-my-progress-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-my-progress-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   private-progress:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -59,6 +60,8 @@ jobs:
           app/api/app/video-progress/route.js
           tests/my-progress.test.mjs
       - name: Typecheck
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Production build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build

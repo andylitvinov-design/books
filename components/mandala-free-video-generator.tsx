@@ -1,22 +1,21 @@
 "use client";
 
-import {useEffect,useMemo,useRef,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import {Check, ChevronDown, Pause, Play, RefreshCw, Sparkles} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import {buildFreeVideoPlan,FREE_VIDEO_EXAMPLES,FREE_VIDEO_FAMILIES,
   FREE_VIDEO_PALETTES} from "@/lib/mandala/free-video-generator.mjs";
-import {paintFreeVideoFrame} from "@/lib/mandala/free-video-renderer";
+
 import type {FreeVideoPlan} from "@/lib/mandala/free-video-renderer";
 import css from "./mandala-free-video-generator.module.css";
 
-type Aspect="portrait"|"landscape"|"square";
 type Family="auto"|FreeVideoPlan["family"];
 type Palette="auto"|"gold"|"ocean"|"violet";
 type Motion="auto"|"calm"|"flow"|"dynamic";
 type Props={
-  locale:PublicLocale;theme:VideoTheme;aspect:Aspect;
-  disabled:boolean;localPortrait?:HTMLImageElement|null;
+  locale:PublicLocale;theme:VideoTheme;
+  disabled:boolean;previewPlaying:boolean;onPreview:()=>void;
   onPlanChange:(plan:FreeVideoPlan)=>void;
 };
 const copy={
@@ -65,7 +64,7 @@ const copy={
 } as const;
 
 export function MandalaFreeVideoGenerator({
-  locale,theme,aspect,disabled,localPortrait,onPlanChange,
+  locale,theme,disabled,previewPlaying,onPreview,onPlanChange,
 }:Props){
   const t=copy[locale];
   const [description,setDescription]=useState<string>(FREE_VIDEO_EXAMPLES[locale]);
@@ -75,8 +74,6 @@ export function MandalaFreeVideoGenerator({
   const [variation,setVariation]=useState(0);
   // Default to the gentler rendering until the device preference is known.
   const [reducedMotion,setReducedMotion]=useState(true);
-  const [playing,setPlaying]=useState(false);
-  const previewRef=useRef<HTMLCanvasElement|null>(null);
   const plan=useMemo(()=>buildFreeVideoPlan({
     description,theme,locale,family,palette,motion,variation,reducedMotion,
   }) as FreeVideoPlan,[description,theme,locale,family,palette,motion,variation,reducedMotion]);
@@ -93,30 +90,6 @@ export function MandalaFreeVideoGenerator({
     return()=>preference.removeListener(update);
   },[]);
   useEffect(()=>{onPlanChange(plan);},[onPlanChange,plan]);
-  const size=aspect==="portrait"?[252,448]:aspect==="square"?[352,352]:[480,270];
-  useEffect(()=>{
-    const canvas=previewRef.current;
-    if(!canvas)return;
-    const ctx=canvas.getContext("2d",{alpha:false});
-    if(!ctx)return;
-    let raf=0,last=-1000,initial=0,stopped=false;
-    const paint=(seconds:number)=>{
-      paintFreeVideoFrame(ctx,plan,seconds,localPortrait||null);
-    };
-    paint(0);
-    if(!playing||disabled)return;
-    const tick=(now:number)=>{
-      if(stopped)return;
-      if(!initial)initial=now;
-      if(now-last>1000/18 && !document.hidden){
-        paint((now-initial)/1000);
-        last=now;
-      }
-      raf=window.requestAnimationFrame(tick);
-    };
-    raf=window.requestAnimationFrame(tick);
-    return()=>{stopped=true;window.cancelAnimationFrame(raf);};
-  },[plan,playing,disabled,localPortrait,aspect]);
   return <section className={css.root} data-free-video-generator
     data-free-video-renderer="local-procedural" aria-label={t.title}>
     <header className={css.heading}>
@@ -151,21 +124,17 @@ export function MandalaFreeVideoGenerator({
         </select></label>
       </div>
     </details>
-    <div className={css.preview} data-free-video-preview>
-      <canvas ref={previewRef} width={size[0]} height={size[1]}
-        aria-label={t.title} role="img" data-free-video-canvas/>
-      <div className={css.controls}>
-        <button type="button" onClick={()=>setPlaying(value=>!value)}
-          disabled={disabled} data-free-video-play>
-          {playing?<Pause size={17} aria-hidden="true"/>:<Play size={17} aria-hidden="true"/>}
-          {playing?t.pause:t.play}
-        </button>
-        <button type="button" data-free-video-variant disabled={disabled}
-          onClick={()=>setVariation(value=>(value+1)%10000)}>
-          <RefreshCw size={17} aria-hidden="true"/>{t.variant}
-        </button>
-        <small data-free-video-variation>{t.seed} {variation+1}</small>
-      </div>
+    <div className={css.controls} data-free-video-preview>
+      <button type="button" onClick={onPreview}
+        disabled={disabled} data-free-video-play>
+        {previewPlaying?<Pause size={17} aria-hidden="true"/>:<Play size={17} aria-hidden="true"/>}
+        {previewPlaying?t.pause:t.play}
+      </button>
+      <button type="button" data-free-video-variant disabled={disabled}
+        onClick={()=>setVariation(value=>(value+1)%10000)}>
+        <RefreshCw size={17} aria-hidden="true"/>{t.variant}
+      </button>
+      <small data-free-video-variation>{t.seed} {variation+1}</small>
     </div>
     <p className={css.local}><Check size={16} aria-hidden="true"/>{t.local}</p>
     <p className={css.limit}>{t.limit} {t.photo}</p>

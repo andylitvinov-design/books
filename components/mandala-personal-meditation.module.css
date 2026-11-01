@@ -71,3 +71,32 @@
 
 .narrationProgress{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:9px;margin:9px 0 3px;color:#377356;font-size:11px;font-weight:750;font-variant-numeric:tabular-nums}
 .narrationProgress progress{appearance:auto;width:100%;height:9px;accent-color:#087e5e;border-radius:99px}
+
+/* Reuse the same generator in a dedicated free-first course, with honest
+   topic previews instead of making or charging for seven missing audio files. */
+.courseRequest{display:grid;gap:7px;margin:13px 0;color:#2b6048;font-size:13px;font-weight:800}
+.courseRequest textarea{box-sizing:border-box;width:100%;min-height:83px;min-width:0;padding:11px 12px;
+  border:1px solid #b8d8c5;border-radius:12px;background:#fff;color:#214b37;
+  font:500 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;resize:vertical}
+.courseOutline{margin:16px 0 8px;padding:13px;border:1px solid #d4e5d3;border-radius:15px;background:#fffdfa}
+.courseOutlineHeader{display:flex;align-items:center;gap:8px;color:#b3812a}
+.courseOutlineHeader h4{margin:0;font-size:17px;line-height:1.3;color:#1d503a}
+.courseOutline>p{margin:9px 0;color:#5c7463;font-size:12px;line-height:1.5}
+.courseDays{display:grid;gap:7px;list-style:none;margin:13px 0 0;padding:0}
+.courseDays li{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:start;gap:4px 9px;
+  min-width:0;padding:10px 11px;border:1px solid #e1e7d9;border-radius:12px;background:#fff}
+.courseDays li:first-child{border-color:#c3ddb9;background:#eff8eb}
+.courseDays li>span{grid-row:span 2;color:#337657;font-size:11px;font-weight:850}
+.courseDays li>div{display:grid;gap:3px;min-width:0}
+.courseDays strong{font-size:13px;line-height:1.35;color:#1e4c36}
+.courseDays small{color:#617a67;font-size:11px;line-height:1.45}
+.courseDays em{grid-column:2;color:#8c7c54;font-size:10px;font-style:normal;font-weight:800}
+.courseOffer{margin:15px 0 1px;padding:14px;border-radius:14px;
+  border:1px solid #e9d6a5;background:linear-gradient(130deg,#fff6db,#f2f9ef)}
+.courseOffer h4{margin:0;color:#224f3a;font-size:16px;line-height:1.3}
+.courseOffer p{margin:8px 0 11px;color:#4b6e56;font-size:12px;line-height:1.5}
+.courseOffer a{display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px;
+  border-radius:11px;background:#087e5e;color:#fff;text-decoration:none;text-align:center;font-size:14px;font-weight:850}
+.courseOffer a:focus-visible{outline:3px solid #daa755;outline-offset:2px}
+.courseOffer>small{display:block;margin-top:8px;font-size:11px;line-height:1.5;color:#6b775f}
+@media(max-width:355px){.courseOutline{padding:9px}.courseDays li{grid-template-columns:46px minmax(0,1fr);padding:8px}}

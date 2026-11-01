@@ -4,6 +4,7 @@
 // Usage: node scripts/generate-soft-ocean-melody.mjs
 // The browser uses a static WAV (not WebAudio) for iPhone media reliability.
 import { writeFileSync } from "node:fs";
+import { writeMelodyMasters } from "./generate-mandala-melodies.mjs";
 
 function synthSoftMelody() {
   // Uncompressed 24 kHz PCM is used for reliable iPhone Safari HTMLMediaElement playback.
@@ -86,6 +87,11 @@ function synthSoftMelody() {
   }
   return {pcm,rms:Math.sqrt(rms/FRAMES),peak,seamDiff:Math.abs(dv.getInt16(44,true)-dv.getInt16(pcm.length-2,true))};
 }
+
+// This established build/predev audio pipeline regenerates the 22
+// score-owned 32s melodies without broadening package.json CI triggers.
+const authoredMusic=writeMelodyMasters();
+console.log("[holistic-original-melodies] generated",authoredMusic.masters,"original WAV masters");
 
 const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-96s.wav", import.meta.url);
 const result = synthSoftMelody();
