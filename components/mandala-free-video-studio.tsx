@@ -2417,6 +2417,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!photoUrl&&!backgroundOnly){onPickPhoto();return;}
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
+      // Outside Characters the shared consent panel lives in the Video workspace.
+      if(activeWorkspace && activeWorkspace!=="characters")setActiveWorkspace("video");
       // Reveal the single original consent control in the relocated cover panel.
       const coverOptions=document.querySelector<HTMLDetailsElement>("[data-video-cover-options]");
       if(coverOptions)coverOptions.open=true;
