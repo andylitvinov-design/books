@@ -1,0 +1,195 @@
+name: HH PR source Repair Worker
+on:
+  schedule:
+    - cron: '9,19,29,39,49,59 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Optional exact PR number; 0 scans the repair queue'
+        type: string
+        default: '0'
+      expected_sha:
+        description: 'Optional exact PR HEAD SHA lease'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Audit only; no claim or source writes'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: read
+concurrency:
+  group: hh-real-repair-worker
+  cancel-in-progress: false
+jobs:
+  claim:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      strategy: ${{ steps.select.outputs.strategy }}
+      pr_number: ${{ steps.select.outputs.pr_number }}
+      sha: ${{ steps.select.outputs.sha }}
+      files_json: ${{ steps.select.outputs.files_json }}
+    steps:
+      - name: Checkout trusted default-branch code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: codex/bootstrap-books
+      - name: Check trusted repair worker
+        run: |
+          node --check scripts/ci-pr-repair-worker.cjs
+          node --test tests/ci-pr-repair-worker.test.cjs
+      - id: select
+        name: Verify exact-HEAD owner, PR branch, repair lease and queue
+        uses: actions/github-script@v7
+        env:
+          HH_HAS_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const requested=Number(context.payload.inputs?.pr_number || 0);
+            await worker.claim({github,core,context,
+              number:Number.isSafeInteger(requested)?requested:0,
+              expectedSha:String(context.payload.inputs?.expected_sha || ''),
+              dryRun:context.eventName==='push' || String(context.payload.inputs?.dry_run ?? 'false')==='true',
+              hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
+  fix:
+    needs: claim
+    if: needs.claim.outputs.strategy == 'lint'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - name: Checkout untrusted PR HEAD without any write credentials or secrets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without running lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Try targeted ESLint autofix and write bounded patch candidate
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const {execFileSync,spawnSync}=require('node:child_process');
+          const paths=JSON.parse(process.env.REPAIR_FILES_JSON);
+          const sha=process.env.REPAIR_SHA;
+          if (!Array.isArray(paths) || paths.length<1 || paths.length>8 ||
+              !/^[a-f0-9]{40}$/i.test(sha) ||
+              !paths.every(x=>typeof x==='string' && /^[\w./-]+\.(js|jsx|ts|tsx|mjs|cjs)$/.test(x)))
+            throw Error('Invalid isolated repair scope');
+          const result={head_sha:sha,files:[]};
+          const fix=spawnSync('./node_modules/.bin/eslint',['--fix',...paths],{stdio:'inherit'});
+          const verify=spawnSync('./node_modules/.bin/eslint',paths,{stdio:'inherit'});
+          const changed=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
+            .split('\0').filter(Boolean);
+          if(fix.status!==0 || verify.status!==0 ||
+              changed.some(p=>!paths.includes(p)) || changed.length>8){
+            console.log('No verified scoped fix. Manual repair required.');
+          }else{
+            for(const path of changed){
+              const content=fs.readFileSync(path);
+              if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
+              result.files.push({path,
+                original_sha:execFileSync('git',['rev-parse','HEAD:'+path]).toString().trim(),
+                base64:content.toString('base64')});
+            }
+          }
+          fs.writeFileSync('candidate.json',JSON.stringify(result));
+          console.log('Verified ESLint repair files:',result.files.map(f=>f.path));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hh-repair-candidate
+          path: candidate.json
+          retention-days: 1
+          if-no-files-found: error
+  publish:
+    needs: [claim,fix]
+    if: needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Checkout trusted publisher only (never run PR code with token)
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-repair-candidate
+          path: hh-candidate
+      - name: Revalidate owner + SHA; publish one source commit with existing owner token
+        uses: actions/github-script@v7
+        env:
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+          HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs=require('node:fs');
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const token=process.env.HH_AUTOMERGE_TOKEN;
+            if (!token) throw Error('HH_AUTOMERGE_TOKEN missing: cannot trigger PR synchronize');
+            const call=async(method,path,payload)=>{
+              const response=await fetch('https://api.github.com'+path,{
+                method,signal:AbortSignal.timeout(20000),
+                headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json',
+                  'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+                ...(payload?{body:JSON.stringify(payload)}:{})
+              });
+              const data=await response.json().catch(()=>({}));
+              const remaining=Number(response.headers.get('x-ratelimit-remaining'));
+              if(method==='GET' && Number.isFinite(remaining) && remaining<100)
+                throw Error('Dedicated owner token rate reserve too low');
+              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              return data;
+            };
+            const writer={commit:async({owner,repo,branch,expectedSha,treeSha,files,number})=>{
+              if(owner!=='andylitvinov-design' || repo!=='books' ||
+                 !/^[a-f0-9]{40}$/i.test(expectedSha) || files.length>8)
+                throw Error('Unsafe writer arguments');
+              const base='/repos/'+owner+'/'+repo;
+              const ref='/git/ref/heads/'+branch.split('/').map(encodeURIComponent).join('/');
+              const current=await call('GET',base+ref);
+              if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
+                throw Error('Source branch moved before repair commit');
+              const tree=[];
+              for(const file of files){
+                const blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+                if(!/^[a-f0-9]{40}$/i.test(blob.sha||''))throw Error('Blob creation failed');
+                tree.push({path:file.path,mode:'100644',type:'blob',sha:blob.sha});
+              }
+              const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
+              const commit=await call('POST',base+'/git/commits',{
+                message:'fix(ci): automated scoped ESLint repair for PR #'+number,
+                tree:t.sha,parents:[expectedSha]});
+              if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
+              const still=await call('GET',base+ref);
+              if(still.object?.sha!==expectedSha)throw Error('PR branch changed during repair');
+              await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
+                {sha:commit.sha,force:false});
+              return {sha:commit.sha};
+            }};
+            const candidate=JSON.parse(fs.readFileSync('hh-candidate/candidate.json','utf8'));
+            const result=await worker.publish({github,core,context,
+              prNumber:Number(process.env.HH_REPAIR_PR),
+              expectedSha:process.env.HH_REPAIR_SHA,candidate,writer});
+            core.info('HH_REPAIR_PUBLISH '+JSON.stringify(result));
+            await core.summary.addHeading('HH PR Repair Worker outcome')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
