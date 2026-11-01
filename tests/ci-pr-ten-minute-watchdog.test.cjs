@@ -857,3 +857,40 @@ test('expired legacy Codex leases release owner capacity, but active and malform
   assert.equal(hasActiveLease([{body:body({...legacy,lease_expires:'not-a-date'})}],SHA,NOW),true);
   assert.equal(hasActiveLease([{body:body({...legacy,schema:'UNTRUSTED'})}],SHA,NOW),true);
 });
+
+test('watchdog retries a missing durable label after the handoff receipt, without duplicate comments',async()=>{
+  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const head='a'.repeat(40), marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->';
+  const pr={number:421,head:{sha:head},labels:[]};
+  let comments=[{body:marker}],written=0,labeled=0;
+  const gh={rest:{issues:{
+    listComments:async()=>({data:comments}),
+    createComment:async()=>{written++;throw Error('duplicate receipt')},
+    addLabels:async({issue_number,labels})=>{assert.equal(issue_number,421);
+      assert.deepEqual(labels,['hh:repair-needed']);labeled++;return {data:[]}}
+  }}};
+  const limited=async(_,fn)=>fn();
+  const ok=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:11,run_attempt:1},[],false,()=>{},limited);
+  assert.equal(ok,true);
+  assert.equal(labeled,1);assert.equal(written,0);
+});
+test('a comment-only partial handoff cannot claim that Repair Worker was queued',async()=>{
+  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const head='b'.repeat(40), pr={number:422,head:{sha:head},labels:[]};
+  const comments=[];let written=0,labeled=0,fail=true;
+  const gh={rest:{issues:{
+    listComments:async()=>({data:comments}),
+    createComment:async({body})=>{written++;comments.push({body});return {data:[]}},
+    addLabels:async()=>{if(fail)throw Object.assign(Error('Resource not accessible by integration'),{status:403});
+      labeled++;return {data:[]}}
+  }}};
+  const limited=async(_,fn)=>fn();
+  const log=()=>{};
+  assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:33,run_attempt:1},[],false,log,limited),false);
+  fail=false;
+  assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:33,run_attempt:1},[],false,log,limited),true);
+  assert.equal(written,1);assert.equal(labeled,1);
+});
