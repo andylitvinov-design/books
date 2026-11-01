@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 120
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -129,7 +129,16 @@ jobs:
                   const i=fields.indexOf(path)
                   return i>0 && fields[i-1]===status
                 })
-              messengerOnly=base===process.env.HH_EXPECTED_BASE &&
+              // The event base SHA can lag the actual test-merge first
+              // parent on a fast-moving production branch. Accept only an
+              // ancestry-proven descendant from the fetched history. A
+              // divergent base, missing history or changed PR HEAD fails shut.
+              let baseValid=base===process.env.HH_EXPECTED_BASE
+              if(!baseValid && /^[0-9a-f]{40}$/.test(process.env.HH_EXPECTED_BASE||'')){
+                git('merge-base','--is-ancestor',process.env.HH_EXPECTED_BASE,base)
+                baseValid=true
+              }
+              messengerOnly=baseValid &&
                 head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
                 (files.every(file=>allowed.some(pattern=>pattern.test(file)))||operatorOnly)
               operatorOnly=operatorOnly&&messengerOnly
