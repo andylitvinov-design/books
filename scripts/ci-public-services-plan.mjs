@@ -50,6 +50,8 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
 // Runtime, privacy, auth, checkout and unknown files still fail closed.
 const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/hh-public-services-production.yml',
+  // Pinned, trusted production push seeds browser binaries without runtime changes.
+  '.github/workflows/hh-public-playwright-cache.yml',
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
