@@ -36,9 +36,24 @@ function activeSweepLease(comments, sha, now) {
     if (start<0 || end<0) return true;
     try {
       const lease = JSON.parse(c.body.slice(start,end+1));
-      if (lease.schema !== 'HH_PR_SWEEP_LEASE_V1') return true;
-      if (lease.head_sha === sha && ['active','claim','heartbeat'].includes(lease.state || lease.last_action) &&
-        Date.parse(lease.expires_at) > now) return true;
+      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
+        if (lease.head_sha === sha &&
+            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
+          const expiry=Date.parse(lease.expires_at || '');
+          if (!Number.isFinite(expiry) || expiry > now) return true;
+        }
+        continue;
+      }
+      // Historical Codex lease comments use lease_expires without schema.
+      // Unknown/malformed ownership always blocks; proven expired leases do not.
+      const legacy=lease.schema == null &&
+        typeof lease.owner === 'string' && lease.owner.trim() &&
+        typeof lease.run_id === 'string' && lease.run_id.trim() &&
+        SHA.test(lease.head_sha || '') &&
+        Number.isFinite(Date.parse(lease.lease_expires || ''));
+      if (!legacy) return true;
+      if (lease.head_sha === sha && Date.parse(lease.lease_expires) > now)
+        return true;
     } catch { return true; }
   }
   return false;

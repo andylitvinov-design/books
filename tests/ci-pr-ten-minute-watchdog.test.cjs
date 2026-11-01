@@ -834,3 +834,16 @@ test('failed legacy gate still pending is not prematurely labeled as root failur
   assert.equal(result.releaseGateQueued,0);
   assert.equal(result.legacyRequiredPending,1);
 });
+
+
+test('expired legacy Codex leases release owner capacity, but active and malformed leases remain protected',()=>{
+  const body=lease=>'<!-- HH_PR_SWEEP_LEASE_V1 -->\n\`\`\`json\n'+JSON.stringify(lease)+'\n\`\`\`';
+  const legacy={owner:'Codex / Video Studio',run_id:'video-2606-20261030',head_sha:SHA,
+    last_action:'verify source',lease_expires:new Date(NOW-3600_000).toISOString()};
+  assert.equal(hasActiveLease([{body:body(legacy)}],SHA,NOW),false);
+  assert.equal(hasActiveLease([{body:body({...legacy,lease_expires:new Date(NOW+3600_000).toISOString()})}],SHA,NOW),true);
+  assert.equal(hasActiveLease([{body:body({...legacy,head_sha:'f'.repeat(40),
+    lease_expires:new Date(NOW+3600_000).toISOString()})}],SHA,NOW),false);
+  assert.equal(hasActiveLease([{body:body({...legacy,lease_expires:'not-a-date'})}],SHA,NOW),true);
+  assert.equal(hasActiveLease([{body:body({...legacy,schema:'UNTRUSTED'})}],SHA,NOW),true);
+});

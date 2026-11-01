@@ -243,10 +243,24 @@ function hasActiveLease(comments, headSha, now) {
       const start = body.indexOf('{'), end = body.indexOf('}', start);
       if (start < 0 || end < 0) return true; // Unparseable ownership: fail closed.
       const lease = JSON.parse(body.slice(start,end+1));
-      if (lease.schema !== 'HH_PR_SWEEP_LEASE_V1') return true;
-      if (lease.head_sha === headSha &&
-          ['active','claim','heartbeat'].includes(lease.state || lease.last_action) &&
-          Date.parse(lease.expires_at || '') > now) return true;
+      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
+        if (lease.head_sha === headSha &&
+            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
+          const expiry = Date.parse(lease.expires_at || '');
+          if (!Number.isFinite(expiry) || expiry > now) return true;
+        }
+        continue;
+      }
+      // Older Codex leases have no schema and use lease_expires. Only a
+      // complete, time-bounded, exact-HEAD legacy record may expire safely.
+      const legacy = lease.schema == null &&
+        typeof lease.owner === 'string' && lease.owner.trim() &&
+        typeof lease.run_id === 'string' && lease.run_id.trim() &&
+        /^[a-f0-9]{40}$/i.test(lease.head_sha || '') &&
+        Number.isFinite(Date.parse(lease.lease_expires || ''));
+      if (!legacy) return true;
+      if (lease.head_sha === headSha && Date.parse(lease.lease_expires) > now)
+        return true;
     } catch { return true; }
   }
   return false;

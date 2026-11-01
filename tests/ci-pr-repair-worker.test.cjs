@@ -124,3 +124,20 @@ test('missing manual-repair label is created before returning owner status',asyn
   assert.equal(f.log.comments,1);
   assert.equal(f.log.commit,0);
 });
+
+
+test('expired historical sweep comments cannot permanently suppress real Repair Worker',async()=>{
+  const now=Date.parse('2026-11-01T18:10:00Z');
+  const wrap=lease=>'<!-- HH_PR_SWEEP_LEASE_V1 -->\n\`\`\`json\n'+JSON.stringify(lease)+'\n\`\`\`';
+  const old={owner:'Codex / video',run_id:'video-2606-20261030',head_sha:sha,
+    lease_expires:'2026-10-30T16:45:00Z',last_action:'verify'};
+  assert.equal(activeSweepLease([{body:wrap(old)}],sha,now),false);
+  assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),true);
+  assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
+    lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
+  assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
+  const f=fixture({comments:[{body:wrap(old)}]});
+  const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
+  assert.equal(claimResult.status,'claimed');
+  assert.equal(f.log.comments,1);
+});
