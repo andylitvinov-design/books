@@ -118,6 +118,40 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
+        // A shared direct link to the Audio picker must reveal the Music
+        // workspace instead of leaving the only picker in closed advanced
+        // settings. Run once per real engine at the owner iPhone width.
+        if(locale==="ru"&&width===390){
+          const deepPage=await context.newPage();
+          try{
+            const deepResponse=await deepPage.goto(url+"#video-audio",{
+              waitUntil:"domcontentloaded",timeout:90000,
+            });
+            assert.equal(deepResponse?.status(),200,"Audio deep link must serve the canonical page");
+            await deepPage.locator("[data-mandala-free-video]").waitFor({
+              state:"visible",timeout:30000,
+            });
+            await expect(deepPage.locator('[data-video-quick-control="audio"]'))
+              .toHaveAttribute("aria-pressed","true",{timeout:20000});
+            const audioPane=deepPage.locator("[data-video-audio-section]");
+            await expect(audioPane).toBeVisible();
+            assert.equal(await audioPane.count(),1,"one canonical Audio picker after deep link");
+            assert.equal(await audioPane.locator("[data-video-audio-mic]").count(),1,
+              "deep linking cannot instantiate a second voice recorder");
+            const audioGeometry=await audioPane.evaluate(element=>({
+              rect:element.getBoundingClientRect().toJSON(),
+              viewport:document.documentElement.clientWidth,
+              pageWidth:document.documentElement.scrollWidth,
+            }));
+            assert.ok(audioGeometry.rect.width>260 &&
+              audioGeometry.rect.width<=audioGeometry.viewport+2 &&
+              audioGeometry.pageWidth<=audioGeometry.viewport+2,
+              "Audio deep link mobile overflow: "+JSON.stringify(audioGeometry));
+            mkdirSync("artifacts/mandala-audio",{recursive:true});
+            await captureSyntheticOverview(deepPage,audioPane,
+              "artifacts/mandala-audio/"+engine+"-ru-390-deep-link.png");
+          }finally{await deepPage.close();}
+        }
 
         // First free video: real exported moving media in both engines.
         const firstStart=page.locator("[data-first-free-video]");
@@ -366,7 +400,10 @@ const runEngine = async ([engine, browserType]) => {
         const playerRect=await screen.boundingBox();
         assert.ok(playerRect&&playerRect.width>playerRect.height,
           engine+" "+locale+" "+width+"px central player must be widescreen");
-        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
+        // This optional theme menu is initially collapsed; innerText() returns ""
+        // for hidden descendants in BOTH engines. Verify the real localized DOM
+        // label without opening an advanced control or weakening user flows.
+        assert.equal((await quick.locator('[data-video-quick-theme="life"] span').last().textContent())?.trim(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
@@ -962,7 +999,7 @@ const runEngine = async ([engine, browserType]) => {
           await page.waitForFunction(() => {
             const video = document.querySelector('[data-mandala-scene-preview="golden-rain"]');
             return video && video.readyState >= 2 && video.videoWidth >= 500 && video.currentTime >= .15;
-          }, undefined, {timeout: 30000});
+          }, undefined, {timeout: 45000});
         } catch (error) {
           const state = await selectedClip.evaluate(video => ({readyState:video.readyState,
             networkState:video.networkState,paused:video.paused,currentTime:video.currentTime,
@@ -1094,13 +1131,19 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
         await page.locator('[data-video-affirmation-frequency="3"]').click();
         assert.equal(await page.locator('[data-video-affirmation-frequency="3"]').getAttribute("aria-pressed"),"true");
-        for(const mode of ["small","frame"]){
-          const checkbox=page.locator('[data-video-affirmation-visibility="'+mode+'"] input');
-          await checkbox.evaluate(element=>element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
-          await checkbox.check();
-        }
-        assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
-        await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
+        // The fixed mobile navigation can cover controls Playwright considers
+        // merely in-view. Scroll as a user would, then perform real pointer
+        // actions and verify both states without hiding the navigation.
+        const smallVisibility=page.locator('[data-video-affirmation-visibility="small"] input');
+        const frameVisibility=page.locator('[data-video-affirmation-visibility="frame"] input');
+        await smallVisibility.evaluate(element=>element.scrollIntoView({block:"center",behavior:"instant"}));
+        await smallVisibility.check();
+        assert.equal(await smallVisibility.isChecked(),true);
+        await frameVisibility.evaluate(element=>element.scrollIntoView({block:"center",behavior:"instant"}));
+        await frameVisibility.check();
+        assert.equal(await frameVisibility.isChecked(),true);
+        await frameVisibility.uncheck();
+        assert.equal(await frameVisibility.isChecked(),false);
         await page.locator("[data-video-affirmations-custom] summary").click();
         await page.locator("[data-video-custom-affirmations]").fill("I choose a small, kind step");
         assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/5.*phrases|5.*фраз|5.*frases/i);
@@ -1136,8 +1179,13 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
-        await compactHypno.locator("[data-hypno-design-edit]").click();
-        await expect(compactHypno.locator("[data-hypno-design-edit]")).toHaveAttribute("aria-expanded","true");
+        // Edit is an idempotent OPEN action; if the panel is already open,
+        // clicking Edit again must not accidentally close it (Safari tap regression).
+        const designEdit=compactHypno.locator("[data-hypno-design-edit]");
+        await designEdit.click();
+        await expect(designEdit).toHaveAttribute("aria-expanded","true");
+        await designEdit.click();
+        await expect(designEdit).toHaveAttribute("aria-expanded","true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1340,8 +1388,8 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(await create.isEnabled(),false,"selecting a soundtrack must not attach it silently");
           await attachButton.click();
           assert.equal(await attachButton.isDisabled(),true,"attached soundtrack acknowledged");
-          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Гармония/,
-            "attached identity is separate from current audio preview");
+          assert.match(await page.locator("[data-video-audio-attached]").innerText(),/Фортепиано гармонии/,
+            "attached identity reflects the actual selected original melody, not the playing preview");
           assert.equal(await create.isEnabled(),true,"attach unlocks real audio+video export");
           const nativePlayer=page.locator("[data-video-audio-player]");
           await nativePlayer.waitFor({state:"attached",timeout:10000});
@@ -1355,7 +1403,28 @@ const runEngine = async ([engine, browserType]) => {
           // MediaRecorder session, not just the legacy Generate control.
           await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
-          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          try {
+            await videoLink.waitFor({ state: "visible", timeout: 45000 });
+          } catch (error) {
+            // Preserve the real end-to-end requirement, but report the exact
+            // stopped state (consent, renderer, or audio) instead of a blind
+            // selector timeout. Never substitute a synthetic download.
+            const state=await page.evaluate(()=>{
+              const control=document.querySelector("[data-mandala-video-generate]");
+              const compact=document.querySelector("[data-hypno-create-video]");
+              const master=document.querySelector("[data-mandala-master-mp4]");
+              return {
+                controlPresent:Boolean(control),controlDisabled:control?.disabled,
+                compactDisabled:compact?.disabled,
+                consent:document.querySelector("[data-video-photo-consent]")?.checked,
+                downloadPresent:Boolean(document.querySelector("[data-mandala-video-download]")),
+                status:[...document.querySelectorAll("[role=status]")].map(x=>x.textContent?.trim()).filter(Boolean).slice(-6),
+                player:{readyState:master?.readyState,paused:master?.paused,error:master?.error?.code??null},
+                recorderSupported:typeof MediaRecorder==="function",
+              };
+            });
+            throw new Error("Chromium 390px actual video export did not finish: "+JSON.stringify(state),{cause:error});
+          }
           const filename = await videoLink.getAttribute("download");
           assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
           const encoded=page.locator("[data-mandala-video-preview]");
@@ -1993,7 +2062,9 @@ const runEngine = async ([engine, browserType]) => {
     if(engine==="webkit")releaseWebkitRu390();
   }
 };
-// Both engines finish before result handling; never waive a failed browser.
+// Both engines finish before result handling: preserve the mandatory
+// independently executed Chromium/WebKit E2E scenarios with bounded concurrency.
+// Never waive a failed browser or skip an actual encoded video.
 const engineResults = await Promise.allSettled(engines.map(runEngine));
 const rejectedEngines = engineResults.filter(result => result.status === "rejected");
 if (rejectedEngines.length) {

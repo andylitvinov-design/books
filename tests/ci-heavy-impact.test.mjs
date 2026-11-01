@@ -132,6 +132,8 @@ test('App Browser keeps one core Chromium PR job and makes full old matrix manua
   assert.match(yaml, /browser-journey-complete/);
   assert.match(yaml, /verify-app-r1/);
   assert.match(yaml, /Initialize empty synthetic database/);
+  assert.match(yaml, /- run: npm ci --no-audit --no-fund\n\s+if: github.event_name != 'pull_request'/,
+    'source-only PR must not repeat Core npm install; full browser QA retains it');
 });
 
 test('CI-only policy edits skip unrelated App, Mandala and Free Review browser matrices', () => {
@@ -211,13 +213,16 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala PR keeps current unit contracts; full legacy browser/build only by manual request', () => {
+test('Mandala PR retains units and runs full media browser only manually or for dedicated voice release branches', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-studio-'\)/);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-mix-'\)/);
+  assert.match(yaml, /node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
-  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
+  assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'.*\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'.*/);
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
@@ -279,4 +284,35 @@ test('temporary backlog fast lane keeps App R1 PR source contracts and manual br
   assert.ok(yaml.includes('"browser":"webkit","suite":"extended"'));
   assert.match(yaml, /browser-journey-complete/);
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
+});
+
+
+test('only audited CI-policy paths skip unrelated heavy browser matrices', () => {
+  const ciPaths = [
+    '.github/workflows/hh-app-browser.yml',
+    '.github/workflows/hh-app-r1.yml',
+    '.github/workflows/holistic-support-mandala.yml',
+    '.github/workflows/ia-v2.yml',
+    '.github/workflows/site-video-browser.yml',
+    'tests/ci-head-cancellation.test.mjs',
+    'tests/ci-heavy-impact.test.mjs',
+    'tests/ci-stale-run-deduplication.test.mjs',
+  ].map(filename => ({filename,status:'modified'}));
+  assert.deepEqual(decideHeavyImpact('free-review',ciPaths),{browser:false});
+  assert.deepEqual(decideHeavyImpact('mandala',ciPaths),{browser:false});
+  assert.deepEqual(decideHeavyImpact('app-r1',ciPaths),
+    {full_app:false,database:false,banner:false,profile:false});
+  for (const protectedPath of [
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-public-services-production.yml',
+    'app/api/app/direct-messages/route.js',
+  ]) {
+    const risky = [...ciPaths,{filename:protectedPath,status:'modified'}];
+    assert.deepEqual(decideHeavyImpact('free-review',risky),{browser:true});
+    assert.deepEqual(decideHeavyImpact('mandala',risky),{browser:true});
+    assert.deepEqual(decideHeavyImpact('app-r1',risky),
+      {full_app:true,database:true,banner:true,profile:true});
+  }
+  assert.deepEqual(decideHeavyImpact('free-review',
+    [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
 });

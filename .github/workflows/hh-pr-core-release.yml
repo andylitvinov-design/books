@@ -98,7 +98,10 @@ jobs:
                   tests/ci-workflow-globs.test.mjs|\
                   tests/workflow-next-route-filters.test.mjs|\
                   tests/pr-sweep-guard.test.mjs|\
-                  tests/ci-heavy-draft-policy.test.mjs) ;;
+                  tests/ci-heavy-draft-policy.test.mjs|\
+                  tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-head-cancellation.test.mjs|\
+                  tests/ci-stale-run-deduplication.test.mjs) ;;
                 *) ci_only=false ;;
               esac
             done < /tmp/hh-pr-changed-files.z
@@ -195,6 +198,42 @@ jobs:
         # adds no coverage for workflow/router/test changes.
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
+  # First step of the guarded release-ready migration. This optional status
+  # checks Core prerequisites only; it never replaces specialist/security gates.
+  hh-core-verified:
+    name: hh-core-verified
+    needs: [scope, code]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Fail closed on missing, cancelled or failing required core jobs
+        shell: bash
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CODE_RESULT: ${{ needs.code.result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: core checks deferred; hh-core-verified must remain red until Ready is fully validated.' >&2
+            exit 1
+          fi
+          [[ "$SCOPE_RESULT" == success ]] || exit 1
+          if [[ "$DOCS_ONLY" == true ]]; then
+            [[ "$CODE_RESULT" == skipped ]] || exit 1
+          elif [[ "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
+            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || exit 1
+            echo "Trusted quick route $ROUTE: no Next.js build needed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            [[ "$CODE_RESULT" == success ]] || exit 1
+          fi
+          echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
   release-ready:
     name: release-ready
     needs: [scope, code]

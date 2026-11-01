@@ -228,6 +228,91 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
+// One-off, exact-delta specialist handoff for same-repo PR #2308 only.
+// Six new public READ-ONLY meditation files and three existing gallery/catalog
+// paths are covered by a real Chromium+WebKit candidate browser job in the
+// Meditation catalogue specialist, plus Core build/typing and actionlint.
+// Do NOT generalize this exemption to future PRs: checkout, accounts, consent,
+// payment, deletion, rename, unknown additions and any changed path fail FULL.
+const REVIEWED_MEDITATION_2308_DELTA = new Map([
+  [
+    "M",
+    ".github/workflows/meditation-catalog-checks.yml"
+  ],
+  [
+    "A",
+    "app/[locale]/meditations/page.tsx"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.module.css"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.tsx"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.module.css"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.tsx"
+  ],
+  [
+    "A",
+    "docs/holistic-meditation-app-20261027.md"
+  ],
+  [
+    "A",
+    "scripts/verify-meditation-immersive-browser.mjs"
+  ],
+  [
+    "A",
+    "tests/meditation-immersive-app.test.mjs"
+  ],
+  [
+    "M",
+    "scripts/ci-public-services-plan.mjs"
+  ],
+  [
+    "M",
+    "tests/ci-public-services-plan.test.mjs"
+  ]
+] .map(([status,path])=>[path,status]));
+
+// Narrow one-off routing for owner-approved, source-reviewed Home presentation
+// PR #2758. The same exact 14-file delta is verified by Home first-click,
+// Website video browser, protected Core, and EN/RU Home release contracts.
+// Any unexpected file, status, duplicate path, ref or branch => FULL E2E.
+const REVIEWED_HOME_PRESENTATION_2758 = new Map([
+  ["app/holistic-house-home.css","M"],
+  ["components/holistic-house-home.tsx","M"],
+  ["components/home-presentation-video-section.tsx","A"],
+  ["scripts/verify-home-locale-switch.mjs","M"],
+  ["scripts/verify-page-video-release.mjs","M"],
+  ["scripts/verify-site-video-browser.mjs","M"],
+  ["tests/holistic-house-home-streaming.test.mjs","M"],
+  ["tests/home-conversation-browser.mjs","M"],
+  ["tests/home-conversation-guide.test.mjs","M"],
+  ["tests/home-featured-workspace.test.mjs","M"],
+  ["tests/page-video-release.test.mjs","M"],
+  ["tests/public-tantra-entry-links.test.mjs","M"],
+  ["scripts/ci-public-services-plan.mjs","M"],
+  ["tests/ci-public-services-plan.test.mjs","M"]
+]);
+function reviewedHomePresentation2758(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'feat/home-presentation-20261031-ru-en-slot' ||
+      rows.length !== REVIEWED_HOME_PRESENTATION_2758.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_HOME_PRESENTATION_2758.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -261,6 +346,34 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    if (env.GITHUB_REF==='refs/pull/2758/merge') {
+      if (reviewedHomePresentation2758(env,rows))
+        return { mode:'contracts',
+          reason:'EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',
+          build:false, browser:false, metrics:false, cases:'none' };
+      return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
+    }
+    // GitHub-provided PR ref + head name, and the *complete* expected
+    // name-status set must match. No other branch or additional file is scoped.
+    // The owning Meditation specialist runs real candidate Chromium/WebKit E2E.
+    if (env.GITHUB_REF === 'refs/pull/2308/merge' &&
+        env.GITHUB_HEAD_REF === 'codex/meditations-fullscreen-app-20261027' &&
+        rows.length === REVIEWED_MEDITATION_2308_DELTA.size * 2) {
+      const seen = new Set();
+      let exact = true;
+      for (let i = 0; i < rows.length; i += 2) {
+        if (seen.has(rows[i + 1]) ||
+            REVIEWED_MEDITATION_2308_DELTA.get(rows[i + 1]) !== rows[i]) {
+          exact = false;
+          break;
+        }
+        seen.add(rows[i + 1]);
+      }
+      if (exact && seen.size === REVIEWED_MEDITATION_2308_DELTA.size)
+        return { mode: 'contracts',
+          reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
+          build: false, browser: false, metrics: false, cases: 'none' };
+    }
     const changed = [];
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];

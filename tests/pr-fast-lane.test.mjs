@@ -658,13 +658,19 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
-test('Mandala PR runs focused source contracts and manual dispatch owns exhaustive media engines', () => {
+test('Mandala PR retains focused source checks plus protected Voice or manual media engines', () => {
   const yaml = workflow('holistic-support-mandala.yml');
   const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  assert.ok(yaml.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"), 'full media browser must be manual-only');
+  const guardedMediaCondition = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))";
+  for (const name of [
+    'Build', 'Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px'
+  ]) assert.ok(yaml.includes('- name: '+name+'\n        '+guardedMediaCondition),
+    'full media browser must remain available manually and mandatory on Voice PRs: '+name);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);
@@ -911,15 +917,14 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
 
 test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
   const source = workflow('hh-native-auto-merge.yml');
-  const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
+  const enable = source.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable, 'missing event-driven enable job');
   assert.match(source, /^  workflow_run:\s*$/m);
-  for (const name of [
-    'HH PR core release gate',
-    'Holistic Support mandala release checks',
-    'HH workflow syntax — actionlint',
-    'Holistic House public services production acceptance',
-  ]) assert.ok(source.includes("      - '" + name + "'"), 'missing CI completion callback: ' + name);
+  const workflowRun=source.split('  workflow_run:\n')[1]?.split('    types: [completed]')[0];
+  assert.ok(workflowRun,'the trusted Core completion hook must exist');
+  const callbacks=[...workflowRun.matchAll(/^\s+- '([^']+)'/gm)].map(match=>match[1]);
+  assert.deepEqual(callbacks,['HH PR core release gate'],
+    'Core release-ready already aggregates specialists; redundant callbacks exhaust the owner PAT');
   assert.ok(enable.includes("github.event_name == 'workflow_run'"), 'not event-driven');
   assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'must wake on successful CI');
   assert.ok(enable.includes('run.event !== "pull_request"'), 'must ignore other triggers');
@@ -939,4 +944,77 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(recover?.includes("github.event.workflow_run.name == 'HH PR core release gate'"),
     'core interruption repair must not run for every specialist completion');
   assert.doesNotMatch(enable, /checkout@|--admin|--delete-branch|continue-on-error:/);
+});
+
+
+test('event-driven AutoMerge zero-required fallback remains normal protected exact-base merge only', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  const enable = source.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  assert.ok(enable, 'missing trusted event-driven AutoMerge');
+  assert.ok(enable.includes('core.setOutput("base", pr.base.sha);'));
+  assert.ok(enable.includes('PR_BASE_SHA: ${{ steps.ready.outputs.base }}'));
+  assert.ok(enable.includes("if grep -Eq 'Pull request is in (clean|unstable) status'"),
+    'direct merge fallback must respond only to exact GitHub zero-required queue rejection');
+  assert.ok(enable.includes('repos/$GH_REPO/rulesets/26269892'),
+    're-read production hosted ruleset immediately before fallback');
+  assert.ok(enable.includes('"$enforcement" != active || "$required_count" != 0'),
+    'required contexts restored: normal protected fallback must stop');
+  assert.ok(enable.includes('repos/$GH_REPO/git/ref/heads/codex/public-book-library'),
+    'must independently read current production tip');
+  assert.ok(enable.includes('"$current_base" != "$PR_BASE_SHA"'),
+    'never merge after the production base changes');
+  assert.ok(enable.includes('(.headRefOid == env.PR_HEAD)'),
+    'immediately recheck exact PR HEAD');
+  assert.ok(enable.includes('(.autoMergeRequest == null)'),
+    'must not replace existing native AutoMerge');
+  assert.ok(enable.includes('gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD"'),
+    'fallback must use the same protected merge method and optimistic HEAD lease');
+  assert.ok(enable.includes('coreRun.conclusion !== "success"'),
+    'never fall back if the current Core CI failed');
+  assert.ok(enable.includes('run.status !== "completed"'),
+    'never fall back while a current specialist workflow is still running');
+  assert.doesNotMatch(enable, /--admin|--force|bypass_rulesets|continue-on-error:|checkout@/);
+});
+
+test('native AutoMerge wakes once after Core and reserves owner PAT for actual protected merge', () => {
+  const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const marker='  workflow_run:\n', start=source.indexOf(marker);
+  const end=source.indexOf('    types: [completed]',start);
+  assert.ok(start>=0 && end>start,'Core workflow_run event must be preserved');
+  const callbacks=[...source.slice(start,end).matchAll(/^\s+- '([^']+)'/gm)].map(match=>match[1]);
+  assert.deepEqual(callbacks,['HH PR core release gate'],
+    'no duplicate specialist CI wakeups that exhaust owner token');
+  const readyStart=source.indexOf('      - name: Verify live PR and completed exact-head CI');
+  const armStart=source.indexOf('      - name: Enable native auto-merge for this exact head',readyStart);
+  assert.ok(readyStart>0 && armStart>readyStart);
+  const readOnly=source.slice(readyStart,armStart);
+  assert.ok(readOnly.includes('github-token: ${{ github.token }}'),
+    'read-only preflight must use per-repo Actions token');
+  assert.doesNotMatch(readOnly,/HH_AUTOMERGE_TOKEN/,
+    'owner PAT must not be spent on every read-only CI wakeup');
+  assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'),
+    'protected merge still uses the explicitly configured owner token');
+  assert.ok(readOnly.includes('coreRun.conclusion !== "success"'));
+  assert.ok(readOnly.includes('expectedHead !== pr.head.sha'));
+  assert.ok(source.includes('1) merge_option=--merge'));
+  assert.ok(!source.includes('recover-missing-required-ci:'), 'legacy recovery must not consume API budget');
+  assert.ok(source.includes('recover-interrupted-core:'));
+});
+
+test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
+  assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
+  assert.match(coreSection,/^    name: hh-core-verified$/m);
+  assert.match(coreSection,/^    needs: \[scope, code\]$/m);
+  assert.match(coreSection,/^    if: always\(\)$/m);
+  assert.match(coreSection,/^    timeout-minutes: 3$/m);
+  assert.match(coreSection,/\[\[ "\$SCOPE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(coreSection,/\[\[ "\$CODE_RESULT" == skipped \]\]/);
+  assert.match(coreSection,/PR_DRAFT: \$\{\{ github\.event\.pull_request\.draft \}\}/);
+  assert.doesNotMatch(coreSection,/ci-specialist-aggregate\.mjs|gh api|checkout@v4/);
+  // A green Core result alone must NOT remove the old release specialist gate.
+  assert.match(source,/^  release-ready:/m);
+  assert.match(source,/ci-specialist-aggregate\.mjs/);
 });

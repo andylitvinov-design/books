@@ -47,7 +47,7 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/startUploadedAudio\(attachedAudio.file,soundVolume\)/);
+  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true\}\)/);
   assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume\)/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
@@ -236,4 +236,19 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   assert.match(studio,/flushSync\(\(\)=>\{setActiveWorkspace\("audio"\);setSamplePreviewId\(choice\);\}\)/);
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
+});
+
+
+test("direct audio URL reveals its existing workspace instead of hidden advanced settings",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/const revealAudioDeepLink=\(\)=>\{/);
+  assert.match(s,/if\(window\.location\.hash!==\"#video-audio\"\)return;/);
+  assert.match(s,/setActiveWorkspace\(\"audio\"\)/);
+  assert.match(s,/window\.addEventListener\(\"hashchange\",revealAudioDeepLink\)/);
+  assert.match(s,/window\.removeEventListener\(\"hashchange\",revealAudioDeepLink\)/);
+  assert.equal((s.match(/id=\"video-audio\"/g)||[]).length,1);
+  assert.equal((s.match(/data-video-audio-mic\b/g)||[]).length,1);
+  assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
+  assert.match(browser,/deep-link\.png/);
 });
