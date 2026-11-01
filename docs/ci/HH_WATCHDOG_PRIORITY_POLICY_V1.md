@@ -19,3 +19,6 @@ Watchdog uses four fast-ranked slots and twelve rotating slots every ten minutes
 On the GitHub PR use Labels → apply exactly one hh:priority:p0/p1/p2/p3. The priority labels are created idempotently by the trusted default-branch Watchdog workflow when its configuration is merged. Use Draft for PRs that must not progress. No changes to release gates.
 
 Review Actions summary from HH PR 10-minute watchdog: priorityTop shows PR number, tier, score and reason; priorityAmbiguous reports label conflicts. Confirm actual first default-branch scheduled run and targeted PR before claiming the scheduler is live.
+
+## Priority backlog fairness (follow-up)
+The highest-impact PR remains anchored. When the top priority tier has more items than the four fast slots, unused fast slots rotate among its other PRs each ten-minute cycle. The independent 12-slot round-robin still covers the complete eligible inventory, so an influx of urgent P0 work cannot indefinitely hide ordinary tasks. A Core completion wake is inspected first, without ejecting the highest-impact PR.
