@@ -1,4 +1,6 @@
-import test from "node:test";\n// Run iPhone decoder-gesture tests in Mandala\u0027s required focused CI.\nimport "./free-film-source-loader.test.mjs";
+import test from "node:test";
+// Run iPhone decoder-gesture tests in Mandala's required focused CI.
+import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
