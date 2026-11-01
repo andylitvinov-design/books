@@ -163,8 +163,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  // Explicit opt-in; the local deterministic guide remains available instantly.
  // The model may only phrase a question, never modify filters or render jobs.
  useEffect(()=>{
-   if(!aiConsent||!draft.goal.trim()||!["mood","aspect","duration","music","phrases"].includes(step))return;
-   const key=locale+":"+draft.goal.trim();
+   if(!aiConsent||!draft.topicId||!draft.scenarioId||!draft.ideaId||
+       !["mood","aspect","duration","music","phrases"].includes(step))return;
+   const questionGoal=draft.goal.trim()||
+     getVideoGoalTopic(draft.topicId,locale)?.desiredOutcome||"";
+   if(questionGoal.length<3)return;
+   const key=locale+":"+questionGoal;
    if(aiAskedKeyRef.current===key)return;
    aiAskedKeyRef.current=key;
    const controller=new AbortController();
@@ -172,7 +176,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    void fetch("/api/holistic-support/video-director-chat",{
      method:"POST",credentials:"same-origin",cache:"no-store",
      headers:{"Content-Type":"application/json"},signal:controller.signal,
-     body:JSON.stringify({consent:true,locale,goal:draft.goal,step,
+     body:JSON.stringify({consent:true,locale,goal:questionGoal,step,
        draft:{mood:draft.mood,aspect:draft.aspect,duration:draft.duration,
          music:draft.music,phrases:draft.phrases}}),
    }).then(async response=>{
@@ -313,10 +317,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          addLine("assistant",question(step));
        }else addLine("assistant",t.error+" "+question(step));
        return;
-     }
-     if(next.topicId&&!next.goal.trim()){
-       next={...next,goal:getVideoGoalTopic(next.topicId,locale)?.desiredOutcome||""};
-     }
+     }   // Leave the public goal text empty for a manual topic pick; the director
+   // reads chosenTopic.desiredOutcome directly, never a stale inherited goal.
      // Recognize extra format/music details only in a free-text answer, not
      // in curated labels such as "Calm" or "Energy" that name the subject.
      if(!choice)next=mergeVideoChatPreferences(next,value) as Draft;
@@ -404,7 +406,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        signal:controller.signal,
        headers:{"Content-Type":"application/json","Accept":"application/json"},
        body:JSON.stringify({
-         consent:true,locale,goal:draft.goal,durationSeconds:executable.durationSeconds,
+         consent:true,locale,goal:goalForPlan,durationSeconds:executable.durationSeconds,
          aspect:executable.aspect,mood:executable.mood,
          music:executable.audio.trackId,phrases:executable.phrases,
          candidateSceneIds:executable.candidateSceneIds,

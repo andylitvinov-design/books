@@ -159,6 +159,15 @@ test("one-click shortcut fills missing nodes and filters without overwriting cho
   assert.equal(nextVideoChatTreeStep({...next,mood:"slow",duration:30}),"review");
 });
 
+test("auto-selected extended phrase keeps both sentences for two actual scene captions",()=>{
+  const selected=pick(pick(draft(),"category","love"),"topic","love-trust");
+  const auto=autocompleteVideoChatTree({...selected,length:"extended"},
+    "relationships","ru");
+  assert.equal(auto?.length,"extended");
+  assert.ok(auto?.phraseText.includes("\\n"));
+  assert.ok(auto?.phraseText.length>35);
+});
+
 test("source integration uses one existing renderer, safe unbound warning and client-only prepared copy",()=>{
   const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
