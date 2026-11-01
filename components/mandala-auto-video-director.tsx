@@ -4,6 +4,7 @@ import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
+import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -21,7 +22,9 @@ type Props={
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
   onGoalChange:(value:string)=>void;
-  onApply:(presetId:string,durationSeconds:10|15|20|30|60)=>void;
+  onInvalidate?:()=>void;
+  onApply:(presetId:string,durationSeconds:10|15|20|30|60,
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]})=>void|boolean;
   onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;
 };
 const copy={
@@ -40,6 +43,7 @@ const copy={
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
    input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Загружаем четыре видеосцены…",
    selectedGoal:"Выбранная цель",
+   timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",
  },
  en:{
    title:"Auto Video Director",
@@ -56,6 +60,7 @@ const copy={
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
    input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Loading four video scenes…",
    selectedGoal:"Selected goal",
+   timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",
  },
  es:{
    title:"Auto Video Director",
@@ -72,6 +77,7 @@ const copy={
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
    input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Cargando cuatro escenas de vídeo…",
    selectedGoal:"Objetivo elegido",
+   timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",
  }
 } as const;
 const allowedDurations=[10,15,20,30,60] as const;
@@ -83,7 +89,7 @@ const themeLabels={
 } as const;
 
 export function MandalaAutoVideoDirector({
- locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply,onCreate,canCreate=false,rendering=false
+ locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -94,6 +100,10 @@ export function MandalaAutoVideoDirector({
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
+ const [timelineEdits,setTimelineEdits]=useState<{
+   presetId:string;totalSeconds:number;clipIds:string[];durations:number[];
+ }|null>(null);
+ const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
  },[]);
@@ -103,16 +113,40 @@ export function MandalaAutoVideoDirector({
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;
  const length=seconds||proposal?.durationSeconds||30;
+ const activeTimelineEdits=chosen&&timelineEdits?.presetId===chosen.id&&
+   timelineEdits.totalSeconds===length?timelineEdits:null;
+ const stageClipIds=chosen?(activeTimelineEdits?.clipIds||[...chosen.clips]):[];
+ const stageDurations=chosen?(activeTimelineEdits?.durations||
+   allocateAdaptiveFilmTimeline(length,stageClipIds).map(shot=>shot.durationSeconds)):[];
+ const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations]);
+ const editTimeline=(clipIds:readonly string[],durations:readonly number[])=>{
+   if(!chosen)return;
+   onInvalidate?.(); // An edited cut must not leave a stale downloadable movie.
+   setTimelineEdits({presetId:chosen.id,totalSeconds:length,
+     clipIds:[...clipIds],durations:[...durations]});
+ };
+ const shiftBoundary=(index:number,direction:-1|1)=>{
+   if(index<0||index>=3)return;
+   const next=shiftAdaptiveFilmBoundary(stageDurations,index,direction);
+   if(next.some((seconds,i)=>seconds!==stageDurations[i]))editTimeline(stageClipIds,next);
+ };
+ const swapScene=(index:number,direction:-1|1)=>{
+   const other=index+direction;
+   if(other<0||other>=stageClipIds.length)return;
+   const next=[...stageClipIds];
+   [next[index],next[other]]=[next[other],next[index]];
+   editTimeline(next,stageDurations);
+ };
  // A prompt changed in the other shared editor must not leave a stale confirmation.
  const showProposal=Boolean(proposal&&proposalContext?.goal===goal&&
-   (proposalContext?.theme===theme||activePresetId===chosen?.id));
+   (proposalContext?.theme===theme||proposal.theme===theme||activePresetId===chosen?.id));
  const alternatives=proposal?[proposal.presetId,...proposal.alternativePresetIds]
    .filter((id):id is string=>Boolean(id)): [];
  const choose=()=>{
    setSelectedGoalId(null);
    setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
-   setOverrideId(null);setSeconds(null);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
    // The selected ready goal also becomes the editable shared wish.
@@ -121,7 +155,7 @@ export function MandalaAutoVideoDirector({
    onGoalChange(nextGoal);
    setProposalContext({goal:nextGoal,theme});
    setSelectedGoalId(goalId);
-   setOverrideId(null);setSeconds(null);
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
    setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,fallbackTheme:theme,presets,scenes}));
  };
  const primaryGoalIds=new Set(["confidence","connection","fresh-start","stability"]);
@@ -152,7 +186,7 @@ export function MandalaAutoVideoDirector({
          onChange={event=>{
            onGoalChange(event.currentTarget.value);
            setProposal(null);setProposalContext(null);setOverrideId(null);setSeconds(null);
-           setSelectedGoalId(null);
+           setSelectedGoalId(null);setTimelineEdits(null);
          }}/>
      </label>
      <div className={css.goalActions}>
@@ -194,7 +228,8 @@ export function MandalaAutoVideoDirector({
            const option=presets.find(item=>item.id===id);
            return option?<button key={id} type="button" data-auto-video-option={id}
              aria-pressed={chosen.id===id} disabled={disabled}
-             onClick={()=>setOverrideId(id===proposal.presetId?null:id)}>
+             onClick={()=>{if(chosen?.id!==id)onInvalidate?.();
+               setOverrideId(id===proposal.presetId?null:id);setTimelineEdits(null);}}>
              {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
                alt="" loading="lazy" className={css.storyPoster}/>:null}
              <span className={css.storyNumber}>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
@@ -205,37 +240,77 @@ export function MandalaAutoVideoDirector({
        </div>
        <p className={css.variantsTitle}>{t.storyboard}</p>
        <ol className={css.shots} data-auto-video-storyboard>
-         {chosen.clips.map((clip,index)=>{
+         {stageClipIds.map((clip,index)=>{
            const scene=sceneById.get(clip);
            return <li key={clip}>
              {scenePoster(clip)?<img src={scenePoster(clip)!} alt="" loading="lazy" className={css.shotPoster}/>:null}
-             <b>{index+1}. {t.stages[index]}</b><span>{sceneLabel(clip)}</span>
+             <b>{index+1}. {t.stages[index]} · {stageDurations[index]} s</b><span>{sceneLabel(clip)}</span>
              {scene?<small className={css.clipDescription}>{scene.description[locale]}</small>:null}
              {scene?<small className={css.clipTags}>{themeLabels[locale][scene.theme as VideoTheme]||scene.theme} · {scene.tags.slice(0,3).join(" · ")}</small>:null}
            </li>;
          })}
        </ol>
+       <div className={css.timelineTrack} data-auto-video-timeline-preview
+         role="list" aria-label={t.timeline}>
+         {stageClipIds.map((clip,index)=><div key={clip} role="listitem"
+           className={css.timelineSegment} style={{flexGrow:stageDurations[index]}}
+           title={sceneLabel(clip)+" · "+stageDurations[index]+" s"}>
+           <strong>{index+1}</strong><span>{stageDurations[index]} s</span>
+         </div>)}
+       </div>
+       <details className={css.montageDetails} data-auto-video-montage>
+         <summary>{t.openMontage}</summary>
+         <p className={css.notice}>{t.montageHelp}</p>
+         <div className={css.montageRows}>
+           {stageClipIds.map((clip,index)=><div className={css.montageRow} key={clip}>
+             <span className={css.montageName}>
+               <strong>{index+1}. {t.stages[index]} · {stageDurations[index]} s</strong>
+               <small>{sceneLabel(clip)}</small>
+             </span>
+             <div className={css.montageActions}>
+               <button type="button" disabled={disabled||index===0}
+                 aria-label={t.reorder+" ← "+sceneLabel(clip)}
+                 onClick={()=>swapScene(index,-1)}>←</button>
+               <button type="button" disabled={disabled||index===3}
+                 aria-label={t.reorder+" → "+sceneLabel(clip)}
+                 onClick={()=>swapScene(index,1)}>→</button>
+               {index<3?<button type="button" disabled={disabled||stageDurations[index]<=2}
+                 aria-label={t.less+" "+sceneLabel(clip)}
+                 onClick={()=>shiftBoundary(index,-1)}>−1s</button>:null}
+               {index<3?<button type="button" disabled={disabled||stageDurations[index+1]<=2}
+                 aria-label={t.more+" "+sceneLabel(clip)}
+                 onClick={()=>shiftBoundary(index,1)}>+1s</button>:null}
+             </div>
+           </div>)}
+         </div>
+         <p className={css.notice}>{t.audioHint}</p>
+       </details>
        <details className={css.details} data-auto-video-adjust>
          <summary>{t.edit}</summary>
          <div className={css.adjust}><span>{t.topic}:</span>
            {allThemes.map(value=><button type="button" key={value} disabled={disabled}
              aria-pressed={proposal.theme===value}
              onClick={()=>{
-               setOverrideId(null);
+               onInvalidate?.();setOverrideId(null);setTimelineEdits(null);
                setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,scenes,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
          </div>
          <div className={css.adjust}><span>{t.duration}:</span>
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
-             aria-pressed={length===n} onClick={()=>setSeconds(n)}>{n} s</button>)}
+             aria-pressed={length===n} onClick={()=>{if(length!==n)onInvalidate?.();
+               setSeconds(n);setTimelineEdits(null);}}>{n} s</button>)}
          </div>
        </details>
        <button type="button" data-auto-video-confirm className={css.confirm}
-         disabled={disabled} onClick={()=>onApply(chosen.id,length as 10|15|20|30|60)}>
+         disabled={disabled} onClick={()=>{
+           const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
+             clipIds:stageClipIds,durationSecondsByStage:stageDurations});
+           if(accepted!==false)setConfirmedTimelineKey(timelineKey);
+         }}>
          <Check size={18} aria-hidden="true"/> {t.accept}
        </button>
-       {activePresetId===chosen.id?<div className={css.appliedActions}>
+       {activePresetId===chosen.id&&confirmedTimelineKey===timelineKey?<div className={css.appliedActions}>
          <p className={css.notice} role="status">{t.applied}</p>
          {onCreate?<button type="button" className={css.create} data-auto-video-create
            disabled={disabled||!canCreate} onClick={onCreate}>
