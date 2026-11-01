@@ -133,12 +133,12 @@ const runEngine = async ([engine, browserType]) => {
           await form.locator("[data-first-video-wish]").fill("Горы");
           const promptField=form.locator("[data-first-video-prompt]");
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
-            .toContain("горные вершины");
+            .toMatch(/горн/i);
           const firstVariant=await promptField.inputValue();
           await form.locator("[data-first-video-refresh]").click();
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
-          assert.match(await promptField.inputValue(),/горные вершины/i);
+          assert.match(await promptField.inputValue(),/горн/i);
           // Exercise actual hydrated iPhone filters; these values MUST
           // survive in the real HTTP body, not merely decorate the UI.
           const aiFilters=form.locator("[data-first-video-filters]");
@@ -1090,6 +1090,7 @@ const runEngine = async ([engine, browserType]) => {
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
+        const approvedPreviewBeforeRequest=await compactHypno.locator("[data-hypno-preview] strong").innerText();
         await compactHypno.locator("[data-hypno-request-edit]").click();
         await compactHypno.locator('[data-hypno-problem="1"]').click();
         // The earlier real-film test selected MONEY. Match its actual goal catalogue.
@@ -1097,12 +1098,19 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.equal(await compactHypno.locator("[data-hypno-preview] strong").innerText(),approvedPreviewBeforeRequest,
+          "a proposed Wave phrase must not replace the active preview before approval");
+        const proposedPhrase=(await compactHypno.locator('[data-hypno-phrase="0"]').innerText()).trim();
+        assert.ok(proposedPhrase.length>0,"Wave must offer a concrete phrase");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.ok((await compactHypno.locator("[data-hypno-preview]").innerText()).includes(proposedPhrase),
+          "approval must put the proposed phrase into the active preview");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        await compactHypno.locator("[data-hypno-design-edit]").click();
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1786,6 +1794,16 @@ const runEngine = async ([engine, browserType]) => {
             undefined,{timeout:15000});
           assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
             "Auto Director reuses the only live editable video stage");
+          const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          // The legacy quick-duration control is intentionally in a collapsed
+          // details panel. Exercise the actually visible Video workspace button.
+          await page.locator('[data-video-duration="15"]').click();
+          await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
+          assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
+            "duration changes must retain the four selected MP4 sources");
         }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;

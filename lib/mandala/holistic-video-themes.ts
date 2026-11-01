@@ -131,13 +131,6 @@ function composePortrait(c:CanvasRenderingContext2D,image:HTMLImageElement|null,
   c.beginPath();c.roundRect(x,y,fw,fh,fw*.07);c.stroke();
   radiance(c,w*.5,h*.17,w*.46,"255,234,184",.18+.03*Math.sin(t));
 }
-
-/**
- * Original on-device animated food illustrations for short free videos.
- * These are NOT stock MP4s or photorealistic generated food footage.
- * Pure Canvas: no remote images, licenses, cookies, API calls or uploads.
- * The same painter is used by the actual preview and MediaRecorder export.
- */
 export const FOOD_CANVAS_SCENES = Object.freeze([
   "food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table",
 ]);
@@ -412,8 +405,14 @@ export function paintRealThemedVideoFrame(
   c.fillStyle = "#fff9e8";
   c.font = "600 " + Math.max(12, Math.min(29, w * .042)) + "px Georgia,serif";
   if (title.trim()) c.fillText(title.slice(0, 72), w / 2, h * .88, w * .86);
-  c.fillStyle = "rgba(255,248,226,.87)";
-  c.font = "600 " + Math.max(10, w * .023) + "px Arial,sans-serif";
-  c.fillText("H O L I S T I C   H O U S E", w / 2, h * .078, w * .9);
+  // V2 masters already contain the title; V3 licensed clips carry source
+  // attribution at the bottom and still need the existing top label.
+  const bakedBrandVisible=video.currentSrc.includes("/film-collection-v2/") &&
+    h/w >= (video.videoHeight/video.videoWidth)*.9;
+  if (!bakedBrandVisible) {
+    c.fillStyle = "rgba(255,248,226,.87)";
+    c.font = "600 " + Math.max(10, w * .023) + "px Arial,sans-serif";
+    c.fillText("H O L I S T I C   H O U S E", w / 2, h * .078, w * .9);
+  }
   c.restore();
 }
