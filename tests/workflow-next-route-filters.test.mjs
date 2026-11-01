@@ -11,10 +11,12 @@ for(const name of ['hh-course-presets','hh-energywork-ai','practitioner-presenta
    ? 'app/\\[locale\\]/app/\\[\\[...path\\]\\]/page.jsx'
    : 'app/api/app/\\[...path\\]/route.js'
  assert.ok(patterns.includes(expected), 'Literal Next route must remain in the trigger')
- const aggregatorAlias = 'app/api/app/[[]...path[]]/route.js'
- assert.ok(patterns.every(pattern=>pattern===aggregatorAlias || !/(?<!\\)[\[\]]/.test(pattern)), 'Next brackets must be escaped or use the literal-class router alias')
- if(['hh-course-presets','hh-cabinet-journey'].includes(name))
-  assert.ok(patterns.includes(aggregatorAlias), 'BASE-trusted Node matcher must find the shared API route')
+ assert.ok(patterns.every(pattern=>!/(?<!\\)[\[\]]/.test(pattern)), 'No unescaped Next directory brackets')
+ if(['hh-course-presets','hh-cabinet-journey'].includes(name)) {
+  assert.ok(patterns.includes('app/api/app/*/route.js'), 'BASE reader needs a narrow one-segment route')
+  for(const excluded of ['direct-messages','practitioner-client-messages','notification-channels'])
+   assert.ok(patterns.includes('!app/api/app/'+excluded+'/**'), 'exclude unrelated Messenger API: '+excluded)
+ }
  const api=patterns.find(p=>p.includes('...path'))
  assert.equal(api.replaceAll('\\[','[').replaceAll('\\]',']'), name === 'holistic-house-mobile-install'
    ? 'app/[locale]/app/[[...path]]/page.jsx' : 'app/api/app/[...path]/route.js')

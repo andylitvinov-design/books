@@ -8,7 +8,13 @@ on:
       - 'components/app/profile-domains.jsx'
       - 'app/api/app/cabinet/**'
       - 'app/api/app/\[...path\]/route.js'
-      - 'app/api/app/[[]...path[]]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
       - 'tests/cabinet-learning-journey.test.mjs'
       - 'tests/workflow-next-route-filters.test.mjs'
       - 'components/app/my-progress.*'

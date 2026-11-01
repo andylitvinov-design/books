@@ -982,6 +982,22 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
     'practice-visual-browser','practice-visual-services','ia-v2','hh-app-r1','hh-app-browser',
   ]) assert.ok(shared.includes(root + owner + '.yml'), 'Shared API router must retain ' + owner);
 
+  // Shared router scope must not drag Messenger's separate API paths into
+  // Course, Editor and Video suites, even though a one-segment glob is used.
+  for (const isolated of [
+    'app/api/app/direct-messages/route.js',
+    'app/api/app/practitioner-client-messages/route.js',
+    'app/api/app/notification-channels/route.js',
+  ]) {
+    const scoped = expectedWorkflows({base:all,current:all,changed:[isolated]});
+    for (const unrelated of [
+      'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+      'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+      'practice-visual-browser','practice-visual-services',
+    ]) assert.ok(!scoped.includes(root + unrelated + '.yml'),
+      isolated + ' must not dispatch ' + unrelated);
+  }
+
   const changedShell = ['components/app/app-workspace.jsx'];
   const shellRuns = expectedWorkflows({base: all, current: all, changed:changedShell});
   for (const owner of ['hh-app-r1','hh-app-browser','ia-v2']) {

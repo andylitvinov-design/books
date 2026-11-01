@@ -8,7 +8,13 @@ on:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
       - 'app/api/app/\[...path\]/route.js'
-      - 'app/api/app/[[]...path[]]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
       - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
@@ -67,7 +73,13 @@ on:
       - 'lib/app/session.js'
       - 'app/api/app/practitioner/**'
       - 'app/api/app/\[...path\]/route.js'
-      - 'app/api/app/[[]...path[]]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
       - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
