@@ -156,14 +156,41 @@ try {
       // which can race a controlled React checkbox commit. Exercise the same
       // real user click, then require the committed consent AND enabled CTA.
       // Never use force, a synthetic change event, or bypass the CRM guard.
-      await requiredConsent.click()
-      await page.waitForFunction(() => {
+      const waitForRealConsentAndEnabledSubmit = () => page.waitForFunction(() => {
         const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form]')
         const checkbox = form?.querySelector('input[type="checkbox"][required]')
         const submit = form?.querySelector('button[type="submit"]')
         return checkbox instanceof HTMLInputElement && checkbox.checked === true &&
           submit instanceof HTMLButtonElement && submit.disabled === false
       }, null, { timeout: 10000 })
+      await requiredConsent.click()
+      try {
+        await waitForRealConsentAndEnabledSubmit()
+      } catch (firstClickError) {
+        // Controlled hydration may undo an early genuine WebKit click. Make at
+        // most ONE more real user click, never force/check via JavaScript.
+        // A checked consent with a disabled submit is a genuine guard failure.
+        const snapshot = await page.evaluate(() => {
+          const form = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] form')
+          const checkbox = form?.querySelector('input[type="checkbox"][required]')
+          const submit = form?.querySelector('button[type="submit"]')
+          const phone = form?.querySelector('input[type="tel"]')
+          const key = Object.keys(phone || {}).find(k => k.startsWith('__reactProps$'))
+          return {
+            hydrated: form?.getAttribute('data-contact-hydrated') === 'true',
+            consentChecked: checkbox instanceof HTMLInputElement && checkbox.checked,
+            submitDisabled: submit instanceof HTMLButtonElement && submit.disabled,
+            phoneCommitted: Boolean(key && String(phone[key]?.value || '').includes('416')),
+          }
+        })
+        if (!snapshot.hydrated || snapshot.consentChecked ||
+            !snapshot.submitDisabled || !snapshot.phoneCommitted) {
+          throw new Error('Real cart consent/phone guard did not commit: ' +
+            JSON.stringify({locale,width,engine,snapshot}), {cause:firstClickError})
+        }
+        await requiredConsent.click()
+        await waitForRealConsentAndEnabledSubmit()
+      }
       assert.equal(await requiredConsent.isChecked(), true,
         'Required reply-only consent must remain selected before the mocked CRM order')
       await contactForm.locator('button[type="submit"]').click()
