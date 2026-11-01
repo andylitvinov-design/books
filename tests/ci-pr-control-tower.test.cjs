@@ -178,3 +178,9 @@ test('incomplete job inventory stops without dispatch',async()=>{
  assert.equal(state.known,false);
  assert.equal(state.reason,'INCOMPLETE_JOB_INVENTORY');
 });
+
+test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(wf.includes("github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer'"));
+ assert.ok(wf.includes('cancel-in-progress: false'));
+});

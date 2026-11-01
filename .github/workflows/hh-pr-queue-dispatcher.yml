@@ -39,7 +39,7 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-control-tower-single-writer
+  group: hh-control-tower-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer' }}
   cancel-in-progress: false
 jobs:
   contract:
