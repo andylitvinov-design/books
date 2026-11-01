@@ -21,6 +21,17 @@ test('guest contact is exposed to the authorized practitioner only with one-off 
   {...consented,replyConsent:undefined},
  ])assert.equal(publicEnquiryReplyContact(invalid),null)
  assert.deepEqual(publicEnquiryReplyContact({...consented,email:'bad\n@example.test',phone:'123'}),null)
+ // Legacy records can have a practitioner-overwritten phone and the original
+ // visitor consent on the same object. Never elevate that number to consent.
+ assert.deepEqual(publicEnquiryReplyContact({...consented,channel:'whatsapp',phone:'+14165550999'}),{
+  email:'visitor@example.test',phone:'',
+ })
+ assert.deepEqual(publicEnquiryReplyContact({...consented,channel:'telegram',phone:'+14165550999'}),{
+  email:'visitor@example.test',phone:'',
+ })
+ assert.deepEqual(publicEnquiryReplyContact({...consented,channel:'whatsapp',phone:'+14165550999',visitorReplyPhone:'+14165550123'}),{
+  email:'visitor@example.test',phone:'+14165550123',
+ })
 })
 test('manual reply handoffs require valid reference, destination and message, never imply delivery',()=>{
  const {emailUrl,whatsAppUrl}=publicEnquiryReplyHandoffs(consented,ref,'Thank you, I can help.')
@@ -41,7 +52,7 @@ test('website leads keep private relay contact isolated and use explicit externa
  const card=read('components/app/messages-contact-card.jsx')
  const css=read('components/app/messages-simple-inbox.module.css')
  assert.match(store,/contact: relayContactView\(/)
- assert.match(store,/replyContact: publicEnquiryReplyContact\(manuallyRecorded\)/)
+ assert.doesNotMatch(store,/replyContact\s*:/)
  if(inbox.includes("inMessagesTab(selected,'chats')")){
   const {inMessagesTab}=await import('../lib/app/messages-inbox-tabs.mjs')
   assert.equal(inMessagesTab({kind:'request',item:{accountRequest:true,requestKind:'private'}},'chats'),true)
