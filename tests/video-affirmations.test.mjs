@@ -84,7 +84,8 @@ test("existing video preview and export use identical overlays; frame mode reque
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
   assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\),appliedStory\]\)/);
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory\]\)/,
+    "changing a shot boundary must invalidate old recorded output as well as the source ID");
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
@@ -242,7 +243,7 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
       }
     }
   }
-  for(const marker of ["data-hypno-request","data-hypno-request-edit","data-hypno-apply-request",
+  for(const marker of ["data-hypno-idea","data-hypno-idea-choice","data-hypno-idea-own","data-hypno-apply-request",
     "data-hypno-phrases","data-hypno-smart","data-hypno-ready","data-hypno-tests",
     "data-hypno-display","data-hypno-frequency","data-hypno-size","data-hypno-position",
     "data-hypno-design","data-hypno-scene","data-hypno-preview"]){
@@ -259,7 +260,9 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
   assert.match(compactCss,/@media\(max-width:360px\)/);
   assert.match(compactCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(compact,/sendBeacon|localStorage|sessionStorage|XMLHttpRequest|autoPlay/);
-  assert.match(compact,/maxLength=\{400\}/);
+  assert.match(compact,/requestText\.slice\(0,160\)/);
+  assert.match(compact,/maxLength=\{36\}/);
+  assert.ok(compact.indexOf("data-hypno-idea")<compact.indexOf("data-hypno-phrases"));
 });
 
 test("new text size and position change the actual shared canvas renderer",()=>{
@@ -290,12 +293,12 @@ test("new text size and position change the actual shared canvas renderer",()=>{
   assert.ok(px[0]<px[1]&&px[1]<px[2]);
 });
 
-test("compact Hypno v5.3 shows two consented paths, editable request, five effective phrase filters",()=>{
+test("mobile Hypno v6 has one editable idea, consented profile and four active phrase filters",()=>{
  const c=read("components/mandala-hypno-compact.tsx");
  const css=read("components/mandala-hypno-compact.module.css");
- for(const marker of ["data-hypno-accent","data-hypno-suggest-tests","data-hypno-short-request",
-  "data-hypno-update-request","data-hypno-profile-proposal","data-hypno-accept-proposal",
-  "data-hypno-filter-type","data-hypno-filter-goal","data-hypno-filter-tone",
+ for(const marker of ["data-hypno-idea-choice","data-hypno-idea-own","data-hypno-suggest-tests",
+  "data-hypno-profile-proposal","data-hypno-accept-proposal",
+  "data-hypno-filter-type","data-hypno-filter-tone",
   "data-hypno-filter-focus","data-hypno-filter-length","data-hypno-generate-new",
   "data-hypno-approve","data-hypno-phrase"]){
    assert.ok(c.includes(marker),marker);
@@ -303,7 +306,10 @@ test("compact Hypno v5.3 shows two consented paths, editable request, five effec
  assert.match(c,/await appFetch\("video-affirmation-focus"\)/);
  assert.match(c,/function acceptTestProposal\(\)/);
  assert.match(c,/setTestProposal\(proposed\)/);
- assert.match(css,/\.topicMiniRail\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.ideaRail\{display:flex/);
+ assert.match(css,/\.filterRow\{display:grid;grid-template-columns:/);
+ assert.match(css,/\.overview \.phraseMiniList\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(c,/data-hypno-accent=\{id\}/);
  assert.match(css,/\.filtersMini\{display:grid/);
  const compiled=ts.transpileModule(c,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
  assert.deepEqual(compiled.diagnostics||[],[]);

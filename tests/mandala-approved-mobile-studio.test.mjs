@@ -20,8 +20,8 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
-    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
@@ -33,7 +33,7 @@ test("the existing public editor retains one real video renderer and the new com
       "video studio hierarchy changed at "+order[i]);
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
-  assert.match(source,/\{activeWorkspace==="characters" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
@@ -76,8 +76,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\}/,
-    "free video is gated until all four genuine stock clips are ready");
+  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\}/,
+    "Create is enabled once all four licensed MP4 source URLs exist; decoding occurs on tap");
+  assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+    "all four iPhone MP4s must start loading synchronously on the trusted Create tap");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
@@ -212,9 +214,16 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
   assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
-  assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
-    "all supported lengths use the verified four-shot timeline allocator");
+  assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
+  assert.match(src,/if\(!\(await filmPreparation\)\)/,
+    "a failed decoder preflight must never yield an incomplete four-scene movie");
+  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
+    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
+    "explicit stage edits must be passed through to the same timing engine");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /export function allocateFreeFilmTimeline\(/,
+    "the legacy equal-time allocator remains intact for other consumers");
   assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/,
     "exported scene timing comes from the same timeline, not stale 10-second padding");
   assert.match(src,/providerPrompt:""/);

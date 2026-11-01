@@ -1,4 +1,6 @@
 import test from "node:test";
+// Run iPhone decoder-gesture tests in Mandala's required focused CI.
+import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
@@ -27,12 +29,12 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("goalId:selectedGoalId"));
  assert.ok(director.includes("onGoalChange(nextGoal)"));
  assert.ok(!studio.includes("<input data-video-quick-wish"));
- assert.ok(director.includes("onClick={()=>onApply(chosen.id,length"));
+ assert.ok(director.includes("onApply(chosen.id,length"),"confirmation applies real edited clips and stage durations");
  assert.ok(director.includes("data-auto-video-story-options"));
  assert.ok(director.includes("data-auto-video-option={id}"));
  assert.ok(director.includes("aria-pressed={chosen.id===id}"));
  assert.ok(director.includes("proposalContext?.goal===goal"));
- assert.ok(studio.includes("setWish(next.slice(0,160))"),"accept trailing spaces while editing");
+ assert.ok(studio.includes("setWish(next.slice(0,800))"),"retain full 800-character context and trailing spaces while editing");
  assert.ok(!studio.includes("setWish(graphemeTrim(next))"),"do not trim the final word boundary");
  assert.ok(studio.includes("aspect={aspect}"),"retain user-selected aspect");
 });
@@ -75,7 +77,14 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/scenePoster\(clip\)/);
  assert.match(director,/data-auto-video-create/);
  assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
- assert.match(studio,/canCreate=\{canGenerate\}/,"four decoded originals + selected audio stay required");
+ assert.match(studio,/canCreate=\{canStartSelectedFilm\}/,
+   "Create stays tappable even when soundtrack attachment or photo rights need confirmation");
+ assert.match(studio,/createFeedback=\{preparing\|\|exportUnavailable\?notice:""\}/,
+   "decoder timeout and export errors appear alongside the iPhone Create button");
+ assert.match(studio,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+   "iPhone native players are decoded after Create is tapped, never via a permanently disabled button");
+ assert.match(director,/\{!canCreate&&!disabled\?<p className=\{css\.notice\}>\{t\.blocked\}<\/p>:null\}/,
+   "an audio/rights block must not masquerade as a still-loading video scene");
  assert.match(studio,/data-video-result-empty/);
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
@@ -83,10 +92,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-quick-music-check=\{id\}/);
  assert.match(studio,/data-video-quick-music-play=\{id\}/);
  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
- assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
- assert.match(studio,/const featuredMelodies = recommendMandalaAudio/);
+ assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
+ assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
  assert.match(studio,/theme:audioTheme,kind:"melody",wish/);
- assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
+ assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed auto-film assigns a real soundtrack");
+ assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
  assert.match(css,/\[data-video-quick-section="1"\]\{order:3/);
@@ -105,9 +115,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Видео","Музыка","Герои","Терапия","Коррекция","Курсы"],
-  en:["Video","Music","Heroes","Therapy","Correction","Courses"],
-  es:["Vídeo","Música","Héroes","Terapia","Corrección","Cursos"],
+  ru:["Видео","Фразы","Эффекты","Практики","PRO","Монтаж"],
+  en:["Video","Phrases","Effects","Practice","PRO","Edit"],
+  es:["Vídeo","Frases","Efectos","Prácticas","PRO","Montaje"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
