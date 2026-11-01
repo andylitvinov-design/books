@@ -628,12 +628,21 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="es"?0:1,
-          "owner-approved RU film introduction is selectable on RU/EN without another editor");
+        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
+          "the approved RU presentation belongs only to the RU screen");
+        assert.equal(await hero.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
+          "English route links only to the verified owner English channel, not a Russian soundtrack");
+        const youtubeLink=hero.locator('[data-video-therapy-youtube]');
+        assert.equal(await youtubeLink.count(),locale==="es"?0:1,
+          "one explicitly identified YouTube destination per active language");
+        if(locale==="ru")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/watch?v=P9Wvo3gEY6U");
+        if(locale==="en")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/@aatapro/videos");
         assert.equal(await hero.locator("iframe").count(),0,
-          "no external video iframe or requests before an explicit user click");
-        assert.equal(await hero.locator("button").count(),locale==="es"?1:2,
-          "the second RU/EN button is the opt-in intro, not another editor");
+          "no external YouTube iframe or requests before an explicit user click");
+        assert.equal(await hero.locator("button").count(),locale==="ru"?2:1,
+          "central Canvas Play stays independent; RU adds its approved video introduction");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
