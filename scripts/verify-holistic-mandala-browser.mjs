@@ -689,7 +689,8 @@ const runEngine = async ([engine, browserType]) => {
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
-        assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
+        assert.equal(await hero.locator("p").count(),1,
+          "the owner-approved mock keeps one short editorial line on top of the real video");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
         assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
