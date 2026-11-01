@@ -531,8 +531,10 @@ test('legacy branch-check migration remains a single valid fail-closed step',()=
   assert.ok(source.includes("grep -Fxq '    name: hh-core-verified'"));
   assert.ok(source.includes("grep -Fxq '    name: hh-specialists-verified'"));
   assert.ok(!source.includes("base64 --decode | grep -q "));
-  assert.ok(source.includes('"strict":false,"contexts":[],"checks"'));
-  assert.ok(source.includes('{"context":"hh-specialists-verified","app_id":15368}'));
+  assert.ok(source.includes("jq '{strict: .strict, contexts: [], checks: ["));
+  assert.ok(source.includes('.strict == $priorStrict and'));
+  assert.ok(!source.includes('"strict":false,"contexts":[],"checks"'));
+  assert.ok(source.includes('{context:"hh-specialists-verified",app_id:15368}'));
   assert.ok(source.includes('["hh-core-verified","hh-specialists-verified"]'));
   assert.ok(source.includes('Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified'));
 });

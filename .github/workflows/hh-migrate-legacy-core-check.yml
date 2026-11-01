@@ -53,7 +53,7 @@ jobs:
             echo 'Legacy branch protection requires repository-administration permission' >&2; exit 1;
           }
           if jq -e '
-            .strict == false and
+            (.strict | type == "boolean") and
             (.contexts | index("release-ready") == null) and
             ([.checks[]?.context] | sort) == ["hh-core-verified","hh-specialists-verified"] and
             (all(.checks[]; .app_id == 15368))
@@ -62,22 +62,27 @@ jobs:
             exit 0
           fi
           jq -e '
+            (.strict | type == "boolean") and
             (.contexts == ["release-ready"]) and
             (.checks | length == 1) and
             (.checks[0].context == "release-ready" and .checks[0].app_id == 15368)
           ' "$before" >/dev/null || {
             echo 'Unexpected existing required checks: refusing destructive replacement' >&2; exit 1;
           }
-          printf '%s\n' '{"strict":false,"contexts":[],"checks":[{"context":"hh-core-verified","app_id":15368},{"context":"hh-specialists-verified","app_id":15368}]}' > "$change"
+          # Only replace named statuses. Do not silently change branch strictness.
+          jq '{strict: .strict, contexts: [], checks: [
+            {context:"hh-core-verified",app_id:15368},
+            {context:"hh-specialists-verified",app_id:15368}
+          ]}' "$before" > "$change"
           gh api --method PATCH "$endpoint" --input "$change" >/dev/null
           gh api "$endpoint" > "$after"
-          jq -e '
-            .strict == false and
+          jq -e --argjson priorStrict "$(jq -r '.strict' "$before")" '
+            .strict == $priorStrict and
             (.contexts | index("release-ready") == null) and
             ([.checks[]?.context] | sort) == ["hh-core-verified","hh-specialists-verified"] and
             (all(.checks[]; .app_id == 15368))
           ' "$after" >/dev/null || {
             echo 'Migration did not read back the intended required-check state' >&2; exit 1;
           }
-          echo 'Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified; strict=false.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified; strict preserved.' >> "$GITHUB_STEP_SUMMARY"
           echo 'All other branch rules and ruleset #26269892 unchanged.' >> "$GITHUB_STEP_SUMMARY"
