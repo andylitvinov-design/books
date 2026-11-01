@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Business hero has a real portrait, bright question and exactly three answers',()=>{
+test('Business hero keeps the real portrait and replaces oversized choices with a private question',()=>{
   const selector=read('components/topic-journey-selector.tsx')
   const finder=read('components/business-consultation-finder.tsx')
   const css=read('components/topic-journey-selector.module.css')
@@ -13,25 +13,27 @@ test('Business hero has a real portrait, bright question and exactly three answe
   assert.match(selector,/<Image src=\{art\.business\} alt=\{businessText\.portrait\} fill/)
   assert.match(selector,/<h1>\{businessText\.title\}<\/h1>/)
   assert.match(selector,/<BusinessConsultationFinder locale=\{language\}/)
-  assert.match(finder,/const needs = \['clarity', 'income', 'growth'\] as const/)
-  assert.match(finder,/needs\.map\(key=/)
-  assert.match(finder,/data-business-need=\{key\}/)
+  assert.match(finder,/data-business-finder-step="question"/)
+  assert.match(finder,/data-business-question-input/)
+  assert.match(finder,/data-business-question-submit/)
+  assert.match(finder,/data-business-quick-idea/)
   assert.match(finder,/data-business-finder-result/)
   assert.match(finder,/data-business-finder-start/)
   assert.match(css,/\.businessHeroPhoto\{/)
   assert.match(css,/#ffdd9f/)
-  assert.match(fcss,/grid-template-columns:1fr/)
+  assert.match(fcss,/\.askForm\{display:grid/)
   assert.doesNotMatch(selector,/businessValueStrip|businessPriceLine|businessSelfChecks/)
 })
 
-test('business self-checks are replaced by a collapsed service filter and 3+3 catalog',()=>{
+test('business self-checks are replaced by visible topic clarification and a 3+3 catalog',()=>{
   const selector=read('components/topic-journey-selector.tsx')
   const browser=read('components/business-service-browser.tsx')
   const css=read('components/business-service-browser.module.css')
-  assert.match(selector,/journey\.id === 'business' \? <BusinessServiceBrowser locale=\{language\}\/?> : assessmentSections/)
+  assert.match(selector,/journey\.id === 'business' \? <BusinessServiceBrowser locale=\{language\}/)
   assert.equal(selector.split('<BusinessServiceBrowser').length-1,1)
   assert.match(browser,/data-business-service-filter/)
-  assert.match(browser,/open=\{filterOpen\}/)
+  assert.match(browser,/id="business-topic-filter"/)
+  assert.match(browser,/data-business-follow-up/)
   assert.match(browser,/const \[visibleCount,setVisibleCount\] = useState\(3\)/)
   assert.match(browser,/filtered\.slice\(0,visibleCount\)/)
   assert.match(browser,/setVisibleCount\(count=>count\+3\)/)
