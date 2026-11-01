@@ -1,10 +1,11 @@
 "use client";
 
 import {useEffect,useMemo,useRef,useState} from "react";
+import type {ChangeEvent,FormEvent} from "react";
 import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {allocateAdaptiveFilmTimeline} from "@/lib/mandala/free-film-timeline.mjs";
-import {mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice} from "@/lib/mandala/video-chat-intent.mjs";
+import {hasVideoChatFilter,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -24,7 +25,7 @@ type Props={
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
  onGoalChange:(text:string)=>void;
  onConfirm:(selection:{presetId:string;duration:Length;aspect:Aspect;music:Music;phrases:boolean;mood:Mood})=>boolean;
- onCreate:()=>void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
+ onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
 const copy={
  ru:{title:"AI-видеорежиссёр",subtitle:"Подбираю реальные видеосюжеты · бесплатно",intro:"Привет! Какое видео вы хотите создать? Опишите идею или выберите тему — я помогу настроить ролик.",
@@ -33,7 +34,8 @@ const copy={
   unsupported:"Для указанного конкретного объекта пока нет подходящего реального MP4. Могу предложить символический монтаж из доступных видеосцен — он не будет изображать запрошенный объект.",
   missing:"Подходящий монтаж из разрешённых сцен не найден. Измените тему или откройте редактор.", symbolic:"Предложить метафорический сюжет",retryGoal:"Изменить запрос",alternate:"Другой сюжет",confirm:"Подтвердить сценарий",create:"Создать видео",creating:"Собираем видео на устройстве…",loading:"Загружаем выбранные видеосцены…",open:"Открыть готовое видео",editor:"Расширенный редактор",startAgain:"Новый ролик",edit:"Изменить настройки",note:"Видео собирается из разрешённых MP4, не из новых AI-кадров. Ваш текст не передаётся внешним AI-сервисам.",
   placeholder:"Напишите, что хотите создать или изменить…",send:"Отправить",photo:"Добавить своё фото",audio:"Добавить голос или звук",promptChanged:"Обновил параметры. Проверьте сценарий снова.",
-  blocked:"Результат не прошёл проверку или запись не удалась. Воспользуйтесь настройками и повторите создание.",stages:["Начало","Погружение","Развитие","Завершение"],
+  aiConsent:"Разрешить бесплатному AI сформулировать вопрос по моей идее (отправить текст внешнему провайдеру)",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
+  auto:"Подобрать настройки автоматически",timeout:"Запись не началась. Проверьте доступность сцен и попробуйте снова.",blocked:"Результат не прошёл проверку или запись не удалась. Воспользуйтесь настройками и повторите создание.",stages:["Начало","Погружение","Развитие","Завершение"],
   themeChips:["Хочу больше спокойствия","Любовь и близость","Энергия и бодрость","Уверенность в себе"],
   moodChoices:[["Мягкая","slow"],["Динамичная","dynamic"]],aspectChoices:[["Вертикальный 9:16","portrait"],["Горизонтальный 16:9","landscape"],["Квадрат 1:1","square"]],
   musicChoices:[["Нежная музыка","love"],["Спокойная","meditation"],["Гармония","harmony"],["Без музыки","none"]],phraseChoices:[["Да, добавить","yes"],["Нет","no"]]},
@@ -43,7 +45,8 @@ const copy={
   unsupported:"That specific subject is not available in our verified MP4 catalog. I can propose a symbolic story using existing footage, but it won't show that subject.",
   missing:"No compatible licensed clips were found. Change the goal or open the editor.",symbolic:"Use a symbolic story",retryGoal:"Change idea",alternate:"Another story",confirm:"Confirm story",create:"Create video",creating:"Recording video on this device…",loading:"Loading the selected video clips…",open:"Open finished video",editor:"Advanced editor",startAgain:"New video",edit:"Change settings",note:"Uses approved existing MP4 footage, not newly AI-generated frames. Your text is not sent to an external AI service.",
   placeholder:"Describe a video or tell me what to change…",send:"Send",photo:"Add my photo",audio:"Add my voice or audio",promptChanged:"Updated the settings. Please confirm the story again.",
-  blocked:"Recording or playback verification failed. Adjust settings and retry.",stages:["Opening","Arriving","Exploring","Closing"],
+  aiConsent:"Let free AI personalize one question (send my idea text to an external provider)",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
+  auto:"Suggest settings for me",timeout:"Recording did not begin. Check the video sources and retry.",blocked:"Recording or playback verification failed. Adjust settings and retry.",stages:["Opening","Arriving","Exploring","Closing"],
   themeChips:["I want more calm","Love and connection","Energy and vitality","Confidence and focus"],
   moodChoices:[["Gentle","slow"],["Dynamic","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Landscape 16:9","landscape"],["Square 1:1","square"]],
   musicChoices:[["Warm melody","love"],["Meditative","meditation"],["Harmony","harmony"],["Silent","none"]],phraseChoices:[["Yes, add them","yes"],["No","no"]]},
@@ -53,7 +56,8 @@ const copy={
   unsupported:"Ese objeto específico no está en el catálogo de MP4. Puedo proponer una historia simbólica, pero no mostrará ese objeto.",
   missing:"No se encontraron escenas autorizadas compatibles. Cambia el tema o usa el editor.",symbolic:"Usar una historia simbólica",retryGoal:"Cambiar idea",alternate:"Otra historia",confirm:"Confirmar historia",create:"Crear vídeo",creating:"Grabando vídeo en este dispositivo…",loading:"Cargando las escenas…",open:"Abrir vídeo terminado",editor:"Editor avanzado",startAgain:"Nuevo vídeo",edit:"Cambiar ajustes",note:"Montaje de MP4 autorizados, no fotogramas nuevos generados por IA. Tu texto no se envía a un servicio IA externo.",
   placeholder:"Describe el vídeo o lo que quieres cambiar…",send:"Enviar",photo:"Añadir mi foto",audio:"Añadir voz o audio",promptChanged:"Ajustes actualizados. Confirma la historia otra vez.",
-  blocked:"Falló la grabación o verificación. Ajusta los parámetros e inténtalo otra vez.",stages:["Inicio","Entrada","Desarrollo","Cierre"],
+  aiConsent:"Permitir que la IA gratuita personalice una pregunta (enviar texto a un proveedor externo)",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
+  auto:"Sugerir ajustes automáticamente",timeout:"No se inició la grabación. Comprueba las escenas y vuelve a intentarlo.",blocked:"Falló la grabación o verificación. Ajusta los parámetros e inténtalo otra vez.",stages:["Inicio","Entrada","Desarrollo","Cierre"],
   themeChips:["Quiero más calma","Amor y conexión","Energía y vitalidad","Confianza y enfoque"],
   moodChoices:[["Suave","slow"],["Dinámico","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Horizontal 16:9","landscape"],["Cuadrado 1:1","square"]],
   musicChoices:[["Melodía suave","love"],["Meditación","meditation"],["Armonía","harmony"],["Sin música","none"]],phraseChoices:[["Sí, añadir","yes"],["No","no"]]},
@@ -69,12 +73,17 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [lines,setLines]=useState<ChatLine[]>([{id:0,role:"assistant",text:t.intro}]);
  const [input,setInput]=useState("");
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
+ const [aiConsent,setAiConsent]=useState(false);
+ const [aiStatus,setAiStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
+ const aiAskedKeyRef=useRef("");
+ const currentStepRef=useRef<Step>(step);
+ currentStepRef.current=step;
  const [alternative,setAlternative]=useState(0);
  const [captureStarted,setCaptureStarted]=useState(false);
  const [captureObserved,setCaptureObserved]=useState(false);
  const counter=useRef(0);
- const threadRef=useRef<HTMLDivElement>(null);
- const windowRef=useRef<HTMLElement>(null);
+ const threadRef=useRef<HTMLDivElement|null>(null);
+ const windowRef=useRef<HTMLElement|null>(null);
  const addLine=(role:ChatLine["role"],text:string)=>{
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
@@ -116,7 +125,48 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const thread=threadRef.current;
    if(thread)thread.scrollTop=thread.scrollHeight;
  },[lines,step,alternative]);
+ // Explicit opt-in; the local deterministic guide remains available instantly.
+ // The model may only phrase a question, never modify filters or render jobs.
+ useEffect(()=>{
+   if(!aiConsent||!draft.goal.trim()||step==="goal"||step==="ready"||step==="done")return;
+   const key=locale+":"+draft.goal.trim();
+   if(aiAskedKeyRef.current===key)return;
+   aiAskedKeyRef.current=key;
+   const controller=new AbortController();
+   setAiStatus("loading");
+   void fetch("/api/holistic-support/video-director-chat",{
+     method:"POST",credentials:"same-origin",cache:"no-store",
+     headers:{"Content-Type":"application/json"},signal:controller.signal,
+     body:JSON.stringify({consent:true,locale,goal:draft.goal,step,
+       draft:{mood:draft.mood,aspect:draft.aspect,duration:draft.duration,
+         music:draft.music,phrases:draft.phrases}}),
+   }).then(async response=>{
+     if(!response.ok)throw Error("FREE_AI_UNAVAILABLE");
+     return response.json();
+   }).then(payload=>{
+     if(controller.signal.aborted)return;
+     if(typeof payload?.reply!=="string"||payload.reply.length>160)throw Error("UNSAFE_AI_REPLY");
+     if(currentStepRef.current!==step){setAiStatus("idle");return;}
+     setAiStatus("ready");addLine("assistant",payload.reply);
+   }).catch(()=>{
+     if(controller.signal.aborted)return;
+     setAiStatus("fallback");addLine("assistant",t.aiFallback);
+   });
+   return ()=>controller.abort();
+ // The first question is the sole external request per film goal; follow-ups stay local.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[aiConsent,draft.goal,locale]);
  useEffect(()=>{if(captureStarted&&rendering)setCaptureObserved(true);},[captureStarted,rendering]);
+ // If the underlying guarded createVideo did not enter recording, do not strand
+ // the conversation in a spinner. Actual rendering is never cancelled by this.
+ useEffect(()=>{
+   if(!captureStarted||captureObserved||rendering)return;
+   const id=window.setTimeout(()=>{
+     setCaptureStarted(false);setStep("ready");addLine("assistant",t.timeout);
+   },8000);
+   return ()=>window.clearTimeout(id);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[captureStarted,captureObserved,rendering]);
  useEffect(()=>{
    if(captureStarted&&captureObserved&&!rendering&&resultReady){
      setStep("done");addLine("assistant",t.done);setCaptureStarted(false);
@@ -156,7 +206,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    }
    if(step==="review"||step==="ready"||step==="done"){
      const extracted=parseVideoChatIntent(value);
-     const hasChoice=Boolean(extracted.aspect||extracted.duration||extracted.mood||extracted.music||extracted.phrases!==null);
+     const hasChoice=hasVideoChatFilter(value);
      if(!hasChoice){
        const next={...initial(value),...{goal:value}};
        setDraft(next);onGoalChange(value);setSymbolicAllowed(false);setAlternative(0);
@@ -171,15 +221,24 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      return;
    }
    const parsed=parseVideoChatStepChoice(step,value);
-   if(parsed===null){addLine("assistant",t.error);return;}
-   const next={...draft,[step]:parsed} as Draft;
+   // A single natural-language message may supply several other preferences.
+   // Keep all recognized choices, rather than discarding all but the current step.
+   if(parsed===null&&!hasVideoChatFilter(value)){addLine("assistant",t.error);return;}
+   const next=mergeVideoChatPreferences(
+     parsed===null?draft:{...draft,[step]:parsed},value) as Draft;
    setDraft(next);
    const following=nextVideoChatStep(next) as Step;
    setStep(following);addLine("assistant",question(following));
  };
+ const autoComplete=()=>{
+   if(disabled)return;
+   const next=suggestVideoChatDefaults(draft,proposal?.theme||theme) as Draft;
+   setDraft(next);setStep("review");addLine("assistant",t.review);
+ };
  const reset=()=>{
    if(disabled)return;
    setDraft(initial(""));onGoalChange("");setStep("goal");setSymbolicAllowed(false);
+   aiAskedKeyRef.current="";setAiStatus("idle");
    setAlternative(0);setCaptureStarted(false);setCaptureObserved(false);
    setLines([{id:++counter.current,role:"assistant",text:t.intro}]);setInput("");
  };
@@ -191,7 +250,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  };
  const start=()=>{
    if(disabled||!canCreate||captureStarted)return;
-   setCaptureObserved(false);setCaptureStarted(true);onCreate();
+   const accepted=onCreate();
+   if(accepted===false){addLine("assistant",t.blocked);return;}
+   setCaptureObserved(false);setCaptureStarted(true);
  };
   return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
@@ -244,12 +305,20 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    {choices.length>0?<div className={css.choices} role="group" aria-label={question(step)}>
      {choices.map(([label,value])=><button type="button" key={value} disabled={disabled} onClick={()=>answer(value===label?label:value)}>{label}</button>)}
    </div>:null}
-   <form className={css.composer} onSubmit={event=>{event.preventDefault();answer(input);}}>
+   <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <input value={input} onChange={event=>setInput(event.currentTarget.value)} maxLength={160} disabled={disabled}
+     <input value={input} onChange={(event:ChangeEvent<HTMLInputElement>)=>setInput(event.currentTarget.value)} maxLength={160} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>
      <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
    </form>
+   <label className={css.aiOptIn}>
+     <input type="checkbox" checked={aiConsent} disabled={disabled}
+       onChange={(event:ChangeEvent<HTMLInputElement>)=>{
+         setAiConsent(event.currentTarget.checked);
+         if(!event.currentTarget.checked)setAiStatus("idle");
+       }}/>
+     <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}</span>
+   </label>
    <div className={css.foot}><span>{t.note}</span><button type="button" onClick={onOpenAudio} disabled={disabled}><Music2 size={14}/>{t.audio}</button></div>
  </section>;
 }

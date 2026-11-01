@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences} from '../lib/mandala/video-chat-intent.mjs';
+import {parseVideoChatIntent, parseVideoChatStepChoice, nextVideoChatStep, mergeVideoChatPreferences, suggestVideoChatDefaults, hasVideoChatFilter} from '../lib/mandala/video-chat-intent.mjs';
 
 test('RU composite prompt fills known filters but leaves optional questions', () => {
   const item = parseVideoChatIntent('Сделай вертикальный ролик о любви на 30 секунд с музыкой и фразами');
@@ -32,4 +32,27 @@ test('next question skips filters provided in initial prompt',()=>{
  const draft={goal:'Любовь',mood:'slow',aspect:'portrait',duration:30,music:null,phrases:null};
  assert.equal(nextVideoChatStep(draft),'music');
  assert.equal(nextVideoChatStep({...draft,music:'love',phrases:false}),'review');
+});
+
+test('automatic choices preserve explicit user settings and fill only the rest',()=>{
+ const d={goal:'Видео про отношения',mood:null,aspect:'square',duration:20,music:'none',phrases:null};
+ assert.deepEqual(suggestVideoChatDefaults(d,'relationships'),{...d,mood:'slow',phrases:false});
+ assert.equal(suggestVideoChatDefaults({...d,music:null,aspect:null},'relationships').music,'love');
+ assert.equal(suggestVideoChatDefaults({...d,music:null},'health').music,'meditation');
+});
+test('a reply can supply several filters even when a single question is pending',()=>{
+ const d={goal:'Видео о любви',mood:null,aspect:null,duration:null,music:null,phrases:null};
+ const next=mergeVideoChatPreferences(d,'мягкий вертикальный ролик 30 секунд с музыкой');
+ assert.equal(next.mood,'slow');assert.equal(next.aspect,'portrait');
+ assert.equal(next.duration,30);assert.equal(next.music,'harmony');
+ assert.equal(nextVideoChatStep(next),'phrases');
+ assert.equal(hasVideoChatFilter('сделай вертикально'),true);
+ assert.equal(hasVideoChatFilter('просто привет'),false);
+});
+
+test('minutes are not silently misread as seconds',()=>{
+ assert.equal(parseVideoChatIntent('Сделай фильм на 10 минут').duration,null);
+ assert.equal(parseVideoChatIntent('A 20 minute film').duration,null);
+ assert.equal(parseVideoChatIntent('Сделай фильм на 30 секунд').duration,30);
+ assert.equal(parseVideoChatIntent('Need a 60s reel').duration,60);
 });

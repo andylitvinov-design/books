@@ -85,3 +85,14 @@
 }
 @media(max-width:355px){.shots{gap:5px}.shot{padding:5px}.choices{gap:5px}.choices button{padding:7px 9px}}
 @media(prefers-reduced-motion:reduce){.window *{animation:none!important;transition:none!important}}
+
+/* Offer a one-tap automatic route, keeping detailed choices optional. */
+.autoChoices{display:flex;justify-content:flex-end;padding:4px 11px 8px;flex:none;background:#fffefa}
+.autoChoices button{display:flex;align-items:center;gap:5px;padding:8px 12px;min-height:40px;
+ border:1px solid #b8d9cd;border-radius:11px;color:#176d59;background:#eff9f4;
+ font:700 12px/1.25 system-ui,-apple-system,sans-serif;cursor:pointer}
+
+.aiOptIn{display:flex;align-items:center;gap:8px;padding:7px 13px;flex:none;border-top:1px solid #f1ede7;
+ color:#557468;background:#fcfffb;font:500 11px/1.35 system-ui,-apple-system,sans-serif}
+.aiOptIn input{flex:none;accent-color:#16896b;width:17px;height:17px}
+.aiOptIn span{flex:1}

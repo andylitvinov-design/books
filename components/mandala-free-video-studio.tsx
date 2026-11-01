@@ -2902,26 +2902,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
         locale==="es"?"Aún se están cargando los cuatro vídeos.":
         "Four original videos are still loading.");
-      return;
+      return false;
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       // Audio controls are inside the collapsed advanced editor.
       // Reveal the real attach action instead of scrolling to hidden content.
       openQuickDetailed("video-audio");
-      return;
+      return false;
     }
     if(uploadedAudio&&!audioRights){
       setNotice(ui.audioRightsHelp);
       openQuickDetailed("video-audio");
-      return;
+      return false;
     }
     if(activeFilm&&!premiumReady){
       primeNativeMasterFromUserGesture();
       setNotice(quick.loading);
-      return;
+      return false;
     }
     startFromHero();
+    return true;
   };
 
   const deepAudioPane = (
@@ -3442,6 +3443,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
           onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
           onConfirm={({presetId,duration:seconds,aspect:outputAspect,music:track,phrases,mood})=>{
+            // Do not silently discard uploaded/attached client voice. The user
+            // must explicitly resolve this in the existing single Audio pane.
+            if(uploadedAudio||attachedAudio?.kind==="file"){
+              setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
+                :locale==="es"?"Configura primero la voz añadida en el panel de audio."
+                :"Please review your existing voice recording in the audio settings first.");
+              return false;
+            }
             const ok=applyAutoFilm(presetId,seconds,undefined,outputAspect);
             if(!ok)return false;
             chooseMusic(track);setAttachedAudio(track==="none"?null:{kind:"preset",id:track});
@@ -3449,7 +3458,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const chosenTheme=FREE_FILM_PRESETS.find(item=>item.id===presetId)?.theme||theme;
             setAffirmations(current=>({...current,enabled:phrases,
               selected:phrases?[]:current.selected,
-              custom:phrases?quickSupportPhrases[locale][chosenTheme][0]:current.custom,
+              custom:phrases?(current.custom.trim()||quickSupportPhrases[locale][chosenTheme][0]):current.custom,
               visibility:phrases?["large"]:current.visibility}));
             setPreviewPlaying(false);
             return true;
