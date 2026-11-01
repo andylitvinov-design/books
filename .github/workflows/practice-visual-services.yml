@@ -8,8 +8,16 @@ on:
       - 'components/app/my-services-dashboard.*'
       - 'components/app/practice-dashboard.css'
       - 'components/app/practice-workspace.jsx'
-      - 'components/app/app-workspace.jsx'
-      - 'app/api/app/**/route.js'
+      - 'app/api/app/practice/**'
+      - 'app/api/app/\[...path\]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
+      - 'app/api/app/services/**'
       - 'components/home-master-path.*'
       - 'components/profi-hub.*'
       - 'tests/practice-public-private-unified.test.mjs'
@@ -19,12 +27,7 @@ on:
       - 'components/app/practice-inner-navigation.jsx'
       - 'components/app/practitioner-client-profiles.*'
       - 'components/app/practice-materials.*'
-      - 'components/app/messages-simple-inbox.module.css'
-      - 'components/app/messages-orders-clients.module.css'
-      - 'components/app/messages-bottom-navigation.jsx'
-      - 'app/[locale]/app/messages/messages-page.css'
       - 'tests/practice-inner-mock-parity.test.mjs'
-      - 'tests/messages-orders-clients.test.mjs'
       - 'lib/practitioners/service-editor-steps.mjs'
       - 'lib/practitioners/reiki-offer.*'
       - 'lib/practitioners/contracts.js'
@@ -39,8 +42,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: practice-visual-services-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: practice-visual-services-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   service-editor:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}

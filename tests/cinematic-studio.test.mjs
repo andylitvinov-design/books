@@ -81,8 +81,16 @@ test("long-running cinematic preview loops actual scene times and synchronized a
   assert.match(studio,/const frameSecond=cinematicPlan\?cinematicPreviewSeconds\(cinematicPlan,elapsed\):elapsed/);
   assert.match(studio,/paintVideoAffirmations\(ctx,frameSecond,affirmationLines,affirmations\)/,
     "looping visual stage and timed affirmations must share one clock");
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/,
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/,
     "final encoded video still uses the original bounded timeline");
+  assert.match(studio,/const frameTime=Math\.min\(duration,\(now-start\)\/1000\)/,
+    "encoded frame clock must be bounded by the requested movie duration");
+  assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime\)/,
+    "the selected stock shot is sampled from the very same timeline");
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
+    "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
+  assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations\)/,
+    "encoded captions must use the same clock as the real video frame");
 });
 
 test("storyboard scene selectors show real localized scene names without touching safe export prompts",()=>{
@@ -251,7 +259,7 @@ test("four style choices visibly grade the SAME local Canvas frames in preview a
     assert.ok(studio.includes('storyboard.styleId==="'+style+'"'),
       style+" must change actual video pixels, not only a paid-provider prompt");
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,0,aspect/);
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(studio,/ctx\.createRadialGradient\(w\*\.53,h\*\.36/);
   assert.match(studio,/ctx\.fillRect\(0,0,w,h\)/);
 });
@@ -311,7 +319,7 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
   assert.match(studio,/setDuration\(plan.durationSeconds as \(typeof durations\)\[number\]\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(studio,/const activeFilm = cinematicPlan \? null/);
   assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
     "applied cinematic storyboard must show its real first frame, not old static hero promo");
@@ -332,7 +340,10 @@ test("same iPhone editor records actual four-shot canvas montage without sending
 test("approved #2691 quick and legacy wish controls share the Director's single React state",()=>{
   assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
   assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
-  assert.match(studio,/data-video-quick-wish/);
+  assert.match(studio,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
+    "single goal-first input shares wish React state with the optional Cinematic Director");
+  assert.doesNotMatch(studio,/<input data-video-quick-wish/,
+    "do not reintroduce a second competing goal input");
   assert.match(studio,/id="personal-video-wish"/);
   assert.match(studio,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(directorUI,/onIntentTextChange/);

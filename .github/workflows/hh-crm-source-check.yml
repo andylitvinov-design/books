@@ -97,7 +97,6 @@ on:
       - 'supabase/migrations/*request_bound_voice_media*'
       - 'tests/practitioner-request-voice.test.mjs'
       - 'components/app/practice-workspace.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/messenger-notification-settings.*'
       - 'lib/app/messenger-notification-*.js'
       - 'app/api/app/notification-channels/**'
@@ -112,8 +111,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-crm-source-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 permissions:
   contents: read

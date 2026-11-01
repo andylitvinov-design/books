@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -12,6 +12,64 @@ const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',
 const path='.github/workflows/messenger.yml';
 const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'lib/crm/**'\n      - '!lib/crm/private/**'\n      - 'lib/crm/private/approved.mjs'\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
 const run=(overrides={})=>({id:151,workflow_id:30,path,head_sha:SHA,head_branch:'feat/test',event:'pull_request',status:'completed',conclusion:'success',run_attempt:1,head_repository:{full_name:repo},pull_requests:[{number:27,head:{sha:SHA},base:{ref:TARGET}}],...overrides});
+
+test('only verified concurrency-only edits can avoid unrelated specialists',()=>{
+ const file='.github/workflows/example.yml';
+ const old="on:\n  pull_request:\n    paths: ['.github/workflows/example.yml', 'app/api/**']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',
+  "  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const base=new Map([[file,old]]), current=new Map([[file,next]]);
+ const call=(changedRows,head=current)=>concurrencyOnlyAdvisory({base,current:head,changedRows,expected:[file]});
+ assert.deepEqual([...call([{filename:file,status:'M'}])],[file]);
+ assert.deepEqual([...call([{filename:file,status:'modified'},{filename:'tests/ci-head-cancellation.test.mjs',status:'modified'}])],[file]);
+ for(const extra of ['app/api/payments/route.js','app/page.tsx','scripts/unknown.mjs','tests/unknown.test.mjs'])
+  assert.deepEqual([...call([{filename:file,status:'M'},{filename:extra,status:'M'}])],[]);
+ for(const status of ['A','D','T','renamed']) assert.deepEqual([...call([{filename:file,status}])],[]);
+ for(const unsafe of [next.replace('runs-on: ubuntu-latest','runs-on: self-hosted'),next.replace('github.event.before != github.event.after','true'),next.replace('example-${{','other-${{'),next+'concurrency:\n'])
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,unsafe]]))],[]);
+ const collision=new Map([[file,next],['.github/workflows/other.yml',old]]);
+ assert.deepEqual([...call([{filename:file,status:'M'}],collision)],[]);
+ for(const prefix of ['example-pr-','example-run-','exam']) {
+  const competing=old.replace('example-${{ github.ref }}',prefix+'${{ github.ref }}');
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,next],['.github/workflows/other.yml',competing]]))],[]);
+ }
+ const relevantOld=old.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
+  changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
+});
+
+test('concurrency advisory never hides push, orphan, wrong-head or unrelated runs',()=>{
+ const paths=new Set([path]);
+ assert.equal(isConcurrencyAdvisoryRun(run(),pr(),paths),true);
+ for(const variant of [run({event:'push'}),run({head_sha:'c'.repeat(40)}),run({head_repository:{full_name:'other/repo'}}),run({pull_requests:[]}),run({path:'.github/workflows/other.yml'})])
+  assert.equal(isConcurrencyAdvisoryRun(variant,pr(),paths),false);
+});
+
+test('trusted exact-merge concurrency scope ignores only its associated PR run',async()=>{
+ const file='.github/workflows/example.yml';
+ const syntax='.github/workflows/hh-actionlint.yml';
+ const old="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const syntaxYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/**']\njobs:\n  syntax:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',"  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const files={base:new Map([[file,old],[syntax,syntaxYaml]]),current:new Map([[file,next],[syntax,syntaxYaml]]),changedRows:[{filename:file,status:'M'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const failed=run({path:file,conclusion:'failure'});
+ const syntaxRun=run({id:153,path:syntax});
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const result=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(result.expected,[syntax]);
+ assert.deepEqual(result.advisory.concurrencyOnly,[file]);
+ api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
+ api.runs=async()=>[failed,syntaxRun];
+ await assert.rejects(()=>verify(api,ctx,modifiedSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
 
 test('scope reads GitHub path filters and ordered negative/reincluded patterns',()=>{
   const trigger=parsePrTrigger(yaml,path);
@@ -158,7 +216,8 @@ test('production workflow directory can be parsed without silently ignoring unkn
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
-    'holistic-house-native.yml', 'native-ci.yml'];
+    'holistic-house-native.yml'];
+  assert.ok(!names.includes('native-ci.yml'), 'Retired duplicate Native CI must not return');
   for(const critical of protectedChecks) assert.ok(names.includes(critical), 'Missing critical workflow: '+critical);
   for(const name of names) {
     const file='.github/workflows/'+name;
@@ -234,11 +293,11 @@ test('approved migration destinations contain the exact retired scope and the or
       contracts:['tests/benchmark-free-tests-first-pilot.test.mjs','tests/free-review-conversion.test.mjs','tests/benchmark-reference-matrix.test.mjs','scripts/benchmarking/plan.mjs'],
     },{
       from:'hh-portrait-sectors.yml',into:'hh-profile-axis-matching.yml',
-      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/app-workspace.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
+      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
       contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
     },{
       from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
-      patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      patterns:["'components/app/cabinet-today.*'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
       contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
     },
   ];
@@ -381,6 +440,42 @@ test('package and lockfile routing is exact-base scoped, with unknown changes fu
     changed,packageImpact:impact}),/PACKAGE_ROUTE_OWNER_UNAVAILABLE/);
 });
 
+test('pinned parser manifests are CI-scoped but all other dependency changes remain full-scope',()=>{
+  const read=(filePaths)=>"on:\n  pull_request:\n    paths:\n"+filePaths.map(path=>"      - '"+path+"'\n").join('');
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const app='.github/workflows/hh-app-r1.yml';
+  const guard='.github/workflows/hh-pr-sweep-guard.yml';
+  const source=new Map([
+    [billing,read(['package.json','package-lock.json','lib/billing/**'])],
+    [app,read(['package.json','package-lock.json','lib/app/**'])],
+    [guard,read(['lib/ci/fast-ui-parser/**','lib/ci/specialist-aggregate.mjs'])],
+  ]);
+  const pinned=[
+    'lib/ci/fast-ui-parser/package.json',
+    'lib/ci/fast-ui-parser/package-lock.json',
+  ];
+  const impact=classifyPackageImpact({changed:pinned,basePackage:'{}',currentPackage:'{}'});
+  assert.deepEqual(impact,{mode:'none',reason:'ISOLATED_CI_PARSER_MANIFESTS',workflows:[]});
+  assert.deepEqual(expectedWorkflows({base:source,current:source,changed:pinned,packageImpact:impact}),
+    [guard], 'isolated static CI parser must not require unrelated DB, billing or App R1');
+  const mixed=[...pinned,'lib/billing/checkout.js'];
+  assert.deepEqual(expectedWorkflows({base:source,current:source,changed:mixed,
+    packageImpact:classifyPackageImpact({changed:mixed})}),[billing,guard],
+    'a real billing source must still require billing acceptance');
+  for(const unsafe of [
+    ['package-lock.json',...pinned],
+    ['package.json',...pinned],
+    ['lib/other/package-lock.json',...pinned],
+    ['lib/other/package.json',...pinned],
+  ]) {
+    const outcome=classifyPackageImpact({changed:unsafe,basePackage:'{}',currentPackage:'{}'});
+    assert.equal(outcome.mode,'full','unknown and root dependencies must stay full scope: '+unsafe.join(','));
+    const required=expectedWorkflows({base:source,current:source,changed:unsafe,packageImpact:outcome});
+    assert.ok(required.includes(billing) && required.includes(app) && required.includes(guard),
+      'root/unknown manifest change must retain application specialists');
+  }
+});
+
 test('Video Studio-only edits run dedicated Mandala real-media acceptance without unrelated Public Services suites',()=>{
   const services='.github/workflows/hh-public-services-production.yml';
   const mandala='.github/workflows/holistic-support-mandala.yml';
@@ -412,16 +507,16 @@ test('fast routing is limited to known public presentation assets and mixed risk
   }
 });
 
-test('FAST bypasses specialist wait but verifies live HEAD and old names in renames', async () => {
+test('FAST verifies exact HEAD and old names in renames', async () => {
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
-  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css'}], runs:async()=>{throw Error('should not wait');}};
-  const result=await verify(api,ctx,sources, {maxWaitMs:0});
+  const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}], runs:async()=>[]};
+  const result=await verify(api,ctx,sources, {maxWaitMs:0,readSource:()=>'.card { color: red; }'});
   assert.equal(result.risk,'FAST');
   assert.equal(reads,2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
-  await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}));
+  assert.equal((await verify(api,ctx,sources, {maxWaitMs:0})).risk,'STRICT');
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];
   await assert.rejects(()=>verify(api,ctx,sources, {maxWaitMs:0}),/PR_CHANGED_FILES/);
 });
@@ -442,7 +537,7 @@ test('presentation changes cannot bypass an applicable private app browser workf
 test('FAST includes dynamic Next.js presentation paths but sensitive or mixed changes remain STRICT', async () => {
   const {classifyReleaseRisk} = await import('../lib/ci/specialist-aggregate.mjs');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']), 'FAST');
-  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.css']), 'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/academy/[[...slug]]/page.module.css']), 'FAST');
   assert.equal(classifyReleaseRisk(['app/[locale]/auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/../auth/page.css']), 'STRICT');
   assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css','app/api/payment/route.ts']), 'STRICT');
@@ -504,8 +599,8 @@ test('public FAST CSS cannot skip a broadly triggered specialist without a trust
   const broad='.github/workflows/diagnostic.yml';
   const sources={base:new Map([[broad,'on: [pull_request]\n']]),current:new Map([[broad,'on: [pull_request]\n']])};
   const ctx={repo,number:27,head:SHA,base:BASE};
-  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css'}],runs:async()=>[]};
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_MISSING_OR_PENDING/);
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>[]};
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0,readSource:()=>'.card { color:red; }'}),/SPECIALIST_MISSING_OR_PENDING/);
 });
 
 test('client progress owner is complete before the trusted second-phase deletion', () => {
@@ -728,4 +823,207 @@ test('unfinished running specialist times out and failed/cancelled runs never pa
     api.runs = async () => [run({ status: 'completed', conclusion })];
     await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0, ...clock }), /SPECIALIST_FAILED/);
   }
+});
+
+test('FAST public CSS does not wait for unchanged unrelated browsers; changed and security workflows stay mandatory',async()=>{
+  const diagnostic='.github/workflows/hh-public-services-production.yml';
+  const workflow='on: [pull_request]\n';
+  const sources={base:new Map([[diagnostic,workflow]]),current:new Map([[diagnostic,workflow]])};
+  const ctx={repo,number:27,head:SHA,base:BASE};
+  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}],runs:async()=>[run({path:diagnostic,conclusion:'failure'})]};
+  const options={maxWaitMs:0,readSource:()=>'.card { color:red; }'};
+  const good=await verify(api,ctx,sources,options);
+  assert.equal(good.risk,'FAST');
+  assert.deepEqual(good.expected,[]);
+  assert.ok(good.advisory.nonApplicable.some(x=>x.includes(diagnostic)));
+  const changedWorkflow={base:new Map([[diagnostic,workflow]]),current:new Map([[diagnostic,workflow+'# changed\n']])};
+  await assert.rejects(()=>verify(api,ctx,changedWorkflow,options),/SPECIALIST_FAILED/);
+  const billing='.github/workflows/hh-billing-isolated.yml';
+  const security={base:new Map([[billing,workflow]]),current:new Map([[billing,workflow]])};
+  api.runs=async()=>[run({path:billing,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,security,options),/SPECIALIST_FAILED/);
+  api.changed=async()=>[{filename:'app/api/auth/route.ts',status:'modified'}];
+  api.runs=async()=>[run({path:diagnostic,conclusion:'failure'})];
+  await assert.rejects(()=>verify(api,ctx,sources,options),/SPECIALIST_FAILED/);
+});
+
+test('installation guidance and consent surfaces cannot be FAST CSS',async()=>{
+  const {classifyReleaseRisk}=await import('../lib/ci/specialist-aggregate.mjs');
+  for(const f of ['app/[locale]/install/install.module.css','app/[locale]/contact/page.module.css','app/[locale]/events/[eventId]/event-detail.module.css']) {
+    assert.equal(classifyReleaseRisk([f]),'STRICT',f);
+  }
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.module.css']),'FAST');
+  assert.equal(classifyReleaseRisk(['app/[locale]/about/page.css']),'STRICT');
+});
+
+test('Native installer successor claims old native triggers before retiring duplicate macOS/Android CI', () => {
+  const old='.github/workflows/native-ci.yml';
+  const replacement='.github/workflows/holistic-house-native.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old], replacement);
+  const source=readFileSync(replacement,'utf8');
+  for(const required of ["'capacitor.config.json'","'components/native-**'",
+    "'package.json'","'package-lock.json'","'.github/workflows/native-ci.yml'",
+    'node --test tests/holistic-house-native-build.test.mjs',
+    'npm run native:check',
+    'tests/native-private-message-push.test.mjs',
+    'workflow_dispatch:',"branches: ['codex/public-book-library']"]) {
+    assert.ok(source.includes(required), 'native successor missing coverage '+required);
+  }
+  assert.ok(source.includes("  native-current-contracts:"), 'source contracts owner missing');
+  assert.match(source, /^  android-test-installer:/m);
+  assert.match(source, /^  ios-simulator:/m);
+  assert.ok(!source.includes('continue-on-error: true'), 'do not hide errors');
+  // Specialist aggregator requires successful PR jobs; a deliberately
+  // lightweight delegation step keeps both jobs green without running builds.
+  const android=source.slice(source.indexOf('  android-test-installer:'),source.indexOf('  ios-simulator:'));
+  const ios=source.slice(source.indexOf('  ios-simulator:'));
+  for (const section of [android,ios]) {
+    assert.ok(section.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
+    const entries=section.split('\n      - ').slice(1);
+    assert.ok(entries.length >= 17, 'expected full set of native steps');
+    assert.ok(entries[0].includes('Verify delegated lightweight PR native coverage'));
+    for (const entry of entries.slice(1)) {
+      assert.ok(entry.includes("if: ${{ github.event_name != 'pull_request' }}") ||
+        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}"),
+        'native build step must never execute on ordinary PR: '+entry.slice(0,110));
+    }
+  }
+});
+
+
+test('stage 2 retiring duplicate native CI routes to the immutable-base successor',()=>{
+  const retired='.github/workflows/native-ci.yml';
+  const successor='.github/workflows/holistic-house-native.yml';
+  assert.ok(!readdirSync('.github/workflows').includes('native-ci.yml'),
+    'the duplicate native macOS/Android workflow is gone');
+  const original="on:\n  pull_request:\n    paths:\n      - '.github/workflows/native-ci.yml'\n";
+  const currentSource=readFileSync(successor,'utf8');
+  // Simulate a trusted production BASE that still has native-ci.yml and
+  // the identical already-shipped Holistic House Native successor.
+  const base=new Map([[retired,original],[successor,currentSource]]);
+  const current=new Map([[successor,currentSource]]);
+  const changed=[retired];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[successor,retired].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[successor],
+    delegated:[{retired,replacement:successor}],
+  });
+});
+
+test('Tantra Photo Cards has an approved BASE-trusted Reiki owner for phase-2 retirement',()=>{
+  const old='.github/workflows/hh-tantra-photo-levels.yml';
+  const successor='.github/workflows/hh-reiki-all-slides-browser.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+  const owner=readFileSync(successor,'utf8');
+  for(const path of ['components/tantra-reiki-journey.tsx','components/tantra-reiki-story.tsx',
+    'components/academy-record-page.tsx','app/academy.css',
+    'tests/tantra-reiki-compact-fullwidth.test.mjs',
+    'tests/tantra-reiki-photo-levels.browser.mjs',
+    'tests/tantra-reiki-teacher-compact.test.mjs',
+    '.github/workflows/hh-tantra-photo-levels.yml']){
+    assert.ok(owner.includes("      - '"+path+"'"),'Reiki owner missing original trigger '+path);
+  }
+  for(const original of ['tests/tantra-reiki-photographic-landing.test.mjs',
+    'tests/tantra-reiki-level-one-focus.test.mjs','tests/tantra-reiki-mobile-chapters.test.mjs',
+    'npx --no-install eslint components/tantra-reiki-journey.tsx']){
+    assert.ok(owner.includes(original),'Reiki owner missing test '+original);
+  }
+  const legacy="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/hh-tantra-photo-levels.yml'\n";
+  const trusted=new Map([[old,legacy],[successor,owner]]);
+  const proposed=new Map([[successor,owner]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base:trusted,current:proposed,changed});
+  assert.deepEqual(expected,[successor,old].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base:trusted,current:proposed,changed,expected}).delegated,
+    [{retired:old,replacement:successor}]);
+  assert.throws(()=>resolveExpectedSpecialists({base:trusted,current:new Map([[successor,owner+'\n# changed in retirement']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
+
+
+// Exact-Merge specialist discovery is the single source of truth for PR impact.
+// Shared auth/DB/checkout remain owned by Core, IA, App Browser and Billing.
+test('Messenger-only PRs skip unrelated specialist workflow dispatch without skipping safety and E2E', () => {
+  const root = '.github/workflows/';
+  const all = new Map(readdirSync(root).filter(f => /\.ya?ml$/.test(f)).map(f =>
+    [root + f, readFileSync(root + f, 'utf8')]));
+  const changed = [
+    'components/app/messages-simple-inbox.jsx',
+    'components/app/messages-orders-clients.module.css',
+    'components/app/messages-hub.jsx',
+    'app/api/app/direct-messages/route.js',
+    'lib/app/direct-message-push.js',
+    'tests/messages-inbox-unified.test.mjs',
+  ];
+  const applicable = expectedWorkflows({base: all, current: all, changed});
+  const present = name => applicable.includes(root + name + '.yml');
+  for (const specialistName of [
+    'hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-public-services-production','site-video-browser','hh-personal-coaching-session',
+    'hh-interpretation-database','hh-my-progress-release','hh-public-test-collections',
+    'hh-portrait-mobile-browser','hh-profile-axis-matching','hh-cabinet-journey',
+  ]) assert.equal(present(specialistName), false, 'Messenger must not dispatch ' + specialistName);
+  for (const owner of [
+    'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
+    'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
+  ]) assert.equal(present(owner), true, 'Messenger needs ' + owner);
+  const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
+  assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
+
+  // Unlike a direct Messenger route, the shared API dispatcher must retain
+  // all product/security owners of its exact source.
+  const shared = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/app/[...path]/route.js',
+  ]});
+  for (const owner of [
+    'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+    'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+    'practice-visual-browser','practice-visual-services','ia-v2','hh-app-r1','hh-app-browser',
+  ]) assert.ok(shared.includes(root + owner + '.yml'), 'Shared API router must retain ' + owner);
+
+  // Shared router scope must not drag Messenger's separate API paths into
+  // Course, Editor and Video suites, even though a one-segment glob is used.
+  for (const isolated of [
+    'app/api/app/direct-messages/route.js',
+    'app/api/app/practitioner-client-messages/route.js',
+    'app/api/app/notification-channels/route.js',
+  ]) {
+    const scoped = expectedWorkflows({base:all,current:all,changed:[isolated]});
+    for (const unrelated of [
+      'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+      'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+      'practice-visual-browser','practice-visual-services',
+    ]) assert.ok(!scoped.includes(root + unrelated + '.yml'),
+      isolated + ' must not dispatch ' + unrelated);
+  }
+
+  const changedShell = ['components/app/app-workspace.jsx'];
+  const shellRuns = expectedWorkflows({base: all, current: all, changed:changedShell});
+  for (const owner of ['hh-app-r1','hh-app-browser','ia-v2']) {
+    assert.ok(shellRuns.includes(root + owner + '.yml'), 'Shared shell stays covered by ' + owner);
+  }
+  for (const unrelated of ['hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-my-progress-release','hh-public-test-collections','hh-cabinet-journey']) {
+    assert.ok(!shellRuns.includes(root + unrelated + '.yml'), 'Shared shell should not fan out ' + unrelated);
+  }
+
+  const sensitive = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/payments/checkout/route.js',
+    'supabase/migrations/20261101_app_private_message_policy.sql',
+  ]});
+  for (const owner of ['hh-billing-isolated','ia-v2','hh-app-r1','hh-app-browser']) {
+    assert.ok(sensitive.includes(root + owner + '.yml'), 'Sensitive change must retain ' + owner);
+  }
+  // Each specialist still owns actual edits to its own module.
+  for (const [owner, file] of [
+    ['hh-course-presets','components/app/my-course.jsx'],
+    ['practice-visual-browser','components/practice-showcase.jsx'],
+    ['practice-visual-services','components/app/simple-service-editor.jsx'],
+    ['site-video-browser','components/site-video-manager.tsx'],
+    ['hh-public-services-production','components/contact-channel-chooser.tsx'],
+    ['hh-interpretation-database','lib/interpretation/engine.js'],
+    ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
+  ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
+    'Own-module change must retain specialist ' + owner);
 });

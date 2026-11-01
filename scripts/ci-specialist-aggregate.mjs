@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 // Read-only exact-HEAD and exact-BASE coverage of applicable specialist workflows.
 // Runs from the PR merge checkout; no third-party API and no write permissions.
-import { readFileSync, readdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
+  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -88,12 +91,88 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx) {
-  if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || pr.base?.sha !== ctx.base || pr.base?.ref !== TARGET ||
-      pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
-    throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
+// Loose BASE is permitted only for recognizable, non-sensitive source paths.
+// A surprising path, CI/policy change, credential-related name, private-data
+// surface, API, or billing/security feature retains fresh production-base
+// matching. This is deliberately independent of FAST UI routing: normal
+// application code still requires Core and all applicable specialist checks.
+export function requiresCurrentProductionBase(changed) {
+  if (!Array.isArray(changed) || changed.length === 0) return true;
+  const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
+  return changed.some(file =>
+    typeof file !== 'string' ||
+    !ordinaryRoots.test(file) ||
+    file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
+    sensitiveName.test(file) ||
+    sensitiveRoots.test(file)
+  );
+}
+
+// A precise PR state reason is actionable; a generic HEAD/BASE message is not.
+// Keep the fail-closed prefix for existing consumers and expose the precise cause.
+export function classifyPrState(pr, ctx, requireCurrentBase = false) {
+  if (!pr || pr.number !== ctx.number) return 'WRONG_PR_NUMBER';
+  if (pr.state !== 'open') return 'PR_NOT_OPEN';
+  if (pr.draft) return 'PR_DRAFT';
+  if (pr.head?.sha !== ctx.head) return 'PR_HEAD_CHANGED';
+  if (!/^[0-9a-f]{40}$/i.test(pr.base?.sha || '')) return 'INVALID_BASE_SHA';
+  if (pr.base?.ref !== TARGET) return 'WRONG_PRODUCTION_TARGET';
+  if (pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) return 'WRONG_REPOSITORY';
+  if (requireCurrentBase && pr.base.sha !== ctx.base) return 'PRODUCTION_BASE_CHANGED';
+  if (pr.mergeable === false || pr.mergeable_state === 'dirty') return 'MERGE_CONFLICT';
+  return null;
+}
+
+function assertSame(pr, ctx, requireCurrentBase = false) {
+  const reason = classifyPrState(pr, ctx, requireCurrentBase);
+  if (reason) throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:' + reason);
+}
+
+// These broad domain/browser diagnostics remain visible in Actions. Only a
+// proven FAST presentation change may stop waiting for an unchanged BASE copy.
+const FAST_ADVISORY_WORKFLOWS = new Set([
+  '.github/workflows/hh-public-services-production.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/opora-module-ci.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-benchmark-public-browser.yml',
+]);
+
+// Load only the BASE-pinned parser, without PR dependencies or npm scripts.
+// A failed install never waives checks: callers fall back to STRICT.
+export function loadTrustedTypescript(base) {
+  if (!/^[0-9a-f]{40}$/.test(base || '')) return null;
+  let dir;
+  try {
+    const read=path=>execFileSync('git',['show',base+':'+path],{encoding:'utf8',maxBuffer:100_000,stdio:['ignore','pipe','pipe']});
+    const manifest=read('lib/ci/fast-ui-parser/package.json');
+    const lock=read('lib/ci/fast-ui-parser/parser-lock.json');
+    const pkg=JSON.parse(manifest), parsed=JSON.parse(lock);
+    const entry=parsed.packages?.['node_modules/typescript'];
+    if (Object.keys(pkg).sort().join(',') !== 'dependencies,name,private,version' ||
+        pkg.name !== 'hh-fast-ui-parser' || pkg.private !== true || pkg.version !== '1.0.0' ||
+        JSON.stringify(pkg.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        JSON.stringify(parsed.packages?.['']?.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        Object.keys(parsed.packages || {}).sort().join(',') !== ',node_modules/typescript' ||
+        entry?.version !== '5.9.3' || entry.resolved !== 'https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz' ||
+        entry.integrity !== 'sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==') return null;
+    dir=mkdtempSync(join(tmpdir(),'hh-ci-ui-parser-'));
+    writeFileSync(join(dir,'package.json'),manifest,{mode:0o600});
+    writeFileSync(join(dir,'package-lock.json'),lock,{mode:0o600});
+    const env={PATH:process.env.PATH || '/usr/bin:/bin',CI:'true',npm_config_userconfig:join(dir,'user.npmrc'),
+      npm_config_globalconfig:join(dir,'global.npmrc'),npm_config_cache:join(dir,'cache')};
+    execFileSync('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],
+      {cwd:dir,env,timeout:45_000,maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']});
+    return createRequire(join(dir,'package.json'))('typescript');
+  } catch {
+    console.warn('Trusted UI parser unavailable; routing this change to STRICT.');
+    return null;
   }
+  finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
 }
 
 export async function verify(api,ctx,files,options={}) {
@@ -110,22 +189,52 @@ export async function verify(api,ctx,files,options={}) {
   const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? delay;
+  const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx);
-  const changedRows=files.changedRows ?? await api.changed(ctx.number);
+  // Loose base is never allowed for legacy/unverified live file listings.
+  // Only exact merged checkout rows can prove what was tested.
+  assertSame(pr,ctx,!pinnedChangeRows);
+  const changedRows=pinnedChangeRows ? files.changedRows : await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
-  const risk=classifyReleaseRisk(changed);
+  // BASE/HEAD workflow definitions and the actual merge snapshot stay
+  // immutable even when the production target moves after the check started.
+  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  assertSame(pr,ctx,requireCurrentBase);
+  let risk=classifyReleaseRisk(changed);
+  const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
+    {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
+  const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
+  if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
+  if (risk !== 'FAST') {
+    let loaded=false, parser;
+    const loadTypescript=()=>{
+      if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
+      return parser;
+    };
+    risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
+  }
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
-  const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
-  if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx);
-    return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
-  }
+  const routed=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
+  const delegated=routed.delegated;
+  const replacements=new Set(delegated.map(item=>item.replacement));
+  const syntaxWorkflow=WORKFLOW_PREFIX+'hh-actionlint.yml';
+  // The unchanged BASE-owned actionlint workflow must independently validate
+  // every modified YAML; never let a PR replace or omit that enforcement.
+  const trustedSyntax=pinnedChangeRows && baselineExpected.includes(syntaxWorkflow) &&
+    files.base.has(syntaxWorkflow) && files.base.get(syntaxWorkflow) === files.current.get(syntaxWorkflow) &&
+    !changed.includes(syntaxWorkflow);
+  const concurrencyAdvisory=trustedSyntax ? concurrencyOnlyAdvisory({
+    ...files,changedRows,expected:routed.expected,
+  }) : new Set();
+  for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
+  const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
+    files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -138,10 +247,12 @@ export async function verify(api,ctx,files,options={}) {
   const deadline = start + maxWait;
   const missingDeadline = start + missingGrace;
   const queuedDeadline = start + queuedGrace;
-  let state;
+  let state, fastDiagnostics=[];
   for (;;) {
     const allRuns=await api.runs(ctx.head);
-    state=inspectWorkflowRuns({expected,runs:allRuns,pr});
+    fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
+    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
@@ -183,12 +294,64 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx);
+  assertSame(fresh,ctx,requireCurrentBase);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+}
+
+// Normalize observable symptoms across PRs without claiming identical root causes.
+// Actual code failures require comparison of the exact-HEAD job logs before repair.
+export function diagnoseAggregateError(error) {
+  const message = String(error?.message || error || 'unknown');
+  const rules = [
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED','BASE_ADVANCED','Rebase/update the sensitive PR against current production, then validate exact HEAD.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Discard stale results and run checks on the new PR HEAD.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT','MERGE_CONFLICT','Resolve the real merge conflict; do not bypass the gate.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
+    ['SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED','WORKFLOW_NOT_TRIGGERED','Fix scoped dispatch or use the guarded recovery path; never mark missing CI successful.'],
+    ['SPECIALIST_MISSING_OR_PENDING:NOT_STARTED','RUNNER_QUEUE','Inspect GitHub runner capacity; rerun only after a confirmed transient interruption.'],
+    ['SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT','CHECK_TIMEOUT','Inspect the running job and optimize its actual bottleneck.'],
+    ['SPECIALIST_FAILED:','SPECIALIST_FAILED','Compare exact-HEAD logs across affected PRs; fix confirmed common code roots once.'],
+    ['ZERO_JOB_WORKFLOW:','WORKFLOW_JOBLESS','Check runner/workflow dispatch; safely rerun a confirmed interrupted run once.'],
+    ['UNSUCCESSFUL_SPECIALIST_JOB:','SPECIALIST_JOB_FAILED','Inspect the named failing job; never treat a skipped or failed job as green.'],
+    ['UNVERIFIED_MERGE_CHECKOUT','CHECKOUT_UNVERIFIED','Rebuild a verified exact-HEAD/exact-BASE merge checkout.'],
+    ['GitHub read ','GITHUB_API_READ_FAILED','Check API availability and permissions, then retry only this transient read.'],
+  ];
+  const found = rules.find(([prefix]) => message.startsWith(prefix));
+  const category = found?.[1] || 'CI_UNKNOWN_FAILURE';
+  const action = found?.[2] || 'Inspect the exact failure; do not auto-waive a required check.';
+  let payload = {};
+  const jsonStart = message.indexOf('{');
+  if (jsonStart >= 0) {
+    try { payload = JSON.parse(message.slice(jsonStart)); } catch { /* preserve fail-closed status */ }
+  }
+  const symptoms = [];
+  const add = (type, raw) => {
+    const path = String(raw).split(':')[0];
+    if (/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(path)) {
+      symptoms.push(type + '/' + path);
+    }
+  };
+  if (category === 'SPECIALIST_FAILED') {
+    for (const field of ['failed','retired','unregistered','push','orphan']) {
+      for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
+    }
+  }
+  if (category === 'WORKFLOW_NOT_TRIGGERED' || category === 'RUNNER_QUEUE' || category === 'CHECK_TIMEOUT') {
+    for (const field of ['missing','pending','queued','running']) {
+      for (const item of Array.isArray(payload[field]) ? payload[field] : []) add(field,item);
+    }
+  }
+  if (category === 'WORKFLOW_JOBLESS' || category === 'SPECIALIST_JOB_FAILED') {
+    add('job',message.split(':')[1] || '');
+  }
+  // Shared SYMPTOM keys are a triage aid, not proof that the code root is shared.
+  return {category,action,symptomKeys:[...new Set(symptoms)].sort().slice(0,30)};
 }
 
 async function main() {
@@ -200,8 +363,9 @@ async function main() {
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
   if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
-  // The verified merge parent is the base actually tested. Reject a later
-  // production advance at both the start and end of specialist aggregation.
+  // The verified merge parent is always the trusted tested BASE. Only
+  // non-sensitive ordinary paths permit a newer live production BASE; security,
+  // payment, privacy, auth, policy and unknown paths still require freshness.
   const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
@@ -214,5 +378,19 @@ async function main() {
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url) {
-  main().catch(error=>{ console.error('CI_SPECIALIST_FAIL_CLOSED: ' + String(error?.message || error));process.exitCode=1; });
+  main().catch(error=>{
+    const diagnosis = diagnoseAggregateError(error);
+    const detail = String(error?.message || error).slice(0,1200);
+    const escaped = (diagnosis.category + ': ' + detail).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+    console.error('::error title=HH CI ' + diagnosis.category + '::' + escaped);
+    console.error('CI_SPECIALIST_FAIL_CLOSED: ' + detail);
+    const report = ['## HH CI blocker diagnosis', '',
+      '- Category: \`' + diagnosis.category + '\`',
+      '- Next action: ' + diagnosis.action,
+      '- Shared symptom keys (NOT verified common root causes): ' +
+        (diagnosis.symptomKeys.length ? diagnosis.symptomKeys.map(x=>'\`'+x+'\`').join(', ') : 'none'),
+      '- Check exact-head job logs before combining repairs.', ''].join('\n');
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,report);
+    process.exitCode=1;
+  });
 }
