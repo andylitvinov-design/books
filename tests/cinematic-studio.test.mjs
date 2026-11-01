@@ -320,8 +320,9 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(studio,/setDuration\(plan.durationSeconds as \(typeof durations\)\[number\]\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
-  assert.match(studio,/const activeFilm = cinematicPlan \? null/);
-  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
+  assert.match(studio,/const activeFilm = creationMode==="generated" \|\| cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/,
+    "generated mode cannot reuse a catalog source while the cinematic montage retains its own frames");
+  assert.match(studio,/data-hero-promo=\{creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
     "applied cinematic storyboard must show its real first frame, not old static hero promo");
   assert.match(studio,/setCinematicPlan\(null\)/);
   assert.match(studio,/data-mandala-video-generate/);
