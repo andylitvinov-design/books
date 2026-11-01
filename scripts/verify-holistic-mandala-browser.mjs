@@ -5,9 +5,12 @@
  */
 import assert from "node:assert/strict";
 
-import { mkdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { chromium, webkit, expect } from "@playwright/test";
+import {decodeSceneFrames,matchSceneSamples} from "./benchmarking/video-scene-match.mjs";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
@@ -119,6 +122,7 @@ const runEngine = async ([engine, browserType]) => {
         // First free video: real exported moving media in both engines.
         const firstStart=page.locator("[data-first-free-video]");
         await firstStart.waitFor({state:"visible",timeout:12000});
+        await expect(firstStart).toHaveAttribute("data-first-video-hydrated","true",{timeout:40000});
         assert.equal(await firstStart.locator("[data-first-video-wish]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-prompt]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
@@ -376,8 +380,9 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         await expandAllFilms.click();
-        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
-          "All 48 must be real selectable four-MP4 film presets, not a decorative count");
+        await expect(quick.locator("[data-video-scene-library] [data-free-film-preset]"),
+          "All 48 must be real selectable four-MP4 film presets, not a decorative count")
+          .toHaveCount(48,{timeout:10000});
         await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
@@ -1104,7 +1109,7 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-goal="recovery"]').getAttribute("aria-pressed"),"true");
         await page.locator("[data-video-goals-apply]").click();
         assert.equal(await page.locator("[data-video-affirmations-enable]").isChecked(),true);
-        assert.match(await page.locator("[data-video-affirmations-preview]").innerText(),/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i);
+        await expect(page.locator("[data-video-affirmations-preview]")).toContainText(/I recharge gently|Я восстанавливаю силы|Recupero mis fuerzas/i,{timeout:15000});
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
@@ -1129,6 +1134,7 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
         await compactHypno.locator("[data-hypno-design-edit]").click();
+        await expect(compactHypno.locator("[data-hypno-design-edit]")).toHaveAttribute("aria-expanded","true");
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1850,6 +1856,10 @@ const runEngine = async ([engine, browserType]) => {
             "Auto Director reuses the only live editable video stage");
           const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          const selectedPaths=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("src")));
+          assert.equal(selectedPaths.length,4);
+          for(const path of selectedPaths)assert.match(path||"",/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/);
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
           // The legacy quick-duration control is intentionally in a collapsed
           // details panel. Exercise the actually visible Video workspace button.
@@ -1858,6 +1868,73 @@ const runEngine = async ([engine, browserType]) => {
           assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
             "duration changes must retain the four selected MP4 sources");
+          // Verify an actual rendered montage with an attached soundtrack and
+          // affirmations, rather than mistaking catalog media for an export.
+          await workspaceNav.locator('[data-video-quick-control="audio"]').click();
+          await page.locator('[data-video-audio-length="10"]').click();
+          await page.locator('[data-video-music="warm-morning"]').click();
+          await page.locator('[data-video-audio-attach]').click();
+          await workspaceNav.locator('[data-video-quick-control="psychocorrection"]').click();
+          await page.locator('[data-hypno-overview-enable]').check();
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources);
+          const createMontage=page.locator('[data-video-quick-generate]');
+          await expect(createMontage).toBeEnabled({timeout:60000});
+          await createMontage.click();
+          const saveMontage=page.locator('[data-mandala-video-download]');
+          await saveMontage.waitFor({state:"visible",timeout:90000});
+          assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
+            'rendered',"a catalog source is not a personalized montage");
+          const [montageDownload]=await Promise.all([
+            page.waitForEvent('download',{timeout:25000}),saveMontage.click()]);
+          const montageBytes=await bufferFromStream(await montageDownload.createReadStream());
+          assert.ok(montageBytes.length>20000,"montage download must contain encoded media");
+          const mediaDir=mkdtempSync(join(tmpdir(),'hh-montage-'));
+          try {
+            const file=join(mediaDir,'montage');
+            writeFileSync(file,montageBytes);
+            const probeMontage=spawnSync('ffprobe',['-v','error','-show_entries',
+              'stream=codec_type,width,height','-of','json',file],{maxBuffer:1024*1024});
+            assert.equal(probeMontage.status,0,'downloaded montage must be decodable');
+            const streams=JSON.parse(probeMontage.stdout.toString()).streams;
+            assert.ok(streams.some(stream=>stream.codec_type==='video' && stream.width>0 && stream.height>0));
+            assert.ok(streams.some(stream=>stream.codec_type==='audio'),'selected audio must be encoded');
+            const decoded=spawnSync('ffmpeg',['-v','error','-i',file,'-f','null','-'],{timeout:30000});
+            assert.equal(decoded.status,0,'all encoded audio and video must decode');
+            const packets=spawnSync('ffprobe',['-v','error','-select_streams','v:0',
+              '-show_entries','packet=pts_time','-of','csv=p=0',file],{encoding:'utf8'});
+            assert.equal(packets.status,0);
+            const timestamps=packets.stdout.trim().split(/\s+/).map(Number).filter(Number.isFinite);
+            const lastTime=Math.max(...timestamps);
+            assert.ok(lastTime>=8.5 && lastTime<=11.5,'10-second montage timestamp out of range');
+            const frames=[1,3.5,6,8.5].map(time=>{
+              const frame=spawnSync('ffmpeg',['-v','error','-ss',String(time),'-i',file,
+                '-frames:v','1','-vf','scale=96:54,format=rgb24','-f','rawvideo','pipe:1'],
+                {maxBuffer:200000,timeout:30000});
+              assert.equal(frame.status,0,'scene frame must decode');
+              assert.equal(frame.stdout.length,96*54*3,'scene frame must contain pixels');
+              return frame.stdout;
+            });
+            for(let i=1;i<frames.length;i++){
+              let delta=0;
+              for(let j=0;j<frames[i].length;j++)delta+=Math.abs(frames[i][j]-frames[i-1][j]);
+              assert.ok(delta/frames[i].length>1,'adjacent scene samples must visibly differ');
+            }
+            const sourceFrames=selectedPaths.map(path=>decodeSceneFrames(join(process.cwd(),'public',path.slice(1))));
+            const outputFrames=decodeSceneFrames(file);
+            const times=[0.75,2.25,3.75,5.25,6.5,7.5,8.5,9.5];
+            const sceneSamples=times.map(time=>outputFrames[Math.round(time*4)]);
+            assert.ok(sceneSamples.every(Boolean),'first and last scene samples must decode');
+            matchSceneSamples(sceneSamples,sourceFrames,[0,0,1,1,2,2,3,3]);
+            const pcm=spawnSync('ffmpeg',['-v','error','-i',file,'-map','0:a:0','-t','2',
+              '-ar','8000','-ac','1','-f','s16le','pipe:1'],{maxBuffer:100000,timeout:30000});
+            assert.equal(pcm.status,0,'soundtrack must decode');
+            let energy=0;const samples=Math.floor(pcm.stdout.length/2);
+            for(let i=0;i<samples;i++){const value=pcm.stdout.readInt16LE(i*2)/32768;energy+=value*value;}
+            assert.ok(samples>4000 && Math.sqrt(energy/samples)>0.003,'soundtrack must be audible');
+          } finally { rmSync(mediaDir,{recursive:true,force:true}); }
+
         }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
