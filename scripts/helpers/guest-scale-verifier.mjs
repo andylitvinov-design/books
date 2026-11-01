@@ -359,6 +359,9 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
   await expect(root).toHaveCount(1)
   await expect(root.locator('button, a')).toHaveCount(0)
   await expect(page.getByRole('button', { name: guestAnalysisLabel(locale), exact: true })).toHaveCount(1)
+  // The optional discussion action is distinct from the single private-save CTA.
+  // Both require a consented save-intent; neither bypasses account ownership.
+  await expect(page.locator('[data-guest-analysis-gate] [data-guest-discuss-test]')).toHaveCount(1)
   const resultCard = page.locator('.cabinet-guest-result').filter({ has: root })
   const options = resultCard.locator(':scope > details')
   await expect(options).toHaveCount(1)
@@ -397,7 +400,7 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
       }),
       text: resultCard.textContent,
       source: resultCard.querySelector(':scope > details')?.textContent,
-      analysisCtaCount: gate?.querySelectorAll('button, a').length || 0,
+      analysisCtaCount: gate?.querySelectorAll('button:not([data-guest-discuss-test]), a').length || 0,
       analysisLabel: label?.textContent.trim(),
       accountAnalysisCount: document.querySelectorAll('[data-personal-result-report], [data-personality-type-summary], [data-assessment-context], [data-assessment-methodology], [data-free-course-banner], [data-report-scale], [data-answer-interpretation], [data-answer-ranges]').length,
     }

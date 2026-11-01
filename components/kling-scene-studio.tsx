@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Copy, ExternalLink, Film, RefreshCcw, Sparkles } from "lucide-react";
 import { checkKlingSceneAction, generateKlingSceneAction } from "@/app/admin/videos/kling-actions";
+import {buildKlingPromptFromHandoff,parseKlingHandoffQuery} from "@/lib/mandala/cinematic-kling-handoff.mjs";
 
 type Language = "en" | "ru" | "es";
 type Mode = "text" | "image";
@@ -112,6 +113,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
   const [lang, setLang] = useState<Language>(initialLocale);
   const [mode, setMode] = useState<Mode>("text");
   const [selectedKey, setSelectedKey] = useState<string>("morning");
+  const [cinematicPacket,setCinematicPacket]=useState<ReturnType<typeof parseKlingHandoffQuery>>(null);
   const [prompt, setPrompt] = useState<string>(sampleScenes[0].prompt);
   const [imageUrl, setImageUrl] = useState("");
   const [imageApproved, setImageApproved] = useState(false);
@@ -133,6 +135,15 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
 
   // A deep link can open the exact approved portrait scene without a second tap.
   useEffect(() => {
+    const imported=parseKlingHandoffQuery(window.location.search);
+    if(imported){
+      const safe=buildKlingPromptFromHandoff(imported);
+      setCinematicPacket(imported);setSelectedKey("");setMode("text");
+      setPrompt(safe.prompt);setDuration(3);setRatio(safe.aspectRatio as typeof ratio);
+      setResolution("720p");setImageUrl("");setImageApproved(false);setApproved(false);
+      setTask(null);setMessage("");
+      return;
+    }
     if (new URLSearchParams(window.location.search).get("klingScene") !== "wealth") return;
     setSelectedKey("wealth");
     setPrompt(sampleScenes[3].prompt);
@@ -185,6 +196,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
         mode, prompt, imageUrl: mode === "image" ? imageUrl : "",
         publicImageApproved: mode === "image" && imageApproved,
         duration, aspectRatio: ratio, resolution, externalTaskId, paidApproved: true,
+        ...(cinematicPacket?{cinematicPacket}:{}),
       });
       if (result.ok && result.result) {
         setTask(result.result);
@@ -227,6 +239,11 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
       </div>
     </div>
 
+    {cinematicPacket?<p className="site-video-admin-notice" data-kling-imported-brief role="status">
+      {lang==="ru"?"Импортирована безопасная художественная раскадровка Holistic House. Генерация НЕ запускалась; проверьте цену Kling и отдельно разрешите один платный рендер.":
+        lang==="es"?"Guion artístico seguro importado. No se ha generado vídeo. Revise el precio de Kling y apruebe un render.":
+        "Safe visual brief imported. No AI generation has started. Verify Kling's price and approve one paid render separately."}
+    </p>:null}
     <div className="kling-studio-preset-group">
       <p className="site-video-field-label">{t.presets}</p>
       <div className="kling-studio-presets" role="group" aria-label={t.presets}>
@@ -234,7 +251,7 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
           aria-pressed={selectedKey === scene.key}
           onClick={() => {
             const wealth = scene.key === "wealth";
-            setSelectedKey(scene.key); setPrompt(scene.prompt);
+            setCinematicPacket(null);setSelectedKey(scene.key); setPrompt(scene.prompt);
             setMode(wealth ? "image" : "text");
             setImageUrl(wealth ? OWNER_WEALTH_PHOTO_URL : "");
             setDuration(wealth ? 5 : 3); setResolution("720p");
@@ -276,18 +293,18 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
       {message && <p className="kling-studio-inline-message" role="status">{message}</p>}
     </div>
 
-    <details className="kling-studio-edit">
+    <details className="kling-studio-edit" open={cinematicPacket!==null}>
       <summary>{labels.edit}</summary>
       <label className="site-video-field"><span>{t.mode}</span>
         <select value={mode} disabled={pending} onChange={event => {
           const next=event.target.value as Mode;
-          setSelectedKey(""); setMode(next); setDuration(next === "image" ? 5 : 3);
+          setCinematicPacket(null);setSelectedKey(""); setMode(next); setDuration(next === "image" ? 5 : 3);
           setImageApproved(false); setApproved(false);
         }}><option value="text">{t.text}</option><option value="image">{t.image}</option></select>
       </label>
       <label className="site-video-field"><span>{t.prompt}</span>
         <textarea rows={5} minLength={12} maxLength={2500} value={prompt} disabled={pending}
-          onChange={event => {setPrompt(event.target.value);setSelectedKey("");setApproved(false);}} />
+          onChange={event => {setCinematicPacket(null);setPrompt(event.target.value);setSelectedKey("");setApproved(false);}} />
       </label>
       {mode === "image" && <label className="site-video-field"><span>{t.imageUrl}</span>
         <input type="url" value={imageUrl} disabled={pending} maxLength={500}
@@ -297,19 +314,19 @@ export function KlingSceneStudio({ initialLocale, configured, enabled, premiumEn
       </label>}
       <div className="kling-studio-settings">
         <label className="site-video-field"><span>{t.duration}</span>
-          <select value={duration} disabled={pending} onChange={event => {setDuration(Number(event.target.value) as 3|5|10);setApproved(false);}}>
+          <select value={duration} disabled={pending} onChange={event => {setCinematicPacket(null);setDuration(Number(event.target.value) as 3|5|10);setApproved(false);}}>
             <option value={3} disabled={mode === "image"}>3 s</option>
             <option value={5} disabled={mode === "text" && !premiumEnabled}>5 s</option>
             <option value={10} disabled={!premiumEnabled}>10 s</option>
           </select>
         </label>
         <label className="site-video-field"><span>{t.ratio}</span>
-          <select value={ratio} disabled={pending || mode === "image"} onChange={event => {setRatio(event.target.value as typeof ratio);setApproved(false);}}>
+          <select value={ratio} disabled={pending || mode === "image"} onChange={event => {setCinematicPacket(null);setRatio(event.target.value as typeof ratio);setApproved(false);}}>
             <option>16:9</option><option>9:16</option><option>1:1</option>
           </select>
         </label>
         <label className="site-video-field"><span>{t.resolution}</span>
-          <select value={resolution} disabled={pending} onChange={event => {setResolution(event.target.value as typeof resolution);setApproved(false);}}>
+          <select value={resolution} disabled={pending} onChange={event => {setCinematicPacket(null);setResolution(event.target.value as typeof resolution);setApproved(false);}}>
             <option value="720p">{t.preview}</option>
             <option value="1080p" disabled={!premiumEnabled}>{t.final}</option>
           </select>
