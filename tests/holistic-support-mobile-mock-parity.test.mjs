@@ -113,3 +113,13 @@ test("mobile screenshot acceptance runs all 18 isolated cases with bounded concu
   assert.match(script, /await page\.close\(\)/);
   assert.match(script, /serviceWorkers: "block"/);
 });
+
+test("anti-stress is available in the actual video-theme dropdown, with honest related matching", () => {
+  assert.match(client,/type Theme = "all" \| MeditationTopic \| "stress"/);
+  assert.match(client,/\["all", "business", "love", "energy", "health", "stress"\] as Theme\[\]/);
+  assert.match(client,/theme === "stress"/);
+  assert.match(client,/video.topics.includes\("health"\) \|\| video.topics.includes\("energy"\)/);
+  assert.match(client,/data-support-stress-related/);
+  for(const label of ["Anti-stress (related)","Антистресс (близкие)","Antiestrés (afines)"])
+    assert.ok(client.includes(label));
+});

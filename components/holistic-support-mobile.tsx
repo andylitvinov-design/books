@@ -61,7 +61,7 @@ export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
-type Theme = "all" | MeditationTopic;
+type Theme = "all" | MeditationTopic | "stress";
 type MeditationCategory = "energy" | "money" | "relationships" | "meaning" | "stress" | "health" | "all";
 
 const meditationCategoryOptions = [
@@ -176,7 +176,7 @@ const copy = {
     masterProfile: "Open master profile", videoMaster: "Meditation guide",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", "greek-dionysus": "Dionysus channel", "greek-demeter": "Demeter channel" },
-    themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
+    themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing", stress: "Anti-stress (related)" },
     meditationCategoriesTitle: "Meditations", meditationCategoryLead: "Choose a direction",
     meditationCategoryAll: "All categories", meditationCategoryMore: "More categories",
     meditationCategoryNames: { energy: "Energy meditations", money: "Money & business meditations",
@@ -290,7 +290,7 @@ const copy = {
     masterProfile: "Открыть страницу мастера", videoMaster: "Мастер медитаций",
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", "greek-dionysus": "Канал Диониса", "greek-demeter": "Канал Деметры" },
-    themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
+    themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие", stress: "Антистресс (близкие)" },
     meditationCategoriesTitle: "Медитации", meditationCategoryLead: "Выбери направление",
     meditationCategoryAll: "Все категории", meditationCategoryMore: "Другие категории",
     meditationCategoryNames: { energy: "Медитации для энергии", money: "Деньги и дело",
@@ -404,7 +404,7 @@ const copy = {
     masterProfile: "Abrir perfil del guía", videoMaster: "Guía de meditación",
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", "greek-dionysus": "Canal de Dioniso", "greek-demeter": "Canal de Deméter" },
-    themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
+    themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar", stress: "Antiestrés (afines)" },
     meditationCategoriesTitle: "Meditaciones", meditationCategoryLead: "Elige una dirección",
     meditationCategoryAll: "Todas las categorías", meditationCategoryMore: "Más categorías",
     meditationCategoryNames: { energy: "Meditaciones de energía", money: "Dinero y trabajo",
@@ -591,7 +591,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     const categoryFiltered = choice !== "meditation" || meditationCategory === "all" ? filtered
       : meditationCategory === "meaning" ? filtered.filter(video => video.program === "sun")
       : filtered.filter(video => video.topics.includes(meditationCategoryTopics[meditationCategory]!));
-    const eligible = theme !== "all" ? categoryFiltered.filter(video => video.topics.includes(theme)) : categoryFiltered;
+    const eligible = theme === "stress"
+      ? categoryFiltered.filter(video => video.topics.includes("health") || video.topics.includes("energy"))
+      : theme !== "all" ? categoryFiltered.filter(video => video.topics.includes(theme)) : categoryFiltered;
     if (goalMatch && choice === "meditation") {
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
@@ -957,7 +959,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <label className={styles.heroFilter} data-support-filter="theme"><Leaf size={18} aria-hidden="true" /><span>{t.theme}</span>
                     <strong className={styles.filterValue}>{t.themes[theme]}</strong>
                     <select value={theme} aria-label={t.theme} onChange={event => { setTheme(event.target.value as Theme); setGoalSelection(null); setPlaying(false); setSelectedId(null); }}>
-                      {(["all", "business", "love", "energy", "health"] as Theme[]).map(key =>
+                      {(["all", "business", "love", "energy", "health", "stress"] as Theme[]).map(key =>
                         <option key={key} value={key}>{t.themes[key]}</option>)}
                     </select><ChevronDown size={14} aria-hidden="true" />
                   </label>
@@ -1019,6 +1021,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <p className={styles.gallerySelection} data-support-goal-basis role="status">
                     {t.goalSector[goalSelection.sector]}. {goalMatch.matchedVideo ? t.goalMatch : t.goalRelated}
                   </p> : null}
+                {choice === "meditation" && !goalSelection && (meditationCategory === "stress" || theme === "stress") ? <p className={styles.gallerySelection}
+                  data-support-stress-related role="status">{t.goalRelated}</p> : null}
                 {choice === "meditation" && meditationCategory === "meaning" && !goalSelection ? <p className={styles.gallerySelection}
                   data-support-meditation-category-related role="status">{t.meditationCategoryRelated}</p> : null}
                 {!goalSelection && suggested && choice === "meditation" ? <p className={styles.gallerySelection}
