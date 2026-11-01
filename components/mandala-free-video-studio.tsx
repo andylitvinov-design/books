@@ -1877,6 +1877,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
+  // A successful recording (or a codec failure) must be immediately visible
+  // after the client creates the film. Safari otherwise leaves the result
+  // below the fold and gives the impression that nothing was generated.
+  useEffect(()=>{
+    if(!result || playbackStatus==="checking")return;
+    const frame=window.requestAnimationFrame(()=>{
+      document.getElementById("personal-video-result")?.scrollIntoView({
+        behavior:"smooth",block:"nearest"
+      });
+    });
+    return ()=>window.cancelAnimationFrame(frame);
+  },[result,playbackStatus]);
+
 
   // Switch actual HTMLVideoElement decoders on the identical storyboard clock
   // used for both live preview and the final MediaRecorder capture.
