@@ -1,10 +1,14 @@
 name: Reports portrait mobile browser QA
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'components/app/test-explorer-visual.jsx'
-      - 'components/app/app-workspace.jsx'
+      - 'components/app/goal-profile-panel.jsx'
+      - 'components/app/goal-profile-panel.module.css'
+      - 'lib/profile/goal-profile.js'
+      - 'components/app/development-program.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
@@ -15,14 +19,21 @@ on:
       - 'scripts/verify-portrait-mobile.mjs'
       - 'tests/portrait-report-actions.test.mjs'
       - '.github/workflows/hh-portrait-mobile-browser.yml'
+  workflow_dispatch:
 permissions:
   contents: read
+
+concurrency:
+  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
 jobs:
   synthetic-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 23
     services:
@@ -59,26 +70,34 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci --no-audit --no-fund
-      - name: Isolated Playwright browser
+      - name: Current Portrait profile/assessment source contracts for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check scripts/verify-portrait-mobile.mjs
+          node --test tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs
+      - name: Isolated Playwright browser (manual deep QA only)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p /tmp/hh-portrait-playwright
           npm install --prefix /tmp/hh-portrait-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-portrait-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-portrait-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize isolated synthetic database
+        if: github.event_name == 'workflow_dispatch'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
-      - name: Four category mobile browser QA in EN/RU at 320, 390, 430
+      - name: Five profile navigation with four scored sectors, goal check-in, mobile EN/RU
+        if: github.event_name == 'workflow_dispatch'
         run: |
           node tests/helpers/app-auth-double.mjs > /tmp/hh-portrait-auth.log 2>&1 & PROVIDER_PID=$!
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-portrait-next.log 2>&1 & APP_PID=$!
           trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
-          for i in $(seq 1 110); do
+          for ((i=1; i<=110; i++)); do
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
             sleep 2
           done
           node scripts/verify-portrait-mobile.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         with:
           name: portrait-mobile-${{ matrix.browser }}
           path: artifacts/portrait-mobile/

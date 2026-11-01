@@ -1,11 +1,11 @@
-# Holistic House — 4 life profiles → 9 topics → 31 research axes → registered source scores
+# Holistic House — 5 life profiles → 10 topics → 34 research facets → registered source scores
 
-**Source-only classification and scientific-review handoff, 26 October 2026.** Related: [#1223](https://github.com/andylitvinov-design/books/issues/1223), [#1881](https://github.com/andylitvinov-design/books/issues/1881), and [#342](https://github.com/andylitvinov-design/books/issues/342). The classification work **does not** establish independent psychometric validity for the 73 original HH questionnaires.
+**Source-only classification and scientific-review handoff, 26–27 October 2026.** Related: [#1223](https://github.com/andylitvinov-design/books/issues/1223), [#1881](https://github.com/andylitvinov-design/books/issues/1881), and [#342](https://github.com/andylitvinov-design/books/issues/342). The classification work **does not** establish independent psychometric validity for the 73 original HH questionnaires.
 
 ## What each level means
 
-- **Profile:** one of four life-area interests: Body/Wellbeing, Relationships, Work/Business/Money, Personality/Growth. These are not clinical diagnoses, nor the separate cabinet domains Psychological / Homeopathy / Wu Xing / Hypnotherapy.
-- **Topic:** one of nine existing categories, selected by the visitor.
+- **Profile:** one of five life-area interests: Body/Wellbeing, Relationships, Work/Business/Money, Personality/Growth, Goal. The Goal Profile adds three private personal self-ratings; these are NOT questionnaire-derived psychometric axes. These are not clinical diagnoses, nor the separate cabinet domains Psychological / Homeopathy / Wu Xing / Hypnotherapy.
+- **Topic:** one of ten existing/approved categories, selected by the visitor. The tenth Goal topic offers only verified source-based *supporting* tests; its three self-ratings remain independent.
 - **Research axis:** a question/facet of interest. It groups genuine source-scored dimensions. An axis is not a newly invented score, normative target, clinical percentile or standalone test.
 - **Questionnaire scale:** exact original score dimension, identified by **test key + dimension key + method version**. A complete questionnaire must be administered. Results across different instruments, versions, directions or languages are not automatically interchangeable.
 - **Eligibility:** only rights-cleared, startable, guest-eligible, starter-eligible, free and explicitly permitted methods can enter the public test battery. Other account methods retain their categories without becoming guest tests.
@@ -23,8 +23,9 @@
 | Personality / Growth | Traits | Big Five extraversion, agreeableness, conscientiousness, emotional reactivity/stability, openness; other strengths; exploratory typologies (not independently validated) |
 | Personality / Growth | Support | Perceived resources/resilience, self-support/self-compassion |
 | Personality / Growth | Meaning | Values and sense of direction |
+| Goal | Goal (supporting measurements) | Goal-related mental clarity and life direction; energy and readiness for action; inner self-support and general confidence — no claim to directly measure confidence in achieving the chosen goal |
 
-**8 + 5 + 8 + 10 = 31 research axes across 9 topics and 4 interests.** Exact EN/RU/ES labels and allowed scorer axis keys live in the one canonical mapping: [profile-scale-selection.js](../../lib/profile/profile-scale-selection.js).
+**8 + 5 + 8 + 10 + 3 = 34 source-backed research facets across 10 topics and 5 interests.** Only 31 facets belong to the former four interests. The fifth has three explanatory *supporting* facets, not three additional clinical indicators. Exact EN/RU/ES labels and allowed scorer axis keys live in the one canonical mapping: [profile-scale-selection.js](../../lib/profile/profile-scale-selection.js).
 
 ### Concrete source links and boundaries
 
@@ -35,6 +36,20 @@
 - Work: HH Focus Mode concerns reported task focus; HH Goal Obstacles and Sustainable Pace concern daily functioning; CBI-Work/HH Workload Weather concern work strain. K6 general distress and HH Money Pressure are not labelled as workplace-burnout scales.
 - Finance: CFPB-5 has its exact financial well-being dimension; HH Money Pressure has two separate authored dimensions (difficulty and coping). **No finance-specific method is currently permitted in the free public starter battery**, so the Money topic is hidden in that wizard. No surrogate financial score is invented from self-esteem, work satisfaction, stress or resource scores.
 - Resources/growth: HH Resource Pulse, self-support methods and values/meaning methods retain exact independent sources. Hobby typologies remain exploratory, explicitly not treated as standardized Big Five measures.
+
+### Fifth profile · Goal — mapping and measurement limits
+
+The fifth Goal Profile has **three voluntary 0–10 self-ratings for ONE chosen goal**: (1) clarity of this goal, (2) motivation for it, and (3) confidence in reaching it. They are stored privately, separately from questionnaire-derived results, with the user's explicit Save action. They must never be treated as clinical measurements, validated goal-specific self-efficacy, comparative norms, or five new psychometric portrait sectors. The four existing independently audited display sectors and 17 portrait axes are retained as-is.
+
+| Goal self-rating | Supporting source measurements (not substitutes for the rating) | Key meaning distinction |
+|---|---|---|
+| Goal clarity | `hh-weekly-pulse::weekly.clarity`; `hh-decision-fog::function.decision_fog.overall`; `hh-values-direction::resources.values_direction.overall`; `hh-meaning-compass::resources.meaning_compass.overall` | Mental clarity and alignment with values can provide context, **not** establish goal clarity |
+| Goal motivation | `hh-motivation-spark::resources.motivation_spark.overall`; `hh-change-readiness::resources.change_readiness.overall`; `hh-start-button::function.start_button.overall`; `hh-goal-obstacles::function.goal_obstacles.overall` | General readiness, energy and practical steps do **not** measure motivation toward the same individual goal |
+| Goal confidence | `hh-confidence-pulse::resources.confidence_pulse.overall`; `hh-resource-pulse::resource.self_support`; `hh-inner-ally::resources.inner_ally.overall` | Broad confidence and self-support do **not** measure expected success or probability of achieving the goal |
+
+Every supporting test must match the **registered questionnaire ID, exact scored dimension key, scorer axis, definition version, rights, free eligibility and starter rules**. No other score from the same instrument can be substituted. Source selection is fully optional; the user can save ratings without taking these tests. Several original tests in the account catalogue are not available in the free guest starter, and the panel must not advertise unavailable methods as free. Spanish interface translation does not create Spanish questionnaire content; where a source exists only in EN, that original language remains explicit. A test link to My Tests must pass both the canonical questionnaire key (`suggest`) and registered scorer axis (`axis`), and the destination revalidates source eligibility. Results are labelled completed only after provenance verification, not by matching a saved key alone.
+
+The exact fifth-profile mapping is maintained in `lib/profile/goal-profile.js`; **no new scorer, score conversion, course assignment or inference of clinical outcomes** is authorized. Each of the three self-ratings is an optional personal observation and is not combined into a single success percentage.
 
 **Important:** shared presentation facets permit looking up potentially relevant *full instruments*, not substituting one test's score for another. All scalar comparisons and course retests must keep existing immutable scorer/provenance guards.
 
@@ -54,10 +69,10 @@ At the inspected source revision:
 | Unique catalogue entries | **295** (each has a source category and authored topic) |
 | Source-scored account methods | **147**; linked to at least one real topic and facet, **0 orphan** |
 | Free guest-starter scored methods | **40**; linked to at least one real topic and facet, **0 orphan** |
-| Research axes with at least one account method | **31 of 31** |
+| Research facets with at least one account method | **34 of 34** (including three supporting Goal facets); verify on exact PR SHA |
 | Topic with no guest-starter finance method | **Money**, hidden in public wizard |
-| Account-scoped facet–score links | **340**, including intentionally adjacent interests |
-| Guest-starter facet–score links | **87** |
+| Account-scoped facet–score links | **340** in the former four-profile checkpoint; goal links are additional and must be computed by exact-branch audit |
+| Guest-starter facet–score links | **87** in the former four-profile checkpoint; goal links are additional and must be computed by exact-branch audit |
 | Reference-only / nonstartable / source-score exclusions | **148**; category kept, no invented scored axis |
 | Original HH authored families / EN+RU editions | **73 / 146** |
 | Original HH item text review rows | **1,498**, no missing EN/RU source version |

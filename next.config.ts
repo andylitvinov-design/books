@@ -19,8 +19,14 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Only the LIVE host can ask the user for microphone permission.
+const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ffmpeg-static uses __dirname to locate its downloaded native executable.
+  // Keep the package external to Next webpack so its binary path remains valid.
+  serverExternalPackages: ["ffmpeg-static"],
   // The idle Next badge covers fixed mobile navigation in isolated browser CI.
   // This supported option preserves compile/runtime error badges and overlays.
   devIndicators: process.env.CI === "true" &&
@@ -90,6 +96,10 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
       })),
+      ...liveAudioHostSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
+      })),
       // Record the owner's course narration directly on iPhone Safari. Only
       // these two PIN-protected editing pages need a microphone, not a camera.
       // All public pages, material indexes and JSON upload APIs stay denied.
@@ -135,6 +145,9 @@ const nextConfig: NextConfig = {
     // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
     // Only this Function traces the pinned FFmpeg binary (no external render API).
     "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // Owner-private Dot /audio → /video uses its existing signed webhook.
+    // The same pinned FFmpeg binary must be available in this function too.
+    "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",

@@ -147,7 +147,7 @@
 @media(max-width:420px){.hh-app .hh-portrait-quick-actions{gap:7px;margin:10px 0 2px}.hh-app .hh-portrait-quick-actions a,.hh-app .hh-portrait-quick-actions button{font-size:12px!important;gap:6px;min-height:46px;padding:9px 7px;border-radius:11px}.hh-app .hh-portrait-quick-actions svg{width:16px;height:16px;flex:none}}
 @media(prefers-reduced-motion:reduce){.hh-app .hh-portrait-quick-actions a,.hh-app .hh-portrait-quick-actions button{transition:none}}
 /* Single in-place Reports section switcher: no anchor navigation or scroll jumps. */
-.hh-app .hh-portrait-quick-actions[role="tablist"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hh-app .hh-portrait-quick-actions[role="group"]{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hh-app .hh-portrait-quick-actions [role="tab"] span{display:block;max-width:100%;overflow-wrap:break-word;hyphens:auto}
 .hh-app .hh-portrait-quick-actions [role="tab"][aria-selected="true"]{border-color:#216e64!important;background:#21796d!important;color:#fff!important}
 .hh-app .hh-portrait-quick-actions [role="tab"][aria-selected="false"]{background:#fefdf8!important;color:#276a5f!important}
