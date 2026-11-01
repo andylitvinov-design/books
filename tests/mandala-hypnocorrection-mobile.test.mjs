@@ -62,3 +62,20 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
+
+
+test("Wave and its four grouped cards precede the compact phrase shelf on iPhones",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const panel=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+  assert.match(studio,/data-workspace-section="psychocorrection"/);
+  assert.match(studio,/id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel/);
+  assert.match(css,/@media\(max-width:600px\)\s*\{\s*\.studio\[data-active-workspace="psychocorrection"\] \.quickBuilder>\.quickPhraseSection>\[data-video-hypnocorrection-panel\]\s*\{\s*order:-1;/);
+  assert.equal((studio.match(/<MandalaHypnocorrectionMobile\b/g)||[]).length,1,
+    "keep one shared effects panel in the original video editor");
+  assert.equal((panel.match(/<section className=\{styles\.wave\}>/g)||[]).length,1,
+    "one Wave card, not separate animated/AI duplications");
+  assert.deepEqual(["phrases","audio","visual","meditation"]
+    .map(id=>panel.includes('id:"'+id+'"')),[true,true,true,true]);
+  assert.match(panel,/font-size:18px|styles\.featureText/);
+});
