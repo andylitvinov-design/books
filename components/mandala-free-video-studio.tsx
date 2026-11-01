@@ -2136,7 +2136,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
-      musicSession = attachedAudio?.kind==="file"
+      const useWebCodecs = typeof MediaRecorder === "undefined" ||
+        (typeof HTMLCanvasElement !== "undefined" &&
+         typeof HTMLCanvasElement.prototype.captureStream !== "function");
+      musicSession = useWebCodecs ? null : attachedAudio?.kind==="file"
         ? await startUploadedAudio(attachedAudio.file,soundVolume)
         : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
         : attachedAudio?.kind==="presets" ? await startPresetMixAudio(attachedAudio.ids,soundVolume) : null;
@@ -2157,11 +2160,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const canvas = canvasRef.current;
       if (canvas && (typeof canvas.captureStream !== "function" ||
           typeof MediaRecorder === "undefined") &&
-          cinematicPlan?.version === "hh-cinematic-storyboard-v1" &&
-          !usingFreeFilmCompilation && !attachedAudio &&
-          typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined") {
-        // WebKit can encode H.264 through WebCodecs even without MediaRecorder.
-        // Render the SAME Canvas storyline; do not silently discard music/voice.
+          cinematicPlan && (
+            cinematicPlan.version === FREE_FILM_PLAN_VERSION ||
+            cinematicPlan.version === FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION ||
+            cinematicPlan.version === "hh-cinematic-storyboard-v1"
+          ) && typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined") {
+        // A missing MediaRecorder must not silently become a source-only MP4.
+        // WebCodecs encodes the same plan, including approved real film sources,
+        // overlays and the user's actual soundtrack, on this device.
         const controller=new AbortController();
         webCodecJobRef.current=controller;
         const [outputWidth,outputHeight]=formatDimensions(aspect,quality);
@@ -2170,41 +2176,56 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(!ctx)throw new Error("Canvas unsupported");
         const fps=affirmations.enabled &&
           affirmations.visibility.includes("frame") && affirmationLines.length?25:12;
+        const realtime = usingFreeFilmCompilation ||
+          cinematicPlan.version === "hh-cinematic-storyboard-v1";
         setRecording(true);setPreparing(false);setNotice(t.creating);
         try {
-          const {encodeCanvasMp4WithWebCodecs}=await import("@/lib/mandala/canvas-webcodecs-mp4");
+          const {encodeCanvasMp4WithWebCodecs,prepareCanvasWebCodecsAudio}=
+            await import("@/lib/mandala/canvas-webcodecs-mp4");
+          const sound=attachedAudio
+            ? await prepareCanvasWebCodecsAudio(attachedAudio,duration,soundVolume,controller.signal)
+            : null;
+          if(attachedAudio&&!sound)throw new Error("webcodecs_audio_missing");
+          if(controller.signal.aborted||sourceRef.current!==snapshotKey)return;
           const movie=await encodeCanvasMp4WithWebCodecs({
             canvas,durationSeconds:duration,framesPerSecond:fps,
             bitrate:quality==="fullhd"?2_400_000:1_400_000,
-            signal:controller.signal,
+            signal:controller.signal,realtime,audioBuffer:sound,
             onProgress:percent=>{
               if(!controller.signal.aborted&&sourceRef.current===snapshotKey)
                 setProgress(percent);
             },
             paint:second=>{
+              const clip=usingFreeFilmCompilation?freeFilmVideoAt(second):null;
+              if(usingFreeFilmCompilation&&!clip)
+                throw new Error("licensed_video_frame_unavailable");
               paintCinematicFrame(ctx,image,effect,second,aspect,moneyScene,caption,
-                theme,otherScene,speed,brightness,null,cinematicPlan,null);
+                theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,clip);
               paintStoryMotifs(ctx,second,appliedStory);
               paintHypnoLightOverlay(ctx,second,hypnoLight);
               paintVideoAffirmations(ctx,second,affirmationLines,affirmations);
+              paintStageCaptionOverlay(ctx,second,cinematicPlan);
             },
           });
-          if(!controller.signal.aborted && aliveRef.current &&
-             sourceRef.current===snapshotKey) {
+          if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey) {
             setResult({url:URL.createObjectURL(movie),extension:"mp4",
               bytes:movie.size,blob:movie,mime:"video/mp4"});
             setProgress(100);setPlaybackStatus("checking");
             setNotice(locale==="ru"
-              ?"MP4 закодирован на устройстве через WebCodecs. Проверяем воспроизведение."
+              ?"Видео MP4 создано на устройстве. Проверяем картинку и звук."
               :locale==="es"
-              ?"MP4 codificado en el dispositivo con WebCodecs. Verificando la reproducción."
-              :"MP4 encoded on your device with WebCodecs. Checking playback.");
+              ?"Vídeo MP4 generado en el dispositivo. Verificando vídeo y audio."
+              :"MP4 created on your device. Verifying video and audio.");
           }
         }catch{
+          // Fail closed if audio could not be encoded or a licensed decoder
+          // stopped. Never offer a misleading silent/substitute movie.
           if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey){
-            setNotice(locale==="ru"?"Локальная запись WebCodecs не удалась. Попробуйте другой браузер."
-              :locale==="es"?"Falló la codificación local WebCodecs. Prueba otro navegador."
-              :"Local WebCodecs encoding failed. Try another browser.");
+            setNotice(locale==="ru"
+              ?"Не удалось создать полноценный MP4 со всеми выбранными сценами и звуком. Попробуйте другой браузер."
+              :locale==="es"
+              ?"No se pudo crear el MP4 completo con escenas y sonido. Prueba otro navegador."
+              :"Could not encode all selected scenes and sound. Try another browser.");
             setExportUnavailable(true);
           }
         }finally{
