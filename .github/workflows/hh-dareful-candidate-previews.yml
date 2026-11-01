@@ -1,0 +1,42 @@
+name: HH Dareful first footage wave · editorial previews only
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'data/video-catalog/dareful-verified-candidate-wave-20261101.json'
+      - 'scripts/preview-dareful-candidates.mjs'
+      - 'tests/dareful-preview-candidates.test.mjs'
+      - '.github/workflows/hh-dareful-candidate-previews.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-dareful-previews-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  candidate-contact-sheets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate fixed source allowlist, no publication or duplicate IDs
+        run: node --test tests/dareful-preview-candidates.test.mjs
+      - name: Prepare nine-frame contact sheets from four licensed source URLs
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          node scripts/preview-dareful-candidates.mjs
+      - name: Upload editorial frames and provenance, no raw videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-editorial-contact-sheets-${{ github.run_id }}
+          path: artifacts/dareful-wave-previews/
+          if-no-files-found: warn
+          retention-days: 7
