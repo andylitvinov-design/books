@@ -279,7 +279,7 @@ const REVIEWED_MEDITATION_2308_DELTA = new Map([
     "M",
     "tests/ci-public-services-plan.test.mjs"
   ]
-]);
+] .map(([status,path])=>[path,status]));
 
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');

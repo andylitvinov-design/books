@@ -134,6 +134,7 @@ jobs:
               ready=1
               break
             fi
+            echo "Meditation candidate startup retry ${i}/70" >&2
             sleep 2
           done
           if [[ "$ready" != 1 ]]; then
