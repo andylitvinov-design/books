@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { toPublishedProfessionalSource } from "@/lib/mandala/professional-public-source.mjs";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { getAppConfig } from "@/lib/app/config";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
 import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
@@ -79,6 +79,9 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
   return (
     <main className={styles.page} lang={locale} data-mandala-meditation-page>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
+
+      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
+        professionalSource={professionalSource} professionalMode={professionalMode} />
       <aside className={styles.slimDiagnostic} data-video-diagnostic-banner aria-label={promo.label}>
         <Sparkles size={17} aria-hidden="true" />
         <strong>{promo.label}</strong>
@@ -86,8 +89,6 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
           {promo.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
       </aside>
-      <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}
-        professionalSource={professionalSource} professionalMode={professionalMode} />
       <HolisticSupportMandalaDock locale={locale} />
     </main>
   );

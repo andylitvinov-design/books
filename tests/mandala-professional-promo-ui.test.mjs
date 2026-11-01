@@ -31,7 +31,7 @@ test('professional card is wired to the existing local four-MP4 editor',()=>{
   assert.ok(liveStudio.includes('presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}'));
   assert.ok(liveStudio.includes('publicOffer={professionalSource?.publicOffer ?? null}'));
   assert.ok(liveStudio.includes('existing.clips.join("|")!==proposal.montage.sceneIds.join("|")'));
-  assert.ok(liveStudio.includes('applyAutoFilm(presetId,seconds,outputAspect)'));
+  assert.ok(liveStudio.includes('applyAutoFilm(presetId,seconds,undefined,outputAspect)'), 'current director keeps edit argument before aspect');
   assert.ok(liveStudio.includes('setBackgroundOnly(true)'));
   assert.ok(liveStudio.includes('setAffirmations({...defaultAffirmations,enabled:false})'));
   assert.ok(liveStudio.includes('setMusic("none");setAttachedAudio(null)'));
