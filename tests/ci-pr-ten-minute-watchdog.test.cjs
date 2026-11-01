@@ -54,7 +54,18 @@ test('green unarmed PR dispatches existing protected coordinator, not a direct m
   const github={rest:{
     pulls:{list:async()=>({data:[pr(99)]}),get:async()=>({data:{...pr(99),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
-    checks:{listForRef:async(arg)=>{targeted=arg.check_name==='hh-core-verified';return {data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
+    checks:{listForRef:async(arg)=>{
+      if(arg.check_name==='release-ready') return {data:{total_count:1,check_runs:[
+        {id:2,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}
+      ]}};
+      targeted=arg.check_name==='hh-core-verified';
+      return {data:{total_count:1,check_runs:[
+        {id:1,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}}
+      ]}};
+    }},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['release-ready']}
+    }}})}
   },request:async(route)=>{if(route.includes('dispatches')) dispatched++;return {data:{workflow_runs:[]}};}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.greenUnarmed,1);
@@ -706,4 +717,46 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   assert.equal(tooMany.ok,false,'three full source HEAD pages with more data must fail closed');
   assert.deepEqual(tooMany.calls.map(c=>c.page),[1,2,3]);
   assert.ok(tooMany.notes.some(s=>s.includes('beyond bounded CI pages')));
+});
+
+test('watchdog honors legacy required status and stops spurious dispatch',async()=>{
+  async function probe(contexts,legacyConclusion){
+    let dispatches=0,legacyReads=0;
+    const github={rest:{
+      pulls:{list:async()=>({data:[pr(137)]}),get:async()=>({data:{
+        ...pr(137),state:'open',mergeable:true,mergeable_state:'clean'
+      }})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      repos:{getBranch:async()=>({data:{protected:true,protection:{
+        required_status_checks:{contexts}
+      }}})},
+      checks:{listForRef:async(args)=>{
+        const legacy=args.check_name==='release-ready';
+        if(legacy) legacyReads++;
+        return {data:{total_count:1,check_runs:[{
+          id:legacy?2:1,name:legacy?'release-ready':'hh-core-verified',
+          status:'completed',conclusion:legacy?legacyConclusion:'success',app:{id:15368}
+        }]}};
+      }}
+    },request:async(route)=>{
+      if(route.includes('dispatches')) dispatches++;
+      return {data:{workflow_runs:[]}};
+    }};
+    const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+    return {result,legacyReads,dispatches};
+  }
+  const red=await probe(['release-ready'],'failure');
+  assert.equal(red.result.greenUnarmed,0);
+  assert.equal(red.result.legacyRequiredPending,1);
+  assert.equal(red.dispatches,0);
+  const green=await probe(['release-ready'],'success');
+  assert.equal(green.result.greenUnarmed,1);
+  assert.equal(green.dispatches,1);
+  assert.equal(green.legacyReads,1);
+  const migrated=await probe(['hh-core-verified'],'failure');
+  assert.equal(migrated.result.greenUnarmed,1);
+  assert.equal(migrated.legacyReads,0);
+  const ambiguous=await probe(['release-ready','hh-core-verified'],'success');
+  assert.equal(ambiguous.result.protectionUnverified,1);
+  assert.equal(ambiguous.dispatches,0);
 });
