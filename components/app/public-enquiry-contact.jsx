@@ -9,6 +9,7 @@ const COPY={
 export default function PublicEnquiryContact({request,locale='en',busy=false,onSave}){
   const t=COPY[locale]||COPY.en
   const isVisitor=request.contactProvenance==='visitor_submitted_unverified'
+  const replyContact=request.replyContact||{}
   const [channel,setChannel]=useState(request.contact?.channel||'whatsapp')
   const [address,setAddress]=useState(request.contact?.address||'')
   useEffect(()=>{
@@ -20,8 +21,8 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
     <p><strong>{t.reference}:</strong> {request.referenceCode}</p>
     <p role="status">{request.contactPending?t.pending:isVisitor?t.visitor:t.manual}</p>
     {isVisitor&&<p><strong>{request.contact?.displayName||'—'}</strong>
-      {request.contact?.email&&<> · {request.contact.email}</>}
-      {request.contact?.phone&&<> · {request.contact.phone}</>}
+      {replyContact.email&&<> · {replyContact.email}</>}
+      {replyContact.phone&&<> · {replyContact.phone}</>}
       <small> · {t.reply}</small></p>}
     <p>{t.hint}</p>
 

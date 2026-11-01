@@ -10,6 +10,13 @@ on:
       - 'components/app/practice-request-conversation.*'
       - 'lib/practitioners/request-media*'
       - 'lib/practitioners/client-messages.js'
+      - 'lib/practitioners/public-enquiry-operator-contact.js'
+      - 'lib/practitioners/public-service-enquiry.js'
+      - 'lib/practitioners/public-enquiry-reply-links.mjs'
+      - 'app/api/app/messages/public-enquiries/**'
+      - 'tests/public-enquiry-*.test.mjs'
+      - 'tests/public-enquiry-contact-audit-rls.integration.mjs'
+      - 'supabase/migrations/*public_enquiry_contact_disclosure_audit.sql'
       - 'tests/messages-*.test.mjs'
       - 'tests/practitioner-request-*.test.mjs'
       - 'lib/practitioners/request-media-policy.mjs'
@@ -22,6 +29,32 @@ concurrency:
   group: hh-messages-wellness-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
+  guest-contact-audit-postgres17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_operator_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_operator_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      HH_APP_TEST_RUNTIME: isolated
+      HH_CONTACT_AUDIT_RLS: synthetic-only
+      NODE_OPTIONS: --conditions=react-server
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_operator_test
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Verify owner disclosure and audit rollback under RLS
+        run: node --test tests/public-enquiry-contact-audit-rls.integration.mjs
   focused:
     runs-on: ubuntu-latest
     timeout-minutes: 16
@@ -36,6 +69,10 @@ jobs:
           node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs tests/practitioner-request-voice.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: New wellness layout and private flow contracts
         run: node --conditions=react-server --test tests/messages-wellness-v2.test.mjs
+      - name: Guest enquiry one-off consent and truthful reply handoff
+        run: node --conditions=react-server --test tests/public-enquiry-reply-handoff.test.mjs tests/public-enquiry-contact-provenance.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/messages-verified-session.test.mjs tests/messages-reply-contact-route.test.mjs
+      - name: Lint guest reply composer and recipient policy
+        run: npx --no-install eslint components/app/public-enquiry-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs tests/public-enquiry-reply-handoff.test.mjs
       - name: Lint edited Messages components and route
         run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/practice-request-conversation.jsx lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
