@@ -47,3 +47,13 @@ test("Auto Director respects current 16:9, 9:16 or 1:1 selection rather than res
   assert.match(studio,/setAspect\(outputAspect\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
 });
+
+test("changing a shared video goal or theme invalidates stale Auto Director confirmation",()=>{
+  assert.match(director,/const \[proposalContext,setProposalContext\]=useState/);
+  assert.match(director,/proposalContext\?\.goal===goal&&proposalContext\.theme===theme/);
+  assert.match(director,/aria-pressed=\{showProposal&&selectedGoalId===item\.id\}/);
+  assert.match(director,/setProposalContext\(\{goal,theme\}\)/);
+  assert.match(director,/setProposalContext\(\{goal:nextGoal,theme\}\)/);
+  assert.match(director,/\{showProposal\?<div className=\{css\.result\}/);
+  assert.match(studio,/onGoalChange=\{next=>\{setWish\(graphemeTrim\(next\)\)/);
+});
