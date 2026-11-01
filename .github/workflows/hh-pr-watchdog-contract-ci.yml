@@ -1,0 +1,32 @@
+name: HH PR watchdog contract
+on:
+  pull_request:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
+      - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-watchdog-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  watchdog-contract:
+    name: watchdog-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check trusted watchdog and tests
+        run: |
+          node --check scripts/ci-pr-ten-minute-watchdog.cjs
+          node --check tests/ci-pr-ten-minute-watchdog.test.cjs
+      - name: Watchdog decision contracts
+        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs
