@@ -24,17 +24,20 @@ permissions:
   checks: read
   issues: write
   pull-requests: write
-concurrency:
-  group: hh-pr-ten-minute-watchdog
-  cancel-in-progress: false
 jobs:
   reconcile:
+    # Skipped successful Core callbacks do not contend for the real worker lease.
+    concurrency:
+      group: hh-pr-ten-minute-watchdog
+      cancel-in-progress: false
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       (github.event_name != 'workflow_run' ||
        (github.event.workflow_run.event == 'pull_request' &&
-        github.event.workflow_run.status == 'completed'))
+        (github.event.workflow_run.conclusion == 'failure' ||
+         github.event.workflow_run.conclusion == 'timed_out' ||
+         github.event.workflow_run.conclusion == 'startup_failure')))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
