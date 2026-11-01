@@ -1,6 +1,7 @@
 name: Holistic House public services production acceptance
-# Exact PR impact controls costly verification: contracts-only changes skip browsers;
-# sensitive/runtime changes fail closed to all 13 real browser scenarios before merge.
+# Fast source/consent/booking PR contracts; sensitive-risk PRs retain required
+# exact-head real Chromium/WebKit acceptance. Full optional browser matrix is
+# also available via workflow_dispatch on an explicitly selected candidate.
 on:
   workflow_dispatch:
   pull_request:
@@ -200,10 +201,10 @@ jobs:
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
-      # Per-PR exact-version binaries; no untrusted cross-PR/browser-version restore.
-      # Install the isolated browser suite only when the exact-head planner
-      # selects focused/full acceptance. Contracts-only PRs use Core's build;
-      # sensitive payments/auth/checkout changes retain required real E2E.
+      # Exact-version binaries; no untrusted cross-PR/browser-version restore.
+      # Browser engines install on explicit full workflow_dispatch OR when
+      # PR impact is independently classified as sensitive/high-risk. No
+      # checkout, consent or unknown risk can bypass required real browser QA.
       - name: Cache exact Playwright Chromium and WebKit browsers
         if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         uses: actions/cache@v4
@@ -226,10 +227,15 @@ jobs:
           fi
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
+      # Required fast checks cover actual contact consent, private handoff and
+      # service order safety. No redundant production build/browser install.
+      - name: Fast public consent, service and Reiki contract tests
+        if: github.event_name == 'pull_request'
+        run: node --test tests/contact-channel-chooser.test.mjs tests/services-browser-order-contract.test.mjs tests/reiki-unified-order-capture.test.mjs tests/public-service-enquiries.test.mjs
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} pr_heavy=${{ steps.scope.outputs.pr_heavy }} engines=${{ steps.scope.outputs.engines }} cases=${{ steps.scope.outputs.cases }}. Safe CSS uses Core build/source tests; focused public UI runs selected engines; sensitive/unknown uses full real browser.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
         if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:

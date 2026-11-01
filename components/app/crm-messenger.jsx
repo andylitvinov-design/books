@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
+import {ArrowLeft, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
@@ -626,8 +626,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>}
-            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
+            {selected.unreadCount>0&&<button disabled={busy} type="button"
+              className={styles.plainButton} aria-label={t.read} title={t.read}
+              onClick={()=>action('read',{threadId:selected.id})}>
+              <CheckCheck size={18} aria-hidden="true"/>
+              <span className={styles.readLabel}>{t.read}</span>
+            </button>}
           </div>}
           {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
@@ -731,12 +735,13 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
-              {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
+              {conversationOnly||compact?<Send size={20} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
             {selected.reply.ok&&<div className={styles.salesbotAssistSlot}>
               <CrmSalesbotAssist key={`${accountId}:${selected.id}`} accountId={accountId}
                 threadId={selected.id} locale={lang} disabled={busy||threadLoading}
+                iconOnly={conversationOnly}
                 onInsert={draft=>{
                   // Nothing is sent here; the owner must review and press Send.
                   if(activeRef.current!==selected.id||busy||threadLoading||!selected.reply.ok)return false

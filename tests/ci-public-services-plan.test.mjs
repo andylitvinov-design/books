@@ -383,7 +383,7 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('required Public Services PR gate follows exact-head risk without suppressing browser QA', () => {
+test('Public Services preserves protected high-risk real-browser QA and fast low-risk contracts', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
@@ -395,18 +395,20 @@ test('required Public Services PR gate follows exact-head risk without suppressi
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
     assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
-      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
+      'sensitive PR browser and build must remain blocking: ' + name);
   }
-  assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
+  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  assert.match(src, /Fast public consent, service and Reiki contract tests/);
+  assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
+  assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
+  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
     const plan = planPublicServicesChangedPaths([risky]);
     assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
-      ['full', true, true, 'all'], 'runtime/checkout risk cannot skip browsers: ' + risky);
+      ['full', true, true, 'all'], 'full manual browser QA risk planner for: ' + risky);
   }
   assert.equal(planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']).browser, false);
-  assert.ok(src.includes("if: github.event_name == 'pull_request'"));
-  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });
 
@@ -491,7 +493,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
 });
 
-test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+test('impact planner preserves sensitive required browser acceptance while low-risk PR uses source contracts', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
     'scripts/verify-ideas-mobile-browser.mjs',
@@ -519,7 +521,7 @@ test('temporary public-service fast lane retains payment/consent/unknown real br
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
