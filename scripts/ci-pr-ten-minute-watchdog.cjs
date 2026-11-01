@@ -175,6 +175,18 @@ function hasActiveLease(comments, headSha, now) {
   return false;
 }
 
+async function verifyCoreRunOnExactHead({github,owner,repo,pr,run,limited}) {
+  if (!coreRunForCurrentPR(run,pr)) return false;
+  if (!/^[a-f0-9]{40}$/i.test(run.head_sha || '')) return false;
+  if (run.head_sha === pr.head.sha) return true;
+  // GitHub pull_request workflows may run on a synthetic merge commit.
+  // Their pull_requests[] association can be refreshed to a NEW current HEAD
+  // even when the run itself belongs to an older commit. Verify ancestry.
+  const {data} = await limited('core-merge-ancestry',()=>github.rest.repos.getCommit({
+    owner,repo,ref:run.head_sha}));
+  return Array.isArray(data?.parents) && data.parents.some(p=>p.sha===pr.head.sha);
+}
+
 async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, now, dryRun, log, limited}) {
   // Historical PRs opened before HH core was introduced can have zero current
   // core runs. A safe base update creates a genuine pull_request.synchronize
@@ -197,8 +209,22 @@ async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, 
     if(data.length<100)break;
     if(page===3)return false; // Incomplete lease history, fail closed.
   }
-  if (comments.some(c=>(c.body || '').includes(marker)) ||
+  // Once per PR, not once per HEAD: base updates change the SHA and must
+  // never create an endless update/CI loop as production continues moving.
+  if (comments.some(c=>(c.body || '').includes(LEGACY_MARKER)) ||
       hasActiveLease(comments,pr.head.sha,now)) return false;
+  // Prove this is genuinely a legacy PR with NO Core workflow history.
+  // A 'behind' PR that already ran Core must not be rebuilt just for age.
+  const {data:history} = await limited('legacy-core-history',()=>github.request(
+    'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+      owner,repo,workflow_id:'hh-pr-core-release.yml',
+      branch:pr.head.ref,event:'pull_request',per_page:100
+    }));
+  if (!history || !Array.isArray(history.workflow_runs) ||
+      !Number.isSafeInteger(history.total_count) || history.total_count>100 ||
+      history.total_count !== history.workflow_runs.length ||
+      history.workflow_runs.some(r=>r.head_branch===pr.head.ref &&
+        r.event==='pull_request')) return false;
   if (!dryRun) {
     // Use the existing dedicated repo-scoped token, not GITHUB_TOKEN. The
     // latter would suppress downstream pull_request CI events.
@@ -252,7 +278,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,
-    transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
     checkedAt:new Date(now).toISOString(),
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
@@ -343,8 +369,20 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
     const coreRuns = runs.workflow_runs.filter(r=>coreRunForCurrentPR(r,pr))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
-    const latest=coreRuns[0];
-    if (!latest) {summary.missingCore++;continue;}
+    if (!coreRuns.length) {summary.missingCore++;continue;}
+    let latest=null;
+    // Check at most the three newest candidate runs to stay under API budget.
+    for(const candidate of coreRuns.slice(0,3)) {
+      try {
+        if(await verifyCoreRunOnExactHead({github,owner,repo,pr,run:candidate,limited})){
+          latest=candidate;break;
+        }
+      } catch(error) {
+        log('#'+pr.number+' cannot verify CI run '+candidate.id+' ancestry: '+error.message);
+        if(budget.exhausted)break;
+      }
+    }
+    if(!latest){summary.coreAssociationUnverified++;continue;}
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
@@ -389,4 +427,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,bootstrapLegacyCore,hasActiveLease};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease};

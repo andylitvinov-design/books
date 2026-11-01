@@ -69,6 +69,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
+    repos:{getCommit:async()=>({data:{parents:[{sha:SHA}]}})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
@@ -208,7 +209,7 @@ test('legacy Core bootstrap merges production into a stale BEHIND PR with exact 
   const github={rest:{
     pulls:{get:async()=>({data:live})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{commentCalls++;}}
-  },paginate:async()=>[]};
+  },paginate:async()=>[],request:async()=>({data:{total_count:0,workflow_runs:[]}})};
   const repairGithub={request:async (route,args)=>{
     assert.equal(route.includes('/update-branch'),true);
     assert.equal(args.expected_head_sha,SHA);
@@ -247,7 +248,7 @@ test('legacy bootstrap dry-run never mutates branches or comments',async()=>{
   const github={rest:{
     pulls:{get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'behind'}})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{writes++;}}
-  },paginate:async()=>[]};
+  },paginate:async()=>[],request:async()=>({data:{total_count:0,workflow_runs:[]}})};
   const repairGithub={request:async()=>{writes++;}};
   const ok=await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',repo:'books',
     pr:candidate,all:[candidate],now:NOW,dryRun:true,log:()=>{},limited:async(n,fn)=>fn()});
@@ -290,4 +291,71 @@ test('obsolete release-ready recovery is absent while interrupted-core recovery 
   assert.ok(source.includes('event.head_repository?.full_name !== fullRepo'));
   assert.ok(source.includes('github-token: ${{ github.token }}'));
   assert.doesNotMatch(source,/--admin|--force|bypass_rulesets|continue-on-error:/);
+});
+
+test('synthetic CI merge SHA is valid only if its commit has current PR HEAD parent',async()=>{
+  const {verifyCoreRunOnExactHead}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const candidate=pr(333),run={name:'HH PR core release gate',event:'pull_request',
+    head_sha:'c'.repeat(40),head_branch:candidate.head.ref,
+    pull_requests:[{number:candidate.number,head:{sha:SHA,ref:candidate.head.ref}}]};
+  let requests=0;
+  const oldGithub={rest:{repos:{getCommit:async()=>{requests++;return {data:{
+    parents:[{sha:'a'.repeat(40)},{sha:'f'.repeat(40)}]}};}}}};
+  const limited=async(_,fn)=>fn();
+  assert.equal(await verifyCoreRunOnExactHead({github:oldGithub,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,run,limited}),false);
+  assert.equal(requests,1);
+  const newGithub={rest:{repos:{getCommit:async()=>({data:{
+    parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})}}};
+  assert.equal(await verifyCoreRunOnExactHead({github:newGithub,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,run,limited}),true);
+  assert.equal(await verifyCoreRunOnExactHead({github:{},owner:'andylitvinov-design',
+    repo:'books',pr:candidate,run:{...run,head_sha:SHA},limited}),true);
+});
+test('legacy bootstrap refuses to update a branch that has Core history',async()=>{
+  const candidate={...pr(1470),updated_at:new Date(NOW-6*60*60000).toISOString()},
+    live={...candidate,state:'open',mergeable:true,mergeable_state:'behind'};
+  let writes=0;
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{writes++;}}
+  },request:async()=>({data:{total_count:1,workflow_runs:[{
+    name:'HH PR core release gate',event:'pull_request',head_branch:candidate.head.ref
+  }]}})};
+  const repairGithub={request:async()=>{writes++;return {status:202}}};
+  assert.equal(await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,all:[candidate],now:NOW,dryRun:false,log:()=>{},
+    limited:async(_,fn)=>fn()}),false);
+  assert.equal(writes,0);
+});
+test('legacy bootstrap refuses a second update after a prior HEAD receipt',async()=>{
+  const candidate={...pr(1470),updated_at:new Date(NOW-8*60*60000).toISOString()},
+    live={...candidate,state:'open',mergeable:true,mergeable_state:'behind'};
+  let writes=0,historyQueries=0;
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async()=>({data:[{
+      body:'<!-- HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1 ' + 'a'.repeat(40) + ' -->'
+    }]})}
+  },request:async()=>{historyQueries++;return {data:{total_count:0,workflow_runs:[]}}}};
+  const repairGithub={request:async()=>{writes++;return {status:202}}};
+  assert.equal(await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,all:[candidate],now:NOW,dryRun:false,log:()=>{},
+    limited:async(_,fn)=>fn()}),false);
+  assert.equal(historyQueries,0);
+  assert.equal(writes,0);
+});
+test('incomplete Core history fails closed before updating branch',async()=>{
+  const candidate={...pr(1470),updated_at:new Date(NOW-8*60*60000).toISOString()},
+    live={...candidate,state:'open',mergeable:true,mergeable_state:'behind'};
+  let writes=0;
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async()=>({data:[]})}
+  },request:async()=>({data:{total_count:123,workflow_runs:[]}})};
+  const repairGithub={request:async()=>{writes++;return {status:202}}};
+  assert.equal(await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',
+    repo:'books',pr:candidate,all:[candidate],now:NOW,dryRun:false,log:()=>{},
+    limited:async(_,fn)=>fn()}),false);
+  assert.equal(writes,0);
 });
