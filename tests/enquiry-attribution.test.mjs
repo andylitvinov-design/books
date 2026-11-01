@@ -6,18 +6,18 @@ import {advanceEnquiryAttribution,parseEnquiryAttributionCookie,
 
 test('first consented public entry retains coarse source, campaign and exact public landing',()=>{
  const cookie=advanceEnquiryAttribution('',{
-  path:'/en/services',href:'https://holistichouse.vercel.app/en/services?utm_source=google&utm_medium=cpc&utm_campaign=fall_sessions',
+  path:'/en/services',href:'https://holistichouse.vercel.app/en/services?utm_source=google&utm_medium=cpc&utm_campaign=hh_free_review_en_toronto_202610',
   referrer:'https://www.google.com/search?q=sensitive'})
  const row=parseEnquiryAttributionCookie(cookie)
  assert.equal(row.landingPath,'/en/services')
  assert.equal(row.trafficSource,'google-paid')
- assert.equal(row.campaign,'fall_sessions')
+ assert.equal(row.campaign,'hh_free_review_en_toronto_202610')
  assert.equal(row.previousPath,null)
  assert.doesNotMatch(decodeURIComponent(cookie),/sensitive|utm_source|utm_medium|www.google.com/)
  const next=advanceEnquiryAttribution(cookie,{path:'/en/services/alchemy-of-soul',
   href:'https://holistichouse.vercel.app/en/services/alchemy-of-soul',referrer:''})
  assert.deepEqual(normalizeEnquiryAttribution(parseEnquiryAttributionCookie(next)),{
-  landingPath:'/en/services',previousPath:'/en/services',trafficSource:'google-paid',campaign:'fall_sessions'})
+  landingPath:'/en/services',previousPath:'/en/services',trafficSource:'google-paid',campaign:'hh_free_review_en_toronto_202610'})
 })
 test('sensitive/private paths and arbitrary payloads cannot become conversion metadata',()=>{
  assert.equal(advanceEnquiryAttribution('',{path:'/en/app/client',href:'https://example.org',referrer:''}),null)
@@ -28,6 +28,10 @@ test('sensitive/private paths and arbitrary payloads cannot become conversion me
  assert.equal(parseEnquiryAttributionCookie('%7Bbad'),null)
  const cookie=advanceEnquiryAttribution('',{path:'/en/services',href:'https://holistichouse.vercel.app/en/services?utm_campaign=EMAIL%40EXAMPLE',referrer:''})
  assert.equal(parseEnquiryAttributionCookie(cookie).campaign,undefined)
+ for(const campaign of ['alice-smith','person123456789','diagnosis-anxiety']){
+  const value=normalizeEnquiryAttribution({landingPath:'/en/services',trafficSource:'direct',campaign})
+  assert.equal(value.campaign,undefined, 'unregistered campaign must not enter lead metadata')
+ }
 })
 test('server requires explicit analytics consent before linking attribution to a lead',()=>{
  const value=advanceEnquiryAttribution('',{path:'/ru/services',href:'https://holistichouse.vercel.app/ru/services',referrer:''})
