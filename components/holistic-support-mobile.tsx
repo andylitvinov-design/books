@@ -207,7 +207,7 @@ const copy = {
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
     private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
-    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
+    newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings", navAi: "AI",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
   },
@@ -320,7 +320,7 @@ const copy = {
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
     private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
-    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
+    newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки", navAi: "ИИ",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
   },
@@ -433,7 +433,7 @@ const copy = {
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
     private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
-    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
+    newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes", navAi: "IA",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
   },
@@ -1203,6 +1203,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         <Link href={"/" + locale + "/practice"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false} data-support-mobile-messages>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.navMessages}</span>
+        </Link>
+        <Link href={"/" + locale + "/holistic-support/mandala#video-director-chat"} prefetch={false} data-support-mobile-ai
+          aria-label={locale === "ru" ? "ИИ · создание видео" : locale === "es" ? "IA · crear vídeo" : "AI video chat"}>
+          <Sparkles size={24} aria-hidden="true" /><span>{t.navAi}</span>
         </Link>
         <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
         <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"

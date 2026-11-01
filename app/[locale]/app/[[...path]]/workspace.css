@@ -1758,3 +1758,18 @@
     padding: 0 !important;
   }
 }
+
+/* Shared six-item private Cabinet/Messages dock. Earlier five-column
+   declarations (including !important) remain for unrelated legacy screens. */
+@media(max-width:760px){
+ .hh-app .hh-mobile-app-nav[data-video-ai-nav]{
+   grid-template-columns:repeat(6,minmax(0,1fr))!important;
+   gap:1px;
+   padding-left:max(4px,env(safe-area-inset-left));
+   padding-right:max(4px,env(safe-area-inset-right));
+ }
+ .hh-app .hh-mobile-app-nav[data-video-ai-nav] a{
+   min-width:0;padding-inline:1px;
+   font-size:clamp(9px,2.4vw,11px);
+ }
+}

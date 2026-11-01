@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
+import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
 const copy = {
-  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", language: "Language", close: "Close" },
-  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть" },
-  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar" },
+  en: { home: "Home", practice: "Practice", messages: "Messages", ai: "AI", progress: "Progress", settings: "Settings", language: "Language", close: "Close" },
+  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", ai: "ИИ", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть" },
+  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", ai: "IA", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar" },
 } as const;
 
 /** The free video editor is a part of the approved Support experience, not
@@ -53,6 +53,10 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false}>
           <MessageCircle size={24} aria-hidden="true" /><span>{t.messages}</span>
         </Link>
+        <a href="#video-director-chat" data-mandala-support-ai
+          aria-label={locale === "ru" ? "ИИ · создание видео" : locale === "es" ? "IA · crear vídeo" : "AI video chat"}>
+          <Sparkles size={24} aria-hidden="true" /><span>{t.ai}</span>
+        </a>
         <Link href={"/" + locale + "/holistic-support/mobile#support-progress"} prefetch={false}>
           <BarChart3 size={24} aria-hidden="true" /><span>{t.progress}</span>
         </Link>
