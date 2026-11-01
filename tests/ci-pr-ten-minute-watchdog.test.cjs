@@ -351,3 +351,11 @@ test('watchdog never retries old Core run even if API association points to new 
   assert.equal(result.transientCiReruns,0);
   assert.equal(commits.length,0);
 });
+
+test('watchdog uses short-lived GITHUB_TOKEN for triage, never owner PAT for broad reads',()=>{
+  const {readFileSync} = require('node:fs');
+  const source=readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  assert.match(source,/github-token: \$\{\{ github\.token \}\}/);
+  assert.match(source,/makeOwnerBranchUpdater/);
+  assert.doesNotMatch(source,/github-token: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN/);
+});
