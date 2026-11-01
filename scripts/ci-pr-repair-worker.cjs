@@ -166,7 +166,18 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     verified.push({path:f.path,content:f.base64});
   }
   if (!verified.length) {
-    await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+    try {
+      await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+    } catch(error) {
+      if (![404,422].includes(error.status)) throw error;
+      try {
+        await github.rest.issues.createLabel({owner,repo,name:MANUAL,color:'d93f0b',
+          description:'Repair Worker attempted; source fix needs owner or coding agent'});
+      } catch(createError) {
+        if(createError.status!==422)throw createError;
+      }
+      await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+    }
     await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
       'HH Repair Worker: ran targeted ESLint autofix, but no safe validated source change was produced '+
       'for HEAD ' + expectedSha + '. Owner action required: diagnose the failed Core/TypeScript build and '+

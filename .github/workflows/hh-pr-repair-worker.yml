@@ -2,6 +2,12 @@ name: HH PR source Repair Worker
 on:
   schedule:
     - cron: '9,19,29,39,49,59 * * * *'
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-repair-worker.yml'
+      - 'scripts/ci-pr-repair-worker.cjs'
+      - 'tests/ci-pr-repair-worker.test.cjs'
   workflow_dispatch:
     inputs:
       pr_number:

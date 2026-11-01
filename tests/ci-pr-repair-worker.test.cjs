@@ -107,3 +107,20 @@ test('low API quota pauses repair without a source claim',async()=>{
   assert.equal(f.log.comments,0);
   assert.equal(f.log.commit,0);
 });
+
+test('missing manual-repair label is created before returning owner status',async()=>{
+  const f=fixture();
+  let created=0, calls=0;
+  f.github.rest.issues.addLabels=async()=>{
+    calls++;
+    if(calls===1)throw Object.assign(Error('Unknown label'),{status:422});
+  };
+  f.github.rest.issues.createLabel=async()=>{created++;};
+  const r=await publish({github:f.github,core,context,prNumber:11,expectedSha:sha,
+    candidate:{head_sha:sha,files:[]},writer:f.writer});
+  assert.equal(r.status,'manual_required');
+  assert.equal(created,1);
+  assert.equal(calls,2);
+  assert.equal(f.log.comments,1);
+  assert.equal(f.log.commit,0);
+});
