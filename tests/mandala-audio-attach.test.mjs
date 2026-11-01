@@ -43,7 +43,9 @@ test("choice is a preview, attach is explicit and MediaRecorder exports ONLY att
   assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
   assert.match(studio,/function attachSelectedAudio\(\)/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);\n  assert.match(studio,/my-voice\\\./);\n  assert.match(studio,/nonLoop:true as const/);
+  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);
+  assert.match(studio,/my-voice\\./);
+  assert.match(studio,/nonLoop:true as const/);
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
