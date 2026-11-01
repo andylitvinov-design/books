@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
-import {chromium,webkit} from "@playwright/test";
+import {chromium,webkit,expect} from "@playwright/test";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 function wav(seconds=3) {
@@ -82,16 +82,38 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(await attachedFile.innerText(),expectedFileName);
       await advanced.locator(":scope > summary").click();
       await selectedFile.waitFor({state:"hidden"});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
+      // Wait for actual capture readiness; an enabled button must not silently
+      // prime an unloaded HD source and require a second user click.
+      const generate=page.locator("[data-video-quick-generate]");
       if(engine==="chromium"||engine==="webkit") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
           const v=document.querySelector("[data-mandala-master-mp4]");
           return !v || v.readyState>=2;
         },undefined,{timeout:25000});
-        await page.locator("[data-video-quick-generate]").click();
+        await expect(generate).toBeEnabled({timeout:30000});
+        await generate.click();
         const output=page.locator("[data-mandala-video-download]");
-        await output.waitFor({state:"visible",timeout:45000});
+        try {
+          await output.waitFor({state:"visible",timeout:45000});
+        } catch (error) {
+          const uiState=await page.evaluate(()=>{
+            const video=document.querySelector("[data-mandala-master-mp4]");
+            const create=document.querySelector("[data-video-quick-generate]");
+            const result=document.querySelector("[data-video-result]");
+            return {
+              canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
+              source:video instanceof HTMLVideoElement ? {
+                readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
+                error:video.error?.code??null
+              } : null,
+              resultHidden:result instanceof HTMLElement ? result.hidden : null,
+              progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
+              notices:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(x=>x.textContent?.trim()).filter(Boolean).slice(0,8),
+            };
+          });
+          throw new Error(engine+" recorded video never became downloadable: "+JSON.stringify(uiState),{cause:error});
+        }
         const [download]=await Promise.all([
           page.waitForEvent("download",{timeout:20000}),output.click(),
         ]);
