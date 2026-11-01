@@ -42,11 +42,12 @@ jobs:
         env:
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
         with:
-          github-token: ${{ github.token }}
+          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
           script: |
             const {run} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
             await run({
               github, core, context,
+              repairGithub: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true' ? github : null,
               hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
