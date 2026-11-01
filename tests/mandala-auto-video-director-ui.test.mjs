@@ -27,7 +27,7 @@ test("only one goal input, a visible proposal and a confirmation gate",()=>{
  assert.ok(director.includes("goalId:selectedGoalId"));
  assert.ok(director.includes("onGoalChange(nextGoal)"));
  assert.ok(!studio.includes("<input data-video-quick-wish"));
- assert.ok(director.includes("onClick={()=>onApply(chosen.id,length"));
+ assert.ok(director.includes("onApply(chosen.id,length"),"confirmation applies real edited clips and stage durations");
  assert.ok(director.includes("data-auto-video-story-options"));
  assert.ok(director.includes("data-auto-video-option={id}"));
  assert.ok(director.includes("aria-pressed={chosen.id===id}"));
