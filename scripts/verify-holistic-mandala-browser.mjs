@@ -772,7 +772,7 @@ const runEngine = async ([engine, browserType]) => {
         // the default ENERGY topic, before browser QA switches to MONEY.
         if(process.env.HH_HYPNO_SCREENSHOT_DIR){
           mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
-          await captureSyntheticOverview(page, page.locator("[data-hypno-overview]"),
+          await captureSyntheticOverview(page, page.locator("[data-video-quick-builder]"),
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-default.png");
         }
         assert.equal(await hero.locator("select").count(),0,"no filters over video");
@@ -804,11 +804,15 @@ const runEngine = async ([engine, browserType]) => {
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
         assert.equal(await page.locator("[data-video-reset-settings]").count(),1);
-        assert.equal(await page.locator("[data-video-affirmations-feature]").isChecked(),false);
-        await page.locator("[data-video-affirmations-feature]").check();
+        // The visible phrase controls now belong to their own workspace.
+        await page.locator('[data-video-quick-control="phrases"]').click();
+        const phraseSwitch=page.locator('[data-video-quick-phrases="ready"]');
+        await expect(phraseSwitch).toBeVisible();
+        await phraseSwitch.click();
         assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
-        await page.locator("[data-video-affirmations-feature]").uncheck();
+        await phraseSwitch.click();
         assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
+        await page.locator('[data-video-quick-control="video"]').click();
         const heroGeometry=await hero.boundingBox();
         assert.ok(heroGeometry && heroGeometry.height <= (width<=430?255:360),
           "the film frame is compact at "+width+"px");
@@ -1241,41 +1245,28 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await secondScene.getAttribute("aria-pressed"),"true");
         await firstScene.click();
         assert.equal(await firstScene.getAttribute("aria-pressed"),"true");
-        // Every editor jump is an actual navigable anchor, not a decorative tab.
-        const destinations = [["design","video-templates"],["audio","video-audio"],["affirmations","video-hypnosis"]];
-        for (const [tab,id] of destinations) {
-          const link=page.locator('[data-video-editor-tab="'+tab+'"]');
-          assert.equal(await link.getAttribute("href"),"#"+id);
-          await link.click();
-          // The approved six-panel editor keeps legacy tools in a collapsed
-          // disclosure. These links must reveal the actual tool, not only
-          // update the URL hash while the target remains hidden.
-          await page.waitForFunction(() => document.querySelector('[data-video-quick-legacy]')?.open === true,
-            undefined,{timeout:8000});
-          try {
-            await page.waitForFunction(target=>window.location.hash==="#"+target,id,{timeout:10000});
-            await page.waitForFunction(target=>{
-              const rect=document.getElementById(target)?.getBoundingClientRect();
-              return Boolean(rect && rect.top<window.innerHeight-16 && rect.bottom>16);
-            },id,{timeout:10000});
-          } catch (error) {
-            const diagnostic=await page.evaluate(target=>{
-              const selected=document.getElementById(target);
-              const link=document.querySelector('[data-video-editor-tab="'+
-                ({'video-templates':'design','video-audio':'audio','video-hypnosis':'affirmations'}[target])+'"]');
-              const rect=selected?.getBoundingClientRect();
-              return {
-                wanted:'#'+target,href:window.location.href,hash:window.location.hash,
-                nativeHref:link?.getAttribute('href'),targetPresent:Boolean(selected),
-                detailsOpen:document.querySelector('[data-video-quick-legacy]')?.open,
-                lastReactTab:document.querySelector('[data-video-editor-nav]')?.getAttribute('data-video-current-tab'),
-                rect:rect?{top:Math.round(rect.top),bottom:Math.round(rect.bottom)}:null,
-                viewport:window.innerHeight,
-              };
-            },id);
-            throw new Error(engine+" "+locale+" "+width+"px deep-tab navigation "+
-              tab+" failed: "+JSON.stringify(diagnostic)+" / "+String(error));
+        // Keep old link destinations in source while testing the visible
+        // six-tab owner of each capability; no jump to a hidden legacy pane.
+        const destinations=[
+          ["design","editor","video-settings"],
+          ["audio","video","video-audio"],
+          ["affirmations","phrases","video-hypnosis"]
+        ];
+        const unchangedHash=await page.evaluate(()=>window.location.hash);
+        for(const [tab,workspace,id] of destinations){
+          const oldLink=page.locator('[data-video-editor-tab="'+tab+'"]');
+          assert.equal(await oldLink.getAttribute("href"),"#"+id);
+          const next=page.locator('[data-video-quick-control="'+workspace+'"]');
+          await next.click();
+          await expect(next).toHaveAttribute("aria-pressed","true");
+          if(id==="video-audio"){
+            const audioDetails=page.locator("[data-video-audio-details]");
+            if(!(await audioDetails.evaluate(node=>node.open)))
+              await audioDetails.locator(":scope > summary").click();
           }
+          await expect(page.locator("#"+id)).toBeVisible({timeout:12000});
+          assert.equal(await page.evaluate(()=>window.location.hash),unchangedHash,
+            "new in-place navigation must not change the page hash");
         }
         // From the bottom of Hypnoaffirmations, a single click must scroll
         // back to the main film and START its existing frame engine.
@@ -1292,6 +1283,10 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator("[data-mandala-cinematic-canvas]").count(),1,
           "affirmation preview reuses the central video canvas");
         assert.equal(await create.isEnabled(), false,"real photo requires permission");
+        await page.locator('[data-video-quick-control="video"]').click();
+        const photoConsentDetails=page.locator("[data-video-cover-options]");
+        if(!(await photoConsentDetails.evaluate(node=>node.open)))
+          await photoConsentDetails.locator(":scope > summary").click();
         await page.locator("[data-video-photo-consent]").check();
         // Selecting a different genuine MP4 starts a new async decode.
         // Wait for the actual master canplay event rather than testing a stale state.
@@ -1510,7 +1505,9 @@ const runEngine = async ([engine, browserType]) => {
         // MP4 and personal goal affirmations, then the SAME local recorder and
         // downloadable playable media as the existing video studio.
         if (engine === "chromium" && locale === "ru" && width === 390) {
-          await page.locator("[data-video-therapy-toggle]").click();
+          await page.locator('[data-video-quick-control="practices"]').click();
+          await expect(page.locator('[data-video-quick-control="practices"]'))
+            .toHaveAttribute("aria-pressed","true");
           assert.equal(await page.locator("[data-video-therapy-toggle]").getAttribute("aria-pressed"),"true");
           await page.locator("[data-video-guided-course]").waitFor({state:"visible",timeout:12000});
           assert.equal(await page.locator("[data-video-studio-mode]").getAttribute("data-video-studio-mode"),"therapy");
@@ -1643,14 +1640,10 @@ const runEngine = async ([engine, browserType]) => {
         // True end-to-end cinematic storyboard → 4 animated Canvas shots →
         // locally captured video bytes, never an AI API submission.
         if(engine==="chromium"&&locale==="ru"&&width===390){
-          const therapy=page.locator("[data-video-therapy-toggle]");
-          if(await therapy.getAttribute("aria-pressed")==="true")await therapy.click();
-          await page.locator("[data-video-photo-enabled]").uncheck();
-          await page.locator("[data-video-affirmations-feature]").uncheck();
+          // Cinematic Director is one real component under PRO.
+          await page.locator('[data-video-quick-control="video"]').click();
+          await page.locator('[data-video-quick-control="pro"]').click();
           const director=page.locator("[data-cinematic-director]");
-          const advanced=page.locator("[data-video-quick-legacy]");
-          if(!(await advanced.evaluate(el=>el.open)))
-            await advanced.locator(":scope > summary").click();
           await director.waitFor({state:"visible",timeout:12000});
           const openDirector=director.locator('button[aria-controls="cinematic-director-content"]');
           if(await director.getAttribute("data-director-open")!=="true")await openDirector.click();
