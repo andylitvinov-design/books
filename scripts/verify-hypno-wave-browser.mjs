@@ -40,9 +40,14 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   const beforeSmart=await activePreview.innerText();
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await activePreview.innerText(),beforeSmart,'smart suggestions must await approval');
-  await pane.locator('[data-hypno-request-edit]').click();
-  const notes=pane.locator('[data-hypno-request-options] textarea');
-  await notes.nth(0).fill(now);await notes.nth(1).fill(goal);
+  // The canonical Phrases workspace uses the local optional wish field.
+  // Do not resurrect the retired two-textarea request editor.
+  const wishDetails=page.locator('[data-video-wish-disclosure]');
+  await wishDetails.waitFor({state:'visible'});
+  if(await wishDetails.getAttribute('open')===null)
+    await wishDetails.locator(':scope > summary').click();
+  const wish=wishDetails.locator('[data-video-wish]');
+  await wish.fill(now+' — '+goal);
   const preview=pane.locator('[data-hypno-preview] strong');const before=await preview.innerText();
   await pane.locator('[data-hypno-smart]').click();
   const proposed=await pane.locator('[data-hypno-phrase="0"]').innerText();
@@ -50,8 +55,7 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   assert.notEqual(proposed,before,'test must exercise a distinct suggestion');
   await pane.locator('[data-hypno-approve]').click();
   assert.equal(await preview.innerText(),proposed,'approved suggestion must be active');
-  await pane.locator('[data-hypno-request-edit]').click();
-  await notes.nth(0).fill('I want to kill myself');
+  await wish.fill('I want to kill myself');
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,'urgent input must not be approved as phrases');
   assert.deepEqual(writes,[],'personal notes must not be sent');
