@@ -36,12 +36,12 @@ test("compile four real approved shots and provider-safe prompt", () => {
   assert.equal(draft.prompt.includes(raw),false);
 });
 
-test("six shots, real supported 60s durations and visual exclusion",()=>{
+test("four licensed shots, real supported 60s durations and visual exclusion",()=>{
   const draft=buildFirstVideoDraft({locale:"ru",wish:"Новая дорога к цели",aspect:"portrait",
     durationSeconds:60,avoid:"море и вода",style:"dream"});
-  assert.equal(draft.plan.shotCount,6);
+  assert.equal(draft.plan.shotCount,4);
   assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),60);
-  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,6);
+  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,4);
   assert.ok(draft.plan.shots.every(s=>!/sea|water|coast|stream|wave/i.test(s.visualCue)));
   assert.match(draft.prompt,/60s/);
   const changed=buildFirstVideoDraft({locale:"ru",wish:"Важный новый путь",promptOverride:"Свет и солнце"});
@@ -78,7 +78,7 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(ui,/data-first-video-wish/);
   assert.match(ui,/data-first-video-filters/);
   assert.match(ui,/data-first-video-hydrated/);
-  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !wish\.trim\(\)\}/);
+  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !draft \|\| !wish\.trim\(\)\}/);
   assert.match(src,/useLayoutEffect\(\(\) => \{\s*const job=jobRef\.current;/);
   assert.match(src,/backgroundOnly\?null:frameUrl/);
   assert.match(src,/data-video-result-mode/);
@@ -121,7 +121,7 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   const other=buildFirstVideoDraft({locale:"ru",wish:"Горы",durationSeconds:20,variant:1});
   assert.equal(original.plan.shots[0].sceneId,"mountain-air");
   assert.equal(other.plan.shots[0].sceneId,"mountain-air");
-  assert.match(original.prompt,/горные вершины/i);
+  assert.match(original.prompt,/горные просторы/i);
   assert.ok(!original.prompt.includes("sunlight awakening across a wide meadow"),"no generic English opening meadow");
   assert.notDeepEqual(original.plan.shots.map(s=>s.sceneId),other.plan.shots.map(s=>s.sceneId));
   assert.notEqual(original.prompt,other.prompt);
@@ -129,12 +129,12 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   for(const locale of ["en","es"]){
     const draft=buildFirstVideoDraft({locale,wish:locale==="es"?"Montañas":"Mountains"});
     assert.equal(draft.plan.shots[0].sceneId,"mountain-air");
-    assert.ok(draft.prompt.includes(locale==="es"?"cumbres montañosas":"broad open mountain sky"));
+    assert.ok(draft.prompt.includes(locale==="es"?"Montañas abiertas":"Open mountains"));
   }
   const forest=buildFirstVideoDraft({locale:"ru",wish:"Лес и деревья"});
   assert.equal(forest.plan.shots[0].sceneId,"fern-awakening");
   const cascada=buildFirstVideoDraft({locale:"es",wish:"Cascada"});
-  assert.equal(cascada.plan.shots[0].sceneId,"light-waterfall");
+  assert.equal(cascada.plan.shots[0].sceneId,"gentle-falls");
 });
 
 test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models or silent output",async()=>{
@@ -229,29 +229,39 @@ test("unavailable Gemini 3.5 Lite model falls back ONLY to confirmed free-tier G
 });
 
 
-test("Food/Еда/Comida creates honest harvest storyboard instead of silently treating food as generic energy",()=>{
+test("Food/Еда/Comida renders four original Canvas food scenes; never pretends to be filmed MP4",()=>{
   const options={durationSeconds:20,theme:"auto",style:"warm",aspect:"landscape"};
+  const ids=["food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table"];
   const ru=buildFirstVideoDraft({locale:"ru",wish:"Еда",...options});
   assert.equal(ru.theme,"life");
-  assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
-  assert.equal(ru.descriptionLimited,true);
-  assert.match(ru.prompt,/Тема «Еда»/);
-  assert.match(ru.prompt,/поле урожая/);
-  assert.match(ru.limitationNote,/нет кадров блюд/);
-  assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
+  assert.equal(ru.plan.version,"hh-local-food-canvas-v1");
+  assert.deepEqual(ru.plan.shots.map(s=>s.sceneId),ids);
+  assert.equal(ru.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),20);
+  assert.match(ru.prompt,/фруктами, овощами, супом и хлебом/);
+  assert.match(ru.limitationNote,/рисованные движущиеся иллюстрации/);
+  assert.equal(ru.plan.shots.every(s=>s.providerPrompt.includes("NOT a filmed dish")),true);
   const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
-  assert.equal(variant.plan.shots[0].sceneId,"golden-harvest");
-  assert.notEqual(ru.prompt,variant.prompt,"real scene variants must change");
+  assert.equal(variant.plan.shots[0].sceneId,ids[0]);
+  assert.notDeepEqual(variant.plan.shots.map(s=>s.sceneId),ids);
+  assert.notEqual(ru.prompt,variant.prompt);
   const manual=buildFirstVideoDraft({locale:"ru",wish:"Еда",promptOverride:"Горы и звёзды",...options});
-  assert.equal(manual.plan.shots[0].sceneId,"golden-harvest","AI text cannot override the user's food intent");
-  for (const [locale,wish] of [["en","Food"],["es","Comida"]]){
-    const result=buildFirstVideoDraft({locale,wish,...options});
-    assert.equal(result.plan.shots[0].sceneId,"golden-harvest");
-    assert.equal(result.descriptionLimited,true);
-    assert.ok(result.limitationNote.length>60);
+  assert.equal(manual.plan.shots[0].sceneId,ids[0],"manual AI text must not override food intent");
+  for(const [locale,wish] of [["en","Food"],["es","Comida"]]){
+    const video=buildFirstVideoDraft({locale,wish,...options});
+    assert.equal(video.plan.version,"hh-local-food-canvas-v1");
+    assert.deepEqual(video.plan.shots.map(s=>s.sceneId),ids);
+    assert.ok(video.limitationNote.length>60);
   }
-  assert.equal(inferFirstVideoTheme("Победа"),"energy","don't confuse a word containing 'еда' with food");
+  const long=buildFirstVideoDraft({locale:"en",wish:"Food",durationSeconds:60,aspect:"portrait",variant:2});
+  assert.equal(long.plan.shotCount,4);
+  assert.equal(long.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),60);
+  assert.equal(long.plan.aspect,"portrait");
+  assert.equal(long.mediaSource,"local_canvas");
+  assert.equal(long.aiMediaGenerated,false);
+  assert.equal(long.plan.paidRenderApproved,false);
+  assert.equal(inferFirstVideoTheme("Победа"),"energy");
 });
+
 
 test("fast free-text failover is budgeted, skips same-project quota retries, keeps safe error details",async()=>{
   const {
@@ -369,7 +379,7 @@ test("six one-tap creative templates compile to real free RU/EN/ES video storybo
       assert.equal(draft.aiMediaGenerated,false);
       assert.equal(draft.plan.localPreview,true);
       assert.equal(draft.plan.paidRenderApproved,false);
-      assert.equal(draft.plan.shots.length,selection.preferences.durationSeconds===60?6:4);
+      assert.equal(draft.plan.shots.length,4);
       assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),
         selection.preferences.durationSeconds);
       assert.ok(draft.plan.shots.every(shot=>shot.sceneId&&shot.durationSeconds>0));
@@ -681,7 +691,7 @@ test("Gemini and OpenRouter receive identical fully selected v1 creative brief w
   assert.equal(seen[0].context.effectiveFilters.caption,true);
   assert.equal(seen[0].context.effectiveFilters.avoid,"море");
   assert.equal(seen[0].context.localRendering.quality,"fullhd");
-  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"golden-harvest");
+  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"food-fruit-bowl");
   assert.ok(!seen[0].context.availableSceneChoices.some(x=>/cooking|dishes|kitchen/i.test(x.visualCue)));
 });
 
@@ -703,4 +713,80 @@ test("UI sends complete filter contract; server retains consent, origin and rate
   assert.match(route,/body\.consent!==true/);
   assert.match(route,/consumeRate\(config/);
   assert.doesNotMatch(ui,/photoUrl:|testResults:|profileId:/);
+});
+
+
+test("free OpenRouter and Groq normalize strictly typed text segments",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"en",wish:"Calm mountain sunrise",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  for(const [provider,env] of [
+    ["openrouter_free",{HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+      HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential"}],
+    ["groq_free",{HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+      HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-credential"}],
+  ]){
+    let called=0;
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url,options)=>{
+      called++;
+      assert.equal(options.method,"POST");
+      assert.equal(options.redirect,"error");
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:[
+          {type:"text",text:"A quiet golden mountain sunrise. "},
+          {type:"text",text:"Four gentle real landscape shots with soft light and connected transitions."},
+        ]}}],
+      })};
+    });
+    assert.equal(out.provider,provider);
+    assert.equal(called,1);
+    assert.match(out.prompt,/quiet golden mountain sunrise/i);
+    assert.match(out.prompt,/Four gentle real landscape shots/);
+    assert.ok(!JSON.stringify(out).includes("credential"));
+  }
+});
+
+test("free OpenRouter rejects image, tool, and malformed parts and uses independent Gemini",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"es",wish:"Luz suave en la montaña",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  const env={HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential",
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-credential",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"openrouter_free,gemini_free"};
+  for(const invalid of [
+    [{type:"text",text:"Start"},{type:"image_url",image_url:{url:"data:image/png;base64,xxx"}}],
+    [{type:"tool_call",text:"Not visual output"}],
+    [{type:"text",text:12}],
+    [],
+  ]){
+    const seen=[];
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url)=>{
+      seen.push(url);
+      if(seen.length===1)return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:invalid}}],
+      })};
+      assert.match(url,/generativelanguage\.googleapis\.com/);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"Montañas bañadas por luz suave. Cuatro paisajes naturales sucesivos, con transiciones tranquilas y movimiento real."}]}}],
+      })};
+    });
+    assert.equal(out.provider,"gemini_free");
+    assert.equal(seen.length,2);
+    assert.deepEqual(out.diagnostics.map(x=>x.reason),["invalid_text"]);
+    assert.ok(!JSON.stringify(out).includes("test-only-router-credential"));
+  }
+});
+
+test("food painter is used by shared preview and real MediaRecorder, without licensed MP4 deception",()=>{
+  const painter=readFileSync(new URL("../lib/mandala/holistic-video-themes.ts",import.meta.url),"utf8");
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const id of ["food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table"])
+    assert.ok(painter.includes('"'+id+'"'));
+  assert.match(painter,/if\(FOOD_CANVAS_SCENES\.includes\(scene\)\)/);
+  assert.match(painter,/paintFoodVideoFrame\(c,image,scene,time,title\)/);
+  assert.match(painter,/Math\.sin\(t\*\.72\)/);
+  assert.match(editor,/paintCinematicFrame\(ctx,image,effect,frameTime/);
+  assert.match(editor,/FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION/);
 });
