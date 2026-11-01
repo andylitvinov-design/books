@@ -6,6 +6,7 @@ on:
     workflows:
       - 'HH PR source Repair Worker'
       - 'HH zero-cost PR CI worker'
+      - 'HH PR 10-minute watchdog'
     types: [completed]
   push:
     branches: ['codex/bootstrap-books']
