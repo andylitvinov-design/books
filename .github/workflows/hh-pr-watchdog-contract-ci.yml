@@ -7,6 +7,9 @@ on:
       - '.github/workflows/hh-native-auto-merge.yml'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
+      - '.github/workflows/hh-pr-ci-worker.yml'
+      - 'scripts/ci-pr-ci-worker.cjs'
+      - 'tests/ci-pr-ci-worker.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,5 +32,7 @@ jobs:
         run: |
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
+          node --check scripts/ci-pr-ci-worker.cjs
+          node --check tests/ci-pr-ci-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs
+        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs
