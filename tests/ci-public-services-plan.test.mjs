@@ -491,7 +491,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
 });
 
-test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+test('Public Services risk classification retains full manual sensitive QA while PR uses fast contracts', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
     'scripts/verify-ideas-mobile-browser.mjs',
@@ -519,7 +519,7 @@ test('temporary public-service fast lane retains payment/consent/unknown real br
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true'/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
