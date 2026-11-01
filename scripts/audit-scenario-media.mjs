@@ -11,11 +11,12 @@ import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
 import {auditScenarioMedia,planDedicatedScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
 import {createScenarioAcquisitionQueue} from "../lib/mandala/scenario-media-acquisition.mjs";
+import {loadActiveFilmPresets} from "./read-live-film-presets.mjs";
 import {SONGS,SAMPLE_RATE,DURATION_SECONDS} from "./generate-mandala-melodies.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const load=name=>JSON.parse(readFileSync(resolve(root,name),"utf8"));
 const presetsPath="data/video-catalog/free-film-presets-v2.json";
-const presetData=load(presetsPath);
+const presetData=loadActiveFilmPresets();
 const sceneData=load("data/video-catalog/scene-taxonomy.json");
 const args=new Set(process.argv.slice(2));
 const audit=auditScenarioMedia(presetData.presets,sceneData.scenes);
@@ -54,6 +55,9 @@ audit.audioMastersMissing=audioAbsent;
 const plan=planDedicatedScenarioMedia(presetData.presets,sceneData.scenes);
 const queue=args.has("--queue")?createScenarioAcquisitionQueue(presetData.presets,sceneData.scenes):null;
 if(args.has("--apply")){
+  // Legacy scenes still live inline in the TSX component; rebalance cannot
+  // change only v2 JSON while claiming all 48 scenarios have unique footage.
+  throw Error("dedicated_rebalance_requires_atomic_migration_of_inline_and_json_presets");
   if(audit.errors.length||!plan.ready||audioAbsent.length)
     throw Error("media_not_ready_for_dedicated_rebalance");
   const next={...presetData,presets:presetData.presets.map(p=>({...p,clips:plan.assignments[p.id]}))};
