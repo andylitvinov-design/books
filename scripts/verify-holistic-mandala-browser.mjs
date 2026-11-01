@@ -70,7 +70,7 @@ const runEngine = async ([engine, browserType]) => {
     // leaking between closed contexts across repeated iPhone dimensions.
     // This is isolation, not a skipped assertion or retry of a failed case.
     // Chromium runs its expensive RU390 MP4 export after WebKit's RU390
-    // native 13-track audio checks, reducing simultaneous encoding pressure.
+    // native 39-track audio checks, reducing simultaneous encoding pressure.
     const orderedViewports = engine === "chromium"
       ? [...viewports.filter(v => v.locale !== "ru" || v.width !== 390),
         ...viewports.filter(v => v.locale === "ru" && v.width === 390)]
@@ -133,12 +133,26 @@ const runEngine = async ([engine, browserType]) => {
           await form.locator("[data-first-video-wish]").fill("Горы");
           const promptField=form.locator("[data-first-video-prompt]");
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
-            .toContain("горные вершины");
+            .toMatch(/горн/i);
           const firstVariant=await promptField.inputValue();
           await form.locator("[data-first-video-refresh]").click();
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
-          assert.match(await promptField.inputValue(),/горные вершины/i);
+          assert.match(await promptField.inputValue(),/горн/i);
+          // Exercise actual hydrated iPhone filters; these values MUST
+          // survive in the real HTTP body, not merely decorate the UI.
+          const aiFilters=form.locator("[data-first-video-filters]");
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-theme]").selectOption("energy");
+          await form.locator("[data-first-video-style]").selectOption("nature");
+          await form.locator("[data-first-video-aspect]").selectOption("portrait");
+          await form.locator("[data-first-video-duration]").selectOption("30");
+          await form.locator("[data-first-video-motion]").selectOption("dynamic");
+          await form.locator("[data-first-video-music]").selectOption("harmony");
+          await form.locator("[data-first-video-avoid]").fill("море");
+          await form.locator("[data-first-video-caption]").check();
+          await aiFilters.locator("summary").click();
           // Mock only the external language model; real form + request.
           const apiRoute="**/api/holistic-support/first-video-prompt";
           const aiCalls=[];
@@ -164,6 +178,22 @@ const runEngine = async ([engine, browserType]) => {
             const input=JSON.parse(aiCalls[0].body||"{}");
             assert.equal(input.wish,"Горы");
             assert.equal(input.consent,true);
+            assert.equal(input.schemaVersion,"hh-first-video-prompt-v1");
+            assert.deepEqual({
+              theme:input.theme,style:input.style,aspect:input.aspect,
+              durationSeconds:input.durationSeconds,motion:input.motion,
+              music:input.music,caption:input.caption,avoid:input.avoid,
+            },{
+              theme:"energy",style:"nature",aspect:"portrait",
+              durationSeconds:30,motion:"dynamic",music:"harmony",
+              caption:true,avoid:"море",
+            },"all actual filter choices must reach Gemini");
+            assert.deepEqual(new Set(input.selectedFields),new Set([
+              "theme","style","aspect","durationSeconds","motion","music","caption","avoid",
+            ]));
+            assert.deepEqual(input.renderOptions,{
+              quality:"hd",brightness:"soft",audioVolumePercent:75,
+            },"existing outer video editor settings must not be lost");
             await expect.poll(()=>promptField.inputValue(),{timeout:12000})
               .toContain("Горные вершины и облака");
             await expect(form).toContainText("Gemini");
@@ -179,6 +209,16 @@ const runEngine = async ([engine, browserType]) => {
             page.off("requestfailed",captureNetworkFailure);
             await page.unroute(apiRoute);
           }
+          // Restore the fast, silent 20s real-video QA path after the consented
+          // request assertion; no expensive 30s/audio export is introduced.
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-duration]").selectOption("20");
+          await form.locator("[data-first-video-motion]").selectOption("slow");
+          await form.locator("[data-first-video-music]").selectOption("none");
+          await form.locator("[data-first-video-caption]").uncheck();
+          await form.locator("[data-first-video-avoid]").fill("");
+          await aiFilters.locator("summary").click();
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{
@@ -336,8 +376,8 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         await expandAllFilms.click();
-        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
-          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
+          "All 48 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
@@ -449,7 +489,7 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -592,7 +632,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-auto-video-input]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
@@ -1050,6 +1090,7 @@ const runEngine = async ([engine, browserType]) => {
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
+        const approvedPreviewBeforeRequest=await compactHypno.locator("[data-hypno-preview] strong").innerText();
         await compactHypno.locator("[data-hypno-request-edit]").click();
         await compactHypno.locator('[data-hypno-problem="1"]').click();
         // The earlier real-film test selected MONEY. Match its actual goal catalogue.
@@ -1057,12 +1098,19 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.equal(await compactHypno.locator("[data-hypno-preview] strong").innerText(),approvedPreviewBeforeRequest,
+          "a proposed Wave phrase must not replace the active preview before approval");
+        const proposedPhrase=(await compactHypno.locator('[data-hypno-phrase="0"]').innerText()).trim();
+        assert.ok(proposedPhrase.length>0,"Wave must offer a concrete phrase");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.ok((await compactHypno.locator("[data-hypno-preview]").innerText()).includes(proposedPhrase),
+          "approval must put the proposed phrase into the active preview");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        await compactHypno.locator("[data-hypno-design-edit]").click();
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
@@ -1186,8 +1234,8 @@ const runEngine = async ([engine, browserType]) => {
           await page.locator("[data-video-audio-voice]").uncheck();
           await page.locator("[data-video-audio-auto]").click();
           await page.locator("[data-video-audio-more]").click();
-          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),13,
-            "expanded audio-only library contains all 13 original WAV tracks");
+          assert.equal(await page.locator('[data-video-audio-tracks] [data-video-music]').count(),39,
+            "expanded audio-only library contains all 39 original WAV tracks");
           for (const preset of ["harmony","prosperity","energy","love","meditation",
             "rain","ocean","breeze","focus","grounding","breath","sunrise","pulse"]) {
             await page.locator('[data-video-music="'+preset+'"]').click();
@@ -1232,7 +1280,7 @@ const runEngine = async ([engine, browserType]) => {
               "healthy preset must not show direct-open error fallback");
             await page.locator("[data-video-music-preview]").click();
           }
-          // Mock-fidelity regression: five sound filters and all 13 original
+          // Mock-fidelity regression: sound filters and all 39 original
           // WAVs share exactly one real player. A row Play starts native
           // Safari-compatible media but does NOT silently attach it to video.
           assert.equal(await page.locator('[data-video-quick-section="5"] audio').count(),0,
@@ -1636,6 +1684,8 @@ const runEngine = async ([engine, browserType]) => {
         if(locale==="ru"&&width===390){
           const oldTheme=await page.locator('[data-video-quick-theme][aria-pressed="true"]').first()
             .getAttribute("data-video-quick-theme");
+          const priorFilmSources=await page.locator('[data-free-film-source]').evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute('data-free-film-source')));
           await page.locator('[data-video-quick-control="characters"]').click();
           const characters=page.locator('[data-video-stories-characters]');
           await characters.waitFor({state:"visible",timeout:12000});
@@ -1653,9 +1703,16 @@ const runEngine = async ([engine, browserType]) => {
           assert.equal(await characters.locator('[data-video-story-addons-apply]').isEnabled(),true,
             "available original symbols and licensed MP4s apply for zero XP");
           await characters.locator('[data-video-story-addons-apply]').click();
-          await page.waitForFunction(()=>
-            document.querySelector('[data-video-quick-theme="life"]')?.getAttribute("aria-pressed")==="true",
-            undefined,{timeout:12000});
+          if(priorFilmSources.length===4){
+            await page.waitForFunction(before=>{
+              const sources=[...document.querySelectorAll('[data-free-film-source]')].map(node=>node.getAttribute('data-free-film-source'));
+              return sources.length===4 && sources[0]==='coastal-freedom' && sources.slice(1).every((id,i)=>id===before[i+1]);
+            },priorFilmSources,{timeout:12000});
+          }else{
+            await page.waitForFunction(()=>
+              document.querySelector('[data-video-quick-theme="life"]')?.getAttribute("aria-pressed")==="true",
+              undefined,{timeout:12000});
+          }
           assert.match(await characters.innerText(),/0 XP/);
           await characters.locator('[data-story-addons-selected] button').click();
           await characters.locator('[data-video-story-addons-apply]').click();
@@ -1756,6 +1813,37 @@ const runEngine = async ([engine, browserType]) => {
           };
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
+        // Goal-first Free Director: selected goal proposes exactly one real
+        // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
+        // Keep the full original Chromium/WebKit recorder & audio E2E intact.
+        if (locale === "ru" && width === 390) {
+          const auto=page.locator("[data-auto-video-director]");
+          await auto.waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+            "six accessible one-tap goals, no mandatory 49-question intake");
+          const planBefore=await page.locator("[data-free-film-original-masters]").count();
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "goal gives four actual source scenes");
+          assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
+            "proposal must not start rendering before user confirms");
+          await auto.locator("[data-auto-video-confirm]").click();
+          await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
+            undefined,{timeout:15000});
+          assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
+            "Auto Director reuses the only live editable video stage");
+          const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          // The legacy quick-duration control is intentionally in a collapsed
+          // details panel. Exercise the actually visible Video workspace button.
+          await page.locator('[data-video-duration="15"]').click();
+          await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
+          assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
+            "duration changes must retain the four selected MP4 sources");
+        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",

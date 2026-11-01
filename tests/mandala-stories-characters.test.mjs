@@ -69,7 +69,7 @@ test("one original video preview and export share the selected symbolic layer",(
   assert.equal((s.match(/paintStoryMotifs\(ctx,/g)||[]).length,4,
     "first preview + animated preview + first recording frame + recorded frames");
   assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\),appliedStory/);
-  assert.match(s,/cinematicPlan, appliedStory\]\);/);
+  assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory\]\);/);
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);

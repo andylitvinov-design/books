@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildFirstVideoDraft, inferFirstVideoTheme } from "../lib/mandala/first-video-director.mjs";
+import {
+  FIRST_VIDEO_PROMPT_CONTRACT_VERSION,FIRST_VIDEO_PROMPT_FILTER_KEYS,
+  makeFirstVideoPromptRequest,parseFirstVideoPromptInput,buildFirstVideoPromptContext,
+} from "../lib/mandala/first-video-prompt-contract.mjs";
 import { VIDEO_QUICK_TEMPLATES, getVideoQuickTemplateDraft } from "../lib/mandala/video-quick-templates.mjs";
 import { prefersSafariWebm, orderRecordingMimes } from "../lib/mandala/recording-codecs.mjs";
 const browserSource=()=>readFileSync(new URL("../scripts/verify-holistic-mandala-browser.mjs",import.meta.url),"utf8");
@@ -32,12 +36,12 @@ test("compile four real approved shots and provider-safe prompt", () => {
   assert.equal(draft.prompt.includes(raw),false);
 });
 
-test("six shots, real supported 60s durations and visual exclusion",()=>{
+test("four licensed shots, real supported 60s durations and visual exclusion",()=>{
   const draft=buildFirstVideoDraft({locale:"ru",wish:"Новая дорога к цели",aspect:"portrait",
     durationSeconds:60,avoid:"море и вода",style:"dream"});
-  assert.equal(draft.plan.shotCount,6);
+  assert.equal(draft.plan.shotCount,4);
   assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),60);
-  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,6);
+  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,4);
   assert.ok(draft.plan.shots.every(s=>!/sea|water|coast|stream|wave/i.test(s.visualCue)));
   assert.match(draft.prompt,/60s/);
   const changed=buildFirstVideoDraft({locale:"ru",wish:"Важный новый путь",promptOverride:"Свет и солнце"});
@@ -74,7 +78,7 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(ui,/data-first-video-wish/);
   assert.match(ui,/data-first-video-filters/);
   assert.match(ui,/data-first-video-hydrated/);
-  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !wish\.trim\(\)\}/);
+  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !draft \|\| !wish\.trim\(\)\}/);
   assert.match(src,/useLayoutEffect\(\(\) => \{\s*const job=jobRef\.current;/);
   assert.match(src,/backgroundOnly\?null:frameUrl/);
   assert.match(src,/data-video-result-mode/);
@@ -117,7 +121,7 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   const other=buildFirstVideoDraft({locale:"ru",wish:"Горы",durationSeconds:20,variant:1});
   assert.equal(original.plan.shots[0].sceneId,"mountain-air");
   assert.equal(other.plan.shots[0].sceneId,"mountain-air");
-  assert.match(original.prompt,/горные вершины/i);
+  assert.match(original.prompt,/горные просторы/i);
   assert.ok(!original.prompt.includes("sunlight awakening across a wide meadow"),"no generic English opening meadow");
   assert.notDeepEqual(original.plan.shots.map(s=>s.sceneId),other.plan.shots.map(s=>s.sceneId));
   assert.notEqual(original.prompt,other.prompt);
@@ -125,12 +129,12 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   for(const locale of ["en","es"]){
     const draft=buildFirstVideoDraft({locale,wish:locale==="es"?"Montañas":"Mountains"});
     assert.equal(draft.plan.shots[0].sceneId,"mountain-air");
-    assert.ok(draft.prompt.includes(locale==="es"?"cumbres montañosas":"broad open mountain sky"));
+    assert.ok(draft.prompt.includes(locale==="es"?"Montañas abiertas":"Open mountains"));
   }
   const forest=buildFirstVideoDraft({locale:"ru",wish:"Лес и деревья"});
   assert.equal(forest.plan.shots[0].sceneId,"fern-awakening");
   const cascada=buildFirstVideoDraft({locale:"es",wish:"Cascada"});
-  assert.equal(cascada.plan.shots[0].sceneId,"light-waterfall");
+  assert.equal(cascada.plan.shots[0].sceneId,"gentle-falls");
 });
 
 test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models or silent output",async()=>{
@@ -232,7 +236,7 @@ test("Food/Еда/Comida creates honest harvest storyboard instead of silently t
   assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
   assert.equal(ru.descriptionLimited,true);
   assert.match(ru.prompt,/Тема «Еда»/);
-  assert.match(ru.prompt,/поле урожая/);
+  assert.match(ru.prompt,/Солнечные поля/);
   assert.match(ru.limitationNote,/нет кадров блюд/);
   assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
   const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
@@ -365,7 +369,7 @@ test("six one-tap creative templates compile to real free RU/EN/ES video storybo
       assert.equal(draft.aiMediaGenerated,false);
       assert.equal(draft.plan.localPreview,true);
       assert.equal(draft.plan.paidRenderApproved,false);
-      assert.equal(draft.plan.shots.length,selection.preferences.durationSeconds===60?6:4);
+      assert.equal(draft.plan.shots.length,4);
       assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),
         selection.preferences.durationSeconds);
       assert.ok(draft.plan.shots.every(shot=>shot.sceneId&&shot.durationSeconds>0));
@@ -482,5 +486,285 @@ test("401 and 403 are shared Google key failures: skip secondary Gemini and use 
       });
     assert.equal(result.provider,"openrouter_free");
     assert.equal(count,2);
+  }
+});
+
+
+test("Server-side optional Groq router is fail closed, free-only and priority configurable",async()=>{
+  const {freeFirstVideoProviders,generateFreeFirstVideoPrompt,FIRST_VIDEO_GROQ_MODEL}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const {orderFreeTextProviders}=await import("../lib/ai/free-text-provider-route.mjs");
+  const env={
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-key-123",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-openrouter-key-123",
+    HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-key-123",
+    HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"groq_free,rogue_https://private.invalid,gemini_free",
+  };
+  assert.equal(FIRST_VIDEO_GROQ_MODEL,"openai/gpt-oss-20b");
+  assert.deepEqual(freeFirstVideoProviders(env),
+    ["groq_free","gemini_free","openrouter_free"]);
+  assert.deepEqual(orderFreeTextProviders(["gemini_free","openrouter_free"],"bad,openrouter_free"),
+    ["openrouter_free","gemini_free"]);
+  assert.deepEqual(freeFirstVideoProviders({...env,HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"false"}),
+    ["gemini_free","openrouter_free"],"an API key alone never authorizes Groq");
+  assert.deepEqual(freeFirstVideoProviders({...env,HH_FIRST_VIDEO_GROQ_API_KEY:""}),
+    ["gemini_free","openrouter_free"],"a free flag alone never authorizes Groq");
+  const urls=[];
+  const result=await generateFreeFirstVideoPrompt(
+    {locale:"es",wish:"Montañas al amanecer",theme:"auto",
+      style:"warm",aspect:"landscape",durationSeconds:20},
+    env,async (url,options)=>{
+      urls.push(url);
+      assert.equal(options.method,"POST");
+      assert.equal(options.redirect,"error");
+      assert.equal(options.headers.Authorization,"Bearer "+env.HH_FIRST_VIDEO_GROQ_API_KEY);
+      const body=JSON.parse(options.body);
+      assert.equal(body.model,FIRST_VIDEO_GROQ_MODEL);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:"Montañas doradas bajo el sol. Cuatro planos sucesivos de luz y nubes, con transiciones suaves y sin escenas inventadas."}}],
+      })};
+    });
+  assert.equal(result.provider,"groq_free");
+  assert.equal(result.model,FIRST_VIDEO_GROQ_MODEL);
+  assert.equal(urls.length,1);
+  assert.deepEqual(urls,["https://api.groq.com/openai/v1/chat/completions"]);
+  assert.ok(!JSON.stringify(result).includes(env.HH_FIRST_VIDEO_GROQ_API_KEY));
+});
+
+test("Groq 503 uses independent confirmed-free Gemini; no paid or arbitrary URL",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const env={
+    HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-key-123",
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-key-123",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"groq_free,gemini_free",
+  };
+  const urls=[];
+  const r=await generateFreeFirstVideoPrompt(
+    {locale:"en",wish:"Gentle sky and sunrise",theme:"auto",
+      style:"warm",aspect:"landscape",durationSeconds:20},
+    env,async url=>{
+      urls.push(url);
+      if(url.includes("api.groq.com"))return {ok:false,status:503};
+      assert.match(url,/^https:\/\/generativelanguage\.googleapis\.com\//);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"A calm open sky at dawn, warming mountains, four gentle successive shots of real scenery, and soft light."}]}}],
+      })};
+    });
+  assert.equal(r.provider,"gemini_free");
+  assert.equal(urls.length,2);
+  assert.deepEqual(r.diagnostics.map(x=>x.reason),["http_503"]);
+  assert.ok(!JSON.stringify(r).includes(env.HH_FIRST_VIDEO_GROQ_API_KEY));
+});
+
+
+test("v1 schema preserves all eight creative filters, explicitly selected values and render options",()=>{
+  const preferences={theme:"goals",style:"dream",aspect:"portrait",
+    durationSeconds:60,motion:"dynamic",music:"meditation",caption:true,avoid:"море и ночь"};
+  const request=makeFirstVideoPromptRequest({
+    locale:"ru",wish:"Горы и свобода",preferences,selectedFields:[...FIRST_VIDEO_PROMPT_FILTER_KEYS],
+    templateId:"morning-light",variant:2,manualPrompt:"Свет на горных вершинах",
+    renderOptions:{quality:"fullhd",brightness:"bright",audioVolumePercent:42},
+  });
+  assert.equal(request.schemaVersion,FIRST_VIDEO_PROMPT_CONTRACT_VERSION);
+  assert.equal(request.consent,true);
+  for(const field of FIRST_VIDEO_PROMPT_FILTER_KEYS)
+    assert.deepEqual(request[field],preferences[field],"filter lost: "+field);
+  const parsed=parseFirstVideoPromptInput(JSON.parse(JSON.stringify(request)));
+  assert.ok(parsed,"backend must accept the exact browser payload");
+  assert.deepEqual(parsed.selectedFields,[...FIRST_VIDEO_PROMPT_FILTER_KEYS]);
+  assert.equal(parsed.templateId,"morning-light");
+  assert.equal(parsed.variant,2);
+  assert.equal(parsed.manualPrompt,"Свет на горных вершинах");
+  assert.deepEqual(parsed.renderOptions,{quality:"fullhd",brightness:"bright",audioVolumePercent:42});
+  assert.equal(Object.hasOwn(request,"photoUrl"),false);
+  assert.equal(Object.hasOwn(request,"uploadedAudio"),false);
+  assert.equal(Object.hasOwn(request,"tests"),false);
+});
+
+test("v1 prompt context uses only verified local scene IDs and honors every parameter",()=>{
+  const options={
+    locale:"ru",wish:"Горы",preferences:{theme:"auto",style:"nature",aspect:"square",
+      durationSeconds:30,motion:"dynamic",music:"none",caption:false,avoid:"море"},
+    selectedFields:["style","aspect","motion","music","caption","avoid"],
+    variant:1,renderOptions:{quality:"hd",brightness:"soft",audioVolumePercent:75},
+  };
+  const request=makeFirstVideoPromptRequest(options);
+  const context=buildFirstVideoPromptContext(parseFirstVideoPromptInput(request));
+  assert.equal(context.contractVersion,FIRST_VIDEO_PROMPT_CONTRACT_VERSION);
+  assert.equal(context.visitorWish,"Горы");
+  assert.equal(context.effectiveFilters.motion,"dynamic");
+  assert.equal(context.effectiveFilters.music,"none");
+  assert.equal(context.effectiveFilters.caption,false);
+  assert.equal(context.effectiveFilters.avoid,"море");
+  assert.equal(context.effectiveFilters.aspect,"square");
+  assert.equal(context.effectiveFilters.durationSeconds,30);
+  assert.equal(context.scenarioVariant,1);
+  assert.deepEqual(context.localRendering,{quality:"hd",brightness:"soft",audioVolumePercent:75});
+  assert.equal(context.verifiedLocalStoryboard.shotCount,4);
+  assert.equal(context.verifiedLocalStoryboard.scenes[0].sceneId,"mountain-air");
+  const allowed=new Set(context.availableSceneChoices.map(x=>x.sceneId));
+  assert.ok(context.verifiedLocalStoryboard.scenes.every(x=>allowed.has(x.sceneId)));
+  assert.ok(!context.availableSceneChoices.some(x=>/sea|ocean|wave|coast/i.test(x.visualCue)),
+    "visual exclusion must constrain the catalog as well as the narrative");
+  assert.ok(JSON.stringify(context).length<6500,"provider input remains bounded");
+  assert.ok(!JSON.stringify(context).includes("photoUrl"));
+});
+
+test("v1 request rejects unknown personal data, invalid filters and injection-shaped structure",()=>{
+  const base=makeFirstVideoPromptRequest({
+    locale:"es",wish:"Naturaleza",preferences:{
+      theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20,
+      motion:"slow",music:"none",caption:false,avoid:"",
+    },
+  });
+  assert.equal(parseFirstVideoPromptInput(base)?.motion,"slow");
+  assert.equal(parseFirstVideoPromptInput(base)?.caption,false);
+  for(const extra of [
+    {photoUrl:"blob:private"},{accountId:"account-123"},{medicalTests:{score:5}},
+    {profile:{email:"someone@example.com"}},{wish:"x"},{avoid:"a".repeat(141)},
+    {motion:"teleport"},{music:"expensive"},{caption:"true"},
+    {schemaVersion:"unknown-v999"},{variant:100},{templateId:"forged-template"},
+    {selectedFields:["theme","theme"]},{selectedFields:["secret"]},
+    {manualPrompt:"secret\u0000injection"},
+    {renderOptions:{quality:"1080p",brightness:"bright",audioVolumePercent:80}},
+    {renderOptions:{quality:"hd",brightness:"bright",audioVolumePercent:101}},
+    {renderOptions:{quality:"hd",brightness:"bright",audioVolumePercent:50,apiKey:"secret"}},
+  ]){
+    assert.equal(parseFirstVideoPromptInput({...base,...extra}),null,
+      "should reject "+JSON.stringify(Object.keys(extra)));
+  }
+  const legacy={locale:"ru",wish:"Горы",theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20};
+  const old=parseFirstVideoPromptInput(legacy);
+  assert.ok(old,"old production browsers need compatible defaults");
+  assert.deepEqual([old.motion,old.music,old.caption,old.avoid,old.variant],["slow","none",false,"",0]);
+});
+
+test("Gemini and OpenRouter receive identical fully selected v1 creative brief with consent",async()=>{
+  const {generateFreeFirstVideoPrompt,firstVideoSystemPrompt}=
+    await import("../lib/mandala/first-video-free-providers.mjs");
+  const input=parseFirstVideoPromptInput(makeFirstVideoPromptRequest({
+    locale:"ru",wish:"Еда и овощи",preferences:{
+      theme:"life",style:"nature",aspect:"portrait",durationSeconds:30,
+      motion:"dynamic",music:"harmony",caption:true,avoid:"море",
+    },
+    selectedFields:["theme","style","aspect","durationSeconds","motion","music","caption","avoid"],
+    renderOptions:{quality:"fullhd",brightness:"bright",audioVolumePercent:64},
+  }));
+  assert.match(firstVideoSystemPrompt("ru"),/explicitlySelectedFilters/);
+  assert.match(firstVideoSystemPrompt("ru"),/effectiveFilters/);
+  const seen=[];
+  const env={HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"mock-gemini-only-key",
+    HH_COUNCIL_OPENROUTER_API_KEY:"mock-openrouter-only-key"};
+  const reply=await generateFreeFirstVideoPrompt(input,env,async(url,options)=>{
+    const body=JSON.parse(options.body);
+    const idea=url.includes("googleapis.com")
+      ?body.contents[0].parts[0].text:body.messages[1].content;
+    seen.push({url,context:JSON.parse(idea)});
+    return seen.length===1?{status:429,ok:false}:{
+      status:200,ok:true,text:async()=>JSON.stringify({
+        choices:[{message:{content:"Золотое поле урожая и цветущий сад. Четыре существующих природных сцены в мягком свете и с плавными переходами."}}],
+      }),
+    };
+  });
+  assert.equal(reply.provider,"openrouter_free");
+  assert.equal(seen.length,2);
+  assert.deepEqual(seen[0].context,seen[1].context,"fallback lost selected filters");
+  assert.equal(seen[0].context.effectiveFilters.motion,"dynamic");
+  assert.equal(seen[0].context.effectiveFilters.music,"harmony");
+  assert.equal(seen[0].context.effectiveFilters.caption,true);
+  assert.equal(seen[0].context.effectiveFilters.avoid,"море");
+  assert.equal(seen[0].context.localRendering.quality,"fullhd");
+  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"golden-harvest");
+  assert.ok(!seen[0].context.availableSceneChoices.some(x=>/cooking|dishes|kitchen/i.test(x.visualCue)));
+});
+
+test("UI sends complete filter contract; server retains consent, origin and rate gates",()=>{
+  const ui=readFileSync(new URL("../components/mandala-first-video-start.tsx",import.meta.url),"utf8");
+  const provider=readFileSync(new URL("../lib/mandala/first-video-free-providers.mjs",import.meta.url),"utf8");
+  const route=readFileSync(new URL("../app/api/holistic-support/first-video-prompt/route.js",import.meta.url),"utf8");
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(ui,/makeFirstVideoPromptRequest\(\{/);
+  assert.match(ui,/selectedFields:selectedFilterKeys,templateId:selectedTemplateId,variant/);
+  assert.match(ui,/manualPrompt:mode==="manual"\?promptOverride:null/);
+  assert.match(ui,/data-first-video-motion/);
+  assert.match(ui,/data-first-video-caption/);
+  assert.match(editor,/renderOptions=\{\{quality,brightness,audioVolumePercent:soundVolume\}\}/);
+  assert.match(provider,/JSON\.stringify\(buildFirstVideoPromptContext\(input\)\)/);
+  assert.match(route,/parseFirstVideoPromptInput\(body\)/);
+  assert.match(route,/FIRST_VIDEO_PROMPT_ALLOWED_FIELDS/);
+  assert.match(route,/requireSameOrigin\(request,config\)/);
+  assert.match(route,/body\.consent!==true/);
+  assert.match(route,/consumeRate\(config/);
+  assert.doesNotMatch(ui,/photoUrl:|testResults:|profileId:/);
+});
+
+
+test("free OpenRouter and Groq normalize strictly typed text segments",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"en",wish:"Calm mountain sunrise",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  for(const [provider,env] of [
+    ["openrouter_free",{HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+      HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential"}],
+    ["groq_free",{HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+      HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-credential"}],
+  ]){
+    let called=0;
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url,options)=>{
+      called++;
+      assert.equal(options.method,"POST");
+      assert.equal(options.redirect,"error");
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:[
+          {type:"text",text:"A quiet golden mountain sunrise. "},
+          {type:"text",text:"Four gentle real landscape shots with soft light and connected transitions."},
+        ]}}],
+      })};
+    });
+    assert.equal(out.provider,provider);
+    assert.equal(called,1);
+    assert.match(out.prompt,/quiet golden mountain sunrise/i);
+    assert.match(out.prompt,/Four gentle real landscape shots/);
+    assert.ok(!JSON.stringify(out).includes("credential"));
+  }
+});
+
+test("free OpenRouter rejects image, tool, and malformed parts and uses independent Gemini",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"es",wish:"Luz suave en la montaña",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  const env={HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential",
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-credential",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"openrouter_free,gemini_free"};
+  for(const invalid of [
+    [{type:"text",text:"Start"},{type:"image_url",image_url:{url:"data:image/png;base64,xxx"}}],
+    [{type:"tool_call",text:"Not visual output"}],
+    [{type:"text",text:12}],
+    [],
+  ]){
+    const seen=[];
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url)=>{
+      seen.push(url);
+      if(seen.length===1)return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:invalid}}],
+      })};
+      assert.match(url,/generativelanguage\.googleapis\.com/);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"Montañas bañadas por luz suave. Cuatro paisajes naturales sucesivos, con transiciones tranquilas y movimiento real."}]}}],
+      })};
+    });
+    assert.equal(out.provider,"gemini_free");
+    assert.equal(seen.length,2);
+    assert.deepEqual(out.diagnostics.map(x=>x.reason),["invalid_text"]);
+    assert.ok(!JSON.stringify(out).includes("test-only-router-credential"));
   }
 });

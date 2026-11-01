@@ -201,25 +201,33 @@ jobs:
       # selects focused/full acceptance. Contracts-only PRs use Core's build;
       # sensitive payments/auth/checkout changes retain required real E2E.
       - name: Cache exact Playwright Chromium and WebKit browsers
-        if: ${{ steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
+        env:
+          HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
         run: |
+          set -euo pipefail
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          if [[ "$HH_PUBLIC_BROWSER_ENGINES" == chromium ]]; then
+            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
+          else
+            # Full sensitive acceptance retains iPhone/WebKit and checkout QA.
+            /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+          fi
       - name: Canonical Homeopathy / Alchemy service routing regression
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} cases=${{ steps.scope.outputs.cases }}. Sensitive/runtime changes must pass selected real-browser acceptance; contracts-only changes rely on focused source checks and required Core.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} pr_heavy=${{ steps.scope.outputs.pr_heavy }} engines=${{ steps.scope.outputs.engines }} cases=${{ steps.scope.outputs.cases }}. Safe CSS uses Core build/source tests; focused public UI runs selected engines; sensitive/unknown uses full real browser.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        if: ${{ steps.scope.outputs.build == 'true' }}
+        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
@@ -339,7 +347,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always() && steps.scope.outputs.build == 'true'
+        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
           path: |
