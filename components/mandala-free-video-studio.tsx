@@ -1624,7 +1624,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? firstPartyFilmFor(cinematicPlan.shots[0].theme,cinematicPlan.shots[0].sceneId)?.src
     : activeFilm?.src;
   const originalFallbackMp4=originalFallbackCandidate &&
-    /^\\/videos\\/holistic-house\\/[a-z0-9_-]+(?:\\/[a-z0-9_-]+)*\\.mp4$/.test(originalFallbackCandidate)
+    /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/.test(originalFallbackCandidate)
     ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
