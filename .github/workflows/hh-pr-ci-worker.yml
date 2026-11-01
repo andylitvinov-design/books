@@ -17,12 +17,13 @@ on:
     paths:
       - '.github/workflows/hh-pr-ci-worker.yml'
       - 'scripts/ci-pr-ci-worker.cjs'
+      - 'scripts/ci-pr-owner-issue-writes.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
 permissions:
   contents: read
   actions: read
   issues: write
-  pull-requests: read
+  pull-requests: write
 concurrency:
   group: hh-pr-ci-worker
   cancel-in-progress: false
@@ -56,6 +57,7 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ci-worker.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
+            const {withOwnerIssueWrites}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-owner-issue-writes.cjs');
             // A GITHUB_TOKEN-created commit would suppress push/PR CI. Reuse
             // the already-configured owner AutoMerge token instead. No new
             // service, AI billing or paid API is involved.
@@ -120,7 +122,8 @@ jobs:
               }
             }:null;
             await run({
-              github,core,context,sourceGit,
+              github:withOwnerIssueWrites(github,token,{owner:context.repo.owner,repo:context.repo.repo}),
+              core,context,sourceGit,
               dryRun:context.eventName==='push' ||
                 String(context.payload.inputs?.dry_run ?? 'false')==='true'
             });

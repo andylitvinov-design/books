@@ -27,3 +27,17 @@ for(const [file,cron] of [
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
 });
+
+for(const name of ['hh-pr-ten-minute-watchdog','hh-pr-ci-worker','hh-pr-repair-worker']){
+  test(name+' can write PR issue queues with scoped permission fallback',()=>{
+    const source=read(name);
+    assert.match(source,/pull-requests: write/);
+    assert.ok(source.includes('withOwnerIssueWrites'));
+    assert.ok(source.includes('ci-pr-owner-issue-writes.cjs'));
+  });
+}
+test('untrusted PR repair checkout has no owner token',()=>{
+  const source=read('hh-pr-repair-worker');
+  const fix=source.split(/^  fix:/m)[1]?.split(/^  publish:/m)[0];
+  assert.ok(fix && !fix.includes('HH_AUTOMERGE_TOKEN'));
+});

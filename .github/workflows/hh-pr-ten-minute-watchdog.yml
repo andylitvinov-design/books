@@ -10,6 +10,7 @@ on:
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'scripts/ci-pr-owner-issue-writes.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
   workflow_dispatch:
     inputs:
@@ -23,7 +24,7 @@ permissions:
   actions: write
   checks: read
   issues: write
-  pull-requests: read
+  pull-requests: write
 concurrency:
   group: hh-pr-ten-minute-watchdog
   cancel-in-progress: false
@@ -58,6 +59,7 @@ jobs:
           script: |
             const {run} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
+            const {withOwnerIssueWrites}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-owner-issue-writes.cjs');
             // Only one trusted GitHub API mutation uses the existing dedicated token.
             // Its events can start CI; a GITHUB_TOKEN base update cannot do that.
             const repairGithub=token ? {request:async(route,args)=>{
@@ -89,7 +91,8 @@ jobs:
                 headers:{'x-ratelimit-remaining':response.headers.get('x-ratelimit-remaining')}};
             }} : null;
             await run({
-              github, core, context, repairGithub,
+              github:withOwnerIssueWrites(github,token,{owner:context.repo.owner,repo:context.repo.repo}),
+              core, context, repairGithub,
               hasMergeToken: Boolean(token),
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
