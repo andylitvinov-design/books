@@ -13,11 +13,14 @@ const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
 const evidence = [];
 const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
+// Bound browser load to two fully isolated pages: all 18 EN/RU/ES cases still run.
+const supportCases = ["ru", "en", "es"].flatMap(locale =>
+  [320, 390, 430].map(width => ({ locale, width })));
 for (const browserType of [chromium, webkit]) {
   const browser = await browserType.launch({ headless: true });
   try {
-    for (const locale of ["ru", "en", "es"]) {
-      for (const width of [320, 390, 430]) {
+    for (let from = 0; from < supportCases.length; from += 2) {
+      const results = await Promise.allSettled(supportCases.slice(from, from + 2).map(async ({ locale, width }) => {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
@@ -910,9 +913,14 @@ for (const browserType of [chromium, webkit]) {
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
         } finally { await page.close(); }
-      }
+      }));
+      // Finish both in-flight pages before closing the browser; never mask failure.
+      const rejected = results.find(result => result.status === "rejected");
+      if (rejected) throw rejected.reason;
     }
   } finally { await browser.close(); }
 }
+assert.equal(evidence.length, 18, "all 18 localized mobile browser cases must pass");
+evidence.sort((a,b) => a.label.localeCompare(b.label));
 await writeFile(output+"/results.json",JSON.stringify({checks:evidence},null,2));
 console.log("Support mock fidelity browser cases: "+evidence.length+" passed.");

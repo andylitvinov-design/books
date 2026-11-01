@@ -93,12 +93,12 @@ test('iOS links only direct to verified Apple App Store; unsigned IPA and TestFl
   }
 })
 
-test('mobile public install landing is native-first, localized and has an explicitly separate PWA fallback',()=>{
+test('public install page prioritizes the working PWA, while unreleased native installers fail closed',()=>{
   const page=read('app/[locale]/install/page.jsx')
   const css=read('app/[locale]/install/install.module.css')
   const banner=read('components/free-mobile-app-banner.tsx')
   assert.match(page,/getNativePublicDownloads\(nativeReleases\)/)
-  assert.ok(page.indexOf('data-hh-native-downloads')<page.indexOf('data-hh-pwa-alternative'))
+  assert.ok(page.indexOf('data-hh-pwa-alternative')<page.indexOf('data-hh-native-downloads'))
   for(const label of ['Настоящее приложение для iPhone и Android','Real iPhone and Android applications','Aplicaciones reales para iPhone y Android']){
     assert.ok(page.includes(label),label)
   }

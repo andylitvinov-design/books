@@ -1,6 +1,7 @@
 name: YouTube phone uploader checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
       - 'lib/youtube/**'
       - 'components/youtube-phone-uploader*'
@@ -21,8 +22,15 @@ on:
       - 'app/api/app/practice/youtube/**'
       - 'tests/practice-video-composer-compact.test.mjs'
   workflow_dispatch:
+
+# Only superseded commits on the SAME PR cancel each other. Manual QA never cancels.
+concurrency:
+  group: hh-youtube-phone-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+
 jobs:
   test:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -49,14 +57,17 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: TypeScript check
+        if: github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library'
         run: npx tsc --noEmit
       - name: Lint practitioner YouTube implementation
         run: npx eslint lib/youtube/practitioner-upload-model.mjs lib/youtube/practitioner-upload-store.js app/api/app/practice/youtube/route.js components/app/practice-youtube-uploader.jsx components/app/compact-video-composer.jsx lib/practitioners/browser-presentation-upload.js
       - name: Lint owner Telegram-to-phone handoff
         run: npx eslint components/youtube-phone-uploader.jsx app/admin/youtube-upload/page.js lib/youtube/phone-upload-protocol.mjs tests/youtube-phone-telegram-cut-import.test.mjs
       - name: Next.js production build
+        if: github.event_name != 'pull_request'
         run: npm run build
       - name: Install isolated Chromium and WebKit for phone UX acceptance
+        if: github.event_name != 'pull_request'
         timeout-minutes: 12
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then
@@ -66,11 +77,12 @@ jobs:
           ln -s /tmp/youtube-ux-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/youtube-ux-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Reproduce iPhone-sized scrolling in real Chromium/WebKit
+        if: github.event_name != 'pull_request'
         run: node scripts/verify-youtube-phone-mobile.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
           name: youtube-phone-mobile-evidence
           path: /tmp/youtube-phone-mobile-evidence

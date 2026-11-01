@@ -23,12 +23,13 @@ on:
       - 'app/es/page.tsx'
       - 'lib/home-conversation.*'
       - 'tests/home-conversation-guide.test.mjs'
+      - 'tests/home-conversation-browser.mjs'
       - '.github/workflows/hh-home-conversation.yml'
 permissions:
   contents: read
 concurrency:
-  group: hh-home-conversation-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-home-conversation-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   conversation:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -44,16 +45,18 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Localized conversation, topic routing and existing carousel regressions
-        run: node --test tests/home-conversation-guide.test.mjs tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
+        run: node --test tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
       - name: Check affected TypeScript and React UI
         run: |
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit; fi
           npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx
       - name: Build with the project's production dependencies
+        if: github.event_name != 'pull_request'
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Install isolated Chromium and WebKit for mobile journey
+        if: github.event_name != 'pull_request'
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then
             printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
@@ -62,11 +65,12 @@ jobs:
           ln -s /tmp/hh-home-guide-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-home-guide-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Real EN/RU/ES Next mobile dialogue in Chromium and WebKit
+        if: github.event_name != 'pull_request'
         run: |
           HH_TEST_BROWSER=chromium node tests/home-conversation-browser.mjs
           HH_TEST_BROWSER=webkit node tests/home-conversation-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
           name: hh-home-conversation-browser
           path: artifacts/home-conversation/

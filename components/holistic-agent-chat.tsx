@@ -144,7 +144,11 @@ export function HolisticAgentChat({locale}:{locale:PublicLocale}) {
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
-    const prior=messages.slice(-6),abort=new AbortController();
+    // Keep every user turn intact for server safety preflight (UI max 2,000).
+    // Bound unusually long assistant replies without altering user risk cues.
+    const prior=messages.slice(-6).map(row=>({
+      role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
+    })),abort=new AbortController();
     controller.current=abort;setBusy(true);setStatus("");setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
