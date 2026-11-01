@@ -21,6 +21,13 @@ function wav(seconds=3) {
 // The default still exercises BOTH engines for developer/manual runs.
 const requestedEngine=process.env.HH_VOICE_E2E_ENGINE||"both";
 assert.ok(["both","webkit","chromium"].includes(requestedEngine),"unknown test browser");
+// Test a real native window/compositor on macOS WebKit only; Chromium stays headless.
+// This flag never relaxes downloaded media, PCM, consent or privacy assertions.
+const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1";
+if(process.env.HH_VOICE_E2E_HEADED==="1"){
+  assert.equal(requestedEngine,"webkit","headed media acceptance is WebKit-only");
+  assert.equal(process.platform,"darwin","headed WebKit acceptance requires macOS");
+}
 // Fail closed with evidence instead of consuming the entire macOS runner quota.
 // Actual encoded 10-second voice video should not run indefinitely.
 let lastPhase="not-started";
@@ -42,7 +49,7 @@ const watchdog=setTimeout(()=>{
 for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   .filter(([name])=>requestedEngine==="both"||name===requestedEngine)) {
   phase(engine,"launch");
-  const browser=await browserType.launch({headless:true});
+  const browser=await browserType.launch({headless:!(engine==="webkit" && headedWebKit)});
   try {
     const locale=engine==="webkit"?"ru":"en";
     const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});

@@ -62,3 +62,14 @@ test("stalled WebKit recorder diagnostics cannot conceal a real export failure",
   assert.match(source,/tracks\.includes\("audio"\)/);
   assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
 });
+
+test("WebKit macOS media acceptance is headed, real encoded audio and never a mock download",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  assert.ok(workflow.includes("HH_VOICE_E2E_HEADED: '1'"));
+  assert.ok(workflow.includes("HH_VOICE_E2E_ENGINE: webkit"));
+  assert.ok(source.includes('const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1"'));
+  assert.ok(source.includes('browserType.launch({headless:!(engine==="webkit" && headedWebKit)})'));
+  assert.ok(source.includes('assert.equal(process.platform,"darwin"'));
+  assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
+  for(const requirement of ['tracks.includes("video")','tracks.includes("audio")','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
+});

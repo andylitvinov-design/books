@@ -232,6 +232,8 @@ jobs:
       NEXT_TELEMETRY_DISABLED: '1'
       HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
       HH_VOICE_E2E_ENGINE: webkit
+      # Test real WebKit native compositor rather than frozen headless media.
+      HH_VOICE_E2E_HEADED: '1'
     steps:
       - uses: actions/checkout@v4
         with:
