@@ -181,7 +181,9 @@ async function ensureQueueLabel(github, owner, repo, pr, name, description, colo
     }
     return true;
   } catch (error) {
-    log('#' + pr.number + ' queue label ' + name + ' unavailable: ' + error.message);
+    const accepted=error.response?.headers?.['x-accepted-github-permissions'] || 'not-reported';
+    log('#' + pr.number + ' queue label ' + name + ' unavailable: status='+
+      String(error.status || 'unknown')+' accepted='+accepted+' '+error.message);
     return false;
   }
 }
@@ -598,7 +600,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
       } else if(handoffs < MAX_HANDOFFS) {
         try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
-        catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
+        catch(e){log(`#${pr.number} repair handoff unavailable: status=${e.status || 'unknown'} accepted=${e.response?.headers?.['x-accepted-github-permissions'] || 'not-reported'} ${e.message}`);}
       }
     }
   }
