@@ -168,10 +168,8 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
       } else log(`Full merge coordinator already active/recent; no duplicate dispatch`);
     } catch(e) {log('Merge coordinator dispatch unavailable: '+e.message);}
   } else if (summary.greenUnarmed&&!hasMergeToken) log('Green PRs exist, but dedicated HH_AUTOMERGE_TOKEN absent: audit-only to avoid suppressed production events');
-  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('
-');
-  log(report.replaceAll('
-','; '));
+  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\n');
+  log(report.replaceAll('\n','; '));
   await core.summary.addHeading('HH PR 10-minute watchdog').addCodeBlock(report).write();
   return summary;
 }
