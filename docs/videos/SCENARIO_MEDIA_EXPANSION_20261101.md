@@ -8,7 +8,7 @@
 - From dedicated clip capacity, 148 *additional independent MP4 masters* are needed to allocate four non-shared, same-theme clips to each current preset. This assumes all 44 existing masters can be allocated exactly once and does not yet cover new stress topics.
 - The previous 22 authored instrumental melody IDs in `scripts/generate-mandala-melodies.mjs` were referenced by the editor but their static `.wav` files were **not committed** to the production branch. 17 texture/nature WAV files already exist. `scripts/ensure-mandala-melodies.mjs` now prepares all 24 real 32s WAV masters (22 originals + 2 new classical-theme variations) in `predev` and `prebuild`; no API or paid service.
 
-| Existing theme bucket | Current MP4 masters | Dedicated slots (4 scenarios × 4) | Minimum new distinct MP4 |
+| Existing theme bucket | Current MP4 masters | Dedicated slots (8 scenarios × 4) | Minimum new distinct MP4 |
 |---|---:|---:|---:|
 | money / Дело | 16 | 32 | 16 |
 | energy / Энергия | 8 | 32 | 24 |
@@ -18,16 +18,16 @@
 | goals / Цели, дело | 1 | 32 | 31 |
 | **TOTAL** | **44** | **192** | **148** |
 
-**Стресс**: new fifth goal category is a structural requirement from the owner's newer scenario-tree specification; it is NOT claimed to have a dedicated executable four-scenario topic in the above 24. Four new stress scenarios (one new stress topic) imply at least **16 further approved dedicated MP4 slots**, unless a future taxonomy demonstrably allocates additional unique footage. Do not mark it ready based on health footage reused from another scenario. This is a *minimum*, not a final target for the expanded topic tree.
+**Стресс**: new fifth goal category is a structural requirement from the owner's newer scenario-tree specification; it is NOT claimed to have a dedicated executable four-scenario topic in the above 48. Four new stress scenarios (one new stress topic) imply at least **16 further approved dedicated MP4 slots**, unless a future taxonomy demonstrably allocates additional unique footage. Do not mark it ready based on health footage reused from another scenario. This is a *minimum*, not a final target for the expanded topic tree.
 
 ## Implemented controls
 
 1. `lib/mandala/scenario-media-coverage.mjs` is the shared deterministic audit and fair assignment planner. Validates real same-origin MP4/JPG paths, approved license metadata, four distinct IDs in every storyboard and counts *cross-scenario reuse*. The planner proposes unique, same-theme clips, giving existing matching scenes priority, filling each stage fairly, and leaving `null` slots rather than inventing assets.
 2. `npm run media:audit` checks catalogue entries AND **physical** local MP4/JPG files (including duplicate master SHA-256), reports shortages and missing original WAVs; `npm run media:plan` previews proposed assignments. Add `--dedicated` as a future release gate when the library is complete. `--apply` is intentionally disabled until the 24 inline and 24 JSON presets are migrated to one canonical catalog, ensuring that a partial v2-only rewrite can never masquerade as a complete global rebalance. Manual viewing remains required for artistic consistency.
-3. `npm run media:music` prepares each original 32s WAV only if absent or invalid; `npm run media:music:verify` checks them without generation. All 22 are synthesized from project-authored scores rather than uploading commercial recordings. They are generated during build **before Next.js serves the soundtrack URLs**.
-4. `scripts/import-scenario-video-batch.mjs` imports reviewed local **Dareful CC BY 4.0** footage (two different original source videos per new 5s H.264 film) using the existing FFmpeg-based importer. It rejects source pages reused elsewhere in the catalog and duplicate/new scene IDs; it requires *explicit* independently reviewed visual motif labels and EN/RU/ES descriptions. On success it writes the output MP4/JPG, provenance record and the taxonomy the existing Video Studio reads.
+3. `npm run media:music` prepares each original 32s WAV only if absent or invalid; `npm run media:music:verify` checks them without generation. All 24 are synthesized from project-authored scores rather than uploading commercial recordings. They are generated during build **before Next.js serves the soundtrack URLs**.
+4. `scripts/import-scenario-video-batch.mjs` imports reviewed local **Dareful CC BY 4.0** footage (two different original source videos per new 5s H.264 film) using the existing FFmpeg-based importer. It rejects original source-page or SHA-256 footage reused elsewhere in the catalog and duplicate/new scene IDs; it requires *explicit* independently reviewed visual motif labels and EN/RU/ES descriptions. On success it writes the output MP4/JPG, provenance record and the taxonomy the existing Video Studio reads.
 
-**Important:** the automation above makes an intake pipeline and fixes original music publication; it **does not conjure or falsely report** 52 additional imported stock videos. Their individual source files, license checks and human visual review remain prerequisites. No unapproved source is exposed to client rendering.
+**Important:** the automation above makes an intake pipeline and fixes original music publication; it **does not conjure or falsely report** 148 additional imported stock videos. Their individual source files, license checks and human visual review remain prerequisites. No unapproved source is exposed to client rendering.
 
 ## Operator procedure · no new subscription
 
@@ -71,4 +71,4 @@
 - Approved manifest and physical files agree. Source origin and licenses remain traceable. No unknown remote URLs, no copyrighted commercial soundtracks without verified rights.
 - Every active user goal has four meaningful variants; a topic with insufficient video is clearly flagged not-ready, never silently filled with an unrelated clip.
 - 24 WAV melodies are built and serve HTTP 200, decode, preview and export with audio. Test `npm run media:music:verify` after build and physically reopen the generated MP4 on iPhone.
-- RUN `node --test tests/scenario-media-coverage.test.mjs` before merge; release only through actual production CI and Vercel verification.
+- RUN `node --test tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs` before merge; release only through actual production CI and Vercel verification.
