@@ -410,3 +410,107 @@ test('hourly full-inventory reads use per-repo token; owner PAT is reserved for 
   assert.ok(!source.includes('github-token: ${{ secrets.HH_AUTOMERGE_TOKEN'));
   assert.ok(source.includes('if(token)'));
 });
+
+test('one GraphQL batch replaces sixteen per-PR REST mergeability reads',async()=>{
+  const all=Array.from({length:16},(_,i)=>pr(i+1));
+  const live=Object.fromEntries(all.map(p=>['p'+p.number,{
+    number:p.number,state:'OPEN',isDraft:false,mergeable:'UNKNOWN',
+    mergeStateStatus:'UNKNOWN',baseRefName:'codex/public-book-library',
+    headRefName:p.head.ref,headRefOid:p.head.sha,
+    headRepository:{nameWithOwner:'andylitvinov-design/books'},autoMergeRequest:null
+  }]));
+  let gqlCalls=0,restCalls=0,deepChecks=0;
+  const github={
+    graphql:async(query,variables)=>{
+      gqlCalls++;
+      assert.equal(variables.repo,'books');
+      assert.ok(query.includes('p16:pullRequest(number:16)'));
+      return {repository:live,rateLimit:{remaining:900}};
+    },
+    rest:{
+      pulls:{list:async()=>({data:all}),get:async()=>{restCalls++;throw Error('unnecessary REST request');}},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>{deepChecks++;throw Error('unknown state must skip checks');}}
+    }
+  };
+  const result=await run({github,core:core(),context,now:NOW,dryRun:true});
+  assert.equal(gqlCalls,1);
+  assert.equal(restCalls,0);
+  assert.equal(deepChecks,0);
+  assert.equal(result.inspected,16);
+  assert.equal(result.mergeStateUnknown,16);
+  assert.equal(result.liveBatchUsed,true);
+  assert.equal(result.graphqlRemaining,900);
+  assert.equal(result.apiRequests,4); // one inventory, two capacity, one GraphQL batch
+});
+
+test('stale GraphQL HEAD is never accepted for CI checks, labels or merge dispatch',async()=>{
+  let checks=0,labels=0,dispatches=0;
+  const p=pr(44);
+  const github={
+    graphql:async()=>({repository:{p44:{
+      number:44,state:'OPEN',isDraft:false,mergeable:'CONFLICTING',
+      mergeStateStatus:'DIRTY',baseRefName:'codex/public-book-library',
+      headRefName:p.head.ref,headRefOid:'a'.repeat(40),
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},autoMergeRequest:null
+    }},rateLimit:{remaining:900}}),
+    rest:{
+      pulls:{list:async()=>({data:[p]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>{checks++;}},
+      issues:{addLabels:async()=>{labels++;}}
+    },
+    request:async()=>{dispatches++;}
+  };
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.staleHead,1);
+  assert.equal(result.mergeConflicts,0);
+  assert.equal(checks,0);
+  assert.equal(labels,0);
+  assert.equal(dispatches,0);
+});
+
+test('low GraphQL quota safely skips deep inspection and all mutations',async()=>{
+  let checks=0;
+  const p=pr(45);
+  const github={
+    graphql:async()=>({repository:{p45:{
+      number:45,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+      mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+      headRefName:p.head.ref,headRefOid:p.head.sha,
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},autoMergeRequest:null
+    }},rateLimit:{remaining:70}}),
+    rest:{
+      pulls:{list:async()=>({data:[p]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>{checks++;throw Error('should skip');}}
+    }
+  };
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.apiRateLimited,true);
+  assert.equal(result.apiBudgetReason,'GRAPHQL_RATE_RESERVE');
+  assert.equal(result.inspected,0);
+  assert.equal(checks,0);
+});
+
+test('GraphQL outage falls back to no more than six rotating REST snapshots',async()=>{
+  const all=Array.from({length:180},(_,i)=>pr(i+1));
+  let restGets=0;
+  const github={
+    graphql:async()=>{throw Error('temporary GraphQL unavailable');},
+    rest:{
+      pulls:{
+        list:async({page})=>({data:all.slice((page-1)*100,page*100)}),
+        get:async({pull_number})=>{restGets++;return {data:{...pr(pull_number),
+          state:'open',mergeable:null,mergeable_state:'unknown'}};}
+      },
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})}
+    }
+  };
+  const result=await run({github,core:core(),context,now:NOW,dryRun:true});
+  assert.equal(result.open,180);
+  assert.equal(result.liveBatchUsed,false);
+  assert.equal(result.liveRestLookups,6);
+  assert.equal(restGets,6);
+  assert.equal(result.inspected,6);
+});
