@@ -1696,7 +1696,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   });
   // Keep the three illustrated default melodies even after a visitor uses
   // Nature-only or another filter in the OPTIONAL advanced audio workspace.
-  const featuredMelodies=recommendMandalaAudio({
+  const featuredMelodies = recommendMandalaAudio({
     theme,kind:"melody",mood:"all",pace:"all",voiceFriendly:false,wish,
   });
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
