@@ -47,6 +47,43 @@ test('every open production PR is inventoried, but writes are capped',async()=>{
   assert.ok(f.counts.adds.every(x=>x.labels.some(y=>y.startsWith('hh:direction:'))));
   assert.ok(result.apiRequests<115);
 });
+test('trusted initial dispatch drains backlog through bounded serial batches',async()=>{
+  const items=Array.from({length:50},(_,i)=>
+    pr(i+1,i%2?'feat(reiki): course':'feat(video): render'));
+  const f=fixture(items);
+  const continued=[];
+  f.github.rest.actions={createWorkflowDispatch:async args=>{
+    continued.push(args);return {data:{},headers:{'x-ratelimit-remaining':'1300'}};
+  }};
+  const selectedContext={...context,eventName:'workflow_dispatch',
+    payload:{inputs:{dry_run:'false',batch:'0'}}};
+  const result=await run({github:f.github,core:core(),context:selectedContext,
+    now:NOW,maxUpdates:4});
+  assert.equal(result.updated,4);
+  assert.equal(result.pending,46);
+  assert.equal(result.nextBatch,1);
+  assert.equal(continued.length,1);
+  assert.equal(continued[0].workflow_id,'hh-pr-direction-watcher.yml');
+  assert.deepEqual(continued[0].inputs,{dry_run:'false',batch:'1'});
+});
+test('bootstrap never chains from schedule, dry-run, or after its hard cap',async()=>{
+  const items=Array.from({length:50},(_,i)=>pr(i+1));
+  for(const scenario of [
+    {eventName:'schedule',inputs:{batch:'0'},dryRun:false,want:null},
+    {eventName:'workflow_dispatch',inputs:{batch:'0'},dryRun:true,want:null},
+    {eventName:'workflow_dispatch',inputs:{batch:'11'},dryRun:false,want:null}
+  ]){
+    const f=fixture(items);
+    let dispatched=0;
+    f.github.rest.actions={createWorkflowDispatch:async()=>{dispatched++;}};
+    const result=await run({github:f.github,core:core(),context:{
+      ...context,eventName:scenario.eventName,payload:{inputs:scenario.inputs}},
+      dryRun:scenario.dryRun,now:NOW,maxUpdates:4});
+    assert.equal(result.nextBatch,scenario.want);
+    assert.equal(dispatched,0);
+    if(scenario.inputs.batch==='11')assert.equal(result.reason,'BOOTSTRAP_BATCH_LIMIT');
+  }
+});
 test('legacy manual priority is cleaned but independent Repair labels remain intact',async()=>{
   const item=pr(40,'feat(voice): guest TTS',{labels:[
     {name:'hh:priority:p0'},{name:'hh:repair-needed'}

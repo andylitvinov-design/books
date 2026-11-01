@@ -9,6 +9,11 @@ on:
         type: boolean
         default: false
         required: false
+      batch:
+        description: 'Bounded bootstrap continuation (0–11); never changes source code'
+        type: string
+        default: '0'
+        required: false
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -20,6 +25,7 @@ on:
       - 'tests/ci-pr-direction-watcher.test.cjs'
 permissions:
   contents: read
+  actions: write
   issues: write
   pull-requests: read
 concurrency:

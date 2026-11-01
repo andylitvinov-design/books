@@ -14,6 +14,10 @@ const MAX_REQUESTS=115;
 const MIN_RATE_RESERVE=100;
 const MAX_WRITES=18;
 const MAX_PATH_READS=5;
+// A single trusted bootstrap dispatch can drain the historical PR inventory
+// even when GitHub's schedule event is temporarily unobserved. At most 12
+// serial runs, 18 metadata-only updates each; never recursive from cron/push.
+const MAX_BOOTSTRAP_BATCH=11;
 
 const LABELS=[
   ...POLICY.directions.map(d=>({name:'hh:direction:'+d.id,color:'5319e7',
@@ -85,7 +89,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     inventoried:0,production:0,defaultBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
     pathProbes:0,createdLabels:0,blockedOverrides:0,
     byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},byDirection:{},
-    selected:[],errors:0,apiRequests:0,apiRemaining:null,paused:false,reason:null};
+    selected:[],errors:0,apiRequests:0,apiRemaining:null,paused:false,
+    nextBatch:null,reason:null};
   const finish=async()=>{
     log(JSON.stringify(summary));
     await core.summary.addHeading('HH Development Direction Watcher — five-level policy')
@@ -218,6 +223,35 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     }
   }
   summary.pending=Math.max(0,summary.pending-summary.updated);
+  // Initial rollout must not depend on a cron registration which GitHub
+  // sometimes silently omits. A GITHUB_TOKEN workflow_dispatch is exempt
+  // from normal GitHub Actions recursion suppression. Concurrency serializes
+  // the handoff; a hard batch limit, progress check, API reserve and no-op
+  // on scheduled/push runs prevent an unbounded Actions event storm.
+  if(context.eventName==='workflow_dispatch' && !dryRun &&
+     summary.pending>0 && summary.updated>0 &&
+     summary.errors===0 && !summary.paused){
+    const raw=String(context.payload?.inputs?.batch ?? '0');
+    const batch=/^(?:0|[1-9][0-9]?)$/.test(raw)?Number(raw):NaN;
+    if(!Number.isSafeInteger(batch)||batch>=MAX_BOOTSTRAP_BATCH){
+      summary.reason||='BOOTSTRAP_BATCH_LIMIT';
+    } else {
+      try{
+        await limited('continue-bootstrap',()=>github.rest.actions.createWorkflowDispatch({
+          owner,repo,workflow_id:'hh-pr-direction-watcher.yml',
+          ref:'codex/bootstrap-books',
+          inputs:{dry_run:'false',batch:String(batch+1)}
+        }));
+        summary.nextBatch=batch+1;
+        log('BOOTSTRAP_CONTINUATION_DISPATCHED nextBatch='+summary.nextBatch+
+          ' remaining='+summary.pending);
+      }catch(error){
+        summary.errors++;
+        summary.reason||='BOOTSTRAP_CONTINUATION_FAILED';
+        log('Bootstrap continuation unavailable: '+error.message);
+      }
+    }
+  }
   return finish();
 }
 module.exports={run,readOpenPRs,ensureKnownLabels,selectReclassification,LABELS,PROD,DEFAULT,TARGETS};
