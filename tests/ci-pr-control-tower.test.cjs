@@ -37,7 +37,7 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  request:async()=>({data:{workflow_runs:recent}})};
  return {github,calls,capacityFn:async()=>cap(active,queued)};
 }
-const proof=(sha=SHA)=>({body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'});
+const proof=(sha=SHA)=>({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'});
 test('task identity includes PR, exact HEAD and lane; manual holds are excluded',()=>{
  const a=pr(1);assert.equal(validPR(a),true);assert.equal(laneOf(a),'repair');
  const x=taskFor(a,{tier:'P1',direction:'video'});
@@ -481,4 +481,10 @@ test('expired active foreign lease cannot be stolen by a second worker',()=>{
   JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
  assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify(old)}],NOW),'FREE');
+});
+
+test('forged source receipt cannot reserve or dispatch a source task',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[{...proof(),user:{id:123,login:'outsider',type:'User'}}]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
 });

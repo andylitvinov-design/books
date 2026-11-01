@@ -16,7 +16,7 @@ function fixture(options={}){
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
-      listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
+      listComments:async()=>({data:options.comments ?? [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
       createComment:async({body})=>{log.comments++;log.commentBodies.push(body)},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
@@ -59,7 +59,7 @@ test('Repair Worker reads owner lease and exact-head source receipt beyond page 
  f.github.rest.issues.listComments=async({page,per_page})=>{
   assert.equal(per_page,100);pages.push(page);
   return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):
-   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  core.outputs={};
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
@@ -163,7 +163,7 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
     lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
   assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
-  const f=fixture({comments:[{body:wrap(old)},{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
+  const f=fixture({comments:[{body:wrap(old)},{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
@@ -205,7 +205,7 @@ test('current mergeability overrides stale conflict labels for exact-head source
   assert.equal(f.log.comments,1);
 });
 test('a source label without a trusted receipt for exact HEAD never edits newer code',async()=>{
-  const f=fixture({comments:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
+  const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
   assert.equal(hasVerifiedSourceHandoff([{body:'not verified'}],sha),false);
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'skipped');
@@ -280,4 +280,12 @@ test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
  assert.match(yml,/status:'skipped_stale_head',reason:'STALE_HEAD_ABORTED'/);
  assert.match(yml,/source_published:false/);
  assert.match(yml,/if \(error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'\) throw error/);
+});
+
+test('forged source receipt cannot authorize a repair claim',async()=>{
+ const forged={body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}};
+ assert.equal(hasVerifiedSourceHandoff([forged],sha),false);
+ const f=fixture({comments:[forged]});
+ assert.equal((await claim({github:f.github,core,context,hasToken:true,number:11})).status,'skipped');
+ assert.equal(f.log.comments,0);
 });
