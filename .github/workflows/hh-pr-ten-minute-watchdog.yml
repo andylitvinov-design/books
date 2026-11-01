@@ -2,6 +2,13 @@ name: HH PR 10-minute watchdog
 on:
   schedule:
     - cron: '7,17,27,37,47,57 * * * *'
+  # A code/workflow change runs a safe read-only smoke test immediately.
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
+      - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -30,6 +37,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
       - name: Test watchdog decisions without network
+        if: github.event_name != 'schedule'
         run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs
       - name: Reconcile complete PR inventory; retry transient CI; hand off red source; dispatch guarded merge
         uses: actions/github-script@v7
@@ -42,5 +50,5 @@ jobs:
             await run({
               github, core, context,
               hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
-              dryRun: String(context.payload.inputs?.dry_run ?? 'false') === 'true'
+              dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
