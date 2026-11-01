@@ -61,6 +61,48 @@ const bufferFromStream = async stream => {
 };
 
 let passes = 0;
+// The desktop music controls must remain inside their own card and accept a
+// real click. A legacy absolute-positioned check previously escaped to the
+// top of the viewport under the sitewide banner at desktop widths.
+async function verifyDesktopAudioControls() {
+ for (const [engine,browserType] of [['chromium',chromium],['webkit',webkit]]) {
+  const browser = await browserType.launch({headless:true});
+  try {
+    for (const [locale,width] of ['ru','en','es'].flatMap(locale=>[390,1280].map(width=>[locale,width]))) {
+      const context=await browser.newContext({viewport:{width,height:800},serviceWorkers:"block"});
+      try {
+        const page=await context.newPage();
+        await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded"});
+        // Director goals are portaled only after React hydration.
+        await expect(page.locator('[data-video-director-goal-controls] [data-auto-video-category]').first())
+          .toBeVisible({timeout:30000});
+        // In the approved iPhone flow, sound belongs to Support Phrases.
+        // Desktop displays this same real rail in the Video editor.
+        if(width<=759)await page.locator('[data-video-quick-control="phrases"]').click();
+        const choice=page.locator('[data-video-quick-music-check]').first();
+        const card=page.locator('[data-video-quick-audio-track]').first();
+        await expect(choice).toBeVisible({timeout:30000});
+        const [buttonRect,cardRect]=await Promise.all([choice.boundingBox(),card.boundingBox()]);
+        assert.ok(buttonRect && cardRect && buttonRect.width>=44 && buttonRect.height>=44 &&
+          buttonRect.x>=cardRect.x && buttonRect.y>=cardRect.y &&
+          buttonRect.x+buttonRect.width<=cardRect.x+cardRect.width &&
+          buttonRect.y+buttonRect.height<=cardRect.y+cardRect.height,
+        engine+' '+locale+' '+width+'px soundtrack checkbox must be a usable target inside its own card');
+        await choice.click();
+        await expect(choice).toHaveAttribute('aria-checked','true');
+        await choice.click();
+        await expect(choice).toHaveAttribute('aria-checked','false');
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+ }
+}
+await verifyDesktopAudioControls();
+if (process.env.HH_MANDALA_DESKTOP_AUDIO_ONLY === '1') process.exit(0);
 // Run both real engines concurrently, but cap resource use at one isolated
 // context per engine (two total); preserve all six viewports per engine.
 const engines = [["webkit", webkit], ["chromium", chromium]];
@@ -134,6 +176,19 @@ const runEngine = async ([engine, browserType]) => {
         await expect(initialAdvanced).toHaveAttribute("aria-expanded","false");
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
+        // Free Help is a real launcher for #2913's existing AI Director; it
+        // cannot start AI requests until the user checks the explicit opt-in.
+        const helpDetails=quick.locator("[data-video-director-chat-details]");
+        assert.equal(await helpDetails.getAttribute("open"),null,
+          "the original compact mock has no expanded duplicate chat");
+        if(locale==="ru"&&width===390){
+          await quick.locator("[data-auto-video-clarify]").click();
+          await expect(helpDetails).toHaveAttribute("open","",{timeout:10000});
+          await expect(helpDetails.locator("[data-video-director-chat]")).toBeVisible();
+          await expect(helpDetails.locator("input[type=checkbox]")).not.toBeChecked();
+          await helpDetails.locator(":scope > summary").click();
+          await expect(helpDetails).not.toHaveAttribute("open","",{timeout:10000});
+        }
         await initialAdvanced.click(); // Expand only for existing full-editor E2E below.
         await expect(initialAdvanced).toHaveAttribute("aria-expanded","true");
         // A shared direct link to the Audio picker must reveal the Music
