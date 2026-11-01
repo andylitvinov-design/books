@@ -11,7 +11,10 @@ for(const name of ['hh-course-presets','hh-energywork-ai','practitioner-presenta
    ? 'app/\\[locale\\]/app/\\[\\[...path\\]\\]/page.jsx'
    : 'app/api/app/\\[...path\\]/route.js'
  assert.ok(patterns.includes(expected), 'Literal Next route must remain in the trigger')
- assert.ok(patterns.every(pattern=>!/(?<!\\)[\[\]]/.test(pattern)), 'No unescaped Next directory brackets')
+ const aggregatorAlias = 'app/api/app/[[]...path[]]/route.js'
+ assert.ok(patterns.every(pattern=>pattern===aggregatorAlias || !/(?<!\\)[\[\]]/.test(pattern)), 'Next brackets must be escaped or use the literal-class router alias')
+ if(['hh-course-presets','hh-cabinet-journey'].includes(name))
+  assert.ok(patterns.includes(aggregatorAlias), 'BASE-trusted Node matcher must find the shared API route')
  const api=patterns.find(p=>p.includes('...path'))
  assert.equal(api.replaceAll('\\[','[').replaceAll('\\]',']'), name === 'holistic-house-mobile-install'
    ? 'app/[locale]/app/[[...path]]/page.jsx' : 'app/api/app/[...path]/route.js')

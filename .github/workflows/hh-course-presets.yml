@@ -30,6 +30,7 @@ on:
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
       - 'app/api/app/course/**'
       - 'app/api/app/\[...path\]/route.js'
+      - 'app/api/app/[[]...path[]]/route.js'
       - 'app/api/app/courses/**'
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'components/energywork-ai-learner.*'

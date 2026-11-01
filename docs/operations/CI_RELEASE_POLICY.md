@@ -80,6 +80,10 @@ Next.js API dispatcher `app/api/app/[...path]/route.js` is a distinct
 high-risk cross-domain dependency: its actual modification still dispatches
 Course, Cabinet, Practice Visual, Public Services, Site Video, Coaching and
 Interpretation owner checks. Direct isolated Messenger API paths do not.
+Both an escaped GitHub glob and the equivalent literal bracket-character-class
+alias are retained for this one exact Next.js catch-all route. The alias
+keeps Node's BASE-trusted `path.matchesGlob` matcher aligned with GitHub;
+neither glob matches an unrelated Messenger child route.
 
 **Coverage that cannot be removed:** unconditional Core classification/lint
 (and TypeScript/Next build for application changes; CI-policy-only changes retain
