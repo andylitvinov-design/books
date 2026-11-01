@@ -15,7 +15,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
  assert.match(studio,/Гипнотерапия/);
- assert.match(studio,/Психокоррекция/);
+ assert.match(studio,/Гипнокоррекция/);
  assert.match(studio,/Курсы и медитации/);
  assert.match(studio,/Герои и образы/);
 });
