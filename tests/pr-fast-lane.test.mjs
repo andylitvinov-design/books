@@ -1134,6 +1134,30 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   })), live, event, 102), false, 'truncated current-head checks fail closed');
 });
 
+test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate synchronize triggers', () => {
+  const native = workflow('hh-native-auto-merge.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
+  assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review\]/);
+  assert.doesNotMatch(nativeEvents, /synchronize/,
+    'new source commits must not start an extra privileged native AutoMerge workflow');
+  assert.match(native, /^  workflow_run:\s*$/m);
+  assert.ok(native.includes("      - 'HH PR core release gate'"),
+    'successful exact-HEAD Core CI must still wake the trusted native listener');
+  const enable = native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
+    'the current source run association must not be weakened');
+  assert.ok(enable.includes("job.name === \"hh-core-verified\""),
+    'native merge must still verify real successful Core');
+  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
+    'retain actual legacy branch protection until admin migration');
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
+    'Core CI MUST still rerun for every source push');
+  assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
+});
+
 test('legacy release-ready is a short fail-closed facade over Core and specialist verification',()=>{
   const source=workflow('hh-pr-core-release.yml');
   const specialist=source.split(/^  hh-specialists-verified:/m)[1]?.split(/^  release-ready:/m)[0];
