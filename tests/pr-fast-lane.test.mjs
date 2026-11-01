@@ -926,7 +926,9 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('pr.head.repo?.full_name !== fullRepo'), 'must skip forks');
   assert.ok(enable.includes('pr.mergeable !== true'), 'must refuse conflicted PRs');
   assert.ok(enable.includes('expectedHead !== pr.head.sha'), 'must reject stale PR events');
-  assert.ok(enable.includes('branch: pr.head.ref, per_page: 100'), 'must query PR branch because CI head_sha may be synthetic');
+  assert.ok(enable.includes('branch: pr.head.ref,') &&
+    enable.includes('per_page: pageSize, page: pageNumber'),
+    'must query current PR branch with bounded pagination because CI head_sha may be synthetic');
   assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
   assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
