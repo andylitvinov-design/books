@@ -98,6 +98,13 @@ jobs:
             /^tests\/messages-[^/]+\.test\.mjs$/,
             /^docs\/crm\/EXTERNAL_TO_PRACTITIONER_MESSENGER_20261031\.md$/,
             /^docs\/design\/MESSAGES_[^/]+\.md$/,
+            // One-off consented guest reply: explicit scoped contract only.
+            // Never include account auth, webhook, RLS or provider-send files.
+            /^components\/app\/public-enquiry-(?:contact|reply)(?:\.jsx|\.module\.css)$/,
+            /^lib\/practitioners\/public-enquiry-reply-links\.mjs$/,
+            /^lib\/practitioners\/public-service-enquiry\.js$/,
+            /^tests\/public-enquiry-reply-handoff\.test\.mjs$/,
+            /^\.github\/workflows\/hh-messages-wellness-v2\.yml$/,
             /^\.github\/workflows\/ia-v2\.yml$/,
           ]
           let messengerOnly=false
@@ -120,7 +127,7 @@ jobs:
       - name: Relevant Messenger, CRM and private-media IA unit contracts
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
         run: |
-          node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs
+          node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs
           # Server-only imports have React Server conditional exports in Next.js.
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
