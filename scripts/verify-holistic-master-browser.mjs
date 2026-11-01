@@ -39,10 +39,21 @@ async function verify(engine, locale, width) {
     assert.equal(response?.status(), 200, label + ": first screen returned HTTP 200");
     const root = page.locator("[data-holistic-first-screen]");
     await root.waitFor({state: "visible", timeout: 30000});
-    const engineCard = root.locator('[data-ideas-discovery][data-holistic-entry="true"]');
-    assert.equal(await engineCard.count(), 1, label + ": single active insight engine");
-    assert.equal(await page.locator("[data-holistic-first-screen] #ideas-title").innerText(),
+    assert.equal(await root.locator('[data-holistic-choose]').count(), 3, label + ": three first-screen choices");
+    assert.equal(await page.locator('[data-holistic-dao-screen]').count(), 0, label + ": Dao waits for an explicit choice");
+    assert.equal(await root.locator('#holistic-journey-title').innerText(),
       copy[locale].title, label + ": localized heading");
+    const daoChoice = root.locator('[data-holistic-choose="dao"]');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-holistic-choose="dao"]');
+      return Boolean(button && Object.keys(button).some(key => key.startsWith("__reactProps$")));
+    }, null, {timeout: 30000});
+    await daoChoice.tap();
+    assert.equal(await daoChoice.getAttribute('aria-expanded'), 'true', label + ": Dao choice opens the panel");
+    const panel = page.locator('[data-holistic-dao-screen]');
+    await panel.waitFor({state: 'visible', timeout: 30000});
+    const engineCard = panel.locator('[data-ideas-discovery]');
+    assert.equal(await engineCard.count(), 1, label + ": single active insight engine");
     const scenic = engineCard.locator('[class*="templeScenic"]').first();
     assert.ok((await scenic.evaluate(node => getComputedStyle(node, "::before").backgroundImage))
       .includes("ideas-pine-sharp.avif"), label + ": approved pine photograph");
@@ -54,52 +65,46 @@ async function verify(engine, locale, width) {
     assert.equal(await tab.getAttribute("aria-current"), "page");
 
 
-    // Meditation acceptance: two equal viewport cards, no seven-row mobile list.
-    const videoStage = page.locator('[data-holistic-meditation-screen="video"]');
-    const audioStage = page.locator('[data-holistic-meditation-screen="audio"]');
-    assert.equal(await videoStage.count(), 1, label + ": one video stage");
-    assert.equal(await audioStage.count(), 1, label + ": one audio stage");
-    const geometryForMeditations = await page.evaluate(() => {
-      const video = document.querySelector('[data-holistic-meditation-screen="video"]');
-      const audio = document.querySelector('[data-holistic-meditation-screen="audio"]');
-      const v = video.getBoundingClientRect(), a = audio.getBoundingClientRect();
-      return { videoHeight:v.height, audioHeight:a.height, width:document.documentElement.scrollWidth, expected:innerHeight-142 };
-    });
-    assert.ok(Math.abs(geometryForMeditations.videoHeight - geometryForMeditations.expected) <= 2,
-      label + ": video card occupies mobile safe viewport " + JSON.stringify(geometryForMeditations));
-    assert.ok(Math.abs(geometryForMeditations.videoHeight - geometryForMeditations.audioHeight) <= 2,
-      label + ": audio / video equal-height cards");
-    assert.ok(geometryForMeditations.width <= width + 2,
-      label + ": meditation cards do not overflow page width");
-    assert.equal(await videoStage.locator('iframe').count(), 0, label + ": no YouTube iframe before Play");
-    assert.equal(await videoStage.locator('a[href="#meditation-audio"]').count(), 1,
-      label + ": keyboard-usable next-stage anchor");
-    assert.equal(await audioStage.locator('audio[controls] source[type="audio/wav"]').getAttribute('src'),
-      '/audio/holistic-house-soft-melody-gentle-waves-96s.wav',
-      label + ": original instrumental WAV wired without autoplay");
-    const selectedVideo = videoStage.locator('[data-academy-course-playlist]');
-    assert.equal(await selectedVideo.getAttribute('data-video-lesson-count'),locale==="ru"?"7":"1",
-      label + ": source-backed locale-only recording count");
-    if (locale === "ru") {
-      await videoStage.locator('[data-academy-course-playlist] nav button').last().click();
-      assert.match(await videoStage.locator('[aria-live="polite"]').innerText(), /.+/,
-        label + ": next video swaps actual selected recording");
-      assert.equal(await videoStage.locator('button[aria-pressed="true"]').count(), 1,
-        label + ": one active video choice");
+    // The current meditation section exposes source-backed recordings and an
+    // explicit audio destination. Selection must never start playback.
+    const meditation = page.locator('[data-holistic-meditations]');
+    await meditation.waitFor({state: "visible", timeout: 30000});
+    const gallery = meditation.locator('[data-holistic-meditation-gallery]');
+    await gallery.waitFor({state: "visible", timeout: 30000});
+    assert.equal(await gallery.locator('iframe').count(), 0, label + ": no video playback before Play");
+    assert.ok((await gallery.locator('h3').first().innerText()).trim().length > 0,
+      label + ": real selected recording has a title");
+    assert.equal(await meditation.locator('[data-hh-live-audio-entry]').getAttribute('href'),
+      '/' + locale + '/live', label + ": audio destination uses the current locale");
+    const audioPage = await browser.newPage({viewport: {width, height: 844}});
+    try {
+      const audioResponse = await audioPage.goto(origin + '/' + locale + '/live',
+        {waitUntil: 'domcontentloaded', timeout: 60000});
+      assert.equal(audioResponse?.status(), 200, label + ": audio destination is available");
+      await audioPage.locator('[data-hh-live-listener-page]').waitFor({state: 'visible', timeout: 30000});
+    } finally { await audioPage.close(); }
+
+    const selectedVideos = gallery.locator('[data-meditation-video-id]');
+    if (locale === 'ru') {
+      assert.ok(await selectedVideos.count() > 1, label + ": multiple Russian recordings are available");
+      await selectedVideos.last().click();
+      assert.equal(await gallery.locator('[data-meditation-video-id][aria-pressed="true"]').count(), 1,
+        label + ": exactly one active recording");
+      assert.equal(await gallery.locator('iframe').count(), 0, label + ": selection does not autoplay");
     }
-    if (width === 320) {
-      await page.setViewportSize({width, height:568});
-      const shortHeight = await videoStage.evaluate(node => node.getBoundingClientRect().height);
-      assert.ok(Math.abs(shortHeight - (568-142)) <= 2,
-        label + ": 320x568 viewport card has safe height");
-      await page.setViewportSize({width, height:844});
-    }
+    const meditationGeometry = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    assert.ok(meditationGeometry.document <= meditationGeometry.viewport + 2,
+      label + ": meditation section does not overflow");
 
     const insight = engineCard.locator("[data-ideas-tao]");
     const energy = engineCard.locator("[data-ideas-energy-support]");
-    const choices = [insight, energy];
+    const diagnostic = engineCard.locator("[data-ideas-free-diagnostic]");
+    const choices = [insight, energy, diagnostic];
     assert.equal(await engineCard.locator("[data-ideas-hero-actions] > button, [data-ideas-hero-actions] > a").count(),
-      2, label + ": exactly two primary actions");
+      3, label + ": exactly three Dao actions");
     assert.equal(await energy.getAttribute("href"),
       "/" + locale + "/services/remote-energy-support", label + ": existing energy route");
     const heading = await root.boundingBox();
@@ -111,13 +116,13 @@ async function verify(engine, locale, width) {
         box.x >= -1 && box.x + box.width <= width + 1,
         label + ": primary action " + index + " has visible touch target");
     }
-    assert.equal(await root.locator("[data-ideas-preview]").count(), 1,
-      label + ": example is visibly distinct from the personal result");
+    assert.equal(await engineCard.locator("[data-ideas-preview]").count(), 0,
+      label + ": no prefilled personal result");
 
     const question = engineCard.locator("#ideas-question");
     await question.fill(copy[locale].question);
     await insight.tap();
-    const result = root.locator('[data-ideas-result="dao"]');
+    const result = engineCard.locator('[data-ideas-result="dao"]');
     await result.waitFor({state:"visible", timeout: 20000});
     assert.ok((await result.locator("[data-ideas-dao-summary]").innerText()).trim().length > 15,
       label + ": genuine symbolic response");
@@ -125,18 +130,27 @@ async function verify(engine, locale, width) {
       label + ": original words kept only in editable field");
 
     await question.fill(copy[locale].intention);
-    assert.equal(await root.locator("[data-ideas-result]").count(), 0,
+    assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
     await energy.tap();
-    await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
-      timeout: 30000,
-    });
+    try {
+      await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
+        waitUntil: "domcontentloaded", timeout: 30000,
+      });
+    } catch (error) {
+      console.error(JSON.stringify({ phase: "energy-handoff", locale, pathname: new URL(page.url()).pathname }));
+      throw error;
+    }
     assert.ok(!page.url().includes(encodeURIComponent(copy[locale].intention)),
       label + ": personal goal not embedded in URL");
     const nextScreen = page.locator("[data-remote-support-intent-first]");
     await nextScreen.waitFor({state:"visible", timeout:30000});
     const handoff = nextScreen.locator("#remote-intention");
     await handoff.waitFor({state:"visible"});
+    // The server-rendered textarea can be visible before the one-use in-memory
+    // handoff is consumed by the mounted client effect. Wait for the exact value.
+    await page.waitForFunction(expected => document.querySelector('#remote-intention')?.value === expected,
+      copy[locale].intention, {timeout: 10000});
     assert.equal(await handoff.inputValue(), copy[locale].intention,
       label + ": private same-tab goal preserved for the user's review");
     assert.equal(await nextScreen.locator("[data-lead-saved]").count(), 0,
@@ -168,6 +182,17 @@ async function verify(engine, locale, width) {
       label + ": only published practitioners or an honest empty state appear");
     await page.reload({waitUntil:"domcontentloaded"});
     await nextScreen.waitFor({state:"visible"});
+    // Prove the reloaded client is hydrated before checking the one-use value.
+    await page.waitForFunction(() => {
+      const button = document.querySelector('[data-remote-focus-chip]');
+      return Boolean(button && Object.keys(button).some(key => key.startsWith('__reactProps$')));
+    }, null, {timeout: 30000});
+    const selectedBeforeReloadCheck = await focusChoices.first().getAttribute('aria-pressed');
+    await focusChoices.first().tap();
+    await page.waitForFunction(previous => {
+      const button = document.querySelector('[data-remote-focus-chip]');
+      return button?.getAttribute('aria-pressed') === (previous === 'true' ? 'false' : 'true');
+    }, selectedBeforeReloadCheck, {timeout: 10000});
     assert.equal(await handoff.inputValue(), "",
       label + ": one-use free-text goal not restored from cookie or storage");
 
