@@ -184,7 +184,11 @@ async function verifyCoreRunOnExactHead({github,owner,repo,pr,run,limited}) {
   // even when the run itself belongs to an older commit. Verify ancestry.
   const {data} = await limited('core-merge-ancestry',()=>github.rest.repos.getCommit({
     owner,repo,ref:run.head_sha}));
-  return Array.isArray(data?.parents) && data.parents.some(p=>p.sha===pr.head.sha);
+  // A GitHub-generated pull_request synthetic merge must have exactly two
+  // ordered parents: [current base, this PR's exact HEAD]. A match on the
+  // first parent (or an arbitrary ancestor) is not evidence for this PR.
+  return Array.isArray(data?.parents) && data.parents.length === 2 &&
+    data.parents[1]?.sha === pr.head.sha;
 }
 
 async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, now, dryRun, log, limited}) {
