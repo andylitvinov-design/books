@@ -25,15 +25,19 @@ test("RU and EN YouTube destinations are different, no Russian audio on EN",()=>
   assert.match(studio,/data-video-therapy-intro="playing"/);
   const stage=studio.indexOf('data-video-live-stage');
   const hero=studio.indexOf('id="video-hero"',stage);
-  const promo=studio.indexOf('data-video-therapy-intro="playing"',hero);
   const original=studio.indexOf('data-video-preview-toggle',hero);
   const nav=studio.indexOf('data-video-quick-controls',hero);
-  assert.ok(stage>=0&&hero>stage&&promo>hero&&original>promo&&nav>original,
-    "the opt-in promo overlays the ONE existing video stage");
+  const dock=studio.indexOf('data-video-therapy-info',nav);
+  const promo=studio.indexOf('data-video-therapy-intro="playing"',dock);
+  assert.ok(stage>=0&&hero>stage&&original>hero&&nav>original&&dock>nav&&promo>dock,
+    "published intro is confined to the Practices panel after the Canvas hero");
+  assert.doesNotMatch(studio.slice(hero,nav),/data-video-therapy-intro/,
+    "no external YouTube chrome can obscure the creative editor");
   assert.match(studio,/<canvas key={aspect} ref={canvasRef}/);
   assert.match(studio,/MediaRecorder/);
   assert.match(studio,/className={videoStyles\.therapyIntroOverlay}/);
-  assert.match(css,/\.studio \.therapyIntroOverlay\{position:absolute;inset:0;z-index:7/);
+  assert.match(css,/\.studio \.therapyIntroStandalone \.therapyIntroOverlay\{/);
+  assert.match(css,/position:relative;inset:auto/);
   assert.match(css,/\.studio \.therapyIntroDirect:focus-visible/);
   assert.match(css,/@media\(max-width:355px\)/);
   assert.match(route,/<MandalaMeditationClient locale={locale}/);
@@ -43,7 +47,8 @@ test("remote iframe is mounted only on the RU visitor's deliberate click",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
   assert.match(source,/introPlaying \? \(\s*<div className={videoStyles\.therapyIntroOverlay}/);
   assert.match(source,/onClick=\{\(\)=>\{\s*premiumVideoRef\.current\?\.pause\(\);\s*setPreviewPlaying\(false\);\s*setIntroPlaying\(true\);/);
-  assert.match(source,/!introPlaying && <button className={videoStyles\.heroPlay}/);
+  assert.match(source,/<button className={videoStyles\.heroPlay}/);
+  assert.match(source,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
   assert.match(source,/className={videoStyles\.therapyIntroClose}[\s\S]*?onClick=\{\(\)=>setIntroPlaying\(false\)\}/);
   assert.match(source,/referrerPolicy="strict-origin-when-cross-origin"/);
   assert.match(source,/rel="noopener noreferrer"/);
