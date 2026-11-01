@@ -3717,7 +3717,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing}
         onApply={(presetId,seconds,outputAspect,proposal)=>{
           // Recheck that the verified four media sources still match the chosen
-          // local preset. Never invent footage, auto-publish or bypass rights.
+          // local preset. Never invent footage, send content or bypass rights.
           const existing=FREE_FILM_PRESETS.find(item=>item.id===presetId);
           if(!existing || !proposal.montage ||
              proposal.montage.presetId!==presetId ||

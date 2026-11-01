@@ -101,7 +101,7 @@ export function MandalaProfessionalPromo({
       <label className={css.label}>{t.goal}
         <select data-professional-goal value={goal} disabled={disabled}
           onChange={event=>{setGoal(event.currentTarget.value);setProposal(null);setNotice("");}}>
-          {PROFESSIONAL_TEMPLATES.map(item=><option key={item.id} value={item.goal}>{item.title[locale]}</option>)}
+          {PROFESSIONAL_TEMPLATES.map(item=><option key={String(item.id)} value={item.goal}>{item.title[locale]}</option>)}
         </select>
       </label>
       <label className={css.label}>{t.topic}
