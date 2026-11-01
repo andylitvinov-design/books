@@ -170,7 +170,13 @@ async function verify(engine, locale, width) {
       label+": no implicit consent");
     assert.equal(await enquiry.locator('button[type="submit"]').isDisabled(),true,
       label+": cannot submit without consent");
+    // Wait for the express deep-link navigation before testing the independent
+    // free CTA. Otherwise WebKit can deliver the previous hash navigation after
+    // the next waitForURL has been installed, producing a false failure.
+    const directNavigation=page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting" &&
+      url.hash==="#business-direct-request",{waitUntil:"domcontentloaded",timeout:15000});
     await page.locator('[data-business-offer="express"] [data-business-direct-option="express"]').click();
+    await directNavigation;
     assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
       label+": actual express SKU preselected on first-party contact form");
     await noOverflow("paid request");
