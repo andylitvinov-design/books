@@ -7,7 +7,9 @@ test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
   assert.ok(s.includes("workflows: ['HH PR core release gate']"));
-  assert.ok(s.includes("github.event.workflow_run.status == 'completed'"));
+  assert.ok(s.includes("github.event.workflow_run.conclusion == 'failure'"));
+  assert.ok(s.includes("github.event.workflow_run.conclusion == 'timed_out'"));
+  assert.ok(s.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
   assert.ok(s.includes("github.event.workflow_run.event == 'pull_request'"));
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
@@ -51,4 +53,13 @@ test('guarded inventory validates but expires historical exact-head sweep owners
   assert.ok(s.includes('lease.lease_expires'));
   assert.ok(s.includes('lease.state="active"'));
   assert.ok(s.includes('Unbounded active lease'));
+});
+
+test('skipped successful Core events never replace a pending failed-Core watchdog',()=>{
+  const s=read('hh-pr-ten-minute-watchdog');
+  assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
+  assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
+  assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
+  assert.ok(!s.includes("github.event.workflow_run.status == 'completed'"));
+  assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
