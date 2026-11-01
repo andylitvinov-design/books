@@ -13,6 +13,7 @@ const MAX_FILES = 8;
 const MAX_CANDIDATES = 4;
 const MAX_READS = 24;
 const RATE_RESERVE = 100;
+const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -69,22 +70,26 @@ function writeOutputs(core, values) {
   for (const [k, v] of Object.entries(values)) core.setOutput(k, String(v));
 }
 // Always inspect actionable source repairs before manual-conflict claims.
-function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES) {
-  const eligible=items=>[...new Map((items || []).filter(i=>
-    i && i.pull_request && Number.isSafeInteger(i.number) && i.number>0)
+function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES){
+  const valid=items=>[...new Map((items||[]).filter(i=>
+    i&&i.pull_request&&Number.isSafeInteger(i.number)&&i.number>0 &&
+    !(i.labels||[]).some(l=>l.name===MANUAL))
     .map(i=>[i.number,i])).values()];
-  const sourceItems=eligible(source), sourceIDs=new Set(sourceItems.map(i=>i.number));
-  const conflictItems=eligible(conflicts).filter(i=>!sourceIDs.has(i.number));
-  const rotate=(items,count)=>{
-    if(!items.length || count<=0)return [];
-    const offset=(Math.floor(now/600000)*MAX_CANDIDATES)%items.length;
-    return [...items.slice(offset),...items.slice(0,offset)].slice(0,count);
-  };
-  // A bounded conflict slot preserves fairness without starving safe fixes.
-  const sourceSlots=conflictItems.length?Math.max(1,max-1):max;
-  const first=rotate(sourceItems,sourceSlots);
-  return [...first,...rotate(conflictItems,max-first.length)];
+  const sources=valid(source),ids=new Set(sources.map(i=>i.number));
+  const manualConflicts=valid(conflicts).filter(i=>!ids.has(i.number));
+  // Actionable source fixes have precedence over conflict-only human handoff.
+  const sourceSlots=manualConflicts.length?Math.max(1,max-1):max;
+  const count=Math.min(sourceSlots,sources.length);
+  const fast=count>1?count-1:0;
+  const first=count?pickQueueCandidates(sources,now,count,fast):[];
+  const rest=Math.max(0,max-first.length);
+  // Manual-only conflicts are rotated fairly; a priority label cannot make
+  // the worker auto-resolve an unsafe ours/theirs conflict.
+  const offset=manualConflicts.length?(Math.floor(now/600000)*MAX_CANDIDATES)%manualConflicts.length:0;
+  const manual=[...manualConflicts.slice(offset),...manualConflicts.slice(0,offset)].slice(0,rest);
+  return [...first,...manual];
 }
+
 async function claim({github,core,context,number=0,expectedSha='',dryRun=false,hasToken=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
@@ -153,7 +158,7 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
     }
     writeOutputs(core,{strategy:'lint',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
       files_json:JSON.stringify(files)});
-    log('CLAIMED #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
+    log('CLAIMED #' + pr.number + ' priority=' + priorityFor(pr,now).tier + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
     return {status:'claimed',number:pr.number,sha:pr.head.sha,files};
   }
   return skip('NO_UNCLAIMED_OWNER_PR');
