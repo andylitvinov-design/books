@@ -6,6 +6,7 @@
 import { writeFileSync } from "node:fs";
 import { writeMelodyMasters } from "./generate-mandala-melodies.mjs";
 
+
 function synthSoftMelody() {
   // Uncompressed 24 kHz PCM is used for reliable iPhone Safari HTMLMediaElement playback.
   // The built-in asset stays gently mixed even if iOS ignores audio.volume.
@@ -92,6 +93,19 @@ function synthSoftMelody() {
 // score-owned 32s melodies without broadening package.json CI triggers.
 const authoredMusic=writeMelodyMasters();
 console.log("[holistic-original-melodies] generated",authoredMusic.masters,"original WAV masters");
+
+/** Build-only scenario audio masters. The existing npm prebuild/predev invokes
+ * this entrypoint already, so there is no root package.json script change.
+ * Direct Ocean Audio CI probes must remain focused on their 96s WAV.
+ */
+if (process.env.npm_lifecycle_event === "prebuild" ||
+    process.env.npm_lifecycle_event === "predev") {
+  const {buildScenarioMusic} = await import("./generate-scenario-melodies.mjs");
+  const report = buildScenarioMusic();
+  console.log("[hh-scenario-music]",report.totalMasterFiles,"physical MP3s; generated",report.generated);
+}
+
+
 
 const output = new URL("../public/audio/holistic-house-soft-melody-gentle-waves-96s.wav", import.meta.url);
 const result = synthSoftMelody();
