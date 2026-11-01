@@ -1,0 +1,391 @@
+{
+  "schema": "HH_PR_DIRECTION_POLICY_V1",
+  "defaultDirection": "other",
+  "levels": [
+    {
+      "id": 1,
+      "name": "Максимальный",
+      "focus": "Infrastructure, reliability and video creation"
+    },
+    {
+      "id": 2,
+      "name": "Высокий",
+      "focus": "Voice, audio, music, hypnocorrection and video therapy"
+    },
+    {
+      "id": 3,
+      "name": "Средний",
+      "focus": "Messenger, CRM, notifications, orders and payments"
+    },
+    {
+      "id": 4,
+      "name": "Плановый",
+      "focus": "Cabinet, diagnostic tests, courses and Reiki Academy"
+    },
+    {
+      "id": 5,
+      "name": "Фоновый",
+      "focus": "SEO, marketing, visual polish, content and experiments"
+    }
+  ],
+  "directions": [
+    {
+      "id": "platform",
+      "level": 1,
+      "name": "GitHub / CI / Watchdog / production stability",
+      "scopes": [
+        "ci",
+        "infra",
+        "actions",
+        "pipeline",
+        "release",
+        "ops",
+        "watchdog",
+        "automerge",
+        "security"
+      ],
+      "terms": [
+        "watchdog",
+        "auto-merge",
+        "automerge",
+        "github actions",
+        "ci pipeline",
+        "core ci",
+        "release-ready",
+        "release ready",
+        "pr sweep",
+        "repair worker",
+        "merge blocker",
+        "merge conflict",
+        "source preflight",
+        "branch protection",
+        "production incident",
+        "ошибки ci",
+        "проверки github"
+      ],
+      "paths": [
+        ".github/workflows/hh-pr-",
+        "scripts/ci-pr-",
+        "tests/ci-pr-"
+      ]
+    },
+    {
+      "id": "video",
+      "level": 1,
+      "name": "Video generator / montage / Studio",
+      "scopes": [
+        "video",
+        "videos",
+        "video-studio",
+        "video-gen",
+        "videostudio",
+        "montage",
+        "render",
+        "video-director"
+      ],
+      "terms": [
+        "video",
+        "videogenerat",
+        "vidеo",
+        "canva-style",
+        "видео",
+        "видеогенерац",
+        "mp4",
+        "webcodecs",
+        "mediarecorder",
+        "webm",
+        "video studio",
+        "video director",
+        "montage",
+        "рендер видео"
+      ],
+      "paths": [
+        "/video-studio/",
+        "/video-generator/",
+        "/video-director/",
+        "/video/",
+        "/videos/",
+        "video-studio",
+        "video-generator"
+      ]
+    },
+    {
+      "id": "audio-hypno",
+      "level": 2,
+      "name": "Audio / TTS / hypnosis / music",
+      "scopes": [
+        "voice",
+        "audio",
+        "tts",
+        "hypno",
+        "hypnosis",
+        "music",
+        "soundtrack",
+        "meditation",
+        "affirmations",
+        "guided"
+      ],
+      "terms": [
+        "voice",
+        "audio",
+        "tts",
+        "hypno",
+        "soundtrack",
+        "music",
+        "meditation",
+        "affirmation",
+        "speech synthesis",
+        "озвуч",
+        "аудио",
+        "голос",
+        "гипно",
+        "музык",
+        "аффирмац",
+        "медитац"
+      ],
+      "paths": [
+        "/audio/",
+        "/voice/",
+        "/tts/",
+        "/hypno/",
+        "voice-studio",
+        "audio-studio"
+      ]
+    },
+    {
+      "id": "messenger-crm",
+      "level": 3,
+      "name": "Messenger / CRM / notifications / leads",
+      "scopes": [
+        "messages",
+        "messenger",
+        "chat",
+        "crm",
+        "leads",
+        "notifications",
+        "telegram",
+        "whatsapp",
+        "support-chat"
+      ],
+      "terms": [
+        "messenger",
+        "messages",
+        "chat",
+        "telegram",
+        "whatsapp",
+        "notification",
+        "client reply",
+        "guest enquiry",
+        "crm",
+        "leads",
+        "мессенджер",
+        "уведомлен",
+        "переписк",
+        "заявк",
+        "чат клиент"
+      ],
+      "paths": [
+        "/messenger/",
+        "/messages/",
+        "/crm/",
+        "/leads/",
+        "/notifications/"
+      ]
+    },
+    {
+      "id": "orders-payments",
+      "level": 3,
+      "name": "Orders / payments / bookings / service purchase",
+      "scopes": [
+        "payments",
+        "payment",
+        "wallet",
+        "checkout",
+        "billing",
+        "orders",
+        "bookings",
+        "booking",
+        "services"
+      ],
+      "terms": [
+        "payment",
+        "checkout",
+        "wallet",
+        "billing",
+        "purchase",
+        "booking",
+        "order flow",
+        "оплат",
+        "заказ",
+        "корзин",
+        "услуг"
+      ],
+      "paths": [
+        "/checkout/",
+        "/billing/",
+        "/wallet/",
+        "/orders/"
+      ]
+    },
+    {
+      "id": "cabinet-diagnostics",
+      "level": 4,
+      "name": "Client Cabinet / tests / profiles / diagnostics",
+      "scopes": [
+        "cabinet",
+        "profile",
+        "tests",
+        "test",
+        "goals",
+        "support",
+        "reports",
+        "diagnostics",
+        "progress",
+        "personalization"
+      ],
+      "terms": [
+        "cabinet",
+        "profile",
+        "diagnostic",
+        "report",
+        "personal test",
+        "wellbeing",
+        "holistic mind",
+        "support",
+        "mandala",
+        "wu xing",
+        "личный кабинет",
+        "диагност",
+        "профил",
+        "тестир",
+        "отчёт",
+        "отчет"
+      ],
+      "paths": [
+        "/cabinet/",
+        "/profile/",
+        "/tests/",
+        "/reports/",
+        "/holistic-support/"
+      ]
+    },
+    {
+      "id": "academy-courses",
+      "level": 4,
+      "name": "Courses / Reiki Academy / events / learning",
+      "scopes": [
+        "academy",
+        "course",
+        "courses",
+        "reiki",
+        "events",
+        "learning",
+        "dao",
+        "practice"
+      ],
+      "terms": [
+        "academy",
+        "course",
+        "reiki",
+        "lesson",
+        "teacher",
+        "initiation",
+        "dao",
+        "opora",
+        "обучен",
+        "академ",
+        "курсы",
+        "курс",
+        "рейки",
+        "инициац",
+        "урок"
+      ],
+      "paths": [
+        "/academy/",
+        "/courses/",
+        "/reiki/",
+        "/events/"
+      ]
+    },
+    {
+      "id": "seo-growth",
+      "level": 5,
+      "name": "SEO / acquisition / marketing / social",
+      "scopes": [
+        "seo",
+        "marketing",
+        "growth",
+        "social",
+        "instagram",
+        "youtube",
+        "meta",
+        "ads"
+      ],
+      "terms": [
+        "seo",
+        "sitemap",
+        "hreflang",
+        "canonical",
+        "search console",
+        "analytics",
+        "instagram",
+        "youtube",
+        "marketing",
+        "traffic",
+        "реклама",
+        "сео",
+        "поисков"
+      ],
+      "paths": [
+        "/seo/",
+        "/marketing/",
+        "/social/"
+      ]
+    },
+    {
+      "id": "content-design",
+      "level": 5,
+      "name": "Visual design / content / presentation",
+      "scopes": [
+        "style",
+        "design",
+        "content",
+        "photos",
+        "images",
+        "graphics",
+        "illustration",
+        "layout",
+        "copy"
+      ],
+      "terms": [
+        "layout",
+        "styling",
+        "typography",
+        "polish",
+        "illustration",
+        "photos",
+        "graphics",
+        "visual",
+        "содержание",
+        "фотограф",
+        "макет",
+        "дизайн",
+        "визуал"
+      ],
+      "paths": [
+        "/styles/",
+        "/illustrations/",
+        "/images/",
+        "/content/"
+      ]
+    },
+    {
+      "id": "other",
+      "level": 5,
+      "name": "Other / unclassified / experiment",
+      "scopes": [],
+      "terms": [],
+      "paths": []
+    }
+  ]
+}
