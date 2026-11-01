@@ -9,6 +9,10 @@ test("voice browser opens the compact studio advanced audio controls before usin
   assert.match(source,/advancedToggle\.click\(\)[\s\S]*?musicSettings\.waitFor\(\{state:"visible"/);
 });
 
+test("voice browser selects the visible montage workspace before recording",()=>{
+  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+});
+
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
   const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
