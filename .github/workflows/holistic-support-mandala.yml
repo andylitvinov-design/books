@@ -29,7 +29,7 @@ on:
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
       - 'scripts/benchmarking/video-scene-match.mjs'
-      - 'tests/video-scene-match.test.mjs'
+      - 'tests/video-scene-match.test.mjs tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs tests/mandala-scenario-media-import-contract.test.mjs tests/mandala-scenario-soundtracks.test.mjs'
       - 'scripts/verify-hypno-wave-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'

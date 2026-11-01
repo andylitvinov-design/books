@@ -72,3 +72,6 @@
 - Every active user goal has four meaningful variants; a topic with insufficient video is clearly flagged not-ready, never silently filled with an unrelated clip.
 - 24 WAV melodies are built and serve HTTP 200, decode, preview and export with audio. Test `npm run media:music:verify` after build and physically reopen the generated MP4 on iPhone.
 - RUN `node --test tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs` before merge; release only through actual production CI and Vercel verification.
+
+## Added: four melodies per story (2026-11-01)
+Every one of the 48 current storyboards now has four different suggested first-party instrumental WAV soundtracks. The suggestions are computed from public scenario theme and tags only, not personal records. One tap explicitly attaches the selected score in the existing video editor. Mute, voice, and manual sound selection remain available. Tests run in the focused Mandala CI suite.
