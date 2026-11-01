@@ -543,3 +543,94 @@ test('event-driven merge and inventory respect legacy protection until admin mig
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
 });
+
+test('watchdog directly dispatches one free CI worker for a truly missing Core run',async()=>{
+  const candidate=pr(401);
+  let queued=0,dispatched=0;
+  const github={
+    graphql:async()=>({repository:{p401:{
+      number:401,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+      mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+      headRefName:candidate.head.ref,headRefOid:candidate.head.sha,
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},
+      autoMergeRequest:null
+    }},rateLimit:{remaining:4000}}),
+    rest:{
+      pulls:{list:async()=>({data:[candidate]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+      issues:{addLabels:async()=>{queued++;return {data:[]}}}
+    },
+    request:async(route,args)=>{
+      if(route.includes('dispatches')){
+        assert.equal(args.workflow_id,'hh-pr-ci-worker.yml');
+        assert.equal(args.inputs.dry_run,'false');
+        dispatched++;
+        return {data:{}};
+      }
+      if(args.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:0,workflow_runs:[]}};
+      return {data:{workflow_runs:[]}};
+    }
+  };
+  const r=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  assert.equal(r.missingCore,1);
+  assert.equal(r.ciBootstrapQueued,1);
+  assert.equal(r.ciWorkerDispatched,1);
+  assert.equal(queued,1);
+  assert.equal(dispatched,1);
+});
+test('watchdog respects existing CI queue label and never repeats dispatch',async()=>{
+  const candidate={...pr(402),labels:[{name:'hh:ci-needed'}]};
+  const github={
+    graphql:async()=>({repository:{p402:{
+      number:402,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+      mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+      headRefName:candidate.head.ref,headRefOid:candidate.head.sha,
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},
+      autoMergeRequest:null
+    }},rateLimit:{remaining:4000}}),
+    rest:{
+      pulls:{list:async()=>({data:[candidate]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+    },
+    request:async(route,args)=>{
+      if(route.includes('dispatches'))throw Error('duplicate CI dispatch forbidden');
+      if(args.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:0,workflow_runs:[]}};
+      return {data:{workflow_runs:[]}};
+    }
+  };
+  const r=await run({github,core:core(),context,now:NOW});
+  assert.equal(r.missingCore,1);
+  assert.equal(r.ciBootstrapQueued,0);
+  assert.equal(r.ciWorkerDispatched,0);
+});
+test('stale historical Core runs do not enter one-shot CI worker queue',async()=>{
+  const candidate=pr(403);
+  const github={
+    graphql:async()=>({repository:{p403:{
+      number:403,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+      mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+      headRefName:candidate.head.ref,headRefOid:candidate.head.sha,
+      headRepository:{nameWithOwner:'andylitvinov-design/books'},
+      autoMergeRequest:null
+    }},rateLimit:{remaining:4000}}),
+    rest:{
+      pulls:{list:async()=>({data:[candidate]})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+    },
+    request:async(route,args)=>{
+      if(route.includes('dispatches'))throw Error('unjustified CI dispatch forbidden');
+      if(args.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
+        id:1,name:'HH PR core release gate',event:'pull_request',
+        head_branch:candidate.head.ref,
+        pull_requests:[{number:candidate.number,head:{sha:'c'.repeat(40),ref:candidate.head.ref}}]
+      }]}};
+      return {data:{workflow_runs:[]}};
+    }
+  };
+  const r=await run({github,core:core(),context,now:NOW});
+  assert.equal(r.missingCore,1);
+  assert.equal(r.ciBootstrapQueued,0);
+});
