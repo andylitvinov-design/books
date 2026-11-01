@@ -136,7 +136,9 @@ test("consent before same-origin profile access; withdraw/goal changes invalidat
 });
 
 test("one canonical editor owns the free user-triggered real render/export; no automatic fake movie",()=>{
-  assert.match(studio,/import \{ MandalaGuidedCourse \} from "\.\/mandala-guided-course"/);
+  assert.ok(studio.includes('const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));'),
+    "guided course should be a real demand-loaded component, not initial mobile JS");
+  assert.doesNotMatch(studio,/import \\{ MandalaGuidedCourse \\} from/, "do not restore the heavyweight eager import");
   assert.match(studio,/<MandalaGuidedCourse locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/onApplyFreeVideo=\{session=>\{/);
   assert.match(studio,/setDuration\(60\)/);
