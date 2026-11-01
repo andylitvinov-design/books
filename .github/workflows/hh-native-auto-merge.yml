@@ -1,7 +1,10 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    # Only onboarding and review-state changes need an early preflight.
+    # Synchronize commits are reevaluated on successful Core CI completion,
+    # not before their new-HEAD tests have run; removes duplicate Action runs.
+    types: [opened, reopened, ready_for_review]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
