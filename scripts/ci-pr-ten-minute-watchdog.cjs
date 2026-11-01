@@ -29,6 +29,7 @@ const MAX_LEGACY_BOOTSTRAPS = 1;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
+const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -513,7 +514,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
-    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,controlTowerWake:'NOT_PROBED',
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
@@ -824,6 +825,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         log('DISPATCHED owner-guarded Repair Worker for source/conflict queue');
       } else log('Repair Worker already active/recent or API reserve low; schedule fallback');
     } catch(error) { log('Repair Worker dispatch unavailable; schedule fallback: '+error.message); }
+  }
+  // The dispatcher no longer subscribes to every Watchdog completion: most
+  // of those runs come from successful Core callbacks and never inspect a PR.
+  // Wake the trusted single-writer directly only if the durable queues need it.
+  if (centralDispatch && !budget.exhausted) {
+    summary.controlTowerWake=await notifyControlTower({github,owner,repo,
+      summary,enabled:centralDispatch,hasToken:hasMergeToken,dryRun,
+      limited,log,now});
   }
   if (summary.greenUnarmed && hasMergeToken) {
     try {
