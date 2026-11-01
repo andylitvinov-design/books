@@ -9,7 +9,6 @@ on:
       - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/goal-profile.js'
       - 'components/app/development-program.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
       - 'lib/profile/portrait-test-suggestions.js'

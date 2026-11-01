@@ -145,14 +145,14 @@ const copy={
 // Names are taken from the same three-language scene catalog as the original
 // editor. English visualCue/providerPrompt remains internal to the disclosure
 // and offline owner handoff, not the primary client-facing shot label.
-const foodIllustrationNames:Record<string,Record<PublicLocale,string>>={
-  "food-fruit-bowl":{ru:"Иллюстрация: миска фруктов",en:"Illustration: bowl of fruit",es:"Ilustración: cuenco de fruta"},
-  "food-vegetable-prep":{ru:"Иллюстрация: подготовка овощей",en:"Illustration: preparing vegetables",es:"Ilustración: preparación de verduras"},
-  "food-soup-bowl":{ru:"Иллюстрация: овощной суп",en:"Illustration: vegetable soup",es:"Ilustración: sopa de verduras"},
-  "food-bread-table":{ru:"Иллюстрация: хлеб на столе",en:"Illustration: bread on a table",es:"Ilustración: pan en la mesa"},
+const illustratedFoodLabels:Record<string,Record<PublicLocale,string>>={
+  "food-fruit-bowl":{en:"Fruit bowl illustration",ru:"Иллюстрация: фрукты в чаше",es:"Ilustración: cuenco de frutas"},
+  "food-vegetable-prep":{en:"Vegetable preparation illustration",ru:"Иллюстрация: свежие овощи",es:"Ilustración: verduras frescas"},
+  "food-soup-bowl":{en:"Soup bowl illustration",ru:"Иллюстрация: тарелка супа",es:"Ilustración: plato de sopa"},
+  "food-bread-table":{en:"Bread table illustration",ru:"Иллюстрация: хлеб на столе",es:"Ilustración: pan en la mesa"},
 };
 function sceneDisplayName(theme:VideoTheme,sceneId:string,locale:PublicLocale):string{
-  if(foodIllustrationNames[sceneId])return foodIllustrationNames[sceneId][locale];
+  if(illustratedFoodLabels[sceneId])return illustratedFoodLabels[sceneId][locale];
   if(theme==="money")return moneyScenes.find(item=>item.id===sceneId)?.label[locale]||sceneId;
   return otherVideoScenes[theme].find(item=>item.id===sceneId)?.label[locale]||sceneId;
 }
