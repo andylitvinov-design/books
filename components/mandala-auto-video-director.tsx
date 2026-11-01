@@ -15,7 +15,7 @@ type SceneMeta={id:string;theme:string;status:string;media:string;
   video:string;label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;
   categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
-  locale:PublicLocale;goal:string;theme:VideoTheme;presets:readonly Preset[];
+  locale:PublicLocale;goal:string;theme:VideoTheme;aspect:"landscape"|"portrait"|"square";presets:readonly Preset[];
   scenes:readonly SceneMeta[];
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
@@ -32,7 +32,7 @@ const copy={
    suggest:"Предложить сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
    duration:"Длительность",variants:"Другой сюжет",topic:"Направление",edit:"Изменить детали (необязательно)",
    stages:["Начало","Погружение","Развитие","Завершение"],
-   source:"4 настоящих MP4 · 16:9 · бесплатный монтаж",
+   source:"4 настоящих MP4 · бесплатный монтаж",
    accept:"Подтвердить этот сценарий",applied:"Сценарий выбран — нажмите «Создать видео».",
    warning:"Новых персонажей и кадров здесь не генерируем: предложен символический монтаж.",
    empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
@@ -48,7 +48,7 @@ const copy={
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
    duration:"Duration",variants:"Different story",topic:"Topic",edit:"Adjust details (optional)",
    stages:["Opening","Arriving","Exploring","Closing"],
-   source:"4 genuine MP4 clips · 16:9 · free compilation",
+   source:"4 genuine MP4 clips · free compilation",
    accept:"Confirm this story",applied:"Story selected — choose Create video.",
    warning:"New characters and footage are not generated here; this is a symbolic montage.",
    empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
@@ -64,7 +64,7 @@ const copy={
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
    duration:"Duración",variants:"Otra historia",topic:"Tema",edit:"Ajustar detalles (opcional)",
    stages:["Inicio","Llegada","Desarrollo","Cierre"],
-   source:"4 clips MP4 reales · 16:9 · montaje gratuito",
+   source:"4 clips MP4 reales · montaje gratuito",
    accept:"Confirmar esta historia",applied:"Historia elegida; pulsa Crear vídeo.",
    warning:"No se generan personajes ni escenas nuevas: es un montaje simbólico.",
    empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
@@ -82,7 +82,7 @@ const themeLabels={
 } as const;
 
 export function MandalaAutoVideoDirector({
- locale,goal,theme,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply,showGoalInput=true
+ locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,onGoalChange,onApply,showGoalInput=true
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -141,7 +141,7 @@ export function MandalaAutoVideoDirector({
      {chosen?<div>
        <h4>{t.reason}: {chosen.label[locale]}</h4>
        {selectedGoal?<p className={css.meta}>{t.selectedGoal}: {selectedGoal.labels[locale]}</p>:null}
-       <p className={css.meta}>{length} s · {t.source}</p>
+       <p className={css.meta}>{length} s · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {t.source}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
        <ol className={css.shots} data-auto-video-storyboard>
