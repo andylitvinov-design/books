@@ -73,6 +73,38 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
 });
+test('source repair lane cannot starve behind sixteen higher-ranked conflicts',()=>{
+ const conflicts=Array.from({length:23},(_,i)=>pr(i+100,'conflict',{
+  title:'fix(video): merge conflict '+i,mergeable:false,mergeable_state:'dirty'
+ }));
+ const source=pr(2629,'repair',{title:'feat(voice): current verified source defect'});
+ const tasks=planCandidates([...conflicts,source],NOW);
+ assert.equal(tasks.length,16);
+ assert.equal(tasks[0].pr_number,2629);
+ assert.equal(tasks[0].lane,'repair');
+ assert.ok(tasks.some(x=>x.lane==='conflict'));
+});
+test('dispatcher gives the source worker the slot before a higher-ranked conflict-only PR',async()=>{
+ const conflicts=Array.from({length:23},(_,i)=>pr(i+100,'conflict',{
+  title:'fix(video): merge conflict '+i,mergeable:false,mergeable_state:'dirty'
+ }));
+ const source=pr(2629,'repair',{title:'feat(voice): current source defect'});
+ const f=fixture([...conflicts,source],{comments:{2629:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'2629');
+ assert.equal(result.workerRuns[0].lane,'repair');
+});
+test('CI candidate is inspected even when P1 conflict list fills the rotation',()=>{
+ const conflicts=Array.from({length:25},(_,i)=>pr(i+100,'conflict',{
+  title:'fix(video): conflict '+i,mergeable:false,mergeable_state:'dirty'
+ }));
+ const candidate=pr(4000,'ci',{title:'feat(tests): bounded CI bootstrap'});
+ const chosen=planCandidates([...conflicts,candidate],NOW);
+ assert.equal(chosen.length,16);
+ assert.ok(chosen.some(x=>x.pr_number===4000&&x.lane==='ci'));
+});
 test('duplicate task reservation suppresses repeated dispatch',async()=>{
  const t=taskFor(pr(1),{tier:'P1'}),body=commentBody(reservation(t,NOW,1));
  const f=fixture([pr(1)],{comments:{1:[proof(),{body}]}});
