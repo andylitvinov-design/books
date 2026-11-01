@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, run} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, run} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -25,6 +25,13 @@ test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
   assert.equal(gateIsGreen({...gate,total_count:101}),false);
   assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,{id:2,name:'browser',conclusion:'failure'}]}),false);
 });
+test('CI admission uses separate running and queued limits, not their sum',()=>{
+  assert.equal(canRetryCi(12,12),true);
+  assert.equal(canRetryCi(18,40),false);
+  assert.equal(canRetryCi(20,0),false);
+  assert.equal(canRetryCi(0,20),false);
+  assert.equal(canRetryCi(Infinity,0),false);
+});
 test('retry only first-attempt infrastructure failures after cooldown',()=>{
   const r={status:'completed',run_attempt:1,conclusion:'failure',created_at:new Date(NOW-60*60000).toISOString(),
     updated_at:new Date(NOW-40*60000).toISOString()};
@@ -34,19 +41,20 @@ test('retry only first-attempt infrastructure failures after cooldown',()=>{
   assert.equal(transientFailure({...r,updated_at:new Date(NOW-5*60000).toISOString()},[{conclusion:'timed_out'}],NOW),false);
 });
 test('green unarmed PR dispatches existing protected coordinator, not a direct merge',async()=>{
-  let dispatched=0;
+  let dispatched=0, targeted=false;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(99)]})},
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
-    checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}})}
+    checks:{listForRef:async(arg)=>{targeted=arg.check_name==='release-ready';return {data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
   },request:async(route)=>{if(route.includes('dispatches')) dispatched++;return {data:{workflow_runs:[]}};}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.greenUnarmed,1);
   assert.equal(result.mergeCoordinatorDispatched,1);
   assert.equal(dispatched,1);
+  assert.equal(targeted,true);
 });
 test('CI overload blocks retries, but code failures are handed to Repair once',async()=>{
-  let reruns=0,comments=0;
+  let reruns=0,comments=0,labels=0;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(98)]})},
     actions:{
@@ -55,7 +63,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
-    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;}}
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
@@ -69,4 +77,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(result.transientCiReruns,0);
   assert.equal(reruns,0);
   assert.equal(comments,1);
+  assert.equal(labels,1);
+  assert.equal(result.activeActions,18);
+  assert.equal(result.queuedActions,32);
 });
