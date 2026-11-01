@@ -22,3 +22,21 @@ test('professional editor stays optional, localized, a11y-oriented and mobile',(
   assert.match(css,/min-height:44px/);
   assert.match(css,/@media\(max-width:420px\)/);
 });
+
+const liveStudio=readFileSync('components/mandala-free-video-studio.tsx','utf8');
+const parent=readFileSync('components/mandala-meditation-client.tsx','utf8');
+test('professional card is wired to the existing local four-MP4 editor',()=>{
+  assert.ok(parent.includes('professionalSource={professionalSource} professionalMode={professionalMode}'));
+  assert.ok(liveStudio.includes('professionalMode ? <MandalaProfessionalPromo'));
+  assert.ok(liveStudio.includes('presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}'));
+  assert.ok(liveStudio.includes('publicOffer={professionalSource?.publicOffer ?? null}'));
+  assert.ok(liveStudio.includes('existing.clips.join("|")!==proposal.montage.sceneIds.join("|")'));
+  assert.ok(liveStudio.includes('applyAutoFilm(presetId,seconds,outputAspect)'));
+  assert.ok(liveStudio.includes('setBackgroundOnly(true)'));
+  assert.ok(liveStudio.includes('setAffirmations({...defaultAffirmations,enabled:false})'));
+  assert.ok(liveStudio.includes('setMusic("none");setAttachedAudio(null)'));
+});
+test('shot keys are stable and public catalog arrays are readonly-safe',()=>{
+  assert.ok(component.includes('presets:[...presets],scenes:[...scenes]'));
+  assert.ok(component.includes('key={String(index)}'));
+});

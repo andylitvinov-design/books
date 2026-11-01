@@ -72,7 +72,8 @@ export function MandalaProfessionalPromo({
     setFactChecked(false);setNotice("");
     try{
       const next=proposeProfessionalCampaign({
-        goal,locale,topic,publicOffer,publicPractitioner,presets,scenes,avoidMotifs:avoid
+        goal,locale,topic,publicOffer,publicPractitioner,
+        presets:[...presets],scenes:[...scenes],avoidMotifs:avoid
       });
       setProposal(next);setDraft(next.postDraft);
     }catch(error){
@@ -127,7 +128,7 @@ export function MandalaProfessionalPromo({
         <p className={css.small}>{proposal.durationSec} s · {proposal.aspect} · Free local draft</p>
         {ready?<><strong>{t.scenes}</strong>
           <ol className={css.beats}>
-            {proposal.shotPlan.map((shot,index)=><li key={shot.role}>
+            {proposal.shotPlan.map((shot,index)=><li key={String(index)}>
               <span>{index+1}. {shot.onScreenText}</span>
               <small>{shot.startSec}–{shot.endSec}s · {shot.sceneId||"—"}</small>
             </li>)}
