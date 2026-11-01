@@ -1207,6 +1207,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         <a href="#support-progress"><BarChart3 size={24} aria-hidden="true" /><span>{t.navProgress}</span></a>
         <button type="button" aria-expanded={settingsOpen} aria-controls="support-mobile-settings"
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={24} aria-hidden="true" /><span>{t.navSettings}</span></button>
+        <Link href={"/" + locale + "/holistic-support/mandala#video-director-chat"} prefetch={false}
+          data-support-video-ai aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>
+          <Sparkles size={24} aria-hidden="true" /><span>{locale === "ru" ? "ИИ" : locale === "es" ? "IA" : "AI"}</span>
+        </Link>
       </nav>
     </main>
   );

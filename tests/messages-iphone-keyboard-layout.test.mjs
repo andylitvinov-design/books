@@ -76,7 +76,7 @@ test('selected client conversation is full screen and follows visualViewport whe
   assert.match(css,/\.shell\[data-detail-open="true"\] \.window,[\s\S]*?position:fixed;z-index:4000/)
   assert.match(css,/top:var\(--hh-mobile-window-top,0px\)/)
   assert.match(css,/window\[data-keyboard-open="true"\] \.personBar/)
-  assert.match(app,/data-simple-messages\]\[data-detail-open="true"\]\) \.hh-mobile-app-nav/)
+  assert.match(app,/\.hh-app\.hh-messages-page \.hh-mobile-app-nav\{/ )
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot\{[\s\S]*?position:relative/)
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot \[role="region"\]\{[\s\S]*?position:static/)
   assert.match(crm,/min-height:44px;height:44px/)
@@ -92,3 +92,15 @@ test('request composer stays mounted behind client card and the hidden pane take
   assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
   assert.match(jsx,/key=\{selected\.id\} inline autoOpen/)
 })
+
+test('selected conversation keeps the pinned six-button dock until the keyboard opens',()=>{
+  const inbox=read('components/app/messages-simple-inbox.jsx')
+  const css=read('app/[locale]/app/messages/messages-page.css')
+  const nav=read('components/app/messages-bottom-navigation.jsx')
+  assert.match(inbox,/dockTop===null\?viewportHeight:Math\.max\(1,dockTop-top\)/)
+  assert.match(css,/\.hh-app\.hh-messages-page \.hh-mobile-app-nav\{[\s\S]*?position:fixed;bottom:0;z-index:4010/)
+  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
+  assert.doesNotMatch(css, /data-detail-open="true"\]\) \.hh-mobile-app-nav\s*\{\s*display:none!important/)
+  assert.match(css, /:has\(input:focus,textarea:focus\) \.hh-mobile-app-nav\{display:none!important/)
+  assert.match(nav, /mandala#video-director-chat/)
+});

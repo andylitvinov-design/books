@@ -78,6 +78,25 @@ for (const browserType of [chromium, webkit]) {
             label + " no extra Tests CTA in check-in");
           assert.equal(await root.locator('[data-support-video]').count(), 4, label + " visible video cards");
           assert.equal(await root.locator('[data-support-mobile-bottom-nav]').count(), 1, label + " dock");
+          const dock = root.locator('[data-support-mobile-bottom-nav]');
+          assert.equal(await dock.locator(':scope > a, :scope > button').count(), 6,
+            label + " six distinct bottom destinations");
+          assert.equal(await dock.locator('[data-support-video-ai]').getAttribute('href'),
+            "/"+locale+"/holistic-support/mandala#video-director-chat",
+            label + " AI opens the real Video Director messenger");
+          const dockGeometry=await dock.evaluate(element=>{
+            const box=element.getBoundingClientRect();
+            const viewport=window.visualViewport;
+            return {position:getComputedStyle(element).position,
+              gap:(viewport?viewport.offsetTop+viewport.height:window.innerHeight)-box.bottom,
+              left:box.left,right:box.right,
+              items:[...element.children].map(child=>child.getBoundingClientRect().width)};
+          });
+          assert.equal(dockGeometry.position,'fixed',label+" dock never participates in page scroll");
+          assert.ok(Math.abs(dockGeometry.gap)<=3,label+" bottom pinned: "+JSON.stringify(dockGeometry));
+          assert.ok(dockGeometry.left>=-2 && dockGeometry.right<=width+2,
+            label+" dock width remains inside viewport");
+          assert.ok(dockGeometry.items.every(size=>size>=40),label+" six tap regions fit 320px");
           // These two locally bundled original-mock visuals must actually load.
           await page.waitForFunction(() => {
             const images = [...document.querySelectorAll(

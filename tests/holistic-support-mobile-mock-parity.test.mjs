@@ -113,3 +113,17 @@ test("mobile screenshot acceptance runs all 18 isolated cases with bounded concu
   assert.match(script, /await page\.close\(\)/);
   assert.match(script, /serviceWorkers: "block"/);
 });
+
+test("six-button mobile dock opens the existing Video Director chat and never floats in Reiki filter", () => {
+  const studio = read("components/holistic-support-mandala-dock.tsx");
+  const chat = read("components/mandala-video-director-chat.tsx");
+  const chatCss = read("components/mandala-video-director-chat.module.css");
+  assert.match(client, /data-support-video-ai/);
+  assert.match(client, /mandala#video-director-chat/);
+  assert.match(studio, /href=\{chatOpen \? "#video-quick-heading" : "#video-director-chat"\}/);
+  assert.match(chat, /id="video-director-chat"/);
+  assert.match(chatCss, /\.window:target/);
+  assert.match(css, /\.bottomNav \{ position: fixed; z-index: 58;/);
+  assert.match(css, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(css, /\.page:has\(\[data-support-reiki-central\][^)]*\) \.bottomNav\s*\{\s*position: static/);
+});

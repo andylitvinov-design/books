@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {ChangeEvent,FormEvent} from "react";
-import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
+import {ArrowLeft,ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {compileExecutableVideoScenario,parseAiVideoCutSuggestion} from "@/lib/mandala/video-executable-director.mjs";
 import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
@@ -130,9 +130,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const frame=windowRef.current;
    if(!frame)return;
    let raf=0;
+   const dock=document.querySelector<HTMLElement>("[data-mandala-support-bottom-nav]");
    const update=()=>{
      const focus=frame.contains(document.activeElement)&&["INPUT","TEXTAREA"].includes(document.activeElement?.tagName||"");
      const mobile=window.innerWidth<=700;
+     const dockVisible=dock&&window.getComputedStyle(dock).display!=="none"&&window.getComputedStyle(dock).visibility!=="hidden";
+     frame.style.setProperty("--chat-dock-height",mobile&&dockVisible&&!focus?Math.ceil(dock.getBoundingClientRect().height)+"px":"0px");
      frame.dataset.composeActive=mobile&&focus?"true":"false";
      const visual=window.visualViewport;
      if(mobile&&focus){
@@ -145,7 +148,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    frame.addEventListener("focusin",schedule);frame.addEventListener("focusout",schedule);
    window.visualViewport?.addEventListener("resize",schedule);
    window.visualViewport?.addEventListener("scroll",schedule);
-   return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",schedule);
+   const dockObserver=dock&&typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
+   if(dockObserver&&dock)dockObserver.observe(dock);
+   return()=>{cancelAnimationFrame(raf);dockObserver?.disconnect();window.removeEventListener("resize",schedule);
      frame.removeEventListener("focusin",schedule);frame.removeEventListener("focusout",schedule);
      window.visualViewport?.removeEventListener("resize",schedule);
      window.visualViewport?.removeEventListener("scroll",schedule);};
@@ -377,8 +382,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
+  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
+     <a className={css.backToStudio} href="#video-quick-heading"
+       aria-label={locale === "ru" ? "Назад в видеоредактор" : locale === "es" ? "Volver al editor" : "Back to video editor"}>
+       <ArrowLeft size={20} aria-hidden="true"/>
+     </a>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
      <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>

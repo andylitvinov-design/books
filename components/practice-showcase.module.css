@@ -87,10 +87,10 @@
 .gate .alert { color: #a43e45; font-weight: 730; }
 .signIn { border: 0; border-radius: 12px; min-height: 39px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 7px; color: white; background: #087c66; font-size: 12px !important; font-weight: 750 !important; }
 .moderation { display: flex; align-items: center; gap: 6px; color: #668076; margin: 13px 3px; font-size: 11px; }
-.bottomNav { position: fixed; z-index: 40; left: max(6px, calc((100vw - 800px) / 2)); right: max(6px, calc((100vw - 800px) / 2)); bottom: 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 1px; padding: 7px 6px max(8px,env(safe-area-inset-bottom,8px)); border-radius: 24px 24px 0 0; background: #fffefa; border: 1px solid #e8e9df; box-shadow: 0 -8px 25px #172d2710; }
+.bottomNav { position: fixed; z-index: 40; left: max(6px, calc((100vw - 800px) / 2)); right: max(6px, calc((100vw - 800px) / 2)); bottom: 0; display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 1px; padding: 7px 6px max(8px,env(safe-area-inset-bottom,8px)); border-radius: 24px 24px 0 0; background: #fffefa; border: 1px solid #e8e9df; box-shadow: 0 -8px 25px #172d2710; }
 .navItem { border: 0; border-radius: 15px; color: #6f756f; background: transparent; min-height: 50px; padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 10px !important; font-weight: 640 !important; }
 .navActive { background: #e4f6ed; color: #04775e; font-weight: 850 !important; }
-.navItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.navItem span { overflow: hidden; max-width: 100%; white-space: normal; overflow-wrap: anywhere; max-height: 2.3em; line-height: 1.12; }
 .modalBackdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 14px; background: #11271e91; backdrop-filter: blur(5px); }
 .signInModal { width: min(100%, 390px); border: 1px solid #f0eadd; border-radius: 24px; padding: 26px 21px 22px; background: #fffdf5; box-shadow: 0 22px 65px #091d1680; color: #24443a; display: grid; justify-items: center; text-align: center; }
 .modalIcon { width: 55px; height: 55px; border-radius: 19px; background: #e1f3e7; display: grid; place-items: center; color: #00866c; margin-bottom: 12px; }
