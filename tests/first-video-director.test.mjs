@@ -229,29 +229,39 @@ test("unavailable Gemini 3.5 Lite model falls back ONLY to confirmed free-tier G
 });
 
 
-test("Food/Еда/Comida creates honest harvest storyboard instead of silently treating food as generic energy",()=>{
+test("Food/Еда/Comida renders four original Canvas food scenes; never pretends to be filmed MP4",()=>{
   const options={durationSeconds:20,theme:"auto",style:"warm",aspect:"landscape"};
+  const ids=["food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table"];
   const ru=buildFirstVideoDraft({locale:"ru",wish:"Еда",...options});
   assert.equal(ru.theme,"life");
-  assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
-  assert.equal(ru.descriptionLimited,true);
-  assert.match(ru.prompt,/Тема «Еда»/);
-  assert.match(ru.prompt,/Солнечные поля/);
-  assert.match(ru.limitationNote,/нет кадров блюд/);
-  assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
+  assert.equal(ru.plan.version,"hh-local-food-canvas-v1");
+  assert.deepEqual(ru.plan.shots.map(s=>s.sceneId),ids);
+  assert.equal(ru.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),20);
+  assert.match(ru.prompt,/фруктами, овощами, супом и хлебом/);
+  assert.match(ru.limitationNote,/рисованные движущиеся иллюстрации/);
+  assert.equal(ru.plan.shots.every(s=>s.providerPrompt.includes("NOT a filmed dish")),true);
   const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
-  assert.equal(variant.plan.shots[0].sceneId,"golden-harvest");
-  assert.notEqual(ru.prompt,variant.prompt,"real scene variants must change");
+  assert.equal(variant.plan.shots[0].sceneId,ids[0]);
+  assert.notDeepEqual(variant.plan.shots.map(s=>s.sceneId),ids);
+  assert.notEqual(ru.prompt,variant.prompt);
   const manual=buildFirstVideoDraft({locale:"ru",wish:"Еда",promptOverride:"Горы и звёзды",...options});
-  assert.equal(manual.plan.shots[0].sceneId,"golden-harvest","AI text cannot override the user's food intent");
-  for (const [locale,wish] of [["en","Food"],["es","Comida"]]){
-    const result=buildFirstVideoDraft({locale,wish,...options});
-    assert.equal(result.plan.shots[0].sceneId,"golden-harvest");
-    assert.equal(result.descriptionLimited,true);
-    assert.ok(result.limitationNote.length>60);
+  assert.equal(manual.plan.shots[0].sceneId,ids[0],"manual AI text must not override food intent");
+  for(const [locale,wish] of [["en","Food"],["es","Comida"]]){
+    const video=buildFirstVideoDraft({locale,wish,...options});
+    assert.equal(video.plan.version,"hh-local-food-canvas-v1");
+    assert.deepEqual(video.plan.shots.map(s=>s.sceneId),ids);
+    assert.ok(video.limitationNote.length>60);
   }
-  assert.equal(inferFirstVideoTheme("Победа"),"energy","don't confuse a word containing 'еда' with food");
+  const long=buildFirstVideoDraft({locale:"en",wish:"Food",durationSeconds:60,aspect:"portrait",variant:2});
+  assert.equal(long.plan.shotCount,4);
+  assert.equal(long.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),60);
+  assert.equal(long.plan.aspect,"portrait");
+  assert.equal(long.mediaSource,"local_canvas");
+  assert.equal(long.aiMediaGenerated,false);
+  assert.equal(long.plan.paidRenderApproved,false);
+  assert.equal(inferFirstVideoTheme("Победа"),"energy");
 });
+
 
 test("fast free-text failover is budgeted, skips same-project quota retries, keeps safe error details",async()=>{
   const {
@@ -681,7 +691,7 @@ test("Gemini and OpenRouter receive identical fully selected v1 creative brief w
   assert.equal(seen[0].context.effectiveFilters.caption,true);
   assert.equal(seen[0].context.effectiveFilters.avoid,"море");
   assert.equal(seen[0].context.localRendering.quality,"fullhd");
-  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"golden-harvest");
+  assert.equal(seen[0].context.verifiedLocalStoryboard.scenes[0].sceneId,"food-fruit-bowl");
   assert.ok(!seen[0].context.availableSceneChoices.some(x=>/cooking|dishes|kitchen/i.test(x.visualCue)));
 });
 
@@ -767,4 +777,16 @@ test("free OpenRouter rejects image, tool, and malformed parts and uses independ
     assert.deepEqual(out.diagnostics.map(x=>x.reason),["invalid_text"]);
     assert.ok(!JSON.stringify(out).includes("test-only-router-credential"));
   }
+});
+
+test("food painter is used by shared preview and real MediaRecorder, without licensed MP4 deception",()=>{
+  const painter=readFileSync(new URL("../lib/mandala/holistic-video-themes.ts",import.meta.url),"utf8");
+  const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const id of ["food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table"])
+    assert.ok(painter.includes('"'+id+'"'));
+  assert.match(painter,/if\(FOOD_CANVAS_SCENES\.includes\(scene\)\)/);
+  assert.match(painter,/paintFoodVideoFrame\(c,image,scene,time,title\)/);
+  assert.match(painter,/Math\.sin\(t\*\.72\)/);
+  assert.match(editor,/paintCinematicFrame\(ctx,image,effect,frameTime/);
+  assert.match(editor,/FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION/);
 });
