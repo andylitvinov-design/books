@@ -97,7 +97,7 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
 test("hypno-wave browser opens the approved collapsed first-video panel before checking its real output",()=>{
  const script=read("scripts/verify-hypno-wave-browser.mjs");
  assert.match(script,/data-video-first-video-advanced/);
- assert.match(script,/advanced\.locator\('summary'\)\.click/);
+ assert.match(script,/advanced\.locator\(':scope > summary'\)\.click/);
  assert.match(script,/advanced\.getAttribute\('open'\)/);
  assert.match(script,/data-first-free-video\]\[data-first-video-hydrated/);
  assert.match(script,/data-hypno-approve/);

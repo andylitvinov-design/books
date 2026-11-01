@@ -12,7 +12,7 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   // The approved mobile Studio keeps advanced first-video controls collapsed.
   // Open the real disclosure before asserting its hydrated renderer, never waive QA.
   const advanced=page.locator('[data-video-first-video-advanced]');
-  await advanced.locator('summary').click({timeout:20000});
+  await advanced.locator(':scope > summary').click({timeout:20000});
   assert.equal(await advanced.getAttribute('open'),'',engine+'/'+locale+' advanced video disclosure opened');
   await page.locator('[data-first-free-video][data-first-video-hydrated="true"]').waitFor({state:'visible',timeout:60000});
   if(engine==='chromium'&&locale==='ru'){
