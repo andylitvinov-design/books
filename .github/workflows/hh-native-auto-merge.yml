@@ -230,7 +230,7 @@ jobs:
                 live.head.repo?.full_name !== fullRepo || live.head.ref !== event.head_branch ||
                 live.head.sha !== reference.head.sha || live.mergeable === false ||
                 live.mergeable_state === "dirty" ||
-                (reference.base?.sha && reference.base.sha !== live.base.sha)) {
+                (reference.base?.sha && reference.base?.sha !== live.base.sha)) {
               log("SKIP PR moved, changed base, became draft, or has conflicts");
               return;
             }
