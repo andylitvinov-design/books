@@ -48,3 +48,15 @@ test('unrelated words do not accidentally count as supported exclusions',()=>{
   for(const avoid of ['морковь','лестница','season'])
     assert.throws(()=>buildFirstVideoDraft({locale:'ru',wish:'тихое утро',avoid}),/unsupported_scene_exclusion/);
 });
+
+test("food requests retain a distinct illustrated plan while other requests require real licensed MP4s",()=>{
+  const food=buildFirstVideoDraft({locale:"ru",wish:"Еда",durationSeconds:30});
+  assert.equal(food.plan.version,"hh-local-food-canvas-v1");
+  assert.equal(food.plan.shots.length,4);
+  assert.ok(food.plan.shots.every(shot=>shot.sceneId.startsWith("food-")));
+  assert.ok(food.plan.shots.every(shot=>!approved.has(shot.sceneId)),
+    "Canvas illustrations must never be misrepresented as licensed footage");
+  const landscape=buildFirstVideoDraft({locale:"en",wish:"Mountains",durationSeconds:30});
+  assert.equal(landscape.plan.version,"hh-local-stock-compilation-v1");
+  assert.ok(landscape.plan.shots.every(shot=>approved.has(shot.sceneId)));
+});
