@@ -64,11 +64,6 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
       await nameDisclosure.locator('summary').click();
       clicked = true;
     }
-    // Hydration may close a disclosure immediately after its first click.
-    // Retry the native summary interaction, without forcing DOM state.
-    if (await nameDisclosure.getAttribute('open') === null) {
-      await nameDisclosure.locator('summary').click();
-    }
     const afterClick = await disclosureNode?.evaluate(node => ({open:node.open, connected:node.isConnected})).catch(() => null);
     try {
       await nameInput.waitFor({state:"visible",timeout:12000});
@@ -96,8 +91,24 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
     const noteDisclosure = form.locator('details:has(textarea)');
+    await noteDisclosure.evaluate(node => {
+      window.__hhDisclosureEvents = [];
+      for (const type of ['pointerdown', 'pointerup', 'click', 'toggle']) {
+        node.addEventListener(type, event => window.__hhDisclosureEvents.push({
+          type, target: event.target.tagName, open: node.open,
+          defaultPrevented: event.defaultPrevented, scrollY: window.scrollY,
+          y: Math.round(node.getBoundingClientRect().y),
+        }));
+      }
+    });
     if (await noteDisclosure.getAttribute('open') === null) {
       await noteDisclosure.locator('summary').click();
+    }
+    if (await noteDisclosure.getAttribute('open') === null) {
+      console.error('Optional note interaction diagnostic:', JSON.stringify({
+        locale, url: new URL(page.url()).pathname,
+        events: await page.evaluate(() => window.__hhDisclosureEvents),
+      }));
     }
     assert.equal(await noteDisclosure.getAttribute('open'), '',
       'The optional private note must be explicitly open');

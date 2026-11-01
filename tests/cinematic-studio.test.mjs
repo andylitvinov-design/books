@@ -87,8 +87,8 @@ test("long-running cinematic preview loops actual scene times and synchronized a
     "encoded frame clock must be bounded by the requested movie duration");
   assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime\)/,
     "the selected stock shot is sampled from the very same timeline");
-  assert.match(studio,/if\(!usingFreeFilmCompilation \|\| stockFrame\)/,
-    "never paint unverified procedural footage over a buffering licensed MP4");
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
+    "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
   assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations\)/,
     "encoded captions must use the same clock as the real video frame");
 });

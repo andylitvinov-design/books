@@ -12,6 +12,7 @@ on:
       - 'components/mandala-first-video-start*'
       - 'app/api/holistic-support/first-video-prompt/route.js'
       - 'tests/first-video-director.test.mjs'
+      - 'tests/first-video-licensed-render.test.mjs'
       - 'components/mandala-video-affirmations*'
       - 'components/mandala-hypno-compact*'
       - 'components/mandala-hypnocorrection-mobile*'
@@ -21,11 +22,13 @@ on:
       - 'components/mandala-personal-meditation*'
       - 'components/mandala-cinematic-director*'
       - 'components/mandala-auto-video-director*'
+      - 'components/mandala-stories-characters*'
       - 'components/mandala-video-mobile.module.css'
       - 'components/holistic-support-mobile.tsx'
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/verify-hypno-wave-browser.mjs'
       - 'lib/public-locales.ts'
       - 'public/mandalas/**'
       - 'public/audio/mandala/**'
@@ -68,6 +71,7 @@ on:
       - 'scripts/video-ai-gpu-readiness.mjs'
       - 'tests/video-ai-gpu-readiness.test.mjs'
       - 'tests/mandala-auto-video-director*.test.mjs'
+      - 'tests/mandala-stories-characters.test.mjs'
       - 'tests/mandala-free-scene-taxonomy.test.mjs'
       - 'tests/free-film-timeline.test.mjs'
       - 'tests/cinematic-creative-brief.test.mjs'
@@ -111,7 +115,16 @@ jobs:
       - name: Check browser acceptance script syntax before slow production build
         run: node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/first-video-director.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs
+        run: node --test tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs
+      - name: Stories and Characters exact source acceptance
+        run: |
+          if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then
+            test -f components/mandala-stories-characters.tsx
+            test -f tests/mandala-stories-characters.test.mjs
+            test -f lib/mandala/story-addon-catalog.ts
+            node --test tests/mandala-stories-characters.test.mjs
+            npx --no-install eslint components/mandala-stories-characters.tsx lib/mandala/story-addon-catalog.ts
+          fi
       - name: Targeted lint
         run: npx --no-install eslint lib/mandala/hypno-wave-engine.mjs lib/mandala/cinematic-kling-handoff.mjs lib/mandala/free-film-timeline.mjs components/mandala-auto-video-director.tsx lib/mandala/auto-video-director.mjs app/api/holistic-support/first-video-prompt/route.js app/api/holistic-support/hypno-strategy/route.js components/mandala-hypnocorrection-mobile.tsx components/meditation-course-enquiry.tsx components/mandala-first-video-start.tsx lib/mandala/first-video-director.mjs lib/mandala/first-video-free-providers.mjs scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
       # Mandatory Core checks exact-head TypeScript on production-bound PRs;
@@ -155,6 +168,10 @@ jobs:
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
+          node scripts/verify-hypno-wave-browser.mjs
+          HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
+            HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
+            node scripts/benchmarking/first-video-live-export.mjs
           node scripts/verify-holistic-mandala-browser.mjs
       - name: Upload synthetic audio-only iPhone screenshots
         if: always() && github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'

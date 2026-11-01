@@ -173,6 +173,10 @@ async function verify(engine, locale, width) {
       expanded: root.querySelector('[data-direction-show-more="session"]')?.getAttribute('aria-expanded'),
       offers: root.querySelectorAll('[data-offer-action="session"]').length,
     })).catch(() => null);
+    console.error('Business quiz failure diagnostic:', JSON.stringify({
+      label, path: new URL(page.url()).pathname, query: new URL(page.url()).search,
+      session: state, freeLink: await page.locator('[data-business-cta="free-hero"]').getAttribute('href').catch(() => null),
+    }));
     error.message = label + ': ' + error.message + '; session state=' + JSON.stringify(state);
     throw error;
   } finally {
