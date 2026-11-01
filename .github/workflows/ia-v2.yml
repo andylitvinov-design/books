@@ -107,6 +107,11 @@ jobs:
             /^\.github\/workflows\/hh-messages-wellness-v2\.yml$/,
             /^\.github\/workflows\/ia-v2\.yml$/,
           ]
+          // Exact 20-path reviewed operator-only handoff: RLS and its genuine
+          // negative account tests are required together. Unknown additions
+          // and a standalone auth/SQL change always run full IA.
+          const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
+          let operatorOnly=false
           let messengerOnly=false
           if(process.env.HH_PR_EVENT==='pull_request'){
             try{
@@ -114,15 +119,26 @@ jobs:
               const base=git('rev-parse','HEAD^1')
               const head=git('rev-parse','HEAD^2')
               const files=git('diff','--name-only','HEAD^1','HEAD').split('\n').filter(Boolean)
+              const raw=execFileSync('git',['diff','--name-status','-z','HEAD^1','HEAD'],{encoding:'utf8'})
+              const fields=raw.split('\0')
+              operatorOnly=fields.at(-1)==='' &&
+                fields.length===operatorExpected.size*2+1 &&
+                files.length===operatorExpected.size &&
+                files.every(file=>operatorExpected.has(file)) &&
+                [...operatorExpected].every(([path,status])=>{
+                  const i=fields.indexOf(path)
+                  return i>0 && fields[i-1]===status
+                })
               messengerOnly=base===process.env.HH_EXPECTED_BASE &&
                 head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
-                files.every(file=>allowed.some(pattern=>pattern.test(file)))
-              console.log(JSON.stringify({base,head,files,messengerOnly}))
+                (files.every(file=>allowed.some(pattern=>pattern.test(file)))||operatorOnly)
+              operatorOnly=operatorOnly&&messengerOnly
+              console.log(JSON.stringify({base,head,files,operatorOnly,messengerOnly}))
             }catch(err){
               console.error('Messenger scoped classification unavailable; keeping full IA',err.message)
             }
           }
-          appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\n')
+          appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
@@ -131,6 +147,9 @@ jobs:
           # Server-only imports have React Server conditional exports in Next.js.
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
+      - name: Exact operator-only contact consent and tenant authorization contracts
+        if: ${{ steps.messenger-scope.outputs.operator_only == 'true' }}
+        run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
       - name: Full historical IA suite for non-Messenger or unverified changes
         if: ${{ steps.messenger-scope.outputs.messenger_only != 'true' }}
         run: npm run test:unit

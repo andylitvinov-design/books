@@ -131,10 +131,10 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   'tests/meditation-course-enquiry.test.mjs',
   'tests/meditation-regeneration.test.mjs',
 ]);
-// Fail-closed reviewed guest reply delta (#2856): contacts must remain private
-// in the separate operator CRM. This exact known change needs real EN/RU/ES
-// consultation/consent browser QA and all auth/CRM/IA/Core privacy checks,
-// but not 11 unrelated store, business, reiki or talisman journeys.
+// Exact operator guest reply (#2856): reviewed private route and SQL audit
+// are backed by isolated PostgreSQL17, other-account negative auth, IA/CRM,
+// real EN/RU/ES public enquiry browser and Core build. Any unknown file or
+// payment, common auth, provider transport change runs the full 13 browsers.
 const REVIEWED_GUEST_REPLY_PATHS=new Set([
   '.github/workflows/hh-messages-wellness-v2.yml',
   '.github/workflows/ia-v2.yml',
@@ -146,12 +146,28 @@ const REVIEWED_GUEST_REPLY_PATHS=new Set([
   'lib/practitioners/public-enquiry-reply-links.mjs',
   'lib/practitioners/public-service-enquiry.js',
   'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
 ]);
 const REVIEWED_GUEST_REPLY_ADDITIONS=new Set([
   'components/app/public-enquiry-reply.jsx',
   'components/app/public-enquiry-reply.module.css',
   'lib/practitioners/public-enquiry-reply-links.mjs',
   'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
 ]);
 const REVIEWED_GUEST_CI_POLICY=new Set([
   'scripts/ci-public-services-plan.mjs',
@@ -214,12 +230,12 @@ export function planPublicServicesChangedPaths(files) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
   }
   if(exactReviewedGuestReply(files)) {
-    // Keep actual Chromium/WebKit service consent, EN/RU/ES and a real
-    // production build mandatory. Unknown, payment, auth, mixed changes still
-    // run the complete 13-journey browser matrix.
+    // Keep real EN/RU/ES service consent Chromium and production build;
+    // the separate mandatory IA owner/browser runs WebKit and the dedicated
+    // Messages workflow runs PostgreSQL17 tenant isolation. Unknowns run ALL.
     return {mode:'focused',reason:'EXACT_PRIVATE_GUEST_REPLY',
       build:true,browser:true,metrics:false,
-      cases:'verify-public-services-production.mjs,verify-home-consultation-first-screen.mjs'};
+      cases:'verify-public-services-production.mjs'};
   }
   const selected = new Set();
   let performance = false;

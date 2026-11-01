@@ -36,7 +36,7 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-test('only exact guest reply privacy delta receives real Chromium/WebKit service-consent QA',()=>{
+test('only exact reviewed guest operator bundle qualifies for real focused consent and privacy CI',()=>{
  const full=[
   '.github/workflows/hh-messages-wellness-v2.yml',
   '.github/workflows/ia-v2.yml',
@@ -48,20 +48,36 @@ test('only exact guest reply privacy delta receives real Chromium/WebKit service
   'lib/practitioners/public-enquiry-reply-links.mjs',
   'lib/practitioners/public-service-enquiry.js',
   'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
  ];
  const plan=planPublicServicesChangedPaths(full);
  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],[
   'focused',true,true,
-  'verify-public-services-production.mjs,verify-home-consultation-first-screen.mjs']);
+  'verify-public-services-production.mjs']);
  assert.equal(requiresPublicServicesHeavyPr(plan),true);
- assert.equal(publicPlaywrightEngines(plan),'chromium webkit');
+ assert.equal(publicPlaywrightEngines(plan),'chromium');
  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
  const additions=new Set(['components/app/public-enquiry-reply.jsx',
   'components/app/public-enquiry-reply.module.css',
   'lib/practitioners/public-enquiry-reply-links.mjs',
-  'tests/public-enquiry-reply-handoff.test.mjs']);
+  'tests/public-enquiry-reply-handoff.test.mjs',
+  'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js',
+  'components/app/public-enquiry-operator-reply.jsx',
+  'lib/practitioners/public-enquiry-operator-contact.js',
+  'supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql',
+  'tests/messages-reply-contact-route.test.mjs',
+  'tests/public-enquiry-contact-audit-rls.integration.mjs',
+  'tests/public-enquiry-operator-contact.test.mjs',
+  'tests/public-enquiry-operator-ui.test.mjs',]);
  const statuses=full.map(path=>[additions.has(path)?'A':'M',path]);
  const event=planPublicServicesEvent({
    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,
