@@ -59,6 +59,12 @@ for(const engineName of ['webkit','chromium']){
             installedGuide:document.querySelectorAll('[data-hh-ios-quicksteps]').length,
             nativeIosPending:!!document.querySelector('[data-hh-native-ios-pending]'),
             nativeAndroidPending:!!document.querySelector('[data-hh-native-android-pending]'),
+            nativeAndroidReady:!!document.querySelector('[data-hh-native-android] a[href="/api/native-download/android"]'),
+            nativeIosReady:!!document.querySelector('[data-hh-native-ios] a[href="/api/native-download/ios"]'),
+            directApkReady:!!document.querySelector('[data-hh-direct-apk-ready]'),
+            directApkHref:document.querySelector('[data-hh-direct-apk-ready] a')?.getAttribute('href')||null,
+            directApk:document.querySelector('[data-hh-direct-apk-ready]')?rect('[data-hh-direct-apk-ready]'):null,
+            directApkAction:document.querySelector('[data-hh-direct-apk-ready] a')?rect('[data-hh-direct-apk-ready] a'):null,
           }
         })
         assert.ok(measurements.pwa.top<measurements.native.top,'Available PWA must appear before future native packages')
@@ -66,7 +72,14 @@ for(const engineName of ['webkit','chromium']){
         assert.ok(measurements.action.height>=44,'Installation action must be thumb-sized')
         assert.ok(measurements.action.left>=0&&measurements.action.right<=item.width+1,'Installation action is clipped')
         assert.ok(measurements.contentWidth<=item.width+1,'Unexpected horizontal overflow on iPhone; page='+measurements.contentWidth+'px, width='+item.width)
-        assert.ok(measurements.nativeIosPending&&measurements.nativeAndroidPending,'Unsigned native packages must remain unpublished')
+        assert.notEqual(measurements.nativeIosPending,measurements.nativeIosReady,'iOS must show exactly one honest release state')
+        assert.notEqual(measurements.nativeAndroidPending,measurements.nativeAndroidReady,'Android must show exactly one honest release state')
+        assert.equal(measurements.directApkReady,measurements.nativeAndroidReady,'Top APK CTA must match the reviewed native Android release')
+        if(measurements.directApkReady){
+          assert.ok(measurements.directApk.top<measurements.pwa.top,'Signed APK CTA must be featured above the PWA alternative')
+          assert.equal(measurements.directApkHref,'/api/native-download/android','APK must route through gated same-site endpoint')
+          assert.ok(measurements.directApkAction.height>=44,'Direct APK CTA must be thumb-sized')
+        }
         if(item.platform==='iphone'){
           assert.equal(measurements.installedGuide,1,'Safari installation steps must be immediately visible')
           const text=await page.locator('[data-hh-ios-quicksteps]').innerText()
@@ -92,4 +105,4 @@ for(const engineName of ['webkit','chromium']){
   }finally{await browser.close()}
 }
 writeFileSync(output+'/summary.json',JSON.stringify({public:true,cases:evidence},null,2)+'\n')
-console.log('Verified '+evidence.length+' public install renderings with WebKit/Chromium; PWA first, Safari manual steps, no native fake downloads.')
+console.log('Verified '+evidence.length+' install renderings; signed direct APK promoted only after approval, otherwise PWA first, no unsigned downloads.')
