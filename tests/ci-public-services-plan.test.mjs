@@ -773,3 +773,48 @@ test('the reviewed six-workspace Video Studio PR cannot trigger unrelated paymen
     assert.equal(v.mode,'full',risky+' must never bypass public safety acceptance');
   }
 });
+
+
+test('only complete PR #2483 public meditation rail diff delegates to real Chromium/WebKit owner',()=>{
+  const head='b'.repeat(40),base='a'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2483/merge',
+    GITHUB_HEAD_REF:'codex/meditation-category-rail-20261028',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const exact=[["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]];
+  const plan=(rows,override={})=>planPublicServicesEvent({...env,...override},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('unrecognized git call');
+  });
+  const allowed=plan(exact);
+  assert.deepEqual([allowed.mode,allowed.reason,allowed.browser,allowed.build],
+    ['contracts','EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(allowed),false);
+  for(const altered of [
+    [...exact,['M','middleware.ts']],
+    [...exact,['M','app/api/service-enquiries/route.js']],
+    [...exact,['A','app/api/payments/checkout/route.js']],
+    exact.filter(([,path])=>path!=='components/holistic-support-mobile.tsx'),
+    exact.filter(([,path])=>path!=='components/holistic-support-goal-filter.tsx'),
+    exact.filter(([,path])=>path!=='tests/holistic-support-goal-filter.test.mjs'),
+    exact.map(([status,path])=>path==='tests/holistic-meditation-mobile-categories.test.mjs'?['M',path]:[status,path]),
+    exact.map(([status,path],i)=>i===1?['D',path]:[status,path]),
+    [...exact,exact[0]],
+  ]) assert.equal(plan(altered).mode,'full','unknown/auth/payments/missing/duplicate still run full browsers');
+  for(const bad of [
+    {GITHUB_HEAD_REF:'unreviewed/branch'}, {GITHUB_REF:'refs/pull/2484/merge'},
+    {GITHUB_EVENT_NAME:'workflow_dispatch'},
+  ]) assert.equal(plan(exact,bad).mode,'full','never generalize the PR exemption');
+  assert.equal(planPublicServicesChangedPaths(exact.map(([,path])=>path)).mode,'full');
+  const owner=workflow('hh-support-mobile-mock-browser.yml');
+  assert.match(owner,/pull_request:/);
+  assert.ok(owner.includes('github.event.pull_request.number == 2483'));
+  assert.match(owner,/playwright install --with-deps chromium webkit/);
+  assert.ok(owner.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
+  assert.ok(owner.includes('tests/holistic-meditation-mobile-categories.test.mjs'));
+  const filter=readFileSync(new URL('../components/holistic-support-goal-filter.tsx',import.meta.url),'utf8');
+  assert.match(filter,/data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+  assert.match(filter,/data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}/);
+});
+

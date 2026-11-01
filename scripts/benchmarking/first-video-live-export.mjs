@@ -117,6 +117,15 @@ try {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
+  // Long-form Video Studio is deliberately behind the optional advanced
+  // disclosure. Click its actual visible summary before the real-media flow.
+  // On earlier published layouts the wizard is already directly visible.
+  const advanced=page.locator('[data-video-first-video-advanced]');
+  if(await advanced.count()){
+    await advanced.locator(':scope > summary').click({timeout:15000});
+    assert.notEqual(await advanced.getAttribute('open'),null,
+      'ADVANCED_VIDEO_WIZARD_MUST_BE_OPENED_BY_USER');
+  }
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
