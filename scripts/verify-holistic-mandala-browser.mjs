@@ -801,9 +801,21 @@ const runEngine = async ([engine, browserType]) => {
         // control with a real summary click only when the panel is closed.
         const advancedFilters=page.locator("[data-video-advanced-filters]");
         const advancedSummary=advancedFilters.locator(":scope > summary");
-        if(!(await advancedFilters.evaluate(element=>element.open)))
-          await advancedSummary.click();
-        await expect(advancedFilters).toHaveJSProperty("open",true,{timeout:10000});
+        try {
+          if(!(await advancedFilters.evaluate(element=>element.open)))
+            await advancedSummary.click();
+          await expect(advancedFilters).toHaveJSProperty("open",true,{timeout:10000});
+        } catch (error) {
+          const state=await advancedFilters.evaluate(element=>({open:element.open,
+            connected:element.isConnected,visible:element.getClientRects().length>0,
+            parent:element.parentElement?.tagName,workspace:document.querySelector("[data-active-workspace]")?.getAttribute("data-active-workspace")}));
+          console.error("ADVANCED_FILTER_STATE",engine,locale,width,JSON.stringify(state));
+          if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+            mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+            await page.screenshot({path:`${process.env.HH_HYPNO_SCREENSHOT_DIR}/advanced-filter-${engine}-${locale}-${width}.png`});
+          }
+          throw error;
+        }
         await expect(page.locator("[data-video-advanced-aspect]")).toBeVisible({timeout:10000});
         await page.locator("[data-video-advanced-aspect]").selectOption("landscape");
         assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
@@ -1756,6 +1768,9 @@ const runEngine = async ([engine, browserType]) => {
         // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
         // Keep the full original Chromium/WebKit recorder & audio E2E intact.
         if (locale === "ru" && width === 390) {
+          // The preceding workspace check selects Hypnotherapy; return through
+          // the real Video tab before exercising its goal-first director.
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
           const auto=page.locator("[data-auto-video-director]");
           await auto.waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
