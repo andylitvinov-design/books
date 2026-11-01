@@ -82,7 +82,12 @@ test('all major campaign surfaces expose the dedicated info landing without remo
   assert.match(academy, /app\/course\?program=stress/)
   assert.match(publicCourses, /courses\/antistress/)
   assert.match(publicCourses, /app\/course\?program=stress/)
-  assert.match(courseSeo, /ОПОРА Антистресс/)
+  // /{locale}/courses is a canonical redirect; course details live at the
+  // dedicated antistress route, not inside the redirecting SEO wrapper.
+  assert.match(courseSeo, /permanentRedirect\(\`\/\$\{locale\}\/academy\`\)/)
+  assert.match(courseSeo, /canonical: \`\/\$\{locale\}\/academy\`/)
+  const antistressSeo = read('app/[locale]/courses/antistress/page.tsx')
+  assert.match(antistressSeo, /ОПОРА Антистресс/)
   assert.match(spanishSeo, /OPORA Antiestrés/)
   assert.doesNotMatch(reportBanner, /courses\/antistress/, 'screening results keep exactly one score-independent optional course link')
 })
