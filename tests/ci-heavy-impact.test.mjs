@@ -220,7 +220,7 @@ test('Mandala PR retains units and runs full media browser only manually or for 
   assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-studio-'\)/);
   assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-mix-'\)/);
   assert.match(yaml, /node scripts\/verify-affirmation-voice-browser\.mjs/);
-  assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
+  assert.match(yaml, /run: node --test [^\n]*tests\/first-video-director\.test\.mjs/, 'first-video director must remain in the executable test command');
   assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'.*\n        run: npm run build/);
   assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'.*/);
 });
