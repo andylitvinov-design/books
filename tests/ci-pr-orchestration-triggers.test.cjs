@@ -143,3 +143,20 @@ test('one-time cron retry uses injected v9 getOctokit after verified pre-toggle 
   assert.ok(s.includes("failed.conclusion!=='failure'"));
   assert.ok(s.includes('getWorkflowRun'));
 });
+
+test('hourly coordinator verifies GitHub + Vercel LIVE independently of native merge',()=>{
+ const s=read('hh-pr-full-inventory');
+ assert.ok(s.includes('  verify-live:\n'));
+ assert.ok(s.includes('name: independent production LIVE evidence (read-only)'));
+ assert.ok(s.includes('statuses: read'));
+ assert.ok(s.includes('node --test tests/ci-pr-live-verifier.test.cjs'));
+ assert.ok(s.includes("scripts/ci-pr-live-verifier.cjs"));
+ assert.ok(s.includes("secrets.VERCEL_TOKEN"));
+ assert.ok(!s.includes('pull_request_target:'));
+ const script=readFileSync('scripts/ci-pr-live-verifier.cjs','utf8');
+ assert.ok(script.includes("deployment.target!=='production'"));
+ assert.ok(script.includes("deployment.readyState!=='READY'"));
+ assert.ok(script.includes("meta.githubCommitSha!==sha"));
+ assert.ok(script.includes('aliasId!==deployId'));
+ assert.ok(script.includes("reason:'LIVE_VERIFIED'"));
+});

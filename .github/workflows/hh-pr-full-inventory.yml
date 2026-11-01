@@ -242,3 +242,38 @@ jobs:
             ];
             for(const r of report)log(r);
             await core.summary.addHeading("HH PR inventory: all open pages").addRaw(report.join("\n\n")).write();
+
+  verify-live:
+    name: independent production LIVE evidence (read-only)
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      statuses: read
+    steps:
+      - name: Checkout only trusted control-plane code
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Verify read-only LIVE classifier contracts without credentials
+        run: |
+          node --check scripts/ci-pr-live-verifier.cjs
+          node --test tests/ci-pr-live-verifier.test.cjs
+      - name: Independently compare production HEAD, Vercel deployment and alias
+        uses: actions/github-script@v7
+        env:
+          # Existing optional read-only Vercel API credential; absent means UNVERIFIED.
+          # No Vercel credential is exposed to PR source or public browser.
+          HH_VERCEL_READ_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const verifier=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-live-verifier.cjs');
+            await verifier.run({github,core,context,
+              vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
