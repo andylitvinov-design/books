@@ -602,8 +602,11 @@ const runEngine = async ([engine, browserType]) => {
           const diagnostic=document.querySelector("[data-video-diagnostic-banner]");
           const box=node=>node?.getBoundingClientRect();
           return {hero:box(header)?.height,brand:box(brand)?.height,
-            goals:[...goalHost?.querySelectorAll("[data-auto-video-goal]")||[]]
+            goals:[...goalHost?.querySelector('[data-auto-video-goal-panel] [role="group"]')
+              ?.querySelectorAll("[data-auto-video-goal]")||[]]
               .filter(node=>node.getClientRects().length).map(node=>box(node)?.width),
+            extraGoalCount:goalHost?.querySelector('[data-auto-video-more-goals]')
+              ?.querySelectorAll("[data-auto-video-goal]").length||0,
             secondaryHeaderVisible:!!root?.querySelector("[data-video-quick-hero-play]")?.getClientRects().length,
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?
@@ -614,7 +617,9 @@ const runEngine = async ([engine, browserType]) => {
         assert.ok(layout.brand>=40 && layout.brand<=75,
           engine+" "+locale+" "+width+"px compact brand "+JSON.stringify(layout));
         assert.ok(layout.goals.length===4 && layout.goals.every(n=>n>=44),
-          engine+" "+locale+" "+width+"px four scannable goal cards "+JSON.stringify(layout));
+          engine+" "+locale+" "+width+"px four primary goal cards "+JSON.stringify(layout));
+        assert.equal(layout.extraGoalCount,2,
+          engine+" "+locale+" "+width+"px two optional goals must remain available");
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
