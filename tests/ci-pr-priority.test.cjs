@@ -1,53 +1,103 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {priorityFor,rankedCandidates,pickQueueCandidates}=require('../scripts/ci-pr-priority.cjs');
+const {POLICY,priorityFor,rankedCandidates,pickQueueCandidates,desiredLabels,
+  classifyDirection,selectNextAvailable,isFreeFor}=require('../scripts/ci-pr-priority.cjs');
 const NOW=Date.parse('2026-11-01T18:00:00Z');
 const label=name=>({name});
-const pr=(number,title='feat(profile): normal product work',extra={})=>({
-  number,title,created_at:'2026-10-01T00:00:00Z',
+const pr=(number,title='feat: add assorted enhancements',extra={})=>({
+  number,title,state:'open',draft:false,
+  created_at:'2026-10-01T00:00:00Z',
   updated_at:new Date(NOW-number*1000).toISOString(),labels:[],...extra
 });
-test('explicit P0 to P3 owner priority overrides title heuristic',()=>{
-  assert.equal(priorityFor(pr(1,'fix(ci): watchdog broken'),NOW).tier,'P0');
-  assert.equal(priorityFor(pr(2,'fix(ci): watchdog broken',{labels:[label('hh:priority:p2')]}),NOW).tier,'P2');
+
+test('central direction policy has exactly five ranks and stable unique areas',()=>{
+  assert.deepEqual(POLICY.levels.map(x=>x.id),[1,2,3,4,5]);
+  assert.equal(new Set(POLICY.directions.map(x=>x.id)).size,POLICY.directions.length);
+  for(const area of POLICY.directions)
+    assert.ok(area.level>=1&&area.level<=5);
 });
-test('production regression precedes media feature, normal work and styling',()=>{
-  for(const [title,tier] of [
-    ['fix(video): unblock iPhone Create','P0'],
-    ['feat(voice): RU/EN TTS audio','P1'],
-    ['feat(courses): lessons','P2'],
-    ['style(video): spacing','P3']])
-    assert.equal(priorityFor(pr(1,title),NOW).tier,tier);
+test('all five inherited priorities come from development directions',()=>{
+  for(const [title,id,tier] of [
+    ['fix(ci): wake Watchdog worker','platform','P1'],
+    ['fix(video): iPhone Create mp4','video','P1'],
+    ['feat(voice): RU/EN TTS narration','audio-hypno','P2'],
+    ['fix(messages): reply to guest enquiry','messenger-crm','P3'],
+    ['feat(wallet): checkout receipt','orders-payments','P3'],
+    ['feat(cabinet): profile improvements','cabinet-diagnostics','P4'],
+    ['feat(reiki): initiation course','academy-courses','P4'],
+    ['seo: hreflang and canonical','seo-growth','P5'],
+    ['style: typography and layout','content-design','P5']]){
+    const actual=priorityFor(pr(1,title),NOW);
+    assert.equal(actual.direction,id,title);
+    assert.equal(actual.tier,tier,title);
+  }
 });
-test('age and queue bonuses cannot jump priority tiers',()=>{
-  const old=pr(1,'docs: grammar',{created_at:'2020-01-01T00:00:00Z'});
-  const newItem=pr(2,'feat(video): editor',{created_at:'2026-11-01T17:59:00Z'});
-  assert.ok(priorityFor(old,NOW).score<priorityFor(newItem,NOW).score);
+test('owner can change a direction, not an individual PR priority',()=>{
+  const original=pr(42,'feat(voice): synthesize music');
+  assert.equal(priorityFor(original,NOW).tier,'P2');
+  const oldManual=pr(42,original.title,{labels:[label('hh:priority:p0')]});
+  assert.equal(priorityFor(oldManual,NOW).tier,'P2','old manual P0 must not override direction');
+  const direction=pr(42,original.title,{labels:[
+    label('hh:direction-override:video'),label('hh:priority:5')]});
+  const inherited=priorityFor(direction,NOW);
+  assert.equal(inherited.direction,'video');
+  assert.equal(inherited.tier,'P1','central direction beats stale numeric label');
 });
-test('conflicting manual labels do not silently escalate priority',()=>{
-  const ambiguous=pr(1,'fix(ci): urgent',{labels:[label('hh:priority:p0'),label('hh:priority:p3')]});
-  assert.equal(priorityFor(ambiguous,NOW).conflicted,true);
-  assert.deepEqual(rankedCandidates([ambiguous,pr(2)],NOW).map(x=>x.number),[2]);
+test('unknown titles can use changed file paths or prior auto classification',()=>{
+  const unknown=pr(1,'feat: add service assets');
+  assert.equal(classifyDirection(unknown).id,'other');
+  assert.equal(classifyDirection(unknown,['src/service/audio/voice.wav']).id,'audio-hypno');
+  assert.equal(classifyDirection(pr(1,unknown.title,{labels:[
+    label('hh:direction:academy-courses')]})).id,'academy-courses');
 });
-test('three fast and one rotating slots protect against starvation',()=>{
-  const pool=Array.from({length:60},(_,i)=>pr(i+1));
-  pool[45]={...pool[45],labels:[label('hh:priority:p0')]};
-  pool[55]={...pool[55],labels:[label('hh:priority:p1')]};
-  const first=pickQueueCandidates(pool,NOW,4,3);
-  assert.equal(first.length,4);
-  assert.equal(first[0].number,46);
-  assert.ok(first.some(x=>x.number===56));
+test('classifier creates authoritative direction and level labels and migrates legacy',()=>{
+  const item=pr(1,'feat(video): new renderer',{labels:[
+    label('hh:priority:p0'),label('hh:direction:audio-hypno'),
+    label('hh:priority:3'),label('hh:repair-needed')]});
+  const result=desiredLabels(item);
+  assert.equal(result.id,'video');
+  assert.deepEqual(result.desired,['hh:direction:video','hh:priority:1']);
+  assert.ok(result.obsolete.includes('hh:priority:p0'));
+  assert.ok(result.obsolete.includes('hh:direction:audio-hypno'));
+  assert.equal(result.obsolete.includes('hh:repair-needed'),false);
+});
+test('conflicting or unknown direction overrides fail closed',()=>{
+  const item=pr(1,'fix(ci): critical',{labels:[
+    label('hh:direction-override:video'),label('hh:direction-override:other')]});
+  assert.equal(priorityFor(item,NOW).conflicted,true);
+  assert.equal(desiredLabels(item).needsSync,false);
+  assert.deepEqual(rankedCandidates([item,pr(2)],NOW).map(x=>x.number),[2]);
+});
+test('age and work-queue bonuses never jump between five priority levels',()=>{
+  const old=pr(1,'style: text',{created_at:'2020-01-01T00:00:00Z'});
+  const fresh=pr(2,'feat(reiki): initiation',{created_at:'2026-11-01T17:59:00Z'});
+  assert.ok(priorityFor(old,NOW).score<priorityFor(fresh,NOW).score);
+});
+test('next available repair work skips manual holds and chooses best direction',()=>{
+  const items=[
+    pr(1,'fix(video): urgent',{labels:[label('hh:repair-needed'),label('hh:repair-manual')]}),
+    pr(2,'feat(voice): narration',{labels:[label('hh:repair-needed')]}),
+    pr(3,'feat(cabinet): profile',{labels:[label('hh:repair-needed')]}),
+    pr(4,'fix(video): pending',{labels:[label('hh:repair-needed'),label('hh:hold')]})
+  ];
+  assert.equal(selectNextAvailable(items,'repair',NOW).number,2);
+  assert.equal(isFreeFor(items[0],'repair'),false);
+  assert.equal(selectNextAvailable(items,'ci',NOW),null);
+});
+test('three fast priority entries plus rotating slot prevent starvation',()=>{
+  const items=Array.from({length:60},(_,i)=>pr(i+1,'feat(cabinet): profile'));
+  items[45].title='fix(video): urgently repair Create';
+  items[55].title='feat(voice): narration';
+  const result=pickQueueCandidates(items,NOW,4,3);
+  assert.equal(result[0].number,46);
+  assert.ok(result.some(x=>x.number===56));
   const seen=new Set();
-  for(let t=0;t<60;t++)seen.add(pickQueueCandidates(pool,NOW+t*600000,4,3)[3].number);
-  assert.ok(seen.size>=45,'rotating slot reaches older P2 PRs');
+  for(let i=0;i<60;i++)
+    seen.add(pickQueueCandidates(items,NOW+i*600000,4,3)[3].number);
+  assert.ok(seen.size>=45);
 });
-test('latest update is tie-break only within priority, not across levels',()=>{
-  const items=[pr(1,'feat(profile): normal',{updated_at:'2026-11-01T17:00:00Z'}),
-    pr(2,'feat(profile): normal',{updated_at:'2026-11-01T17:30:00Z'})];
-  assert.deepEqual(rankedCandidates(items,NOW).map(x=>x.number),[2,1]);
-});
-test('invalid capacity fails closed',()=>{
+test('invalid queue size fails closed',()=>{
   assert.throws(()=>pickQueueCandidates([pr(1)],NOW,30,3),/Unsafe/);
   assert.throws(()=>pickQueueCandidates([pr(1)],NOW,4,5),/Unsafe/);
 });
