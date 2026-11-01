@@ -176,15 +176,25 @@ jobs:
             const required = branchProtection.protection?.required_status_checks?.contexts;
             const oldRequired = Array.isArray(required) && required.includes("release-ready");
             const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            const specialistRequired = Array.isArray(required) && required.includes("hh-specialist");
+            // Safe transition states: legacy-only, both enforced, or fully migrated.
+            // Partial replacement is a configuration error, never an approval.
+            const legacyOnly = oldRequired && !coreRequired && !specialistRequired;
+            const dualEnforced = oldRequired && coreRequired && specialistRequired;
+            const migrated = !oldRequired && coreRequired && specialistRequired;
             if (!branchProtection.protected || !Array.isArray(required) ||
-                (oldRequired === coreRequired)) {
-              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+                !(legacyOnly || dualEnforced || migrated)) {
+              log("SKIP missing/partial/unknown required protection on PR #" + number);
               return;
             }
-            if (oldRequired && !jobPage.jobs.some(job =>
-                job.name === "release-ready" && job.status === "completed" &&
-                job.conclusion === "success")) {
-              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
+            const passed = name => jobPage.jobs.some(job =>
+              job.name === name && job.status === "completed" && job.conclusion === "success");
+            if (oldRequired && !passed("release-ready")) {
+              log("SKIP old mandatory release-ready is not green for PR #" + number);
+              return;
+            }
+            if (specialistRequired && !passed("hh-specialist")) {
+              log("SKIP required hh-specialist missing or red for PR #" + number);
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||
