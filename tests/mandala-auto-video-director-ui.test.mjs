@@ -75,7 +75,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/scenePoster\(clip\)/);
  assert.match(director,/data-auto-video-create/);
  assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
- assert.match(studio,/canCreate=\{canGenerate\}/,"four decoded originals + selected audio stay required");
+ assert.match(studio,/canCreate=\{canGenerate\}/,"licensed source URLs and selected audio are required");
+ assert.match(studio,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+   "iPhone native players are decoded after Create is tapped, never via a permanently disabled button");
+ assert.match(director,/\{!canCreate&&!disabled\?<p className=\{css\.notice\}>\{t\.blocked\}<\/p>:null\}/,
+   "an audio/rights block must not masquerade as a still-loading video scene");
  assert.match(studio,/data-video-result-empty/);
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
