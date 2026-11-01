@@ -5,14 +5,23 @@
  */
 export type ExpandedAudioPreset = "soft-piano" | "kalimba" | "harp" | "flute" | "celesta" | "strings" | "marimba" | "lullaby" | "handpan" | "forest" | "stream" | "waterfall" | "fireplace" | "night" | "birdsong" | "singing-bowl" | "wind-chimes" | "crystal" | "cosmos" | "soft-beat" | "earth-drum";
 export type OriginalMelodyPreset = "warm-morning" | "wings-of-light" | "heart-harmony" | "quiet-stars" | "bright-path";
+/** Individually mastered first-party MP3 for each approved video scenario. */
+export type ScenarioAudioPreset = `score-${string}-${1|2|3|4}` |
+  "classic-ode-to-joy" | "classic-fur-elise" | "classic-greensleeves" | "classic-twinkle";
+export function isScenarioAudioPreset(value: AmbientMusic): value is ScenarioAudioPreset {
+  return /^score-[a-z0-9]+(?:-[a-z0-9]+)*-[1-4]$/.test(value) ||
+    /^classic-(?:ode-to-joy|fur-elise|greensleeves|twinkle)$/.test(value);
+}
 export type AmbientMusic = "none" | "harmony" | "prosperity" | "energy" | "love" | "meditation" |
-  "rain" | "ocean" | "breeze" | "focus" | "grounding" | "breath" | "sunrise" | "pulse" | ExpandedAudioPreset | OriginalMelodyPreset;
+  "rain" | "ocean" | "breeze" | "focus" | "grounding" | "breath" | "sunrise" | "pulse" | ExpandedAudioPreset | OriginalMelodyPreset | ScenarioAudioPreset;
 /** Cacheable first-party files: Safari in-app browsers cannot reliably open
  * synthetic blob: audio, even when WAV bytes are valid.
  * HTTPS /audio/mandala/*.wav lets WebKit request the actual media using Range.
  */
 export function presetAudioUrl(preset: Exclude<AmbientMusic, "none">): string {
-  return "/audio/mandala/" + preset + ".wav";
+  return isScenarioAudioPreset(preset)
+    ? "/audio/mandala/scenarios/" + preset + ".mp3"
+    : "/audio/mandala/" + preset + ".wav";
 }
 export type AmbientSession = {
   track: MediaStreamTrack;
@@ -20,7 +29,7 @@ export type AmbientSession = {
   fadeOut: () => void;
   setVolume: (value: number) => void;
 };
-const NOTES: Record<Exclude<AmbientMusic,"none">, readonly [number,number,number,number]> = {
+const NOTES: Record<Exclude<AmbientMusic,"none" | ScenarioAudioPreset>, readonly [number,number,number,number]> = {
   harmony:[174.61,261.63,349.23,523.25],
   prosperity:[196.00,246.94,392.00,493.88],
   energy:[164.81,246.94,329.63,493.88],
@@ -92,7 +101,7 @@ function outputGain(volume: number): number {
 export async function startAmbientMusic(
   preset: AmbientMusic, volume = 30, audible = false,
 ): Promise<AmbientSession | null> {
-  if (preset === "none" || typeof window === "undefined") return null;
+  if (preset === "none" || typeof window === "undefined" || isScenarioAudioPreset(preset)) return null;
   const AudioCtor = window.AudioContext ||
     (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtor) return null;
@@ -317,6 +326,7 @@ function createExpandedSoundWav(preset: ExpandedAudioPreset): Blob {
  * the original screenshot showed native media "Error" for that source.
  */
 export function createAmbientPreviewWav(preset: Exclude<AmbientMusic, "none">): Blob {
+  if(isScenarioAudioPreset(preset)) throw Error("scenario_mp3_has_no_synthetic_wav");
   if (preset in EXPANDED_AUDIO_SCORES) return createExpandedSoundWav(preset as ExpandedAudioPreset);
   // Original five presets retain byte-for-byte identical 44.1kHz masters.
   // Additional first-party loops use 22.05kHz mono for mobile download size.
@@ -398,7 +408,7 @@ export function startPresetAudio(
  * on many iPhones. This graph deliberately does not connect to speakers.
  */
 export async function startUploadedAudio(
-  file: File, volume = 80,
+  file: File, volume = 80, options: { loop?: boolean } = {},
 ): Promise<AmbientSession | null> {
   if (typeof window === "undefined" || !isSupportedLocalAudio(file)) return null;
   const AudioCtor = window.AudioContext ||
@@ -426,7 +436,7 @@ export async function startUploadedAudio(
     master.connect(destination);
     source = context.createBufferSource();
     source.buffer = buffer;
-    source.loop = true;
+    source.loop = options.loop !== false;
     source.connect(master);
     const track = destination.stream.getAudioTracks()[0];
     if (!track) throw new Error("No decoded audio output track");
@@ -494,7 +504,7 @@ export const ORIGINAL_MELODY_IDS = [
   "handpan",
 ] as const;
 export function isMelodyPreset(preset: AmbientMusic): boolean {
-  return ORIGINAL_MELODY_IDS.some(id => id===preset);
+  return isScenarioAudioPreset(preset) || ORIGINAL_MELODY_IDS.some(id => id===preset);
 }
 export async function startPresetMixAudio(
   ids: readonly Exclude<AmbientMusic,"none">[], volume=75,

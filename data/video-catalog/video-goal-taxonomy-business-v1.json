@@ -1,0 +1,606 @@
+{
+  "schemaVersion": "hh-video-goal-topic-scenarios-v1",
+  "id": "business",
+  "label": {
+    "ru": "Дело",
+    "en": "Work & purpose",
+    "es": "Trabajo"
+  },
+  "subtitle": {
+    "ru": "Работа, деньги, решения и реализация",
+    "en": "Work, money, decisions and progress",
+    "es": "Trabajo, dinero, decisiones y progreso"
+  },
+  "topics": [
+    {
+      "id": "work-support",
+      "label": {
+        "ru": "Опора в работе",
+        "en": "Confidence at work",
+        "es": "Seguridad en el trabajo"
+      },
+      "desiredOutcome": {
+        "ru": "Обрести больше устойчивости в работе",
+        "en": "Feel steadier at work",
+        "es": "Sentir más estabilidad en el trabajo"
+      },
+      "legacyVideoTheme": "money",
+      "legacyProfileTopic": "business/work",
+      "aliases": {
+        "ru": [
+          "работа",
+          "опора в работе",
+          "рабочий день"
+        ],
+        "en": [
+          "work",
+          "job stability"
+        ],
+        "es": [
+          "trabajo",
+          "estabilidad laboral"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "work-support-s1",
+          "label": {
+            "ru": "Устойчивая почва",
+            "en": "Steady ground",
+            "es": "Suelo firme"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "stone",
+            "roots",
+            "tree",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-support-s2",
+          "label": {
+            "ru": "Ясное утро",
+            "en": "A clear morning",
+            "es": "Mañana clara"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "sunrise",
+            "window",
+            "notebook",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-support-s3",
+          "label": {
+            "ru": "Путь мастерства",
+            "en": "Path of mastery",
+            "es": "Camino del dominio"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "road",
+            "bridge",
+            "mountain",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-support-s4",
+          "label": {
+            "ru": "Спокойный рабочий день",
+            "en": "A balanced workday",
+            "es": "Jornada equilibrada"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "garden",
+            "path",
+            "hearth",
+            "sunset"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "money-stability",
+      "label": {
+        "ru": "Деньги и стабильность",
+        "en": "Money and stability",
+        "es": "Dinero y estabilidad"
+      },
+      "desiredOutcome": {
+        "ru": "Относиться к финансам с большей ясностью",
+        "en": "Approach money with greater clarity",
+        "es": "Abordar el dinero con más claridad"
+      },
+      "legacyVideoTheme": "money",
+      "legacyProfileTopic": "business/money",
+      "aliases": {
+        "ru": [
+          "деньги",
+          "доход",
+          "финансы",
+          "стабильность"
+        ],
+        "en": [
+          "money",
+          "finances",
+          "income"
+        ],
+        "es": [
+          "dinero",
+          "finanzas",
+          "ingresos"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "money-stability-s1",
+          "label": {
+            "ru": "Золотая тропа",
+            "en": "Golden path",
+            "es": "Sendero dorado"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "golden-field",
+            "path",
+            "sunrise",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "money-stability-s2",
+          "label": {
+            "ru": "Порядок и ясность",
+            "en": "Order and clarity",
+            "es": "Orden y claridad"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "notebook",
+            "window",
+            "stone",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "money-stability-s3",
+          "label": {
+            "ru": "Дерево возможностей",
+            "en": "Tree of possibilities",
+            "es": "Árbol de posibilidades"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "seed",
+            "tree",
+            "roots",
+            "harvest"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "money-stability-s4",
+          "label": {
+            "ru": "Тихая финансовая опора",
+            "en": "Financial grounding",
+            "es": "Apoyo financiero sereno"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "home",
+            "hearth",
+            "bridge",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "work-focus",
+      "label": {
+        "ru": "Концентрация",
+        "en": "Focus and attention",
+        "es": "Concentración"
+      },
+      "desiredOutcome": {
+        "ru": "Удерживать внимание на важных задачах",
+        "en": "Focus on what matters",
+        "es": "Concentrarme en lo importante"
+      },
+      "legacyVideoTheme": "goals",
+      "legacyProfileTopic": "personal_growth/goal",
+      "aliases": {
+        "ru": [
+          "внимание",
+          "фокус",
+          "концентрация",
+          "прокрастинация"
+        ],
+        "en": [
+          "focus",
+          "attention",
+          "distraction"
+        ],
+        "es": [
+          "concentración",
+          "atención",
+          "distracción"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "work-focus-s1",
+          "label": {
+            "ru": "Один луч",
+            "en": "One ray of light",
+            "es": "Un solo rayo"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "clouds",
+            "light",
+            "notebook",
+            "path"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-focus-s2",
+          "label": {
+            "ru": "Точка внимания",
+            "en": "Point of focus",
+            "es": "Punto de atención"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "stone",
+            "circle",
+            "sun",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-focus-s3",
+          "label": {
+            "ru": "Чистый горизонт",
+            "en": "Clear horizon",
+            "es": "Horizonte despejado"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "sky",
+            "clearing",
+            "mountain",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-focus-s4",
+          "label": {
+            "ru": "Ритм действий",
+            "en": "Rhythm of action",
+            "es": "Ritmo de acción"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "road",
+            "bridge",
+            "seed",
+            "harvest"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "work-decision",
+      "label": {
+        "ru": "Решительность",
+        "en": "Decision and action",
+        "es": "Decisión y acción"
+      },
+      "desiredOutcome": {
+        "ru": "Сделать следующий осознанный шаг",
+        "en": "Take my next considered step",
+        "es": "Dar mi siguiente paso consciente"
+      },
+      "legacyVideoTheme": "goals",
+      "legacyProfileTopic": "personal_growth/goal",
+      "aliases": {
+        "ru": [
+          "решение",
+          "решительность",
+          "выбор",
+          "действовать"
+        ],
+        "en": [
+          "decision",
+          "courage",
+          "action"
+        ],
+        "es": [
+          "decisión",
+          "elegir",
+          "actuar"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "work-decision-s1",
+          "label": {
+            "ru": "Первый шаг",
+            "en": "First step",
+            "es": "Primer paso"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "stone",
+            "road",
+            "light",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-decision-s2",
+          "label": {
+            "ru": "Перекрёсток",
+            "en": "Crossroads",
+            "es": "Encrucijada"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "path",
+            "compass",
+            "clouds",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-decision-s3",
+          "label": {
+            "ru": "Смелый выбор",
+            "en": "A considered choice",
+            "es": "Una elección consciente"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "door",
+            "window",
+            "sun",
+            "mountain"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-decision-s4",
+          "label": {
+            "ru": "Открытая дверь",
+            "en": "The open door",
+            "es": "La puerta abierta"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "home",
+            "door",
+            "bridge",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "work-opportunity",
+      "label": {
+        "ru": "Новые возможности",
+        "en": "New opportunities",
+        "es": "Nuevas oportunidades"
+      },
+      "desiredOutcome": {
+        "ru": "Замечать возможности для развития",
+        "en": "Notice opportunities to grow",
+        "es": "Reconocer oportunidades de crecimiento"
+      },
+      "legacyVideoTheme": "money",
+      "legacyProfileTopic": "business/work",
+      "aliases": {
+        "ru": [
+          "возможности",
+          "проект",
+          "бизнес рост"
+        ],
+        "en": [
+          "opportunities",
+          "project",
+          "career"
+        ],
+        "es": [
+          "oportunidades",
+          "proyecto",
+          "carrera"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "work-opportunity-s1",
+          "label": {
+            "ru": "Новый горизонт",
+            "en": "New horizon",
+            "es": "Nuevo horizonte"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "horizon",
+            "sky",
+            "sun",
+            "golden-field"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-opportunity-s2",
+          "label": {
+            "ru": "Навстречу возможностям",
+            "en": "Meeting opportunity",
+            "es": "Encuentro con oportunidades"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "path",
+            "bridge",
+            "door",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-opportunity-s3",
+          "label": {
+            "ru": "Рост в саду",
+            "en": "Growth in the garden",
+            "es": "Crecimiento en el jardín"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "seed",
+            "garden",
+            "flowers",
+            "harvest"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-opportunity-s4",
+          "label": {
+            "ru": "Свет будущего",
+            "en": "Light of tomorrow",
+            "es": "Luz del mañana"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "lantern",
+            "mountain",
+            "sunrise",
+            "road"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "work-speaking",
+      "label": {
+        "ru": "Уверенное выступление",
+        "en": "Confident speaking",
+        "es": "Hablar con confianza"
+      },
+      "desiredOutcome": {
+        "ru": "Чувствовать опору во время выступления",
+        "en": "Feel supported when speaking",
+        "es": "Sentir apoyo al hablar"
+      },
+      "legacyVideoTheme": "goals",
+      "legacyProfileTopic": "personal_growth/traits",
+      "aliases": {
+        "ru": [
+          "выступление",
+          "публично",
+          "речь",
+          "презентация"
+        ],
+        "en": [
+          "public speaking",
+          "presentation",
+          "voice"
+        ],
+        "es": [
+          "hablar en público",
+          "presentación",
+          "voz"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "work-speaking-s1",
+          "label": {
+            "ru": "Свой голос",
+            "en": "Finding my voice",
+            "es": "Encontrar mi voz"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "window",
+            "breath",
+            "light",
+            "stage"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-speaking-s2",
+          "label": {
+            "ru": "Спокойная сцена",
+            "en": "A calm stage",
+            "es": "Escenario tranquilo"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "stage",
+            "circle",
+            "sky",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-speaking-s3",
+          "label": {
+            "ru": "Встреча с людьми",
+            "en": "Meeting the audience",
+            "es": "Encuentro con el público"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "bridge",
+            "hands",
+            "heart",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "work-speaking-s4",
+          "label": {
+            "ru": "Уверенный выход",
+            "en": "Stepping forward",
+            "es": "Salir con confianza"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "door",
+            "road",
+            "sunrise",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    }
+  ]
+}

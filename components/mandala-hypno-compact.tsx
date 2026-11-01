@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
 import Link from "next/link";
@@ -143,7 +144,11 @@ const hypnoExtra = {
   aiPrivacy:"Wave funciona localmente. Gemini no recibe notas personales.",
   catalog:"La selección usa las opciones elegidas. Tu texto queda en el dispositivo."}
 } as const;
-const hypnoMiniThemes:VideoTheme[]=["money","relationships","energy","goals"];
+const ideaCopy={
+ ru:{title:"1. Идея",hint:"Главная мысль вашего видео",own:"Своя идея (по желанию)",profile:"Подобрать по моему профилю",update:"Обновить профиль",apply:"Подобрать фразы",gender:"Форма обращения",female:"Женщина",male:"Мужчина",variants:["Я справлюсь","Я сильная","Я в гармонии","Я открыт новому"]},
+ en:{title:"1. Idea",hint:"The central thought of your video",own:"My own idea (optional)",profile:"Suggest from my profile",update:"Update profile",apply:"Find phrases",gender:"Addressing",female:"Woman",male:"Man",variants:["I can manage","I am strong","I feel balanced","I welcome change"]},
+ es:{title:"1. Idea",hint:"La idea central de tu vídeo",own:"Mi propia idea (opcional)",profile:"Según mi perfil",update:"Actualizar perfil",apply:"Elegir frases",gender:"Dirigido a",female:"Mujer",male:"Hombre",variants:["Puedo lograrlo","Soy fuerte","Estoy en armonía","Me abro al cambio"]},
+} as const;
 type HypnoTestProposal={theme:VideoTheme;problemIndex:number;goal:VideoAffirmationGoal};
 const profileDirections:Record<string,HypnoTestProposal>={
  stress:{theme:"energy",problemIndex:0,goal:"rhythm"},
@@ -160,51 +165,37 @@ const profileDirections:Record<string,HypnoTestProposal>={
  boundaries:{theme:"relationships",problemIndex:1,goal:"boundaries"},
  relationships:{theme:"relationships",problemIndex:2,goal:"dialogue"}
 };
-function problemIndexFromNote(theme:VideoTheme,raw:string,fallback:number):number{
- const note=raw.toLocaleLowerCase().slice(0,160);
- const keywords:Record<VideoTheme,RegExp[]> = {
- energy:[/напряж|тревог|stress|tensi|anxi/i,/устал|утом|tired|fatig|cansad/i,/спеш|тороп|rush|prisa/i],
- money:[/цен|price|precio|cobr/i,/неопредел|uncertain|incertid/i,/сомнен|doubt|duda/i],
- relationships:[/отказ|отверг|reject|rechaz/i,/границ|boundar|límite/i,/разговор|конфликт|convers|conflict/i],
- goals:[/ясност|направлен|clarity|rumbo/i,/откладыв|procrast|posterg/i,/ошиб|mistake|error/i],
- life:[/перемен|change|cambio/i,/неопредел|uncertain|incertid/i,/радост|joy|alegr/i],
- health:[/перегруз|overload|sobrecarg/i,/сил|energy|fuerza/i,/напряж|stress|tensi/i],
- };
- const found=keywords[theme].findIndex(re=>re.test(note));
- return found>=0?found:fallback;
-}
-
 export function MandalaHypnoCompact({
-  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster,
+  locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
   onSelectScene, onSelectTheme, onPreview, onCreate,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null;
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
-  const [problemNote,setProblemNote]=useState("");
-  const [goalNote,setGoalNote]=useState("");
+  const problemNote=requestText.slice(0,160);
+  const goalNote="";
   const [selectionSource,setSelectionSource]=useState<"smart"|"ready"|"tests"|"gemini">("ready");
   const extraGoal=topicGoals[theme].includes(goalId)?goalId:topicGoals[theme][0];
-  const issue=hypnoRequestProblems[locale][theme][problemIndex] || hypnoRequestProblems[locale][theme][0];
-  const goal=affirmationGoalCatalog[locale].find(item=>item.id===extraGoal) || affirmationGoalCatalog[locale][0];
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
-  const [showHint,setShowHint]=useState(false);
+  const [ideaIndex,setIdeaIndex]=useState(0);
+  const [ownIdea,setOwnIdea]=useState("");
+  const [gender,setGender]=useState<"female"|"male">("female");
+  const ideas=locale==="ru"&&gender==="male"?["Я справлюсь","Я сильный","Я в гармонии","Я открыт новому"]:ideaCopy[locale].variants;
+  const ideaText=ownIdea.trim()||ideas[ideaIndex];
   const [tone,setTone]=useState<"gentle"|"balanced"|"uplifting">("gentle");
   const [kind,setKind]=useState<"support"|"possibility"|"action">("support");
   const [focus,setFocus]=useState<"support"|"confidence"|"action">("support");
   const [length,setLength]=useState<"short"|"medium">("medium");
   const [generation,setGeneration]=useState(0);
-  const [allPhrases,setAllPhrases]=useState(false);
   const [ownOpen,setOwnOpen]=useState(false);
-  const [filtersOpen,setFiltersOpen]=useState(false);
   const [ownText,setOwnText]=useState("");
   const [testProposal,setTestProposal]=useState<HypnoTestProposal|null>(null);
   const [testBusy,setTestBusy]=useState(false);
@@ -233,32 +224,35 @@ export function MandalaHypnoCompact({
   // to third-party models or written to account state. Existing approved
   // video phrases remain unchanged until the visitor explicitly approves.
   function createWaveDraft(round:number,nextTheme:VideoTheme=theme,
-    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal):HypnoDraft {
+    nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal,
+    overrides:Partial<Pick<typeof waveInput,"kind"|"tone"|"focus"|"length">>={}):HypnoDraft {
     // Test suggestions can change theme/chips in the same React event. Build
     // the draft with their NEXT values, not a stale pre-render request key.
-    const localInput={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
+    const localInput={...waveInput,...overrides,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
     const key=JSON.stringify([localInput,problemNote,goalNote]);
     const fallbackStrategy=buildWaveStrategy(localInput);
     const fallbackPhrases=buildHypnoFilteredPhrases(
-      locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,round);
+      locale,nextTheme,nextProblem,nextGoal,localInput.tone,localInput.kind,localInput.focus,localInput.length,round);
     const result=buildWaveNarrativeDraft({...localInput,currentText:problemNote,goalText:goalNote,
       round,fallbackStrategy,fallbackPhrases});
     if(result.status==="safety_handoff"){
       return {model:"wave",key,strategy:result.strategy,phrases:[],selected:[]};
     }
-    const maxLength=length==="short"?26:36;
-    const phrases=[...new Set([...result.phrases,...fallbackPhrases])]
+    const maxLength=localInput.length==="short"?26:36;
+    const chosenIdea=Array.from(ideaText).slice(0,maxLength).join("");
+    const phrases=[...new Set([chosenIdea,...result.phrases,...fallbackPhrases])]
       .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
     return {model:"wave",key,strategy:result.strategy,
       phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
   }
-  function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
+  function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal,
+    overrides:Partial<Pick<typeof waveInput,"kind"|"tone"|"focus"|"length">>={}){
     pending.current?.abort();runId.current++;
     setModel("wave");setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
     // Updating a request or accepting a test proposal only stages a Wave v2
     // suggestion. The parent video never receives it before Approve.
-    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal));
+    setDraftState(createWaveDraft(next,nextTheme,nextProblem,nextGoal,overrides));
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){
@@ -269,7 +263,7 @@ export function MandalaHypnoCompact({
       const axes=Array.isArray(response.axes)?response.axes.filter(v=>typeof v==="string").slice(0,3):[];
       const proposed=axes.map(v=>profileDirections[String(v)]).find(Boolean);
       if(!proposed){setNote(extra.noData);return;}
-      setTestProposal(proposed);setOpen("request");
+      setTestProposal(proposed);
     }catch(error){
       const status=(error as {status?:number}).status;
       setNote(status===401?extra.auth:extra.noData);
@@ -368,37 +362,32 @@ export function MandalaHypnoCompact({
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
-      <section className={css.card} data-hypno-request>
+      <section className={css.card} data-hypno-request data-hypno-idea>
         <div className={css.cardHead}>
-          <span className={css.emblem}><Target size={20} aria-hidden="true"/></span>
-          <div className={css.heading}><h4>{ui.request}</h4><p>{ui.requestHint}</p></div>
-          <button type="button" className={css.edit} data-hypno-request-edit
-            disabled={disabled} aria-expanded={open==="request"} aria-controls="hypno-request-options"
-            onClick={()=>toggle("request")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+          <span className={css.emblem}><Target size={22} aria-hidden="true"/></span>
+          <div className={css.heading}><h4>{ideaCopy[locale].title}</h4><p>{ideaCopy[locale].hint}</p></div>
         </div>
-
-        <div className={css.topicMiniRail} role="group" aria-label={ui.theme}>
-          {hypnoMiniThemes.map((id,i)=><button type="button" key={id} data-hypno-accent={id}
-            aria-pressed={theme===id} disabled={disabled} onClick={()=>changeTheme(id)}>{extra.topics[i]}</button>)}
+        <div className={css.ideaRail} role="group" aria-label={ideaCopy[locale].title}>
+          {ideas.map((text,index)=><button key={index} type="button" data-hypno-idea-choice={index}
+            disabled={disabled} aria-pressed={ideaIndex===index&&!ownIdea.trim()} onClick={()=>{
+              setIdeaIndex(index);setOwnIdea("");setDraftState(null);setApprovalKey("");
+            }}>{ideaIndex===index&&!ownIdea.trim()?<Check size={18} aria-hidden="true"/>:null}{text}</button>)}
         </div>
-        <div className={css.profileMiniActions}>
-          <button type="button" data-hypno-suggest-tests disabled={disabled||testBusy}
-            onClick={()=>void suggestFromTests()}><Sparkles size={14} aria-hidden="true"/>{testBusy?ui.tests:extra.tests}</button>
-          <Link href={"/"+locale+"/tests"} prefetch={false}><Target size={14} aria-hidden="true"/>{extra.test}</Link>
+        <label className={css.ideaOwn}>
+          <span>{ideaCopy[locale].own}</span>
+          <input type="text" value={ownIdea} maxLength={36} disabled={disabled}
+            data-hypno-idea-own placeholder={ideaCopy[locale].own}
+            onChange={event=>{setOwnIdea(event.target.value);setDraftState(null);setApprovalKey("");}}/>
+        </label>
+        <div className={css.ideaGender} role="group" aria-label={ideaCopy[locale].gender}>
+          <span>{ideaCopy[locale].gender}</span>
+          <button type="button" aria-pressed={gender==="female"} disabled={disabled} onClick={()=>{setGender("female");setDraftState(null);setApprovalKey("");}}>{ideaCopy[locale].female}</button>
+          <button type="button" aria-pressed={gender==="male"} disabled={disabled} onClick={()=>{setGender("male");setDraftState(null);setApprovalKey("");}}>{ideaCopy[locale].male}</button>
         </div>
-        <div className={css.requestPreview}>
-          <div><span className={css.micro}>{ui.current}</span><strong>{problemNote.trim()||issue.label}</strong></div>
-          <ChevronRight size={17} color="#8da99d" aria-hidden="true"/>
-          <div><span className={css.micro}>{ui.desired}</span><strong>{goalNote.trim()||goal.label}</strong></div>
-        </div>
-        <div className={css.shortNote}>
-          <input type="text" value={problemNote} disabled={disabled} maxLength={160}
-            data-hypno-short-request aria-label={extra.note} placeholder={extra.note}
-            onChange={event=>setProblemNote(event.target.value)}/>
-          <button type="button" data-hypno-update-request disabled={disabled} onClick={()=>{
-            const problem=problemIndexFromNote(theme,problemNote,problemIndex);
-            setProblemIndex(problem);filtered(theme,problem,extraGoal);
-          }}>{extra.update}</button>
+        <div className={css.ideaActions}>
+          <button type="button" className={css.profilePrimary} data-hypno-suggest-tests disabled={disabled||testBusy}
+            onClick={()=>void suggestFromTests()}><Sparkles size={18} aria-hidden="true"/>{testBusy?ui.tests:ideaCopy[locale].profile}</button>
+          <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{ideaCopy[locale].update}<ChevronRight size={17} aria-hidden="true"/></Link>
         </div>
         {testProposal&&<div className={css.testMiniProposal} data-hypno-profile-proposal>
           <strong>{extra.proposal}</strong>
@@ -410,39 +399,12 @@ export function MandalaHypnoCompact({
           </div>
         </div>}
         {note&&<p role="status" className={css.hypnoMiniNotice}>{note}</p>}
-        {open==="request"&&<div className={css.editPane} id="hypno-request-options" data-hypno-request-options>
-          <label className={css.fieldLabel} htmlFor="hypno-quick-theme">{ui.theme}</label>
-          <select id="hypno-quick-theme" value={theme} disabled={disabled}
-            onChange={event=>changeTheme(event.target.value as VideoTheme)}>
-            {primaryThemes.map(item=><option key={item} value={item}>{ui.themeNames[item]}</option>)}
-            {(["life","health"] as const).map(item=><option key={item} value={item}>{ui.themeNames[item]}</option>)}
-          </select>
-          <strong className={css.fieldLabel}>{ui.problem}</strong>
-          <div className={css.chipGrid}>
-            {hypnoRequestProblems[locale][theme].map((item,i)=><button key={item.label}
-              type="button" data-hypno-problem={i} aria-pressed={problemIndex===i}
-              disabled={disabled} onClick={()=>setProblemIndex(i)}>{item.label}</button>)}
-          </div>
-          <textarea rows={2} value={problemNote} maxLength={400} disabled={disabled}
-            aria-label={ui.optional} placeholder={ui.problemPlaceholder}
-            onChange={event=>setProblemNote(event.target.value)}/>
-          <strong className={css.fieldLabel}>{ui.goal}</strong>
-          <div className={css.chipGrid}>
-            {topicGoals[theme].map(id=>{
-              const row=affirmationGoalCatalog[locale].find(entry=>entry.id===id);
-              return row?<button type="button" key={id} aria-pressed={goalId===id}
-                data-hypno-goal={id} disabled={disabled} onClick={()=>setGoalId(id)}>{row.label}</button>:null;
-            })}
-          </div>
-          <textarea rows={2} value={goalNote} maxLength={400} disabled={disabled}
-            aria-label={ui.goalPlaceholder} placeholder={ui.goalPlaceholder}
-            onChange={event=>setGoalNote(event.target.value)}/>
-          <small className={css.contextNote}>{ui.optional}</small>
-          <button type="button" className={css.apply} data-hypno-apply-request
-            disabled={disabled} onClick={propose}><WandSparkles size={17} aria-hidden="true"/>{ui.apply}</button>
-        </div>}
+        <button type="button" className={css.ideaApply} data-hypno-apply-request disabled={disabled}
+          onClick={propose}><WandSparkles size={19} aria-hidden="true"/>{ideaCopy[locale].apply}<ChevronRight size={18} aria-hidden="true"/></button>
       </section>
 
+      <details className={css.strategyDisclosure}>
+        <summary>{extra.strategy} · {extra.wave}<ChevronDown size={17} aria-hidden="true"/></summary>
         <section className={css.strategyCard} data-hypno-strategy>
         <div className={css.strategyHead}><BrainCircuit size={18} aria-hidden="true"/><h4>{extra.strategy}</h4></div>
         <div className={css.modelChoice} role="group" aria-label={extra.strategy}>
@@ -466,6 +428,7 @@ export function MandalaHypnoCompact({
         {geminiNotice&&<p role="status" className={css.strategyNotice}>{geminiNotice}</p>}
         <small className={css.strategyPrivacy}>{extra.aiPrivacy}</small>
       </section>
+      </details>
 
       <section className={css.card} data-hypno-phrases>
         <div className={css.cardHead}>
@@ -477,48 +440,48 @@ export function MandalaHypnoCompact({
         </div>
 
         <div className={css.modeRail} role="group" aria-label={extra.support}>
-          <button type="button" data-hypno-smart disabled={disabled} aria-pressed={selectionSource==="smart"} onClick={propose}><Sparkles size={14}/>{ui.smart}</button>
+          <button type="button" data-hypno-smart disabled={disabled} aria-pressed={selectionSource==="smart"} onClick={propose}><Sparkles size={17} aria-hidden="true"/>{ui.smart}</button>
           <button type="button" data-hypno-ready disabled={disabled} aria-pressed={selectionSource==="ready"} onClick={ready}>{ui.ready}</button>
-          <button type="button" data-hypno-tests disabled={disabled} aria-pressed={selectionSource==="tests"}
-            onClick={()=>{setOpen("phrases");setShowHint(true);}}>{ui.tests}</button>
+          <button type="button" data-hypno-tests disabled={disabled||testBusy} aria-pressed={selectionSource==="tests"}
+            onClick={()=>void suggestFromTests()}>{ui.tests}</button>
         </div>
-        <button type="button" data-hypno-filters-toggle className={css.filtersToggle}
-           aria-expanded={filtersOpen} aria-controls="hypno-phrase-filter-options" disabled={disabled}
-           onClick={()=>setFiltersOpen(x=>!x)}>
-           <SlidersHorizontal size={15} aria-hidden="true"/>
-           <span>{locale==="ru"?"Тип · Цель · Тон · Фокус · Длина":locale==="es"?"Tipo · Meta · Tono · Enfoque · Longitud":"Type · Goal · Tone · Focus · Length"}</span>
-           <ChevronDown size={15} aria-hidden="true"/>
-         </button>
-        <div className={css.filtersMini} id="hypno-phrase-filter-options" data-hypno-phrase-filters hidden={!filtersOpen}>
-          <label>{extra.role}<select value={kind} data-hypno-filter-type disabled={disabled} onChange={e=>setKind(e.target.value as typeof kind)}>
-            {(["support","possibility","action"] as const).map((id,i)=><option key={id} value={id}>{extra.roles[i]}</option>)}
-          </select></label>
-          <label>{extra.goal}<select value={extraGoal} data-hypno-filter-goal disabled={disabled}
-            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setGoalNote("");setApprovalKey("");}}>
-            {topicGoals[theme].map(id=><option key={id} value={id}>{affirmationGoalCatalog[locale].find(x=>x.id===id)?.label}</option>)}
-          </select></label>
-          <label>{extra.tone}<select value={tone} data-hypno-filter-tone disabled={disabled} onChange={e=>setTone(e.target.value as typeof tone)}>
-            {(["gentle","balanced","uplifting"] as const).map((id,i)=><option key={id} value={id}>{extra.tones[i]}</option>)}
-          </select></label>
-          <label>{extra.focus}<select value={focus} data-hypno-filter-focus disabled={disabled} onChange={e=>setFocus(e.target.value as typeof focus)}>
-            {(["support","confidence","action"] as const).map((id,i)=><option key={id} value={id}>{extra.focuses[i]}</option>)}
-          </select></label>
-          <label>{extra.length}<select value={length} data-hypno-filter-length disabled={disabled} onChange={e=>setLength(e.target.value as typeof length)}>
-            {(["short","medium"] as const).map((id,i)=><option key={id} value={id}>{extra.lengths[i]}</option>)}
-          </select></label>
-          <button type="button" data-hypno-generate-new disabled={disabled||geminiBusy} onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
-            <WandSparkles size={14} aria-hidden="true"/>{extra.generate}</button>
+        <div className={css.filtersMini} id="hypno-phrase-filter-options" data-hypno-phrase-filters>
+          <div className={css.filterRow} data-hypno-filter-type role="group" aria-label={extra.role}>
+            <strong>{extra.role}</strong><div>
+              {(["support","possibility","action"] as const).map((id,i)=><button type="button" key={id}
+                aria-pressed={kind===id} disabled={disabled} onClick={()=>{setKind(id);filtered(theme,problemIndex,extraGoal,{kind:id});}}>{extra.roles[i]}</button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-tone role="group" aria-label={extra.tone}>
+            <strong>{extra.tone}</strong><div>
+              {(["gentle","balanced","uplifting"] as const).map((id,i)=><button type="button" key={id}
+                aria-pressed={tone===id} disabled={disabled} onClick={()=>{setTone(id);filtered(theme,problemIndex,extraGoal,{tone:id});}}>{extra.tones[i]}</button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-focus role="group" aria-label={extra.focus}>
+            <strong>{extra.focus}</strong><div>
+              {(["support","confidence","action"] as const).map((id,i)=><button type="button" key={id}
+                aria-pressed={focus===id} disabled={disabled} onClick={()=>{setFocus(id);filtered(theme,problemIndex,extraGoal,{focus:id});}}>{extra.focuses[i]}</button>)}
+            </div>
+          </div>
+          <div className={css.filterRow} data-hypno-filter-length role="group" aria-label={extra.length}>
+            <strong>{extra.length}</strong><div>
+              {(["short","medium"] as const).map((id,i)=><button type="button" key={id}
+                aria-pressed={length===id} disabled={disabled} onClick={()=>{setLength(id);filtered(theme,problemIndex,extraGoal,{length:id});}}>{extra.lengths[i]}</button>)}
+            </div>
+          </div>
         </div>
-        <div className={css.phraseCounter}>
-          <span>{selectedCount}/5 {ui.selected}</span>
-          <button type="button" disabled={disabled} onClick={()=>setAllPhrases(v=>!v)}>{allPhrases?extra.less:extra.more}<ChevronDown size={13}/></button>
-        </div>
+        <button type="button" className={css.regenerate} data-hypno-generate-new disabled={disabled||geminiBusy}
+          onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
+          <WandSparkles size={18} aria-hidden="true"/>{extra.generate}</button>
+        <div className={css.phraseCounter}><strong>{locale==="ru"?"Выберите фразы":locale==="es"?"Elige frases":"Choose phrases"}</strong><span>{selectedCount}/5 {ui.selected}</span></div>
         <div className={css.phraseMiniList}>
-          {(allPhrases?candidates:candidates.slice(0,3)).map((sentence,i)=><button type="button" key={i} data-hypno-phrase={i}
+          {candidates.map((sentence,i)=><button type="button" key={i} data-hypno-phrase={i}
             aria-pressed={chosen.includes(i)} disabled={disabled} onClick={()=>toggleSelected(i)}>
             {chosen.includes(i)?<Check size={15}/>:<span aria-hidden="true">○</span>}
             <span>{sentence}</span></button>)}
         </div>
+        {settings.custom.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
           <button type="button" disabled={disabled} onClick={()=>setOwnOpen(v=>!v)}>{extra.add}<ChevronDown size={14}/></button>
           <button type="button" disabled={disabled} onClick={()=>toggle("phrases")}>{extra.additional}<ChevronRight size={14}/></button>
@@ -529,13 +492,6 @@ export function MandalaHypnoCompact({
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
         {open==="phrases"&&<div className={css.legacyEditor} id="hypno-phrase-options" data-hypno-phrase-editor>
-          {showHint&&<div className={css.testEntry}>
-            <p className={css.contextNote}>{ui.testsHelp}</p>
-            <div className={css.designFoot}>
-              <Link href={"/"+locale+"/tests"} prefetch={false}>{locale==="ru"?"Пройти тест":locale==="es"?"Hacer una prueba":"Take a test"}</Link>
-              <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
-            </div>
-          </div>}
           <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
@@ -543,6 +499,7 @@ export function MandalaHypnoCompact({
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
+      <details className={css.advanced}><summary>{locale==="ru"?"Дополнительные настройки видео":locale==="es"?"Ajustes adicionales de vídeo":"Additional video settings"}<ChevronDown size={18} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-display>
         <div className={css.cardHead}>
           <span className={css.emblem}><SlidersHorizontal size={20} aria-hidden="true"/></span>
@@ -584,7 +541,7 @@ export function MandalaHypnoCompact({
           <div className={css.heading}><h4>{ui.design}</h4><p>{ui.designHint}</p></div>
           <button type="button" className={css.edit} disabled={disabled}
             data-hypno-design-edit aria-expanded={open==="design"} aria-controls="hypno-design-options"
-            onClick={()=>toggle("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+            onClick={()=>setOpen("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
         <button type="button" className={css.sceneMiniSummary} data-hypno-scene-summary
           disabled={disabled} aria-expanded={open==="design"} aria-controls="hypno-design-options"
@@ -621,6 +578,8 @@ export function MandalaHypnoCompact({
         </div>}
       </section>
 
+      </details>
+      {children}
       <label className={css.enable}>
         <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
