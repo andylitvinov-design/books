@@ -13,8 +13,12 @@ const messagesCss = read('app/[locale]/app/messages/messages-page.css')
 test('Practitioner preview and authenticated dashboard keep Messages as third tab', () => {
   const tabs = showcase.match(/const TABS = \[([\s\S]*?)\n\]/)?.[1]
   assert.ok(tabs, 'original five-tab bar must remain in the real PracticeShowcase')
-  assert.deepEqual([...tabs.matchAll(/key:'([^']+)'/g)].map(match => match[1]),
-    ['home','practice','messages','materials','profile'])
+  const primary=['home','practice','messages','materials','profile']
+  const keys=[...tabs.matchAll(/key:'([^']+)'/g)].map(match=>match[1])
+  assert.deepEqual(keys.filter(key=>primary.includes(key)),primary)
+  assert.equal(keys.indexOf('messages'),2,'Messages remains the third primary tab')
+  assert.ok(keys.length<=6&&keys.every(key=>primary.includes(key)||['ai','video-ai'].includes(key)),
+    'only the authorized optional AI video destination may be added')
   assert.match(tabs, /\{ key:'messages', label:'inbox', Icon:MessageCircle \}/)
   assert.doesNotMatch(tabs, /key:'requests'/)
   assert.match(showcase, /inbox:'Сообщения'/)
@@ -29,8 +33,11 @@ test('Practitioner preview and authenticated dashboard keep Messages as third ta
 test('private Cabinet uses the same 5-tab order and localized names as Messenger', () => {
   const section = cabinet.match(/  const mobileNav = \[([\s\S]*?)\n  \]/)?.[1]
   assert.ok(section)
-  assert.deepEqual([...section.matchAll(/id: '([^']+)'/g)].map(match => match[1]),
-    ['practice','messages','materials','profile'])
+  const primary=['practice','messages','materials','profile']
+  const ids=[...section.matchAll(/id: '([^']+)'/g)].map(match=>match[1])
+  assert.deepEqual(ids.filter(id=>primary.includes(id)),primary)
+  assert.ok(ids.length<=5&&ids.every(id=>primary.includes(id)||['ai','video-ai'].includes(id)),
+    'only the approved optional AI-video destination may extend the Cabinet dock')
   for (const label of ['Практика','Сообщения','Материалы','Профиль',
     'Práctica','Mensajes','Materiales','Perfil','Practice','Messages','Materials','Profile']) {
     assert.ok(section.includes("'" + label + "'"), label)

@@ -138,8 +138,11 @@ test('mobile navigation remains pinned for practitioner and expanded Reiki filte
  const messenger=read('components/app/messages-bottom-navigation.jsx')
  const browser=read('scripts/verify-holistic-support-mock-fidelity.mjs')
  const tabs=front.match(/const TABS = \[([\s\S]*?)\n\]/)?.[1]
- assert.deepEqual([...tabs.matchAll(/key:'([^']+)'/g)].map(x=>x[1]),
-   ['home','practice','messages','materials','profile'])
+ const primary=['home','practice','messages','materials','profile']
+ const keys=[...tabs.matchAll(/key:'([^']+)'/g)].map(x=>x[1])
+ assert.deepEqual(keys.filter(key=>primary.includes(key)),primary)
+ assert.equal(keys.indexOf('messages'),2)
+ assert.ok(keys.length<=6&&keys.every(key=>primary.includes(key)||['ai','video-ai'].includes(key)))
  assert.match(front,/key:'messages', label:'inbox', Icon:MessageCircle/)
  for(const label of ['Главная','Практика','Сообщения','Материалы','Профиль'])
    assert.ok(messenger.includes(label))
