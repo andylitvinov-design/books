@@ -170,7 +170,7 @@ export function MandalaHypnoCompact({
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode|((stagePhrase:(text:string)=>void)=>ReactNode);
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode|((stagePhrase:(text:string)=>void,selectedDraftPhrase:string)=>ReactNode);
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
@@ -597,7 +597,7 @@ export function MandalaHypnoCompact({
       </section>
 
       </details>
-      {typeof children==="function"?children(stageCatalogPhrase):children}
+      {typeof children==="function"?children(stageCatalogPhrase,displayedCustom):children}
       <label className={css.enable}>
         <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>

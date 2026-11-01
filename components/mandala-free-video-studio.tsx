@@ -3392,13 +3392,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
         }} onPreview={openAffirmationPreview} onCreate={startFromHero}>
-      {(stageCatalogPhrase:(text:string)=>void)=><>
+      {(stageCatalogPhrase:(text:string)=>void,selectedDraftPhrase:string)=><>
       <details className={videoStyles.phraseAudioSettings} data-video-phrase-catalog-details>
         <summary>{locale==="ru"?"Каталог фраз по целям и сценариям":
           locale==="es"?"Catálogo de frases por objetivos e historias":
           "Phrase catalog by goals and stories"}<ChevronDown size={18} aria-hidden="true"/></summary>
         <MandalaPhraseCatalog locale={locale} theme={theme} wish={wish}
-          disabled={recording||preparing} selectedPhrase={affirmations.custom}
+          disabled={recording||preparing} selectedPhrase={selectedDraftPhrase}
           onPhraseChoose={stageCatalogPhrase}
           onOpenAudio={()=>{
             setPhraseAudioExpanded(true);

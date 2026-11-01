@@ -84,8 +84,9 @@ test("ready, selected and custom changes are drafts until approval",()=>{
 test("prepared phrase catalog stages selection through the one approval gate",()=>{
   assert.match(studio,/<MandalaPhraseCatalog/);
   assert.match(studio,/onPhraseChoose=\{stageCatalogPhrase\}/);
-  assert.match(studio,/\{\(stageCatalogPhrase:\(text:string\)=>void\)=><>/);
+  assert.match(studio,/\{\(stageCatalogPhrase:\(text:string\)=>void,selectedDraftPhrase:string\)=><>/);
   assert.match(phrases,/setStagedCustom\(cleaned\);setStagedSelection\(\[\]\)/);
-  assert.match(phrases,/typeof children==="function"\?children\(stageCatalogPhrase\):children/);
+  assert.match(phrases,/typeof children==="function"\?children\(stageCatalogPhrase,displayedCustom\):children/);
+  assert.match(studio,/selectedPhrase=\{selectedDraftPhrase\}/);
   assert.doesNotMatch(studio,/onPhraseChoose=\{phrase=>\{\s*setAffirmations/);
 });
