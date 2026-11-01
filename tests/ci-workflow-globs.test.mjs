@@ -6,7 +6,8 @@ const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, 
 
 test('My Progress uses a valid broad dynamic Next.js pathname and production push only', () => {
   const s = workflow('hh-my-progress-release.yml');
-  assert.match(s, /'app\/\*\*\/app\/\*\*\/page\.jsx'/);
+  assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
+  assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
   assert.match(s, /push:\s*\n\s*branches: \['codex\/public-book-library'\]/);
@@ -14,7 +15,10 @@ test('My Progress uses a valid broad dynamic Next.js pathname and production pus
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
   const s = workflow('practice-visual-services.yml');
-  assert.match(s, /'app\/api\/app\/\*\*\/route\.js'/);
+  assert.ok(s.includes("      - 'app/api/app/practice/**'"));
+  assert.ok(s.includes("      - 'app/api/app/services/**'"));
+  assert.ok(!s.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!s.includes("      - 'components/app/messages-simple-inbox.module.css'"));
   assert.match(s, /'app\/\*\*\/practice\/page\.jsx'/);
   assert.doesNotMatch(s, /app\/api\/app\/\[\.\.\.path\]/);
   assert.doesNotMatch(s.split(/^permissions:/m)[0], /^  push:/m);
@@ -146,4 +150,23 @@ test('Public Services exact-head routing preserves source contracts and real ris
     "'app/api/payments/**'"
   ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+
+test('Core scope uses bounded shallow checkout while preserving exact PR merge parent and base verification', () => {
+  const s=workflow('hh-pr-core-release.yml');
+  const scope=s.split('\n  scope:')[1]?.split('\n  code:')[0];
+  assert.ok(scope, 'Core scope job must exist');
+  assert.match(scope, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
+  assert.doesNotMatch(scope, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
+  assert.match(scope, /Verify bounded shallow scope ancestry before PR routing/);
+  assert.match(scope, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
+  assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
+  assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
+  assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
+  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" \|\|/);
+  assert.match(scope, /Verify live PR readiness before costly CI/);
+  assert.match(scope, /Classify strictly documentation-only PRs/);
+  assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
+  assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
 });

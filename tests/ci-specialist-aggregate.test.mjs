@@ -1,3 +1,4 @@
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -117,6 +118,20 @@ test('workflow status needs live matching PR HEAD, path, associated PR and lates
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[run({status:'in_progress',conclusion:null})]}).pending,[path+':in_progress']);
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[run({id:150}),run({id:151,status:'completed',conclusion:'failure'})]}).failed,[path+':failure']);
   assert.equal(inspectWorkflowRuns({...input,runs:[run({id:150,conclusion:'failure'}),run()]}).passed.length,1);
+});
+
+test('immutable run SHA survives GitHub rewriting associated PR head on subsequent pushes',()=>{
+  const associated = run({pull_requests:[{number:27,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  const input = {expected:[path],pr:pr()};
+  assert.equal(inspectWorkflowRuns({...input,runs:[associated]}).passed.length,1);
+  const wrongBranch=run({head_branch:'unrelated',pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongBranch]}).missing,[path]);
+  const wrongRepo=run({head_repository:{full_name:'other/repo'},pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongRepo]}).missing,[path]);
+  const wrongNumber=run({pull_requests:[{number:999,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongNumber]}).missing,[path]);
+  const wrongTarget=run({pull_requests:[{number:27,base:{ref:'other'},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
 });
 
 test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
@@ -293,11 +308,11 @@ test('approved migration destinations contain the exact retired scope and the or
       contracts:['tests/benchmark-free-tests-first-pilot.test.mjs','tests/free-review-conversion.test.mjs','tests/benchmark-reference-matrix.test.mjs','scripts/benchmarking/plan.mjs'],
     },{
       from:'hh-portrait-sectors.yml',into:'hh-profile-axis-matching.yml',
-      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/app-workspace.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
+      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
       contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
     },{
       from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
-      patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      patterns:["'components/app/cabinet-today.*'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
       contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
     },
   ];
@@ -939,4 +954,121 @@ test('Tantra Photo Cards has an approved BASE-trusted Reiki owner for phase-2 re
     [{retired:old,replacement:successor}]);
   assert.throws(()=>resolveExpectedSpecialists({base:trusted,current:new Map([[successor,owner+'\n# changed in retirement']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
+
+
+// Exact-Merge specialist discovery is the single source of truth for PR impact.
+// Shared auth/DB/checkout remain owned by Core, IA, App Browser and Billing.
+test('Messenger-only PRs skip unrelated specialist workflow dispatch without skipping safety and E2E', () => {
+  const root = '.github/workflows/';
+  const all = new Map(readdirSync(root).filter(f => /\.ya?ml$/.test(f)).map(f =>
+    [root + f, readFileSync(root + f, 'utf8')]));
+  const changed = [
+    'components/app/messages-simple-inbox.jsx',
+    'components/app/messages-orders-clients.module.css',
+    'components/app/messages-hub.jsx',
+    'app/api/app/direct-messages/route.js',
+    'lib/app/direct-message-push.js',
+    'tests/messages-inbox-unified.test.mjs',
+  ];
+  const applicable = expectedWorkflows({base: all, current: all, changed});
+  const present = name => applicable.includes(root + name + '.yml');
+  for (const specialistName of [
+    'hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-public-services-production','site-video-browser','hh-personal-coaching-session',
+    'hh-interpretation-database','hh-my-progress-release','hh-public-test-collections',
+    'hh-portrait-mobile-browser','hh-profile-axis-matching','hh-cabinet-journey',
+  ]) assert.equal(present(specialistName), false, 'Messenger must not dispatch ' + specialistName);
+  for (const owner of [
+    'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
+    'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
+  ]) assert.equal(present(owner), true, 'Messenger needs ' + owner);
+  const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
+  assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
+
+  // Unlike a direct Messenger route, the shared API dispatcher must retain
+  // all product/security owners of its exact source.
+  const shared = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/app/[...path]/route.js',
+  ]});
+  for (const owner of [
+    'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+    'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+    'practice-visual-browser','practice-visual-services','ia-v2','hh-app-r1','hh-app-browser',
+  ]) assert.ok(shared.includes(root + owner + '.yml'), 'Shared API router must retain ' + owner);
+
+  // Shared router scope must not drag Messenger's separate API paths into
+  // Course, Editor and Video suites, even though a one-segment glob is used.
+  for (const isolated of [
+    'app/api/app/direct-messages/route.js',
+    'app/api/app/practitioner-client-messages/route.js',
+    'app/api/app/notification-channels/route.js',
+  ]) {
+    const scoped = expectedWorkflows({base:all,current:all,changed:[isolated]});
+    for (const unrelated of [
+      'hh-course-presets','hh-cabinet-journey','hh-public-services-production',
+      'site-video-browser','hh-personal-coaching-session','hh-interpretation-database',
+      'practice-visual-browser','practice-visual-services',
+    ]) assert.ok(!scoped.includes(root + unrelated + '.yml'),
+      isolated + ' must not dispatch ' + unrelated);
+  }
+
+  const changedShell = ['components/app/app-workspace.jsx'];
+  const shellRuns = expectedWorkflows({base: all, current: all, changed:changedShell});
+  for (const owner of ['hh-app-r1','hh-app-browser','ia-v2']) {
+    assert.ok(shellRuns.includes(root + owner + '.yml'), 'Shared shell stays covered by ' + owner);
+  }
+  for (const unrelated of ['hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-my-progress-release','hh-public-test-collections','hh-cabinet-journey']) {
+    assert.ok(!shellRuns.includes(root + unrelated + '.yml'), 'Shared shell should not fan out ' + unrelated);
+  }
+
+  const sensitive = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/payments/checkout/route.js',
+    'supabase/migrations/20261101_app_private_message_policy.sql',
+  ]});
+  for (const owner of ['hh-billing-isolated','ia-v2','hh-app-r1','hh-app-browser']) {
+    assert.ok(sensitive.includes(root + owner + '.yml'), 'Sensitive change must retain ' + owner);
+  }
+  // Each specialist still owns actual edits to its own module.
+  for (const [owner, file] of [
+    ['hh-course-presets','components/app/my-course.jsx'],
+    ['practice-visual-browser','components/practice-showcase.jsx'],
+    ['practice-visual-services','components/app/simple-service-editor.jsx'],
+    ['site-video-browser','components/site-video-manager.tsx'],
+    ['hh-public-services-production','components/contact-channel-chooser.tsx'],
+    ['hh-interpretation-database','lib/interpretation/engine.js'],
+    ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
+  ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
+    'Own-module change must retain specialist ' + owner);
+});
+
+
+test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
+  const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
+  const compare = files => ({
+    status:'ahead', ahead_by:2, behind_by:0, total_commits:2,
+    base_commit:{sha:base}, merge_base_commit:{sha:base},
+    commits:[{sha:other},{sha:live}], files:files.map(filename=>({filename,status:'modified'})),
+  });
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['app/api/voice/route.ts']),true);
+  const forbidden = [
+    'docs/operations/CI_RELEASE_POLICY.md','docs/security/overview.md','docs/billing/overview.md',
+    'docs/guides/secret-rotation.md','.github/workflows/core.yml','components/mandala.tsx',
+    'package-lock.json','docs/../api.md',
+  ];
+  for (const filename of forbidden) {
+    assert.equal(safeDocumentationAdvance(compare([filename]),base,live,['app/api/voice/route.ts']),false,filename);
+  }
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['docs/guides/intro.md']),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),status:'diverged'},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),merge_base_commit:{sha:other}},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:other},{sha:other}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:live}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),total_commits:3},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),behind_by:1},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),ahead_by:100,total_commits:100,commits:Array(100).fill({sha:live})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
 });

@@ -38,7 +38,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ia-v2-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  group: ia-v2-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   verify:
@@ -107,9 +107,6 @@ jobs:
             /^\.github\/workflows\/hh-messages-wellness-v2\.yml$/,
             /^\.github\/workflows\/ia-v2\.yml$/,
           ]
-          // Exact 20-path reviewed operator-only handoff: RLS and its genuine
-          // negative account tests are required together. Unknown additions
-          // and a standalone auth/SQL change always run full IA.
           const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
           let operatorOnly=false
           let messengerOnly=false
