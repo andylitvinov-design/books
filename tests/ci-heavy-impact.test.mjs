@@ -132,6 +132,8 @@ test('App Browser keeps one core Chromium PR job and makes full old matrix manua
   assert.match(yaml, /browser-journey-complete/);
   assert.match(yaml, /verify-app-r1/);
   assert.match(yaml, /Initialize empty synthetic database/);
+  assert.match(yaml, /- run: npm ci --no-audit --no-fund\n\s+if: github.event_name != 'pull_request'/,
+    'source-only PR must not repeat Core npm install; full browser QA retains it');
 });
 
 test('CI-only policy edits skip unrelated App, Mandala and Free Review browser matrices', () => {
