@@ -3480,15 +3480,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onOpenEditor={()=>openQuickDetailed("video-settings")}
           onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
-          audioTrackId={attachedAudio?.kind==="preset"?attachedAudio.id:null}
-          onPickAudio={id=>{
-            const matched=mandalaAudioTracks.find(track=>track.id===id&&track.kind==="melody");
-            if(!matched)return;
-            const chosenId=matched.id as PresetId;
-            setAudioAuto(false);chooseMusic(chosenId);
-            setAttachedAudio({kind:"preset",id:chosenId});
-            if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
-          }}/>
+/>
         <div className={videoStyles.quickBenefits} aria-label={approvedMobileCopy[locale].introTitle}>
           {approved.benefits.map((benefit,index)=>{
             const Icon=[Sparkles,Heart,Leaf,Music2][index];
@@ -3910,6 +3902,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ?(locale==="ru"?"Не прикреплён":locale==="es"?"Sin adjuntar":"Not attached")
             :appliedAudioName}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
+          audioTrackId={attachedAudio?.kind==="preset"?attachedAudio.id:null}
+          onPickAudio={id=>{
+            const matched=mandalaAudioTracks.find(track=>track.id===id&&track.kind==="melody");
+            if(!matched)return;
+            const chosenId=matched.id as PresetId;
+            setAudioAuto(false);chooseMusic(chosenId);
+            setAttachedAudio({kind:"preset",id:chosenId});
+            if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
+          }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
