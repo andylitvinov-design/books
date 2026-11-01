@@ -1843,10 +1843,16 @@ const runEngine = async ([engine, browserType]) => {
           await auto.waitFor({state:"visible",timeout:12000});
           // Regression from the owner's physical iPhone: the compact Auto
           // Director belongs BELOW the video and music, not over the hero.
-          const musicBox=await page.locator("[data-video-quick-audio-choices]").boundingBox();
-          const directorBox=await auto.boundingBox();
-          assert.ok(musicBox&&directorBox&&directorBox.y>=musicBox.y+musicBox.height-2,
-            "Auto Director must follow the actual Music and Voice section");
+          const sectionOrder=await page.evaluate(()=>{
+            const music=document.querySelector("[data-video-quick-audio-choices]");
+            const director=document.querySelector("[data-auto-video-director]");
+            const hero=document.querySelector("[data-video-mandala-hero]");
+            return Boolean(music&&director&&hero&&
+              (music.compareDocumentPosition(director)&Node.DOCUMENT_POSITION_FOLLOWING)&&
+              (hero.compareDocumentPosition(director)&Node.DOCUMENT_POSITION_FOLLOWING));
+          });
+          assert.equal(sectionOrder,true,
+            "Auto Director DOM order follows hero and Music even when workspace tabs hide Music");
           const goalField=page.locator("[data-first-video-wish]");
           await goalField.fill("Любовь");
           await goalField.press("End");
