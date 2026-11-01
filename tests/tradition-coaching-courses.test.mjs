@@ -186,8 +186,8 @@ test('Egyptian and Greek coaching use fitting photos and preserve lesson image f
  const art=source('components/app/tradition-coaching.jsx')
  assert.match(courses,/"ru": "Египетское планирование"/)
  assert.match(courses,/"ru": "Греческое планирование"/)
- assert.match(courses,/coaching-ancient\/egyptian-cover\.jpg/)
- assert.match(courses,/coaching-ancient\/greek-cover\.jpg/)
+ assert.match(courses,/"art": "\/images\/holistic-house\/books-library\.webp"/)
+ assert.match(courses,/"art": "\/images\/holistic-house\/hero-olive-incense\.webp"/)
  assert.doesNotMatch(academy,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/)
  assert.doesNotMatch(dashboard,/data-ancient-coaching-courses|data-tradition-course-card/)
  assert.match(lounge,/image=\{traditionCoachingArt.egyptian\}/)
@@ -197,12 +197,12 @@ test('Egyptian and Greek coaching use fitting photos and preserve lesson image f
 })
 
 
-test('all 18 approved Egyptian and Greek photographs are mapped to unique first-party assets',async()=>{
+test('existing local Egyptian/Greek covers and sixteen unique credited stage images are mapped correctly',async()=>{
  const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
  const {TRADITION_COURSES}=await import('../lib/personal-coaching/traditions.js')
  const root='/images/holistic-house/coaching-ancient/'
- assert.equal(traditionCoachingArt.egyptian,root+'egyptian-cover.jpg')
- assert.equal(traditionCoachingArt.greek,root+'greek-cover.jpg')
+ assert.equal(traditionCoachingArt.egyptian,'/images/holistic-house/books-library.webp')
+ assert.equal(traditionCoachingArt.greek,'/images/holistic-house/hero-olive-incense.webp')
  for(const course of TRADITION_COURSES){
   assert.equal(course.art,traditionCoachingArt[course.slug])
   assert.equal(traditionStages(course.slug).length,8)
