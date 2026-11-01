@@ -125,6 +125,13 @@ try {
       await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaAs60VariedDay(5,locale).result)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
+      // AS-6.0 adds four distinct optional self-guided scenes between the
+      // single goal card and the real experiment. Keep them in the test.
+      for(const moment of ['bodyExperience','emotionExperience','mentalExperience','imageryMeditation']){
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await assertBounds(moment)
+      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -155,10 +162,15 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // Feel; navigation closes optional original guidance.
+      await click(t.next) // Real ritual scene follows the practical experiment.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await click(t.next) // Then the original feelings check.
+      await expect(page.locator('[data-opora-current-screen="feel"]')).toBeVisible()
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
-      await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
+      await click(t.previous) // Feel -> ritual, still no old guidance.
+      await assertNeutral()
+      await click(t.previous) // Ritual -> practice, preserve voluntary neutral pause.
       await assertNeutral()
       await click(t.original)
       await click(t.pause); await click(t.back)
