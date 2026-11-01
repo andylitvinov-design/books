@@ -74,7 +74,12 @@ function repairMode(pr) {
 }
 function hasVerifiedSourceHandoff(comments, sha) {
   const receipt='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+  // The marker is public text and can be copied into an issue comment.
+  // Only the GitHub Actions app identity can establish this handoff.
   return Array.isArray(comments) && comments.some(c=>
+    c?.user?.id===41898282 && c.user.login==='github-actions[bot]' &&
+    c.user.type==='Bot' && c.performed_via_github_app?.id===15368 &&
+    c.performed_via_github_app.slug==='github-actions' &&
     typeof c.body==='string' && c.body.includes(receipt));
 }
 function safeFiles(items) {

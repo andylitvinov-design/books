@@ -30,6 +30,7 @@ const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
+const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -259,7 +260,7 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     if(data.length<100) break;
     if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
   }
-  if(comments.some(c=>(c.body||'').includes(marker))) {
+  if(hasVerifiedSourceHandoff(comments,pr.head.sha)) {
     // If a receipt exists but its queue label failed, retry only the label.
     if((pr.labels || []).some(label=>label.name===REPAIR_LABEL))return false;
     const recovered=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
