@@ -116,6 +116,10 @@ try {
       await cart.locator('[data-cart-start-order]').click()
       const contactForm = cart.locator('[data-cart-contact-form]')
       await contactForm.waitFor({ state: 'visible' })
+      // SSR DOM can appear before React has attached real consent handlers.
+      // This marker is published only by a committed client hydration effect.
+      await contactForm.locator('form[data-contact-hydrated="true"]')
+        .waitFor({ state: 'visible', timeout: 20000 })
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Order must require a contact and explicit reply-only opt-in')
       assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
@@ -134,7 +138,9 @@ try {
       await contactForm.locator('input[type="tel"]').fill('416 555 1234');
       await page.waitForFunction(() => {
         const input = document.querySelector('[data-personal-service-cart] [data-cart-contact-form] input[type="tel"]');
-        return input instanceof HTMLInputElement && input.value.includes('416');
+        if (!(input instanceof HTMLInputElement) || !input.value.includes('416')) return false;
+        const key = Object.keys(input).find(k => k.startsWith('__reactProps$'));
+        return Boolean(key && String(input[key]?.value || '').includes('416'));
       }, null, {timeout:10000});
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Phone without reply-only opt-in is insufficient');

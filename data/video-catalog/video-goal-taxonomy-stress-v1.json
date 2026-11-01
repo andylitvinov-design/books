@@ -1,0 +1,603 @@
+{
+  "schemaVersion": "hh-video-goal-topic-scenarios-v1",
+  "id": "stress",
+  "label": {
+    "ru": "Стресс",
+    "en": "Stress",
+    "es": "Estrés"
+  },
+  "subtitle": {
+    "ru": "Мягкое успокоение, пауза и безопасность",
+    "en": "Gentle calming, pauses and groundedness",
+    "es": "Calma suave, pausas y seguridad"
+  },
+  "topics": [
+    {
+      "id": "stress-anxiety",
+      "label": {
+        "ru": "Меньше тревоги",
+        "en": "Ease anxious feelings",
+        "es": "Reducir la ansiedad"
+      },
+      "desiredOutcome": {
+        "ru": "Найти больше спокойствия в тревожный момент",
+        "en": "Find steadiness during worry",
+        "es": "Encontrar calma ante la preocupación"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/emotions",
+      "aliases": {
+        "ru": [
+          "тревога",
+          "тревожусь",
+          "тревожиться",
+          "беспокойство",
+          "страх"
+        ],
+        "en": [
+          "anxiety",
+          "worry",
+          "anxious"
+        ],
+        "es": [
+          "ansiedad",
+          "preocupación",
+          "inquietud"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-anxiety-s1",
+          "label": {
+            "ru": "Тихая гавань",
+            "en": "Quiet harbor",
+            "es": "Puerto tranquilo"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "shore",
+            "stone",
+            "ocean",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-anxiety-s2",
+          "label": {
+            "ru": "Спокойная вода",
+            "en": "Still water",
+            "es": "Agua tranquila"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "lake",
+            "stream",
+            "clouds",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-anxiety-s3",
+          "label": {
+            "ru": "Защитный круг",
+            "en": "Gentle circle",
+            "es": "Círculo protector"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "circle",
+            "shield",
+            "garden",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-anxiety-s4",
+          "label": {
+            "ru": "Я здесь",
+            "en": "Here and now",
+            "es": "Aquí y ahora"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "hands",
+            "breath",
+            "tree",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "stress-fast-calm",
+      "label": {
+        "ru": "Быстрое успокоение",
+        "en": "A short calming pause",
+        "es": "Pausa breve para calmarse"
+      },
+      "desiredOutcome": {
+        "ru": "Сделать короткую паузу и собраться",
+        "en": "Take a short calming pause",
+        "es": "Hacer una breve pausa para calmarme"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/emotions",
+      "aliases": {
+        "ru": [
+          "быстро успокоиться",
+          "прямо сейчас",
+          "короткая пауза"
+        ],
+        "en": [
+          "calm now",
+          "pause immediately",
+          "quick calm"
+        ],
+        "es": [
+          "calmarme ahora",
+          "pausa rápida"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-fast-calm-s1",
+          "label": {
+            "ru": "Одна пауза",
+            "en": "One pause",
+            "es": "Una pausa"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "stone",
+            "breath",
+            "sky",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-fast-calm-s2",
+          "label": {
+            "ru": "Пять чувств",
+            "en": "Five senses",
+            "es": "Cinco sentidos"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "leaves",
+            "breeze",
+            "hands",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-fast-calm-s3",
+          "label": {
+            "ru": "Мягкий выдох",
+            "en": "Gentle exhale",
+            "es": "Exhalación suave"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "window",
+            "breath",
+            "clouds",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-fast-calm-s4",
+          "label": {
+            "ru": "Вернуться в момент",
+            "en": "Back to now",
+            "es": "Volver al ahora"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "stream",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "stress-after-day",
+      "label": {
+        "ru": "После сложного дня",
+        "en": "After a hard day",
+        "es": "Después de un día difícil"
+      },
+      "desiredOutcome": {
+        "ru": "Отдохнуть после напряжённого дня",
+        "en": "Rest after a demanding day",
+        "es": "Descansar tras un día exigente"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/recovery",
+      "aliases": {
+        "ru": [
+          "после работы",
+          "тяжёлый день",
+          "устал",
+          "стресс"
+        ],
+        "en": [
+          "after work",
+          "difficult day"
+        ],
+        "es": [
+          "después del trabajo",
+          "día difícil"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-after-day-s1",
+          "label": {
+            "ru": "Закат забот",
+            "en": "Setting down the day",
+            "es": "Dejar atrás el día"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "sunset",
+            "shore",
+            "road",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-after-day-s2",
+          "label": {
+            "ru": "Закрыть день",
+            "en": "Closing the day",
+            "es": "Cerrar el día"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "notebook",
+            "door",
+            "window",
+            "hearth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-after-day-s3",
+          "label": {
+            "ru": "Тихий вечер",
+            "en": "Quiet evening",
+            "es": "Tarde tranquila"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "lake",
+            "stars",
+            "home",
+            "flame"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-after-day-s4",
+          "label": {
+            "ru": "Возвращение к себе",
+            "en": "Returning to myself",
+            "es": "Volver a mí"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "garden",
+            "path",
+            "hands",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "stress-release",
+      "label": {
+        "ru": "Отпустить напряжение",
+        "en": "Releasing tension",
+        "es": "Soltar la tensión"
+      },
+      "desiredOutcome": {
+        "ru": "Ослабить внутреннее и телесное напряжение",
+        "en": "Ease inner tension gently",
+        "es": "Aflojar la tensión interior"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/body",
+      "aliases": {
+        "ru": [
+          "отпустить напряжение",
+          "зажим",
+          "сжаться"
+        ],
+        "en": [
+          "release tension",
+          "pressure"
+        ],
+        "es": [
+          "soltar tensión",
+          "presión"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-release-s1",
+          "label": {
+            "ru": "Река уносит",
+            "en": "Let the river flow",
+            "es": "Dejar fluir el río"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "river",
+            "stream",
+            "stone",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-release-s2",
+          "label": {
+            "ru": "Снять груз",
+            "en": "Putting down a burden",
+            "es": "Dejar la carga"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "mountain",
+            "path",
+            "roots",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-release-s3",
+          "label": {
+            "ru": "Мягкая волна",
+            "en": "A gentle wave",
+            "es": "Una ola suave"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "ocean",
+            "shore",
+            "breeze",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-release-s4",
+          "label": {
+            "ru": "Лёгкие плечи",
+            "en": "Room to unwind",
+            "es": "Espacio para aflojarse"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "tree",
+            "leaves",
+            "sky",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "stress-before-event",
+      "label": {
+        "ru": "Перед важным событием",
+        "en": "Calm before an event",
+        "es": "Calma antes de un evento"
+      },
+      "desiredOutcome": {
+        "ru": "Почувствовать больше опоры перед событием",
+        "en": "Feel steadier before an event",
+        "es": "Sentir más apoyo antes de un evento"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "energy_health/emotions",
+      "aliases": {
+        "ru": [
+          "собеседование",
+          "экзамен",
+          "встреча",
+          "перед событием"
+        ],
+        "en": [
+          "before interview",
+          "exam",
+          "event anxiety"
+        ],
+        "es": [
+          "antes del examen",
+          "entrevista",
+          "evento"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-before-event-s1",
+          "label": {
+            "ru": "Перед дверью",
+            "en": "At the doorway",
+            "es": "Ante la puerta"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "door",
+            "stone",
+            "breath",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-before-event-s2",
+          "label": {
+            "ru": "Опора в пути",
+            "en": "Support on the path",
+            "es": "Apoyo en el camino"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "path",
+            "roots",
+            "tree",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-before-event-s3",
+          "label": {
+            "ru": "Спокойный взгляд",
+            "en": "A steady gaze",
+            "es": "Mirada serena"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "window",
+            "sky",
+            "mountain",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-before-event-s4",
+          "label": {
+            "ru": "Сила присутствия",
+            "en": "Being present",
+            "es": "Estar presente"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "circle",
+            "hands",
+            "stage",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "stress-safety",
+      "label": {
+        "ru": "Ощущение безопасности",
+        "en": "Feeling grounded and safe",
+        "es": "Sentirse a salvo"
+      },
+      "desiredOutcome": {
+        "ru": "Найти внутреннее ощущение опоры",
+        "en": "Find a grounding sense of support",
+        "es": "Encontrar una sensación de apoyo"
+      },
+      "legacyVideoTheme": "health",
+      "legacyProfileTopic": "personal_growth/support",
+      "aliases": {
+        "ru": [
+          "безопасность",
+          "защищенность",
+          "страх",
+          "опора"
+        ],
+        "en": [
+          "safety",
+          "safe",
+          "grounding"
+        ],
+        "es": [
+          "seguridad",
+          "sentirme a salvo"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "stress-safety-s1",
+          "label": {
+            "ru": "Тёплый дом",
+            "en": "A warm home",
+            "es": "Hogar cálido"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "home",
+            "hearth",
+            "window",
+            "warmth"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-safety-s2",
+          "label": {
+            "ru": "Крепкие корни",
+            "en": "Deep roots",
+            "es": "Raíces profundas"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "stone",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-safety-s3",
+          "label": {
+            "ru": "Спокойное место",
+            "en": "A welcoming place",
+            "es": "Lugar tranquilo"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "garden",
+            "clearing",
+            "nest",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "stress-safety-s4",
+          "label": {
+            "ru": "Добрый свет",
+            "en": "Kind light",
+            "es": "Luz amable"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "lantern",
+            "sunrise",
+            "hands",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    }
+  ]
+}
