@@ -452,8 +452,17 @@ for (const browserType of [chromium, webkit]) {
             label+" original feed includes all featured videos");
           assert.deepEqual(featuredIds,catalogIds.slice(0,featuredIds.length),
             label+" four featured originals and the full feed share the same filtered manifest");
-          assert.match(await root.locator('[data-support-fullscreen-selected]').getAttribute('href')||'',
-            new RegExp('^/'+locale+'/meditations\\?video=[A-Za-z0-9_-]{11}
+          const fullscreenHref=await root.locator('[data-support-fullscreen-selected]').getAttribute('href');
+          const selectedVideoId=await root.locator('[data-support-player]').getAttribute('data-selected-video');
+          assert.equal(fullscreenHref,"/"+locale+"/meditations?video="+encodeURIComponent(selectedVideoId),
+            label+" fullscreen player receives exactly the selected published source ID");
+          await meditationCategories.locator('[data-support-meditation-category="money"]').click();
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category="money"]').getAttribute("aria-pressed"),"true",
+            label+" money category responds to a real click");
+          await meditationCategories.locator('[data-support-meditation-category="all"]').click();
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+            label+" switching category never autoplays YouTube");
+          await root.locator('[data-support-tool="talisman"]').click();
           const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           // Owner-approved shopping mock: verify actual category navigation,
