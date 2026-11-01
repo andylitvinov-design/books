@@ -523,6 +523,11 @@ test('legacy branch-check migration remains a single valid fail-closed step',()=
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
   assert.equal((source.match(/^          gh api "repos\/\$GH_REPO\/rulesets\/26269892"/gm)||[]).length,1);
   assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
+  assert.ok(source.includes("GH_TOKEN: " + '$' + "{{ secrets.HH_BRANCH_ADMIN_TOKEN }}"));
+  assert.ok(!source.includes("secrets.HH_AUTOMERGE_TOKEN"));
+  assert.ok(source.includes("  workflow_dispatch:"));
+  assert.ok(!source.includes("  push:"));
+
   assert.ok(source.includes("grep -Fxq '    name: hh-core-verified'"));
   assert.ok(source.includes("grep -Fxq '    name: hh-specialists-verified'"));
   assert.ok(!source.includes("base64 --decode | grep -q "));
