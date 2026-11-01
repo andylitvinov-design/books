@@ -1060,3 +1060,13 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
     if(selectCandidates(prs,NOW+tick*600000).some(p=>p.number===10))audited=true;
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
+
+
+test('interrupted Core recovery allocates a runner only to eligible first-attempt events',()=>{
+ const source=require('node:fs').readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const job=source.split('  recover-interrupted-core:')[1].split('    runs-on:')[0];
+ assert.match(job,/github\.event\.workflow_run\.run_attempt == 1/);
+ for(const result of ['cancelled','timed_out','startup_failure','failure']) assert.ok(job.includes(result));
+ assert.match(job,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
+ assert.match(job,/github\.event\.workflow_run\.status == 'completed'/);
+});
