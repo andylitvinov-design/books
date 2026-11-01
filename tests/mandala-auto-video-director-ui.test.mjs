@@ -116,3 +116,13 @@ test("mobile six workspaces use short locale labels without changing full panel 
  assert.match(studio,/aria-pressed=\{activeWorkspace===item.id\|\|\(!activeWorkspace&&item.id==="video"\)\}/,
    "Video tab is selected on the initial one-screen mock");
 });
+
+test("desktop retains original six explicit theme choices while iPhone starts with four goals",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/quickThemeAdvancedRef=useRef<HTMLDetailsElement>\(null\)/);
+ assert.match(studio,/window\.matchMedia\("\(min-width: 760px\)"\)/);
+ assert.match(studio,/quickThemeAdvancedRef\.current\.open=large\.matches/);
+ assert.match(studio,/data-video-theme-advanced/);
+ assert.match(css,/@media\(min-width:760px\)\{[\s\S]*?\.quickThemeAdvanced>summary\{display:none\}/);
+ assert.match(css,/\.quickThemeAdvanced \.quickThemeRail\{display:grid;grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+});
