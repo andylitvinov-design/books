@@ -790,3 +790,63 @@ test("food painter is used by shared preview and real MediaRecorder, without lic
   assert.match(editor,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(editor,/FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION/);
 });
+
+
+test("native prompt v2 prioritizes first mentioned positive visual, not registry order or excluded motif",async()=>{
+  const {analyzeFirstVideoVisualIntent,inferFirstVideoTheme}=await import("../lib/mandala/first-video-director.mjs");
+  const parsed=analyzeFirstVideoVisualIntent("Без моря, хочу горы, затем лес");
+  assert.equal(parsed.requested[0].id,"mountains");
+  assert.equal(parsed.excluded[0].id,"sea");
+  assert.equal(inferFirstVideoTheme("Горы над морем"),"energy");
+  assert.equal(inferFirstVideoTheme("Forest and then mountains"),"life");
+  assert.equal(inferFirstVideoTheme("Sin mar, montañas"),"energy");
+});
+
+test("native video prompt shows effective render filters without claiming novel AI footage",()=>{
+  const draft=buildFirstVideoDraft({locale:"ru",wish:"Горы",motion:"dynamic",
+    music:"none",caption:false,avoid:"море",durationSeconds:20,
+    renderOptions:{quality:"fullhd",brightness:"bright",audioVolumePercent:42}});
+  assert.match(draft.prompt,/Темп: динамичный/);
+  assert.match(draft.prompt,/Музыка: без музыки/);
+  assert.match(draft.prompt,/Текст: без текста/);
+  assert.match(draft.prompt,/Качество: Full HD/);
+  assert.match(draft.prompt,/Яркость: яркая/);
+  assert.match(draft.prompt,/Громкость: 42%/);
+  assert.match(draft.prompt,/Исключить: море/);
+  assert.equal(draft.prompt.includes("AI-сгенерировано"),false);
+  assert.equal(draft.plan.shots[0].sceneId,"mountain-air");
+  assert.ok(draft.prompt.length<=1000);
+});
+
+test("director choices survive v1 API contract as allowlisted editorial-only choices",async()=>{
+  const {parseFirstVideoDirectorSelections}=await import("../lib/mandala/first-video-prompt-contract.mjs");
+  const selections=[{id:"ADV_09",optionId:"warm"},{id:"PRO_19",optionId:"side",shotNumber:2}];
+  assert.deepEqual(parseFirstVideoDirectorSelections(selections),selections);
+  const base=makeFirstVideoPromptRequest({locale:"ru",wish:"Горы",preferences:{
+    theme:"auto",style:"warm",aspect:"landscape",durationSeconds:20,
+    motion:"slow",music:"none",caption:false,avoid:""},directorSelections:selections});
+  const parsed=parseFirstVideoPromptInput(base);
+  assert.ok(parsed);
+  const ctx=buildFirstVideoPromptContext(parsed);
+  assert.equal(ctx.directingPreferences.length,2);
+  assert.equal(ctx.directingPreferences[1].shotNumber,2);
+  assert.equal(ctx.directingPreferences[1].application,"creative_reference_only_not_in_local_renderer");
+  assert.deepEqual(ctx.visualIntent.requested[0],{id:"mountains",theme:"energy"});
+  for(const invalid of [
+    [{id:"ADV_09",optionId:"not-an-option"}],
+    [{id:"PRO_19",optionId:"side"}],
+    [{id:"ADV_09",optionId:"warm",customText:"private medical profile"}],
+    [...selections,...selections],
+  ])assert.equal(parseFirstVideoPromptInput({...base,directorSelections:invalid}),null);
+  assert.equal(parseFirstVideoPromptInput({...base,photoUrl:"private"}) ,null);
+});
+
+test("semantic AI prompt guard rejects banned imagery and incompatible media controls",async()=>{
+  const {firstVideoReplyMatchesConstraints}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={avoid:"море",music:"none",caption:false};
+  assert.equal(firstVideoReplyMatchesConstraints("Горные вершины и море под ясным небом",input),false);
+  assert.equal(firstVideoReplyMatchesConstraints("Горы без моря и без текста",input),true);
+  assert.equal(firstVideoReplyMatchesConstraints("Add subtitles to each shot.",input),false);
+  assert.equal(firstVideoReplyMatchesConstraints("Music plays over the clip.",input),false);
+  assert.equal(firstVideoReplyMatchesConstraints("Горы, мягкие переходы, четыре проверенные сцены.",input),true);
+});
