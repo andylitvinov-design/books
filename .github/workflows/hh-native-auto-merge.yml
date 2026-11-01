@@ -142,6 +142,7 @@ jobs:
             core.setOutput("eligible", "true");
             core.setOutput("pr", String(number));
             core.setOutput("head", pr.head.sha);
+            core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
               " after " + observed.length + " latest exact-head PR workflows");
@@ -155,6 +156,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.ready.outputs.pr }}
           PR_HEAD: ${{ steps.ready.outputs.head }}
+          PR_BASE_SHA: ${{ steps.ready.outputs.base }}
           PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}
         run: |
           set -euo pipefail
@@ -196,6 +198,36 @@ jobs:
             cat "$RUNNER_TEMP/auto-merge-error" >&2
             if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
+            fi
+            # GitHub can reject --auto as "unstable" when hosted required
+            # contexts are empty, even after verified current-HEAD CI is green.
+            # Only then use normal GitHub-protected merge: no admin or bypass.
+            if grep -Eq 'Pull request is in (clean|unstable) status' "$RUNNER_TEMP/auto-merge-error"; then
+              ruleset="$(gh api "repos/$GH_REPO/rulesets/26269892" --jq '[.enforcement, ([.rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[]?] | length)] | @tsv')"
+              IFS=$'\t' read -r enforcement required_count <<< "$ruleset"
+              if [[ "$enforcement" != active || "$required_count" != 0 ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; hosted required contexts active or ruleset changed' >&2
+                exit 1
+              fi
+              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
+              if [[ "$current_base" != "$PR_BASE_SHA" ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; production advanced since CI evaluation' >&2
+                exit 1
+              fi
+              fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName,autoMergeRequest --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library") and (.autoMergeRequest == null)')"
+              if [[ "$fresh" != true ]]; then
+                echo 'CI_AUTO_MERGE: SKIP fallback; live PR or ARM already changed'
+                exit 0
+              fi
+              # The trusted preflight confirmed successful Core and all latest
+              # started applicable exact-HEAD PR workflows. GitHub still
+              # enforces classic branch protection and the hosted ruleset.
+              if gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/checked-direct-merge-error"; then
+                echo "CI_AUTO_MERGE: normal protected merge confirmed, PR #$PR_NUMBER HEAD $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              cat "$RUNNER_TEMP/checked-direct-merge-error" >&2
+              exit 1
             fi
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
