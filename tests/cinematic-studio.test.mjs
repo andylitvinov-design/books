@@ -172,7 +172,7 @@ test("therapy-mode storyboards require practitioner review and make no autonomou
   assert.match(directorUI,/data-director-therapy-review/);
   assert.match(directorUI,/customPlan\.requiresPractitionerReview===therapyMode/);
   assert.match(directorUI,/generated && generatedMode===therapyMode/);
-  assert.match(studio,/setStudioMode\(current=>current==="therapy"\?"pump":"therapy"\);setActiveWorkspace\("practices"\);setNotice\("");/);
+  assert.ok(studio.includes('setStudioMode(current=>current==="therapy"?"pump":"therapy");setActiveWorkspace("practices");setNotice("");'));
 });
 test("visual avoid rules do not leak private text or force an untrusted prompt",()=>{
   const p=buildCinematicStoryboard({theme:"health",locale:"en",wish:prefix,
