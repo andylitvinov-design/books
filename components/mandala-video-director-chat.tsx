@@ -110,6 +110,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [step,setStep]=useState<Step>(()=>nextVideoChatStep(draft) as Step);
  const [lines,setLines]=useState<ChatLine[]>([{id:0,role:"assistant",text:t.intro}]);
  const [input,setInput]=useState("");
+ const [clientHydrated,setClientHydrated]=useState(false);
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
  const [aiStatus,setAiStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
@@ -128,6 +129,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const counter=useRef(0);
  const threadRef=useRef<HTMLDivElement|null>(null);
  const windowRef=useRef<HTMLElement|null>(null);
+ const composerRef=useRef<HTMLTextAreaElement|null>(null);
+ useEffect(()=>{
+   const preHydrationText=composerRef.current?.value||"";
+   if(preHydrationText)setInput(value=>value||preHydrationText.slice(0,800));
+   setClientHydrated(true);
+ },[]);
  const addLine=(role:ChatLine["role"],text:string)=>{
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
@@ -140,6 +147,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setSymbolicAllowed(false);setAlternative(0);
    // New goals invalidate the old AI suggestion, approval and consent.
    cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+   approvedPlanKeyRef.current="";
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
    setStep(nextVideoChatStep(next) as Step);
  // Avoid reacting to every local answer: identical text does not trigger changes.
@@ -245,6 +253,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const canPlan=Boolean(selected&&draft.mood&&draft.aspect&&draft.duration&&draft.music!==null&&draft.phrases!==null);
  const planKey=JSON.stringify([draft.goal,chosenId,draft.duration,draft.aspect,draft.music,
    draft.mood,draft.phrases,renderOptions.quality,renderOptions.brightness,renderOptions.volumePercent]);
+ const currentPlanKeyRef=useRef(planKey);
+ currentPlanKeyRef.current=planKey;
  const currentAiCut=aiCut?.key===planKey?aiCut.value:null;
  const executable=useMemo(()=>{
    if(!canPlan||!selected)return null;
@@ -257,7 +267,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      });
    }catch{return null;}
  },[canPlan,selected,draft,locale,theme,presets,scenes,proposal,renderOptions,currentAiCut]);
- const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(draft.goal).specificVisual);
+ const executionKey=JSON.stringify([planKey,executable?.edit.clipIds,executable?.edit.durationSecondsByStage]);
+ const needSymbolic=Boolean(proposal?.requiresNewAiFootage||executable?.requiresNovelFootage||parseVideoChatIntent(draft.goal).specificVisual);
  const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
  const choices:readonly (readonly [string,string])[]=step==="goal"?t.themeChips.map(x=>[x,x] as const):
@@ -387,10 +398,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setLines([{id:++counter.current,role:"assistant",text:t.intro}]);setInput("");
  };
  const confirm=()=>{
-   if(disabled||!executable||offerSymbolic)return;
+   if(disabled||!executable||offerSymbolic||aiCutState==="loading")return;
+   cutAbortRef.current?.abort();
    const ok=onConfirm({scenario:executable});
    if(!ok){addLine("assistant",t.blocked);return;}
-   approvedPlanKeyRef.current=planKey;
+   approvedPlanKeyRef.current=executionKey;
    setStep("ready");addLine("assistant",t.ready);setCaptureStarted(false);setCaptureObserved(false);
  };
  const enhanceExecutable=async()=>{
@@ -415,12 +427,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      });
      if(!response.ok)throw Error("VIDEO_PLAN_UNAVAILABLE");
      const payload:unknown=await response.json();
-     if(controller.signal.aborted||!payload||typeof payload!=="object"||
+     if(controller.signal.aborted||requestKey!==currentPlanKeyRef.current||
+       currentStepRef.current!=="review"||!payload||typeof payload!=="object"||
        !("suggestion" in payload))return;
      const accepted=parseAiVideoCutSuggestion(payload.suggestion,{
        candidateSceneIds:executable.candidateSceneIds,
        durationSeconds:executable.durationSeconds,scenes,
        excludedMotifs:executable.edit.excludedMotifs,
+       goal:draft.goal,
      });
      if(!accepted)throw Error("VIDEO_PLAN_UNTRUSTED");
      setAiCut({key:requestKey,value:{clipIds:[...accepted.clipIds],
@@ -433,13 +447,13 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    }
  };
  const start=()=>{
-   if(disabled||!canCreate||captureStarted)return;
-   if(approvedPlanKeyRef.current!==planKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
+   if(disabled||!canCreate||captureStarted||step!=="ready")return;
+   if(approvedPlanKeyRef.current!==executionKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
    const accepted=onCreate();
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} aria-labelledby="video-director-chat-heading">
+  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
@@ -484,7 +498,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          <button type="button" disabled={disabled} onClick={reset}>{t.retryGoal}</button>
        </div>:null}
        {step==="review"&&!offerSymbolic?<div className={css.storyActions}>
-         <button type="button" className={css.primary} disabled={disabled} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
+         <button type="button" className={css.primary} disabled={disabled||aiCutState==="loading"} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
          {options.length>1?<button type="button" className={css.secondary} disabled={disabled} onClick={()=>{
            cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");onInvalidate();
            setAlternative(n=>(n+1)%options.length);
@@ -499,7 +513,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          </button>
          {!canCreate&&!disabled?(assetWaitLong?<div className={css.warning} role="alert">
            <p>{t.assetTimeout}</p>
-           {options.length>1?<button type="button" onClick={()=>{setAlternative(n=>(n+1)%options.length);setStep("review");}}>{t.alternate}</button>:null}
+           {options.length>1?<button type="button" onClick={()=>{cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+             onInvalidate();setAlternative(n=>(n+1)%options.length);setStep("review");}}>{t.alternate}</button>:null}
            <button type="button" onClick={onOpenEditor}>{t.editor}</button>
          </div>:<small className={css.loading}>{t.loading}</small>):null}
        </div>:null}
@@ -525,7 +540,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    </div>:null}
    <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <textarea rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
+     <textarea ref={composerRef} rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
        onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
        maxLength={800} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>

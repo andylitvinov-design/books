@@ -109,6 +109,19 @@ try {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
+  // The approved Video Studio's *whole* extra editor is collapsed by
+  // default. Open the real advanced controls on owner layout; the previously
+  // deployed layout has no such toggle. Both use the same original recorder.
+  const ownerAdvanced=page.locator('[data-video-advanced-toggle]');
+  if(await ownerAdvanced.count()){
+    await ownerAdvanced.click();
+    await page.waitForFunction(()=>document.querySelector('[data-video-advanced-toggle]')?.getAttribute('aria-expanded')==='true',undefined,{timeout:15000});
+  }
+  const advanced=page.locator('[data-video-first-video-advanced]');
+  await advanced.waitFor({state:'visible',timeout:40000});
+  if(await advanced.getAttribute('open')===null)
+    await advanced.locator(':scope > summary').click();
+  assert.equal(await advanced.count(),1,'FIRST_VIDEO_ADVANCED_SECTION_MISSING');
   const first = page.locator('[data-first-free-video][data-first-video-hydrated="true"]');
   await first.waitFor({state: 'visible', timeout: 40000});
   await first.locator('[data-first-video-wish]').fill('Тихое утро на солнечном лугу');
