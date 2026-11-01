@@ -55,11 +55,18 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     const decoded=await offline.decodeAudioData(await file.arrayBuffer());
     if(!decoded.length||!Number.isFinite(decoded.duration)||decoded.duration>180)
       throw new Error("audio_decode_invalid");
+    if(!entry.loop && "file" in entry && decoded.duration > seconds + .10)
+      throw new Error("narration_longer_than_video");
     const source=offline.createBufferSource();
     source.buffer=decoded;
     source.loop=entry.loop;
     const gain=offline.createGain();
-    gain.gain.value=gainValue;
+    // Smooth music edges; narration's short fade-in preserves first syllables.
+    const fadeIn=entry.loop?.25:.035, fadeOut=entry.loop?.7:.10;
+    gain.gain.setValueAtTime(0,0);
+    gain.gain.linearRampToValueAtTime(gainValue,fadeIn);
+    gain.gain.setValueAtTime(gainValue,Math.max(fadeIn,seconds-fadeOut));
+    gain.gain.linearRampToValueAtTime(0,seconds);
     source.connect(gain).connect(offline.destination);
     source.start(0);
   }
@@ -108,9 +115,14 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       if(!shouldContinue())throw new Error("export_cancelled");
       const remaining=startedAt+(i*1000/frameRate)-performance.now();
       if(remaining>0)await new Promise<void>(resolve=>setTimeout(resolve,remaining));
-      const time=Math.min(seconds-.001,Math.max(0,(performance.now()-startedAt)/1000));
+      // The same logical timestamp must drive shot selection and MP4 PTS.
+      // A stalled encoder must fail rather than speed up the story or drift
+      // across approved cut boundaries.
+      const time=i/frameRate;
+      if(performance.now()-startedAt > time*1000+750)
+        throw new Error("video_encoder_timeline_drift");
       if(!renderFrame(time))throw new Error("licensed_scene_frame_unavailable");
-      await videoSource.add(i/frameRate,1/frameRate,
+      await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
       if((i%Math.max(1,Math.ceil(frameRate/3)))===0)
         onProgress?.(Math.min(99,Math.floor(i/frames*100)));
