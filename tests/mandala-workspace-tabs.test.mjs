@@ -14,9 +14,9 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
- assert.match(studio,/Психокоррекция/);
+ assert.match(studio,/Фразы поддержки и аудиогид/);
  assert.match(studio,/Гипноэффекты/);
- assert.match(studio,/Курсы и медитации/);
+ assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO генерация",title:"PRO генерация"/);
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{

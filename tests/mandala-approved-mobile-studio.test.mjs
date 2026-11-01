@@ -101,8 +101,8 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/onGoalChange\(event\.currentTarget\.value\)/,
-    "typing updates the same local state without remote upload");
+  assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
+    "typing updates the same local state and real source-backed proposal without remote upload");
   assert.match(s,/data-video-personal-affirmations/);
   assert.match(s,/enabled:!current\.enabled/);
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
