@@ -150,6 +150,14 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
   return true;
 }
 
+function coreRunForCurrentPR(r,pr) {
+  // The run's head_sha can be GitHub's synthetic merge commit, not PR HEAD.
+  return r?.name===CORE_NAME && r.head_branch===pr.head.ref &&
+    r.event==='pull_request' && (r.pull_requests||[]).some(p=>
+      p.number===pr.number && p.head?.sha===pr.head.sha &&
+      p.head?.ref===pr.head.ref);
+}
+
 function hasActiveLease(comments, headSha, now) {
   for (const comment of comments) {
     const body = comment.body || '';
@@ -301,8 +309,6 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // Do not create repetitive CI jobs merely to rediscover outdated HEADs.
     if (mergeState === 'BEHIND') {
       summary.behindProduction++;
-      // Source-preserving base update only for long-idle, clean BEHIND PRs.
-      // This creates genuine pull_request CI; it never fabricates release-ready.
       if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
           summary.legacyCoreBootstraps < MAX_LEGACY_BOOTSTRAPS &&
           summary.legacyCoreProbes < MAX_LEGACY_PROBES) {
@@ -330,13 +336,12 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     try {
       // Restrict to the release gate: hundreds of specialist checks can share the same SHA.
       runs = (await limited('core-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-        owner,repo,workflow_id:'hh-pr-core-release.yml',head_sha:pr.head.sha,
+        owner,repo,workflow_id:'hh-pr-core-release.yml',branch:pr.head.ref,
         event:'pull_request',per_page:100
       }))).data;
     } catch(e) { log(`#${pr.number} CI run lookup unavailable: ${e.message}`); continue; }
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
-    const coreRuns = runs.workflow_runs.filter(r=> r.name===CORE_NAME && r.head_sha===pr.head.sha &&
-      r.head_branch===pr.head.ref && r.event==='pull_request')
+    const coreRuns = runs.workflow_runs.filter(r=>coreRunForCurrentPR(r,pr))
       .sort((a,b)=> Date.parse(b.created_at)-Date.parse(a.created_at));
     const latest=coreRuns[0];
     if (!latest) {summary.missingCore++;continue;}
@@ -384,4 +389,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,bootstrapLegacyCore,hasActiveLease};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,bootstrapLegacyCore,hasActiveLease};
