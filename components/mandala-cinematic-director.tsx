@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
-import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
+import {ArrowRight, Check, ChevronRight, Crown, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
 import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded,durationFromBrief} from "@/lib/mandala/video-studio-question-registry.mjs";
@@ -26,6 +26,7 @@ type StyleId=keyof typeof CINEMATIC_STYLES;
 const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
 type QuestionGroup=typeof QUESTION_GROUPS[number];
 type StudioQuestion={id:string;scope:string;labels:Record<PublicLocale,string>;
+  tier:"free"|"mixed"|"premium";freeOptionIds:readonly string[];
   options:readonly {id:string;labels:Record<PublicLocale,string>}[]};
 type BriefMusicPreference="none"|"calm"|"energetic";
 type BriefCaptionPreference="none"|"phrases"|"subtitles";
@@ -362,11 +363,17 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           </div>;
         })}
         <div className={css.questionList}>
-          {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}>
-            <legend>{question.labels[locale]}</legend>
+          {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}
+            data-video-parameter-tier={question.tier}>
+            <legend>{question.labels[locale]}
+              {question.tier==="premium"?<span className={css.premiumOption}><Crown size={13} aria-hidden="true"/> {locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}</span>:null}
+            </legend>
             <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+              data-video-option-tier={question.freeOptionIds.includes(option.id)?"free":"premium"}
+              title={!question.freeOptionIds.includes(option.id)?(locale==="ru"?"Только план: недоступно в бесплатном видео":locale==="es"?"Solo plan: no disponible en el vídeo gratis":"Creative brief only: unavailable in free video"):undefined}
               aria-pressed={questionAnswers[question.id]?.selectedOptionId===option.id}
-              onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}</button>)}</div>
+              onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}
+              {!question.freeOptionIds.includes(option.id)?<Crown size={13} aria-label={locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}/>:null}</button>)}</div>
             <input value={questionAnswers[question.id]?.customText||""} placeholder={t.ownAnswer}
               onChange={event=>answerStudioQuestion(question.id,null,event.target.value,false,false)}
               onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value);}} disabled={disabled}/>
@@ -374,11 +381,17 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           {generated?visibleCategoryQuestions.length?visibleCategoryQuestions.map(question=>{
             const answer=answerForQuestion(question);
             const sceneScoped=question.scope==="scene";
-            return <fieldset key={question.id} className={css.contextQuestion}>
-              <legend>{question.labels[locale]}</legend>
+            return <fieldset key={question.id} className={css.contextQuestion}
+              data-video-parameter-tier={question.tier}>
+              <legend>{question.labels[locale]}
+                {question.tier==="premium"?<span className={css.premiumOption}><Crown size={13} aria-hidden="true"/> {locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}</span>:null}
+              </legend>
               <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+                data-video-option-tier={question.freeOptionIds.includes(option.id)?"free":"premium"}
+                title={!question.freeOptionIds.includes(option.id)?(locale==="ru"?"Только план: недоступно в бесплатном видео":locale==="es"?"Solo plan: no disponible en el vídeo gratis":"Creative brief only: unavailable in free video"):undefined}
                 aria-pressed={answer?.selectedOptionId===option.id}
-                onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}</button>)}</div>
+                onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}
+                {!question.freeOptionIds.includes(option.id)?<Crown size={13} aria-label={locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}/>:null}</button>)}</div>
               <input value={answer?.customText||""} placeholder={t.ownAnswer}
                 onChange={event=>answerStudioQuestion(question.id,null,event.target.value,sceneScoped,false)}
                 onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value,sceneScoped);}} disabled={disabled}/>

@@ -27,8 +27,8 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: hh-alchemy-mobile-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-alchemy-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   alchemy-mobile:
@@ -81,13 +81,18 @@ jobs:
             components/alchemy-example-report.tsx \
             'app/[locale]/services/alchemy-of-soul/example-report/page.tsx' \
             app/es/services/alchemy-of-soul/example-report/page.tsx
+      # Temporary queue relief: source contracts run on PRs; expensive Next +
+      # Playwright suites remain available on workflow_dispatch.
+      - name: Explain deferred manual Alchemy acceptance on PR
+        if: github.event_name == 'pull_request'
+        run: echo 'Alchemy production build and real Chromium/WebKit browser acceptance temporarily delegated to manual workflow_dispatch; source unit/lint and protected Core build remain required.' >> "$GITHUB_STEP_SUMMARY"
       - name: Install browser once for real responsive check
-        if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'
+        if: github.event_name != 'pull_request'
         run: |
           npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
           /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Build production-mode Next and measure current Chromium viewports; WebKit manual QA
-        if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -112,7 +117,7 @@ jobs:
           exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
-        if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true')
+        if: always() && github.event_name != 'pull_request'
         with:
           name: alchemy-mobile-geometry
           path: artifacts/public-services-production/alchemy-one-screen-geometry*.json

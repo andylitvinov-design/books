@@ -139,6 +139,20 @@ const runEngine = async ([engine, browserType]) => {
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
           assert.match(await promptField.inputValue(),/горные вершины/i);
+          // Exercise actual hydrated iPhone filters; these values MUST
+          // survive in the real HTTP body, not merely decorate the UI.
+          const aiFilters=form.locator("[data-first-video-filters]");
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-theme]").selectOption("energy");
+          await form.locator("[data-first-video-style]").selectOption("nature");
+          await form.locator("[data-first-video-aspect]").selectOption("portrait");
+          await form.locator("[data-first-video-duration]").selectOption("30");
+          await form.locator("[data-first-video-motion]").selectOption("dynamic");
+          await form.locator("[data-first-video-music]").selectOption("harmony");
+          await form.locator("[data-first-video-avoid]").fill("море");
+          await form.locator("[data-first-video-caption]").check();
+          await aiFilters.locator("summary").click();
           // Mock only the external language model; real form + request.
           const apiRoute="**/api/holistic-support/first-video-prompt";
           const aiCalls=[];
@@ -164,6 +178,22 @@ const runEngine = async ([engine, browserType]) => {
             const input=JSON.parse(aiCalls[0].body||"{}");
             assert.equal(input.wish,"Горы");
             assert.equal(input.consent,true);
+            assert.equal(input.schemaVersion,"hh-first-video-prompt-v1");
+            assert.deepEqual({
+              theme:input.theme,style:input.style,aspect:input.aspect,
+              durationSeconds:input.durationSeconds,motion:input.motion,
+              music:input.music,caption:input.caption,avoid:input.avoid,
+            },{
+              theme:"energy",style:"nature",aspect:"portrait",
+              durationSeconds:30,motion:"dynamic",music:"harmony",
+              caption:true,avoid:"море",
+            },"all actual filter choices must reach Gemini");
+            assert.deepEqual(new Set(input.selectedFields),new Set([
+              "theme","style","aspect","durationSeconds","motion","music","caption","avoid",
+            ]));
+            assert.deepEqual(input.renderOptions,{
+              quality:"hd",brightness:"soft",audioVolumePercent:75,
+            },"existing outer video editor settings must not be lost");
             await expect.poll(()=>promptField.inputValue(),{timeout:12000})
               .toContain("Горные вершины и облака");
             await expect(form).toContainText("Gemini");
@@ -179,6 +209,16 @@ const runEngine = async ([engine, browserType]) => {
             page.off("requestfailed",captureNetworkFailure);
             await page.unroute(apiRoute);
           }
+          // Restore the fast, silent 20s real-video QA path after the consented
+          // request assertion; no expensive 30s/audio export is introduced.
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-duration]").selectOption("20");
+          await form.locator("[data-first-video-motion]").selectOption("slow");
+          await form.locator("[data-first-video-music]").selectOption("none");
+          await form.locator("[data-first-video-caption]").uncheck();
+          await form.locator("[data-first-video-avoid]").fill("");
+          await aiFilters.locator("summary").click();
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{
@@ -283,6 +323,15 @@ const runEngine = async ([engine, browserType]) => {
               "an unreadable media blob must not be offered as a downloadable video");
             assert.equal(await page.locator("[data-video-post-generation-offers]").count(),0,
               "do not claim a meditation is finished on broken-video playback");
+            const original=page.locator("[data-video-original-fallback-download]");
+            await expect(original).toBeVisible();
+            const originalPath=await original.getAttribute("href");
+            assert.match(originalPath||"",/^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/,
+              "recovery link must be a published first-party MP4, never private or external");
+            assert.equal(await original.getAttribute("download"),"holistic-house-original-scene.mp4");
+            assert.match(await page.locator("[data-video-original-fallback]").innerText(),/не ваш готовый фильм/i,
+              "fallback must explicitly reject the false custom-film claim");
+
           }
           // Restore original untouched Studio state for the existing full
           // photo/audio/Hypno regression cases below, on this same page.
@@ -327,8 +376,8 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         await expandAllFilms.click();
-        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),24,
-          "All 24 must be real selectable four-MP4 film presets, not a decorative count");
+        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
+          "All 48 must be real selectable four-MP4 film presets, not a decorative count");
         await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
@@ -440,7 +489,7 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-auto-video-input]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -583,7 +632,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-auto-video-input]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
@@ -628,12 +677,21 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="es"?0:1,
-          "owner-approved RU film introduction is selectable on RU/EN without another editor");
+        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
+          "the approved RU presentation belongs only to the RU screen");
+        assert.equal(await hero.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
+          "English route links only to the verified owner English channel, not a Russian soundtrack");
+        const youtubeLink=hero.locator('[data-video-therapy-youtube]');
+        assert.equal(await youtubeLink.count(),locale==="es"?0:1,
+          "one explicitly identified YouTube destination per active language");
+        if(locale==="ru")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/watch?v=P9Wvo3gEY6U");
+        if(locale==="en")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/@aatapro/videos");
         assert.equal(await hero.locator("iframe").count(),0,
-          "no external video iframe or requests before an explicit user click");
-        assert.equal(await hero.locator("button").count(),locale==="es"?1:2,
-          "the second RU/EN button is the opt-in intro, not another editor");
+          "no external YouTube iframe or requests before an explicit user click");
+        assert.equal(await hero.locator("button").count(),locale==="ru"?2:1,
+          "central Canvas Play stays independent; RU adds its approved video introduction");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
@@ -1708,6 +1766,27 @@ const runEngine = async ([engine, browserType]) => {
           };
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
+        // Goal-first Free Director: selected goal proposes exactly one real
+        // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
+        // Keep the full original Chromium/WebKit recorder & audio E2E intact.
+        if (locale === "ru" && width === 390) {
+          const auto=page.locator("[data-auto-video-director]");
+          await auto.waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+            "six accessible one-tap goals, no mandatory 49-question intake");
+          const planBefore=await page.locator("[data-free-film-original-masters]").count();
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "goal gives four actual source scenes");
+          assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
+            "proposal must not start rendering before user confirms");
+          await auto.locator("[data-auto-video-confirm]").click();
+          await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
+            undefined,{timeout:15000});
+          assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
+            "Auto Director reuses the only live editable video stage");
+        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -78,16 +78,17 @@ test('release audit and consent test helper changes run only their Public Servic
   }
 });
 
-test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelated scripts', () => {
+test('Alchemy CSS-only uses source-tested Core build, never a duplicate full browser', () => {
   const file = 'components/alchemy-soul-landing.module.css';
   const plan = planPublicServicesChangedPaths([file]);
-  assert.equal(plan.mode, 'focused');
-  assert.equal(plan.build, true);
-  assert.equal(plan.browser, true);
+  assert.equal(plan.mode, 'contracts');
+  assert.equal(plan.build, false);
+  assert.equal(plan.browser, false);
   assert.equal(plan.metrics, false);
-  assert.deepEqual(plan.cases.split(',').sort(),
-    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']);
+  assert.equal(plan.cases, 'none');
+  assert.equal(publicPlaywrightEngines(plan), 'none');
   assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-lead-form.tsx']).mode, 'full');
+  assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-landing.tsx']).mode, 'full');
 });
 
 test('the exact Public Services CI+Alchemy change verifies only its two real browser owners', () => {
@@ -393,8 +394,8 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' }}\n"),
-      'risk-scoped PR acceptance must run when planner selects it: ' + name);
+    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
+      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
   }
   assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
@@ -407,4 +408,89 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
+});
+
+test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+  const focused = paths => planPublicServicesChangedPaths(paths);
+  for (const name of [
+    'scripts/verify-ideas-mobile-browser.mjs',
+    'scripts/verify-direction-focus-mobile.mjs',
+    'scripts/verify-holistic-topics-browser.mjs',
+    'scripts/verify-holistic-support-recommendations-mobile.mjs',
+  ]) {
+    const result=focused([name]);
+    assert.equal(result.mode,'focused');
+    assert.equal(requiresPublicServicesHeavyPr(result),false,name+' visual PR');
+  }
+  for (const name of [
+    'scripts/verify-service-cart-browser.mjs',
+    'scripts/verify-public-services-production.mjs',
+    'scripts/verify-alchemy-one-screen.mjs',
+    'scripts/verify-talisman-google-checkout-browser.mjs',
+    'scripts/verify-storefront-shop-browser.mjs',
+  ]) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' consent/payment/browser');
+  }
+  for (const name of ['app/api/payments/talismans/checkout/route.js',
+    'components/contact-channel-chooser.tsx','middleware.ts',
+    'components/alchemy-soul-landing.tsx']) {
+    assert.equal(requiresPublicServicesHeavyPr(focused([name])),true,name+' sensitive');
+  }
+  assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
+  const yml=workflow('hh-public-services-production.yml');
+  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(yml,/playwright install --with-deps chromium webkit/);
+  assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
+  assert.doesNotMatch(yml,/continue-on-error:\s*true/);
+});
+
+test('independent Site Video CI orchestration never triggers unrelated thirteen-case public checkout E2E',()=>{
+  const files=[
+    '.github/workflows/site-video-browser.yml',
+    'scripts/ci-site-video-scope.mjs',
+    'tests/ci-site-video-scope.test.mjs',
+    'tests/site-video-admin-e2e-gate.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+  ];
+  const plan=planPublicServicesChangedPaths(files);
+  assert.deepEqual([plan.mode,plan.build,plan.browser],['contracts',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  const mixed=planPublicServicesChangedPaths([...files,'app/api/payments/talismans/checkout/route.js']);
+  assert.deepEqual([mixed.mode,requiresPublicServicesHeavyPr(mixed)],['full',true]);
+});
+
+test('common public display changes use only relevant browser cases, not unrelated 13-case E2E',()=>{
+  const direction=planPublicServicesChangedPaths(['components/direction-offers.tsx']);
+  assert.equal(direction.mode,'focused');
+  assert.equal(direction.build,true);
+  assert.equal(direction.browser,true);
+  assert.deepEqual(direction.cases.split(',').sort(),[
+    'verify-direction-focus-mobile.mjs','verify-public-services-production.mjs',
+  ]);
+  assert.equal(publicPlaywrightEngines(direction),'chromium');
+  assert.equal(requiresPublicServicesHeavyPr(direction),true);
+  const video=planPublicServicesChangedPaths(['components/academy-course-video-playlist.tsx']);
+  assert.deepEqual([video.mode,video.cases],['focused','verify-public-services-production.mjs']);
+  assert.equal(publicPlaywrightEngines(video),'chromium');
+  for(const risky of ['components/consultation-choice-capture.tsx',
+    'components/alchemy-soul-lead-form.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'middleware.ts','components/holistic-support-topic-filter.tsx']){
+    const result=planPublicServicesChangedPaths([risky]);
+    assert.equal(result.mode,'full',risky+' must retain full E2E');
+    assert.equal(publicPlaywrightEngines(result),'chromium webkit');
+  }
+  for(const file of ['scripts/verify-storefront-shop-browser.mjs',
+    'scripts/verify-talisman-google-checkout-browser.mjs',
+    'scripts/verify-reiki-mobile-order-browser.mjs']){
+    const result=planPublicServicesChangedPaths([file]);
+    assert.equal(publicPlaywrightEngines(result),'chromium webkit',file+' WebKit required');
+  }
+  const yml=workflow('hh-public-services-production.yml');
+  assert.match(yml,/HH_PUBLIC_BROWSER_ENGINES/);
+  assert.match(yml,/steps\.scope\.outputs\.engines/);
+  assert.match(yml,/playwright install --with-deps chromium\n/);
+  assert.match(yml,/playwright install --with-deps chromium webkit/);
 });

@@ -13,12 +13,25 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
   const clientPrefetch = ['/en/client', '/en/contact'].includes(url.pathname)
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
-  if (!bootstrap && !prefetch && !clientPrefetch) return null;
+  const tantraPrefetch = (['/', '/en/academy', '/en/academy/principles-of-energywork/learn'].includes(url.pathname)
+      && [...url.searchParams.keys()].length === 1 && !!url.searchParams.get('_rsc'))
+    || (url.pathname === '/en/client/tests' && [...url.searchParams.keys()].length === 2
+      && url.searchParams.get('focus') === 'tantra' && !!url.searchParams.get('_rsc'));
+  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch) return null;
   for (const navigation of lifecycle) {
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
     if (!source || new URL(source.url).origin !== url.origin) continue;
     const sourcePath = new URL(source.url).pathname;
+    const tantraBack = tantraPrefetch && error.phase === 'back-from-tantra'
+      && source.url === new URL('/en/academy/reiki/tantra-reiki', origin).href
+      && navigation.documentClass === 'tantra-media' && navigation.navigationType === 'replace'
+      && navigation.destination === new URL('/en/about', origin).href
+      && lifecycle.some(event => event.type === 'navigate' && event.documentProbe === navigation.documentProbe
+        && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
+        && event.url === source.url && event.documentClass === 'tantra-media'
+        && event.destination === navigation.destination);
+    if (tantraPrefetch && !prefetch && !clientPrefetch && !tantraBack) continue;
     // The same shared-header home prefetch was observed during private Back/
     // Forward teardown. Accept only that traced client -> About traversal.
     const clientHomePrefetch = prefetch && url.pathname === '/'
@@ -43,7 +56,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.documentClass === 'public-video'
         && event.destination === navigation.destination))) continue;
-    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch) continue;
+    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch && !tantraBack) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.

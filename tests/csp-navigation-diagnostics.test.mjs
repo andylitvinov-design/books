@@ -94,6 +94,27 @@ test('About client-link prefetch teardown requires the observed Back-to-home rep
   for (const override of [{engine:'chromium'},{readiness:'loaded-history'}]) assert.equal(classifyCspNavigationCancellation(error,{...info,...override}),null);
 });
 
+test('Tantra prefetch teardown requires the observed Back-to-About replacement', () => {
+  const tantra = origin + '/en/academy/reiki/tantra-reiki', about = origin + '/en/about';
+  const trace = [
+    {type:'init',time:1,documentProbe:'tantra',url:tantra},
+    {type:'navigate',time:95,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:true,navigationType:'traverse',destination:about},
+    {type:'navigate',time:100,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:false,navigationType:'replace',destination:about},
+    {type:'pagehide',time:140,documentProbe:'tantra'},
+    {type:'init',time:150,documentProbe:'about',url:about},
+  ];
+  const info = {...detail,lifecycle:trace};
+  const err = path => ({...diagnostic(origin+path),phase:'back-from-tantra'});
+  for (const path of ['/?_rsc=probe','/en/academy?_rsc=probe','/en/academy/principles-of-energywork/learn?_rsc=probe','/en/client/tests?focus=tantra&_rsc=probe'])
+    assert.ok(classifyCspNavigationCancellation(err(path),info),path);
+  for (const path of ['/en/academy?_rsc=probe&other=1','/en/client/tests?focus=other&_rsc=probe','/en/client/tests?focus=tantra&_rsc=probe&other=1','/en/contact?_rsc=probe'])
+    assert.equal(classifyCspNavigationCancellation(err(path),info),null,path);
+  for (const change of [{phase:'initial'},{time:141},{time:150}])
+    assert.equal(classifyCspNavigationCancellation({...err('/?_rsc=probe'),...change},info),null);
+  for (const index of [0,1,2,3,4])
+    assert.equal(classifyCspNavigationCancellation(err('/?_rsc=probe'),{...info,lifecycle:trace.filter((_,i)=>i!==index)}),null);
+});
+
 for (const [phase, destination, otherPhase] of [
   ['forward-to-public', '/en/about', 'back-to-private'],
   ['back-to-private', '/en/client', 'forward-to-public'],
