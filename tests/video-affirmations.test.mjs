@@ -86,7 +86,8 @@ test("existing video preview and export use identical overlays; frame mode reque
   assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
   assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds\]\),appliedStory\]\)/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
-  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
+  // Four native render paths plus the same overlay in the WebCodecs fallback.
+  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5);
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
   assert.match(studio,/setAffirmations\(defaultAffirmations\)/);
