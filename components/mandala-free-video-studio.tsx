@@ -50,7 +50,7 @@ type Quality = "hd" | "fullhd";
 type Result =
   | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: never }
   | { url: string; extension: "mp4"; bytes: 0; mime: "video/mp4"; mode: "catalog" };
-type StudioWorkspace = "video" | "audio" | "characters" | "hypnotherapy" | "psychocorrection" | "courses";
+type StudioWorkspace = "video" | "phrases" | "effects" | "practices" | "pro" | "editor";
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
@@ -138,33 +138,33 @@ const translations = {
 
 const workspaceCopy = {
  ru:{
- video:{tab:"Видео",title:"Видео и настройки",desc:"Стили, сюжеты, формат и качество вашего видеоролика."},
- audio:{tab:"Музыка",title:"Музыка и голос",desc:"Выберите красивую мелодию, добавьте свою запись или голос и прикрепите к видео."},
- characters:{tab:"Герои",title:"Герои и персонализация",desc:"Добавьте личное пожелание, изображение или фото с разрешения. Другие герои появятся после проверки."},
- hypnotherapy:{tab:"Терапия",title:"Гипнотерапия · 8 видеосессий",desc:"Бережные образные практики, не заменяющие клинический гипноз или лечение."},
- psychocorrection:{tab:"Коррекция",title:"Гипнокоррекция и установки",desc:"Подберите поддерживающие фразы, настроив их показ и подачу в видео."},
- courses:{tab:"Курсы",title:"Курсы и медитации",desc:"Выберите курс, медитацию или персональную видеопрограмму Holistic House."}
+  video:{tab:"Видео",title:"Видео и аудио",desc:"Сюжеты, музыка и быстрые параметры видео."},
+  phrases:{tab:"Фразы",title:"Персональные фразы · Психокоррекция",desc:"Опишите ситуацию, выберите и утвердите подходящие слова поддержки."},
+  effects:{tab:"Эффекты",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты; экспериментальные опции отмечены."},
+  practices:{tab:"Практики",title:"Курсы и медитации",desc:"Личная медитация и программа восьми образных практик."},
+  pro:{tab:"PRO",title:"Герои и кинорежиссура",desc:"Персонажи, личные сюжеты и расширенные параметры."},
+  editor:{tab:"Монтаж",title:"Редактор и монтаж",desc:"Порядок и длительность сцен, текст и доступные настройки звука."}
  },
  en:{
- video:{tab:"Video",title:"Video & settings",desc:"Choose video styles, scenes, format and output quality."},
- audio:{tab:"Music",title:"Music & voice",desc:"Choose a melody, add your own sound or voice and attach it to the video."},
- characters:{tab:"Heroes",title:"Characters & personalization",desc:"Add an intention, your imagery or a consented photo. More character options are under development."},
- hypnotherapy:{tab:"Therapy",title:"Guided hypnotherapy · 8 sessions",desc:"Gentle guided imagery, not clinical hypnosis or a substitute for care."},
- psychocorrection:{tab:"Correction",title:"Psychocorrection & affirmations",desc:"Choose supportive phrases and how they appear in the video."},
- courses:{tab:"Courses",title:"Courses & meditations",desc:"Open a course, meditation or personal video programme."}
+  video:{tab:"Video",title:"Video & audio",desc:"Film stories, music and quick video settings."},
+  phrases:{tab:"Phrases",title:"Personal phrases",desc:"Explore your goal; review and approve supportive wording."},
+  effects:{tab:"Effects",title:"Optional audiovisual effects",desc:"Gentle visuals and sound, with experimental features labelled."},
+  practices:{tab:"Practice",title:"Courses & meditations",desc:"A personal meditation and eight-session practice plan."},
+  pro:{tab:"PRO",title:"Characters & cinematic direction",desc:"Characters, personal scenes and advanced settings."},
+  editor:{tab:"Edit",title:"Final montage",desc:"Clip order and timing, captions and available audio settings."}
  },
  es:{
- video:{tab:"Vídeo",title:"Vídeo y ajustes",desc:"Elige estilos, escenas, formato y calidad de vídeo."},
- audio:{tab:"Música",title:"Música y voz",desc:"Elige una melodía, añade sonido o voz y adjúntalo al vídeo."},
- characters:{tab:"Héroes",title:"Personajes y personalización",desc:"Añade tu intención, imágenes o una foto consentida. Más personajes llegarán tras verificarlos."},
- hypnotherapy:{tab:"Terapia",title:"Hipnoterapia guiada · 8 sesiones",desc:"Imágenes guiadas que no sustituyen la atención clínica."},
- psychocorrection:{tab:"Corrección",title:"Psicocorrección y frases",desc:"Frases de apoyo y formas de mostrarlas en el vídeo."},
- courses:{tab:"Cursos",title:"Cursos y meditaciones",desc:"Abre un curso, meditación o programa personal."}
- },
+  video:{tab:"Vídeo",title:"Vídeo y audio",desc:"Escenas, música y ajustes básicos."},
+  phrases:{tab:"Frases",title:"Frases personales",desc:"Explora tu objetivo y aprueba frases de apoyo."},
+  effects:{tab:"Efectos",title:"Efectos audiovisuales opcionales",desc:"Imagen y sonido suaves con opciones experimentales identificadas."},
+  practices:{tab:"Prácticas",title:"Cursos y meditaciones",desc:"Una meditación y un plan personal de ocho prácticas."},
+  pro:{tab:"PRO",title:"Personajes y cine",desc:"Personajes, historias y ajustes avanzados."},
+  editor:{tab:"Montaje",title:"Edición final",desc:"Orden y tiempo de escenas, texto y audio disponible."}
+ }
 } as const;
 const workspaceTabs=[
- {id:"video",Icon:Film},{id:"audio",Icon:Music2},{id:"characters",Icon:Sparkles},
- {id:"hypnotherapy",Icon:HandHeart},{id:"psychocorrection",Icon:HeartPulse},{id:"courses",Icon:Leaf}
+ {id:"video",Icon:Film},{id:"phrases",Icon:HeartPulse},{id:"effects",Icon:Sparkles},
+ {id:"practices",Icon:Leaf},{id:"pro",Icon:UserRound},{id:"editor",Icon:SlidersHorizontal}
 ] as const;
 
 const studioCopy = {
@@ -1595,7 +1595,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
-  const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace|null>(null);
+  const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -2420,7 +2420,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopSoundPreview();
     // Ensure the original single audio dock is mounted before the user-gesture
     // play() call, including from the legacy compact first screen.
-    flushSync(()=>{setActiveWorkspace("audio");setSamplePreviewId(choice);});
+    flushSync(()=>{setActiveWorkspace("video");setSamplePreviewId(choice);});
     const player=audioPreviewRef.current;
     if(!player){setMusicWarning(ui.soundUnavailable);return;}
     try{
@@ -2654,7 +2654,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(photoUrl&&!backgroundOnly&&!photoConsent){
       setNotice(supportUi.heroConsent);
       // Outside Characters the shared consent panel lives in the Video workspace.
-      if(activeWorkspace && activeWorkspace!=="characters")setActiveWorkspace("video");
+      if(activeWorkspace && activeWorkspace!=="pro")setActiveWorkspace("video");
       // Reveal the single original consent control in the relocated cover panel.
       const coverOptions=document.querySelector<HTMLDetailsElement>("[data-video-cover-options]");
       if(coverOptions)coverOptions.open=true;
@@ -2729,53 +2729,46 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const quickNavTokenRef=useRef(0);
   const [quickNavTarget,setQuickNavTarget]=useState("");
 
-  // Incoming /mandala#video-audio links used to land inside closed advanced
-  // settings. Reveal the SAME audio workspace before scrolling to its real
-  // library; never create a second player or start playback/recording.
+  // Keep existing anchors working with the new single-editor navigation.
   useEffect(()=>{
-    const revealAudioDeepLink=()=>{
-      if(window.location.hash!=="#video-audio")return;
-      const requestedPath=window.location.pathname+window.location.search+window.location.hash;
-      setActiveWorkspace("audio");
+    const reveal=()=>{
+      const hash=window.location.hash.slice(1);
+      const destination:Record<string,StudioWorkspace>={
+        "video-audio":"video","voice-studio":"video","video-templates":"video",
+        "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",
+        "guided-video-series":"practices","personal-meditation":"practices",
+        "cinematic-director":"pro","video-settings":"editor",
+      };
+      const tab=destination[hash];if(!tab)return;
+      setActiveWorkspace(tab);
+      setStudioMode(tab==="practices"?"therapy":"pump");
+      const route=window.location.pathname+window.location.search+window.location.hash;
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-        if(window.location.pathname+window.location.search+window.location.hash!==requestedPath)return;
-        document.getElementById("video-audio")?.scrollIntoView({
+        if(route!==window.location.pathname+window.location.search+window.location.hash)return;
+        if(hash==="video-audio"||hash==="voice-studio")
+          document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
+        document.getElementById(hash==="voice-studio"?"video-audio":hash)?.scrollIntoView({
           behavior:"instant" as ScrollBehavior,block:"start",
         });
       }));
     };
-    revealAudioDeepLink();
-    window.addEventListener("hashchange",revealAudioDeepLink);
-    return()=>window.removeEventListener("hashchange",revealAudioDeepLink);
+    reveal();window.addEventListener("hashchange",reveal);
+    return()=>window.removeEventListener("hashchange",reveal);
   },[]);
-
   const openQuickDetailed=(anchor:string)=>{
-    if(activeWorkspace){
-      const workspace=anchor==="video-audio"?"audio":anchor==="video-hypnosis"?"psychocorrection":"video";
-      setActiveWorkspace(workspace);
-      return;
-    }
-    const token=++quickNavTokenRef.current;
-    const path=window.location.pathname+window.location.search;
-    const desired="#"+anchor;
-    const current=()=>token===quickNavTokenRef.current &&
-      window.location.pathname+window.location.search===path;
-    const setLocation=(push:boolean)=>{
-      if(!current()||window.location.hash===desired)return;
-      if(push)window.history.pushState(window.history.state,"",path+desired);
-      else window.history.replaceState(window.history.state,"",path+desired);
-    };
-    setLocation(true);
-    setQuickNavTarget(anchor);
+    const tab:StudioWorkspace=anchor==="video-audio"?"video":
+      anchor==="video-hypnosis"?"phrases":anchor==="video-hypnocorrection-mobile"?"effects":
+      anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
+    setActiveWorkspace(tab);
+    setStudioMode(tab==="practices"?"therapy":"pump");
     setQuickDetailedOpen(true);
-    const jump=()=>{
-      if(!current())return;
-      setLocation(false);
-      const section=document.getElementById(anchor);
-      if(section && section.getClientRects().length)
-        section.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"nearest"});
-    };
-    window.requestAnimationFrame(()=>window.requestAnimationFrame(jump));
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      if(anchor==="video-audio")
+        document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
+      document.getElementById(anchor)?.scrollIntoView({
+        behavior:"instant" as ScrollBehavior,block:"nearest",
+      });
+    }));
   };
   const applyFirstVideoDraft=(
     draft:{plan:CinematicStoryboard;wish:string;theme:VideoTheme;aspect:Aspect;durationSeconds:20|30|60},
@@ -3495,11 +3488,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-controls="video-workspace-panel" disabled={recording||preparing}
           onClick={()=>{
             setActiveWorkspace(item.id);
-            if(item.id==="hypnotherapy" && studioMode!=="therapy"){
-              setStudioMode("therapy");setCinematicPlan(null);setTherapyJumpRequested(false);
-            }else if(item.id!=="hypnotherapy"&&studioMode==="therapy"){
-              setStudioMode("pump");setTherapyJumpRequested(false);
-            }
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
           }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
       </nav>
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
@@ -3574,7 +3564,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <h3>{workspaceCopy[locale][activeWorkspace].title}</h3>
         <p>{workspaceCopy[locale][activeWorkspace].desc}</p>
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
-      {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-workspace-section="hypnotherapy" data-video-therapy-banner>
+      {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-workspace-section="practices" data-video-therapy-banner>
         <div className={videoStyles.therapyBannerCopy}>
           <small>{layout.therapyBannerLabel}</small>
           <h3>{locale==="ru"?"Сформировать индивидуальную программу видеотерапии бесплатно":locale==="es"?"Crear un programa personalizado de videoterapia gratis":"Create your free personalized video-therapy program"}</h3>
@@ -3582,7 +3572,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <button type="button" data-video-therapy-start
           disabled={recording||preparing}
-          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setTherapyJumpRequested(true);}}>
+          onClick={()=>{setActiveWorkspace("practices");setStudioMode("therapy");setTherapyJumpRequested(true);}}>
           {locale==="ru"?"Подобрать программу":locale==="es"?"Crear programa":"Build my plan"}<ArrowRight size={19} aria-hidden="true"/>
         </button>
       </section> : null}
@@ -3636,7 +3626,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="psychocorrection" data-video-quick-phrases aria-labelledby="quick-phrases-heading">
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-labelledby="quick-phrases-heading">
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
@@ -3652,7 +3642,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setPreviewPlaying(false);
             }}><span aria-hidden="true">“</span>{phrase}</button>)}
         </div>
-        {activeWorkspace==="psychocorrection" ? deepHypnoPane : null}
+        {activeWorkspace==="phrases" ? deepHypnoPane : null}
         {activeWorkspace==="psychocorrection" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
           <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
@@ -3686,7 +3676,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}/>
         </div> : null}
       </section>
-      <section className={videoStyles.quickMusicSection} data-workspace-section="audio" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
+      <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-music-heading"><Music2 size={18} aria-hidden="true"/>
             {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</h3>
@@ -3912,10 +3902,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           locale==="es"?"Elige una historia y crea el vídeo. Aquí aparecerán el archivo, su vista previa y la opción de guardarlo.":
           "Choose a story and create the video. Your playable file, preview and save option will appear here."}</p>
       </section>:null}
-      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="hypnotherapy" id="guided-video-series">
+      {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="practices" id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
-        onClick={()=>{setStudioMode("pump");setCinematicPlan(null);setTherapyJumpRequested(false);setNotice("");}}>
+        onClick={()=>{setStudioMode("pump");setActiveWorkspace("video");setTherapyJumpRequested(false);setNotice("");}}>
         <ArrowRight size={17} aria-hidden="true"/>{quick.exitTherapy}
       </button>
       <MandalaGuidedCourse locale={locale} theme={theme}
@@ -4071,7 +4061,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </p>:null}
       </section>
 
-          {activeWorkspace!=="characters" ? deepCharacterPhotoPane : null}
+          {activeWorkspace!=="pro" ? deepCharacterPhotoPane : null}
         </section>
 
         <section className={videoStyles.quickSection} data-video-quick-tier data-workspace-section="video" data-video-quick-section="2" aria-labelledby="quick-tier-title">
@@ -4142,7 +4132,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
         </section>
 
-        <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="characters" aria-labelledby="quick-personal-title">
+        <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
           </div>
@@ -4169,7 +4159,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <Music2 size={21} aria-hidden="true"/>{approved.music}
             </button>
           </div>
-          {activeWorkspace==="characters" ? deepCharacterPhotoPane : null}
+          {activeWorkspace==="pro" ? deepCharacterPhotoPane : null}
           <MandalaStoriesCharacters locale={locale} theme={theme}
             disabled={recording||preparing||micRecording} applied={appliedStory}
             onApply={next=>{
@@ -4217,7 +4207,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
         </details>
-        {activeWorkspace==="courses" ? <section className={videoStyles.workspaceCourses} data-workspace-section="courses">
+        {activeWorkspace==="practices" ? <section className={videoStyles.workspaceCourses} data-workspace-section="practices">
           <div className={videoStyles.workspaceCourseGrid}>
             <Link href={"/"+locale+"/courses"} prefetch={false}><Film size={22} aria-hidden="true"/>
               <strong>{locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}</strong>
@@ -4226,7 +4216,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <Music2 size={22} aria-hidden="true"/><strong>{locale==="ru"?"Медитации":locale==="es"?"Meditaciones":"Meditations"}</strong>
               <span>{locale==="ru"?"Выбрать практику":locale==="es"?"Elegir práctica":"Choose a practice"}</span><ArrowRight size={18} aria-hidden="true"/></Link>
             <button type="button" disabled={recording||preparing} onClick={()=>{
-              setActiveWorkspace("hypnotherapy");setStudioMode("therapy");setTherapyJumpRequested(false);
+              setActiveWorkspace("practices");setStudioMode("therapy");setTherapyJumpRequested(false);
             }}><HeartPulse size={22} aria-hidden="true"/>
               <strong>{locale==="ru"?"8 видеосессий":locale==="es"?"8 vídeos guiados":"8 guided sessions"}</strong>
               <span>{locale==="ru"?"Персональная программа":locale==="es"?"Plan personal":"Personal programme"}</span><ArrowRight size={18} aria-hidden="true"/></button>
@@ -4264,7 +4254,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
           data-video-quick-therapy disabled={recording||preparing}
-          onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setQuickDetailedOpen(true);
+          onClick={()=>{setActiveWorkspace("practices");setStudioMode("therapy");setQuickDetailedOpen(true);
             setTherapyJumpRequested(true);}}>
           <HandHeart size={18} aria-hidden="true"/>{practiceType==="video"?quick.therapy:quick.therapy}
         </button>
@@ -4456,7 +4446,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.videoMandalaChoice}
             data-video-therapy-toggle aria-pressed={studioMode==="therapy"}
             disabled={recording||preparing}
-            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setCinematicPlan(null);setNotice("");}}>
+            onClick={()=>{setStudioMode(current=>current==="therapy"?"pump":"therapy");setActiveWorkspace("practices");setNotice("");}}>
             <Sparkles size={16} aria-hidden="true"/>{supportUi.mandala}
           </button>
         </section>
@@ -4693,7 +4683,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
       </details>
-      {studioMode==="therapy" && activeWorkspace!=="courses" ? <MandalaPersonalMeditation
+      {studioMode==="therapy" && activeWorkspace!=="practices" ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?appliedAudioName:""}
         audioSrc={attachedAudio?.kind==="file" ? (audioRights ? uploadedAudio?.url||null : null) :
