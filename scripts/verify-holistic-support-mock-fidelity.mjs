@@ -52,8 +52,8 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
-          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
-            label + " four top check-ins; Goals is part of Meaning");
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 5,
+            label + " five top check-ins; Goals is part of Meaning");
           assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
             label+" no duplicate Goals scale");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
@@ -133,7 +133,7 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(geometry.guide.length,0,
             label+" personalized dialogue must not appear before the visitor starts it");
           assert.ok(geometry.hero[0].y>=geometry.a[0].bottom-2,
-            label+" unchanged four-score dashboard precedes the scenic player");
+            label+" five-score dashboard precedes the scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
@@ -141,7 +141,7 @@ for (const browserType of [chromium, webkit]) {
             t.top>=t.buttonTop-2 && t.bottom<=t.buttonBottom+2),
             label+" all action captions visible within buttons: "+JSON.stringify(geometry.readableTools));
           assert.ok(geometry.readableScores.every(t=>t.fits),
-            label+" all four focus labels visible: "+JSON.stringify(geometry.readableScores));
+            label+" all five focus labels visible: "+JSON.stringify(geometry.readableScores));
           assert.ok(geometry.hero[0].height>=268, label+" hero remains the dominant workspace");
           assert.equal(geometry.videos.length,4,label+" all four videos exist");
           assert.ok(geometry.videos.every(v=>v.right<=geometry.client+2 && v.x>=-2), label+" all four cards visible without swipe");
@@ -177,7 +177,7 @@ for (const browserType of [chromium, webkit]) {
             label+" focus comes from the user's edited rating");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
-          // The workspace expands into four sectors, including merged Meaning and Goals.
+          // The workspace expands into five sectors, including merged Meaning/Goals and Anti-stress.
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
@@ -187,14 +187,14 @@ for (const browserType of [chromium, webkit]) {
             const title=document.getElementById("support-goal-filter-title");
             return !!title && title.getBoundingClientRect().top >= 59;
           }, null, {timeout:4000});
-          assert.equal(await filter.locator('[data-goal-sector]').count(),4,label+" four merged goal sectors");
+          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
           assert.equal(await filter.locator('[data-goal-sector="goals"]').count(),0,
             label+" no standalone Goals category");
           // Live two-way sync between upper-left check-ins and the new compact
           // first slider in the filter, without dragging the separate axes.
           const checkinPairs = [
             ["energy","energy"], ["money","money"],
-            ["love","relationships"], ["meaning","meaning"],
+            ["love","relationships"], ["meaning","meaning"], ["stress","stress"],
           ];
           for (const [sector, key] of checkinPairs) {
             await filter.locator('[data-goal-sector="'+sector+'"]').click();
@@ -599,6 +599,20 @@ for (const browserType of [chromium, webkit]) {
             label+" energy has three compact measures in the right column");
           assert.equal(await root.locator('[data-goal-accepted]').count(),0,
             label+" Reset clears all previously accepted sector badges");
+          // Stress is a fifth direction with 6 concerns, 6 goals and a user-editable recheck.
+          await filter.locator('[data-goal-sector="stress"]').click();
+          assert.equal(await filter.locator('[data-goal-concern]').count(),6,label+" stress concerns");
+          assert.equal(await filter.locator('[data-goal-task]').count(),6,label+" stress goals");
+          assert.equal(await filter.locator('[data-goal-axis]').count(),3,label+" stress measures");
+          await filter.locator('[data-goal-task="grounding"] input').check();
+          await filter.locator('[data-support-goal-save]').click();
+          await filter.locator('[data-support-stress-recheck]').waitFor({state:"visible",timeout:7000});
+          await filter.locator('[data-support-stress-after]').focus();
+          await filter.locator('[data-support-stress-after]').press("End");
+          assert.equal(await filter.locator('[data-support-stress-after]').inputValue(),"10",
+            label+" self-recheck slider responds to keyboard input");
+          assert.equal(await filter.locator('[data-support-stress-delta]').count(),1,
+            label+" post-practice before/after score is displayed");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
           assert.equal(await root.locator('[data-support-inline-guide]').count(),0,
