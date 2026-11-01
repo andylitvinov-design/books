@@ -2590,7 +2590,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true,
       spokenText:clip.spokenText,speechSeconds:clip.speechSeconds,mixSeconds:clip.mixSeconds,
       voiceId:clip.voiceId,language:clip.language,bed:clip.bed});
-    if(duration!==clip.mixSeconds){setDuration(clip.mixSeconds as (typeof durations)[number]);setCinematicPlan(null);}
+    // A new narration length must not throw away the chosen four-shot film.
+    if(duration!==clip.mixSeconds)changeVideoDuration(clip.mixSeconds as (typeof durations)[number]);
     setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
   }
@@ -2611,7 +2612,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioRights(true);
     setSoundVolume(100);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
-    if(duration!==target){setDuration(target);setCinematicPlan(null);}
+    // Keep the approved scene order and adaptive cut timing when voice changes the length.
+    if(duration!==target)changeVideoDuration(target);
     setNotice(locale==="ru"?"Голос медитации и музыкальный фон добавлены в видеоролик.":
       locale==="es"?"La narración y la música se han adjuntado al vídeo.":
       "Meditation narration and background are now attached to the video.");
