@@ -17,6 +17,25 @@ function trustedContext(context){
  }
  return ['schedule','push','workflow_dispatch'].includes(context.eventName);
 }
+/**
+ * A completed PUSH of the trusted Repair/CI workflow is audit-only, so it
+ * must not occupy the 2-minute post-worker cooldown. Unknown/active runs
+ * still fail closed. Successful real worker completions get a short
+ * propagation grace; failed attempts keep the longer backoff.
+ */
+function workerBusyOrCooling(runs,now){
+ if(!Array.isArray(runs))return true;
+ return runs.some(r=>{
+  if(['in_progress','queued','requested','waiting','pending'].includes(r.status))return true;
+  if(r.status!=='completed')return true;
+  if(r.event==='push')return false;
+  if(!['workflow_dispatch','schedule'].includes(r.event)||!r.conclusion)return true;
+  const completed=Date.parse(r.updated_at||r.created_at||'');
+  if(!Number.isFinite(completed)||completed>now)return true;
+  const cooldown=r.conclusion==='success'?30_000:120_000;
+  return now-completed<cooldown;
+ });
+}
 function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
@@ -169,8 +188,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!Array.isArray(r?.workflow_runs)){blocked('WORKER_HISTORY_INCOMPLETE');continue;}
    recent=r.workflow_runs;
   }catch(err){blocked('WORKER_HISTORY_UNAVAILABLE');continue;}
-  if(recent.some(x=>['in_progress','queued','requested','waiting','pending'].includes(x.status)
-     ||(Number.isFinite(Date.parse(x.created_at))&&now-Date.parse(x.created_at)<120000))){
+  if(workerBusyOrCooling(recent,now)){
    blocked('WORKER_BUSY_OR_COOLDOWN');continue;
   }
   if(dryRun){summary.wouldDispatch++;summary.workerRuns.push({task_key:task.task_key,
@@ -278,5 +296,5 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  }
  log();return state;
 }
-module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,
+module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
  DIRECTION_IDLE_MS,DIRECTION_WORKFLOW};
