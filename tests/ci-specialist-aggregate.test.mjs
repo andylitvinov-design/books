@@ -120,6 +120,20 @@ test('workflow status needs live matching PR HEAD, path, associated PR and lates
   assert.equal(inspectWorkflowRuns({...input,runs:[run({id:150,conclusion:'failure'}),run()]}).passed.length,1);
 });
 
+test('immutable run SHA survives GitHub rewriting associated PR head on subsequent pushes',()=>{
+  const associated = run({pull_requests:[{number:27,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  const input = {expected:[path],pr:pr()};
+  assert.equal(inspectWorkflowRuns({...input,runs:[associated]}).passed.length,1);
+  const wrongBranch=run({head_branch:'unrelated',pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongBranch]}).missing,[path]);
+  const wrongRepo=run({head_repository:{full_name:'other/repo'},pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongRepo]}).missing,[path]);
+  const wrongNumber=run({pull_requests:[{number:999,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongNumber]}).missing,[path]);
+  const wrongTarget=run({pull_requests:[{number:27,base:{ref:'other'},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
+});
+
 test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
   const state=inspectWorkflowRuns({expected:[path],pr:pr(),runs:[run(),run({event:'push',id:300,status:'completed',conclusion:'failure'})]});
   assert.deepEqual(state.pushFailures,['300:failure']);
