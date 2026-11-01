@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {createScenarioAcquisitionQueue} from "../lib/mandala/scenario-media-acquisition.mjs";
 import {auditScenarioMedia,planDedicatedScenarioMedia,isUsableFilm}
   from "../lib/mandala/scenario-media-coverage.mjs";
 
@@ -59,4 +60,19 @@ test("invalid scenario with duplicate stages fails even if source is licensed",(
  const s=["a","b","c","d"].map(id=>film(id));
  const audit=auditScenarioMedia([scenario("repeat",["a","a","b","c"])],s);
  assert.ok(audit.errors.some(e=>e.type==="scenario_requires_four_distinct_clips"));
+});
+
+test("editorial queue enumerates the exact independent scenes still required",()=>{
+ const presets=JSON.parse(readFileSync(new URL("../data/video-catalog/free-film-presets-v2.json",import.meta.url))).presets;
+ const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url))).scenes;
+ const q=createScenarioAcquisitionQueue(presets,scenes);
+ assert.equal(q.expectedNewMp4,52);
+ assert.equal(q.slots.length,52);
+ assert.equal(new Set(q.slots.map(row=>row.id)).size,52);
+ for(const row of q.slots){
+   assert.equal(row.importStatus,"not_imported");
+   assert.equal(row.rightsStatus,"needs_individual_editorial_review");
+   assert.equal(row.sourceUrl,null);
+   assert.equal(row.newIndependentVideoRequired,true);
+ }
 });
