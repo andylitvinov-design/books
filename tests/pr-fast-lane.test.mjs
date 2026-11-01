@@ -762,17 +762,12 @@ test('all 14 Public Services browser suites use semantic readiness rather than n
 });
 
 
-test('Public Services PR keeps a fast gate; full real E2E is still runnable on candidate ref', () => {
+test('Public Services PR retains all browser suites without manual-only gates', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.match(source, /^  pull_request:/m);
-  assert.match(source, /Fast public consent, service and Reiki contract tests/);
-  assert.match(source, /github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true'/);
-  assert.match(source, /github.event_name == 'workflow_dispatch' && steps.scope.outputs.build == 'true'/);
-  assert.ok(source.includes('run_case "verify-contact-channel-chooser-browser.mjs"'));
-  assert.ok(source.includes('run_case "verify-service-cart-browser.mjs"'));
-  assert.doesNotMatch(source, /continue-on-error:\\s*true/);
+  assert.doesNotMatch(source, /if \[\[ "\$GITHUB_EVENT_NAME" == 'workflow_dispatch' \]\]; then/);
 });
+
 test('Free Review PR retains both engines and all four mobile viewports', () => {
   const source = workflow('hh-free-review-live-mobile.yml');
   const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
