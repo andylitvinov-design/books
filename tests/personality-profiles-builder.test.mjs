@@ -46,10 +46,11 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
-  assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
-  // On Ready the sole CTA hands the eligible selection to authenticated My Tests.
-  // Guest test exploration remains available only via its separate public catalogue.
-  assert.doesNotMatch(component, /startTests=|data-profile-start-tests/)
+  assert.match(component, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
+  // On Tests an explicit guest CTA launches only selected eligible test keys.
+  // Ready separately offers one opt-in Google save without a duplicate guest action.
+  assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
+  assert.match(component, /data-profile-start-tests/)
   assert.match(component, /data-profile-google-signin/)
   assert.match(component, /onClick={saveSelectionWithGoogle}/)
   assert.match(component, /makeTestSelectionIntent\(selectedKeys\)/)
@@ -117,13 +118,13 @@ test('home Stage 2 is one free service while account reports remain separate and
 test('unified profile is multi-select and describes four separate analysis layers', () => {
   const component = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  for (const focus of ['wellbeing', 'relationships', 'work', 'identity']) {
+  for (const focus of ['wellbeing', 'relationships', 'work', 'identity', 'goal']) {
     assert.ok(component.includes(focus + ': ['), focus)
   }
   for (const token of [
     'data-profile-focus-selection', 'data-profile-focus={key}', 'data-profile-confirm-focus',
     'aria-pressed={focuses.includes(key)}', 'disabled={focuses.length === 0}',
-    'const suggested = areasFor(focuses)', 'data-profile-four-layers', 't.layers.map',
+    'setSelectedResearchIds([])', 'data-profile-four-layers', 't.layers.map',
     'ONE PERSONAL PROFILE', 'ОДИН ЛИЧНЫЙ ПРОФИЛЬ', 'UN PERFIL PERSONAL',
   ]) assert.ok(component.includes(token), token)
   assert.ok(!component.includes('data-profile-kind='))
@@ -134,15 +135,16 @@ test('unified profile is multi-select and describes four separate analysis layer
 })
 
 
-test('four life directions retain all nine topics, are localized and require an explicit selection', () => {
+test('five life directions retain the original topics and add a goal-support topic', () => {
   const component = read('components/personality-profiles-builder.tsx')
   const sections = [...component.matchAll(/^    focuses: \{\n([\s\S]*?)^    \},/gm)]
   assert.equal(sections.length, 3, 'EN, RU, ES must have matching focus options')
-  const directions = ['wellbeing', 'relationships', 'work', 'identity']
+  const directions = ['wellbeing', 'relationships', 'work', 'identity', 'goal']
   for (const section of sections) {
     assert.deepEqual([...section[1].matchAll(/^      ([a-z]+): \[/gm)].map(match => match[1]), directions)
   }
   for (const phrase of [
+    'Goal Profile', 'Профиль цели', 'Perfil de la meta',
     'Body, health & energy', 'Relationships & connection',
     'Work, business & money', 'Personality & personal growth',
     'Тело, здоровье и энергия', 'Отношения и близость',
@@ -150,12 +152,10 @@ test('four life directions retain all nine topics, are localized and require an 
     'Cuerpo, salud y energía', 'Relaciones y cercanía',
     'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
   ]) assert.ok(component.includes(phrase), phrase)
-  assert.match(component, /identity: \["traits", "support", "meaning"\]/)
-  assert.match(component, /wellbeing: \["emotions", "recovery", "body"\]/)
-  assert.match(component, /relationships: \["connection"\]/)
-  assert.match(component, /work: \["work", "money"\]/)
+  for (const name of ['PROFILE_AREA_AXES', 'profileAreasWithTests'])
+    assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
-  assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
+  assert.match(component, /\[selectedResearchIds, setSelectedResearchIds\] = useState<string\[\]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
   assert.doesNotMatch(component, /not five diagnoses|пять диагнозов|cinco diagnósticos/)
 })
@@ -178,5 +178,89 @@ test('browse free tests opens the real catalogue and positions the existing pers
   for (const locale of ['en', 'ru', 'es']) {
     assert.ok(builder.includes('  ' + locale + ': {'), locale + ' profile localization')
     assert.ok(offers.includes('  ' + locale + ': {'), locale + ' review localization')
+  }
+})
+
+test('Tests slide keeps 3+5 suggestions, explicit start and a chosen-scope overflow finder', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const route = read('app/[locale]/personality-profiles/page.tsx')
+  const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
+  const primary = slide.indexOf('data-profile-recommended-tests')
+  const fiveMore = slide.indexOf('data-profile-five-more-tests')
+  const start = slide.indexOf('data-profile-start-tests')
+  const overflow = slide.indexOf('data-profile-additional-tests')
+  assert.ok(primary > 0 && fiveMore > primary && start > fiveMore && overflow > start)
+  for (const phrase of ['type="search"', 'data-profile-test-mode', 'data-profile-extra-selected-scope',
+    'value={timeFilter}', 'value={sortFilter}', 'data-profile-mode={mode}',
+    'data-profile-extra-toggle', 'aria-controls="profile-builder-extra-results"', 'aria-expanded={showMore}',
+    'checked={selectedKeys.includes(test.key)}',
+    'disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}'])
+    assert.ok(slide.includes(phrase), phrase)
+  assert.ok(builder.includes('const displayTests = showMore ? extraMatches : [];'))
+  assert.ok(builder.includes('remainingTestKeys.size > 0'))
+  assert.ok(builder.includes('if (!eligibleTestKeys.has(key)) return;'))
+  assert.ok(builder.includes('keys.length < 12'))
+  assert.ok(builder.includes('selectedScaleIds, "pro")'))
+  assert.ok(builder.includes('test.key === key &&'))
+  assert.ok(route.includes('testKind: entry.testKind'))
+  assert.ok(css.includes('.extraFilters {'))
+  assert.ok(css.includes('.extraSearch { grid-column: 1 / -1; }'))
+  assert.ok(css.includes('.startRow > .primary { width: 100%; }'))
+  assert.ok(css.includes('.extraScope{display:grid'))
+  for (const phrase of ['start: "Пройти тесты"', 'start: "Take tests"', 'start: "Realizar pruebas"'])
+    assert.ok(builder.includes(phrase), phrase)
+  assert.ok(builder.includes('data-profile-google-cabinet-offer'))
+  assert.ok(!slide.includes('data-profile-test-review-slide'))
+})
+
+test('all additional tests inherit only chosen facets and the existing server guest rights', () => {
+  const page = read('app/[locale]/personality-profiles/page.tsx')
+  const builder = read('components/personality-profiles-builder.tsx')
+  for (const flag of ['entry.selectable === true', 'entry.startable === true',
+    'entry.guestEligible === true', 'entry.free === true', 'entry.rightsStatus === "cleared"',
+    'entry.explicitOptIn !== true']) assert.ok(page.includes(flag), flag)
+  assert.ok(builder.includes('rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)'))
+  assert.ok(builder.includes('remainingTestKeys.has(test.key) && test.testKind === modeKind'))
+  assert.ok(builder.includes('selectedAxisRefs.includes(scale.researchAxisId)'))
+  assert.ok(builder.includes('timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter))'))
+  assert.ok(builder.includes('fitByKey.get(key) ?? 0'))
+  assert.ok(builder.includes('candidate.matchPercent'))
+  assert.doesNotMatch(builder, /extraProfile|extraScales|extraGroups|effectiveExtraScales|setExtra/)
+  assert.ok(!builder.includes('data-profile-extra-profile-filter'))
+  assert.ok(!builder.includes('setSelectedAxes('))
+  assert.ok(builder.includes('makeTestSelectionIntent(selectedKeys)'))
+  assert.ok(builder.includes('selectedKeys.join(",")'))
+  for (const phrase of ['Other tests for your topics', 'Дополнительные тесты по вашим темам',
+    'Otras pruebas para tus temas', '80%', '20%', 'clinical probability', 'клинический прогноз', 'probabilidad clínica'])
+    assert.ok(builder.includes(phrase), phrase)
+})
+
+test('Tests step keeps three plus five cards in place when checkboxes change and always displays topic relevance', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const slide = builder.slice(builder.indexOf('{step === 3 && <section'), builder.indexOf('{step === 4 && <section'))
+  assert.match(builder, /rankProfileAxisTests\(tests, scaleGroups, selectedScaleIds, batteryMode\)/)
+  assert.match(builder, /recommendProfileTopThreeTests\(tests, scaleGroups,/)
+  assert.match(builder, /const featuredTestKeys = new Set\(/)
+  assert.match(slide, /recommendedTests\.map\(\(\{ test, matchPercent \}\) =>/)
+  assert.match(slide, /fiveMoreTests\.map\(\(\{ test, matchPercent \}\) =>/)
+  assert.match(slide, /data-profile-five-more-tests/)
+  assert.match(slide, /data-profile-additional-suggestion=\{test\.key\}/)
+  assert.match(slide, /checked=\{selectedKeys\.includes\(test\.key\)\}/)
+  assert.doesNotMatch(slide, /chosenTests\.map\(test\s*=>\s*<label/)
+  assert.doesNotMatch(slide, /\.filter\(test => !selectedKeys\.includes\(test\.key\)\)/)
+  assert.match(slide, /extraMatchPercent\(test\.key\)/)
+  assert.match(slide, /\{matchPercent\}%/)
+  assert.match(slide, /\{extraMatchPercent\(test\.key\)\}%/)
+  assert.match(builder, /selectedKeys\.join\(","\)/)
+  assert.match(builder, /selectedKeys\.length === 0 && recommendedTests\.length > 0/)
+  for (const text of ['3 key recommended tests', '5 more tests ranked by topic match',
+    '3 основных рекомендованных теста', 'Ещё 5 тестов по проценту соответствия',
+    '3 pruebas principales recomendadas', '5 pruebas más, ordenadas por coincidencia']) {
+    assert.ok(builder.includes(text), text)
+  }
+  for (const selector of ['.testSectionHeading', '.fiveMore', '.fitPill', '.fitNote']) {
+    assert.ok(css.includes(selector), selector)
   }
 })

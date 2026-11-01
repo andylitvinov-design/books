@@ -1,8 +1,10 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
+import {ArrowLeft, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
+import MessagesContactCard from './messages-contact-card'
+import CrmSalesbotAssist from './crm-salesbot-assist'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -219,6 +221,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [showFilters,setShowFilters]=useState(false)
   const [showTools,setShowTools]=useState(false)
   const [showQuickReplies,setShowQuickReplies]=useState(false)
+  const [showContactCard,setShowContactCard]=useState(false)
   useEffect(()=>{onOpenChange?.(Boolean(active))},[active,onOpenChange])
   useEffect(()=>{
     if(!showSettings)return
@@ -249,7 +252,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingFollowup.current=null
     activeRef.current=''
     setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('');setBotCheck(null)
-    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
+    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false);setShowContactCard(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
       if(ctrl.signal.aborted)return
@@ -304,7 +307,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
-    setShowTools(false);setShowQuickReplies(false)
+    setShowTools(false);setShowQuickReplies(false);setShowContactCard(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -611,7 +614,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         </button>}
       </div>}
       <div className={conversationOnly?styles.detailConversation:styles.conversation}>
-        {!selected?<p className={styles.empty}>{t.select}</p>:<>
+        {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
+          <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
+            item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
+              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
           {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
             {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
@@ -620,8 +626,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>}
-            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
+            {selected.unreadCount>0&&<button disabled={busy} type="button"
+              className={styles.plainButton} aria-label={t.read} title={t.read}
+              onClick={()=>action('read',{threadId:selected.id})}>
+              <CheckCheck size={18} aria-hidden="true"/>
+              <span className={styles.readLabel}>{t.read}</span>
+            </button>}
           </div>}
           {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
@@ -632,6 +642,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <option value="archived">{w.archived}</option>
               </select>
             </label>
+            <button type="button" className={styles.profileAction} onClick={()=>setShowContactCard(true)}>
+              {lang==='ru'?'Карточка':lang==='es'?'Ficha':'Client card'}
+            </button>
             {compact&&<button type="button" className={styles.toolsButton}
               aria-expanded={showTools} aria-controls="hh-crm-conversation-tools"
               onClick={()=>setShowTools(value=>!value)}>
@@ -722,9 +735,23 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
-              {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
+              {conversationOnly||compact?<Send size={20} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
+            {selected.reply.ok&&<div className={styles.salesbotAssistSlot}>
+              <CrmSalesbotAssist key={`${accountId}:${selected.id}`} accountId={accountId}
+                threadId={selected.id} locale={lang} disabled={busy||threadLoading}
+                iconOnly={conversationOnly}
+                onInsert={draft=>{
+                  // Nothing is sent here; the owner must review and press Send.
+                  if(activeRef.current!==selected.id||busy||threadLoading||!selected.reply.ok)return false
+                  if(text.trim()&&!window.confirm(lang==='ru'?'Заменить текущий черновик?':
+                    lang==='es'?'¿Reemplazar el borrador actual?':'Replace your current draft?'))return false
+                  pendingRequest.current=null
+                  setText(draft)
+                  return true
+                }}/>
+            </div>}
           </div>
         </>}
       </div>

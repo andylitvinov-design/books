@@ -17,12 +17,26 @@ await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const responseEvidence = [];
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  // Page-level synthetic mocks may fulfill requests; all unmocked API writes
+  // fail closed rather than reaching any configured provider or database.
+  await context.route('**/api/**', route =>
+    ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (response.request().method() === "GET" && response.status() === 503 &&
+          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
+        // Status and path are already verified above. Browser streams may
+        // close before body.json(), so do not misclassify empty reads.
+        responseEvidence.push(url.pathname);
+      }
+    });
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
@@ -56,6 +70,15 @@ try {
   const createPage = async (width) => {
     const page = await context.newPage();
     attachDiagnostics(page);
+    // The draft-link assertions exercise the private-browsing fallback. The
+    // regular receipt redirect has a separate synthetic release-audit case.
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'hh-service-enquiry-receipt:v1') throw new DOMException('blocked', 'SecurityError');
+        return set.call(this, key, value);
+      };
+    });
     await page.setViewportSize({ width, height: 844 });
     return page;
   };
@@ -67,15 +90,15 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "domcontentloaded" });
       const main = page.locator('main[data-core-service-detail="alchemy"]');
       await visible(main.locator("h1"));
       await expect(main).toHaveAttribute("lang", "es");
       await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
       await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
       await assertViewport(page, "es/alchemy-of-soul/" + width);
-      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-        "Default Spanish payment details are collapsed before geometry measurement");
+      assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+        "Spanish booking does not expose payment methods before confirmed time");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
       assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
@@ -105,7 +128,7 @@ try {
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
-      await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
+      await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
       await visible(page.locator("#services-conversion-title"));
       // Free-first studio: three distinct no-payment paths, then six real
       // personal offers. No secondary marketplace repeats on the landing.
@@ -140,14 +163,14 @@ try {
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
           "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
+          "#method-videos", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
       await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
         { timeout: 15000 });
       // Method posters are visible, while third-party players stay opt-in.
@@ -247,7 +270,7 @@ try {
       }
       // Keep the advanced matching UX available on a separate, dedicated
       // directory page, instead of duplicating it below personal offers.
-      const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "networkidle" });
+      const directoryResponse = await page.goto(origin + "/" + locale + "/services/catalog", { waitUntil: "domcontentloaded" });
       assert.equal(directoryResponse?.status(), 200, "The dedicated Services catalog must load");
       const discovery = page.locator("#find-your-service");
       const searchForm = discovery.locator('form[role="search"]');
@@ -326,7 +349,7 @@ try {
   // Spanish uses its own page route but the same EN/RU/ES discovery component.
   {
     const page = await createPage(390);
-    await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
+    await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
@@ -344,15 +367,26 @@ try {
     await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+    // Reiki is online-only: selecting its topic intentionally switches the
+    // current Toronto mode to online instead of displaying a false empty state.
     await esShowcase.locator('[data-services-kind="reiki"]').click();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
+    // A visitor can still explicitly switch to Toronto afterward. Only that
+    // genuinely unmatched topic+mode combination should display empty state.
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
+    await expect(esShowcase.locator('[data-services-mode="toronto"]')).toHaveAttribute("aria-pressed", "true");
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeHidden();
     await esShowcase.locator('[data-services-mode="online"]').click();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
     await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
     await assertViewport(page, "es/services/slider-filter/390");
-    await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
+    await page.goto(origin + "/es/services/catalog", { waitUntil: "domcontentloaded" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
     await expect(freeOnly).not.toBeChecked();
@@ -370,7 +404,7 @@ try {
       const width = 390;
       const page = await createPage(width);
       const label = locale + "/" + service + "/" + width;
-      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "networkidle", timeout: 60000 });
+      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "domcontentloaded", timeout: 60000 });
       assert.equal(response?.status(), 200, "Personal landing should render: " + label);
       const main = page.locator('main[data-personal-service="' + service + '"]');
       await visible(main.locator('h1#personal-service-title'));
@@ -380,7 +414,11 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      // The main contains the responsive site header: its free-review link is
+      // intentionally hidden when the mobile nav is closed. Verify the hero CTA,
+      // which is the actual visible and directly actionable free alternative.
+      const free = main.locator('section[aria-labelledby="personal-service-title"] a[href="/' + locale + '/services/free-situation-review"]');
+      assert.equal(await free.count(), 1, "One hero free-review link: " + label);
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
@@ -395,7 +433,7 @@ try {
       await visible(target);
       assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
         "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] button');
+      const choices = target.locator('[data-choice-layout="service"] > button');
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
@@ -415,7 +453,7 @@ try {
   for (const locale of ["en", "ru", "es"]) {
     const page = await createPage(390);
     const label = locale + "/business-consulting/390";
-    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"networkidle",timeout:60000});
+    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"domcontentloaded",timeout:60000});
     assert.equal(response?.status(), 200, "Business service must render: " + label);
     const main = page.locator("main[data-business-consulting]");
     await visible(main.locator('h1#business-hero-title'));
@@ -462,7 +500,7 @@ try {
     for (const [slug, kind] of coreServices) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
-        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
+        await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "domcontentloaded" });
         const main = page.locator('main[data-core-service-detail="' + kind + '"]');
         await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
@@ -471,8 +509,8 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (kind === "alchemy") {
-          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-            "Default payment details are collapsed before geometry measurement");
+          assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+            "Payment options belong only to the confirmed booking cart");
         }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
@@ -532,27 +570,21 @@ try {
             });
             assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
-            // Payments are still available after agreement, but the default
-            // 320/390px decision screen must not be extended by transfer notes.
-            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
-            if (await paymentDisclosure.count()) {
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
-                "Payment methods must be collapsed until explicitly requested");
-              await paymentDisclosure.locator('summary').click();
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
-                "Payment help can be expanded with an accessible control");
-              await paymentDisclosure.locator('summary').click();
-            }
+            // No payment methods or external provider links on an unconfirmed booking.
+            await assertAlchemyPaymentsExpanded(main, expect, width);
             await pricing.locator('[data-alchemy-format="month"]').click();
             await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
-            assert.equal(await paymentDisclosure.count(), 0,
-              "Unpriced monthly support must never expose one-time transfer amounts");
+            assert.equal(await pricing.locator('[data-booking-cta]').count(), 0,
+              "Monthly support uses its independent service enquiry, not this one-time booking flow");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
-            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-              "Selected express session must appear in prepared order draft");
+            const book = pricing.locator('[data-booking-cta="book"]');
+            await expect(book).toHaveCount(1);
+            await book.click();
+            await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
+            await expect(pricing.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveCount(1);
+            assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
+              "No cart or payment method before a server-confirmed booking");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
@@ -611,59 +643,31 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
-          const featured = main.locator("[data-featured-constellations-video]");
+          // The former three-offer widget was replaced by the express review.
+          // Verify the real current funnel without submitting any visitor data.
+          const featured = main.locator("[data-free-review-intro-video]");
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
-            "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
+            "Introductory recording never autoplays before opt-in");
+          const capture = main.locator("#" + captureId + "[data-personal-express-enquiry]");
+          await visible(capture);
+          const reveal = capture.locator("[data-express-reveal]");
+          await expect(reveal).toHaveAttribute("aria-expanded", "false");
+          await expect(capture.locator("[data-express-inline-disclosure]")).toBeHidden();
+          await reveal.click();
+          await expect(reveal).toHaveAttribute("aria-expanded", "true");
+          const disclosure = capture.locator("[data-express-inline-disclosure]");
+          await visible(disclosure);
+          await expect(disclosure.locator("[data-express-focus]")).toHaveCount(2);
+          const chooser = disclosure.locator("[data-contact-channel-chooser]");
+          await expect(chooser).toHaveCount(1);
+          const consent = chooser.locator('input[type="checkbox"][required]');
+          await expect(consent).not.toBeChecked();
+          await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+          await expect(chooser.locator('[data-lead-saved]')).toHaveCount(0);
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
+            "Expanded information must fit the phone width");
 
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
-
-          const writtenIntake = main.locator("[data-optional-written-review]");
-          assert.equal(await writtenIntake.evaluate(el => el.open), false);
-          if (width === 390) {
-            await writtenIntake.locator(":scope > summary").click();
-            const preview = writtenIntake.locator("[data-free-drawing-intake]");
-            await visible(preview);
-            await visible(preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]'));
-            assert.equal(await preview.locator("form,textarea").count(), 0,
-              "The private answers are entered only in the protected questionnaire");
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-              "Expanded information must fit the phone width");
-
-            const hub = await page.context().newPage();
-            await hub.setViewportSize({width, height: 844});
-            await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
-              "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
-            await hub.close();
-          }
         }
         await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
         if (width === 390 || width === 1188) {
@@ -676,7 +680,27 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  // In isolated CI, getAppConfig() is guaranteed to return 503 before any
+  // database query when HH_APP_SUPABASE_URL is absent. Do not read the response
+  // body after the browser resource has already closed. Only a real observed
+  // GET 503 from these two audited read-only endpoints can be exempted.
+  const unavailable = responseEvidence;
+  const unexpectedUnavailable = unavailable.filter(path =>
+    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
+  const expectedUnavailable = new Set();
+  if (!process.env.HH_APP_SUPABASE_URL) {
+    for (const path of unavailable) expectedUnavailable.add(path);
+  }
+  const unexpected = diagnostics.console.filter(entry => {
+    if (entry.type !== 'error') return false;
+    if (expectedUnavailable.has(entry.path) &&
+        entry.text === 'Failed to load resource: the server responded with a status of 503 (Service Unavailable)') {
+      return false;
+    }
+    return true;
+  });
+  assert.deepEqual(unexpected, [], "Unexpected browser console errors");
   await context.close();
 } catch (error) {
   failure = error;

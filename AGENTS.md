@@ -1,24 +1,31 @@
-# Holistic House agent rules
+# Holistic House: screenshot-driven UI work
 
-Scope: `andylitvinov-design/books`, Holistic House site and connected
-GitHub, Vercel, Supabase and provider integrations. More detailed task-specific
-requirements and runtime safety/confirmation rules take precedence. This file
-does not grant new permissions. See `docs/integrations/AGENT_SECRET_AUTOMATION.md`.
+When the owner provides a screenshot, reference image, Figma export, or mockup and asks to create, rebuild, redesign, or correct any page, **read and follow .agents/skills/visual-to-code-pro/SKILL.md before changing UI code**. Its FIRST gate is page identity: reference and actual must share the same route/query intent, role, auth state and dashboard/editor view type. A service editor screenshot is not a visually failed practitioner dashboard; fix wrong OAuth/automatic navigation before comparing pixels. Use its reference specification, preserve working APIs/auth/data, perform rendered screenshot comparison, and never call CSS/unit tests alone a visual match.
 
-## Before changing anything
+The canonical website is https://holistichouse.vercel.app. The GitHub default branch codex/bootstrap-books is **not** automatically production. See the CI / PR / LIVE delivery policy below for production release verification.
 
-- Verify the live Vercel project, production Git branch, commit SHA and domain
-  instead of assuming the GitHub default branch is production.
-- The Holistic House Vercel project is `codex-public-book-library`
-  (`prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b`, team
-  `team_OSf690d0nxRHWVMXCElA8i95`), serving
-  `holistichouse.vercel.app`. GitHub default `codex/bootstrap-books` is
-  NOT the production branch; re-check the current deployment source.
-- Do not trust a local `.vercel/project.json` without matching the IDs above.
-  In particular, `~/projects/books/.vercel` has pointed to a different project.
-- Preserve unrelated files and changes; reuse existing modules and integrations.
+Keep existing pages/components instead of adding duplicates. Preserve EN/RU/ES routes, signed-in navigation, private data, CSP nonce, CRM, protected media, real service IDs, consent and existing E2E contracts. Never claim real delivery, booking, payment, OAuth, or photo upload from a mock, a screenshot, HTTP 200 or CI alone. Use synthetic screenshots in public artifacts and respect privacy.
 
-## Agent-first credential policy (owner wants minimal manual input)
+## Automatic visual QA tool order
+
+For each owner screenshot, URL or Figma-based page design request, **do not ask the owner to name tools**. Inspect the correct canonical route and auth/view state first; then invoke the tools that are actually connected:
+
+1. **Existing live page as reference:** use Chrome DevTools MCP for read-only DOM, CSS, asset and geometry inspection; if unavailable, use the existing authorized browser/Playwright CI approach and clearly state the limitation.
+2. **Figma source link supplied:** use Figma MCP for design context/variables/screenshot (only with an actual Figma source). Do not insert Figma into an image-only workflow or invent access to a file.
+3. **Rendered implementation:** use Playwright MCP interactively where connected, plus the GitHub Actions Playwright Chromium/WebKit acceptance workflow. Execute real click/navigation and responsive screenshot tests, then calculate overlay/difference only on the same route/state/viewport. See docs/design/VISUAL_MCP_AUTO_QA.md.
+4. The first deployed screen can NEVER be accepted based solely on text/CSS contracts, screenshots of a different view, HTTP 200, CI green, or successful OAuth initiation. State separate evidence for visual fidelity, real account E2E, and Vercel READY/SHA.
+
+Verified tool versions and project setup are declared in .codex/config.toml and .vscode/mcp.json, but **repository files do not install MCPs into ChatGPT nor grant browser/IDE permissions**. Only claim tool availability after successful tool calls. A failed or blocked MCP connection is not a reason to skip the independent GitHub browser workflow or to fabricate visual acceptance.
+
+## CI / PR / LIVE Delivery
+
+Follow [CI_RELEASE_POLICY.md](docs/operations/CI_RELEASE_POLICY.md) for agent ownership, CI, PR delivery and LIVE acceptance.
+
+## Provider credential autonomy: bounded, consented, agent-first
+
+Use `docs/integrations/AGENT_SECRET_AUTOMATION.md` for consent-gated provider integration. This file does not itself grant permission to create, read, change or transmit secrets. The preceding screenshot-driven visual policies and `docs/operations/CI_RELEASE_POLICY.md` remain authoritative; do not bypass production protections.
+
+Verify current deployment identity first: `codex-public-book-library`, project `prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b`, team `team_OSf690d0nxRHWVMXCElA8i95`; production branch `codex/public-book-library`. Re-check live IDs instead of trusting local metadata.
 
 1. Search existing **authorized** app connectors, provider OAuth, environment
    variable **names and targets only**, integration configuration and linked
@@ -59,11 +66,6 @@ does not grant new permissions. See `docs/integrations/AGENT_SECRET_AUTOMATION.m
    generated or provider-issued), outcome, tests, PR/commit, CI, production
    deployment/SHA and any remaining owner-only blocker in the linked issue.
 
-## Delivery
+## New public landing pages (optional, subordinate design skill)
 
-- Run narrow tests plus relevant lint/typecheck/build/CI, review diffs, and
-  merge safe PRs into the verified production branch under the existing safe
-  merge gate. Never equate a successful merge with a live verified feature.
-- For any credential task, follow the runbook above; the optional local bridge
-  is `scripts/agent-secret-bridge.mjs`. In ChatGPT, prefer the already
-  connected Vercel app to a new Vercel CLI login or permanent API token.
+For a new public marketing landing page or an explicitly requested marketing redesign, consult `.agents/skills/landing-page-design/SKILL.md`, the MIT-licensed vendored reference from #2224. Apply only ideas compatible with Holistic House's current visual identity, localization, accessibility, honest claims and consent/CRM contracts. Its broad scope must NOT change existing cabinets, Messenger, courses or site-wide UI without an explicit request. For screenshot-driven changes, the existing `visual-to-code-pro` skill remains FIRST.

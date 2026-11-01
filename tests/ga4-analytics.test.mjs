@@ -27,16 +27,19 @@ function assertContactAnalyticsContract(intake, chooser) {
   assert.match(intakeChooser, /event="service_request_start"/);
   assert.doesNotMatch(intakeChooser, /analyticsEvent=|(?:problem|goal|obstacle|tried|answers)/);
   const channels = [...chooser.matchAll(/<AcquisitionEventLink\b[\s\S]*?<\/AcquisitionEventLink>/g)].map(match => match[0]);
-  assert.equal(channels.length, 4); // Two mutually exclusive layouts, two channels each.
+  assert.equal(channels.length, 6); // Three mutually exclusive layouts, two channels each.
   for (const channel of ["whatsapp", "telegram"]) {
     const link = channels.filter(value => value.includes('"data-contact-channel": "' + channel + '"'));
-    assert.equal(link.length, 2);
+    assert.equal(link.length, 3);
     for (const item of link) assert.match(item, /event=\{event\}/, channel + " must use the caller-supplied event");
   }
-  const trigger = [...chooser.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]).find(button => button.includes("data-contact-order"));
-  assert.ok(trigger, "Order is a button");
-  assert.match(trigger, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.doesNotMatch(trigger, /emit|analytics|dispatchEvent|onChannelClick|event=/);
+  const triggers = [...chooser.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0])
+    .filter(button => button.includes("data-contact-order"));
+  assert.equal(triggers.length, 3, "Each consented enquiry layout has one explicit trigger");
+  assert.ok(triggers.some(button => /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/.test(button)),
+    "The standard request remains an explicit opening action");
+  for (const trigger of triggers)
+    assert.doesNotMatch(trigger, /emit|analytics|dispatchEvent|onChannelClick|event=/);
   assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent\([^)]*(?:answers|description|contact|phone|email)|dispatchEvent|sendBeacon|window\.gtag/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
   assert.match(chooser, /method: "POST"/);

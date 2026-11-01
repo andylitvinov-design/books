@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Camera, ChevronDown, Clock3, Globe2, Image as Im
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
 import { getServiceEditorIssue, servicePreviewPrice } from '@/lib/practitioners/service-editor-steps.mjs'
+import { reikiOfferPricing } from '@/lib/practitioners/reiki-offer.mjs'
 import styles from './simple-service-editor.module.css'
 
 const AREAS = {
@@ -148,10 +149,59 @@ Object.assign(TEXT.es,{
  createFirst:'Puedes editar esta tarjeta ahora. Todavía no está publicada.'
 })
 
+const REIKI_METHODS = ['Kundalini Reiki', 'Tantra Reiki', 'Runic Reiki', 'Reiki Yggdrasil']
+const REIKI_KINDS = ['session', 'initiation', 'course']
+const REIKI_DURATIONS = [10, 20, 30, 60]
+const REIKI_REPORTS = ['brief', 'text', 'voice']
+const REIKI_TIMINGS = ['day', 'days', 'chosen']
+const REIKI_COPY = {
+  en: {
+    direction:'Service category',regular:'General service',reiki:'Reiki services',
+    kind:'Choose Reiki offer',kinds:{session:'Reiki support',initiation:'Reiki initiation',course:'Reiki course'},
+    timing:'Timing you can offer (subject to confirmation)',times:{day:'Within 24 hours',days:'Within 3 days',chosen:'At a chosen hour'},
+    report:'Client report',reports:{brief:'Brief',text:'Personal written review',voice:'Personal voice review'},
+    role:'Session provider',roles:{practitioner:'Reiki practitioner',master:'Reiki master'},
+    practices:'Reiki practices (for sessions only)',currency:'Currency',variants:'Actual offers and prices',
+    variant:'Offer',duration:'Duration',price:'Price',certificate:'With certificate',
+    addVariant:'Add another price option',removeVariant:'Remove option',
+    note:'Prices are set by you. A certificate can only be offered with an initiation or course. Timing is a request, not a guaranteed appointment; publication follows review.',
+    needReiki:'Check Reiki type, duration, reports, distinct prices and certificate options. Add at least one complete price option to submit.',
+    needReikiMethod:'Select at least one Reiki practice for a support session.',
+  },
+  ru: {
+    direction:'Категория услуги',regular:'Обычная услуга',reiki:'Услуги Рейки',
+    kind:'Какую услугу Рейки предлагаете?',kinds:{session:'Рейки-поддержка',initiation:'Рейки-инициация',course:'Рейки-курс'},
+    timing:'Сроки выполнения (после подтверждения)',times:{day:'В течение суток',days:'В течение 3 дней',chosen:'В выбранный час'},
+    report:'Формат отчёта',reports:{brief:'Краткий',text:'Личный разбор текстом',voice:'Личный разбор голосом'},
+    role:'Кто проводит сессию',roles:{practitioner:'Рейки-практик',master:'Рейки-мастер'},
+    practices:'Практики Рейки (только для сессии)',currency:'Валюта',variants:'Варианты и реальные цены',
+    variant:'Вариант',duration:'Длительность',price:'Цена',certificate:'С сертификатом',
+    addVariant:'Добавить вариант цены',removeVariant:'Удалить вариант',
+    note:'Цены устанавливает мастер. Сертификат — только для инициации или курса. Срок не гарантирует запись, публикация после модерации.',
+    needReiki:'Проверьте тип Рейки, длительность, отчёт, уникальные варианты цен и сертификата. Для отправки добавьте хотя бы один заполненный вариант.',
+    needReikiMethod:'Выберите хотя бы одну практику Рейки для сессии поддержки.',
+  },
+  es: {
+    direction:'Categoría del servicio',regular:'Servicio general',reiki:'Servicios Reiki',
+    kind:'Tipo de servicio Reiki',kinds:{session:'Apoyo Reiki',initiation:'Iniciación Reiki',course:'Curso Reiki'},
+    timing:'Plazos ofrecidos (pendientes de confirmación)',times:{day:'En 24 horas',days:'En 3 días',chosen:'Hora elegida'},
+    report:'Informe para el cliente',reports:{brief:'Breve',text:'Análisis escrito personal',voice:'Análisis de voz personal'},
+    role:'Profesional de la sesión',roles:{practitioner:'Practicante Reiki',master:'Maestro Reiki'},
+    practices:'Prácticas Reiki (solo sesiones)',currency:'Moneda',variants:'Opciones y precios reales',
+    variant:'Opción',duration:'Duración',price:'Precio',certificate:'Con certificado',
+    addVariant:'Añadir otra opción de precio',removeVariant:'Quitar opción',
+    note:'Cada profesional fija sus precios. Certificados solo para iniciaciones y cursos. El horario se confirma aparte; hay moderación.',
+    needReiki:'Revisa tipo Reiki, duración, informes, precios únicos y certificados. Añade al menos una opción completa para publicar.',
+    needReikiMethod:'Selecciona al menos una práctica Reiki para la sesión.',
+  },
+}
+for(const code of ['en','ru','es'])Object.assign(TEXT[code],{
+  needReiki:REIKI_COPY[code].needReiki,needReikiMethod:REIKI_COPY[code].needReikiMethod})
+
 const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
-  pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'', priceOptions:[],
+  pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'', priceOptions:[], reikiOffer:null,
   imagePath:'', photos:[], videoPresentation:null, serviceIntroductions:[], goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
 }
 
@@ -161,6 +211,8 @@ const lines = (value,max) => String(value||'').split('\n').map(x=>x.trim()).filt
 // Public Pro passes only these non-sensitive category templates. Never seed
 // fictional credentials, prices, client benefits or descriptive claims.
 const PRO_STARTERS = {
+  reiki: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'',
+    reikiOffer:{kind:'session',currency:'EUR',timings:[],role:'practitioner',variants:[]} },
   session: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
   intro: { areaKey:'energy_spiritual', offeringType:'intro', deliveryFormat:'online', pricingMode:'free', confirmedPrice:null, currency:'' },
   workshop: { areaKey:'energy_spiritual', offeringType:'workshop', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
@@ -178,7 +230,7 @@ function initialDraft(item,locale,starter='') {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions?.length?item.serviceIntroductions:undefined, goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], reikiOffer:item.reikiOffer||null, imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions?.length?item.serviceIntroductions:undefined, goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
@@ -221,15 +273,40 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
     mark()
     setDraft(prev=>({...prev,goals:checked?[...new Set([...(prev.goals||[]),key])]:(prev.goals||[]).filter(goal=>goal!==key)}))
   }
+  const reikiCopy=REIKI_COPY[lang]
+  const isReiki=Boolean(draft.reikiOffer)
+  const reiki=draft.reikiOffer
   const paid=['fixed','from'].includes(draft.pricingMode)
   const locked=busy||videoBusy||photoBusy
+  const chooseReiki=enabled=>{
+    mark()
+    setDraft(prev=>({...prev,areaKey:enabled?'energy_spiritual':prev.areaKey,
+      offeringType:'session',deliveryFormat:enabled?'online':prev.deliveryFormat,
+      priceOptions:[],pricingMode:'contact',confirmedPrice:null,currency:'',
+      reikiOffer:enabled?{kind:'session',currency:'EUR',timings:[],role:'practitioner',variants:[]}:null}))
+  }
+  const chooseReikiKind=kind=>{
+    mark()
+    if(kind!=='session')setMethodsText('')
+    setDraft(prev=>({...prev,areaKey:'energy_spiritual',offeringType:kind==='course'?'course':'session',
+      reikiOffer:{...prev.reikiOffer,kind,role:kind==='session'?'practitioner':null,variants:[]}}))
+  }
+  const updateReiki=(patch)=>set('reikiOffer',{...reiki,...patch})
+  const updateReikiVariant=(index,patch)=>updateReiki({variants:reiki.variants.map((variant,i)=>i===index?{...variant,...patch}:variant)})
+  const reikiPrices=reiki?reikiOfferPricing({...reiki,variants:reiki.variants
+    .filter(v=>v.price!==''&&v.price!=null).map(variant=>({...variant,price:Number(variant.price)}))}):null
   const makePayload=()=>({
-    ...draft,languages:commas(languagesText),methods:commas(methodsText),
+    ...draft,languages:commas(languagesText),methods:isReiki&&reiki.kind!=='session'?[]:commas(methodsText),
     benefits:lines(benefitsText,5),faq:lines(faqText,6),
-    confirmedPrice:paid?(draft.confirmedPrice==null||draft.confirmedPrice===''?null:Number(draft.confirmedPrice)):null,
-    currency:paid?(draft.currency||'CAD'):'',
-    durationMinutes:draft.durationMinutes==null||draft.durationMinutes===''?null:Number(draft.durationMinutes),
-    priceOptions:paid?(draft.priceOptions||[]).filter(option=>option.price!==''&&option.price!=null).map(option=>({duration:option.duration,price:Number(option.price)})):[],
+    areaKey:isReiki?'energy_spiritual':draft.areaKey,
+    offeringType:isReiki?(reiki.kind==='course'?'course':'session'):draft.offeringType,
+    pricingMode:isReiki?reikiPrices.pricingMode:draft.pricingMode,
+    confirmedPrice:isReiki?reikiPrices.confirmedPrice:paid?(draft.confirmedPrice==null||draft.confirmedPrice===''?null:Number(draft.confirmedPrice)):null,
+    currency:isReiki?reikiPrices.currency:paid?(draft.currency||'CAD'):'',
+    durationMinutes:isReiki?null:draft.durationMinutes==null||draft.durationMinutes===''?null:Number(draft.durationMinutes),
+    priceOptions:isReiki?[]:paid?(draft.priceOptions||[]).filter(option=>option.price!==''&&option.price!=null).map(option=>({duration:option.duration,price:Number(option.price)})):[],
+    reikiOffer:isReiki?{...reiki,variants:reiki.variants.map(variant=>({...variant,
+      price:variant.price===''?null:Number(variant.price)}))}:null,
     displayLocales:draft.copy.es.title?.trim()
       ? [...new Set([...(draft.displayLocales||['en','ru']),'es'])]
       : (draft.displayLocales||['en','ru']).filter(code=>code!=='es'),
@@ -325,7 +402,118 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
     {stage===1&&<section className={styles.stagePanel} data-service-slide="booking" aria-label={c.stageOffer}>
       <div className={styles.panelHead}><strong><Clock3 size={17}/>{c.offerHeading}</strong><span>02 / 03</span></div>
       <p className={styles.stageTip}>{c.offerTip}</p>
-      <div className={styles.bookingCard}>
+      <fieldset className={styles.reikiMode} data-reiki-service-editor>
+        <legend>{reikiCopy.direction}</legend>
+        <div className={styles.reikiKindButtons}>
+          <button type="button" aria-pressed={!isReiki} disabled={locked} onClick={()=>chooseReiki(false)}>{reikiCopy.regular}</button>
+          <button type="button" aria-pressed={isReiki} disabled={locked} onClick={()=>chooseReiki(true)}>{reikiCopy.reiki}</button>
+        </div>
+      </fieldset>
+      {isReiki&&<div className={styles.reikiPanel} data-reiki-booking>
+        <fieldset className={styles.reikiMode}>
+          <legend>{reikiCopy.kind}</legend>
+          <div className={styles.reikiKindButtons} data-reiki-kind>
+            {REIKI_KINDS.map(kind=><button key={kind} type="button" value={kind}
+              aria-pressed={reiki.kind===kind} disabled={locked}
+              data-reiki-type={kind} onClick={()=>chooseReikiKind(kind)}>{reikiCopy.kinds[kind]}</button>)}
+          </div>
+        </fieldset>
+        <div className={styles.reikiLine}>
+          <label className={styles.field}><span>{c.format}</span>
+            <select value={draft.deliveryFormat} disabled={locked} onChange={e=>set('deliveryFormat',e.target.value)}>
+              <option value="online">{c.online}</option><option value="hybrid">{c.hybrid}</option>
+            </select>
+          </label>
+          <label className={styles.field}><span>{reikiCopy.currency}</span>
+            <select value={reiki.currency} disabled={locked} onChange={e=>updateReiki({currency:e.target.value})}>
+              <option value="EUR">EUR €</option><option value="CAD">CAD $</option><option value="USD">USD $</option>
+            </select>
+          </label>
+        </div>
+        {draft.deliveryFormat==='hybrid'&&<label className={styles.field}><span>{c.location} *</span>
+          <input value={draft.locationLabel||''} maxLength={200} disabled={locked} onChange={e=>set('locationLabel',e.target.value)} placeholder={c.locationExample}/>
+        </label>}
+        <fieldset className={styles.reikiMode} data-reiki-timing>
+          <legend>{reikiCopy.timing}</legend>
+          <div className={styles.reikiChecks}>
+            {REIKI_TIMINGS.map(timing=><label key={timing}>
+              <input type="checkbox" checked={reiki.timings.includes(timing)} disabled={locked}
+                onChange={e=>updateReiki({timings:e.target.checked?[...reiki.timings,timing]:reiki.timings.filter(value=>value!==timing)})}/>
+              <span>{reikiCopy.times[timing]}</span>
+            </label>)}
+          </div>
+        </fieldset>
+        {reiki.kind==='session'&&<>
+          <fieldset className={styles.reikiMode} data-reiki-role>
+            <legend>{reikiCopy.role}</legend>
+            <div className={styles.reikiKindButtons}>
+              {(['practitioner','master']).map(role=><button key={role} type="button"
+                aria-pressed={reiki.role===role} disabled={locked}
+                onClick={()=>updateReiki({role})}>{reikiCopy.roles[role]}</button>)}
+            </div>
+          </fieldset>
+          <fieldset className={styles.reikiMode} data-reiki-practices>
+            <legend>{reikiCopy.practices}</legend>
+            <div className={styles.reikiChecks}>
+              {REIKI_METHODS.map(practice=><label key={practice}>
+                <input type="checkbox" disabled={locked} checked={commas(methodsText).includes(practice)}
+                  onChange={e=>{mark();setMethodsText(current=>{
+                    const methods=commas(current)
+                    return (e.target.checked?[...new Set([...methods,practice])]:methods.filter(value=>value!==practice)).join(', ')
+                  })}}/>
+                <span>{practice}</span>
+              </label>)}
+            </div>
+          </fieldset>
+        </>}
+        <fieldset className={styles.reikiMode} data-reiki-variants>
+          <legend>{reikiCopy.variants}</legend>
+          <div className={styles.reikiRows}>
+            {reiki.variants.map((variant,index)=><div className={styles.reikiVariant} data-reiki-variant key={index}>
+              <div className={styles.reikiVariantTop}>
+                <strong>{reikiCopy.variant} {index+1}</strong>
+                <button type="button" disabled={locked} onClick={()=>updateReiki({variants:reiki.variants.filter((_,i)=>i!==index)})}>
+                  {reikiCopy.removeVariant}
+                </button>
+              </div>
+              <div className={styles.reikiLine}>
+                {reiki.kind==='session'&&<label className={styles.field}><span>{reikiCopy.duration}</span>
+                  <select value={variant.duration??30} disabled={locked}
+                    onChange={e=>updateReikiVariant(index,{duration:Number(e.target.value)})}>
+                    {REIKI_DURATIONS.map(minutes=><option key={minutes} value={minutes}>{minutes} min</option>)}
+                  </select>
+                </label>}
+                <label className={styles.field}><span>{reikiCopy.report}</span>
+                  <select value={variant.report} disabled={locked}
+                    onChange={e=>updateReikiVariant(index,{report:e.target.value})}>
+                    {REIKI_REPORTS.map(report=><option key={report} value={report}>{reikiCopy.reports[report]}</option>)}
+                  </select>
+                </label>
+                <label className={styles.field}><span>{reikiCopy.price} · {reiki.currency}</span>
+                  <input type="number" step="0.01" min="0" max="100000" inputMode="decimal"
+                    value={variant.price??''} disabled={locked} placeholder="0.00"
+                    onChange={e=>updateReikiVariant(index,{price:e.target.value})}/>
+                </label>
+              </div>
+              {reiki.kind!=='session'&&<label className={styles.reikiCertificate} data-reiki-certificate>
+                <input type="checkbox" checked={variant.certificate} disabled={locked}
+                  onChange={e=>updateReikiVariant(index,{certificate:e.target.checked})}/>
+                <span>{reikiCopy.certificate}</span>
+              </label>}
+            </div>)}
+          </div>
+          <button type="button" className={styles.reikiAddVariant} disabled={locked||reiki.variants.length>=12}
+            onClick={()=>updateReiki({variants:[...reiki.variants,{
+              duration:reiki.kind==='session'?30:null,report:'brief',certificate:false,price:''}]})}>
+            + {reikiCopy.addVariant}
+          </button>
+        </fieldset>
+        <div className={styles.bookingPreview} aria-label={c.fromPreview}>
+          <span>{c.fromPreview}</span><strong>{priceSummary}</strong>
+        </div>
+        <p className={styles.reikiDisclaimer}>{reikiCopy.note}</p>
+      </div>}
+      {!isReiki&&<div className={styles.bookingCard}>
         <fieldset className={styles.formatGroup}><legend>{c.format}</legend>
           <div className={styles.formatTiles} role="group" aria-label={c.format}>
             {([['online',c.online],['in_person',c.inPerson],['hybrid',c.hybrid]]).map(([key,label])=>
@@ -397,7 +585,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
           <span>{c.fromPreview}</span><strong>{priceSummary}</strong>
           {draft.durationMinutes&&<small>{draft.durationMinutes} {c.duration}</small>}
         </div>
-      </div>
+      </div>}
     </section>}
     {stage===2&&<section className={styles.stagePanel} data-service-slide="details" aria-label={c.stageDetails}>
       <div className={styles.panelHead}><strong><Leaf size={17}/>{c.detailsHeading}</strong><span>03 / 03</span></div>
@@ -428,9 +616,9 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
               </label>)}
             </div>
           </fieldset>
-          <label className={styles.field}><span>{c.methods}</span>
+          {!isReiki&&<label className={styles.field}><span>{c.methods}</span>
             <input value={methodsText} disabled={locked} onChange={event=>{mark();setMethodsText(event.target.value)}}/>
-          </label>
+          </label>}
           <label className={styles.field}><span>{c.benefits}</span>
             <textarea rows={3} value={benefitsText} disabled={locked}
               onChange={event=>{mark();setBenefitsText(event.target.value)}}/>

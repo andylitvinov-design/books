@@ -21,7 +21,7 @@ const copy = {
     shortTitle: "Free express review",
     lead: "One personal written review. Choose what your question is about; the service stays the same.",
     legend: "What is your request about?",
-    reveal: "Request my free review", close: "Close request form",
+    secureAlternative: "Use the secure website form instead", close: "Close request form",
     areas: {
       situation: { title: "My situation", short: "Situation", hint: "A decision, relationship, work or something that feels stuck.", tag: "Situation" },
       energy: { title: "Energy & health", short: "Energy / health", hint: "Your energy, wellbeing and everyday resources — not a medical diagnosis.", tag: "Energy and wellbeing" },
@@ -40,7 +40,7 @@ const copy = {
     shortTitle: "Экспресс-диагностика",
     lead: "Один личный письменный разбор. Выберите тему обращения — это не разные услуги.",
     legend: "С чем связан ваш запрос?",
-    reveal: "Заказать бесплатную диагностику", close: "Свернуть форму",
+    secureAlternative: "Заполнить защищённую форму на сайте", close: "Свернуть форму",
     areas: {
       situation: { title: "По ситуации", short: "Ситуация", hint: "Решение, отношения, работа или вопрос, в котором вы застряли.", tag: "Ситуация" },
       energy: { title: "По энергии и здоровью", short: "Энергия", hint: "Самочувствие, энергия и ресурсы — без медицинской диагностики.", tag: "Энергия и самочувствие" },
@@ -59,7 +59,7 @@ const copy = {
     shortTitle: "Revisión exprés gratuita",
     lead: "Una sola revisión personal escrita. Elige el tema de tu pregunta, no un servicio diferente.",
     legend: "¿Sobre qué es tu consulta?",
-    reveal: "Solicitar mi revisión gratuita", close: "Cerrar formulario",
+    secureAlternative: "Usar el formulario seguro de esta web", close: "Cerrar formulario",
     areas: {
       situation: { title: "Mi situación", short: "Situación", hint: "Decisiones, relaciones, trabajo o algo que te bloquea.", tag: "Situación" },
       energy: { title: "Energía y salud", short: "Energía / salud", hint: "Bienestar y recursos personales, sin diagnóstico médico.", tag: "Energía y bienestar" },
@@ -163,14 +163,15 @@ export function PersonalExpressEnquiry({
           <p className={styles.eyebrow}><MessageCircle size={15} aria-hidden="true" />{t.label}</p>
           <h2 id="express-enquiry-title"><span className={styles.longTitle}>{t.title}</span><span className={styles.shortTitle}>{t.shortTitle}</span></h2>
           <p className={styles.lead}>{t.lead}</p>
+          <TelegramDiagnosticEntry locale={locale} />
           <button ref={revealRef} type="button" className={styles.reveal}
             data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
+            aria-label={expanded ? t.close : t.secureAlternative}
             onClick={() => setExpanded(open => !open)}>
-            {expanded ? <X size={20} aria-hidden="true" /> : <MessageCircle size={20} aria-hidden="true" />}
-            <span>{expanded ? t.close : t.reveal}</span>
-            <ChevronDown className={styles.revealChevron} size={19} aria-hidden="true" />
+            {expanded ? <X size={19} aria-hidden="true" /> : <ShieldCheck size={17} aria-hidden="true" />}
+            <span>{expanded ? t.close : t.secureAlternative}</span>
+            <ChevronDown className={styles.revealChevron} size={16} aria-hidden="true" />
           </button>
-          <TelegramDiagnosticEntry locale={locale} />
           <div ref={panelRef} className={styles.disclosure} id="express-request-form"
             data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
             role="region" aria-label={t.title}>
@@ -178,7 +179,8 @@ export function PersonalExpressEnquiry({
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
               <label className={styles.choice} data-express-focus={area} key={area}
-                data-selected={focus === area ? "true" : "false"}>
+                data-selected={focus === area ? "true" : "false"}
+                onClick={() => { if (!focusLocked) setFocus(area); }}>
                 <input type="radio" name="express-review-focus" value={area}
                   checked={focus === area} onChange={() => setFocus(area)} />
                 {area === "situation" ? <MessageCircle size={19} aria-hidden="true" /> : <HeartPulse size={19} aria-hidden="true" />}

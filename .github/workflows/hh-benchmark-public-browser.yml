@@ -1,6 +1,7 @@
 name: Holistic House benchmark public mobile browser smoke
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-benchmark-public-browser.yml'
@@ -11,11 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-benchmark-mobile-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-benchmark-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   anonymous-smoke:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Anonymous Chromium/WebKit · 320–430 · EN/RU/ES
     runs-on: ubuntu-24.04
     timeout-minutes: 16
@@ -29,17 +31,20 @@ jobs:
       - name: Check test syntax without using project secrets
         run: node --check scripts/benchmarking/public-browser-smoke.mjs
       - name: Install disposable pinned browser runners
+        # Full cross-engine acceptance remains available via workflow_dispatch.
+        if: github.event_name != 'pull_request'
         timeout-minutes: 10
         run: |
           npm install --prefix "$RUNNER_TEMP/hh-benchmark-browser" --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
           "$RUNNER_TEMP/hh-benchmark-browser/node_modules/.bin/playwright" install --with-deps chromium webkit
       - name: Verify public test landing and guest entry without writing data
+        if: github.event_name != 'pull_request'
         timeout-minutes: 9
         env:
           HH_BENCH_BROWSER_PKG: ${{ runner.temp }}/hh-benchmark-browser/node_modules/playwright/index.mjs
         run: node scripts/benchmarking/public-browser-smoke.mjs
       - name: Preserve only aggregate anonymous result JSON
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: hh-benchmark-public-browser-results

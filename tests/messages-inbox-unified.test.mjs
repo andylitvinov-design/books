@@ -10,7 +10,7 @@ test('one full-width EN/RU/ES Messages page provides just two accessible tabs',(
   const css=read('components/app/messages-hub.module.css')
   const pageCss=read('app/[locale]/app/messages/messages-page.css')
   assert.match(page,/if\(!\['en','ru','es'\]\.includes\(locale\)\)notFound\(\)/)
-  assert.match(page,/<MessagesHub locale=\{locale\}\/>/)
+  assert.match(page,/<MessagesHub locale=\{locale\} embedded\/>/)
   assert.doesNotMatch(page,/<DirectMessageInbox locale=\{locale\}\/>/)
   assert.match(hub,/const VALID_TABS=new Set\(\['chats','requests'\]\)/)
   assert.match(hub,/role="tablist"/)
@@ -48,8 +48,9 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact onOpenChange=\{setDirectOpen\}/)
   assert.match(hub,/ownerAccountId&&<section hidden=\{source!=='crm'\}/)
   assert.match(hub,/botCheck|CrmMessengerPanel/)
-  assert.ok(hub.indexOf('<CrmMessengerPanel')<hub.indexOf('<DirectMessageInbox'),
-    'owner Telegram CRM must be visible before the empty member inbox')
+  assert.ok(hub.indexOf('if(ownerAccountId)return <MessagesSimpleInbox')>0,
+    'ordinary owner view still opens original CRM-backed inbox')
+  assert.match(hub,/ownerAccountId&&directDestination/)
   assert.match(hub,/ownerAccountId&&<div className=\{styles\.sources\}/)
   assert.doesNotMatch(hub,/showCrm&&<CrmMessengerPanel/)
   assert.match(req,/PracticeRequestConversation/)
@@ -64,16 +65,25 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(req,/onViewed=\{onReload\}/)
   assert.doesNotMatch(req,/\/api\/app\/crm\/leads/)
 })
-test('iPhone seven-item Cabinet navigation remains one row and not six columns',()=>{
+test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=>{
   const workspace=read('components/app/app-workspace.jsx')
   const css=read('app/[locale]/app/[[...path]]/workspace.css')
   const start=workspace.indexOf('const nav = [')
-  const end=workspace.indexOf('const navIsActive',start)
+  const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
-  assert.equal((nav.match(/id: '/g)||[]).length,6)
+  // Desktop Account navigation gained the approved My Progress destination.
+  // The iPhone dock still has four links plus its separate Home anchor.
+  assert.equal((nav.match(/id: '/g)||[]).length,7)
+  assert.match(nav,/id: 'progress'/)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
-  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/)
+  assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
+  assert.match(workspace,/const mobileNav = \[/)
+  const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
+  assert.equal((mobile.match(/id: '/g)||[]).length,4)
+  assert.match(mobile,/id: 'progress'/)
+  assert.match(mobile,/id: 'settings'/)
+  assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
 })
 
 test('empty personal inbox is compact; does not hide or mislabel existing Telegram CRM data',()=>{
@@ -108,19 +118,23 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages has five focused app destinations without public site navigation',()=>{
+test('Messages dock mirrors the five-destination private mobile Cabinet menu',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
+  const workspace=read('components/app/app-workspace.jsx')
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav hh-messages-app-dock"'))
-  assert.doesNotMatch(nav,/hh-mobile-app-nav-home/)
+  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
+  assert.match(nav,/hh-mobile-app-nav-home/)
   assert.equal((nav.match(/\{path:'/g)||[]).length,5)
+  const order=[...nav.matchAll(/\{path:'([^']*)'/g)].map(match=>match[1])
+  assert.deepEqual(order,['','practice','messages','materials','profile'])
+  const mobile=workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('const navIsActive'))
+  assert.equal((mobile.match(/id: '/g)||[]).length,4)
   assert.ok(nav.includes("locale==='es'?'en':locale"))
-  assert.match(css,/hh-messages-app-dock/)
+  assert.doesNotMatch(css,/hh-messages-app-dock|repeat\(5,minmax\(0,1fr\)\)/)
   assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
 })
-
 
 test('Messages compact mode opens only one mobile pane at a time, with accessible Back',()=>{
   const hub=read('components/app/messages-hub.jsx')
@@ -195,7 +209,7 @@ test('owner CRM inbox boots independently of slow/failed practitioner requests',
   assert.match(hub,/const safeCrmSummary=ownerAccountId\?crmSummary:null/)
   assert.match(hub,/const requestData=usableData\|\|\(ownerAccountId\?/)
   assert.match(hub,/crmState=\{safeCrmSummary\|\|/)
-  assert.ok(hub.indexOf('<CrmMessengerPanel')<hub.indexOf('<DirectMessageInbox'))
+  assert.ok(hub.indexOf('if(ownerAccountId)return <MessagesSimpleInbox')>0)
   assert.match(requests,/data.websiteUnavailable&&<p role="alert"/)
   assert.match(requests,/!data.websiteLoading&&!data.websiteUnavailable/)
   // CRM leads remain accessible in the single virtual row list, not another form.
@@ -204,7 +218,7 @@ test('owner CRM inbox boots independently of slow/failed practitioner requests',
   assert.match(hub,/crmUnreadLeads.length>0&&<button type="button"/)
   assert.match(css,/\.unreadJump\{/)
   const practiceNav=read('components/app/practice-workspace.jsx')
-  assert.match(practiceNav,/app\/messages'\+\(isOwner\?'\?tab=requests'/)
+  assert.match(practiceNav,/app\/messages\?section=clients&tab=chats/)
   assert.doesNotMatch(route,/HH_CRM_MSG_TELEGRAM_TOKEN|HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET/)
 })
 

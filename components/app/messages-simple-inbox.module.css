@@ -3,6 +3,12 @@
 .heading h1{font:500 clamp(25px,4vw,34px)/1.15 Georgia,serif;margin:0;color:#473832}
 .heading span{font-size:12px;color:var(--soft)}
 .refresh{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--green);cursor:pointer}
+/* Owner folders keep requests separate while sharing the same selected conversation. */
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:0 0 9px;padding:4px;border:1px solid #e4d8ca;border-radius:13px;background:#f3ece3}
+.tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:43px;padding:7px 10px;border:1px solid transparent;border-radius:10px;background:transparent;color:#75685f;font:700 13px/1.3 system-ui,sans-serif;cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:#d6e6d8;background:#fffdf8;color:#286b5b;box-shadow:0 2px 7px #44332210}
+.tabs button span{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:#e6dfd6;color:#61544c;font:700 11px/1 system-ui,sans-serif}
+.tabs button[aria-selected="true"] span{background:#e1f0e5;color:#286b5b}
 .window{display:grid;grid-template-columns:minmax(220px,320px) minmax(0,1fr);height:clamp(480px,69dvh,750px);min-height:0;overflow:hidden;background:#fff;border:1px solid #e4d9cd;border-radius:19px;box-shadow:0 12px 30px #4433220e}
 .people{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--line);background:#faf8f4}
 .search{padding:12px;border-bottom:1px solid var(--line)}
@@ -24,6 +30,7 @@
 .info{padding:15px;margin:0;color:#756960;font-size:13px}
 .history{display:block;margin:12px;padding:8px;border:1px solid var(--line);border-radius:8px;color:var(--green);font-weight:700;font-size:12px;text-decoration:none}
 .detail{display:flex;flex-direction:column;min-width:0;min-height:0;background:#fff}
+.detail[hidden]{display:none!important}
 .placeholder{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:13px;color:#a09288}
 .placeholder p{font-size:13px;max-width:220px;text-align:center}
 .personBar{height:63px;min-height:63px;padding:9px 15px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:#fffefa}
@@ -34,6 +41,7 @@
 .chatHolder{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .chatHolder[hidden]{display:none!important}
 .requestPane{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:auto;padding:15px;background:#fefbf7;gap:15px}
+.requestPane[hidden]{display:none!important}
 .requestBubble{align-self:flex-start;max-width:min(90%,570px);border:1px solid #eadfd6;border-radius:14px 14px 14px 5px;background:#fff;padding:14px 16px;overflow-wrap:anywhere;white-space:pre-wrap}
 .requestBubble small{font-size:11px;color:#8d8179}
 .requestBubble p{margin:7px 0 0;line-height:1.55;font-size:14px}
@@ -48,6 +56,9 @@
 @media(max-width:700px){
  .shell{padding-bottom:0}
  .heading{padding:4px 4px 11px}
+ .tabs{margin-bottom:7px}
+ .tabs button{font-size:12px;min-height:42px;padding:6px 5px}
+ .shell[data-detail-open="true"] .tabs{display:none}
  .heading h1{font-size:28px}
  .window{display:block;height:clamp(440px,61dvh,650px);border-radius:16px}
  .people,.detail{height:100%;width:100%}
@@ -68,6 +79,9 @@
 .shareLink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:360px){.shareLink{max-width:97px;padding:7px 8px}.shareLink span{font-size:11px}}
 
+.cardButton{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:6px;min-height:38px;padding:6px 10px;border:1px solid #bdd9cc;background:#eef6f0;color:#286b5b;border-radius:10px;cursor:pointer;font:700 12px/1.25 system-ui,sans-serif;white-space:nowrap}
+.cardButton[aria-pressed="true"]{background:#dbece2}
+@media(max-width:360px){.cardButton{width:39px;padding:5px}.cardButton span{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}}
 
 /* Mobile visual viewport: the keyboard is not included in CSS dvh on iOS.
    JS updates --hh-mobile-window-height from visualViewport when it changes. */
@@ -84,3 +98,260 @@
 }
 
 .offline{flex:none;margin:0 0 7px;padding:7px 10px;border:1px solid #e6d3b0;border-radius:9px;background:#fff7e9;color:#79572f;font-size:12px}
+
+
+/* Unified Holistic House inbox design: visual enhancement only.
+   The existing verified CRM/direct/website data source and voice composer are unchanged. */
+.shell[data-detail-open]{--cream:#fffdf8;--line:#e9dfd1;--ink:#233f34;--soft:#81766b;--green:#00866e;
+ color:var(--ink);background:transparent}
+.shell .heading{padding:8px 2px 13px;gap:10px}
+.shell .heading h1{font:780 clamp(25px,4vw,32px)/1.16 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.035em;color:#193c32;margin:0 0 6px}
+.shell .heading span{color:#897c6f;font:500 12px/1.4 system-ui,sans-serif}
+.shell .refresh{border-radius:50%;border-color:#e8dfd3;color:#1a816c;
+ background:#fffefa;box-shadow:0 3px 10px #5845330a}
+.shell .tabs{background:transparent;border:0;gap:8px;padding:0;margin-bottom:13px}
+.shell .tabs button{display:flex;gap:6px;justify-content:center;align-items:center;
+ min-height:45px;border:1px solid #e7dccc;border-radius:13px;background:#fffefa;color:#786e61;
+ box-shadow:0 3px 12px #4e46330a;font:750 12px/1.3 system-ui,sans-serif}
+.shell .tabs button[aria-selected="true"]{background:linear-gradient(110deg,#019d7a,#00785f);
+ color:#fff;border-color:#008f72;box-shadow:0 5px 12px #0d8b6726}
+.shell .tabs button span{background:#ebe5db;color:#766958}
+.shell .tabs button[aria-selected="true"] span{background:#d8f2e5;color:#007c60}
+.shell .window{border-radius:19px;border-color:#e9dfd1;
+ background:#fffefa;box-shadow:0 6px 24px #5446310e;min-width:0}
+.shell .people{background:#fdf9f2;border-color:#ece2d4}
+.shell .search{padding:10px;border-bottom:1px solid #ede3d6}
+.shell .search input{min-height:45px;border:1px solid #e7ded2;border-radius:12px;
+ background:#fffefa;font:500 16px/1.25 system-ui,sans-serif;color:#223f33}
+.shell .search input::placeholder{color:#988a7c}
+.shell .person,.shell .personSelected{min-height:79px;gap:11px;padding:11px 12px;
+ border-color:#eee7dc;color:#24463b}
+.shell .personSelected{border-left:3px solid #00a17b;padding-left:9px;background:#e5f3e9}
+.shell .person:hover{background:#f6f2ea}
+.shell .avatar,.shell .avatarSmall{background:linear-gradient(145deg,#f0ddcf,#e1ece3);
+ color:#447d68;border:2px solid #fff;box-shadow:0 0 0 1px #cbdacf}
+.shell .personHead strong{font:760 14px/1.35 system-ui,sans-serif;color:#213d34}
+.shell .personHead time{font:550 10px/1.35 system-ui,sans-serif;color:#96897a}
+.shell .preview{color:#786e61;font:520 12px/1.35 system-ui,sans-serif}
+.shell .personText small{color:#22856d;font:660 10px/1.3 system-ui,sans-serif}
+.shell .unread{background:#008d72;color:white}
+.shell .personBar{background:#fffdf8;border-color:#e8decf}
+.shell .personLabel strong{font:780 15px/1.3 system-ui,sans-serif;color:#223f34}
+.shell .personLabel small{color:#928273;font:550 11px/1.35 system-ui,sans-serif}
+.shell .detail,.shell .chatHolder{background:#fffefa}
+.shell .requestPane{background:linear-gradient(155deg,#fffcf6,#f6f0e6)}
+.shell .requestBubble{background:#fffefa;border-color:#e8dace;box-shadow:0 4px 11px #5548370c}
+.shell .requestActions{background:#fffdf9;border-color:#e9ddce}
+.shell .requestActions a{min-height:44px;border-color:#07866a;background:#e3f3e9;color:#08735b}
+.shell .cardButton{background:#e5f3ea;border:1px solid #c9e5d6;color:#126c55;border-radius:12px}
+.shell .placeholder{color:#7f8f80}
+.shell .placeholder svg{color:#099077}
+.shell .info{color:#756d61}
+.shell :is(button,a,input):focus-visible{outline:3px solid #02896d;outline-offset:2px}
+@media(max-width:700px){
+ .shell .heading{padding:3px 3px 10px}
+ .shell .heading h1{font-size:25px}
+ .shell .heading span{font-size:11px}
+ .shell .tabs{margin-bottom:8px;gap:6px}
+ .shell .tabs button{min-height:44px;font-size:12px}
+ .shell .window{border-radius:16px}
+ .shell .person,.shell .personSelected{padding:11px 10px;min-height:76px}
+ .shell .personHead strong{font-size:13px}
+ .shell .personBar{min-height:60px}
+ .shell .requestBubble{max-width:96%;padding:11px 12px}
+ .shell .requestActions{padding:12px}
+ .shell .search input{font-size:16px!important}
+ /* Never override --hh-mobile-window-height; it follows the visual viewport
+    and iPhone keyboard, keeping the actual Send/record button visible. */
+}
+@media(max-width:355px){
+ .shell .person,.shell .personSelected{padding:9px 8px;gap:7px}
+ .shell .avatar{height:40px;width:40px}
+ .shell .heading h1{font-size:23px}
+ .shell .tabs button{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.shell *{transition:none!important}}
+
+
+/* Embedded My Clients folder: reuse CRM/direct/website data and render a single
+   high-density wellness list, without a second Chats/Requests navigation. */
+.shell[data-embedded="true"]{--line:#e8e0d5;--green:#177d63;--ink:#1b4237;
+ padding:0;color:var(--ink)}
+.shell[data-embedded="true"] .window{display:block;min-height:0;height:auto;max-height:none;
+ border:0;background:transparent;box-shadow:none;overflow:visible;border-radius:0}
+.shell[data-embedded="true"] .people{height:auto;width:100%;background:transparent;border:0;overflow:visible}
+.shell[data-embedded="true"] .peopleScroll{height:auto;max-height:none;min-height:0;overflow:visible}
+.shell[data-embedded="true"] .detail{display:none}
+.findRow{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.shell[data-embedded="true"] .search{display:flex;align-items:center;gap:10px;flex:1;min-width:0;
+ padding:0 12px;background:#fffefa;border:1px solid #e3ded3;border-radius:15px;
+ height:50px;box-shadow:0 3px 11px #4338290a;color:#7c8279}
+.shell[data-embedded="true"] .search svg{flex:none}
+.shell[data-embedded="true"] .search input{flex:1;min-width:0;height:48px;width:100%;
+ padding:0;border:0;background:transparent;box-shadow:none;
+ font:520 16px/1.25 system-ui,sans-serif;color:#20453a}
+.shell[data-embedded="true"] .unreadFilter{display:grid;place-items:center;
+ flex:none;width:50px;height:50px;border:1px solid #e1dacf;border-radius:15px;
+ background:#fffefa;color:#355f51;cursor:pointer;box-shadow:0 3px 11px #4338290a}
+.shell[data-embedded="true"] .unreadFilter[aria-pressed="true"]{background:#dff3e7;border-color:#6eb795}
+.shell[data-embedded="true"] .person,.shell[data-embedded="true"] .personSelected{
+ display:flex;position:relative;align-items:flex-start;width:100%;min-width:0;
+ min-height:124px;padding:14px;gap:13px;margin:0 0 12px;
+ border:1px solid #e8e1d8;border-radius:18px;
+ box-shadow:0 4px 16px #3f45300b;text-align:left;background:#fffefa;
+ color:#1e4137;cursor:pointer}
+.shell[data-embedded="true"] .personSelected{border-color:#5fac8f;background:#f1f9f2}
+.shell[data-embedded="true"] .person:hover{background:#f8faf5}
+.shell[data-embedded="true"] .avatar{width:54px;height:54px;font:760 22px Georgia,serif;
+ border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #d5e1d8}
+.shell[data-embedded="true"] .personText{min-width:0;flex:1;gap:5px}
+.shell[data-embedded="true"] .personHead{align-items:center;gap:7px}
+.shell[data-embedded="true"] .personHead strong{color:#153f34;font:780 15px/1.3 system-ui,sans-serif}
+.shell[data-embedded="true"] .personHead time{font:520 11px/1.3 system-ui,sans-serif;color:#898277}
+.threadFlag{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;
+ max-width:100%;width:max-content;background:#e8f3ed;color:#217758;
+ border-radius:99px;padding:4px 9px;font:700 10px/1.24 system-ui,sans-serif}
+.threadFlag:before{content:"";width:6px;height:6px;flex:none;border-radius:50%;background:#32a56d}
+.threadFlag[data-state="waiting"]{background:#fff0d9;color:#946c2f}
+.threadFlag[data-state="waiting"]:before{background:#e9a52f}
+.threadFlag[data-state="active"]{background:#edf2ed;color:#678171}
+.threadFlag[data-state="active"]:before{background:#83a78b}
+.shell[data-embedded="true"] .preview{display:-webkit-box;-webkit-box-orient:vertical;
+ -webkit-line-clamp:2;overflow:hidden;white-space:normal;
+ color:#78776e;font:520 12px/1.42 system-ui,sans-serif}
+.shell[data-embedded="true"] .sourceTag{display:inline-flex;align-self:flex-start;
+ padding:4px 9px;border-radius:99px;background:#f4f5ef;
+ color:#2d7463;font:700 10px/1.28 system-ui,sans-serif}
+.shell[data-embedded="true"] .unread{flex:none;background:#13795e;min-width:26px;
+ height:26px;padding:2px 7px;font-size:12px}
+.rowChevron{align-self:center;flex:none;color:#958e82;margin-right:-6px}
+.shell[data-embedded="true"] .info{background:#fffefa;border:1px solid #e9e3d9;
+ border-radius:16px;padding:16px;color:#747b72;margin:0 0 10px}
+@media(min-width:701px){
+ .shell[data-embedded="true"][data-detail-open="true"] .window{
+   display:grid;grid-template-columns:minmax(235px,320px) minmax(0,1fr);
+   height:clamp(520px,72dvh,780px);overflow:hidden;border:1px solid #e7dfd4;
+   border-radius:18px;background:#fffefa}
+ .shell[data-embedded="true"][data-detail-open="true"] .people{height:100%;
+   padding:10px;background:#f8f4ed;overflow:hidden}
+ .shell[data-embedded="true"][data-detail-open="true"] .peopleScroll{height:100%;overflow:auto}
+ .shell[data-embedded="true"][data-detail-open="true"] .detail{display:flex}
+}
+@media(max-width:700px){
+ .shell[data-embedded="true"] .window{height:auto;min-height:0;max-height:none}
+ .shell[data-embedded="true"] .people{height:auto;overflow:visible}
+ .shell[data-embedded="true"] .person,.shell[data-embedded="true"] .personSelected{
+   padding:12px;gap:10px;min-height:109px}
+ .shell[data-embedded="true"] .avatar{width:46px;height:46px}
+ .shell[data-embedded="true"] .personHead strong{font-size:14px}
+ .shell[data-embedded="true"] .personHead time{font-size:10px}
+ .shell[data-embedded="true"][data-detail-open="true"] .window{
+   height:var(--hh-mobile-window-height,calc(100dvh - 190px));
+   overflow:hidden;background:#fffefa;border:1px solid #e9ded2;border-radius:16px}
+ .shell[data-embedded="true"][data-detail-open="true"] .people{display:none}
+ .shell[data-embedded="true"][data-detail-open="true"] .detail{display:flex;height:100%;width:100%}
+}
+@media(max-width:354px){
+ .shell[data-embedded="true"] .person,.shell[data-embedded="true"] .personSelected{padding:10px;gap:7px}
+ .shell[data-embedded="true"] .avatar{width:42px;height:42px}
+ .shell[data-embedded="true"] .personHead strong{font-size:13px}
+ .shell[data-embedded="true"] .sourceTag{font-size:9px}
+}
+
+
+/* Owner-approved client list and compact mobile conversation detail — 31 Oct.
+   Only visual presentation changes: keep original account-bound CRM/direct data. */
+.shell[data-embedded="true"] .person,
+.shell[data-embedded="true"] .personSelected{
+ min-height:102px;padding:12px 13px;gap:11px;margin-bottom:10px;
+ border-radius:17px;border-color:#e5e8df;align-items:center;
+ box-shadow:0 3px 14px #43563e0b;
+}
+.shell[data-embedded="true"] .avatar{width:49px;height:49px}
+.shell[data-embedded="true"] .personText{gap:4px}
+.shell[data-embedded="true"] .personHead{align-items:baseline;min-width:0}
+.shell[data-embedded="true"] .personHead strong{
+ flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ font-size:14px;line-height:1.28;
+}
+.shell[data-embedded="true"] .preview{
+ font-size:11px;line-height:1.35;color:#778278;
+ -webkit-line-clamp:1;
+}
+.shell[data-embedded="true"] .sourceTag{
+ font-size:10px;line-height:1.2;padding:3px 8px;
+ border-radius:999px;background:#f1f5ef;color:#2a7860;
+}
+.shell[data-embedded="true"] .threadFlag{font-size:10px;padding:4px 9px}
+.shell[data-embedded="true"] .personBar{
+ background:#fffdfa;border-bottom:1px solid #e5e8df;
+ min-height:59px;gap:9px;padding:8px 10px;
+}
+.shell[data-embedded="true"] .back{
+ display:flex;align-items:center;justify-content:center;
+ width:44px;min-width:44px;height:44px;
+ border-radius:14px;border:1px solid #dee9df;
+ background:#f8faf5;color:#216a53;
+}
+.shell[data-embedded="true"] .back:focus-visible{outline:3px solid #208a69;outline-offset:2px}
+.shell[data-embedded="true"] .cardButton{min-height:42px}
+@media(max-width:700px){
+ .shell[data-embedded="true"] .person,
+ .shell[data-embedded="true"] .personSelected{min-height:99px;padding:11px 12px;gap:9px}
+ .shell[data-embedded="true"] .avatar{width:47px;height:47px}
+ .shell[data-embedded="true"] .personHead strong{font-size:13px}
+ .shell[data-embedded="true"] .personHead time{font-size:10px}
+ .shell[data-embedded="true"] .personLabel strong{font-size:14px}
+ .shell[data-embedded="true"] .personBar .cardButton{padding:7px 10px}
+}
+@media(max-width:354px){
+ .shell[data-embedded="true"] .person,
+ .shell[data-embedded="true"] .personSelected{padding:10px;gap:8px}
+ .shell[data-embedded="true"] .avatar{width:43px;height:43px}
+ .shell[data-embedded="true"] .personHead strong{font-size:12.5px}
+ .shell[data-embedded="true"] .back{width:42px;min-width:42px;height:42px}
+}
+
+/* Full-screen mobile conversations, like Telegram/WhatsApp: the website and
+   Orders/Clients navigation stay behind the selected conversation. Only the
+   history scrolls; the real Send composer remains inside the visual viewport. */
+@media(max-width:700px){
+ .shell[data-detail-open="true"] .window,
+ .shell[data-embedded="true"][data-detail-open="true"] .window{
+  box-sizing:border-box;display:block;position:fixed;z-index:4000;
+  top:var(--hh-mobile-window-top,0px);inset-inline:0;
+  width:100%;height:var(--hh-mobile-window-height,100dvh);
+  max-height:none;min-height:0;margin:0;padding-top:env(safe-area-inset-top);
+  border:0;border-radius:0;box-shadow:none;overflow:hidden;background:#fffdfa;
+ }
+ .shell[data-detail-open="true"] .window .people{display:none}
+ .shell[data-detail-open="true"] .window .detail{
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+  width:100%;height:100%;overflow:hidden;background:#fffdfa
+ }
+ .shell[data-detail-open="true"] .window .personBar{
+  flex:0 0 56px;height:56px;min-height:56px;gap:8px;
+  padding:6px 9px;border-radius:0;border-bottom:1px solid #e8e7dd;
+  box-shadow:0 1px 5px #2446320a
+ }
+ .shell[data-detail-open="true"] .window .back{min-width:44px;width:44px;height:44px}
+ .shell[data-detail-open="true"] .window .personLabel strong{font-size:15px}
+ .shell[data-detail-open="true"] .window .personLabel small{font-size:11px}
+ .shell[data-detail-open="true"] .window .cardButton{min-height:42px}
+ .shell[data-detail-open="true"] .window .chatHolder{
+  display:flex;flex:1;min-height:0;overflow:hidden
+ }
+ .shell[data-detail-open="true"] .window .requestPane{
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="false"] .chatHolder{
+  padding-bottom:env(safe-area-inset-bottom)
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="false"] .requestPane{
+  padding-bottom:calc(12px + env(safe-area-inset-bottom))
+ }
+ .shell[data-detail-open="true"] .window[data-keyboard-open="true"] .personBar{
+  flex-basis:50px;height:50px;min-height:50px;padding-top:3px;padding-bottom:3px
+ }
+}

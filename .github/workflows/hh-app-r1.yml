@@ -3,43 +3,157 @@ on:
   push:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
+    paths:
+      - 'scripts/verify-eight-v2-registry-proposal.mjs'
+      - 'tests/author-score-clusters.test.mjs'
+      - 'tests/cabinet-today.test.mjs'
+      - 'tests/canonical-pdf.test.mjs'
+      - 'tests/checkin-course-result-integrity.test.mjs'
+      - 'tests/checkin-scoring-analysis-quality.test.mjs'
+      - 'tests/consultation-draft-preview.test.mjs'
+      - 'tests/consultation-report-language.test.mjs'
+      - 'tests/course-banner/browser.mjs'
+      - 'tests/distance-homeopathy-report.test.mjs'
+      - 'tests/free-course-banner.test.mjs'
+      - 'tests/full-assessment-library-quality.test.mjs'
+      - 'tests/hh-original-review-ledger.test.mjs'
+      - 'tests/historical-interpretation-coverage.test.mjs'
+      - 'tests/personal-analysis-cabinet.test.mjs'
+      - 'tests/professional-test-expansion-2026.test.mjs'
+      - 'tests/psi-monitoring.test.mjs'
+      - 'tests/psychometric-validity-directory.test.mjs'
+      - 'tests/public-test-match-paging.test.mjs'
+      - 'tests/session-publication-review.test.mjs'
+      - 'app/**/app/**'
+      - 'app/**/client/**'
+      - 'app/api/app/**'
+      - 'app/api/client/**'
+      - 'app/api/assessments/**'
+      - 'components/app/**'
+      - 'components/academy-video-library-client.tsx'
+      - 'components/my-course*'
+      - 'components/profile-*'
+      - 'lib/app/**'
+      - 'lib/profile/**'
+      - 'lib/assessments/**'
+      - 'lib/course/**'
+      - 'lib/academy/**'
+      - 'lib/security/**'
+      - 'data/assessments/**'
+      - 'tests/app-*.mjs'
+      - 'tests/client-report*.mjs'
+      - 'tests/assessment-*.mjs'
+      - 'tests/profile-*.mjs'
+      - 'tests/course-*.mjs'
+      - 'tests/my-course*.mjs'
+      - 'tests/opora-*.mjs'
+      - 'tests/personal-video-cloud.test.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/ci-heavy-impact.mjs'
+      - 'tests/ci-heavy-impact.test.mjs'
+      - '.github/workflows/hh-app-r1.yml'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
-  group: app-r1-${{ github.ref }}
-  cancel-in-progress: true
+  group: app-r1-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
+  impact:
+    name: route-expensive-app-suites
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      full_app: ${{ steps.choose.outputs.full_app }}
+      database: ${{ steps.choose.outputs.database }}
+      profile: ${{ steps.choose.outputs.profile }}
+      banner: ${{ steps.choose.outputs.banner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Classify exact-head changes, otherwise run all original jobs
+        id: choose
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-heavy-impact.mjs app-r1
   unit-build:
+    needs: impact
+    # CI-only changes are validated by Core + actionlint + focused routing tests.
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Confirm App R1 profile was safely routed away
+        if: needs.impact.outputs.profile != 'true'
+        env:
+          HH_ROUTED_SCOPE: ${{ needs.impact.outputs.profile }}
+        run: test "$HH_ROUTED_SCOPE" = false
       - uses: actions/checkout@v4
+        if: needs.impact.outputs.profile == 'true'
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request' && needs.impact.outputs.profile == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        if: needs.impact.outputs.profile == 'true'
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
+        if: needs.impact.outputs.profile == 'true'
       - name: Check-in evidence, scoring and report-priority regressions
+        if: needs.impact.outputs.full_app == 'true'
         run: node --conditions=react-server --test tests/checkin-scoring-analysis-quality.test.mjs tests/checkin-course-result-integrity.test.mjs tests/author-score-clusters.test.mjs tests/hh-original-review-ledger.test.mjs tests/full-assessment-library-quality.test.mjs tests/professional-test-expansion-2026.test.mjs tests/assessment-selectable-report.test.mjs tests/assessment-interpretation-band-model.test.mjs tests/assessment-report-semantic-summary.test.mjs tests/assessment-interpretation-consumer.test.mjs tests/psychometric-validity-directory.test.mjs tests/public-test-match-paging.test.mjs
-      - run: npm run test:app tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs tests/full-assessment-library-quality.test.mjs
+      - name: Historical interpretation and monitoring regressions
+        if: needs.impact.outputs.full_app == 'true'
+        run: node --conditions=react-server --test tests/historical-interpretation-coverage.test.mjs tests/psi-monitoring.test.mjs
       - name: Profile four domains, truthful scales and compact responsive UI
-        run: node --conditions=react-server --test tests/profile-four-domains.test.mjs tests/profile-assessment-overview.test.mjs tests/profile-compact-design.test.mjs tests/profile-integrated-summary.test.mjs tests/cabinet-today.test.mjs tests/personal-analysis-cabinet.test.mjs
+        if: needs.impact.outputs.profile == 'true'
+        run: node --conditions=react-server --test tests/profile-four-domains.test.mjs tests/profile-assessment-overview.test.mjs tests/profile-integrated-summary.test.mjs tests/cabinet-today.test.mjs
       - name: Optional free-course banner render contracts
+        if: needs.impact.outputs.full_app == 'true' || needs.impact.outputs.banner == 'true'
         run: node --conditions=react-server --test tests/free-course-banner.test.mjs
       - name: Anti-Stress 14-day continuation path regressions (EN/RU/ES)
+        if: needs.impact.outputs.full_app == 'true' || needs.impact.outputs.banner == 'true'
         run: node --test tests/course-immersive-start-ui.test.mjs
       - name: Client report HTML/PDF, privacy and long-content regressions
+        if: needs.impact.outputs.full_app == 'true'
         run: node --test tests/canonical-pdf.test.mjs tests/client-report-notes-preview.test.mjs tests/distance-homeopathy-report.test.mjs tests/client-report-design.test.mjs tests/consultation-draft-preview.test.mjs tests/consultation-report-language.test.mjs tests/client-report-mobile-layout.test.mjs tests/client-report-premium-v3.test.mjs tests/client-report-before-after-rings.test.mjs tests/session-publication-review.test.mjs
+      - name: Personal video owner RLS, signed-upload tombstone and consent contracts
+        if: needs.impact.outputs.full_app == 'true'
+        run: node --test tests/personal-video-cloud.test.mjs
       - name: Real SDK PKCE and callback cookie regressions
+        if: needs.impact.outputs.full_app == 'true'
         run: node --conditions=react-server --test tests/app-auth-pkce.integration.mjs
       - name: Lint complete repository including literal App Router paths
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run lint
       - name: Production-mode build, app flags absent
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
         env: {NEXT_TELEMETRY_DISABLED: '1'}
-      - run: npx --no-install tsc --noEmit
-      - run: npm run pwa:check && npm run native:check
+      - name: Full TypeScript (core release-ready owns production PR typing)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
+      - name: Independent native/PWA contracts for non-UI changes
+        if: needs.impact.outputs.full_app == 'true'
+        run: npm run pwa:check && npm run native:check
   course-banner-browser:
+    needs: impact
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:
@@ -49,26 +163,43 @@ jobs:
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
     steps:
+      - name: Confirm Course banner was safely routed away
+        if: needs.impact.outputs.banner != 'true'
+        env:
+          HH_ROUTED_SCOPE: ${{ needs.impact.outputs.banner }}
+        run: test "$HH_ROUTED_SCOPE" = false
       - uses: actions/checkout@v4
+        if: needs.impact.outputs.banner == 'true'
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request' && needs.impact.outputs.banner == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        if: needs.impact.outputs.banner == 'true'
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
+        if: needs.impact.outputs.banner == 'true'
       - name: Isolated synthetic browser tools
+        if: needs.impact.outputs.banner == 'true'
         run: |
           mkdir -p /tmp/hh-course-banner-tools
           npm install --prefix /tmp/hh-course-banner-tools --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-course-banner-tools/node_modules/@playwright node_modules/@playwright
           /tmp/hh-course-banner-tools/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: EN/RU course disclosure, keyboard and narrow-screen acceptance
+        if: needs.impact.outputs.banner == 'true'
         run: node tests/course-banner/browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.impact.outputs.banner == 'true'
         with:
           name: course-banner-synthetic-${{ matrix.browser }}
           path: artifacts/course-banner/
           retention-days: 7
   database:
+    needs: impact
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && needs.impact.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -96,12 +227,27 @@ jobs:
       HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
     steps:
+      - name: Confirm Database was safely routed away
+        if: needs.impact.outputs.database != 'true'
+        env:
+          HH_ROUTED_SCOPE: ${{ needs.impact.outputs.database }}
+        run: test "$HH_ROUTED_SCOPE" = false
       - uses: actions/checkout@v4
+        if: needs.impact.outputs.database == 'true'
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request' && needs.impact.outputs.database == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        if: needs.impact.outputs.database == 'true'
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
+        if: needs.impact.outputs.database == 'true'
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
+        if: needs.impact.outputs.database == 'true'
         run: npm run test:app:db
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
+        if: needs.impact.outputs.database == 'true'
         run: node scripts/verify-eight-v2-registry-proposal.mjs

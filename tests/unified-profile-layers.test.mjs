@@ -76,7 +76,7 @@ test('client profile and Insights reuse one owner-scoped source model', () => {
   assert.match(style, /focus-visible/)
 })
 
-test('existing fifth review slide offers explicit Google handoff without silent guest import', () => {
+test('optional fifth Ready slide offers Google handoff without silent guest import', () => {
   const builder = source('components/personality-profiles-builder.tsx')
   const css = source('components/personality-profiles-builder.module.css')
   const page = source('app/[locale]/personality-profiles/page.tsx')
@@ -90,6 +90,7 @@ test('existing fifth review slide offers explicit Google handoff without silent 
   assert.ok(builder.includes('continueTo: "tests"'))
   assert.ok(builder.includes('/app/tests?selection=pending'))
   for (const locale of ['en','ru','es']) assert.ok(builder.includes(locale + ': {'))
+  assert.ok(builder.includes('No guest answers or guest results are imported into the Google account.'))
   assert.doesNotMatch(builder, /guestAnswers|results\/import/)
   assert.ok(css.includes('.accountOffer'))
   assert.ok(!page.includes('business, wellbeing or comprehensive profile'))

@@ -3,8 +3,12 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Paperclip,Bell} from 'lucide-react'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
+import {directMediaSpec,directMediaMime,DIRECT_MEDIA_PROXY_MAX_BYTES} from '@/lib/practitioners/direct-message-policy.mjs'
 import styles from './direct-message-inbox.module.css'
+import PrivateChatPhoto from './private-chat-photo'
+import DirectVoiceRecorder from './direct-voice-recorder'
+import DirectVideoRecorder from './direct-video-recorder'
+import MessengerSignIn from './messenger-sign-in'
 import {ClientExpressReportNotices} from './practice-express-reports'
 
 const COPY={
@@ -12,8 +16,8 @@ const COPY={
     title:'Messages',hint:'Private conversations with Holistic House practitioners.',
     choose:'Choose a conversation',empty:'No conversations yet. Visit a practitioner page to start one.',ownerEmpty:'No private conversations yet. Telegram enquiries are in the CRM section above.',loading:'Loading conversations…',
     new:'Start a conversation',newWith:'Message',load:'Refresh',send:'Send message',
-    composer:'Write a message (optional with an attachment)',attach:'Photo or audio file',
-    welcome:'Send photos and audio directly. Only you and the recipient can read these messages.',
+    composer:'Write a message (optional with an attachment)',attach:'Photo, audio or video',
+    welcome:'Send photos, voice and short videos privately. Only conversation participants can access them.',
     consent:'I permit this practitioner to republish this audio on their public profile.',
     warning:'Off by default. Do not send health records, private client files or another person’s recording.',
     upload:'Uploading securely…',sendBusy:'Sending…',signIn:'Sign in to exchange messages',
@@ -22,16 +26,16 @@ const COPY={
     published:'Published on profile',publish:'Add audio to my public profile',unpublish:'Remove from profile',
     revoke:'Revoke publication permission',titleLabel:'Public audio title',
     localeLabel:'Audio language',rights:'I confirm I have the right to publish this recording.',
-    apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',error:'Could not complete the action.',
+    apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',video:'Video note',videoLimit:'Video must play and be 60 seconds or shorter.',fileInvalid:'Unsupported file type or size (20 MB video limit).',error:'Could not complete the action.',
     noPublish:'Audio is private unless its sender explicitly authorizes publication.',
-    older:'Showing the latest 50 messages.',retry:'Try again',
+    older:'Load earlier messages',olderBusy:'Loading earlier messages…',retry:'Try again',findMaster:'Find a practitioner',
   },
   ru:{
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
     choose:'Выберите беседу',empty:'Переписок пока нет. Откройте страницу мастера, чтобы написать.',ownerEmpty:'Личных переписок пока нет. Заявки Telegram находятся в разделе CRM выше.',loading:'Загружаю переписки…',
     new:'Начать переписку',newWith:'Написать мастеру',load:'Обновить',send:'Отправить сообщение',
-    composer:'Сообщение (необязательно, если есть файл)',attach:'Фото или аудиофайл',
-    welcome:'Фото и аудио доступны только участникам диалога.',
+    composer:'Сообщение (необязательно, если есть файл)',attach:'Фото, аудио или видео',
+    welcome:'Фото, голосовые и короткие видео доступны только участникам диалога.',
     consent:'Разрешаю этому мастеру разместить моё аудио на своей публичной странице.',
     warning:'По умолчанию выключено. Не отправляйте медицинские документы, клиентские материалы и чужие записи.',
     upload:'Безопасная загрузка…',sendBusy:'Отправляем…',signIn:'Войдите, чтобы писать сообщения',
@@ -40,16 +44,16 @@ const COPY={
     published:'Опубликовано на странице',publish:'Прикрепить аудио к странице мастера',unpublish:'Снять с публикации',
     revoke:'Отозвать разрешение на публикацию',titleLabel:'Название аудио',
     localeLabel:'Язык аудио',rights:'Подтверждаю право публичного размещения этой записи.',
-    apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',error:'Не удалось выполнить действие.',
+    apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',video:'Видеосообщение',videoLimit:'Видео должно открываться и длиться не больше 60 секунд.',fileInvalid:'Неподдерживаемый формат или размер (видео до 20 МБ).',error:'Не удалось выполнить действие.',
     noPublish:'Аудио остаётся приватным без отдельного разрешения отправителя.',
-    older:'Показаны последние 50 сообщений.',retry:'Повторить',
+    older:'Показать более ранние сообщения',olderBusy:'Загружаем историю…',retry:'Повторить',findMaster:'Найти мастера',
   },
   es:{
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
     choose:'Elige una conversación',empty:'Aún no hay conversaciones. Visita el perfil de un profesional.',ownerEmpty:'No hay mensajes privados. Las solicitudes de Telegram están en CRM arriba.',loading:'Cargando conversaciones…',
     new:'Iniciar conversación',newWith:'Enviar mensaje',load:'Actualizar',send:'Enviar mensaje',
-    composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto o audio',
-    welcome:'Las fotos y los audios son privados entre los participantes.',
+    composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto, audio o vídeo',
+    welcome:'Fotos, voz y vídeos cortos son privados entre los participantes.',
     consent:'Permito que este profesional publique este audio en su perfil público.',
     warning:'Desactivado por defecto. No envíes historiales médicos ni grabaciones ajenas.',
     upload:'Subiendo de forma segura…',sendBusy:'Enviando…',signIn:'Inicia sesión para enviar mensajes',
@@ -58,24 +62,36 @@ const COPY={
     published:'Publicado en el perfil',publish:'Añadir audio a mi perfil público',unpublish:'Retirar del perfil',
     revoke:'Revocar permiso para publicar',titleLabel:'Título del audio',
     localeLabel:'Idioma del audio',rights:'Confirmo que tengo derecho a publicar la grabación.',
-    apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',error:'No se pudo completar la acción.',
+    apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',video:'Videomensaje',videoLimit:'El vídeo debe reproducirse y durar 60 segundos como máximo.',fileInvalid:'Archivo no compatible o demasiado grande (vídeo: 20 MB).',error:'No se pudo completar la acción.',
     noPublish:'El audio es privado sin autorización expresa del remitente.',
-    older:'Se muestran los últimos 50 mensajes.',retry:'Reintentar',
+    older:'Cargar mensajes anteriores',olderBusy:'Cargando mensajes…',retry:'Reintentar',findMaster:'Buscar profesional',
   }
 }
 const URL='/api/app/direct-messages'
 const AUDIO_MIMES=new Set(['audio/mpeg','audio/mp4','audio/webm','audio/ogg','audio/wav'])
-const labels={en:'English',ru:'Русский',es:'Español'}
-function mediaMime(file){
-  const type=(file.type||'').split(';')[0].toLowerCase()
-  const extension=/\.([a-z0-9]+)$/i.exec(file.name||'')?.[1]?.toLowerCase()
-  if(type==='audio/x-m4a'||type==='audio/m4a'||(type==='application/octet-stream'&&extension==='m4a'))
-    return 'audio/mp4'
-  if(type==='audio/x-wav')return 'audio/wav'
-  if(type==='audio/x-ogg')return 'audio/ogg'
-  if(type==='audio/mp3')return 'audio/mpeg'
-  return type
+const VIDEO_MIMES=new Set(['video/mp4','video/webm','video/quicktime'])
+async function shortVideo(file){
+  return new Promise(resolve=>{
+    const source=globalThis.URL.createObjectURL(file)
+    const player=document.createElement('video')
+    let settled=false
+    const complete=valid=>{
+      if(settled)return
+      settled=true;clearTimeout(timeout)
+      player.removeAttribute('src');player.load()
+      globalThis.URL.revokeObjectURL(source)
+      resolve(valid)
+    }
+    const timeout=setTimeout(()=>complete(false),12000)
+    player.preload='metadata'
+    player.onloadedmetadata=()=>complete(Number.isFinite(player.duration)&&
+      player.duration>0&&player.duration<=60)
+    player.onerror=()=>complete(false)
+    player.src=source
+    player.load()
+  })
 }
+const labels={en:'English',ru:'Русский',es:'Español'}
 async function jsonGet(path=URL){
   const response=await fetch(path,{cache:'no-store',credentials:'same-origin'})
   const value=await response.json().catch(()=>({}))
@@ -112,10 +128,28 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
-    [busy,setBusy]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
+    [busy,setBusy]=useState(false),[voiceRecording,setVoiceRecording]=useState(false),
+    [videoRecording,setVideoRecording]=useState(false),[inspectingVideo,setInspectingVideo]=useState(false),
+    [status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
-  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const shellRef=useRef(null),uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null),
+    fileSelectionRef=useRef(0)
+  const recording=voiceRecording||videoRecording
   const [showNotices,setShowNotices]=useState(false)
+  const [olderBusy,setOlderBusy]=useState(false)
+  const [audioPreview,setAudioPreview]=useState(''),[videoPreview,setVideoPreview]=useState('')
+  useEffect(()=>{
+    if(!file||!AUDIO_MIMES.has(directMediaMime(file))){setAudioPreview('');return}
+    const url=globalThis.URL.createObjectURL(file)
+    setAudioPreview(url)
+    return()=>globalThis.URL.revokeObjectURL(url)
+  },[file])
+  useEffect(()=>{
+    if(!file||!VIDEO_MIMES.has(directMediaMime(file))){setVideoPreview('');return}
+    const url=globalThis.URL.createObjectURL(file)
+    setVideoPreview(url)
+    return()=>globalThis.URL.revokeObjectURL(url)
+  },[file])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
     const data=await jsonGet()
@@ -143,7 +177,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   async function openThread(id){
     const generation=++readGeneration.current
-    setActiveId(id);setCurrent(null);setError('')
+    setActiveId(id);setCurrent(null);setError('');setOlderBusy(false)
     try {
       const data=await jsonGet(URL+'?threadId='+encodeURIComponent(id))
       if(generation!==readGeneration.current)return
@@ -162,10 +196,58 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     }
   }
   openThreadRef.current=openThread
+  // Recover new replies when the phone app returns to foreground.
+  // Never fetch while hidden/offline; never store private history offline.
+  useEffect(()=>{
+    if(!accountId||signedOut)return
+    let disposed=false,inFlight=false,last=0
+    const refresh=async()=>{
+      if(disposed||inFlight||shellRef.current?.closest('[hidden]')||document.visibilityState!=='visible'||
+        navigator.onLine===false||busy||recording||Date.now()-last<15000)return
+      last=Date.now();inFlight=true
+      try{
+        const next=await getThreads()
+        if(!disposed&&next.accountId===accountId&&activeId)
+          await openThreadRef.current?.(activeId)
+      }catch(e){
+        if(!disposed&&e?.message==='ACCOUNT_CHANGED')setError('ACCOUNT_CHANGED')
+      }finally{inFlight=false}
+    }
+    const focus=()=>{void refresh()}
+    const visible=()=>{if(document.visibilityState==='visible')focus()}
+    window.addEventListener('focus',focus)
+    window.addEventListener('online',focus)
+    document.addEventListener('visibilitychange',visible)
+    const timer=window.setInterval(focus,45000)
+    return()=>{
+      disposed=true
+      window.clearInterval(timer)
+      window.removeEventListener('focus',focus)
+      window.removeEventListener('online',focus)
+      document.removeEventListener('visibilitychange',visible)
+    }
+  },[accountId,activeId,busy,recording,signedOut,getThreads])
   useEffect(()=>{
     if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
       void openThreadRef.current?.(initialThreadId)
   },[simpleDetail,accountId,initialThreadId,activeId])
+  async function loadEarlier(){
+    if(!current?.nextMessagesCursor||olderBusy||!activeId)return
+    const id=activeId,generation=readGeneration.current,cursor=current.nextMessagesCursor
+    setOlderBusy(true);setError('')
+    try{
+      const data=await jsonGet(URL+'?'+new URLSearchParams({threadId:id,messagesBefore:cursor}))
+      if(generation!==readGeneration.current||data.accountId!==accountId||data.threadId!==id)
+        return
+      setCurrent(previous=>{
+        if(previous?.threadId!==id||previous.nextMessagesCursor!==cursor)return previous
+        const seen=new Set(previous.messages.map(row=>row.id))
+        return {...previous,messages:[...data.messages.filter(row=>!seen.has(row.id)),...previous.messages],
+          nextMessagesCursor:data.nextMessagesCursor,hasMore:Boolean(data.nextMessagesCursor)}
+      })
+    }catch(e){if(generation===readGeneration.current)setError(e.message)}
+    finally{if(generation===readGeneration.current)setOlderBusy(false)}
+  }
   async function action(body){
     setBusy(true);setError('')
     try {
@@ -188,7 +270,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   async function send(event){
     event.preventDefault()
-    if(busy||!activeId||(!draft.trim()&&!file))return
+    if(busy||recording||inspectingVideo||!activeId||(!draft.trim()&&!file))return
     setBusy(true);setError('')
     const key={threadId:activeId,text:draft.trim(),file,allowPublicReuse}
     try {
@@ -199,20 +281,55 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
         if(!uploadRef.current||uploadRef.current.file!==file||uploadRef.current.threadId!==activeId){
           const prepared=file.type.startsWith('image/')||/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)
             ?await preparePhoto(file):file
-          const mime=mediaMime(prepared)
+          const mime=directMediaMime(prepared)
           directMediaSpec(mime,prepared.size)
           setStatus(t.upload)
           const intent=await post({action:'intent',threadId:activeId,
             mime,bytes:prepared.size,allowPublicReuse:allowPublicReuse&&AUDIO_MIMES.has(mime)})
-          const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
-            auth:{persistSession:false,autoRefreshToken:false}})
-          const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
-            intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
-          if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
-          await post({action:'complete',assetId:intent.assetId})
-          uploadRef.current={file,threadId:activeId,assetId:intent.assetId}
+          // Retain the original bytes and the immutable intent across failed
+          // network responses and retries; never mint duplicate pending assets.
+          uploadRef.current={file,threadId:activeId,prepared,mime,intent,assetId:intent.assetId,
+            attempted:false,uploaded:false,completed:false}
         }
-        assetId=uploadRef.current.assetId
+        const staged=uploadRef.current
+        setStatus(t.upload)
+        if(staged.attempted&&!staged.uploaded){
+          // A response may have been lost after Supabase stored the bytes.
+          try{
+            await post({action:'complete',assetId:staged.assetId})
+            staged.uploaded=true;staged.completed=true
+          }catch(e){
+            if(!['MEDIA_UPLOAD_NOT_FOUND','MEDIA_STORAGE_UNAVAILABLE'].includes(e.message))throw e
+          }
+        }
+        if(!staged.uploaded){
+          staged.attempted=true
+          if(staged.prepared.size<=DIRECT_MEDIA_PROXY_MAX_BYTES){
+            let response
+            try{
+              response=await fetch(URL+'/media/'+encodeURIComponent(staged.assetId)+'/upload',{
+                method:'POST',cache:'no-store',credentials:'same-origin',
+                headers:{'Content-Type':staged.mime,'x-hh-account-id':accountId},
+                body:staged.prepared})
+            }catch{throw new Error('MEDIA_UPLOAD_FAILED')}
+            const result=await response.json().catch(()=>({}))
+            if(!response.ok||result.uploaded!==true)throw new Error(result.error||'MEDIA_UPLOAD_FAILED')
+          }else{
+            // Larger pre-existing audio files retain the signed Storage route.
+            const intent=staged.intent
+            const storage=createClient(intent.supabaseUrl,intent.publishableKey,{
+              auth:{persistSession:false,autoRefreshToken:false}})
+            const {error:failure}=await storage.storage.from(intent.bucket).uploadToSignedUrl(
+              intent.objectKey,intent.token,staged.prepared,{contentType:staged.mime,upsert:false})
+            if(failure)throw new Error('MEDIA_UPLOAD_FAILED')
+          }
+          staged.uploaded=true
+        }
+        if(!staged.completed){
+          await post({action:'complete',assetId:staged.assetId})
+          staged.completed=true
+        }
+        assetId=staged.assetId
       }
       setStatus(t.sendBusy)
       await post({action:'send',threadId:activeId,operationId:operationRef.current.id,
@@ -223,9 +340,28 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     }catch(e){setError(e.message);setStatus('')}
     finally{setBusy(false)}
   }
-  function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
-  const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
-  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
+  async function changeFile(next,{recorded=false}={}){
+    const generation=++fileSelectionRef.current
+    setFile(null);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null
+    if(!next){setInspectingVideo(false);return}
+    try {
+      const mime=directMediaMime(next)
+      // HEIC/large iPhone photos are converted by preparePhoto() at send time.
+      // Do not reject their unconverted MIME/size in the chooser.
+      const photoLike=next.type.startsWith('image/')||/\.(heic|heif|jpe?g|png|webp)$/i.test(next.name)
+      if(!photoLike)directMediaSpec(mime,next.size)
+      if(VIDEO_MIMES.has(mime)&&!recorded){
+        setInspectingVideo(true)
+        if(!await shortVideo(next))throw new Error('VIDEO_DURATION_NOT_ALLOWED')
+      }
+      if(generation===fileSelectionRef.current){setFile(next);setError('')}
+    }catch(e){
+      if(generation===fileSelectionRef.current)
+        setError(e.message==='VIDEO_DURATION_NOT_ALLOWED'?t.videoLimit:t.fileInvalid)
+    }finally{if(generation===fileSelectionRef.current)setInspectingVideo(false)}
+  }
+  const audioSelected=file&&AUDIO_MIMES.has(directMediaMime(file))
+  return <section ref={shellRef} className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
     data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
     {!simpleDetail&&<header className={styles.head}>
       {!compact&&<div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>}
@@ -240,7 +376,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
         }}><RefreshCw size={17} aria-hidden="true"/>{!compact&&t.load}</button>
       </div>
     </header>}
-    {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
+    {signedOut?<p role="alert" className={styles.notice}>
+      {embedded?t.signIn:<MessengerSignIn locale={locale} recipientSlug={destination} label={t.signIn}/>}
+    </p>:null}
     {!simpleDetail&&accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
       <ClientExpressReportNotices locale={locale} accountId={accountId}/>
     </div>}
@@ -250,7 +388,10 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
       <button type="button" disabled={busy||!accountId} onClick={start}>{t.newWith}: {destination}</button>
     </div>}
     {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
-    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{ownerCrmAvailable?t.ownerEmpty:t.empty}</p>}
+    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>
+      {ownerCrmAvailable?t.ownerEmpty:t.empty}{' '}
+      <a href={'/'+locale+'/masters'}>{t.findMaster} →</a>
+    </p>}
     {accountId&&(threads.length>0||destination)&&<div className={styles.layout} data-chat-open={Boolean(current)}>
       {!simpleDetail&&<aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>
@@ -275,14 +416,18 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             </button>}
           </div>
           <div className={styles.feed} aria-live="polite">
-            {current.hasMore&&<p className={styles.hint}>{t.older}</p>}
+            {current.hasMore&&<button type="button" className={styles.loadOlder}
+              disabled={olderBusy} onClick={loadEarlier}>{olderBusy?t.olderBusy:t.older}</button>}
             {current.messages.map(m=><article key={m.id} className={m.mine?styles.own:styles.received}>
               {m.text&&<p>{m.text}</p>}
               {m.attachment&&<div className={styles.attachment}>
                 {m.attachment.kind==='image'
-                  ?<a href={'/api/app/direct-messages/media/'+m.attachment.id} target="_blank" rel="noopener noreferrer">
-                    <img src={'/api/app/direct-messages/media/'+m.attachment.id} alt={t.photo} loading="lazy"/></a>
-                  :<audio controls preload="none" aria-label={t.view} src={'/api/app/direct-messages/media/'+m.attachment.id}/>}
+                  ?<PrivateChatPhoto src={'/api/app/direct-messages/media/'+m.attachment.id}
+                    alt={t.photo} locale={locale}/>
+                  :m.attachment.kind==='video'
+                    ?<video controls playsInline preload="metadata" aria-label={t.video}
+                      className={styles.videoBubble} src={'/api/app/direct-messages/media/'+m.attachment.id}/>
+                    :<audio controls preload="none" aria-label={t.view} src={'/api/app/direct-messages/media/'+m.attachment.id}/>}
                 {m.attachment.kind==='audio'&&current.isRecipient&&
                   <AudioPublication key={m.attachment.id} message={m} onAction={action} busy={busy} locale={locale} t={t}/>}
                 {m.attachment.kind==='audio'&&m.mine&&m.attachment.canPublish&&
@@ -302,11 +447,21 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
               placeholder={t.composer} disabled={busy}/>
             <div className={styles.actions}>
               <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
-                  disabled={busy} onChange={e=>changeFile(e.target.files?.[0]||null)}/></label>
-              <button className={styles.send} type="submit" disabled={busy||(!draft.trim()&&!file)}>
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,video/mp4,video/webm,video/quicktime,.mov,.mp4"
+                  disabled={busy} onChange={e=>{changeFile(e.target.files?.[0]||null);e.target.value=''}}/></label>
+              <DirectVoiceRecorder key={current.threadId} locale={locale} disabled={busy||videoRecording}
+                onRecordingChange={setVoiceRecording}
+                onRecorded={recorded=>{void changeFile(recorded,{recorded:true});setError('')}}/>
+              <DirectVideoRecorder key={current.threadId} locale={locale} disabled={busy||voiceRecording}
+                onRecordingChange={setVideoRecording}
+                onRecorded={recorded=>{void changeFile(recorded,{recorded:true});setError('')}}/>
+              <button className={styles.send} type="submit" disabled={busy||recording||inspectingVideo||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>
             </div>
+            {audioPreview&&<audio controls preload="metadata" src={audioPreview} aria-label={t.audio} className={styles.voicePreview}/>}
+            {videoPreview&&<video controls playsInline preload="metadata" src={videoPreview}
+              aria-label={t.video} className={styles.videoDraft}/>}
+            {inspectingVideo&&<p role="status">{t.videoLimit}</p>}
             {file&&<p className={styles.fileName}>{file.name} ({Math.ceil(file.size/1024)} KB)
               <button type="button" disabled={busy} onClick={()=>changeFile(null)}>×</button></p>}
             {audioSelected&&<label className={styles.permission}>

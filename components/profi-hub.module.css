@@ -631,3 +631,17 @@
 .masterDirectory{min-width:0;margin-top:10px;padding:clamp(10px,1.8vw,20px);border:1px solid #e6d6c4;border-radius:21px;background:#fffaf4}
 .directoryError{margin:10px 0;padding:17px;border:1px solid #e3d1c0;border-radius:15px;color:#705447;background:#fffaf4;font-size:13px;line-height:1.5}
 @media(max-width:600px){.masterDirectory{padding:8px;border-radius:16px;margin-top:8px}}
+
+
+/* Public-first practitioner path: show the approved mock before Google auth. */
+.practiceShowcaseEntry{display:flex;align-items:center;gap:12px;min-width:0;min-height:60px;
+ margin:15px 0 0;padding:11px 14px;text-decoration:none;border-radius:14px;
+ border:1px solid #7ed0b7;background:linear-gradient(115deg,#008f70,#02a584);
+ color:#fff!important;box-shadow:0 7px 18px #047b5e2c}
+.practiceShowcaseEntry>svg{flex:none}
+.practiceShowcaseEntry>span{display:grid;flex:1;gap:3px;min-width:0;
+ font:750 13px/1.25 system-ui,sans-serif}
+.practiceShowcaseEntry small{font:500 10px/1.35 system-ui,sans-serif;color:#e9f8f0}
+.practiceShowcaseEntry:hover{background:linear-gradient(115deg,#007a61,#008b72)}
+.practiceShowcaseEntry:focus-visible{outline:3px solid #eac46f;outline-offset:3px}
+@media(max-width:430px){.practiceShowcaseEntry{min-height:56px;padding:9px 10px;gap:9px}.practiceShowcaseEntry>span{font-size:12px}}
