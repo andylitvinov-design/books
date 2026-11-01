@@ -12,6 +12,7 @@ import {fileURLToPath} from "node:url";
 import {auditScenarioMedia,planDedicatedScenarioMedia} from "../lib/mandala/scenario-media-coverage.mjs";
 import {createScenarioAcquisitionQueue} from "../lib/mandala/scenario-media-acquisition.mjs";
 import {loadActiveFilmPresets} from "./read-live-film-presets.mjs";
+import {auditGoalTreeMedia,createGoalTreeMediaQueue} from "../lib/mandala/video-goal-media-coverage.mjs";
 import {SONGS,SAMPLE_RATE,DURATION_SECONDS} from "./generate-mandala-melodies.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const load=name=>JSON.parse(readFileSync(resolve(root,name),"utf8"));
@@ -53,8 +54,11 @@ audit.audioMastersExpected=SONGS.length;
 audit.audioMastersMissing=audioAbsent;
 const plan=planDedicatedScenarioMedia(presetData.presets,sceneData.scenes);
 const queue=args.has("--queue")?createScenarioAcquisitionQueue(presetData.presets,sceneData.scenes):null;
+const goalTree=auditGoalTreeMedia();
+const goalQueue=args.has("--goal-queue")?createGoalTreeMediaQueue():null;
 if(args.has("--apply"))throw Error("dedicated_rebalance_requires_atomic_migration_of_inline_and_json_presets");
-if(args.has("--json")||args.has("--queue"))console.log(JSON.stringify(args.has("--queue")?queue:{...audit,...(args.has("--plan")?{plan}:{})},null,2));
+if(args.has("--goal-queue")||args.has("--goal-tree")||args.has("--json")||args.has("--queue"))
+  console.log(JSON.stringify(args.has("--goal-queue")?goalQueue:args.has("--goal-tree")?goalTree:args.has("--queue")?queue:{...audit,goalTree,...(args.has("--plan")?{plan}:{})},null,2));
 else {
   console.log("Video Studio | "+audit.scenarios+" scenarios | "+audit.approvedScenes+
     " MP4 masters | "+audit.requiredSlots+" shot slots");
@@ -63,6 +67,7 @@ else {
   for(const row of audit.byTheme)console.log(
     row.theme+": "+row.available+" unique MP4 / "+row.slots+" dedicated slots; need "+row.missing);
   console.log("New distinct shots required (same-theme): "+audit.minimumNewDedicatedScenes);
+  console.log("New 5×6×4 tree: "+goalTree.scenarios+" unbound stories / "+goalTree.requiredFourShotSlots+" beats; bound "+goalTree.currentlyBoundSlots);
   console.log("Original melody WAV masters: "+(SONGS.length-audioAbsent.length)+"/"+SONGS.length);
   if(audioAbsent.length)console.log("Missing music: "+audioAbsent.join(", "));
   if(audit.errors.length)console.log("INVALID assets: "+JSON.stringify(audit.errors));

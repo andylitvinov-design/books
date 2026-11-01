@@ -78,3 +78,8 @@ Every one of the 48 current storyboards now has four different suggested first-p
 
 ## CI scope / merge reconciliation
 The video PR keeps OPORA untouched: its unrelated curricular browser/unit checks belong to the course workflow, not the video asset pipeline. The package-level build scripts are left at the current production implementation, which already calls `scripts/generate-soft-ocean-melody.mjs` (all first-party WAV masters) and `scripts/generate-scenario-melodies.mjs` (196 scenario/classical MP3 masters) during `prebuild` / `predev`. New video auditing/importing tools are invoked directly with `node`, avoiding a global `package.json` edit and hundreds of unrelated CI suites. This does not change or disable any required branch protection check.
+
+## Canonical five-axis narrative tree · 2026-11-01
+The newer production taxonomy contains **5 categories × 6 topics × 4 conceptual scenarios = 120 unbound stories / 480 visual beats**. They are **not** the original 48 playable video presets (192 storyboard slots / 44 licensed MP4 masters). Avoid adding 192 + 480 as if both are already independent published video collections.
+
+`node scripts/audit-scenario-media.mjs --goal-tree` summarizes the new hierarchy; `node scripts/audit-scenario-media.mjs --goal-queue` produces its 480 required source-binding slots, including optional *editorial-only* motif candidates from existing approved footage. A textual resemblance does NOT approve or bind the clip or authorize export. The theoretical maximum reuse-saving lower bound if no shot may recur is **at least 436 additional distinct clips** beyond the existing 44, assuming all are appropriate; this is not a completed asset order. No unbound story is treated as export-ready.
