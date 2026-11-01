@@ -77,7 +77,10 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/scenePoster\(clip\)/);
  assert.match(director,/data-auto-video-create/);
  assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
- assert.match(studio,/canCreate=\{canGenerate\}/,"licensed source URLs and selected audio are required");
+ assert.match(studio,/canCreate=\{canStartSelectedFilm\}/,
+   "Create stays tappable even when soundtrack attachment or photo rights need confirmation");
+ assert.match(studio,/createFeedback=\{preparing\|\|exportUnavailable\?notice:""\}/,
+   "decoder timeout and export errors appear alongside the iPhone Create button");
  assert.match(studio,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
    "iPhone native players are decoded after Create is tapped, never via a permanently disabled button");
  assert.match(director,/\{!canCreate&&!disabled\?<p className=\{css\.notice\}>\{t\.blocked\}<\/p>:null\}/,
