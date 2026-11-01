@@ -32,6 +32,16 @@ on:
         type: boolean
         default: true
         required: false
+      completion_wake:
+        description: 'Delay a worker-completion wake until its slot is released'
+        type: boolean
+        default: false
+        required: false
+      worker_run_id:
+        description: 'Originating trusted worker run for completion wake'
+        type: string
+        default: ''
+        required: false
 permissions:
   contents: read
   actions: write
@@ -92,6 +102,16 @@ jobs:
           script: |
             const {run,wakeDirectionWatcher}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-queue-dispatcher.cjs');
+            // Wait for the actual trusted worker to finish and cool down.
+            // Capacity, leases, exact HEAD and task dedup remain mandatory below.
+            if (context.eventName==='workflow_dispatch' &&
+                String(context.payload.inputs?.completion_wake ?? 'false')==='true') {
+              const {waitForWorkerCompletion}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+              if (!await waitForWorkerCompletion({github,owner:context.repo.owner,repo:context.repo.repo,
+                runId:String(context.payload.inputs?.worker_run_id || '')})) {
+                core.warning('Worker completion unverified; defer refill to next event or cron'); return;
+              }
+            }
             const input=String(context.payload.inputs?.dry_run ?? 'false')==='true';
             const dryRun=context.eventName==='push'||input;
             // Trust checks inside run() and exact-HEAD check before each mutation.
