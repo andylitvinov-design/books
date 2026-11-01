@@ -14,7 +14,7 @@ const COPY={
    none:'No attachments in the loaded history.',loading:'Opening private client details…',
    error:'Could not open private details. Reopen the card to retry.',older:'Load earlier attachments',
    olderBusy:'Loading earlier history…',olderError:'Could not load earlier history. Retry.',
-   master:'Master profile',openMaster:'Open verified master profile',full:'Open private client request and materials',
+   master:'Master profile',openMaster:'Open verified master profile',full:'Full request',
    empty:'No other verified details yet.',privacy:'CRM contacts, private client records and master profiles are linked only after identity verification.',
    video:'Videos from the private client case are available through its protected case link, not from this messenger archive.',
    photo:'Photo',audio:'Audio',movie:'Video'},
@@ -24,7 +24,7 @@ const COPY={
    none:'В загруженной истории вложений нет.',loading:'Открываю защищённую карточку…',
    error:'Не удалось открыть сведения. Повторите открытие карточки.',older:'Показать более ранние материалы',
    olderBusy:'Загружаю историю…',olderError:'Не удалось загрузить историю. Повторите.',
-   master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Открыть защищённую заявку и материалы',
+   master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Вся заявка',
    empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные клиентские записи и профили мастеров связываются только после проверки личности.',
    video:'Видео из личного дела доступны через защищённую заявку, а не через общий архив мессенджера.',
    photo:'Фото',audio:'Аудио',movie:'Видео'},
@@ -34,7 +34,7 @@ const COPY={
    none:'No hay adjuntos en el historial cargado.',loading:'Abriendo ficha privada…',
    error:'No se pueden abrir los datos. Vuelve a intentar.',older:'Ver adjuntos anteriores',
    olderBusy:'Cargando historial…',olderError:'No se pudo cargar el historial. Reintenta.',
-   master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Abrir solicitud y archivos privados',
+   master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Solicitud completa',
    empty:'No hay más datos verificados.',privacy:'Contactos CRM, expedientes privados y perfiles profesionales solo se enlazan tras verificar la identidad.',
    video:'Los videos del expediente privado están disponibles en la solicitud protegida, no en este archivo de mensajes.',
    photo:'Foto',audio:'Audio',movie:'Video'}
@@ -188,9 +188,10 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
      {view.olderError&&<p className={styles.notice} role="alert">{t.olderError}</p>}
    </section>}
    {kind==='request'&&validId(item.id)&&<section className={styles.section}>
-     <h3><Video size={17}/>{t.photos}</h3><Link prefetch={false} className={styles.link}
-       href={'/'+lang+'/app/practice?panel=clients&requestId='+encodeURIComponent(item.id)}>
-       {t.full}<ExternalLink size={16}/></Link></section>}
+      <h3><Video size={17}/>{t.full}</h3>
+      {item.item?.message&&<p className={styles.muted} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.item.message}</p>}
+      <p className={styles.muted}>{t.privacy}</p>
+    </section>}
    {(kind==='crm'||kind==='direct')&&<p className={styles.privacy}><Music2 size={13}/>{t.video}</p>}
    <p className={styles.privacy}>{t.privacy}</p>
  </section>

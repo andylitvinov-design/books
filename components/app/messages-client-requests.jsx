@@ -1,6 +1,7 @@
 'use client'
 import {useMemo,useState} from 'react'
 import Link from 'next/link'
+import {messagesRequestPath} from '@/lib/app/messages-request-route.mjs'
 import {ArrowLeft,ArrowRight,CalendarDays,Inbox} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import PublicEnquiryContact from './public-enquiry-contact'
@@ -209,7 +210,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
               <button type="button" disabled={busy} onClick={()=>statusChange(selected,'contacted')}>{t.contacted}</button>}
             {['requested','contacted'].includes(selected.status)&&!selected.remoteBooking&&
               <button type="button" disabled={busy} onClick={()=>statusChange(selected,'closed')}>{t.closed}</button>}
-            <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}
+            <Link href={messagesRequestPath(locale,selected.id)}
               prefetch={false}>{t.full} <ArrowRight size={15}/></Link>
           </div>
           {selected.requestKind==='public'?<>
