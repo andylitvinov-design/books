@@ -91,9 +91,14 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-queue-dispatcher.cjs');
+            const {run,wakeDirectionWatcher}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-queue-dispatcher.cjs');
             const input=String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            const dryRun=context.eventName==='push'||input;
             // Trust checks inside run() and exact-HEAD check before each mutation.
             // Push is audit-only; cron and completed trusted worker events are live.
-            await run({github,core,context,
-              dryRun:context.eventName==='push'||input});
+            await run({github,core,context,dryRun});
+            // Single-writer event fallback: once per 11+ minute inactivity,
+            // never if Direction Watcher is queued/running. Does not create PR
+            // checks, edit source or pretend that GitHub cron delivered events.
+            await wakeDirectionWatcher({github,core,context,dryRun});
