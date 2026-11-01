@@ -101,3 +101,12 @@ test('invalid queue size fails closed',()=>{
   assert.throws(()=>pickQueueCandidates([pr(1)],NOW,30,3),/Unsafe/);
   assert.throws(()=>pickQueueCandidates([pr(1)],NOW,4,5),/Unsafe/);
 });
+
+test('historical CI test maintenance does not displace operational Watchdog P1',()=>{
+  const maintenance=pr(850,'fix(ci): restore regression coverage for current test UI');
+  const incident=pr(2956,'fix(ci): prevent Watchdog callbacks cancelling repairs');
+  assert.equal(priorityFor(maintenance,NOW).direction,'ci-maintenance');
+  assert.equal(priorityFor(maintenance,NOW).tier,'P5');
+  assert.equal(priorityFor(incident,NOW).tier,'P1');
+  assert.equal(rankedCandidates([maintenance,incident],NOW)[0].number,2956);
+});
