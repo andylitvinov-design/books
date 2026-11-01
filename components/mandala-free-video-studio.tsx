@@ -26,7 +26,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -2576,6 +2576,41 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return null;
     });
   };
+  // The final editor changes the same approved four-shot plan used by Canvas and MediaRecorder.
+  const reorderFilmScene=(index:number,delta:-1|1)=>{
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
+      const nextIndex=index+delta;
+      if(nextIndex<0||nextIndex>=4)return current;
+      const ordered=[...current.shots];
+      [ordered[index],ordered[nextIndex]]=[ordered[nextIndex],ordered[index]];
+      let startSeconds=0;
+      const shots=ordered.map((shot,i)=>{
+        const next={...shot,number:i+1,startSeconds};
+        startSeconds+=shot.durationSeconds;
+        return next;
+      });
+      return {...current,shots,sceneChoices:shots.map(shot=>({
+        sceneId:shot.sceneId,theme:shot.theme,visualCue:shot.visualCue
+      }))} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+  };
+  const shiftFilmCut=(index:number,direction:-1|1)=>{
+    setCinematicPlan(current=>{
+      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
+      const durations=current.shots.map(shot=>shot.durationSeconds);
+      const next=shiftAdaptiveFilmBoundary(durations,index,direction);
+      let startSeconds=0;
+      const shots=current.shots.map((shot,i)=>{
+        const updated={...shot,startSeconds,durationSeconds:next[i]};
+        startSeconds+=next[i];
+        return updated;
+      });
+      return {...current,shots} as CinematicStoryboard;
+    });
+    stopMovieSound();setPreviewPlaying(false);
+  };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
     edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]},
     outputAspect:Aspect=aspect)=>{
@@ -4200,6 +4235,56 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         {theme==="health"?<p className={videoStyles.quickHint} role="note">{quick.disclaimer}</p>:null}
+        <section className={videoStyles.quickSection} data-workspace-section="editor"
+          data-video-final-editor aria-label={workspaceCopy[locale].editor.title}>
+          <div className={videoStyles.quickSectionHeading}>
+            <h3><SlidersHorizontal size={20} aria-hidden="true"/>
+              {locale==="ru"?"Редактор готового видеопроекта":locale==="es"?"Editor del vídeo":"Your film editor"}</h3>
+          </div>
+          {activeWorkspace==="editor" ? deepVideoPane : null}
+          <div className={videoStyles.editorTimeline} data-video-editor-timeline>
+            <strong>{locale==="ru"?"Порядок и длительность сцен":locale==="es"?
+              "Orden y duración de escenas":"Scene order and duration"}</strong>
+            {usingFreeFilmCompilation&&cinematicPlan?.shots.length===4 ? <>
+              <div className={videoStyles.editorTimelineBar} role="list" aria-label="Shot durations">
+                {cinematicPlan.shots.map((shot,index)=><div key={shot.sceneId}
+                  role="listitem" style={{flexGrow:shot.durationSeconds}} title={freeFilmClipLabel(shot.sceneId)}>
+                  {index+1} · {shot.durationSeconds}{quick.seconds}
+                </div>)}
+              </div>
+              {cinematicPlan.shots.map((shot,index)=><div className={videoStyles.editorTimelineRow}
+                key={shot.sceneId} data-video-editor-shot={shot.sceneId}>
+                <span>{index+1}. {freeFilmClipLabel(shot.sceneId)} · {shot.durationSeconds}{quick.seconds}</span>
+                <div className={videoStyles.editorTimelineActions}>
+                  <button type="button" disabled={recording||preparing||index===0}
+                    aria-label={"Move clip left "+(index+1)} onClick={()=>reorderFilmScene(index,-1)}>←</button>
+                  <button type="button" disabled={recording||preparing||index===3}
+                    aria-label={"Move clip right "+(index+1)} onClick={()=>reorderFilmScene(index,1)}>→</button>
+                  {index<3?<button type="button" disabled={recording||preparing||shot.durationSeconds<=2}
+                    aria-label={"Shorten clip "+(index+1)} onClick={()=>shiftFilmCut(index,-1)}>−1s</button>:null}
+                  {index<3?<button type="button"
+                    disabled={recording||preparing||cinematicPlan.shots[index+1].durationSeconds<=2}
+                    aria-label={"Lengthen clip "+(index+1)} onClick={()=>shiftFilmCut(index,1)}>+1s</button>:null}
+                </div>
+              </div>)}
+            </> : <p>{locale==="ru"?"Выберите четырёхсценный фильм во вкладке «Видео», чтобы изменить монтаж.":
+              locale==="es"?"Selecciona un vídeo de cuatro escenas en Vídeo para editar el montaje.":
+              "Choose a four-scene film under Video to edit the montage."}</p>}
+          </div>
+          <label className={videoStyles.editorVolume}>
+            <span>{locale==="ru"?"Громкость выбранной дорожки":locale==="es"?
+              "Volumen del sonido elegido":"Selected soundtrack volume"}: {soundVolume}%</span>
+            <input type="range" min={0} max={100} step={5} value={soundVolume}
+              disabled={recording||preparing||!attachedAudio}
+              onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
+          </label>
+          <div className={videoStyles.editorActions}>
+            <button type="button" disabled={recording||preparing||!source}
+              onClick={openAffirmationPreview}><Play size={17}/>{locale==="ru"?"Посмотреть":locale==="es"?"Vista previa":"Preview"}</button>
+            <button type="button" disabled={!canGenerate}
+              onClick={createQuickVideo}><Film size={17}/>{ui.create}</button>
+          </div>
+        </section>
         <details className={videoStyles.quickExtras} data-workspace-section="editor" data-video-quick-extras>
           <summary><strong>{approved.extra}</strong><ChevronDown size={20} aria-hidden="true"/></summary>
           <div className={videoStyles.quickExtraActions}>
