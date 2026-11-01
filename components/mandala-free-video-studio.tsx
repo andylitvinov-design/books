@@ -3903,6 +3903,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setPreviewPlaying(false);
             }}><span aria-hidden="true">“</span>{phrase}</button>)}
         </div>
+        <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
+          enabled={affirmations.enabled} durationSeconds={duration}
+          disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
+          onInvalidate={()=>setAttachedAudio(current=>
+            current?.kind==="file"&&current.narration?null:current)}
+          onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
+        {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
+          {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
+            locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
+            "Phrases or duration changed — regenerate the voice before exporting."}
+        </p>:null}
         {deepHypnoPane}
 
       </section>
@@ -4623,17 +4634,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <SlidersHorizontal size={23} aria-hidden="true"/><strong>{quick.ownPhrases}</strong><small>{quick.write}</small>
             </button>
           </div>
-          <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
-            enabled={affirmations.enabled} durationSeconds={duration}
-            disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
-            onInvalidate={()=>setAttachedAudio(current=>
-              current?.kind==="file"&&current.narration?null:current)}
-            onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
-          {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
-            {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
-              locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
-              "Phrases or duration changed — regenerate the voice before exporting."}
-          </p>:null}
+
         </section>
 
         {/* One small audio status/action row replaces the second audio picker,

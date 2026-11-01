@@ -70,3 +70,23 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(local,/source\.loop = options\.loop !== false/);
   assert.match(browser,/page\.route/);
 });
+
+test("six-voice affirmation editor is visible in the Phrases workspace rather than hidden legacy extras",()=>{
+  const page=read("components/mandala-free-video-studio.tsx");
+  const section=page.indexOf('data-workspace-section="phrases" data-video-quick-phrases');
+  const voice=page.indexOf('<MandalaAffirmationVoice locale={locale}');
+  const next=page.indexOf('data-workspace-section="effects"',section);
+  const hidden=page.indexOf('data-video-quick-legacy');
+  assert.ok(section>0 && voice>section && next>voice && hidden>next,
+    "voice must be usable from the single visible Phrases tab");
+  assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
+    "do not duplicate the voice editor or API requests");
+  assert.match(page.slice(section,next),/data-video-narration-stale/,
+    "the warning for stale narration stays beside the visible controls");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(browser,/data-video-quick-control="phrases"/);
+  assert.match(browser,/data-video-quick-affirmation="0"/);
+  assert.match(browser,/data-video-quick-control="video"/);
+  assert.doesNotMatch(browser,/advanced\.locator\(":scope > summary"\)\.click/,
+    "do not test inaccessible old controls");
+});
