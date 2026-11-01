@@ -69,7 +69,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
         steps:[{name:'TypeScript build',conclusion:'failure'}]}]}})
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'release-ready',conclusion:'failure'}]}})},
-    repos:{getCommit:async()=>({data:{parents:[{sha:SHA}]}})},
+    repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
     issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
