@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -199,4 +199,80 @@ test('stale or mismatched PR association cannot authorize CI repair',()=>{
   assert.equal(coreRunForCurrentPR({...baseRun,pull_requests:[{number:78,
     head:{sha:SHA,ref:'test-77'}}]},current),false);
   assert.equal(coreRunForCurrentPR({...baseRun,pull_requests:[]},current),false);
+});
+
+test('legacy Core bootstrap merges production into a stale BEHIND PR with exact HEAD lease',async()=>{
+  const candidate={...pr(1470),updated_at:new Date(NOW-5*60*60000).toISOString()};
+  let updateCalls=0,commentCalls=0;
+  const live={...candidate,state:'open',mergeable:true,mergeable_state:'behind'};
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{commentCalls++;}}
+  },paginate:async()=>[]};
+  const repairGithub={request:async (route,args)=>{
+    assert.equal(route.includes('/update-branch'),true);
+    assert.equal(args.expected_head_sha,SHA);
+    updateCalls++;
+    return {status:202,data:{message:'Updating pull request branch'}};
+  }};
+  const ok=await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',repo:'books',
+    pr:candidate,all:[candidate],now:NOW,dryRun:false,log:()=>{},limited:async(n,fn)=>fn()});
+  assert.equal(ok,true);
+  assert.equal(updateCalls,1);
+  assert.equal(commentCalls,1);
+});
+test('legacy bootstrap does not modify active, stacked or conflicted PRs',async()=>{
+  const candidate={...pr(1470),state:'open',updated_at:new Date(NOW-6*60*60000).toISOString()};
+  let writes=0;
+  const live={...candidate,mergeable:true,mergeable_state:'behind'};
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async()=>({data:[]})}
+  },paginate:async()=>[]};
+  const repairGithub={request:async()=>{writes++;}};
+  const args={github,repairGithub,owner:'andylitvinov-design',repo:'books',
+    pr:candidate,all:[candidate],now:NOW,dryRun:false,log:()=>{},limited:async(n,fn)=>fn()};
+  assert.equal(await bootstrapLegacyCore({...args,all:[candidate,{number:999,state:'open',base:{ref:candidate.head.ref}}]}),false);
+  assert.equal(await bootstrapLegacyCore({...args,github:{...github,rest:{
+    ...github.rest,pulls:{get:async()=>({data:{...live,mergeable_state:'dirty'}})}
+  }}}),false);
+  assert.equal(hasActiveLease([{body:JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,
+    state:'active',expires_at:new Date(NOW+60000).toISOString()})}],SHA,NOW),true);
+  assert.equal(hasActiveLease([{body:'HH_PR_SWEEP_LEASE_V1 {bad}'}],SHA,NOW),true);
+  assert.equal(writes,0);
+});
+test('legacy bootstrap dry-run never mutates branches or comments',async()=>{
+  const candidate={...pr(1600),updated_at:new Date(NOW-24*60*60000).toISOString()};
+  let writes=0;
+  const github={rest:{
+    pulls:{get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'behind'}})},
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{writes++;}}
+  },paginate:async()=>[]};
+  const repairGithub={request:async()=>{writes++;}};
+  const ok=await bootstrapLegacyCore({github,repairGithub,owner:'andylitvinov-design',repo:'books',
+    pr:candidate,all:[candidate],now:NOW,dryRun:true,log:()=>{},limited:async(n,fn)=>fn()});
+  assert.equal(ok,true);
+  assert.equal(writes,0);
+});
+
+test('scheduled coordinator repairs the missing-Core legacy category at bounded capacity',async()=>{
+  const old={...pr(1801),state:'open',updated_at:new Date(NOW-9*60*60000).toISOString()};
+  let updates=0,comments=0;
+  const github={rest:{
+    pulls:{list:async()=>({data:[old]}),get:async()=>({data:{...old,mergeable:true,mergeable_state:'behind'}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
+    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;}}
+  },paginate:async()=>[],request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:0,workflow_runs:[]}};
+    return {data:{workflow_runs:[]}};
+  }};
+  const repairGithub={request:async()=>{updates++;return {status:202}}};
+  const result=await run({github,repairGithub,hasMergeToken:true,core:core(),context,now:NOW});
+  assert.equal(result.behindProduction,1);
+  assert.equal(result.missingCore,0);
+  assert.equal(result.legacyCoreProbes,1);
+  assert.equal(result.legacyCoreBootstraps,1);
+  assert.equal(updates,1);
+  assert.equal(comments,1);
 });

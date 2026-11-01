@@ -19,6 +19,9 @@ const MAX_CONFLICT_HANDOFFS = 2;
 // Preserve per-repository API quota for event-driven merge / CI workflows.
 const MAX_API_CALLS = 65;
 const MIN_RATE_REMAINING = 100;
+const MAX_LEGACY_PROBES = 3;
+const MAX_LEGACY_BOOTSTRAPS = 1;
+const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 
 function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
@@ -155,7 +158,62 @@ function coreRunForCurrentPR(r,pr) {
       p.head?.ref===pr.head.ref);
 }
 
-async function run({github, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
+function hasActiveLease(comments, headSha, now) {
+  for (const comment of comments) {
+    const body = comment.body || '';
+    if (!body.includes('HH_PR_SWEEP_LEASE_V1')) continue;
+    try {
+      const start = body.indexOf('{'), end = body.indexOf('}', start);
+      if (start < 0 || end < 0) return true; // Unparseable ownership: fail closed.
+      const lease = JSON.parse(body.slice(start,end+1));
+      if (lease.schema !== 'HH_PR_SWEEP_LEASE_V1') return true;
+      if (lease.head_sha === headSha &&
+          ['active','claim','heartbeat'].includes(lease.state || lease.last_action) &&
+          Date.parse(lease.expires_at || '') > now) return true;
+    } catch { return true; }
+  }
+  return false;
+}
+
+async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, now, dryRun, log, limited}) {
+  // Historical PRs opened before HH core was introduced can have zero current
+  // core runs. A safe base update creates a genuine pull_request.synchronize
+  // event (not a synthetic successful check) only for clean, BEHIND branches.
+  if (!repairGithub || !/^[a-f0-9]{40}$/.test(pr.head?.sha || '')) return false;
+  const updatedAt = Date.parse(pr.updated_at || '');
+  if (!Number.isFinite(updatedAt) || now - updatedAt < 4 * 60 * MINUTE) return false;
+  if (all.some(other => other.number !== pr.number && other.state === 'open' && other.base?.ref === pr.head.ref)) return false;
+  const live = (await limited('legacy-live-pr',()=>github.rest.pulls.get({owner, repo, pull_number:pr.number}))).data;
+  if (live.state !== 'open' || live.draft || live.base?.ref !== PROD ||
+      live.head?.sha !== pr.head.sha || live.head.repo?.full_name !== owner+'/'+repo ||
+      live.mergeable !== true || live.mergeable_state !== 'behind') return false;
+  const marker = `<!-- ${LEGACY_MARKER} ${pr.head.sha} -->`;
+  const comments=[];
+  for(let page=1;page<=3;page++) {
+    const {data}=await limited('legacy-ownership',()=>github.rest.issues.listComments({
+      owner,repo,issue_number:pr.number,per_page:100,page}));
+    if(!Array.isArray(data))return false;
+    comments.push(...data);
+    if(data.length<100)break;
+    if(page===3)return false; // Incomplete lease history, fail closed.
+  }
+  if (comments.some(c=>(c.body || '').includes(marker)) ||
+      hasActiveLease(comments,pr.head.sha,now)) return false;
+  if (!dryRun) {
+    // Use the existing dedicated repo-scoped token, not GITHUB_TOKEN. The
+    // latter would suppress downstream pull_request CI events.
+    await limited('legacy-base-update',()=>repairGithub.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch',
+      {owner,repo,pull_number:pr.number,expected_head_sha:pr.head.sha}));
+    try {
+      await limited('legacy-receipt',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,
+        body:`${marker}\nHH watchdog: one source-preserving update from current production was accepted to trigger genuine Core CI on this legacy HEAD. No bypass of required checks; verify the new HEAD and Core CI before merge.`}));
+    } catch (error) { log(`#${pr.number} bootstrap was accepted, but receipt comment failed: ${error.message}`); }
+  }
+  log(`${dryRun?'WOULD_BOOTSTRAP':'BOOTSTRAP_ACCEPTED'} legacy Core PR #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
+  return true;
+}
+
+async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
   const budget={requests:0,remaining:null,exhausted:false,reason:null};
@@ -195,7 +253,8 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
-    activeActions:null,queuedActions:null,checkedAt:new Date(now).toISOString(),
+    activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
+    checkedAt:new Date(now).toISOString(),
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
   let active = Infinity, queued = Infinity;
@@ -248,7 +307,19 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     if (mergeState === 'UNKNOWN') { summary.mergeStateUnknown++; continue; }
     // Behind-base PRs require a deliberate source-preserving base update.
     // Do not create repetitive CI jobs merely to rediscover outdated HEADs.
-    if (mergeState === 'BEHIND') { summary.behindProduction++; continue; }
+    if (mergeState === 'BEHIND') {
+      summary.behindProduction++;
+      if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
+          summary.legacyCoreBootstraps < MAX_LEGACY_BOOTSTRAPS &&
+          summary.legacyCoreProbes < MAX_LEGACY_PROBES) {
+        summary.legacyCoreProbes++;
+        try {
+          if (await bootstrapLegacyCore({github,repairGithub,owner,repo,pr:live,all,now,dryRun,log,limited}))
+            summary.legacyCoreBootstraps++;
+        } catch(error) { log(`#${pr.number} guarded BEHIND update denied: ${error.message}`); }
+      }
+      continue;
+    }
     let checks;
     try {
       // Query the exact release gate only: many specialist checks may exceed
@@ -318,4 +389,4 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,bootstrapLegacyCore,hasActiveLease};
