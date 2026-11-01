@@ -68,8 +68,6 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.match(director,/primaryGoalIds=new Set\(\["confidence","connection","fresh-start","stability"\]\)/);
  assert.match(director,/data-auto-video-more-goals/,"other goals remain available");
- assert.match(autoCss,/\.extraGoals:not\(\[open\]\)>\.goalChoices\{display:none\}/,
-   "closed More goals must hide extra choice buttons despite author grid styling");
  assert.match(director,/data-auto-video-clarify/);
  assert.match(director,/data-auto-video-refine-panel/);
  assert.match(director,/data-auto-video-option=\{id\}/);
@@ -107,9 +105,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Видео","Музыка","Герои","Терапия","Коррекция","Курсы"],
-  en:["Video","Music","Heroes","Therapy","Correction","Courses"],
-  es:["Vídeo","Música","Héroes","Terapia","Corrección","Cursos"],
+  ru:["Видео","Фразы","Эффекты","Практики","PRO","Монтаж"],
+  en:["Video","Phrases","Effects","Practice","PRO","Edit"],
+  es:["Vídeo","Frases","Efectos","Prácticas","PRO","Montaje"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){

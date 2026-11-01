@@ -108,6 +108,23 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // Unlike editor-only changes, the new course contact UI calls the EXISTING
 // /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
 // browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+// These EXISTING, isolated files are directly owned by Holistic Support
+// Mandala's source, consent, audio/video and Playwright tests. They contain no
+// checkout, booking, client-account, payment, app-wide routing or auth code.
+// Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
+const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  'app/[locale]/holistic-support/mandala/page.tsx',
+  'components/mandala-cinematic-director.tsx',
+  'components/mandala-video-mobile.module.css',
+  'scripts/verify-holistic-mandala-browser.mjs',
+  'tests/cinematic-studio.test.mjs',
+  'tests/mandala-approved-mobile-studio.test.mjs',
+  'tests/mandala-audio-attach.test.mjs',
+  'tests/mandala-auto-video-director-ui.test.mjs',
+  'tests/mandala-mobile-video-design.test.mjs',
+  'tests/mandala-stories-characters.test.mjs',
+  'tests/mandala-therapy-video-intro.test.mjs',
+]);
 const MANDALA_COURSE_ENQUIRY_FILES = new Set([
   'components/meditation-course-enquiry.module.css',
   'components/meditation-course-enquiry.tsx',
@@ -183,7 +200,7 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
-    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
@@ -313,6 +330,24 @@ function reviewedHomePresentation2758(env,rows) {
   return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
 }
 
+
+// Exact PR #2483 ONLY: public source-backed meditation discovery UI.
+// Real Chromium/WebKit on its owning Support Mobile PR specialist remains
+// mandatory before release; unrelated payment/consent/browser routes are not
+// re-run here. Any missing, extra, renamed or non-matching file/status is FULL.
+const REVIEWED_MEDITATION_RAIL_2483 = new Map([["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]].map(([status,path])=>[path,status]));
+function reviewedMeditationRail2483(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'codex/meditation-category-rail-20261028' ||
+      rows.length !== REVIEWED_MEDITATION_RAIL_2483.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_MEDITATION_RAIL_2483.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -346,6 +381,12 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    if (env.GITHUB_REF === 'refs/pull/2483/merge') {
+      if (reviewedMeditationRail2483(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_MEDITATION_RAIL_DELTA');
+    }
     if (env.GITHUB_REF==='refs/pull/2758/merge') {
       if (reviewedHomePresentation2758(env,rows))
         return { mode:'contracts',

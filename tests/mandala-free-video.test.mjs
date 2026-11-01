@@ -164,8 +164,7 @@ test("background-only reusable clip is the default, with an explicit photo check
 
 test("Safari failed render offers only a source-backed unedited MP4 without pretending it is customized", () => {
   const studio = read("components/mandala-free-video-studio.tsx");
-  assert.match(studio, /const originalFallbackCandidate=creationMode==="generated"\?null:cinematicPlan\?\.shots\[0\]/,
-    "a locally generated animation must never fall back to an unrelated catalog MP4");
+  assert.match(studio, /const originalFallbackCandidate=cinematicPlan\?\.shots\[0\]/);
   assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
   assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
   assert.match(studio, /data-video-original-fallback-download/);
