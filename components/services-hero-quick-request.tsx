@@ -31,6 +31,9 @@ const copy = {
     contactDirect: "Contact Andrey on Telegram",
     modeOnline: "Preferred format: online.",
     modeToronto: "Preferred format: Toronto, in person.",
+    stepRequest: "1 · Enquiry saved",
+    stepReply: "2 · Personal reply pending",
+    stepTime: "3 · Time confirmed separately",
   },
   ru: {
     eyebrow: "БЫСТРАЯ ЗАЯВКА НА СЕССИЮ",
@@ -53,6 +56,9 @@ const copy = {
     contactDirect: "Написать Андрею в Telegram",
     modeOnline: "Предпочтительный формат: онлайн.",
     modeToronto: "Предпочтительный формат: лично в Торонто.",
+    stepRequest: "1 · Заявка сохранена",
+    stepReply: "2 · Ожидается личный ответ",
+    stepTime: "3 · Время согласуется отдельно",
   },
   es: {
     eyebrow: "SOLICITUD RÁPIDA",
@@ -75,6 +81,9 @@ const copy = {
     contactDirect: "Contactar por Telegram",
     modeOnline: "Modalidad preferida: en línea.",
     modeToronto: "Modalidad preferida: Toronto presencial.",
+    stepRequest: "1 · Solicitud guardada",
+    stepReply: "2 · Respuesta personal pendiente",
+    stepTime: "3 · Horario por confirmar",
   },
 } as const;
 
@@ -90,8 +99,9 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** Same public enquiry + encrypted CRM transaction used by existing course/service registration. */
 export function ServicesHeroQuickRequest({
-  locale, service, mode, onClose,
-}: { locale: PublicLocale; service: string; mode: MeetingMode; onClose: () => void }) {
+  locale, service, mode, onClose, bookingSku, fromStableChoice = false,
+}: { locale: PublicLocale; service: string; mode: MeetingMode; onClose: () => void;
+  bookingSku?: "express-consultation-30" | "personal-session-60"; fromStableChoice?: boolean }) {
   const t = copy[locale];
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -104,7 +114,8 @@ export function ServicesHeroQuickRequest({
 
   useEffect(() => {
     panelRef.current?.focus({ preventScroll: true });
-  }, []);
+    if (fromStableChoice) panelRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  }, [fromStableChoice]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,6 +134,7 @@ export function ServicesHeroQuickRequest({
         body: JSON.stringify({
           operationId: operationId.current,
           serviceTitle: service,
+          ...(bookingSku ? { bookingSku } : {}),
           description: mode === "toronto" ? t.modeToronto : t.modeOnline,
           sourcePath: "/" + locale + "/services",
           locale,
@@ -159,6 +171,11 @@ export function ServicesHeroQuickRequest({
           <CheckCircle2 size={27} aria-hidden="true" />
           <h2>{t.success}</h2>
           <p>{t.successNote}</p>
+          <ol className={styles.requestSteps} aria-label={t.success}>
+            <li>{t.stepRequest}</li>
+            <li>{t.stepReply}</li>
+            <li>{t.stepTime}</li>
+          </ol>
           <small>{t.reference}: <strong>{reference}</strong></small>
           <button type="button" className={styles.requestBack} onClick={onClose}>{t.back}<ArrowRight size={16} aria-hidden="true" /></button>
         </div>
