@@ -754,7 +754,7 @@ test('only complete PR #2483 public meditation rail diff delegates to real Chrom
     exact.filter(([,path])=>path!=='components/holistic-support-mobile.tsx'),
     exact.filter(([,path])=>path!=='components/holistic-support-goal-filter.tsx'),
     exact.filter(([,path])=>path!=='tests/holistic-support-goal-filter.test.mjs'),
-    exact.map(([status,path],i)=>i===6?['M',path]:[status,path]),
+    exact.map(([status,path])=>path==='tests/holistic-meditation-mobile-categories.test.mjs'?['M',path]:[status,path]),
     exact.map(([status,path],i)=>i===1?['D',path]:[status,path]),
     [...exact,exact[0]],
   ]) assert.equal(plan(altered).mode,'full','unknown/auth/payments/missing/duplicate still run full browsers');
