@@ -12,7 +12,9 @@ export type LocalSceneId =
   | "light-path" | "open-door" | "guiding-stars" | "meaning-tree"
   | "solar-surge" | "ocean-pulse" | "sunbeam-flow" | "river-power" | "desert-light" | "mountain-air"
   | "wildflower-dance" | "fern-awakening" | "coastal-freedom" | "lone-tree" | "meadow-morning"
-  | "calm-sea" | "morning-dew" | "mossy-stream" | "gentle-falls" | "sea-breeze" | (string & {});
+  | "calm-sea" | "morning-dew" | "mossy-stream" | "gentle-falls" | "sea-breeze"
+  | "food-fruit-bowl" | "food-vegetable-prep" | "food-soup-bowl" | "food-bread-table"
+  | (string & {});
 export type VideoLocale = "en" | "ru" | "es";
 
 type LocalScene = {
@@ -129,10 +131,165 @@ function composePortrait(c:CanvasRenderingContext2D,image:HTMLImageElement|null,
   c.beginPath();c.roundRect(x,y,fw,fh,fw*.07);c.stroke();
   radiance(c,w*.5,h*.17,w*.46,"255,234,184",.18+.03*Math.sin(t));
 }
+
+/**
+ * Original on-device animated food illustrations for short free videos.
+ * These are NOT stock MP4s or photorealistic generated food footage.
+ * Pure Canvas: no remote images, licenses, cookies, API calls or uploads.
+ * The same painter is used by the actual preview and MediaRecorder export.
+ */
+export const FOOD_CANVAS_SCENES = Object.freeze([
+  "food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table",
+]);
+function paintFoodVideoFrame(
+  c:CanvasRenderingContext2D,image:HTMLImageElement|null,
+  scene:LocalSceneId,time:number,title:string,
+):void {
+  const w=c.canvas.width,h=c.canvas.height,t=Math.max(0,time);
+  const themeColors:Record<string,readonly [string,string]> = {
+    "food-fruit-bowl":["#693e36","#d9a26a"],
+    "food-vegetable-prep":["#2c5545","#c7c680"],
+    "food-soup-bowl":["#624238","#deb27f"],
+    "food-bread-table":["#684538","#d7af75"],
+  };
+  const colors=themeColors[scene]||themeColors["food-fruit-bowl"];
+  c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
+  const back=c.createLinearGradient(0,0,w,h);
+  back.addColorStop(0,colors[0]);back.addColorStop(.7,colors[1]);back.addColorStop(1,"#fff1d4");
+  c.fillStyle=back;c.fillRect(0,0,w,h);
+  const sun=c.createRadialGradient(w*.72,h*.16,3,w*.72,h*.16,Math.max(w,h)*.85);
+  sun.addColorStop(0,"rgba(255,250,227,.51)");sun.addColorStop(1,"rgba(255,250,227,0)");
+  c.fillStyle=sun;c.fillRect(0,0,w,h);
+  c.fillStyle="rgba(59,40,25,.17)";c.fillRect(0,h*.76,w,h*.24);
+  c.save();c.translate(w/2,h*.51);
+  const k=Math.min(w/1000,h/730);c.scale(k,k);
+  const oval=(x:number,y:number,rx:number,ry:number,color:string,r=0)=>{
+    c.beginPath();c.ellipse(x,y,rx,ry,r,0,TAU);c.fillStyle=color;c.fill();
+  };
+  const stem=(x:number,y:number,angle=0)=>{
+    c.save();c.translate(x,y);c.rotate(angle);
+    c.strokeStyle="#46633a";c.lineWidth=8;c.lineCap="round";
+    c.beginPath();c.moveTo(0,7);c.quadraticCurveTo(8,-26,3,-38);c.stroke();
+    c.beginPath();c.ellipse(24,-25,32,12,-.45,0,TAU);
+    c.fillStyle="#86a957";c.fill();c.restore();
+  };
+  const plate=()=>{
+    oval(7,143,395,158,"rgba(52,25,16,.27)");
+    oval(0,110,387,156,"#ece7d7");
+    oval(0,96,336,124,"#fff8e7");
+    c.strokeStyle="rgba(195,161,115,.62)";c.lineWidth=9;
+    c.beginPath();c.ellipse(0,96,334,125,0,0,TAU);c.stroke();
+  };
+  // All displacements are continuous: no flashes or abrupt camera cuts.
+  const float=Math.sin(t*.72)*4;
+  if(scene==="food-fruit-bowl"){
+    plate();
+    oval(-122,-23+float,103,104,"#cb3e37",-.15);
+    oval(-150,-55+float,40,29,"rgba(255,179,121,.33)");
+    stem(-120,-113+float,.12);
+    oval(37,-49-float,107,108,"#f3a631",.12);
+    oval(5,-82-float,37,25,"rgba(255,231,170,.39)");
+    stem(35,-143-float,-.25);
+    oval(170,-6+float*.6,94,99,"#8cb24e",.19);
+    oval(141,-37+float*.6,36,27,"rgba(226,250,147,.34)");
+    stem(179,-97+float*.6,.37);
+    for(let i=0;i<11;i++){
+      const angle=i*2.4;
+      const x=-16+Math.cos(angle)*(45+i%3*13);
+      const y=68+Math.sin(angle)*(38+i%2*10);
+      oval(x,y,18,18,i%2?"#5d3d8d":"#794e9a");
+    }
+    c.fillStyle="#fff7eb";c.globalAlpha=.34;
+    oval(-116,28,66,13,"#fff3d8");c.globalAlpha=1;
+  }else if(scene==="food-vegetable-prep"){
+    c.fillStyle="rgba(63,38,22,.26)";c.beginPath();c.roundRect(-372,-131,760,428,35);c.fill();
+    c.fillStyle="#c58c58";c.beginPath();c.roundRect(-380,-144,760,418,34);c.fill();
+    c.strokeStyle="rgba(255,225,174,.49)";c.lineWidth=8;c.stroke();
+    for(let i=0;i<10;i++){
+      const a=i*TAU/10+t*.014;
+      oval(-160+Math.cos(a)*68,-14+Math.sin(a)*85,47,83,"#498d4f",a);
+      oval(-160+Math.cos(a)*43,-14+Math.sin(a)*58,31,64,"#7cb86b",a);
+    }
+    for(const [x,y] of [[80,-54],[225,72],[-2,103]]){
+      oval(x,y,75,69,"#c94837");
+      oval(x-22,y-18,25,18,"rgba(255,174,117,.35)");
+      stem(x,y-60,-.21);
+    }
+    c.save();c.translate(190,-101);c.rotate(.42);
+    c.fillStyle="#ed8429";c.beginPath();c.moveTo(-57,-48);
+    c.quadraticCurveTo(70,-67,75,5);c.lineTo(-61,39);c.closePath();c.fill();
+    for(let i=0;i<3;i++){c.strokeStyle="rgba(255,220,141,.53)";c.lineWidth=5;
+      c.beginPath();c.moveTo(-28,-35+i*23);c.lineTo(46,-29+i*9);c.stroke();}
+    c.restore();
+  }else if(scene==="food-soup-bowl"){
+    plate();
+    oval(0,52,284,127,"#e8e2d6");
+    oval(0,44,261,103,"#c77827");
+    oval(0,36,237,91,"#efaf45");
+    for(let i=0;i<10;i++){
+      const a=i*2.38+t*.08,x=Math.cos(a)*(40+i%4*40),y=34+Math.sin(a)*(26+i%3*19);
+      oval(x,y,10+i%3*4,8+i%2*3,i%2?"#517c43":"#f5cc75",a);
+    }
+    // Steam is a slow, visible animated element (not a static picture).
+    c.lineWidth=7;c.lineCap="round";
+    for(let i=0;i<4;i++){
+      const x=-155+i*98;
+      c.strokeStyle="rgba(255,250,227,"+(0.38+Math.sin(t*.5+i)*.1)+")";
+      c.beginPath();c.moveTo(x,-115);
+      c.bezierCurveTo(x+19+Math.sin(t*.45+i)*14,-155,x-24,-214,x+7+Math.sin(t*.52+i)*12,-257);
+      c.stroke();
+    }
+    c.save();c.translate(276,128);c.rotate(-.36);
+    oval(0,0,75,30,"#cbd1cd");c.fillStyle="#a8b4b2";c.fillRect(56,-7,205,13);
+    c.restore();
+  }else if(scene==="food-bread-table"){
+    c.fillStyle="rgba(53,28,11,.26)";c.beginPath();c.roundRect(-360,-133,730,400,34);c.fill();
+    c.fillStyle="#ad764c";c.beginPath();c.roundRect(-366,-145,730,396,34);c.fill();
+    c.strokeStyle="rgba(250,206,151,.57)";c.lineWidth=8;c.stroke();
+    oval(-118,-6+float,198,113,"#9d542a",-.16);
+    oval(-129,-19+float,184,103,"#d49a52",-.16);
+    oval(198,68-float,120,95,"#a96933",.22);
+    oval(190,58-float,108,83,"#e4b36d",.22);
+    for(let i=0;i<4;i++){
+      c.strokeStyle="rgba(255,236,187,.86)";c.lineWidth=11;c.lineCap="round";
+      c.beginPath();c.moveTo(-260+i*58,-50+i*3);c.lineTo(-229+i*58,24+i*3);c.stroke();
+    }
+    for(let i=0;i<3;i++){c.strokeStyle="rgba(251,228,178,.73)";c.lineWidth=7;
+      c.beginPath();c.moveTo(132+i*46,35);c.lineTo(151+i*45,91);c.stroke();}
+    oval(48,171,73,37,"#f5e6bf");
+    oval(48,162,60,29,"#f3cb67");
+    stem(46,143,1.2);
+  }
+  c.restore();
+  // Explicitly chosen visitor photos remain local and are drawn only if supplied.
+  if(image?.complete&&image.naturalWidth>0&&image.naturalHeight>0){
+    const diameter=Math.max(72,Math.min(w,h)*.17);
+    const x=w-diameter-16,y=18;
+    c.save();c.beginPath();c.roundRect(x,y,diameter,diameter,diameter*.18);c.clip();
+    const crop=Math.min(image.naturalWidth,image.naturalHeight);
+    c.drawImage(image,(image.naturalWidth-crop)/2,(image.naturalHeight-crop)/2,
+      crop,crop,x,y,diameter,diameter);c.restore();
+  }
+  const footer=c.createLinearGradient(0,h*.85,0,h);
+  footer.addColorStop(0,"rgba(32,25,21,0)");
+  footer.addColorStop(1,"rgba(28,23,20,.62)");
+  c.fillStyle=footer;c.fillRect(0,h*.85,w,h*.15);
+  c.textAlign="center";c.textBaseline="middle";
+  if(title.trim()){
+    c.font="600 "+Math.max(13,Math.min(29,w*.043))+"px Georgia,serif";
+    c.fillStyle="#fffaf0";c.fillText(title.slice(0,72),w*.5,h*.89,w*.88);
+  }
+  c.font="600 "+Math.max(10,w*.017)+"px Arial,sans-serif";
+  c.fillStyle="rgba(255,244,222,.9)";
+  c.fillText("H O L I S T I C   H O U S E",w*.5,h*.965,w*.88);
+  c.restore();
+}
+
 export function paintThemedVideoFrame(
   c:CanvasRenderingContext2D,image:HTMLImageElement|null,
   theme:OtherTheme,scene:LocalSceneId,time:number,title:string,
 ) {
+  if(FOOD_CANVAS_SCENES.includes(scene)){paintFoodVideoFrame(c,image,scene,time,title);return;}
   const w=c.canvas.width,h=c.canvas.height,t=Math.max(0,time);
   const [dark,mid,,ink]=PALETTE[theme];
   c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);

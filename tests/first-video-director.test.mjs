@@ -229,24 +229,27 @@ test("unavailable Gemini 3.5 Lite model falls back ONLY to confirmed free-tier G
 });
 
 
-test("Food/Еда/Comida creates honest harvest storyboard instead of silently treating food as generic energy",()=>{
+test("Food/Еда/Comida composes original animated FOOD scenes rather than random meadows",()=>{
   const options={durationSeconds:20,theme:"auto",style:"warm",aspect:"landscape"};
   const ru=buildFirstVideoDraft({locale:"ru",wish:"Еда",...options});
   assert.equal(ru.theme,"life");
-  assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
+  assert.equal(ru.plan.shots[0].sceneId,"food-fruit-bowl");
+  assert.deepEqual(ru.plan.shots.map(s=>s.sceneId),[
+    "food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table",
+  ]);
   assert.equal(ru.descriptionLimited,true);
   assert.match(ru.prompt,/Тема «Еда»/);
-  assert.match(ru.prompt,/поле урожая/);
-  assert.match(ru.limitationNote,/нет кадров блюд/);
+  assert.match(ru.prompt,/фруктами, овощами, супом и хлебом/);
+  assert.match(ru.limitationNote,/рисованные движущиеся иллюстрации/);
   assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
   const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
-  assert.equal(variant.plan.shots[0].sceneId,"golden-harvest");
+  assert.equal(variant.plan.shots[0].sceneId,"food-fruit-bowl");
   assert.notEqual(ru.prompt,variant.prompt,"real scene variants must change");
   const manual=buildFirstVideoDraft({locale:"ru",wish:"Еда",promptOverride:"Горы и звёзды",...options});
-  assert.equal(manual.plan.shots[0].sceneId,"golden-harvest","AI text cannot override the user's food intent");
+  assert.equal(manual.plan.shots[0].sceneId,"food-fruit-bowl","AI text cannot override the user's food intent");
   for (const [locale,wish] of [["en","Food"],["es","Comida"]]){
     const result=buildFirstVideoDraft({locale,wish,...options});
-    assert.equal(result.plan.shots[0].sceneId,"golden-harvest");
+    assert.equal(result.plan.shots[0].sceneId,"food-fruit-bowl");
     assert.equal(result.descriptionLimited,true);
     assert.ok(result.limitationNote.length>60);
   }
@@ -767,4 +770,27 @@ test("free OpenRouter rejects image, tool, and malformed parts and uses independ
     assert.deepEqual(out.diagnostics.map(x=>x.reason),["invalid_text"]);
     assert.ok(!JSON.stringify(out).includes("test-only-router-credential"));
   }
+});
+
+test("Food storyboard is local-only, uses drawn frames and valid shot IDs in portrait and 60s formats",()=>{
+  const painter=readFileSync(new URL("../lib/mandala/holistic-video-themes.ts",import.meta.url),"utf8");
+  const helper=readFileSync(new URL("../lib/mandala/cinematic-director.mjs",import.meta.url),"utf8");
+  for(const scene of ["food-fruit-bowl","food-vegetable-prep","food-soup-bowl","food-bread-table"]){
+    assert.ok(painter.includes('"'+scene+'"'));
+    assert.ok(helper.includes("'"+scene+"'"),"registered allowlisted scene "+scene);
+  }
+  assert.match(painter,/if\(FOOD_CANVAS_SCENES\.includes\(scene\)\)/);
+  assert.match(painter,/paintFoodVideoFrame\(c,image,scene,time,title\)/);
+  assert.match(painter,/Math\.sin\(t\*\.72\)/,"food frames visibly animate");
+  const v=buildFirstVideoDraft({locale:"en",wish:"Food",durationSeconds:60,aspect:"portrait",style:"dream",variant:2});
+  assert.equal(v.plan.shotCount,6);
+  assert.equal(v.plan.aspect,"portrait");
+  assert.equal(v.plan.shots.reduce((sum,shot)=>sum+shot.durationSeconds,0),60);
+  assert.equal(v.plan.shots[0].sceneId,"food-fruit-bowl");
+  assert.ok(v.plan.shots.every(shot=>v.plan.sceneChoices.some(choice=>choice.sceneId===shot.sceneId)));
+  assert.equal(v.mediaSource,"local_canvas");
+  assert.equal(v.aiMediaGenerated,false);
+  assert.equal(v.plan.paidRenderApproved,false);
+  assert.match(v.limitationNote,/moving drawn food illustrations/);
+  assert.ok(v.plan.shots.slice(0,4).every(shot=>shot.providerPrompt.includes("NOT a filmed dish")));
 });
