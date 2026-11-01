@@ -78,7 +78,21 @@ async function send(chat,text){
   const input=chat.locator('form textarea');
   assert.equal(await input.count(),1,'SINGLE_CHAT_COMPOSER_REQUIRED');
   await input.fill(text);
-  await chat.locator('form button[type=submit]').click();
+  // A disabled React-controlled submit must never be mistaken for a success.
+  // Diagnose readiness explicitly; do not retry/rewrite the user's answer.
+  try {
+    await chat.locator('form button[type=submit]').click({timeout:15000});
+  } catch(error) {
+    const readiness=await chat.evaluate(root=>({
+      step:root.getAttribute('data-chat-step'),
+      hydrated:root.getAttribute('data-chat-hydrated'),
+      characters:root.querySelector('form textarea')?.value?.length||0,
+      disabled:root.querySelector('form button[type=submit]')?.disabled??true,
+      documentReady:document.readyState,
+    }));
+    throw Error('VIDEO_CHAT_SEND_NOT_READY:'+JSON.stringify(readiness)+':'+
+      String(error?.message||error).slice(0,100));
+  }
 }
 async function downloadBytes(download){
   const chunks=[];
@@ -112,6 +126,29 @@ try{
     assert.equal(response?.status(),200,'LIVE_CHAT_PAGE_NOT_200_'+locale);
     const chat=page.locator('[data-video-director-chat]');
     await chat.waitFor({state:'visible',timeout:60000});
+    // A visible server-rendered chat is NOT proof that React has hydrated.
+    // After the product hydration marker ships, require it explicitly; for
+    // the currently deployed older page, require DOM load completion first.
+    await page.waitForFunction(()=>{
+      const root=document.querySelector('[data-video-director-chat]');
+      const hydration=root?.getAttribute('data-chat-hydrated');
+      return hydration==='true'||(hydration===null&&document.readyState==='complete');
+    },undefined,{timeout:30000});
+    if(await chat.getAttribute('data-chat-hydrated')===null){
+      // Backwards-compatible check while testing an older deployed release.
+      // Its SSR shell has no explicit hydration marker: only proceed after
+      // a controlled input response enables Submit, without sending a message.
+      const textarea=chat.locator('form textarea');
+      const button=chat.locator('form button[type=submit]');
+      let interactive=false;
+      for(let attempt=0;attempt<18;attempt++){
+        await textarea.fill('Video');
+        if(await button.isEnabled()){interactive=true;break;}
+        await page.waitForTimeout(400);
+      }
+      assert.ok(interactive,'LEGACY_CHAT_INTERACTION_NOT_HYDRATED');
+      await textarea.fill('');
+    }
     await state(page,'goal');
     assert.equal(await chat.locator('form textarea').count(),1,'CHAT_COMPOSER_DUPLICATED');
     assert.equal(await chat.locator('input[type=checkbox]').isChecked(),false,

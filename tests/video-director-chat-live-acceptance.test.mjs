@@ -42,3 +42,13 @@ test('cost-bounded existing LIVE video workflow runs the new smoke on real publi
  assert.match(workflow,/scripts\/benchmarking\/first-video-live-export\.mjs/);
  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
+
+test('chat hydration readiness is explicit and preserves early mobile input',()=>{
+ const src=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
+ assert.match(src,/data-chat-hydrated=\{clientHydrated\?"true":"false"\}/);
+ assert.match(src,/composerRef\.current\?\.value/);
+ assert.match(src,/setInput\(value=>value\|\|preHydrationText\.slice\(0,800\)\)/);
+ assert.match(qa,/LEGACY_CHAT_INTERACTION_NOT_HYDRATED/);
+ assert.match(qa,/VIDEO_CHAT_SEND_NOT_READY/);
+ assert.match(qa,/hydration==='true'/);
+});
