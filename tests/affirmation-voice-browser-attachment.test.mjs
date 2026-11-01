@@ -50,3 +50,15 @@ test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/
   assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.doesNotMatch(workflow,/voice-webkit-macos:[\s\S]*continue-on-error:\s*true/);
 });
+
+test("stalled WebKit recorder diagnostics cannot conceal a real export failure",()=>{
+  assert.match(source,/phase\(engine,"waiting-for-export"\)/);
+  assert.match(source,/phase\(engine,"download-control-timed-out"\)/);
+  assert.match(source,/withDeadline\(page\.evaluate\(/);
+  assert.match(source,/4000,engine\+" media-state evaluation"/);
+  assert.match(source,/withDeadline\(context\.close\(\),10000/);
+  assert.match(source,/withDeadline\(browser\.close\(\),10000/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/tracks\.includes\("audio"\)/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});

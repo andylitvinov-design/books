@@ -25,6 +25,16 @@ assert.ok(["both","webkit","chromium"].includes(requestedEngine),"unknown test b
 // Actual encoded 10-second voice video should not run indefinitely.
 let lastPhase="not-started";
 const phase=(engine,stage)=>{lastPhase=engine+":"+stage;console.log("VOICE_E2E_PHASE "+lastPhase);};
+// A frozen WebKit renderer can make page.evaluate or browser.close wait forever.
+// Playwright's default action timeout does NOT cover page.evaluate. Keep the
+// real-media acceptance red, but surface the original recorder failure promptly.
+const withDeadline=(work,ms,label)=>new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>reject(new Error(label+" timed out after "+ms+"ms")),ms);
+  Promise.resolve(work).then(
+    value=>{clearTimeout(timer);resolve(value);},
+    error=>{clearTimeout(timer);reject(error);}
+  );
+});
 const watchdog=setTimeout(()=>{
   console.error("VOICE_E2E_WATCHDOG_TIMEOUT engine="+requestedEngine+" elapsed_seconds=360 last_phase="+lastPhase);
   process.exit(1);
@@ -134,10 +144,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await generate.click();
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        phase(engine,"waiting-for-export");
         try {
           await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
-          const uiState=await page.evaluate(()=>{
+          phase(engine,"download-control-timed-out");
+          let uiState;
+          try {
+            uiState=await withDeadline(page.evaluate(()=>{
             const video=document.querySelector("[data-mandala-master-mp4]");
             const create=document.querySelector("[data-video-quick-generate]");
             const result=document.querySelector("[data-video-result]");
@@ -151,7 +165,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
               notices:[...document.querySelectorAll('[role="status"],[role="alert"]')].map(x=>x.textContent?.trim()).filter(Boolean).slice(0,8),
             };
-          });
+          }),4000,engine+" media-state evaluation");
+          } catch (diagnosticError) {
+            uiState={diagnosticsUnavailable:diagnosticError instanceof Error
+              ? diagnosticError.message:"WebKit renderer did not respond"};
+          }
+          phase(engine,"recording-error-reported");
           throw new Error(engine+" recorded video never became downloadable: "+JSON.stringify(uiState),{cause:error});
         }
         phase(engine,"download-control-ready");
@@ -209,7 +228,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
       phase(engine,"all-assertions-passed");
       process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
-    }finally{phase(engine,"closing-context");await context.close();}
-  }finally{phase(engine,"closing-browser");await browser.close();phase(engine,"closed");}
+    }finally{phase(engine,"closing-context");await withDeadline(context.close(),10000,engine+" context.close");}
+  }finally{phase(engine,"closing-browser");await withDeadline(browser.close(),10000,engine+" browser.close");phase(engine,"closed");}
 }
 clearTimeout(watchdog);
