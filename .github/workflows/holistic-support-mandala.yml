@@ -193,7 +193,9 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
           # Fail fast on the new API-voice + iPhone audio path before the existing 10-view matrix.
-          node scripts/verify-affirmation-voice-browser.mjs
+          # Linux Chromium supports the local recorder; WebKit runs in a
+          # separate macOS job with real Safari-platform media codecs.
+          HH_VOICE_E2E_ENGINE=chromium node scripts/verify-affirmation-voice-browser.mjs
           node scripts/verify-hypno-wave-browser.mjs
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
@@ -219,3 +221,50 @@ jobs:
           path: artifacts/hypno-compact/*.png
           if-no-files-found: ignore
           retention-days: 3
+
+  # Linux Playwright WebKit does not implement Canvas captureStream in this
+  # runner image. Prove the *actual encoded* voice/video via WebKit on macOS,
+  # the closest supported CI platform to iPhone Safari. Never mock a download.
+  voice-webkit-macos:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-')) }}
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+      HH_VOICE_E2E_ENGINE: webkit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and build exact voice release candidate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Install WebKit and real media decoders
+        run: |
+          mkdir -p "$RUNNER_TEMP/voice-playwright"
+          npm install --prefix "$RUNNER_TEMP/voice-playwright" --no-audit --no-fund @playwright/test@1.63.0
+          ln -s "$RUNNER_TEMP/voice-playwright/node_modules/@playwright" node_modules/@playwright
+          "$RUNNER_TEMP/voice-playwright/node_modules/.bin/playwright" install webkit
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            brew install ffmpeg
+          fi
+      - name: WebKit recorded movie contains video and audible consented voice
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-voice-macos-next.log 2>&1 & NEXT_PID=$!
+          trap 'kill "$NEXT_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3100/ru/holistic-support/mandala >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
+          node scripts/verify-affirmation-voice-browser.mjs
