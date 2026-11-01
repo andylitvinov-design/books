@@ -24,7 +24,7 @@ export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;s
   sceneChoices:readonly {sceneId:string;theme:VideoTheme;visualCue:string}[]};
 type Field="theme"|"difficulty"|"goal"|"profile"|"style"|"avoid";
 type StyleId=keyof typeof CINEMATIC_STYLES;
-const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
+const QUESTION_GROUPS=["principal","personalization","advanced","pro","extra"] as const;
 type QuestionGroup=typeof QUESTION_GROUPS[number];
 type StudioQuestion={id:string;scope:string;labels:Record<PublicLocale,string>;
   tier:"free"|"mixed"|"premium";freeOptionIds:readonly string[];
@@ -46,7 +46,7 @@ const copy={
     newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
     supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
     localMatchUnknown:"The free montage uses existing scenes. We cannot verify that they depict your description; review each scene before exporting.",
-    understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",categories:{personalization:"Personalization",principal:"Principal",advanced:"Advanced",pro:"Pro Cinematic",extra:"Extra"},refine:"Refine this plan",noQuestions:"No additional questions are needed here.",selectShot:"Choose a scene card to direct this shot.",ownAnswer:"Your answer",
+    understood:"Recognized visual elements",needsMore:"Add a subject or action above to make your story clearer.",categories:{personalization:"Personalization",principal:"Video parameters",advanced:"Advanced",pro:"Pro Cinematic",extra:"Extra"},refine:"Refine this plan",noQuestions:"No additional questions are needed here.",selectShot:"Choose a scene card to direct this shot.",ownAnswer:"Your answer",
     theme:"Topic",difficulty:"Main challenge",goal:"Desired change",profile:"My profile",style:"Visual style",avoid:"Avoid these images",
     profileEmpty:"Not connected",profileReady:"Verified test suggestions available",
     profileConsent:"I allow the site to read my saved test results in this browser to suggest a video theme. The results are not shared with video AI services, analytics or CRM.",
@@ -82,7 +82,7 @@ const copy={
     newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
     supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
     localMatchUnknown:"Бесплатный монтаж использует готовые сцены. Их соответствие вашему описанию не проверено — просмотрите каждую сцену перед экспортом.",
-    understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",categories:{personalization:"Персонализация",principal:"Основное",advanced:"Расширенное",pro:"Про-режиссура",extra:"Дополнительно"},refine:"Уточнить этот план",noQuestions:"В этом разделе дополнительных вопросов не нужно.",selectShot:"Выберите карточку сцены для покадровой режиссуры.",ownAnswer:"Свой ответ",
+    understood:"Распознано в описании",needsMore:"Уточните персонажа или действие выше — тогда сюжет станет понятнее.",categories:{personalization:"Персонализация",principal:"Параметры видео",advanced:"Расширенное",pro:"Про-режиссура",extra:"Дополнительно"},refine:"Уточнить этот план",noQuestions:"В этом разделе дополнительных вопросов не нужно.",selectShot:"Выберите карточку сцены для покадровой режиссуры.",ownAnswer:"Свой ответ",
     theme:"Тема",difficulty:"Главная сложность",goal:"Желаемое изменение",profile:"Мой профиль",style:"Визуальный стиль",avoid:"Нежелательные образы",
     profileEmpty:"Не подключён",profileReady:"Есть рекомендации по проверенным тестам",
     profileConsent:"Я разрешаю прочитать мои сохранённые тесты в браузере для подбора темы видео. Результаты не передаются AI-видеосервисам, аналитике или CRM.",
@@ -118,7 +118,7 @@ const copy={
     newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
     supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
     localMatchUnknown:"El montaje gratuito usa escenas existentes. No se ha comprobado que coincidan con tu descripción; revisa cada escena antes de exportar.",
-    understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",categories:{personalization:"Personalización",principal:"Principal",advanced:"Avanzado",pro:"Pro cinematográfico",extra:"Extra"},refine:"Mejorar este plan",noQuestions:"No se necesitan más preguntas aquí.",selectShot:"Elige una tarjeta de escena para dirigir este plano.",ownAnswer:"Tu respuesta",
+    understood:"Elementos visuales reconocidos",needsMore:"Aclara el personaje o la acción para mejorar el guion.",categories:{personalization:"Personalización",principal:"Parámetros de vídeo",advanced:"Avanzado",pro:"Pro cinematográfico",extra:"Extra"},refine:"Mejorar este plan",noQuestions:"No se necesitan más preguntas aquí.",selectShot:"Elige una tarjeta de escena para dirigir este plano.",ownAnswer:"Tu respuesta",
     theme:"Tema",difficulty:"Dificultad principal",goal:"Cambio deseado",profile:"Mi perfil",style:"Estilo visual",avoid:"Evitar estas imágenes",
     profileEmpty:"Sin conectar",profileReady:"Hay sugerencias de tests verificados",
     profileConsent:"Autorizo consultar mis tests guardados en este navegador para sugerir temas del vídeo. Los resultados no se envían a IA de vídeo, analítica ni CRM.",
