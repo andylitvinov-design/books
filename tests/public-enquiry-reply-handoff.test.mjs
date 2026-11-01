@@ -43,7 +43,7 @@ test('website leads keep private relay contact isolated and use explicit externa
  assert.match(store,/contact: relayContactView\(/)
  assert.match(store,/replyContact: publicEnquiryReplyContact\(manuallyRecorded\)/)
  assert.match(inbox,/requestKind!=='public'/)
- assert.match(inbox,/<PublicEnquiryReply key=\{selected\.id\}/)
+ assert.match(inbox,/selected\.item\.requestKind==='public'&&<PublicEnquiryReply key=\{selected\.id\}/)
  assert.match(inbox,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}/)
  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
  assert.match(reply,/publicEnquiryReplyHandoffs\(/)

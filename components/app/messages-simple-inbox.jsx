@@ -367,7 +367,7 @@ export default function MessagesSimpleInbox({
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
             <>
-              <PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}/>
+              {selected.item.requestKind==='public'&&<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}/> }
               <div className={styles.requestActions}>
                 <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
                   {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
