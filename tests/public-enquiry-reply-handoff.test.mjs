@@ -68,3 +68,32 @@ test('shared master request JSON, contact card and composer expose NO visitor co
  assert.match(card,/item\.item\.sourcePath/)
  assert.doesNotMatch(full,/replyContact/)
 })
+
+
+test('operator-only CRM contact lookup rejects non-operators and other owner accounts',()=>{
+ const owner=read('app/api/app/crm/contact/route.js')
+ assert.match(owner,/await auth\\.verified\\(\\)/)
+ assert.match(owner,/requireSameOrigin\\(request,config\\)/)
+ assert.match(owner,/request\\.headers\\.get\\('x-hh-account-id'\\)!==actor\\.id/)
+ assert.match(owner,/if\\(!practitionerEmailAllowed\\(actor\\)\\)/)
+ assert.match(owner,/createCrmRepository\\(config\\)\\.withOwner\\(actor,/)
+ assert.match(owner,/store=>store\\.getContactById\\(input\\.contactId\\)/)
+ assert.match(owner,/PRIVATE_HEADERS/)
+ const shared=read('app/api/app/messages/requests/route.js')
+ assert.doesNotMatch(shared,/replyContact|contact_ciphertext|crm_contacts/)
+ const card=read('components/app/messages-contact-card.jsx')
+ assert.match(card,/const email=publicRequest\\?'':field\\(contact,'email'\\)/)
+ assert.match(card,/const phone=publicRequest\\?'':field\\(contact,'phone'\\)/)
+})
+test('guest consent never converts shared relay data into a personal contact directory',async()=>{
+ const {relayContactView,redactRelayContacts}=await import('../lib/practitioners/relay-privacy.mjs')
+ const contact={displayName:'Public QA Visitor',email:'visitor@example.test',
+   phone:'+14165550123',telegram:'@visitorhandle',submittedByVisitor:true,
+   replyConsent:'website_reply_only_v1'}
+ const alias=relayContactView(contact)
+ assert.deepEqual(alias,{displayName:'Public QA Visitor'})
+ for(const secret of [contact.email,contact.phone,contact.telegram]){
+   assert.ok(!JSON.stringify(alias).includes(secret))
+   assert.ok(!redactRelayContacts('Message '+secret).includes(secret))
+ }
+})
