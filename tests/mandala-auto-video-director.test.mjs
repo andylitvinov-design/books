@@ -91,3 +91,6 @@ test("curated goal respects explicit forbidden imagery and user correction",()=>
   assert.equal(unknown.goalId,null);
   assert.equal(unknown.theme,"goals");
 });
+
+// Keep the new taxonomy contract in Mandala's existing source-test CI suite.
+import "./mandala-video-goal-taxonomy.test.mjs";

@@ -15,6 +15,20 @@ class FakeVideo extends EventTarget {
     this.playsInline = false;
     this.loads = 0;
     this.plays = 0;
+    this.pauses = 0;
+    this._currentTime = 0;
+    this.seeking = false;
+    this.rewinds = 0;
+  }
+  get currentTime() { return this._currentTime; }
+  set currentTime(value) {
+    this._currentTime = value;
+    this.seeking = true;
+    this.rewinds++;
+  }
+  finishSeek() {
+    this.seeking = false;
+    this.dispatchEvent(new Event("seeked"));
   }
   load() { this.loads++; }
   play() {
@@ -22,7 +36,7 @@ class FakeVideo extends EventTarget {
     // Simulate Safari deferring hidden playback even after an explicit tap.
     return Promise.reject(new Error("not_allowed"));
   }
-  pause() {}
+  pause() { this.pauses++; }
   ready() {
     this.readyState = 2;
     this.videoWidth = 480;
@@ -96,4 +110,51 @@ test("never accept missing, duplicate or still-only media as ready", async () =>
   videos[0].videoHeight = 270;
   videos[0].error = {code:3};
   assert.equal(playableFilmSource(videos[0]), false, "decoder error must fail closed");
+});
+
+test("Create after preview rewinds all four decoded MP4s and waits for seeked", async () => {
+  const { videos, refs } = setup();
+  videos.forEach((video, index) => {
+    video.ready();
+    video._currentTime = index + 1; // Previous 4-shot preview already advanced.
+  });
+  const progress = [];
+  let completed = false;
+  const pending = prepareFourFilmSources(shots, refs, {
+    timeoutMs: 200, onProgress: ready => progress.push(ready),
+  }).then(() => { completed = true; });
+  assert.ok(videos.every(video =>
+    video.rewinds === 1 && video.currentTime === 0 && video.seeking && video.pauses === 1
+  ));
+  await Promise.resolve();
+  assert.equal(completed, false, "loadeddata alone is not a completed decoder seek");
+  videos.forEach(video => video.finishSeek());
+  await pending;
+  assert.equal(completed, true);
+  assert.equal(progress.at(-1), 4);
+});
+
+test("unseekable old preview frames never become an exported montage", async () => {
+  const { videos, refs } = setup();
+  videos.forEach(video => video.ready());
+  Object.defineProperty(videos[1], "currentTime", {
+    get() { return 4; },
+    set() { throw Error("seek denied"); },
+  });
+  await assert.rejects(
+    prepareFourFilmSources(shots, refs, {timeoutMs: 200}),
+    /four_scene_rewind_failed:abundance-tree/,
+  );
+});
+
+test("a missing seeked event after rewind times out rather than certifying stale frames", async () => {
+  const { videos, refs } = setup();
+  videos.forEach(video => {
+    video.ready();
+    video._currentTime = 3;
+  });
+  await assert.rejects(
+    prepareFourFilmSources(shots, refs, {timeoutMs: 10}),
+    /four_scene_load_timeout/,
+  );
 });
