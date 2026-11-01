@@ -699,3 +699,33 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
   assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
 });
+
+
+test('the reviewed six-workspace Video Studio PR cannot trigger unrelated payment, store or Reiki browsers', () => {
+  const owned = ["app/[locale]/holistic-support/mandala/page.tsx","components/mandala-cinematic-director.tsx","components/mandala-video-mobile.module.css","scripts/verify-holistic-mandala-browser.mjs","tests/cinematic-studio.test.mjs","tests/mandala-approved-mobile-studio.test.mjs","tests/mandala-audio-attach.test.mjs","tests/mandala-auto-video-director-ui.test.mjs","tests/mandala-mobile-video-design.test.mjs","tests/mandala-stories-characters.test.mjs","tests/mandala-therapy-video-intro.test.mjs"];
+  const remaining = [
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-hypnocorrection-mobile.test.mjs',
+    'tests/mandala-meditation-courses.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/personal-meditation-script.test.mjs',
+  ];
+  const scope=planPublicServicesChangedPaths([...owned,...remaining,
+    '.github/workflows/holistic-support-mandala.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs']);
+  assert.deepEqual([scope.mode,scope.build,scope.browser,scope.metrics,scope.cases],
+    ['contracts',false,false,false,'none']);
+  // The same video-only delta always retains its independently owned Mandala CI.
+  const specialist=workflow('holistic-support-mandala.yml');
+  assert.match(specialist,/tests\/mandala-therapy-video-intro\.test\.mjs/);
+  assert.match(specialist,/scripts\/verify-holistic-mandala-browser\.mjs/);
+  for(const risky of ['app/[locale]/holistic-support/page.tsx',
+    'app/api/service-enquiries/route.js','middleware.ts',
+    'components/holistic-support-mobile.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'components/mandala-unknown-new-renderer.tsx']){
+    const v=planPublicServicesChangedPaths([...owned,...remaining,risky]);
+    assert.equal(v.mode,'full',risky+' must never bypass public safety acceptance');
+  }
+});
