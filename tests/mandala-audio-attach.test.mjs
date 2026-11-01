@@ -138,3 +138,10 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   assert.match(styles,/\.audioTrackPlay\{position:absolute/);
   assert.match(styles,/\.quickAudioCompact\{display:grid/);
 });
+
+test("catalog help text accurately says 39 site-owned WAV tracks in EN/RU/ES",()=>{
+  assert.match(studio,/originalAudio:"39 original synthesized WAV soundtracks/);
+  assert.match(studio,/originalAudio:"39 авторских WAV-треков/);
+  assert.match(studio,/originalAudio:"39 pistas WAV originales/);
+  assert.doesNotMatch(studio,/originalAudio:"13 /,"old 13-track help cannot survive 39-track catalog");
+});
