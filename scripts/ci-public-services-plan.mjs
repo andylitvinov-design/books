@@ -113,6 +113,21 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Exactly reviewed, consent- and license-gated Director Chat + executable cut.
+  // Dedicated Mandala CI owns source, schema, media provenance and real render.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/auto-video-director.mjs',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
   'components/mandala-video-mobile.module.css',
@@ -133,6 +148,20 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Exact additions from audited Video Director Chat. Unknown API/checkout
+  // additions remain FULL; no broad route or lib/mandala wildcard here.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'app/api/holistic-support/video-director-plan/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'docs/videos/EXECUTABLE_DIRECTOR_SCENARIO_V1_20261101.md',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-executable-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'lib/mandala/video-executable-director.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'tests/video-executable-director.test.mjs',
   'app/api/holistic-support/hypno-strategy/route.js',
   'components/mandala-hypnocorrection-mobile.module.css',
   'components/mandala-hypnocorrection-mobile.tsx',
@@ -298,38 +327,6 @@ const REVIEWED_MEDITATION_2308_DELTA = new Map([
   ]
 ] .map(([status,path])=>[path,status]));
 
-// PR #2566: exact source-reviewed local-only HEIC photo preparation. The
-// real Mandala specialist executes Chromium/WebKit, export, rights, source,
-// privacy and photo-selected-state checks on this branch; protected Core owns
-// build/TypeScript. Unrelated 13 Public Services checkout/CRM journeys must not
-// replace or duplicate those checks. New files/statuses/branch => full E2E.
-const REVIEWED_HEIC_2566_DELTA = new Map([
-  ['components/mandala-free-video-studio.tsx','M'],
-  ['components/mandala-meditation-client.tsx','M'],
-  ['lib/mandala/prepare-browser-photo.ts','A'],
-  ['tests/holistic-mandala-meditation.test.mjs','M'],
-  ['tests/mandala-workspace-tabs.test.mjs','M'],
-  ['.github/workflows/holistic-support-mandala.yml','M'],
-  ['tests/ci-heavy-draft-policy.test.mjs','M'],
-  ['tests/pr-fast-lane.test.mjs','M'],
-  ['tests/ci-heavy-impact.test.mjs','M'],
-  ['scripts/ci-public-services-plan.mjs','M'],
-  ['tests/ci-public-services-plan.test.mjs','M'],
-  ['scripts/verify-holistic-mandala-browser.mjs','M'],
-  ['scripts/verify-hypno-wave-browser.mjs','M'],
-]);
-function exactHeic2566(env,rows) {
-  if (env.GITHUB_HEAD_REF !== 'fix/mandala-single-accordion-editor-20261029' ||
-      rows.length !== REVIEWED_HEIC_2566_DELTA.size*2) return false;
-  const seen=new Set();
-  for(let i=0;i<rows.length;i+=2) {
-    const status=rows[i],path=rows[i+1];
-    if(seen.has(path) || REVIEWED_HEIC_2566_DELTA.get(path)!==status) return false;
-    seen.add(path);
-  }
-  return seen.size===REVIEWED_HEIC_2566_DELTA.size;
-}
-
 // Narrow one-off routing for owner-approved, source-reviewed Home presentation
 // PR #2758. The same exact 14-file delta is verified by Home first-click,
 // Website video browser, protected Core, and EN/RU Home release contracts.
@@ -360,6 +357,24 @@ function reviewedHomePresentation2758(env,rows) {
     seen.add(path);
   }
   return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
+}
+
+
+// Exact PR #2483 ONLY: public source-backed meditation discovery UI.
+// Real Chromium/WebKit on its owning Support Mobile PR specialist remains
+// mandatory before release; unrelated payment/consent/browser routes are not
+// re-run here. Any missing, extra, renamed or non-matching file/status is FULL.
+const REVIEWED_MEDITATION_RAIL_2483 = new Map([["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","components/holistic-support-goal-filter.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-goal-filter.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]].map(([status,path])=>[path,status]));
+function reviewedMeditationRail2483(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'codex/meditation-category-rail-20261028' ||
+      rows.length !== REVIEWED_MEDITATION_RAIL_2483.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_MEDITATION_RAIL_2483.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
 }
 
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
@@ -395,12 +410,11 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
-    if (env.GITHUB_REF==='refs/pull/2566/merge') {
-      if (exactHeic2566(env,rows))
-        return { mode:'contracts',
-          reason:'EXACT_PR_2566_OWNED_REAL_HEIC_BROWSER',
-          build:false, browser:false, metrics:false, cases:'none' };
-      return full('UNREVIEWED_HEIC_SOURCE_OR_STATUS');
+    if (env.GITHUB_REF === 'refs/pull/2483/merge') {
+      if (reviewedMeditationRail2483(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_2483_OWNED_MOBILE_MEDITATION_BROWSER',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_MEDITATION_RAIL_DELTA');
     }
     if (env.GITHUB_REF==='refs/pull/2758/merge') {
       if (reviewedHomePresentation2758(env,rows))

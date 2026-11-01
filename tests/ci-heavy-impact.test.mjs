@@ -218,11 +218,8 @@ test('Mandala PR keeps current unit contracts; full legacy browser/build only by
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
   assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  const reviewedHeicMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'fix/mandala-single-accordion-editor-20261029'))";
-  for (const name of ["Build","Install isolated Chromium and WebKit (no external account)","Ensure ffprobe and ffmpeg for real encoded video/audio verification","Public mandala photo, PNG and video browser flow · 320/390/430px"]) {
-    assert.ok(yaml.includes('      - name: '+name+'\n        '+reviewedHeicMediaGate),
-      'HEIC-safe dedicated Chromium/WebKit and ffprobe acceptance remains: '+name);
-  }
+  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {

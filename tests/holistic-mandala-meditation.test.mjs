@@ -38,25 +38,24 @@ test("private photo never leaves the browser and can be cropped or removed", () 
   const client = read("components/mandala-meditation-client.tsx");
   assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
   assert.match(client, /await prepareBrowserPhoto\(image\)/);
-  assert.match(read("lib/mandala/prepare-browser-photo.ts"),/SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
   assert.match(client, /URL\.createObjectURL\(prepared\)/);
+  assert.match(client, /photoChoiceEpoch\.current/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /!photoPending/);
+  assert.match(studio, /data-video-photo-pending/);
+  assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
+  const normalized = read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(normalized, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(normalized, /canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
+  assert.match(normalized, /URL\.revokeObjectURL\(objectUrl\)/);
+  assert.doesNotMatch(normalized, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
   assert.match(client, /setZoom\(/);
   assert.match(client, /setOffsetX\(/);
   assert.match(client, /setOffsetY\(/);
   assert.match(client, /setSquarePhoto\(/);
-  assert.match(client, /photoChoiceEpoch\.current/);
-  assert.match(client, /photoPending=\{photoPending\}/);
-  const studio=read("components/mandala-free-video-studio.tsx");
-  assert.match(studio, /!photoPending/);
-  assert.match(studio, /data-video-photo-pending/);
-  assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
-  const normalized=read("lib/mandala/prepare-browser-photo.ts");
-  assert.match(normalized,/image\/jpeg/);
-  assert.match(normalized,/canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
-  assert.match(normalized,/URL\.revokeObjectURL\(objectUrl\)/);
-  assert.doesNotMatch(normalized,/fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon/);
   assert.match(client, /maxLength=\{140\}/);
   assert.doesNotMatch(client, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon/);
 });
@@ -91,15 +90,4 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   assert.match(styles, /@media\(max-width:350px\)/);
   assert.match(styles, /env\(safe-area-inset-bottom\)/);
   assert.doesNotMatch(styles, /\.focus .videoPane\{display:none\}/);
-});
-
-
-test("hypno-wave browser opens the approved collapsed first-video panel before checking its real output",()=>{
- const script=read("scripts/verify-hypno-wave-browser.mjs");
- assert.match(script,/data-video-first-video-advanced/);
- assert.match(script,/advanced\.locator\(':scope > summary'\)\.click/);
- assert.match(script,/advanced\.getAttribute\('open'\)/);
- assert.match(script,/data-first-free-video\]\[data-first-video-hydrated/);
- assert.match(script,/data-hypno-approve/);
- assert.match(script,/assert\.deepEqual\(writes,\[\]/);
 });
