@@ -92,16 +92,35 @@ jobs:
             }
             // GitHub's temporarily empty hosted required-check list can merge immediately.
             // Therefore ARM only after actual trusted PR CI has completed successfully.
+            // A pull_request workflow can report a synthetic test-merge head_sha.
+            // Its immutable PR association, not run.head_sha, identifies the actual
+            // source HEAD and the production base against which CI ran.
+            const matchesCurrentSource = run => run.event === "pull_request" &&
+              run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
+                item.number === number &&
+                item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
+                item.base?.ref === "codex/public-book-library" &&
+                item.base?.sha === pr.base.sha);
+            // Query by head branch: filtering head_sha=pr.head.sha can incorrectly
+            // hide successful CI because GitHub stores its synthetic merge SHA.
+            // One branch-scoped page is enough if its oldest run is from a prior
+            // source HEAD; never claim full evidence if the active HEAD is truncated.
             const response = await github.rest.actions.listWorkflowRunsForRepo({
-              owner, repo, event: "pull_request", head_sha: pr.head.sha, per_page: 100
+              owner, repo, event: "pull_request", branch: pr.head.ref, per_page: 100
             });
-            if (response.data.total_count > 100 || !response.data.workflow_runs?.length) {
-              log("SKIP missing/incomplete exact-head workflow evidence for PR #" + number);
+            const page = response.data.workflow_runs;
+            if (!Array.isArray(page) || !page.length || response.data.total_count == null) {
+              log("SKIP missing/incomplete branch-scoped CI evidence for PR #" + number);
+              return;
+            }
+            if (response.data.total_count > page.length &&
+                page.length === 100 && matchesCurrentSource(page[page.length - 1])) {
+              log("SKIP current source HEAD extends beyond workflow-run page for PR #" + number);
               return;
             }
             const latest = new Map();
-            for (const run of response.data.workflow_runs) {
-              if (run.event !== "pull_request" || run.head_branch !== pr.head.ref) continue;
+            for (const run of page) {
+              if (!matchesCurrentSource(run)) continue;
               const key = String(run.workflow_id || run.path || run.name);
               const old = latest.get(key);
               const newer = !old || (Date.parse(run.created_at) > Date.parse(old.created_at)) ||
@@ -109,8 +128,8 @@ jobs:
               if (newer) latest.set(key, run);
             }
             const observed = [...latest.values()];
-            if (completedRunId && !response.data.workflow_runs.some(run => run.id === completedRunId)) {
-              log("SKIP stale CI completion " + completedRunId + " for PR #" + number);
+            if (completedRunId && !observed.some(run => run.id === completedRunId)) {
+              log("SKIP stale or misassociated CI completion " + completedRunId + " for PR #" + number);
               return;
             }
             const coreRun = observed.find(run =>

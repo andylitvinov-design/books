@@ -84,7 +84,7 @@ test("existing video preview and export use identical overlays; frame mode reque
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
   assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds\]\),appliedStory\]\)/,
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory\]\)/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);

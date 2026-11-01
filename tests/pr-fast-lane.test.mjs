@@ -932,8 +932,8 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('pr.head.repo?.full_name !== fullRepo'), 'must skip forks');
   assert.ok(enable.includes('pr.mergeable !== true'), 'must refuse conflicted PRs');
   assert.ok(enable.includes('expectedHead !== pr.head.sha'), 'must reject stale PR events');
-  assert.ok(enable.includes('head_sha: pr.head.sha'), 'must use exact HEAD');
-  assert.ok(enable.includes('completedRunId && !response.data.workflow_runs.some'), 'must reject stale CI events');
+  assert.ok(enable.includes('branch: pr.head.ref, per_page: 100'), 'must query PR branch because CI head_sha may be synthetic');
+  assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
@@ -1017,4 +1017,89 @@ test('new hh-core-verified is a short fail-closed Core-only status, not speciali
   // A green Core result alone must NOT remove the old release specialist gate.
   assert.match(source,/^  release-ready:/m);
   assert.match(source,/ci-specialist-aggregate\.mjs/);
+});
+
+test('production-base impact analyzer runs CI-only contracts without unrelated Next build',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const allow=source.split('# CI-only allowlist')[1]?.split('esac')[0];
+  assert.ok(allow?.includes('lib/ci/production-base-impact.mjs'),'pure CI module must use CI-only route');
+  assert.match(source,/node --test tests\/ci-workflow-globs\.test\.mjs tests\/workflow-next-route-filters\.test\.mjs tests\/ci-specialist-aggregate\.test\.mjs/);
+  assert.ok(source.includes("if: needs.scope.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
+});
+
+test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
+  const native = workflow('hh-native-auto-merge.yml');
+  const begin = native.indexOf('          script: |\n', native.indexOf('  enable:\n'));
+  const end = native.indexOf('      - name: Enable native auto-merge for this exact head', begin);
+  assert.ok(begin > 0 && end > begin, 'trusted preflight script missing');
+  const lines = native.slice(begin + '          script: |\n'.length, end).split('\n');
+  const code = lines.map(line => line.startsWith('            ') ? line.slice(12) : line).join('\n');
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const preflight = new AsyncFunction('github', 'core', 'context', code);
+  const repoName = 'andylitvinov-design/books';
+  const head = 'a'.repeat(40), base = 'b'.repeat(40), synthetic = 'f'.repeat(40);
+  const live = {
+    number: 42, state: 'open', draft: false, mergeable: true, mergeable_state: 'clean',
+    base: {ref: 'codex/public-book-library', sha: base},
+    head: {sha: head, ref: 'feature/safe', repo: {full_name: repoName}},
+  };
+  const good = {
+    id: 103, workflow_id: 31, event: 'pull_request', head_branch: live.head.ref,
+    head_sha: synthetic, name: 'HH PR core release gate',
+    path: '.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
+    status: 'completed', conclusion: 'success', created_at: '2026-11-01T14:00:00Z',
+    pull_requests: [{number: 42, head: {ref: live.head.ref, sha: head},
+      base: {ref: live.base.ref, sha: base}}],
+  };
+  const specialist = {...good, id: 104, workflow_id: 32, name: 'Holistic Support mandala release checks',
+    path: '.github/workflows/holistic-support-mandala.yml@refs/pull/42/merge'};
+  const event = {
+    repo: {owner: 'andylitvinov-design', repo: 'books'},
+    eventName: 'workflow_run',
+    payload: {workflow_run: {id: 103, event: 'pull_request', conclusion: 'success',
+      repository: {full_name: repoName}, head_repository: {full_name: repoName},
+      head_branch: live.head.ref, pull_requests: [{number: 42,
+        base: {ref: live.base.ref}}]}},
+  };
+  async function decide(runs, testedLive = live, expectedEvent = event, totalCount = runs.length) {
+    const outputs = {}, args = [];
+    const github = {rest: {
+      pulls: {get: async () => ({data: testedLive}),
+        list: async () => ({data: [testedLive]})},
+      actions: {listWorkflowRunsForRepo: async params => {
+        args.push(params);
+        return {data: {total_count: totalCount, workflow_runs: runs}};
+      }},
+    }};
+    await preflight(github, {setOutput: (k, v) => { outputs[k] = v; }, info: () => {}}, expectedEvent);
+    if (args.length) {
+      assert.equal(args[0].branch, live.head.ref, 'query must be branch-scoped');
+      assert.equal(args[0].head_sha, undefined, 'synthetic workflow SHA is not source SHA');
+    }
+    return outputs.eligible === 'true';
+  }
+  assert.equal(await decide([good, specialist]), true, 'exact source association accepts synthetic CI SHA');
+  assert.equal(await decide([good, {...specialist, conclusion: 'failure'}]), false, 'red specialist blocks ARM');
+  assert.equal(await decide([{...good, pull_requests: []}]), false, 'missing association fails closed');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base
+  }]}]), false, 'old source SHA cannot authorize new HEAD');
+  assert.equal(await decide([{...good, pull_requests: [{
+    number: 42, head: live.head, base: {ref: live.base.ref, sha: 'c'.repeat(40)}
+  }]}]), false, 'old production base cannot authorize ARM');
+  assert.equal(await decide([good, specialist], {...live, draft: true}), false, 'Draft does not ARM');
+  assert.equal(await decide([good, specialist], {...live, mergeable: false, mergeable_state: 'dirty'}), false,
+    'conflicted PR does not ARM');
+  assert.equal(await decide([good, specialist], live, {...event, payload: {
+    workflow_run: {...event.payload.workflow_run, id: 999},
+  }}), false, 'stale completion event cannot ARM');
+  const historical = Array.from({length: 98}, (_, i) => ({
+    ...good, id: 200 + i, pull_requests: [{number: 42,
+      head: {ref: live.head.ref, sha: 'c'.repeat(40)}, base: live.base}],
+  }));
+  assert.equal(await decide([good, specialist, ...historical], live, event, 220), true,
+    'more than 100 total historical runs does not hide current complete HEAD evidence');
+  assert.equal(await decide(Array.from({length: 100}, (_, i) => ({
+    ...good, id: 300 + i,
+  })), live, event, 102), false, 'truncated current-head checks fail closed');
 });

@@ -16,7 +16,8 @@ import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-cinematic-director.module.css";
 
 export type CinematicShot={id:string;number:number;title:string;theme:VideoTheme;sceneId:string;
-  startSeconds:number;durationSeconds:number;camera:string;providerPrompt:string;visualCue:string};
+  startSeconds:number;durationSeconds:number;camera:string;providerPrompt:string;visualCue:string;
+  overlayText?:string};
 export type CinematicStoryboard={version:string;theme:VideoTheme;locale:string;styleId:string;
   durationSeconds:number;aspect:"portrait"|"square"|"landscape";shots:readonly CinematicShot[];
   shotCount:number;noExternalClientData:boolean;paidRenderApproved:boolean;localPreview:boolean;

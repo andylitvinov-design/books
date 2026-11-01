@@ -21,6 +21,12 @@ function wav(seconds=3) {
 // The default still exercises BOTH engines for developer/manual runs.
 const requestedEngine=process.env.HH_VOICE_E2E_ENGINE||"both";
 assert.ok(["both","webkit","chromium"].includes(requestedEngine),"unknown test browser");
+// Fail closed with evidence instead of consuming the entire macOS runner quota.
+// Actual encoded 10-second voice video should not run indefinitely.
+const watchdog=setTimeout(()=>{
+  console.error("VOICE_E2E_WATCHDOG_TIMEOUT engine="+requestedEngine+" elapsed_seconds=360");
+  process.exit(1);
+},360000);
 for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   .filter(([name])=>requestedEngine==="both"||name===requestedEngine)) {
   const browser=await browserType.launch({headless:true});
@@ -142,14 +148,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type",
-          "-of","json","-"],{input:bytes,encoding:"utf8"});
+          "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
         const tracks=JSON.parse(probe.stdout).streams.map(row=>row.codec_type);
         assert.ok(tracks.includes("video"),"real video stream present");
         assert.ok(tracks.includes("audio"),"generated affirmation WAV survived into exported video");
         const pcm=spawnSync("ffmpeg",["-v","error","-i","pipe:0","-map","0:a:0",
           "-t","1","-ar","8000","-ac","1","-f","s16le","pipe:1"],
-          {input:bytes,maxBuffer:1024*1024});
+          {input:bytes,maxBuffer:1024*1024,timeout:20000});
         assert.equal(pcm.status,0,"generated voice audio decodes: "+pcm.stderr);
         assert.ok(pcm.stdout.some(value=>value!==0),"the encoded audio must not be silent");
       }
@@ -188,4 +194,4 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     }finally{await context.close();}
   }finally{await browser.close();}
 }
-
+clearTimeout(watchdog);
