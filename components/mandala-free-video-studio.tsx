@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
@@ -8,22 +9,22 @@ import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
-import { MandalaHypnocorrectionMobile } from "./mandala-hypnocorrection-mobile";
+
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
-import { MandalaGuidedCourse } from "./mandala-guided-course";
-import { MandalaCinematicDirector } from "./mandala-cinematic-director";
+
+
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
 import { MandalaPhraseCatalog } from "./mandala-phrase-catalog";
-import { MandalaVideoDirectorChat } from "./mandala-video-director-chat";
-import { MandalaFirstVideoStart } from "./mandala-first-video-start";
-import { MandalaStoriesCharacters } from "./mandala-stories-characters";
+
+
+
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
 import type { StorySelection } from "@/lib/mandala/story-addon-catalog";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
-import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
-import { MandalaCloudVoiceStudio } from "./mandala-cloud-voice-studio";
+
+
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
 import type { AffirmationVoiceResult, AffirmationVoicePreferences } from "./mandala-affirmation-voice";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
@@ -52,6 +53,17 @@ import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mj
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
+
+// First-screen player and Auto Video Director remain eager. Optional workspaces
+// and collapsed tools download on interaction, reducing initial JS on mobile.
+const MandalaHypnocorrectionMobile = dynamic(() => import("./mandala-hypnocorrection-mobile").then(module => module.MandalaHypnocorrectionMobile));
+const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));
+const MandalaCinematicDirector = dynamic(() => import("./mandala-cinematic-director").then(module => module.MandalaCinematicDirector));
+const MandalaVideoDirectorChat = dynamic(() => import("./mandala-video-director-chat").then(module => module.MandalaVideoDirectorChat));
+const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start").then(module => module.MandalaFirstVideoStart));
+const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
+const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-meditation").then(module => module.MandalaPersonalMeditation));
+const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
@@ -1619,6 +1631,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
+  const [firstVideoAdvancedOpen,setFirstVideoAdvancedOpen] = useState(false);
+  const [voiceStudioOpen,setVoiceStudioOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
@@ -4032,11 +4046,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           
         </section>
         <details className={videoStyles.quickExtras} data-workspace-section="video"
+          onToggle={event=>setFirstVideoAdvancedOpen(event.currentTarget.open)}
           data-video-first-video-advanced>
           <summary>{locale==="ru"?"Дополнительно: видео по подробному описанию":locale==="es"?"Avanzado: vídeo desde descripción":"Advanced: video from description"}</summary>
         {/* Compact first-video tool follows the third Style section,
             main video screen and the six control buttons. */}
-        <MandalaFirstVideoStart locale={locale} wish={wish}
+        {firstVideoAdvancedOpen ? <MandalaFirstVideoStart locale={locale} wish={wish}
           renderOptions={{quality,brightness,audioVolumePercent:soundVolume}}
           disabled={recording||preparing} preparing={preparing} recording={recording}
           progress={progress} resultReady={Boolean(result)&&playbackStatus==="ready"} ready={canGenerate}
@@ -4051,7 +4066,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(job)stopJob(job,true);
             webCodecJobRef.current?.abort();
             firstVideoRequestRef.current=false;
-          }}/>
+          }}/> : null}
         </details>
 
 
@@ -4753,16 +4768,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
 
 
-      <details id="voice-studio" className={videoStyles.extraControls} data-video-voice-studio>
+      <details id="voice-studio" className={videoStyles.extraControls} data-video-voice-studio
+        onToggle={event=>setVoiceStudioOpen(event.currentTarget.open)}>
         <summary><AudioLines size={17} aria-hidden="true"/>{locale==="ru"
           ?"Озвучить свой текст · 6 голосов RU/EN"
           :locale==="es"?"Crear voz desde texto · 6 voces RU/EN"
           :"Generate voice from text · 6 RU/EN voices"}</summary>
-        <MandalaCloudVoiceStudio locale={locale}
+        {voiceStudioOpen ? <MandalaCloudVoiceStudio locale={locale}
           sourceText={currentAffirmationSpeech} sourceIsPublic
           onAudioReady={attachMeditationNarration}
           onAudioInvalidated={()=>setAttachedAudio(current=>
-            current?.kind==="file"&&current.nonLoop?null:current)}/>
+            current?.kind==="file"&&current.nonLoop?null:current)}/> : null}
       </details>
 
       <details className={videoStyles.quickLegacy} data-video-quick-legacy
