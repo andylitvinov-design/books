@@ -20,7 +20,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
-import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
+import { suggestPersonalVideoScene, captionFromWish, graphemeInput } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, retimeFreeFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
@@ -1008,14 +1008,18 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
   const webm = withAudio ? [
     'video/webm;codecs="vp8,opus"', "video/webm",
   ] : ["video/webm;codecs=vp8", "video/webm"];
-  // iOS 26 Safari can advertise valid H264 MP4 support yet emit an
-  // unplayable MP4. Prefer genuine VP8/Opus WebM on Apple mobile WebKit
-  // when supported, while retaining MP4 on unsupported/other browsers.
-  const candidates = orderRecordingMimes({
+  // Some current iPhones fail to decode WebM (MEDIA_ERR_SRC_NOT_SUPPORTED).
+  // Try H.264/AAC MP4 first on iOS, but require actual native playback before
+  // calling the result ready. The explicit retry remains available for WebM.
+  const appleMobile = typeof navigator !== "undefined" &&
+    /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const ordered = orderRecordingMimes({
     mp4, webm, preferWebm, forceMp4:forceMp4ForRetry,
     userAgent:typeof navigator==="undefined"?"":navigator.userAgent,
     maxTouchPoints:typeof navigator==="undefined"?0:navigator.maxTouchPoints,
   });
+  const candidates = appleMobile && !preferWebm && !forceMp4ForRetry
+    ? [...mp4,...webm] : ordered;
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
@@ -2872,7 +2876,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
         <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
           value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
+          onChange={event=>{setWish(graphemeInput(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
         <p>{ui.wishHelp}</p>
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
@@ -3376,15 +3380,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(job)stopJob(job,true);
             firstVideoRequestRef.current=false;
           }}/>
-        <MandalaAutoVideoDirector
-          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
-          scenes={FREE_FILM_CATALOG}
-          disabled={recording||preparing}
-          activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
-          clipLabel={freeFilmClipLabel}
-          showGoalInput={false}
-          onGoalChange={next=>{setWish(graphemeTrim(next));setSuggestion("");setCinematicPlan(null);}}
-          onApply={applyAutoFilm}/>
         </div>
 
 
@@ -3460,6 +3455,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {activeWorkspace==="audio" ? deepAudioPane : null}
       </section>
+      {/* One shared goal, four selectable film concepts; below the video and music. */}
+      <div data-workspace-section="video" data-video-director-after-music>
+        <MandalaAutoVideoDirector
+          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
+          scenes={FREE_FILM_CATALOG}
+          disabled={recording||preparing}
+          activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
+          clipLabel={freeFilmClipLabel}
+          showGoalInput={false}
+          onGoalChange={next=>{setWish(graphemeInput(next));setSuggestion("");setCinematicPlan(null);}}
+          onApply={applyAutoFilm}/>
+      </div>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="hypnotherapy" id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
