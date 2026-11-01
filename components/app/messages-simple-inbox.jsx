@@ -18,7 +18,7 @@ const COPY={
     telegram:'Telegram',website:'Website request',business:'Business request',direct:'Holistic House',
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
     replyWebsite:'Reply in the protected client cabinet',openCase:'Full request',manual:'Open WhatsApp to reply',
-    email:'Reply by email',unavailable:'Website requests could not be loaded; existing chats remain available.',
+    email:'Reply by email',unavailable:'Website requests could not be loaded.',crmUnavailable:'Connected messenger conversations could not be loaded.',
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
     more:'More conversations',other:'Other requests',portal:'Private website conversations'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
@@ -27,7 +27,7 @@ const COPY={
     telegram:'Telegram',website:'Заявка с сайта',business:'Бизнес-заявка',direct:'Holistic House',
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',
     replyWebsite:'Ответить в защищённом кабинете',openCase:'Вся заявка',manual:'Ответить через WhatsApp',
-    email:'Ответить по email',unavailable:'Заявки сайта сейчас недоступны, но переписка остаётся открытой.',
+    email:'Ответить по email',unavailable:'Не удалось загрузить заявки сайта.',crmUnavailable:'Не удалось загрузить переписки подключённых мессенджеров.',
     offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
     more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
@@ -36,7 +36,7 @@ const COPY={
     telegram:'Telegram',website:'Solicitud web',business:'Solicitud de negocio',direct:'Holistic House',
     waiting:'Esperando tu respuesta',received:'Recibida',details:'Solicitud',contact:'Contacto',
     replyWebsite:'Responder en el portal privado',openCase:'Solicitud completa',manual:'Responder por WhatsApp',
-    email:'Responder por correo',unavailable:'No están disponibles las solicitudes web, pero puedes leer tus chats.',
+    email:'Responder por correo',unavailable:'No se pudieron cargar las solicitudes web.',crmUnavailable:'No se pudieron cargar las conversaciones de mensajería conectadas.',
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio'},
 }
@@ -301,10 +301,10 @@ export default function MessagesSimpleInbox({
             onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
         </div>
         <div className={styles.peopleScroll}>
-          {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
+          {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
           {!tabTotal&&!tabLoading&&!sourcesUnavailable?<p className={styles.info}>{embedded?t.empty:tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&(search.trim()||unreadOnly)&&<p className={styles.info}>{t.noMatches}</p>}
-          {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {crmState.error&&<p role="alert" className={styles.info}>{t.crmUnavailable}</p>}
           {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}

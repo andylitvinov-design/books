@@ -85,4 +85,6 @@ test('both inbox tabs report website loading and failure even when CRM is ready'
   assert.match(source,/inboxSourceStatus\(\{websiteLoading,websiteUnavailable,/)
   assert.match(source,/!tabTotal&&!tabLoading&&!sourcesUnavailable/)
   assert.match(source,/websiteUnavailable&&<p role="alert"/)
+  assert.match(source,/\{tabLoading\?<p className=\{styles\.info\} role="status">\{t\.loading\}/)
+  assert.match(source,/crmState\.error&&<p role="alert" className=\{styles\.info\}>\{t\.crmUnavailable\}/)
 })
