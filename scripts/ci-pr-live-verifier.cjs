@@ -12,9 +12,14 @@ const SHA=/^[a-f0-9]{40}$/i;
 const VERCEL_URL=/^https:\/\/vercel\.com\/super10\/codex-public-book-library\/([A-Za-z0-9]{8,64})\/?$/;
 
 function trustedContext(context) {
- return context?.repo?.owner+'/'+context?.repo?.repo===REPO &&
-  context.ref==='refs/heads/'+DEFAULT &&
-  ['schedule','workflow_dispatch','push'].includes(context.eventName);
+ if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO ||
+    context.ref!=='refs/heads/'+DEFAULT)return false;
+ if(['schedule','workflow_dispatch','push'].includes(context.eventName))return true;
+ if(context.eventName!=='repository_dispatch')return false;
+ const event=context.payload||{},p=event.client_payload||{};
+ return ['vercel.deployment.success','vercel.deployment.promoted'].includes(event.action) &&
+  p.environment==='production' && SHA.test(p.git?.sha||'') &&
+  (!p.project?.id||p.project.id===PROJECT_ID);
 }
 function latestVercelStatus(rows) {
  if(!Array.isArray(rows))return null;
@@ -88,6 +93,11 @@ async function run({github,core,context,vercelToken='',fetchImpl=fetch,now=Date.
   if(!SHA.test(sha||'')){report.reason='PRODUCTION_HEAD_UNVERIFIED';return finish();}
   report.production_sha=sha;
   report.evidence_urls.push('https://github.com/'+REPO+'/commit/'+sha);
+  // An old Vercel success callback must never certify a newer source HEAD.
+  if(context.eventName==='repository_dispatch' &&
+     context.payload.client_payload.git.sha!==sha){
+   report.reason='EVENT_SHA_NOT_CURRENT_PRODUCTION';return finish();
+  }
   const result=(await github.rest.repos.getCombinedStatusForRef({
    owner,repo,ref:sha,per_page:100
   })).data;

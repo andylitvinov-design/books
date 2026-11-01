@@ -160,3 +160,12 @@ test('hourly coordinator verifies GitHub + Vercel LIVE independently of native m
  assert.ok(script.includes('aliasId!==deployId'));
  assert.ok(script.includes("reason:'LIVE_VERIFIED'"));
 });
+
+test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
+ const s=read('hh-pr-full-inventory');
+ assert.ok(s.includes("types: ['vercel.deployment.success', 'vercel.deployment.promoted']"));
+ assert.ok(s.includes("if: github.event_name != 'repository_dispatch'"));
+ assert.ok(s.includes("github.event.client_payload.environment == 'production'"));
+ assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
+ assert.ok(s.includes("vercel-event' || 'periodic'"));
+});

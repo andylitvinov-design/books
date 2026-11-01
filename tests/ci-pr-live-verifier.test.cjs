@@ -34,6 +34,15 @@ test('only trusted control-plane event can query live production evidence',()=>{
  assert.equal(trustedContext({...ctx,ref:'refs/heads/codex/public-book-library'}),false);
  assert.equal(trustedContext({...ctx,eventName:'pull_request'}),false);
  assert.equal(trustedContext({...ctx,repo:{owner:'outsider',repo:'books'}}),false);
+ const event={...ctx,eventName:'repository_dispatch',payload:{
+  action:'vercel.deployment.success',client_payload:{environment:'production',
+   git:{sha},project:{id:PROJECT_ID}}}};
+ assert.equal(trustedContext(event),true);
+ assert.equal(trustedContext({...event,payload:{...event.payload,
+  client_payload:{...event.payload.client_payload,environment:'preview'}}}),false);
+ assert.equal(trustedContext({...event,payload:{...event.payload,
+  client_payload:{...event.payload.client_payload,git:{sha:'invalid'}}}}),false);
+ assert.equal(trustedContext({...event,payload:{...event.payload,action:'vercel.deployment.pending'}}),false);
 });
 test('latest Vercel status cannot be substituted by an older green result',()=>{
  const fresh={...status,state:'failure',updated_at:'2026-11-02T00:00:00Z'};
@@ -91,5 +100,17 @@ test('no GitHub status or bad status pagination cannot prove a deployment',async
  const r=await run({github:f.github,core:core(),context:ctx,vercelToken:'synthetic',
   fetchImpl:f.fetchImpl});
  assert.equal(r.verified_live,false);assert.equal(r.reason,'INCOMPLETE_GITHUB_STATUS_HISTORY');
+ assert.equal(f.reads.length,0);
+});
+
+test('outdated Vercel completion event cannot certify newer production HEAD',async()=>{
+ const f=fixture();
+ const event={...ctx,eventName:'repository_dispatch',payload:{
+  action:'vercel.deployment.success',client_payload:{environment:'production',
+   git:{sha:'b'.repeat(40)},project:{id:PROJECT_ID}}}};
+ const result=await run({github:f.github,core:core(),context:event,
+  vercelToken:'synthetic',fetchImpl:f.fetchImpl});
+ assert.equal(result.verified_live,false);
+ assert.equal(result.reason,'EVENT_SHA_NOT_CURRENT_PRODUCTION');
  assert.equal(f.reads.length,0);
 });

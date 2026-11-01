@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: '25 * * * *'
   workflow_dispatch:
+  # Vercel's existing integration emits deployment completion on default.
+  # Only LIVE verifier can respond; the merge coordinator remains quiet.
+  repository_dispatch:
+    types: ['vercel.deployment.success', 'vercel.deployment.promoted']
   push:
     branches: ['codex/bootstrap-books']
     paths: ['.github/workflows/hh-pr-full-inventory.yml']
@@ -13,10 +17,13 @@ permissions:
   issues: read
   pull-requests: read
 concurrency:
-  group: hh-pr-full-inventory
+  # Vercel event storms never displace the independent hourly inventory lease.
+  group: hh-pr-full-inventory-${{ github.event_name == 'repository_dispatch' && 'vercel-event' || 'periodic' }}
   cancel-in-progress: false
 jobs:
   reconcile:
+    # Vercel callbacks verify LIVE only, never scan/merge PRs.
+    if: github.event_name != 'repository_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -248,7 +255,10 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'push' ||
+       (github.event_name == 'repository_dispatch' &&
+        github.event.client_payload.environment == 'production'))
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     permissions:
