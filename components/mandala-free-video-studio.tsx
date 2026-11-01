@@ -1609,6 +1609,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resultVideoRef=useRef<HTMLVideoElement>(null);
+  const quickThemeAdvancedRef=useRef<HTMLDetailsElement>(null);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
   const activeMoneyFilm = theme==="money" && moneyScene ? getRealMoneyFilm(moneyScene) : null;
@@ -1882,6 +1883,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
+
+  // Restore the original all-topic theme rail on desktop. The compact
+  // 2×2 goal picker with collapsed optional themes is iPhone-only.
+  useEffect(()=>{
+    const large=window.matchMedia("(min-width: 760px)");
+    const sync=()=>{if(quickThemeAdvancedRef.current)quickThemeAdvancedRef.current.open=large.matches;};
+    sync();
+    large.addEventListener("change",sync);
+    return()=>large.removeEventListener("change",sync);
+  },[]);
 
   // A successful recording (or a codec failure) must be immediately visible
   // after the client creates the film. Safari otherwise leaves the result
@@ -3145,7 +3156,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
           <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
-          <details className={videoStyles.quickThemeAdvanced} data-video-theme-advanced>
+          <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced>
             <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
             {quickThemeOrder.map(value=>{
