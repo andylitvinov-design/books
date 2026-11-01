@@ -126,3 +126,18 @@ test('same-site endpoints fail closed without approval; never proxy binary bytes
     assert.doesNotMatch(src,/fetch\(|readFileSync|storage\.from|cookies\(|api\.github\.com/)
   }
 })
+
+test('direct Android APK top CTA appears only after verified native release gates',()=>{
+  const page=read('app/[locale]/install/page.jsx')
+  const registry=current()
+  assert.equal(getNativePublicDownloads(registry).androidUrl,null)
+  assert.match(page,/downloads\.androidUrl && <section/)
+  assert.match(page,/data-hh-direct-apk-ready/)
+  assert.match(page,/href="\/api\/native-download\/android"/)
+  assert.match(page,/Скачать APK с сайта/)
+  assert.match(page,/без Google Play/)
+  assert.match(page,/без App Store/)
+  const gate=read('lib/native/public-downloads.mjs')
+  assert.match(gate,/ownerApproved !== true/)
+  assert.match(gate,/process\.env\.HH_NATIVE_PUBLIC_RELEASES_ENABLED === 'true'/)
+})
