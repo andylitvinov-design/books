@@ -103,7 +103,7 @@ export default function MessagesOrdersClients({locale='en',children}){
   const orderChatRef=useRef(null)
   useEffect(()=>{
     const q=new URLSearchParams(window.location.search)
-    setSection(q.get('section')==='clients'||q.has('to')||q.has('tab')?'clients':'orders')
+    setSection(q.get('section')==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':'orders')
     const id=q.get('order')
     setSelectedId(id&&/^[0-9a-f-]{36}$/i.test(id)?id:'')
   },[searchParams])
@@ -179,7 +179,7 @@ export default function MessagesOrdersClients({locale='en',children}){
     const url=new URL(window.location.href)
     if(value==='orders')url.searchParams.set('section','orders')
     else url.searchParams.set('section','clients')
-    if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to')}
+    if(value==='orders'){url.searchParams.delete('tab');url.searchParams.delete('to');url.searchParams.delete('requestId')}
     if(value==='clients'){url.searchParams.delete('order');setSelectedId('')}
     setClientDetailOpen(false)
     window.history.replaceState(window.history.state,'',url)

@@ -1758,3 +1758,11 @@
     padding: 0 !important;
   }
 }
+
+/* Protected Practice uses the very same global five-item dock as Messages.
+   When the iPhone editor is focused, the dock yields the keyboard/Send area. */
+@media(max-width:760px){
+ .hh-app.hh-app--practice-inner:has(input:focus,textarea:focus) .hh-mobile-app-nav{
+  display:none!important
+ }
+}
