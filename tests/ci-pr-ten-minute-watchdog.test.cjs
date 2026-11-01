@@ -389,3 +389,14 @@ test('frequent GitHub reads use isolated native GITHUB_TOKEN',()=>{
   assert.match(wf,/Authorization:'Bearer '\+token/);
   assert.doesNotMatch(wf,/github-token: \x24\x7b\x7b secrets\.HH_AUTOMERGE_TOKEN \|\| github\.token/);
 });
+
+test('hourly full-inventory reads use per-repo token; owner PAT is reserved for protected merges', () => {
+  const {readFileSync} = require('node:fs');
+  const {join} = require('node:path');
+  const source = readFileSync(join(__dirname,'..','.github','workflows','hh-pr-full-inventory.yml'),'utf8');
+  assert.match(source,/^  pull-requests: read$/m);
+  assert.ok(source.includes('          github-token: ${{ github.token }}'));
+  assert.ok(source.includes('          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
+  assert.ok(!source.includes('github-token: ${{ secrets.HH_AUTOMERGE_TOKEN'));
+  assert.ok(source.includes('if(token)'));
+});
