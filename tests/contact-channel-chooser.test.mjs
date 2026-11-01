@@ -46,7 +46,9 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<details className=\{styles\.optionalNote\} open=\{noteOpen\}>/);
+  assert.match(src, /setNoteOpen\(value => !value\)/);
+  assert.match(src, /setNoteOpen\(false\)/);
   assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
   assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
   assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);

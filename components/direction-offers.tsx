@@ -815,9 +815,15 @@ export function DirectionOffers({ locale, journey, suggestions }: {
                   <p className={styles.description}>{offer.description}</p>
                   <div className={styles.cardFooter}>
                     <span className={styles.note}>{offer.note}</span>
-                    <Link className={styles.action} href={offer.href} prefetch={false} data-offer-action={kind}>
-                      {offer.action}<ArrowRight size={17} aria-hidden="true"/>
-                    </Link>
+                    {kind === "session" ? (
+                      <a className={styles.action} href={offer.href} data-offer-action={kind} data-native-session-link>
+                        {offer.action}<ArrowRight size={17} aria-hidden="true"/>
+                      </a>
+                    ) : (
+                      <Link className={styles.action} href={offer.href} prefetch={false} data-offer-action={kind}>
+                        {offer.action}<ArrowRight size={17} aria-hidden="true"/>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </article>

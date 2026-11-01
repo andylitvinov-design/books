@@ -132,7 +132,20 @@ async function verify(engine, locale, width) {
     await noOverflow("filtered");
     // Keep a genuine pointer click on the actual Next Link, but do not let a
     // fixed iPhone navigation overlay cover its initial hit target.
-    await session.evaluate(node => node.scrollIntoView({block:"center",behavior:"auto"}));
+    await session.scrollIntoViewIfNeeded();
+    await session.evaluate(async node => {
+      let last = null, stable = 0;
+      for (let frame = 0; frame < 45; frame++) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (!node.isConnected) throw new Error("SESSION_LINK_REMOUNTED");
+        const rect = node.getBoundingClientRect();
+        const current = [rect.x,rect.y,rect.width,rect.height];
+        stable = last && current.every((v,i)=>Math.abs(v-last[i])<1) ? stable+1 : 0;
+        if (stable >= 3) return;
+        last = current;
+      }
+      throw new Error("SESSION_LINK_UNSTABLE");
+    });
     const paidNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/business-consulting",
       {waitUntil:"domcontentloaded",timeout:25000});
     await session.click();
@@ -161,9 +174,10 @@ async function verify(engine, locale, width) {
     assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
       label+": actual express SKU preselected on first-party contact form");
     await noOverflow("paid request");
-    await page.locator('[data-business-cta="free-hero"]').click();
-    await page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
+    const freeNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
       url.searchParams.get("topic")==="business",{waitUntil:"domcontentloaded",timeout:25000});
+    await page.locator('[data-business-cta="free-hero"]').click();
+    await freeNavigation;
     await page.locator('main[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:25000});
     assert.deepEqual(externalPosts,[],label+": navigation never sends lead, payment or analytics POST");
     assert.deepEqual(pageErrors,[],label+": no unhandled page errors");

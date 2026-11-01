@@ -61,7 +61,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <p className={styles.heroLead}>{t.lead}</p>
             <p className={styles.audiences}><Check size={17} aria-hidden="true" />{t.audiences}</p>
             <div className={styles.heroActions}>
-              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
+              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} nativeNavigation attributes={{ "data-business-cta": "free-hero" }}>
                 {t.freeCta}<ArrowRight size={19} aria-hidden="true" />
               </AcquisitionEventLink>
               <a href="#business-offers" className={styles.secondary}>{t.paidCta}<ArrowUpRight size={18} aria-hidden="true" /></a>

@@ -85,6 +85,7 @@ test('the single page shows hero then filter then three separate topic-specific 
       assert.equal(by(tree,'data-offer-action','course')[0].props.href,actualCourse)
       const service={energy:'alchemy-of-soul',relationships:'systemic-constellations',business:'business-consulting'}[direction]
       assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)
+      assert.equal(by(tree,'data-offer-action','session')[0].type,'a','session first tap uses native navigation')
     }
   }
 })

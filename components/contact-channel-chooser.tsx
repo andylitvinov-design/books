@@ -172,6 +172,8 @@ export function ContactChannelChooser({
   const [settledResetSignature, setSettledResetSignature] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
+  // Preserve a user-opened private note through React updates and WebKit hydration.
+  const [noteOpen, setNoteOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [method, setMethod] = useState<"email" | "phone">(cartContact ? "phone" : "email");
   const [googleReady, setGoogleReady] = useState(false);
@@ -234,6 +236,7 @@ export function ContactChannelChooser({
     }
     setOpen(false);
     setDescription("");
+    setNoteOpen(false);
     setDisplayName("");
     setMethod(cartContact ? "phone" : "email");
     setGoogleReady(false);
@@ -783,8 +786,13 @@ export function ContactChannelChooser({
               </label>
             </details>
             <small className={styles.privateNote}>{c.contactHelp}</small>
-            <details className={styles.optionalNote}>
-              <summary>{c.description}</summary>
+            <details className={styles.optionalNote} open={noteOpen}>
+              <summary onClick={event => {
+                // One genuine click owns the disclosure state; suppress the
+                // native toggle that may race a WebKit hydration remount.
+                event.preventDefault();
+                if (interactive && !busy) setNoteOpen(value => !value);
+              }}>{c.description}</summary>
               <textarea id={panelId + "-situation"} aria-label={c.description}
                 maxLength={1400} rows={2}
                 placeholder={c.placeholder} value={description} disabled={busy || !interactive}
@@ -838,7 +846,7 @@ export function ContactChannelChooser({
               </AcquisitionEventLink>
             </div>
             <button type="button" className={styles.again} onClick={() => {
-              setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
+              setSaved(null); setDescription(""); setNoteOpen(false); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
               setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>
