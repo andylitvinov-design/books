@@ -82,10 +82,10 @@ function latestByName(checks) {
   for (const item of [...checks].sort((a,b) => b.id - a.id)) if (!map.has(item.name)) map.set(item.name, item);
   return map;
 }
-function gateIsGreen(checks) {
+function gateIsGreen(checks, name = 'hh-core-verified') {
   if (!checks || checks.total_count > 100 || !Array.isArray(checks.check_runs)) return false;
   const entries = latestByName(checks.check_runs);
-  const gate = entries.get('hh-core-verified');
+  const gate = entries.get(name);
   return Boolean(gate && gate.status === 'completed' && gate.conclusion === 'success' &&
     gate.app?.id === 15368 && ![...entries.values()].some(c =>
       c.name !== 'release-ready' &&
@@ -349,7 +349,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
-    staleHead:0,
+    staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
@@ -391,6 +391,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     }
   }
   let handoffs = 0, conflictHandoffs = 0;
+  let auditedProtection = null, protectionRead = false;
   for (const pr of (liveBatch ? selected : boundedRestFallback(selected))) {
     if(budget.exhausted) break;
     summary.inspected++;
@@ -455,6 +456,34 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         check_name:'hh-core-verified',per_page:100,filter:'latest'}))).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
     if (gateIsGreen(checks)) {
+      // Core success is not enough while legacy branch protection still
+      // requires release-ready. Read effective protection once per cycle.
+      if (!protectionRead) {
+        protectionRead = true;
+        try {
+          const branch = (await limited('production-protection',()=>github.rest.repos.getBranch({
+            owner,repo,branch:PROD
+          }))).data;
+          const required = branch?.protection?.required_status_checks?.contexts;
+          if (branch?.protected && Array.isArray(required) && required.length === 1 &&
+              ['release-ready','hh-core-verified'].includes(required[0]))
+            auditedProtection = required[0];
+        } catch(e) { log('Production protection unavailable: '+e.message); }
+      }
+      if (!auditedProtection) { summary.protectionUnverified++; continue; }
+      if (auditedProtection === 'release-ready') {
+        let legacy = null;
+        try {
+          legacy = (await limited('legacy-required-head-check',()=>github.rest.checks.listForRef({
+            owner,repo,ref:pr.head.sha,check_name:'release-ready',
+            per_page:100,filter:'latest'
+          }))).data;
+        } catch(e) { log('#'+pr.number+' required legacy CI unavailable: '+e.message); }
+        if (!gateIsGreen(legacy,'release-ready')) {
+          summary.legacyRequiredPending++;
+          continue;
+        }
+      }
       if (!pr.auto_merge) summary.greenUnarmed++;
       continue;
     }
