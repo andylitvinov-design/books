@@ -113,6 +113,12 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Real LIVE Director Chat QA is owned by the independently required Chrome,
+  // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
+  '.github/workflows/hh-first-video-live-export.yml',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
   // Exactly reviewed, consent- and license-gated Director Chat + executable cut.
   // Dedicated Mandala CI owns source, schema, media provenance and real render.
   'app/api/holistic-support/video-director-chat/route.js',
@@ -148,6 +154,9 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
   // Exact additions from audited Video Director Chat. Unknown API/checkout
   // additions remain FULL; no broad route or lib/mandala wildcard here.
   'app/api/holistic-support/video-director-chat/route.js',

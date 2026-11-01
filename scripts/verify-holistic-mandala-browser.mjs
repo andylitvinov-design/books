@@ -61,6 +61,45 @@ const bufferFromStream = async stream => {
 };
 
 let passes = 0;
+// The desktop music controls must remain inside their own card and accept a
+// real click. A legacy absolute-positioned check previously escaped to the
+// top of the viewport under the sitewide banner at desktop widths.
+async function verifyDesktopAudioControls() {
+ for (const [engine,browserType] of [['chromium',chromium],['webkit',webkit]]) {
+  const browser = await browserType.launch({headless:true});
+  try {
+    for (const [locale,width] of ['ru','en','es'].flatMap(locale=>[390,1280].map(width=>[locale,width]))) {
+      const context=await browser.newContext({viewport:{width,height:800},serviceWorkers:"block"});
+      try {
+        const page=await context.newPage();
+        await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"domcontentloaded"});
+        // Director goals are portaled only after React hydration.
+        await expect(page.locator('[data-video-director-goal-controls] [data-auto-video-goal]').first())
+          .toBeVisible({timeout:30000});
+        const choice=page.locator('[data-video-quick-music-check="warm-morning"]');
+        const card=page.locator('[data-video-quick-audio-track="warm-morning"]');
+        await expect(choice).toBeVisible({timeout:30000});
+        const [buttonRect,cardRect]=await Promise.all([choice.boundingBox(),card.boundingBox()]);
+        assert.ok(buttonRect && cardRect && buttonRect.width>=44 && buttonRect.height>=44 &&
+          buttonRect.x>=cardRect.x && buttonRect.y>=cardRect.y &&
+          buttonRect.x+buttonRect.width<=cardRect.x+cardRect.width &&
+          buttonRect.y+buttonRect.height<=cardRect.y+cardRect.height,
+        engine+' '+locale+' '+width+'px soundtrack checkbox must be a usable target inside its own card');
+        await choice.click();
+        await expect(choice).toHaveAttribute('aria-checked','true');
+        await choice.click();
+        await expect(choice).toHaveAttribute('aria-checked','false');
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+ }
+}
+await verifyDesktopAudioControls();
+if (process.env.HH_MANDALA_DESKTOP_AUDIO_ONLY === '1') process.exit(0);
 // Run both real engines concurrently, but cap resource use at one isolated
 // context per engine (two total); preserve all six viewports per engine.
 const engines = [["webkit", webkit], ["chromium", chromium]];
