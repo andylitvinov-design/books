@@ -18,8 +18,16 @@ function inferLevel(pr){
   if(labels.has('security')||labels.has('bug:production')||
      labels.has('hh:production-regression'))return ['P0','production/security'];
   if(/^(fix|hotfix)\((ci|actions|infra|pipeline|release)\)/i.test(title) ||
-     /^(fix|hotfix):.*\b(watchdog|automerge|auto.merge|repair worker|core ci)\b/i.test(title))
-    return ['P0','critical delivery CI'];
+     /^(fix|hotfix):.*\b(watchdog|automerge|auto.merge|repair worker|core ci)\b/i.test(title)){
+    // A historical test-only PR is not an urgent CI outage just because its
+    // title starts with fix(ci). Reserve automatic P0 for genuine delivery
+    // control incidents. Owner labels can always override this inference.
+    if(/\b(watchdog|auto.?merge|repair worker|core ci|release[- ]ready|branch protection|ci slots?|deadlock|blocking workers|stuck queue)\b/i.test(title))
+      return ['P0','critical delivery CI'];
+    if(/\b(unblock|blocked|broken|failed|failure|crash|release)\b/i.test(title))
+      return ['P1','pipeline repair'];
+    return ['P2','CI/test maintenance'];
+  }
   if(/^(fix|hotfix)\((video|voice|audio|messages|messenger|auth|payments?|support)\)/i.test(title) &&
      /\b(unblock|broken|crash|regression|restore|fail(?:ed|ing)?|stuck|cannot|not working)\b/i.test(title))
     return ['P0','broken client functionality'];

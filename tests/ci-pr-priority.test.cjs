@@ -12,6 +12,15 @@ test('explicit P0 to P3 owner priority overrides title heuristic',()=>{
   assert.equal(priorityFor(pr(1,'fix(ci): watchdog broken'),NOW).tier,'P0');
   assert.equal(priorityFor(pr(2,'fix(ci): watchdog broken',{labels:[label('hh:priority:p2')]}),NOW).tier,'P2');
 });
+test('old CI regression-coverage PR does not displace active production P0',()=>{
+  const coverage=pr(850,'fix(ci): restore regression coverage for current test, course and consultation UI');
+  const outage=pr(2956,'fix(ci): prevent Watchdog callbacks cancelling repairs');
+  const blocked=pr(2957,'fix(ci): unblock developer build');
+  assert.equal(priorityFor(coverage,NOW).tier,'P2');
+  assert.equal(priorityFor(outage,NOW).tier,'P0');
+  assert.equal(priorityFor(blocked,NOW).tier,'P1');
+  assert.equal(rankedCandidates([coverage,outage],NOW)[0].number,2956);
+});
 test('production regression precedes media feature, normal work and styling',()=>{
   for(const [title,tier] of [
     ['fix(video): unblock iPhone Create','P0'],
