@@ -120,9 +120,9 @@ test("published informational YouTube no longer overlays the original Canvas her
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
-  assert.match(css,/grid-auto-columns:minmax\(148px,43%\)/);
+  assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
   assert.match(css,/scroll-snap-type:x proximity/);
-  assert.match(css,/\.studio \.quickMusicRail \.quickMusicPlay\{position:absolute/);
+  assert.match(css,/\.studio \.quickMusicRail \.quickMusicPlay\{position:static/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(css,/font:650 clamp\(10px,2.75vw,12px\)/);
