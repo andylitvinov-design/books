@@ -470,3 +470,15 @@ test('Watchdog wakes the dispatcher only for durable work, not every completed C
  assert.ok(coordinator.includes('notifyControlTower({github,owner,repo'));
  assert.ok(coordinator.includes('summary.controlTowerWake='));
 });
+
+test('expired active foreign lease cannot be stolen by a second worker',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const active={schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,state:'active',
+  expires_at:new Date(NOW-60_000).toISOString()};
+ const old={owner:'Codex / video',run_id:'historical',head_sha:SHA,
+  last_action:'verify',lease_expires:new Date(NOW-60_000).toISOString()};
+ assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify(active)}],NOW),'OWNER_LEASE_ACTIVE');
+ assert.equal(reservationStatus(task,[{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify(old)}],NOW),'FREE');
+});

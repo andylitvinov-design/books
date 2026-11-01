@@ -14,7 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {taskFor,commentBody,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -42,8 +42,9 @@ function activeSweepLease(comments, sha, now) {
       if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
         if (lease.head_sha === sha &&
             ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
-          const expiry=Date.parse(lease.expires_at || '');
-          if (!Number.isFinite(expiry) || expiry > now) return true;
+          // A worker can remain active after its TTL expires. Never
+          // overwrite that worker's source just because the clock advanced.
+          return true;
         }
         continue;
       }
@@ -193,18 +194,29 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
       log('WOULD_CLAIM #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
       return {status:'dry_run',number:pr.number,sha:pr.head.sha,files};
     }
-    // A persistent exact-HEAD claim is written before expensive untrusted checkout.
+    // Persist the addressed task acknowledgement on the exact source HEAD.
+    // CLAIMED is evidence of ownership, never evidence of a published fix.
+    const receipt=taskFor(pr,priorityFor(pr,now));
+    const workerRunUrl=Number.isSafeInteger(context.runId)?
+      'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
+    const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',
+      owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
+      outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body:
       marker + '\n**HH Repair Worker claimed this HEAD.**\n' +
       'Owner: @' + pr.user.login + '; strategy: ' + (conflict?'conflict/manual':'targeted ESLint autofix') +
-      '. The worker does not bypass checks or overwrite another source branch.'});
+      '. The worker does not bypass checks or overwrite another source branch.' +
+      (claimedReceipt?'\n'+claimedReceipt:'')});
     try { await github.rest.issues.addAssignees({owner,repo,issue_number:pr.number,assignees:[pr.user.login]}); }
     catch (error) { log('Could not assign owner to #' + pr.number + ': ' + error.message); }
     if (conflict) {
       await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body:
         'HH Repair Worker: true merge conflict detected. No safe deterministic resolution; '+
         '@' + pr.user.login + ' must resolve the conflicting source semantics or use an approved coding agent. '+
-        'No force-push or automatic ours/theirs resolution performed.'});
+        'No force-push or automatic ours/theirs resolution performed.'+
+        (receipt?'\n'+commentBody({...receipt,state:'MANUAL',
+          outcome:'CONFLICT_REQUIRES_OWNER',owner_run_id:String(context.runId||'unknown'),
+          run_url:workerRunUrl}):'')});
       // A claimed conflict is not a source-fixable queue item. Preserve a
       // visible owner blocker but release its repair labels so idle slots are
       // spent on work that CAN be fixed. A future changed HEAD can be requeued.
@@ -245,6 +257,9 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   const pr=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
   if (!eligible(pr,fullRepo) || pr.head.sha !== expectedSha)
     throw Error('HH_REPAIR_PUBLISH_STALE_OR_UNAUTHORIZED');
+  const receipt=taskFor(pr,priorityFor(pr,Date.now()));
+  const workerRunUrl=Number.isSafeInteger(context.runId)?
+    'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
   const files = (await github.rest.pulls.listFiles({owner,repo,pull_number:prNumber,per_page:100,page:1})).data;
   const allowed = safeFiles(files);
   if (!allowed || candidate.files.some(f => !allowed.includes(f.path)) ||
@@ -276,7 +291,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
       'HH Repair Worker: ran targeted ESLint autofix, but no safe validated source change was produced '+
       'for HEAD ' + expectedSha + '. Owner action required: diagnose the failed Core/TypeScript build and '+
-      'apply a tested source fix. No checks were bypassed.'});
+      'apply a tested source fix. No checks were bypassed.'+
+      (receipt?'\n'+commentBody({...receipt,state:'MANUAL',
+        outcome:'NO_VERIFIED_SOURCE_CHANGE',owner_run_id:String(context.runId||'unknown'),
+        run_url:workerRunUrl}):'')});
     // An actionable source queue must not endlessly cycle once a verified
     // deterministic repair attempt concludes that human/AI coding is required.
     try {await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE});}
@@ -293,7 +311,11 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
     'HH Repair Worker: committed targeted ESLint autofix ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
-    'AutoMerge is allowed only after exact-HEAD required checks pass.'});
+    'AutoMerge is allowed only after exact-HEAD required checks pass.'+
+    (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
+      outcome:'VERIFIED_SOURCE_COMMIT',new_sha:created.sha,
+      commit_url:'https://github.com/'+fullRepo+'/commit/'+created.sha,
+      owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl}):'')});
   try { await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE}); }
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
