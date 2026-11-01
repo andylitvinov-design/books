@@ -108,6 +108,32 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // Unlike editor-only changes, the new course contact UI calls the EXISTING
 // /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
 // browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+// These EXISTING, isolated files are directly owned by Holistic Support
+// Mandala's source, consent, audio/video and Playwright tests. They contain no
+// checkout, booking, client-account, payment, app-wide routing or auth code.
+// Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
+const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // This exact free-only, consent-gated AI question service belongs to Mandala.
+  // Its route and provider contract have focused source/consent/rate tests.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
+  'app/[locale]/holistic-support/mandala/page.tsx',
+  'components/mandala-cinematic-director.tsx',
+  'components/mandala-video-mobile.module.css',
+  'scripts/verify-holistic-mandala-browser.mjs',
+  'tests/cinematic-studio.test.mjs',
+  'tests/mandala-approved-mobile-studio.test.mjs',
+  'tests/mandala-audio-attach.test.mjs',
+  'tests/mandala-auto-video-director-ui.test.mjs',
+  'tests/mandala-mobile-video-design.test.mjs',
+  'tests/mandala-stories-characters.test.mjs',
+  'tests/mandala-therapy-video-intro.test.mjs',
+]);
 const MANDALA_COURSE_ENQUIRY_FILES = new Set([
   'components/meditation-course-enquiry.module.css',
   'components/meditation-course-enquiry.tsx',
@@ -116,6 +142,15 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Only these seven audited chat additions may use the Mandala-owned scope.
+  // New payment, account or otherwise unknown API additions still run full E2E.
+  'app/api/holistic-support/video-director-chat/route.js',
+  'components/mandala-video-director-chat.module.css',
+  'components/mandala-video-director-chat.tsx',
+  'lib/mandala/video-chat-ai.mjs',
+  'lib/mandala/video-chat-intent.mjs',
+  'tests/video-chat-ai.test.mjs',
+  'tests/video-chat-intent.test.mjs',
   'app/api/holistic-support/hypno-strategy/route.js',
   'components/mandala-hypnocorrection-mobile.module.css',
   'components/mandala-hypnocorrection-mobile.tsx',
@@ -183,7 +218,7 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
-    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;

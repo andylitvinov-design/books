@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseVideoChatAiInput,generateVideoChatAiQuestion} from '../lib/mandala/video-chat-ai.mjs';
@@ -35,4 +36,17 @@ test('unsafe or invented links from model are ignored; no fake success',async()=
  const response=await generateVideoChatAiQuestion(parseVideoChatAiInput(payload),env,async()=>({ok:true,
     text:async()=>JSON.stringify({candidates:[{content:{parts:[{text:'https://external.example/private'}]}}]})}));
  assert.equal(response.error,'VIDEO_CHAT_AI_UNAVAILABLE');
+});
+test('chat question HTTP route enforces explicit user consent and shared free quota',()=>{
+  const route=readFileSync(new URL('../app/api/holistic-support/video-director-chat/route.js',import.meta.url),'utf8');
+  assert.match(route,/requireSameOrigin\(request,config\)/);
+  assert.match(route,/readBody\(request,2000\)/);
+  assert.match(route,/parseVideoChatAiInput\(/);
+  assert.match(route,/HH_FIRST_VIDEO_AI_ENABLED/);
+  assert.match(route,/consumeRate\(config,\{op:'video-chat-free-global-day'\},60,86400\)/);
+  assert.match(route,/consumeRate\(config,\{op:'video-chat-free-global-minute'\},10,60\)/);
+  assert.match(route,/PRIVATE_HEADERS/);
+  assert.match(route,/changesApplied:false/);
+  assert.match(route,/externalVideoGenerated:false/);
+  assert.doesNotMatch(route,/console\.(?:log|warn|error)|wallet|creditDebit|paidRender/i);
 });
