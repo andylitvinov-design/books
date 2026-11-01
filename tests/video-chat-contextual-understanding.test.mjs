@@ -44,12 +44,16 @@ test("safety: contradictory and unsupported options never silently override sele
  assert.equal(understand("9:16 или 16:9","review").reason,"ambiguous");
  assert.equal(understand("20 минут","duration").reason,"unsupported_duration");
  assert.equal(understand("45 секунд","review").reason,"unsupported_duration");
+ assert.equal(understand("20-30 секунд","duration").reason,"ambiguous");
+ assert.equal(understand("15 или 30 секунд","review").reason,"ambiguous");
  assert.equal(understand("нет","review").kind,"clarify");
 });
 test("explicit confirmation and rendering stay in separate stages",()=>{
  assert.equal(understand("да","review").kind,"confirm");
  assert.equal(understand("да","ready").kind,"clarify");
  assert.equal(understand("создавай","review").reason,"approval_needed");
+ assert.equal(understand("сделай видео","review").reason,"approval_needed");
+ assert.equal(understand("сделай видео","scenario").reason,"incomplete_path");
  assert.equal(understand("создавай","ready").kind,"create");
  assert.equal(understand("покажи результат","done").kind,"open");
  assert.notEqual(understand("да, но без музыки","review").kind,"confirm");

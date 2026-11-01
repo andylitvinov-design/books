@@ -333,8 +333,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(reply.kind==="create"){start();return;}
    if(reply.kind==="open"){onOpenResult();return;}
    if(reply.kind==="navigate"){
+     if(reply.targetStep==="goal"){commit(draft,"category",t.category);return;}
      const requested=(reply.targetStep||step) as Step;
-     if(requested==="goal"){commit(draft,"category",t.category);return;}
      if(requested==="review"&&!draft.categoryId){
        addLine("assistant",t.category);return;
      }
@@ -410,6 +410,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    }
    if(reply.kind==="clarify"&&reply.reason==="ambiguous"){
      addLine("assistant",t.chatAmbiguous);return;
+   }
+   if(reply.kind==="clarify"&&reply.reason==="approval_needed"){
+     addLine("assistant",t.chatConfirmFirst);return;
+   }
+   if(reply.kind==="clarify"&&reply.reason==="incomplete_path"){
+     addLine("assistant",question(step));return;
    }
    // Resolve a new goal in the canonical taxonomy, keeping explicit media
    // settings. A new topic must drop stale story/idea/phrase selections.
