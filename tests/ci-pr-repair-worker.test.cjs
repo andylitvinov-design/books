@@ -110,7 +110,7 @@ test('publisher verifies owner, SHA, changed file blob and commits exactly once'
 test('publisher refuses changed SHA, unauthorized owner and forged patch path',async()=>{
   const c={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,base64:'YQ=='}]};
   let f=fixture({fresh:pr({head:{ref:'fix/pr-11',sha:'e'.repeat(40),repo:{full_name:owner+'/'+repo}}})});
-  await assert.rejects(publish({github:f.github,core,context,prNumber:11,expectedSha:sha,candidate:c,writer:f.writer}),/STALE/);
+  await assert.rejects(publish({github:f.github,core,context,prNumber:11,expectedSha:sha,candidate:c,writer:f.writer}),/STALE_HEAD/);
   assert.equal(f.log.commit,0);
   f=fixture();const forbidden={head_sha:sha,files:[{...c.files[0],path:'scripts/outside.js'}]};
   await assert.rejects(publish({github:f.github,core,context,prNumber:11,expectedSha:sha,candidate:forbidden,writer:f.writer}),/UNSAFE_PATH/);
@@ -260,4 +260,24 @@ test('empty autofix emits MANUAL receipt, never PUBLISHED',async()=>{
  assert.equal(result.status,'manual_required');
  assert.match(f.log.commentBodies.at(-1),/"state":"MANUAL"/);
  assert.doesNotMatch(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
+});
+
+test('publisher distinguishes moved owner HEAD from unauthorized PR and never writes either',async()=>{
+ const c={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,base64:'YQ=='}]};
+ const f=fixture({pr:pr({head:{ref:'fix/pr-11',sha:'e'.repeat(40),
+   repo:{full_name:owner+'/'+repo}}})});
+ await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+   expectedSha:sha,candidate:c,writer:f.writer}),/HH_REPAIR_PUBLISH_STALE_HEAD/);
+ assert.equal(f.log.commit,0);
+ const x=fixture({pr:pr({user:{login:'someone-else'}})});
+ await assert.rejects(publish({github:x.github,core,context,prNumber:11,
+   expectedSha:sha,candidate:c,writer:x.writer}),/HH_REPAIR_PUBLISH_STALE_OR_UNAUTHORIZED/);
+ assert.equal(x.log.commit,0);
+});
+test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
+ const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(yml,/error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'/);
+ assert.match(yml,/status:'skipped_stale_head',reason:'STALE_HEAD_ABORTED'/);
+ assert.match(yml,/source_published:false/);
+ assert.match(yml,/if \(error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'\) throw error/);
 });

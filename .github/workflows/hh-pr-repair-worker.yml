@@ -203,9 +203,20 @@ jobs:
               return {sha:commit.sha};
             }};
             const candidate=JSON.parse(fs.readFileSync('hh-candidate/candidate.json','utf8'));
-            const result=await worker.publish({github,core,context,
-              prNumber:Number(process.env.HH_REPAIR_PR),
-              expectedSha:process.env.HH_REPAIR_SHA,candidate,writer});
+            let result;
+            try {
+              result=await worker.publish({github,core,context,
+                prNumber:Number(process.env.HH_REPAIR_PR),
+                expectedSha:process.env.HH_REPAIR_SHA,candidate,writer});
+            } catch (error) {
+              if (error?.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD') throw error;
+              // Changed HEAD is a correct fail-closed abort, not a code repair.
+              // No PR source, labels or CI checks are altered in this branch.
+              result={status:'skipped_stale_head',reason:'STALE_HEAD_ABORTED',
+                pr_number:Number(process.env.HH_REPAIR_PR),
+                expected_sha:process.env.HH_REPAIR_SHA,source_published:false};
+              core.warning('HH_REPAIR: stale source HEAD; discarded isolated candidate');
+            }
             core.info('HH_REPAIR_PUBLISH '+JSON.stringify(result));
             await core.summary.addHeading('HH PR Repair Worker outcome')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
