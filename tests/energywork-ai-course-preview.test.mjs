@@ -230,7 +230,7 @@ test('Kundalini slide includes all three screenshot-supplied reflections in Engl
 })
 
 test('Flight to the Sun invites curiosity, removes clinical caveats and only offers published audio', () => {
-  const opening = curriculum.slice(curriculum.indexOf('id: "flight-01"'), curriculum.indexOf('id: "flight-02"'))
+  const opening = curriculum.slice(curriculum.indexOf('id: "flight-01"'), curriculum.indexOf('id: "flight-audio"'))
   const audio = read('components/reiki-lesson-intro-audio.tsx')
   assert.match(opening, /The Sun is calling\. Ready\?/)
   assert.match(opening, /Солнце зовёт\. Готовы\?/)
@@ -238,7 +238,9 @@ test('Flight to the Sun invites curiosity, removes clinical caveats and only off
   assert.match(opening, /воображаемый полёт к Солнцу/)
   assert.equal((opening.match(/\n\s+l\("/g) || []).length, 3)
   assert.doesNotMatch(opening, /physical or medical claim|не медицинское утверждение/i)
-  assert.match(audio, /if \(!audio\) return null;/)
+  assert.match(audio, /if \(!audio\) return showEmpty \? \(/)
+  assert.match(audio, /data-reiki-audio-unpublished/)
+  assert.doesNotMatch(audio, /autoPlay|autoplay/)
   assert.doesNotMatch(audio, /will be added here|скоро появится/)
   assert.match(css, /Flight to the Sun: warmer, more evocative opening/)
   assert.ok(css.includes('.slide[data-reiki-art-layout="background"][data-energywork-slide-id="flight-01"] .slideMain > .art img'))

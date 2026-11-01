@@ -29,7 +29,7 @@ const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 64 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 68 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
@@ -40,12 +40,12 @@ test('Server registry includes exactly 64 editorial IDs in one fixed five-lesson
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 64)
-  assert.equal(new Set(registered).size,64)
+  assert.equal(editorial.length, 68)
+  assert.equal(new Set(registered).size,68)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length, 64)
-  assert.deepEqual(sequence.slice(3,10), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
+  assert.equal(sequence.length, 68)
+  assert.deepEqual(sequence.slice(3,11), ['flight-01','flight-audio','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.ok(!sequence.includes('flight-save'))
   assert.equal(sequence[10],'tan-01')
   assert.equal(sequence[0],'welcome-01')
