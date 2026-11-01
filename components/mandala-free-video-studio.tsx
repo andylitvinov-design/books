@@ -1693,6 +1693,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,wish,
   });
+  // Keep the three illustrated default melodies even after a visitor uses
+  // Nature-only or another filter in the OPTIONAL advanced audio workspace.
+  const featuredMelodies=recommendMandalaAudio({
+    theme,kind:"melody",mood:"all",pace:"all",voiceFriendly:false,wish,
+  });
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = mandalaAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
@@ -3473,7 +3478,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {locale==="ru"?"Послушать все":locale==="es"?"Escuchar todas":"Listen to all"}</button>
         </div>
         <div className={videoStyles.quickMusicRail} role="group" aria-label={locale==="ru"?"Звуковые дорожки":locale==="es"?"Pistas de audio":"Audio tracks"}>
-          {audioMatches.filter(track=>track.kind==="melody").slice(0,3).map((track,index)=>{
+          {featuredMelodies.slice(0,3).map((track,index)=>{
             const id=track.id as Exclude<AmbientMusic,"none">;
             const posters=[
               "/videos/holistic-house/film-collection-v2/meadow-morning.jpg",
