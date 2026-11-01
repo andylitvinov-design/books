@@ -126,3 +126,14 @@ test("desktop retains original six explicit theme choices while iPhone starts wi
  assert.match(css,/@media\(min-width:760px\)\{[\s\S]*?\.quickThemeAdvanced>summary\{display:none\}/);
  assert.match(css,/\.quickThemeAdvanced \.quickThemeRail\{display:grid;grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
 });
+
+test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
+ assert.match(studio,/if\(attachedAudio && audioPreviewRef\.current\?\.paused\)toggleSoundPreview\(\)/,
+   "selected audio must begin from the same trusted Play tap on Safari");
+ assert.match(studio,/if\(previewPlaying\)\{setPreviewPlaying\(false\);if\(attachedAudio\)stopSoundPreview\(\);\}/,
+   "pausing the video must pause its selected native audio");
+ assert.match(studio,/const player=audioPreviewRef\.current;[\s\S]*?void player\.play\(\)\.catch/,
+   "retain the existing one user-gesture audio player");
+ assert.match(studio,/if\(recording \|\| preparing\) return;\s*setPreviewPlaying\(true\)/,
+   "Play never starts audio during export");
+});
