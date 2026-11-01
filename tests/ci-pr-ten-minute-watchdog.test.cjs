@@ -12,9 +12,9 @@ const pr = number => ({
 const core = () => ({info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 const context = {repo:{owner:'andylitvinov-design',repo:'books'}};
 
-test('full pool is covered by rotating slices within six 10-minute checks',()=>{
+test('full pool is covered by rotating slices within sixteen 10-minute checks',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1)), numbers=new Set();
-  for(let tick=0;tick<6;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
+  for(let tick=0;tick<16;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
@@ -32,7 +32,7 @@ test('CI admission uses separate running and queued limits, not their sum',()=>{
   assert.equal(canRetryCi(0,20),false);
   assert.equal(canRetryCi(Infinity,0),false);
 });
-test('merge state classifier does not mistake unknown or behind for conflict',()=>{
+test('merge state classifier distinguishes dirty, unknown and behind',()=>{
   assert.equal(classifyMergeState({mergeable:false,mergeable_state:'dirty'}),'DIRTY');
   assert.equal(classifyMergeState({mergeable:null,mergeable_state:'unknown'}),'UNKNOWN');
   assert.equal(classifyMergeState({mergeable:true,mergeable_state:'behind'}),'BEHIND');
@@ -49,8 +49,7 @@ test('retry only first-attempt infrastructure failures after cooldown',()=>{
 test('green unarmed PR dispatches existing protected coordinator, not a direct merge',async()=>{
   let dispatched=0, targeted=false;
   const github={rest:{
-    pulls:{list:async()=>({data:[pr(99)]}),
-      get:async()=>({data:{...pr(99),state:'open',mergeable:true,mergeable_state:'clean'}})},
+    pulls:{list:async()=>({data:[pr(99)]}),get:async()=>({data:{...pr(99),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?0:3}})},
     checks:{listForRef:async(arg)=>{targeted=arg.check_name==='release-ready';return {data:{total_count:1,check_runs:[{id:1,name:'release-ready',status:'completed',conclusion:'success',app:{id:15368}}]}};}}
   },request:async(route)=>{if(route.includes('dispatches')) dispatched++;return {data:{workflow_runs:[]}};}};
@@ -63,8 +62,7 @@ test('green unarmed PR dispatches existing protected coordinator, not a direct m
 test('CI overload blocks retries, but code failures are handed to Repair once',async()=>{
   let reruns=0,comments=0,labels=0;
   const github={rest:{
-    pulls:{list:async()=>({data:[pr(98)]}),
-      get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
+    pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
     actions:{
       listWorkflowRunsForRepo:async ({status})=>({data:{total_count:status==='queued'?32:18}}),
       listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'Build',conclusion:'failure',
@@ -90,15 +88,44 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(result.queuedActions,32);
 });
 
-test('dirty PR is placed in conflict repair queue without scanning CI',async()=>{
+test('rate-reserve stops deep checks and no merge dispatch is sent',async()=>{
+  let checks=0;
+  const github={rest:{
+    pulls:{list:async()=>({headers:{'x-ratelimit-remaining':'0'},data:[pr(66)]})},
+    actions:{listWorkflowRunsForRepo:async()=>{throw Error('capacity must be skipped');}},
+    checks:{listForRef:async()=>{checks++;throw Error('checks must be skipped');}}
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.apiRateLimited,true);
+  assert.equal(result.apiBudgetReason,'GITHUB_RATE_RESERVE');
+  assert.equal(result.apiRequests,1);
+  assert.equal(result.inspected,0);
+  assert.equal(checks,0);
+  assert.equal(result.mergeCoordinatorDispatched,0);
+});
+test('bounded rotation inventories all open PRs while limiting detailed calls',async()=>{
+  const all=Array.from({length:179},(_,i)=>pr(i+1));
+  const github={rest:{
+    pulls:{list:async({page})=>({data:all.slice((page-1)*100,page*100)}),
+      get:async({pull_number})=>({data:{...pr(pull_number),state:'open',mergeable:true,mergeable_state:'clean'}})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false,dryRun:true});
+  assert.equal(result.open,179);
+  assert.ok(result.inspected<=16);
+  assert.ok(result.apiRequests<=65);
+});
+
+test('real DIRTY PR enters conflict queue without consuming Core CI requests',async()=>{
   let checked=0,labels=0,dispatched=0;
   const live={...pr(1469),state:'open',mergeable:false,mergeable_state:'dirty',labels:[]};
   const github={rest:{
     pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
-    checks:{listForRef:async()=>{checked++;throw Error('dirty PR should not read CI');}},
+    checks:{listForRef:async()=>{checked++;throw Error('dirty PR must bypass CI');}},
     issues:{addLabels:async()=>{labels++;}}
-  },request:async()=>{dispatched++;throw Error('unexpected API call');}};
+  },request:async()=>{dispatched++;throw Error('unexpected API call')}};
   const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
   assert.equal(result.mergeConflicts,1);
   assert.equal(result.conflictLabelsQueued,1);
@@ -106,8 +133,9 @@ test('dirty PR is placed in conflict repair queue without scanning CI',async()=>
   assert.equal(checked,0);
   assert.equal(labels,1);
   assert.equal(dispatched,0);
+  assert.ok(result.apiRequests<=65);
 });
-test('unknown merge state is not mislabeled as missing Core CI',async()=>{
+test('unknown mergeability is not treated as missing Core CI',async()=>{
   let checks=0;
   const live={...pr(1538),state:'open',mergeable:null,mergeable_state:'unknown'};
   const github={rest:{
@@ -120,7 +148,7 @@ test('unknown merge state is not mislabeled as missing Core CI',async()=>{
   assert.equal(result.missingCore,0);
   assert.equal(checks,0);
 });
-test('outdated base is recorded without producing unnecessary CI reruns',async()=>{
+test('behind branch is reported without spawning redundant CI jobs',async()=>{
   let checks=0;
   const live={...pr(1624),state:'open',mergeable:true,mergeable_state:'behind'};
   const github={rest:{
@@ -133,7 +161,7 @@ test('outdated base is recorded without producing unnecessary CI reruns',async()
   assert.equal(result.missingCore,0);
   assert.equal(checks,0);
 });
-test('conflict label already present does not cause duplicate writes',async()=>{
+test('already-labeled conflict is not written again',async()=>{
   let labels=0;
   const live={...pr(1469),state:'open',mergeable:false,mergeable_state:'dirty',
     labels:[{name:'hh:conflict-repair-needed'}]};
