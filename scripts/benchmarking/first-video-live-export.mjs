@@ -11,16 +11,20 @@ import {mkdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
 
-const ORIGIN = 'https://holistichouse.vercel.app';
+const LIVE_ORIGIN = 'https://holistichouse.vercel.app';
+const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
 const ARTIFACT = 'artifacts/benchmarking/first-video-live-export.json';
 const driver = process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
-const source = process.env.HH_LIVE_VIDEO_SOURCE || ORIGIN;
-if (!driver || !driver.startsWith('/') || source !== ORIGIN) {
+const requireLicensed = process.env.HH_LIVE_VIDEO_REQUIRE_STOCK === 'true';
+const source = process.env.HH_LIVE_VIDEO_SOURCE || LIVE_ORIGIN;
+if (!driver || !driver.startsWith('/') ||
+    (source !== LIVE_ORIGIN && !(requireLicensed && source === LOCAL_ORIGIN))) {
   throw new Error('LIVE_VIDEO_SMOKE_CONFIG_UNSAFE');
 }
+const ORIGIN=source;
 const {chromium} = await import(driver);
 const row = {target: ORIGIN, engine: 'chromium', viewport: '390x844',
-  origin: 'anonymous-public', method: 'local-canvas-export',
+  origin: source===LIVE_ORIGIN?'anonymous-public':'anonymous-local', method: 'local-canvas-export',
   paidVideoProviderUsed: false, aiPromptRequested: false,
   physicalIPhoneVerified: false, status: 'FAIL', blockedRequests: 0};
 
@@ -40,6 +44,23 @@ function movingPixels(mediaFile, at) {
   return mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', mediaFile,
     '-ss', String(at), '-frames:v', '1', '-vf', 'scale=96:54,format=rgb24',
     '-f', 'rawvideo', 'pipe:1'], 200 * 1024);
+}
+function portraitPixels(mediaFile, at) {
+  return mediaTool('ffmpeg', ['-hide_banner','-loglevel','error','-ss',String(at),
+    '-i',mediaFile,'-frames:v','1','-vf','scale=54:96,format=rgb24',
+    '-f','rawvideo','pipe:1'],200*1024);
+}
+function correlation(a,b) {
+  assert.equal(a.length,54*96*3,'FRAME_UNDECODABLE');
+  assert.equal(b.length,a.length,'SOURCE_FRAME_UNDECODABLE');
+  let meanA=0,meanB=0;
+  for(let i=0;i<a.length;i++){meanA+=a[i];meanB+=b[i];}
+  meanA/=a.length;meanB/=b.length;
+  let aa=0,bb=0,ab=0;
+  for(let i=0;i<a.length;i++){
+    const x=a[i]-meanA,y=b[i]-meanB;aa+=x*x;bb+=y*y;ab+=x*y;
+  }
+  return aa&&bb?ab/Math.sqrt(aa*bb):0;
 }
 function rmsPcm(mediaFile) {
   const pcm = mediaTool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', mediaFile,
@@ -104,6 +125,18 @@ try {
   await first.locator('[data-first-video-music]').selectOption('meditation');
   assert.equal(await first.locator('[data-first-video-ai-consent]').isChecked(), false,
     'SYNTHETIC_LIVE_SMOKE_SHOULD_NOT_SEND_AI');
+  let licensedSources=[];
+  if(requireLicensed){
+    await page.waitForFunction(()=>{
+      const videos=[...document.querySelectorAll('[data-free-film-source]')];
+      return videos.length===4&&videos.every(v=>v.readyState>=2&&v.videoWidth>0);
+    },undefined,{timeout:90000});
+    licensedSources=await page.locator('[data-free-film-source]').evaluateAll(videos=>
+      videos.map(video=>({id:video.dataset.freeFilmSource,src:video.getAttribute('src')})));
+    assert.equal(new Set(licensedSources.map(item=>item.id)).size,4,'FOUR_DISTINCT_SOURCES_REQUIRED');
+    for(const item of licensedSources)
+      assert.match(item.src||'',/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,'SOURCE_NOT_FIRST_PARTY');
+  }
   const create = first.locator('[data-first-video-generate]');
   await page.waitForFunction(() => {
     const button = document.querySelector('[data-first-video-generate]');
@@ -152,7 +185,7 @@ try {
   for (const [index, frame] of frames.entries()) {
     assert.equal(frame.length, 96 * 54 * 3, 'FRAME_UNDECODABLE_' + times[index]);
   }
-  const differences = frames.slice(1).map((frame, index) => {
+  const differences = frames.slice(1).map(frame => {
     let delta = 0;
     const first = frames[0];
     for (let i = 0; i < frame.length; i++) delta += Math.abs(frame[i] - first[i]);
@@ -163,13 +196,44 @@ try {
   row.motionAverageDeltas = differences;
   row.pixelDifference = avgPixelDifference;
   assert.ok(avgPixelDifference > 0.35, 'EXPORTED_FRAMES_NOT_MOVING');
+  if(requireLicensed){
+    const root=resolve('public');
+    const references=licensedSources.map(item=>{
+      const path=resolve(root,'.'+item.src);
+      assert.ok(path.startsWith(root+'/'),'SOURCE_PATH_INVALID');
+      return [0.5,1,2,2.5,3,4].map(t=>portraitPixels(path,t));
+    });
+    const matrix=licensedSources.map((_,index)=>{
+      const frame=portraitPixels(mediaFile,index*5+2.5);
+      return references.map(samples=>Math.max(...samples.map(sample=>correlation(frame,sample))));
+    });
+    for(let i=0;i<4;i++){
+      assert.ok(matrix[i][i]>.6,'LICENSED_SCENE_NOT_VISIBLE_'+i);
+      assert.ok(matrix[i].every((score,j)=>j===i||matrix[i][i]>score+.08),'LICENSED_SCENE_ORDER_MISMATCH_'+i);
+    }
+    const motion=licensedSources.map((_,index)=>{
+      const a=portraitPixels(mediaFile,index*5+1),b=portraitPixels(mediaFile,index*5+3);
+      let difference=0;
+      for(let i=0;i<a.length;i++)difference+=Math.abs(a[i]-b[i]);
+      return difference/a.length;
+    });
+    assert.ok(motion.every(value=>value>.3),'LICENSED_SHOT_NOT_MOVING');
+    const black=spawnSync('ffmpeg',['-hide_banner','-i',mediaFile,'-vf',
+      'blackdetect=d=0.15:pix_th=0.05','-an','-f','null','-'],{timeout:30000,maxBuffer:1024*1024});
+    assert.equal(black.status,0,'BLACK_GAP_INSPECTION_FAILED');
+    assert.doesNotMatch(String(black.stderr),/black_start:/,'BLACK_GAP_IN_EXPORT');
+    row.licensedSourceIds=licensedSources.map(item=>item.id);
+    row.licensedFrameCorrelations=matrix.map((scores,index)=>Number(scores[index].toFixed(3)));
+    row.motionPerLicensedShot=motion.map(value=>Number(value.toFixed(3)));
+    row.blackGaps=false;
+  }
   assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
   row.status = 'PASS';
-  console.log('LIVE_FIRST_VIDEO_REAL_EXPORT_PASS', JSON.stringify(row));
+  console.log(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_PASS':'LOCAL_FIRST_VIDEO_REAL_EXPORT_PASS', JSON.stringify(row));
   await context.close();
 } catch (error) {
   row.failure = String(error?.message || error).slice(0, 200);
-  console.error('LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
   process.exitCode = 1;
 } finally {
   await browser?.close();
