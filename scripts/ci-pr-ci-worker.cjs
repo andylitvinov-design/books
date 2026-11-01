@@ -31,7 +31,7 @@ function validPR(pr, repo) {
   return Boolean(pr && pr.state === 'open' && !pr.draft &&
     pr.base?.ref === PROD && pr.head?.repo?.full_name === repo &&
     SHA.test(pr.head?.sha || '') && validBranch(pr.head?.ref) &&
-    pr.mergeable === true && pr.mergeable_state === 'clean' &&
+    pr.mergeable === true && ['clean','blocked'].includes(pr.mergeable_state) &&
     !pr.labels?.some(label => label.name === ATTEMPTED));
 }
 

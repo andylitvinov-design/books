@@ -1,7 +1,10 @@
 name: HH PR 10-minute watchdog
 on:
   schedule:
-    - cron: '7,17,27,37,47,57 * * * *'
+    - cron: '6,16,26,36,46,56 * * * *'
+  workflow_run:
+    workflows: ['HH PR core release gate']
+    types: [completed]
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -14,7 +17,7 @@ on:
         description: 'Inspect only; no CI retries, PR comments or merge dispatch'
         required: false
         type: boolean
-        default: true
+        default: false
 permissions:
   contents: read
   actions: write
@@ -26,7 +29,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   reconcile:
-    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.event == 'pull_request' &&
+        (github.event.workflow_run.conclusion == 'failure' ||
+         github.event.workflow_run.conclusion == 'timed_out' ||
+         github.event.workflow_run.conclusion == 'startup_failure')))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
