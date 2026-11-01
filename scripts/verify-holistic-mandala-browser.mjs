@@ -660,17 +660,18 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,true,"free diagnostic remains accessible as a secondary CTA");
-        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
-          "diagnostic CTA belongs below—not above—the primary video editor: "+JSON.stringify(layout));
+        assert.equal(layout.diagnosticVisible,false,
+          "the approved mobile layout hides the diagnostic banner while keeping its route intact");
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);
         assert.ok(await quick.locator("[data-video-preview-toggle]").isEnabled());
+        await page.locator('[data-video-quick-control="editor"]').click();
         const extras=quick.locator("[data-video-quick-extras]");
-        await extras.locator("summary").click();
+        await extras.locator(":scope > summary").click();
         await expect(extras).toHaveAttribute("open","");
-        await extras.locator("summary").click();
+        await extras.locator(":scope > summary").click();
+        await page.locator('[data-video-quick-control="video"]').click();
         const quickOverflow=await page.evaluate(()=>({
           page:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,
           cards:[...document.querySelectorAll("[data-video-quick-builder] > [data-video-quick-section], [data-video-quick-builder] > [data-video-quick-tier], [data-video-quick-personal]")].map(el=>({
