@@ -2843,7 +2843,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       anchor==="video-hypnocorrection-mobile"?"effects":
       anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
-    setStudioMode(tab==="practices"?"therapy":"pump");
+    setStudioMode("pump");
     setQuickDetailedOpen(true);
     const token=++quickNavTokenRef.current;
     const path=window.location.pathname+window.location.search;
