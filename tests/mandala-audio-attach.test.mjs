@@ -169,7 +169,7 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
     const attachedPresetIds=attached?.kind==="presets"?attached.ids:
       attached?.kind==="preset"?[attached.id]:[];
     runInNewContext(transpiled+";toggleQuickMusic(choice)",{
-      choice,attachedPresetIds,recording:false,preparing:false,micRecording:false,
+      choice,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
       clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
       setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
       setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
@@ -187,6 +187,12 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   assert.deepEqual(Array.from(attached.ids),["wings-of-light","quiet-stars"],"toggle off selected layer");
   assert.equal(selected,"wings-of-light");
   assert.equal(mutations,5);assert.equal(played,0,"inactive film does not autoplay");
+  // A pre-existing mastered voice must never be replaced by standalone music.
+  attached={kind:"file",narration:true,file:{name:"voice.wav"},id:"blob:voice"};
+  invoke("warm-morning");
+  assert.equal(attached.kind,"file");
+  assert.equal(attached.narration,true);
+  assert.equal(mutations,5,"no audio mutation when narration is attached");
 });
 
 test("local music mixer reads at most three static site-owned WAVs and emits one export audio track",async()=>{
@@ -235,7 +241,7 @@ test("quick music rail and shared native player are simultaneously mounted on Au
   // The old production CSS hid the quick selector exactly when the native player existed.
   assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
   assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
-  assert.match(studio,/flushSync\(\(\)=>\{setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
+  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)setActiveWorkspace\("video"\);setSamplePreviewId\(choice\);\}\)/);
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
 });
