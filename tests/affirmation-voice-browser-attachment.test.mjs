@@ -13,7 +13,7 @@ test("affirmation attachment acceptance verifies the visible live movie soundtra
   const render=source.indexOf('[data-video-quick-control="video"]',remix);
   assert.ok(phrase>=0&&generate>phrase&&expected>generate&&visible>expected&&remix>visible&&render>remix,
     "inspect the visible attached audio in the canonical video stage, then record the remixed movie");
-  assert.doesNotMatch(source,/\\.textContent\\(/,"hidden DOM text is not visible UI evidence");
+  assert.doesNotMatch(source,/\.textContent\(/,"hidden DOM text is not visible UI evidence");
 });
 
 test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
