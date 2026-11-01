@@ -1355,7 +1355,27 @@ const runEngine = async ([engine, browserType]) => {
           // MediaRecorder session, not just the legacy Generate control.
           await page.locator("[data-hypno-create-video]").click();
           const videoLink = page.locator("[data-mandala-video-download]");
-          await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          try {
+            await videoLink.waitFor({ state: "visible", timeout: 25000 });
+          } catch (error) {
+            const state=await page.evaluate(()=>{
+              const result=document.querySelector("[data-video-result]");
+              const video=document.querySelector("[data-mandala-video-preview]");
+              return {resultHidden:result?.hidden,mode:result?.getAttribute("data-video-result-mode"),
+                format:result?.getAttribute("data-video-recording-format"),
+                video:video?{readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,error:video.error?.code||null}:null,
+                checking:!!document.querySelector("[data-video-playback-check]"),
+                playbackError:!!document.querySelector("[data-video-playback-error]"),
+                createDisabled:document.querySelector("[data-hypno-create-video]")?.disabled,
+                statuses:Array.from(document.querySelectorAll("[data-mandala-free-video] [role=status]"),el=>el.textContent?.trim().slice(0,180))};
+            });
+            console.error("VIDEO_EXPORT_STATE",engine,locale,width,JSON.stringify(state));
+            if(process.env.HH_HYPNO_SCREENSHOT_DIR){
+              mkdirSync(process.env.HH_HYPNO_SCREENSHOT_DIR,{recursive:true});
+              await page.screenshot({path:`${process.env.HH_HYPNO_SCREENSHOT_DIR}/video-export-${engine}-${locale}-${width}.png`});
+            }
+            throw error;
+          }
           const filename = await videoLink.getAttribute("download");
           assert.match(filename || "", /^holistic-house-personal-mandala\.(webm|mp4)$/);
           const encoded=page.locator("[data-mandala-video-preview]");
