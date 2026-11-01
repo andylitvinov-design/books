@@ -106,6 +106,9 @@ function saveRegistry(data){
 }
 export function importReviewedAudio({manifest,dryRun=false}){
   const manifestPath=manifestFile(manifest);
+  const manifestStat=lstatSync(manifestPath);
+  if(manifestStat.isSymbolicLink()||!manifestStat.isFile()||manifestStat.size>64*1024)
+    throw Error("unsafe_or_too_large_review_manifest");
   const meta=validateReviewedAudioMetadata(JSON.parse(readFileSync(manifestPath,"utf8")));
   const file=resolve(inbox,meta.sourceFile);
   const inputStat=lstatSync(file);
@@ -126,8 +129,8 @@ export function importReviewedAudio({manifest,dryRun=false}){
     const result=spawnSync(executable,[
       "-nostdin","-hide_banner","-loglevel","error","-y",
       "-i",file,"-vn","-t","32",
-      "-af","afade=t=in:st=0:d=0.25,afade=t=out:st=31.4:d=0.6",
-      "-ar","22050","-ac","1","-codec:a","libmp3lame","-b:a","96k",
+      "-af","loudnorm=I=-23:TP=-2.5:LRA=9,afade=t=in:st=0:d=0.25,afade=t=out:st=31.4:d=0.6",
+      "-ar","44100","-ac","2","-codec:a","libmp3lame","-b:a","160k",
       "-map_metadata","-1","-f","mp3",tmp
     ],{timeout:60000,maxBuffer:2*1024*1024});
     if(result.error||result.status!==0||!existsSync(tmp)||statSync(tmp).size<30000)
