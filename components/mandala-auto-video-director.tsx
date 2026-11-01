@@ -31,7 +31,7 @@ type Props={
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
     edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]})=>void|boolean;
-  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;
+  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
 };
 const copy={
  ru:{
@@ -47,7 +47,7 @@ const copy={
    warning:"Новых персонажей и кадров здесь не генерируем: предложен символический монтаж.",
    empty:"Нет подходящего готового сюжета с такими ограничениями. Уточните цель или используйте расширенный редактор.",
    safety:"Образная практика для поддержки, не медицинское или психотерапевтическое лечение.",
-   input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Загружаем четыре видеосцены…",
+   input:"Или напишите свою цель",clarify:"Уточнить цель",refine:"Что именно хотите почувствовать или изменить?",addRefine:"Добавить к цели",moreGoals:"Ещё цели",create:"Создать выбранное видео",waiting:"Создаём видео…",blocked:"Проверьте выбранный звук и разрешения для создания видео.",
    selectedGoal:"Выбранная цель",
    melodyOptions:"Четыре мелодии для вашего сценария",melodyHint:"Выбранная мелодия включается в видео; звук можно отключить.",
    captionTrack:"Текст по сценам",captionHint:"Необязательно: одна надпись на каждом этапе. Текст показывается в вашем видео, а не отправляется в ИИ.",soundTrack:"Музыка и голос",soundMissing:"Звук не прикреплён",soundSettings:"Настроить звук",
@@ -66,7 +66,7 @@ const copy={
    warning:"New characters and footage are not generated here; this is a symbolic montage.",
    empty:"No ready-made story matches those exclusions. Refine your goal or use the advanced editor.",
    safety:"Supportive imagery, not medical or psychotherapeutic treatment.",
-   input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Loading four video scenes…",
+   input:"Or write your own goal",clarify:"Refine goal",refine:"What would you like to feel or change?",addRefine:"Add to my goal",moreGoals:"More goals",create:"Create selected video",waiting:"Creating video…",blocked:"Check your selected audio and permissions before creating video.",
    selectedGoal:"Selected goal",
    melodyOptions:"Four melodies for your story",melodyHint:"Selected music is included in the video; you can change or mute it.",
    captionTrack:"Scene captions",captionHint:"Optional: one caption per stage. Your text appears in the video and is not sent to AI.",soundTrack:"Music and voice",soundMissing:"No audio attached",soundSettings:"Edit sound",
@@ -85,7 +85,7 @@ const copy={
    warning:"No se generan personajes ni escenas nuevas: es un montaje simbólico.",
    empty:"Ningún montaje coincide con estas restricciones. Ajusta el objetivo o usa el editor avanzado.",
    safety:"Imágenes de apoyo, no un tratamiento médico ni psicoterapéutico.",
-   input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Cargando cuatro escenas de vídeo…",
+   input:"O escribe tu objetivo",clarify:"Precisar objetivo",refine:"¿Qué te gustaría sentir o cambiar?",addRefine:"Añadir al objetivo",moreGoals:"Más objetivos",create:"Crear vídeo seleccionado",waiting:"Creando vídeo…",blocked:"Comprueba el audio y los permisos para crear el vídeo.",
    selectedGoal:"Objetivo elegido",
    melodyOptions:"Cuatro melodías para tu historia",melodyHint:"La melodía elegida se incluye en el vídeo; puedes cambiarla o silenciarla.",
    captionTrack:"Texto por escena",captionHint:"Opcional: un texto por etapa. Se muestra en el vídeo, sin enviarlo a IA.",soundTrack:"Música y voz",soundMissing:"Sin audio adjunto",soundSettings:"Ajustar audio",
@@ -102,7 +102,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
+ audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -399,7 +399,8 @@ export function MandalaAutoVideoDirector({
            <Play size={17} fill="currentColor" aria-hidden="true"/>
            {rendering?t.waiting:t.create}
          </button>:null}
-         {!canCreate&&!disabled?<p className={css.notice}>{t.waiting}</p>:null}
+         {createFeedback?<p role="status" className={css.notice}>{createFeedback}</p>:null}
+         {!canCreate&&!disabled?<p className={css.notice}>{t.blocked}</p>:null}
        </div>:null}
        <p className={css.notice}>{t.safety}</p>
      </div>:<p role="status" className={css.warning}>{t.empty}</p>}
