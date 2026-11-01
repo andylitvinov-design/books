@@ -49,6 +49,28 @@ where scenario_id='love-trust-s1'
 order by variant;
 ```
 
+## Scenario-aware editorial refinement
+
+On 2026-11-01, the follow-up `sql/hh-video-phrase-story-arc-copy-v1-20261101.sql`
+was applied to the same live Supabase table. The 4 scenarios within a topic
+now have a different editorial tag *in the phrase text itself*: journey
+(«шаг за шагом»), shelter («без спешки»), awakening («с новым интересом»)
+and connection («в своём ритме»), with corresponding EN/ES grammatical
+versions. The four idea titles within each scenario reflect its arc. This
+retains fixed IDs; a theme switch cannot silently select a different person's
+text.
+
+Verified from the real database after the update: 69,120 rows,
+480 scenario-specific ideas (1,440 language-scoped idea selectors), all
+69,120 phrase texts distinct within scenario + locale, no repeated
+tone variant, maximum 105 Unicode characters. Runtime word wrapping
+handles the longer sentence without truncation.
+
+Manual category/topic/scenario/idea selection is kept on tone, address,
+length and locale changes; only changing the *underlying video request/theme*
+offers a fresh automatic recommendation. This avoids clobbering user input
+when the site language changes.
+
 ## Application path
 
 - **Client:** `MandalaPhraseCatalog` mounted once inside existing `mandala-free-video-studio.tsx` in the **phrases** workspace, replacing the previous `quickSupportPhrases[locale][theme]` hardcoded list. One large **Audio guide / music / voice** button calls the **existing** video-audio editor. No duplicate music picker, microphone, media renderer, or public page.

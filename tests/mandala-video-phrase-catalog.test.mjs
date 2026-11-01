@@ -110,3 +110,28 @@ test("each tone keeps distinct wording for the same selected story/idea",()=>{
           }
     }
 });
+
+test("all four stories have distinct, actionable idea titles for each topic and language",()=>{
+  const topicMap=new Map();
+  for(const scenario of VIDEO_GOAL_SCENARIOS){
+    const group=topicMap.get(scenario.topicId)||[];
+    group.push(scenario.id);
+    topicMap.set(scenario.topicId,group);
+  }
+  assert.equal(topicMap.size,30);
+  for(const storyIds of topicMap.values()){
+    assert.equal(storyIds.length,4);
+    for(const locale of VIDEO_PHRASE_LOCALES){
+      const titles=storyIds.flatMap(id=>listVideoPhraseIdeas(id,locale).map(x=>x.title));
+      assert.equal(titles.length,16);
+      assert.equal(new Set(titles).size,16,"four stories must visibly change the phrasing");
+    }
+  }
+});
+test("manual phrase-path selection survives locale switching without a state-reset effect",()=>{
+  const picker=readFileSync(new URL("../components/mandala-phrase-catalog.tsx",import.meta.url),"utf8");
+  assert.match(picker,/const intentKey=JSON\.stringify\(\[wish,theme\]\)/);
+  assert.match(picker,/selection\?\.intentKey===intentKey\?selection\.path/);
+  assert.doesNotMatch(picker,/useEffect\(\(\)=>\{if\(recommended\)setPath\(recommended\)/);
+  assert.match(picker,/const scenarioKey=path\.scenarioId\+"\:"\+locale/);
+});

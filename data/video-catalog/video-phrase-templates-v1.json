@@ -212,5 +212,61 @@
         "support": "Tu espacio importa."
       }
     }
+  },
+  "sceneTags": {
+    "ru": {
+      "journey": {
+        "self": " — шаг за шагом",
+        "support": " — шаг за шагом"
+      },
+      "shelter": {
+        "self": " — без спешки",
+        "support": " — без спешки"
+      },
+      "awakening": {
+        "self": " — с новым интересом",
+        "support": " — с новым интересом"
+      },
+      "connection": {
+        "self": " — в своём ритме",
+        "support": " — в своём ритме"
+      }
+    },
+    "en": {
+      "journey": {
+        "self": ", one step at a time",
+        "support": ", one step at a time"
+      },
+      "shelter": {
+        "self": ", without rushing",
+        "support": ", without rushing"
+      },
+      "awakening": {
+        "self": ", with fresh curiosity",
+        "support": ", with fresh curiosity"
+      },
+      "connection": {
+        "self": ", at my own pace",
+        "support": ", at your own pace"
+      }
+    },
+    "es": {
+      "journey": {
+        "self": ", paso a paso",
+        "support": ", paso a paso"
+      },
+      "shelter": {
+        "self": ", sin prisa",
+        "support": ", sin prisa"
+      },
+      "awakening": {
+        "self": ", con nueva curiosidad",
+        "support": ", con nueva curiosidad"
+      },
+      "connection": {
+        "self": ", a mi ritmo",
+        "support": ", a tu ritmo"
+      }
+    }
   }
 }
