@@ -14,6 +14,7 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
+import { MandalaVideoDirectorChat } from "./mandala-video-director-chat";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import { MandalaStoriesCharacters } from "./mandala-stories-characters";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
@@ -3430,6 +3431,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
+        {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
+            Visual styling reuses the approved Messenger pattern without importing CRM data. */}
+        <MandalaVideoDirectorChat
+          locale={locale} goal={wish} theme={theme}
+          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          disabled={recording||preparing} canCreate={canGenerate}
+          rendering={recording||preparing} renderProgress={progress}
+          resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
+          resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
+          onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
+          onConfirm={({presetId,duration:seconds,aspect:outputAspect,music:track,phrases,mood})=>{
+            const ok=applyAutoFilm(presetId,seconds,undefined,outputAspect);
+            if(!ok)return false;
+            chooseMusic(track);setAttachedAudio(track==="none"?null:{kind:"preset",id:track});
+            setAudioAuto(false);setSpeed(mood);
+            const chosenTheme=FREE_FILM_PRESETS.find(item=>item.id===presetId)?.theme||theme;
+            setAffirmations(current=>({...current,enabled:phrases,
+              selected:phrases?[]:current.selected,
+              custom:phrases?quickSupportPhrases[locale][chosenTheme][0]:current.custom,
+              visibility:phrases?["large"]:current.visibility}));
+            setPreviewPlaying(false);
+            return true;
+          }}
+          onCreate={createQuickVideo}
+          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
+          onOpenEditor={()=>openQuickDetailed("video-settings")}
+          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
+          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
         <div className={videoStyles.quickBenefits} aria-label={approvedMobileCopy[locale].introTitle}>
           {approved.benefits.map((benefit,index)=>{
             const Icon=[Sparkles,Heart,Leaf,Music2][index];
