@@ -284,27 +284,32 @@ test('temporary backlog fast lane keeps App R1 PR source contracts and manual br
 });
 
 
-test('only known CI-dedup policies skip unrelated heavy browser matrices', () => {
+test('only audited CI-policy paths skip unrelated heavy browser matrices', () => {
   const ciPaths = [
     '.github/workflows/hh-app-browser.yml',
     '.github/workflows/hh-app-r1.yml',
-    '.github/workflows/hh-pr-core-release.yml',
-    '.github/workflows/hh-public-services-production.yml',
     '.github/workflows/holistic-support-mandala.yml',
     '.github/workflows/ia-v2.yml',
     '.github/workflows/site-video-browser.yml',
     'tests/ci-head-cancellation.test.mjs',
     'tests/ci-heavy-impact.test.mjs',
     'tests/ci-stale-run-deduplication.test.mjs',
-  ].map(filename => ({filename, status:'modified'}));
-  assert.deepEqual(decideHeavyImpact('free-review', ciPaths), {browser:false});
-  assert.deepEqual(decideHeavyImpact('mandala', ciPaths), {browser:false});
-  assert.deepEqual(decideHeavyImpact('app-r1', ciPaths),
-    {full_app:false, database:false, banner:false, profile:false});
-  const sensitive = [...ciPaths, {filename:'app/api/app/direct-messages/route.js', status:'modified'}];
-  assert.deepEqual(decideHeavyImpact('free-review', sensitive), {browser:true});
-  assert.deepEqual(decideHeavyImpact('mandala', sensitive), {browser:true});
-  assert.deepEqual(decideHeavyImpact('app-r1', sensitive),
-    {full_app:true, database:true, banner:true, profile:true});
-  assert.deepEqual(decideHeavyImpact('free-review', [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]), {browser:true});
+  ].map(filename => ({filename,status:'modified'}));
+  assert.deepEqual(decideHeavyImpact('free-review',ciPaths),{browser:false});
+  assert.deepEqual(decideHeavyImpact('mandala',ciPaths),{browser:false});
+  assert.deepEqual(decideHeavyImpact('app-r1',ciPaths),
+    {full_app:false,database:false,banner:false,profile:false});
+  for (const protectedPath of [
+    '.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-public-services-production.yml',
+    'app/api/app/direct-messages/route.js',
+  ]) {
+    const risky = [...ciPaths,{filename:protectedPath,status:'modified'}];
+    assert.deepEqual(decideHeavyImpact('free-review',risky),{browser:true});
+    assert.deepEqual(decideHeavyImpact('mandala',risky),{browser:true});
+    assert.deepEqual(decideHeavyImpact('app-r1',risky),
+      {full_app:true,database:true,banner:true,profile:true});
+  }
+  assert.deepEqual(decideHeavyImpact('free-review',
+    [...ciPaths,{filename:'tests/unknown.test.mjs',status:'added'}]),{browser:true});
 });
