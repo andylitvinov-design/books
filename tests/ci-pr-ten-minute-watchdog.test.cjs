@@ -360,6 +360,35 @@ test('incomplete Core history fails closed before updating branch',async()=>{
   assert.equal(writes,0);
 });
 
+test('API rate reserve discovered mid-pagination safely skips all mutations',async()=>{
+  const many=Array.from({length:100},(_,i)=>pr(i+1));
+  let ciCalls=0,writes=0;
+  const github={rest:{
+    pulls:{list:async({page})=>{
+      if(page>1)throw Error('must stop before second page');
+      return {headers:{'x-ratelimit-remaining':'72'},data:many};
+    }},
+    actions:{listWorkflowRunsForRepo:async()=>{ciCalls++;throw Error('unwanted capacity call');}},
+    issues:{createComment:async()=>{writes++;}}
+  },request:async()=>{writes++;}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.inventoryComplete,false);
+  assert.equal(result.reason,'GITHUB_RATE_RESERVE');
+  assert.equal(result.apiRequests,1);
+  assert.equal(result.ciRetries,0);
+  assert.equal(result.branchUpdates,0);
+  assert.equal(result.mergeDispatches,0);
+  assert.equal(ciCalls,0);
+  assert.equal(writes,0);
+});
+test('frequent GitHub reads use isolated native GITHUB_TOKEN',()=>{
+  const {readFileSync}=require('node:fs');
+  const wf=readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  assert.match(wf,/github-token: \x24\x7b\x7b github\.token \x7d\x7d/);
+  assert.match(wf,/HH_AUTOMERGE_TOKEN: \x24\x7b\x7b secrets\.HH_AUTOMERGE_TOKEN \x7d\x7d/);
+  assert.match(wf,/Authorization:'Bearer '\+token/);
+  assert.doesNotMatch(wf,/github-token: \x24\x7b\x7b secrets\.HH_AUTOMERGE_TOKEN \|\| github\.token/);
+});
 
 test('hourly full-inventory reads use per-repo token; owner PAT is reserved for protected merges', () => {
   const {readFileSync} = require('node:fs');

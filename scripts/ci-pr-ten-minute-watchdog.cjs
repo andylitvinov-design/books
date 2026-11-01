@@ -270,7 +270,27 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       throw error;
     }
   };
-  const all=await listOpen(github,owner,repo,limited);
+  let all;
+  try {
+    all=await listOpen(github,owner,repo,limited);
+  } catch(error) {
+    // Do not fail the scheduled workflow when the GitHub API reserve is low.
+    // An incomplete inventory cannot authorize CI, branch updates or merging;
+    // report one read-only skipped cycle and let the next cron retry.
+    if(!budget.exhausted && !String(error?.message || '').includes('HH_API_BUDGET_EXHAUSTED'))
+      throw error;
+    const skipped={
+      inventoryComplete:false,reason:budget.reason || 'GITHUB_API_RATE_EXHAUSTED',
+      apiRequests:budget.requests,apiRemaining:budget.remaining,
+      checkedAt:new Date(now).toISOString(),dryRun,hasMergeToken,
+      ciRetries:0,branchUpdates:0,mergeDispatches:0
+    };
+    const report=Object.entries(skipped).map(([key,value])=>key+': '+value).join('\n');
+    log('SKIP safely: incomplete PR inventory; ' + report.replaceAll('\n','; '));
+    await core.summary.addHeading('HH PR 10-minute watchdog: safe API pause')
+      .addCodeBlock(report).write();
+    return skipped;
+  }
   const prod = all.filter(p=>p.base?.ref===PROD);
   const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
   const selected = selectCandidates(review,now);
@@ -421,7 +441,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.apiRateLimited=budget.exhausted;
   summary.apiRemaining=budget.remaining;
   summary.apiBudgetReason=budget.reason;
-  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\\n');
+  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\n');
   log(report.replaceAll('\n','; '));
   await core.summary.addHeading('HH PR 10-minute watchdog').addCodeBlock(report).write();
   return summary;

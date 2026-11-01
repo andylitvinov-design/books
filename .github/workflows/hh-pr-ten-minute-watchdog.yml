@@ -40,14 +40,46 @@ jobs:
       - name: Reconcile complete PR inventory; retry transient CI; hand off red source; dispatch guarded merge
         uses: actions/github-script@v7
         env:
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
         with:
-          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          # High-frequency reads use GITHUB_TOKEN, not the scarce merge PAT.
+          github-token: ${{ github.token }}
           script: |
-            const {run} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
+            const {run} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
+            const token=process.env.HH_AUTOMERGE_TOKEN;
+            // Only one trusted GitHub API mutation uses the existing dedicated token.
+            // Its events can start CI; a GITHUB_TOKEN base update cannot do that.
+            const repairGithub=token ? {request:async(route,args)=>{
+              if(route!=='PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch' ||
+                 args.owner!==context.repo.owner || args.repo!==context.repo.repo ||
+                 !Number.isSafeInteger(args.pull_number) ||
+                 !/^[a-f0-9]{40}$/i.test(args.expected_head_sha || ''))
+                throw Error('Unsafe legacy branch update rejected');
+              const url='https://api.github.com/repos/'+args.owner+'/'+args.repo+
+                '/pulls/'+args.pull_number+'/update-branch';
+              const response=await fetch(url,{
+                method:'PUT',signal:AbortSignal.timeout(20000),
+                headers:{
+                  Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json',
+                  'Content-Type':'application/json',
+                  'X-GitHub-Api-Version':'2022-11-28'
+                },
+                body:JSON.stringify({expected_head_sha:args.expected_head_sha})
+              });
+              const data=await response.json().catch(()=>({}));
+              if(response.status!==202){
+                const error=new Error('Dedicated-token update denied: HTTP '+
+                  response.status+' '+String(data.message || '').slice(0,200));
+                error.status=response.status;
+                throw error;
+              }
+              return {status:response.status,data,
+                headers:{'x-ratelimit-remaining':response.headers.get('x-ratelimit-remaining')}};
+            }} : null;
             await run({
-              github, core, context,
-              repairGithub: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true' ? github : null,
-              hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
+              github, core, context, repairGithub,
+              hasMergeToken: Boolean(token),
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
