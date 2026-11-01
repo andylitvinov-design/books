@@ -164,7 +164,7 @@ test("auto-selected extended phrase keeps both sentences for two actual scene ca
   const auto=autocompleteVideoChatTree({...selected,length:"extended"},
     "relationships","ru");
   assert.equal(auto?.length,"extended");
-  assert.ok(auto?.phraseText.includes("\\n"));
+  assert.ok(auto?.phraseText.includes(String.fromCharCode(10)));
   assert.ok(auto?.phraseText.length>35);
 });
 
