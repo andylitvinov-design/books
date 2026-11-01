@@ -3662,6 +3662,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
+      {!result?<section className={videoStyles.resultEmpty} data-video-result-empty aria-labelledby="video-result-empty-title">
+        <div className={videoStyles.resultEmptyHead}>
+          <Film size={18} aria-hidden="true"/>
+          <h3 id="video-result-empty-title">{locale==="ru"?"Готовое видео":
+            locale==="es"?"Vídeo listo":"Finished video"}</h3>
+        </div>
+        <p>{locale==="ru"?"Выберите сценарий и нажмите «Создать выбранное видео». Здесь появятся настоящий файл, просмотр и сохранение.":
+          locale==="es"?"Elige una historia y crea el vídeo. Aquí aparecerán el archivo, su vista previa y la opción de guardarlo.":
+          "Choose a story and create the video. Your playable file, preview and save option will appear here."}</p>
+      </section>:null}
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="hypnotherapy" id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
