@@ -889,3 +889,29 @@ test('Practice visual PR does not repeat Google-auth browser or old Chromium/Web
     'Google auth source tests have a distinct owner');
   assert.match(core, /^  release-ready:/m);
 });
+
+test('native CI interruption recovery is one-time, exact-head and never bypasses failing code', () => {
+  const workflow = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(workflow, /^  workflow_run:/m);
+  assert.match(workflow, /workflows: \['HH PR core release gate'\]/);
+  const repair=workflow.split(/^  recover-interrupted-core:\s*$/m)[1];
+  assert.ok(repair,'missing recovery job');
+  for(const guard of [
+    "github.event_name == 'workflow_run'",
+    'event.run_attempt !== 1',
+    'event.event !== "pull_request"',
+    'event.repository?.full_name !== fullRepo',
+    'event.head_repository?.full_name !== fullRepo',
+    'live.head.sha !== reference.head.sha',
+    'reference.base?.sha !== live.base.sha',
+    'fresh.run_attempt !== 1',
+    'jobData.total_count > 100',
+    'event.conclusion !== "failure"',
+    '["cancelled","skipped","timed_out"].includes(job.conclusion)',
+    'github.rest.actions.reRunWorkflow',
+  ]) assert.ok(repair.includes(guard),'recovery lost safety guard: '+guard);
+  assert.match(repair,/actions: write/);
+  assert.match(repair,/concurrency:/);
+  assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
+  assert.match(repair,/new release-ready SUCCESS still required/);
+});
