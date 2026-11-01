@@ -4,6 +4,7 @@ on:
     branches: ['codex/bootstrap-books']
     paths:
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - '.github/workflows/hh-native-auto-merge.yml'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
   workflow_dispatch:
