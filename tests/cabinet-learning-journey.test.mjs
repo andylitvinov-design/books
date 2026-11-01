@@ -194,7 +194,9 @@ test('Cabinet journey delegates only redundant global TS; privacy and journey te
   const workflow = source('.github/workflows/hh-cabinet-journey.yml')
   const core = source('.github/workflows/hh-pr-core-release.yml')
   assert.match(core, /^  release-ready:/m)
-  assert.match(core, /tsc --noEmit/)
+  assert.match(core, /run: npm run build/)
+  assert.equal(JSON.parse(source('package.json')).scripts.build, 'next build')
+  assert.doesNotMatch(source('next.config.ts'), /ignoreBuildErrors/)
   assert.ok(workflow.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"))
   assert.match(workflow, /- name: TypeScript[\s\S]*?run: npx --no-install tsc --noEmit/)
   for (const suite of ['tests/cabinet-learning-journey.test.mjs', 'tests/workflow-next-route-filters.test.mjs', 'tests/my-progress.test.mjs', 'tests/cabinet-today.test.mjs']) {

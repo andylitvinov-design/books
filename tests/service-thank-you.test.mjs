@@ -51,7 +51,8 @@ test('video is draft-only until explicit checked publication, with no default au
   assert.throws(()=>prepareVideoChange(draft,{
     slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
   }))
-  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  // A single explicitly published slot, never a bulk draft catalogue.
+  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideo\("thank-you:" \+ locale\)/)
   assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })
