@@ -6,7 +6,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/app/session.js'
-      - 'app/api/app/**'
+      - 'app/api/app/practitioner/**'
+      - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'
@@ -62,7 +63,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/app/session.js'
-      - 'app/api/app/**'
+      - 'app/api/app/practitioner/**'
+      - 'app/api/app/site-video/**'
       - 'lib/site-videos/**'
       - 'lib/public-locales.ts'
       - 'lib/spanish-metadata.ts'
