@@ -26,6 +26,13 @@ test('live chat acceptance uses only one renderer and actually downloads playabl
  assert.match(qa,/CLIENT_JAVASCRIPT_ERROR_/);
  assert.match(qa,/CHAT_MUST_REUSE_SINGLE_CANVAS/);
 });
+test('legacy prompt-based live benchmark opens its approved advanced disclosure before recording',()=>{
+ const legacy=readFileSync(new URL('../scripts/benchmarking/first-video-live-export.mjs',import.meta.url),'utf8');
+ assert.match(legacy,/\[data-video-first-video-advanced\]/);
+ assert.match(legacy,/advanced\.locator\(':scope > summary'\)\.click\(\)/);
+ assert.ok(legacy.indexOf("const advanced=page.locator")<legacy.indexOf("const first = page.locator"));
+ assert.match(legacy,/\[data-mandala-video-download\]/);
+});
 test('cost-bounded existing LIVE video workflow runs the new smoke on real published pages',()=>{
  assert.match(workflow,/scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
  assert.match(workflow,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
