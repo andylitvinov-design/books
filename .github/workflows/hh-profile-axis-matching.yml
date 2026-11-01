@@ -114,8 +114,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: profile-axis-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: profile-axis-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   writer-practical-focused:
     if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
@@ -137,7 +137,7 @@ jobs:
       - name: TypeScript contract check
         run: npx --no-install tsc --noEmit --pretty false
   axis-unit-types-build:
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name != 'pull_request' || github.head_ref != 'feat/meditation-writer-device-voice-v1-20261030' || github.event.pull_request.base.ref == 'codex/public-book-library') }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:

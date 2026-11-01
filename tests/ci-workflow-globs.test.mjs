@@ -40,14 +40,27 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
-test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+test('Portrait PR runs focused current contracts while the old synthetic DB/browser matrix is manual-only',()=>{
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
-  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
-  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'PR routing must not allocate two private DB/browser runners');
+  assert.ok(s.includes("'[\"chromium\",\"webkit\"]'"), 'manual full matrix remains available');
+  assert.ok(s.includes("'[\"chromium\"]'"), 'normal PR executes one Chromium core check');
+  for (const step of [
+    'Isolated Playwright browser (manual deep QA only)',
+    'Initialize isolated synthetic database',
+    'Five profile navigation with four scored sectors, goal check-in, mobile EN/RU',
+  ]) {
+    assert.ok(s.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+      'obsolete portrait E2E must not block an ordinary PR: '+step);
+  }
+  assert.ok(s.includes('node --test tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs'),
+    'current profile source contracts still run');
   assert.match(s,/postgres:17-alpine/);
   assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
   assert.match(s,/verify-portrait-mobile\.mjs/);
@@ -57,8 +70,8 @@ test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels sup
 });
 
 test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
-  const suffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
-  const cancel = "${{ github.event_name == 'pull_request' }}";
+  const suffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
   const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   for (const [file, prefix, job] of [
     ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
@@ -110,4 +123,27 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.match(source, /Single-tap focus was not committed/);
   assert.match(source, /input\[type="checkbox"\]/);
   assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
+});
+
+test('Public Services exact-head routing preserves source contracts and real risk-based browser acceptance', () => {
+  const s = workflow('hh-public-services-production.yml');
+  assert.ok(!s.includes("      - '.github/workflows/hh-public-services-production.yml'"),
+    'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
+  assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
+  assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(s, /fetch-depth: 0/);
+  assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
+  assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
+  assert.match(s, /HH_PUBLIC_CASES/);
+  assert.match(s, /wait "\$lane_a_pid"/);
+  assert.match(s, /wait "\$lane_b_pid"/);
+  assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
+    'obsolete contact-channel browser duplicate must not run');
+  for (const required of [
+    'npm run build', 'playwright install --with-deps chromium webkit',
+    'run_case "verify-service-cart-browser.mjs"',
+    'run_case "verify-talisman-google-checkout-browser.mjs"',
+    "'app/api/payments/**'"
+  ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
