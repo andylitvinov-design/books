@@ -704,3 +704,67 @@ test("UI sends complete filter contract; server retains consent, origin and rate
   assert.match(route,/consumeRate\(config/);
   assert.doesNotMatch(ui,/photoUrl:|testResults:|profileId:/);
 });
+
+
+test("free OpenRouter and Groq normalize strictly typed text segments",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"en",wish:"Calm mountain sunrise",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  for(const [provider,env] of [
+    ["openrouter_free",{HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+      HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential"}],
+    ["groq_free",{HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:"true",
+      HH_FIRST_VIDEO_GROQ_API_KEY:"test-only-groq-credential"}],
+  ]){
+    let called=0;
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url,options)=>{
+      called++;
+      assert.equal(options.method,"POST");
+      assert.equal(options.redirect,"error");
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:[
+          {type:"text",text:"A quiet golden mountain sunrise. "},
+          {type:"text",text:"Four gentle real landscape shots with soft light and connected transitions."},
+        ]}}],
+      })};
+    });
+    assert.equal(out.provider,provider);
+    assert.equal(called,1);
+    assert.match(out.prompt,/quiet golden mountain sunrise/i);
+    assert.match(out.prompt,/Four gentle real landscape shots/);
+    assert.ok(!JSON.stringify(out).includes("credential"));
+  }
+});
+
+test("free OpenRouter rejects image, tool, and malformed parts and uses independent Gemini",async()=>{
+  const {generateFreeFirstVideoPrompt}=await import("../lib/mandala/first-video-free-providers.mjs");
+  const input={locale:"es",wish:"Luz suave en la montaña",theme:"auto",
+    style:"warm",aspect:"landscape",durationSeconds:20};
+  const env={HH_FIRST_VIDEO_OPENROUTER_FREE_CONFIRMED:"true",
+    HH_COUNCIL_OPENROUTER_API_KEY:"test-only-router-credential",
+    HH_FIRST_VIDEO_GEMINI_FREE_CONFIRMED:"true",
+    HH_COUNCIL_GEMINI_API_KEY:"test-only-gemini-credential",
+    HH_FIRST_VIDEO_PROVIDER_ORDER:"openrouter_free,gemini_free"};
+  for(const invalid of [
+    [{type:"text",text:"Start"},{type:"image_url",image_url:{url:"data:image/png;base64,xxx"}}],
+    [{type:"tool_call",text:"Not visual output"}],
+    [{type:"text",text:12}],
+    [],
+  ]){
+    const seen=[];
+    const out=await generateFreeFirstVideoPrompt(input,env,async(url)=>{
+      seen.push(url);
+      if(seen.length===1)return {ok:true,status:200,text:async()=>JSON.stringify({
+        choices:[{message:{content:invalid}}],
+      })};
+      assert.match(url,/generativelanguage\.googleapis\.com/);
+      return {ok:true,status:200,text:async()=>JSON.stringify({
+        candidates:[{content:{parts:[{text:"Montañas bañadas por luz suave. Cuatro paisajes naturales sucesivos, con transiciones tranquilas y movimiento real."}]}}],
+      })};
+    });
+    assert.equal(out.provider,"gemini_free");
+    assert.equal(seen.length,2);
+    assert.deepEqual(out.diagnostics.map(x=>x.reason),["invalid_text"]);
+    assert.ok(!JSON.stringify(out).includes("test-only-router-credential"));
+  }
+});
