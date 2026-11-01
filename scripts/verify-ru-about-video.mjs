@@ -9,12 +9,6 @@ const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3200';
 const evidence = '/tmp/site-video-evidence';
 const videoId = 'd4e55c984e54b40fbeb8a21f81d27694';
-// Exact public About inventory: matching local archived posters, not the old 3-card grid.
-const aboutTestimonialIds = [
-  'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
-  '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
-  'VABgpmn4ZYA', 'muOnIHllI7E',
-];
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 mkdirSync(evidence, { recursive: true });
@@ -74,7 +68,8 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        // About is intentionally internal-only, including when its transcript opens.
+        // This published About intro is explicitly internal-only; even an
+        // expanded transcript cannot expose an external HeyGen share link.
         await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
@@ -89,22 +84,13 @@ try {
       const page = await browser.newPage();
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
-      const englishIntro = page.locator('#psychic-alchemy-video');
-      await expect(englishIntro).toBeVisible();
-      assert.equal(await englishIntro.locator('.site-video-player--minimal').count(), 0);
-      assert.equal(await page.locator('iframe').count(), 0, 'EN About remains click-gated');
-      const testimonials = page.locator('[data-personal-testimonials="about"]');
-      await expect(testimonials).toHaveCount(1);
-      const cards = testimonials.locator('[data-testimonial-video-id]');
-      await expect(cards).toHaveCount(aboutTestimonialIds.length);
-      assert.deepEqual((await cards.evaluateAll(nodes =>
-        nodes.map(node => node.getAttribute('data-testimonial-video-id')))).sort(),
-        [...aboutTestimonialIds].sort(), 'EN About retains the exact archived testimonial identities');
-      for (const id of aboutTestimonialIds) {
-        const card = testimonials.locator(`[data-testimonial-video-id="${id}"]`);
-        await expect(card.locator('.site-video-player--minimal')).toHaveCount(1);
-        await expect(card.locator('.site-video-watch-link')).toHaveCount(0);
-      }
+      await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
+      // The English intro is a distinct poster, while the About archive now
+      // renders ten original public testimonials with matching local posters.
+      await expect(page.locator('#psychic-alchemy-video button')).toBeVisible();
+      await expect(page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')).toHaveCount(10);
+      await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(10);
+      await expect(page.locator('[data-personal-testimonials="about"] iframe')).toHaveCount(0);
       await page.close();
     } finally { await browser.close(); }
   }
@@ -112,5 +98,3 @@ try {
 } finally {
   if (app) app.kill('SIGTERM');
 }
-
-

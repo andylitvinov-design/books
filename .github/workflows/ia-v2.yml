@@ -1,6 +1,7 @@
 name: Holistic House IA v2 checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/verify-ia-v2.mjs'
@@ -29,14 +30,19 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Public practitioner directory/checkout use Public Services acceptance,
+      # not synthetic encrypted owner/client IA with Redis and two browsers.
+      - '!lib/practitioners/public-*'
+      - '!lib/practitioners/taoist-talisman-cart.js'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: ia-v2-${{ github.ref }}
-  cancel-in-progress: true
+  group: ia-v2-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   verify:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -72,10 +78,14 @@ jobs:
       - run: npm run test:unit
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
-      - run: npm run lint
+      - name: Full lint outside production PR (core release-ready owns production lint)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npm run lint
       - run: npm run native:check && npm run pwa:check
       - run: npm run build
-      - run: npx --no-install tsc --noEmit
+      - name: Full TypeScript outside production PR (core release-ready owns production typing)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi

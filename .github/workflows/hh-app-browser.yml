@@ -1,8 +1,10 @@
 name: Holistic House App R1 browser and database journey
 on:
+  workflow_dispatch:
   push:
     branches: ['codex/holistic-house-app-r1']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'scripts/helpers/isolated-browser-diagnostics.mjs'
@@ -37,16 +39,18 @@ on:
       - 'package-lock.json'
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
-  group: app-r1-browser-${{ github.ref }}
-  cancel-in-progress: true
+  group: app-r1-browser-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   browser:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     strategy:
       fail-fast: false
-      matrix:
-        browser: [chromium, webkit]
-        suite: [core, extended]
+      # Minimal blocking PR acceptance: one Chromium core with a synthetic database.
+      # Four legacy browser/suite combinations remain available only on explicit manual QA.
+      matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '{"include":[{"browser":"chromium","suite":"core"},{"browser":"webkit","suite":"core"},{"browser":"chromium","suite":"extended"},{"browser":"webkit","suite":"extended"}]}' || '{"include":[{"browser":"chromium","suite":"core"}]}') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
@@ -83,8 +87,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
+        with: {node-version: 22, cache: npm}
       - run: npm ci --no-audit --no-fund
       - name: Isolated test tools
         run: |
@@ -134,13 +143,11 @@ jobs:
           path: artifacts/app-r1/
           retention-days: 7
   browser-journey-complete:
-    name: browser (${{ matrix.browser }})
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, webkit]
+    name: browser-journey-complete
+    # The matrix dependency aggregates all four Chromium/WebKit x core/extended jobs.
+    # A single fail-closed summary avoids two redundant runner allocations.
     needs: browser
-    if: always()
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:

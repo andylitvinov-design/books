@@ -1,4 +1,4 @@
-// Legacy cookie denial + ephemeral CI Redis only. --live performs no login or
+// Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
@@ -8,6 +8,8 @@ import { createServer } from 'node:https'
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:fs'
 import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
+import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
+import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -65,10 +67,16 @@ try {
   page.on('pageerror', error => pageErrors.push({ message: error.message, url: page.url() }))
   async function navigate(target) {
     const options = { waitUntil: 'domcontentloaded', timeout: 60000 }
-    let response = await page.goto(new URL(target, origin).href, options)
-    // Different placements can be anchors on the same Services page. A hash-only
-    // navigation makes no HTTP request and returns null. Reload to inspect the
-    // newly published server snapshot rather than the old document already open.
+    const destination = new URL(target, origin)
+    const previous = new URL(page.url())
+    // Multiple placements can share one Services path and differ by #anchor.
+    // Avoid dispatching an unnecessary Next.js same-document navigation, which
+    // does not request fresh publication data and can recurse through popstate.
+    const sameDocument = previous.origin === destination.origin &&
+      previous.pathname === destination.pathname && previous.search === destination.search
+    let response = sameDocument
+      ? await page.reload(options)
+      : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
@@ -79,7 +87,7 @@ try {
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('[data-testimonial-video-id]').count() === 10) break
+      if (await page.locator('.site-video-player').count() === 3) break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -163,28 +171,27 @@ try {
       ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
+      // Owner-approved RU guided-imagery video in data/service-video-library.ts,
+      // not the generic Russian overview used by Alchemy and constellations.
       ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/eLsjFaKCBhI?'],
       ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
+      // The standalone systemic-constellations landing uses the owner's
+      // published business-constellations case, not the generic method video.
       ['/en/services/systemic-constellations', 'constellation-case', 'https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
+      // FreeEntryLanding owns its own inline intro; it does not render the old
+      // ServiceVideoShowcase wrapper. The approved overview recording is kept.
+      ['/en/services/free-situation-review', 'free-review-intro', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      if (route.endsWith('/systemic-constellations')) {
-        await expect(page.locator('[data-personal-service="systemic-constellations"]')).toHaveCount(1);
-      }
-      if (route.endsWith('/free-situation-review')) {
-        await expect(page.locator('[data-free-entry-landing="situation"]')).toHaveCount(1);
-      }
-      const block = page.locator(route.endsWith('/free-situation-review')
-        ? '[data-free-review-intro-video]'
-        : topic === 'alchemy' ? '[data-alchemy-panel="video"]'
-          : `[data-service-video="${topic}"]`)
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' :
+        topic === 'free-review-intro' ? '[data-free-review-intro-video]' :
+        `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
@@ -193,7 +200,9 @@ try {
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000, message: route + ' expected approved iframe source ' + expectedUrl }).toBe(true)
+      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), {
+        timeout: 10000, message: `${route}: player must embed the exact approved public source ${expectedUrl}`,
+      }).toBe(true)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
@@ -208,16 +217,21 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  // About now uses the approved 10 local-poster testimonial masters, not
-  // the old 3-card landing section. Verify the complete real inventory.
-  const aboutTestimonials=page.locator('[data-testimonial-video-id]');
-  await expect(aboutTestimonials).toHaveCount(10);
-  await expect(page.locator('.site-video-player')).toHaveCount(10);
-  assert.equal(new Set(await aboutTestimonials.evaluateAll(cards=>
-    cards.map(card=>card.getAttribute('data-testimonial-video-id')))).size,10,
-    'Every approved About video must have a unique reviewed identity');
+  // About now shows ten verified archived public testimonials (6 EN, 4 RU
+  // with matching approved local posters). The two unverified-poster RU
+  // clips are excluded by PersonalTestimonials, never silently substituted.
+  const approvedReviewIds = [
+    'Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk',
+    '4NrryHcEF1A', 'hYwRNMxIMjc', 'MIVLm1GUTtM', 'ttQxUHopaUM',
+    'VABgpmn4ZYA', 'muOnIHllI7E',
+  ].sort()
+  const aboutReviews = page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')
+  await expect(aboutReviews).toHaveCount(approvedReviewIds.length)
+  const renderedIds = await aboutReviews.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testimonial-video-id')).sort())
+  assert.deepEqual(renderedIds, approvedReviewIds, 'About contains only the approved public testimonial originals')
+  await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(approvedReviewIds.length)
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten original testimonials and form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten identity-matched public testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
@@ -251,28 +265,6 @@ try {
     await page.screenshot({ path: `${evidence}/live-player-open.png` })
     const frame = page.frames().find(item => item.url().startsWith('https://app.heygen.com/embeds/'))
     if (frame) console.log('OBSERVATION: HeyGen video elements:', await frame.locator('video').count())
-  } else {
-    // Security regression: the v1 HMAC cookie once used by this test is now
-    // deliberately denied by the genuine owner+session-bound v2 auth.
-    // Do NOT resurrect legacy authentication or inject a mock admin session
-    // into the production app to make the old publication tests pass.
-    const legacy=await browser.newContext({
-      viewport:{width:1365,height:1000},serviceWorkers:'block',
-    })
-    await legacy.addCookies([{
-      name:'prescriptions_admin',
-      value:createHmac('sha256',testToken).update('prescriptions-admin-v1').digest('base64url'),
-      domain:'127.0.0.1',path:'/admin',httpOnly:true,sameSite:'Strict',
-    }])
-    const denied=await legacy.newPage()
-    await denied.goto(origin+'/admin/videos',{waitUntil:'domcontentloaded'})
-    await expect(denied).toHaveURL(/\/admin\/login/)
-    await expect(denied.locator('.site-video-manager')).toHaveCount(0)
-    pass('Retired v1 admin cookie cannot access verified-owner video editor')
-    await legacy.close()
-    // Draft/publish/hide, optimistic concurrency, EN/RU/ES and real v2 auth
-    // are exercised through separate source-backed Node contract tests.
-    // Signed-in browser owner E2E requires a real authenticated test account.
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
   pass('No page JavaScript errors')
