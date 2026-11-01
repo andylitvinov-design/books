@@ -361,7 +361,7 @@ export function MandalaCloudVoiceStudio({locale,sourceText="",ambientSrc=null,on
             </button>)}
         </div>
         <label className={css.moreBeds}>{b.other}
-          <select data-voice-background-extra value={extraBeds.includes(background as NatureBed)?background:""}
+          <select data-voice-background-extra value={extraBeds.some(bed=>bed===background)?background:""}
             onChange={event=>{if(event.currentTarget.value)chooseBackground(event.currentTarget.value as NatureBed);}}>
             <option value="">—</option>
             {extraBeds.map(value=><option key={value} value={value}>{bedNames[value]?.[locale]||value}</option>)}

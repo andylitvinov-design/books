@@ -114,7 +114,7 @@ test("resume failure returns no fake playing session and restores iOS routing", 
 });
 
 test("recording negotiates a real AAC/Opus mux and never silently removes a selected track", () => {
-  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\)\)/);
+  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
   assert.match(studioSource, /mp4a\.40\.2/);
   assert.match(studioSource, /vp8,opus/);
   assert.match(studioSource, /stream\.addTrack\(musicSession\.track\)/);

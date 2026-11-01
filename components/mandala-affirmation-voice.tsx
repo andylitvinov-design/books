@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
+import { AudioLines, Check, Download, LoaderCircle, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";

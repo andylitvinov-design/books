@@ -74,6 +74,7 @@ test('scheduler and private read/write boundaries retain existing cron jobs',()=
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
+    {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
   ])
   const route=readFileSync(new URL('../app/api/internal/council-archive-telegram/route.js',import.meta.url),'utf8')
   const hub=readFileSync(new URL('../app/api/internal/telegram-hub/route.js',import.meta.url),'utf8')

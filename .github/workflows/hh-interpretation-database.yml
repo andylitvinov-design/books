@@ -1,6 +1,7 @@
 name: Holistic House interpretation registry database verification
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - 'tests/helpers/interpretation-db-isolation.mjs'
@@ -16,6 +17,7 @@ on:
       - 'lib/interpretation/**'
       - 'data/assessments/**'
       - 'tests/interpretation-*.mjs'
+      - 'tests/ci-expensive-draft-ready-policy.test.mjs'
       - 'tests/assessment-interpretation*.mjs'
       - 'scripts/verify-interpretation*.mjs'
       - 'supabase/migrations/**'
@@ -24,10 +26,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: hh-interpretation-database-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-interpretation-database-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   interpretation-database:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     # Dedicated fresh service. Never point this job at the application database.
@@ -54,7 +57,7 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - name: Verify isolated transport and strict C1/C2 release gates
-        run: node --test tests/interpretation-db-isolation.test.mjs
+        run: node --test tests/interpretation-db-isolation.test.mjs tests/ci-expensive-draft-ready-policy.test.mjs
       - name: Native PostgreSQL schema, approved seed, readback and server loader
         run: node --conditions=react-server --test --test-concurrency=1 tests/interpretation-database.integration.mjs
       - uses: actions/upload-artifact@v4

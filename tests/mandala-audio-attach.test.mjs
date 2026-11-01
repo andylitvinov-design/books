@@ -87,13 +87,16 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
-test("sound-only covers reuse 13 real local first-party illustration files",()=>{
+test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
   const covers=[...styles.matchAll(/\.audioTrackRow\[data-audio-id="([a-z-]+)"\] \.audioTileGlyph\{background-image:url\('([^']+)'\)\}/g)];
-  assert.equal(covers.length,13,"all thirteen site audio sounds have honest illustrative cover art");
-  assert.equal(new Set(covers.map(x=>x[1])).size,13);
+  assert.equal(covers.length,39,"all 39 site audio sounds have explicit illustrative cover art");
+  assert.ok(new Set(covers.map(x=>x[1])).size>=13,"retain diverse existing cover scenes");
   for(const [,id,url] of covers){
     assert.match(url,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.jpg$/);
     assert.ok(existsSync(new URL("../public"+url,import.meta.url)),id+" first-party cover must exist");
@@ -113,7 +116,10 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
   const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
   const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
-  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
+    "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,

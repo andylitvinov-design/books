@@ -44,7 +44,7 @@ export async function mixVoiceWithNature(
   minimumSeconds?: number,
   levels: {voiceLevel?:number;musicLevel?:number} = {},
 ): Promise<Blob> {
-  if(preset!=="none" && !VOICE_BED_PRESETS.includes(preset))
+  if(preset!=="none" && !new Set<string>(VOICE_BED_PRESETS).has(preset))
     throw new Error("INVALID_BACKGROUND");
   if(typeof window==="undefined")throw new Error("BROWSER_AUDIO_REQUIRED");
   // The canonical Gemini and first-party WAVs are PCM16 mono: mix them
