@@ -31,7 +31,7 @@ try {
     page.on("response", response => {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
-          ["/api/catalog/ratings", "/api/service-enquiries/booking-status"].includes(url.pathname)) {
+          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
         // Status and path are already verified above. Browser streams may
         // close before body.json(), so do not misclassify empty reads.
         responseEvidence.push(url.pathname);
@@ -686,7 +686,7 @@ try {
   // GET 503 from these two audited read-only endpoints can be exempted.
   const unavailable = responseEvidence;
   const unexpectedUnavailable = unavailable.filter(path =>
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status'].includes(path));
+    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
   assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
   if (!process.env.HH_APP_SUPABASE_URL) {

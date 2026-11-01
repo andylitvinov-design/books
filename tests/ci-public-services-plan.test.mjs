@@ -583,6 +583,7 @@ test('browser CI accepts only observed credential-free 503 paths without body-re
     'response.status() === 503',
     '/api/catalog/ratings',
     '/api/service-enquiries/booking-status',
+    '/api/app/bootstrap',
     'responseEvidence.push(url.pathname)',
     'const unavailable = responseEvidence',
     'if (!process.env.HH_APP_SUPABASE_URL)',
@@ -593,6 +594,11 @@ test('browser CI accepts only observed credential-free 503 paths without body-re
   ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
   assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
     'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');
+  const appBootstrap=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
+  assert.ok(appBootstrap.includes("const config = getAppConfig()"),
+    'unconfigured bootstrap API must be fail-closed before authenticated data');
+  assert.ok(appBootstrap.includes("joined === 'bootstrap' && method === 'GET'"),
+    'only the read-only bootstrap endpoint is allowlisted');
   assert.ok(!source.includes('responseEvidence.push(response.json()'),
     'Body reads after browser resource closure are not reliable evidence');
 });
