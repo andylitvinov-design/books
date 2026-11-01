@@ -65,7 +65,7 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.ok(opora.includes("fromJSON(github.event_name == 'pull_request'"), 'OPORA browser matrix must route by event');
   assert.ok(opora.includes("'[\"chromium\"]'"), 'Ready PR runs one isolated Chromium');
   assert.ok(opora.includes("'[\"chromium\",\"webkit\"]'"), 'manual and feature-push still cover WebKit');
-  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"), 'manual jobs cannot be cancelled by unrelated PRs');
+  assert.ok(opora.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), 'manual jobs cannot be cancelled by unrelated PRs');
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
@@ -176,10 +176,13 @@ test('Video Studio-only changes run Mandala real-media QA, not unrelated Public 
     'scripts/verify-holistic-mandala-browser.mjs',
     'components/mandala-free-video-studio.tsx',
     'components/mandala-video-mobile.module.css',
+    'components/mandala-stories-characters.tsx',
+    'components/mandala-stories-characters.module.css',
     'components/mandala-first-video-start.tsx',
     'components/mandala-first-video-start.module.css',
     'app/api/holistic-support/first-video-prompt/route.js',
     'tests/first-video-director.test.mjs',
+    'tests/mandala-stories-characters.test.mjs',
   ]){
     assert.equal(covers(service,file),false,file+' should not run unrelated Alchemy/storefront');
     assert.equal(covers(mandala,file),true,file+' must still run real video/browser checks');
@@ -449,7 +452,7 @@ test('two confirmed source-only specialist suites delegate duplicate TypeScript 
   for(const filename of ['hh-kling-video.yml']) {
     const s=workflow(filename);
     assert.match(s,/^concurrency:/m,filename+' must cancel outdated PR runs');
-    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' \}\}/);
+    assert.match(s,/cancel-in-progress: \$\{\{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after \}\}/);
   }
 });
 
@@ -477,8 +480,8 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
 });
 
 
-const prOnlyCancel = "${{ github.event_name == 'pull_request' }}";
-const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
+const prOnlyCancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+const prGroupSuffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
 test('video About and Library cancel only superseded PR checks, preserving specialized tests', () => {
   for (const [file,prefix,job] of [
     ...(existsSync(join(root,'.github','workflows','holistic-about-video-check.yml')) ? [['holistic-about-video-check.yml','hh-about-video','check']] : []),
@@ -535,8 +538,8 @@ test('video About and Library cancel only superseded PR checks, preserving speci
 
 
 test('PR-only cancellation safeguards owner video, SEO and performance audit without cancelling release',()=>{
-  const suffix="${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
-  const guard="${{ github.event_name == 'pull_request' }}";
+  const suffix="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const guard="${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
   const specs=[
     ['hh-live-seo-audit.yml','hh-live-seo',['Verify Next.js production build','Run comprehensive public-only SEO audit against production','public-tests-mobile:']],
     ['hh-public-performance-audit.yml','hh-public-performance',['Validate targeted safety and booking contracts','Measure public TTFB and HTML/RSC size']],
@@ -703,13 +706,22 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
   const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.match(source, /pull_request_target:/);
   assert.match(source, /pull-requests: write/);
   assert.match(source, /head\.repo\.full_name == github\.repository/);
   assert.match(source, /draft == false/);
-  assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.ok(source.includes('PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}'));
+  // A parent with an open child (even Draft) must retain its ancestry.
+  assert.ok(source.includes('gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1'));
+  assert.match(source, /if ! stacked_children=/, 'failed child lookup must fail closed');
+  assert.match(source, /0\) merge_option=--squash; export HH_EXPECTED_MERGE_METHOD=SQUASH/);
+  assert.match(source, /1\) merge_option=--merge; export HH_EXPECTED_MERGE_METHOD=MERGE/);
+  assert.ok(source.includes('gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD"'));
+  assert.match(source, /attempt<=3/);
+  assert.match(source, /Unable to determine if workflow can be created or updated due to timeout/);
+  assert.ok(source.includes('.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD'));
   assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });
 
@@ -869,4 +881,30 @@ test('Practice visual PR does not repeat Google-auth browser or old Chromium/Web
   assert.ok(!source.includes('tests/capture-public-ui-reference.test.mjs tests/practitioner-preview-auth.test.mjs'),
     'Google auth source tests have a distinct owner');
   assert.match(core, /^  release-ready:/m);
+});
+
+test('native CI interruption recovery is one-time, exact-head and never bypasses failing code', () => {
+  const workflow = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  assert.match(workflow, /^  workflow_run:/m);
+  assert.match(workflow, /workflows: \['HH PR core release gate'\]/);
+  const repair=workflow.split(/^  recover-interrupted-core:\s*$/m)[1];
+  assert.ok(repair,'missing recovery job');
+  for(const guard of [
+    "github.event_name == 'workflow_run'",
+    'event.run_attempt !== 1',
+    'event.event !== "pull_request"',
+    'event.repository?.full_name !== fullRepo',
+    'event.head_repository?.full_name !== fullRepo',
+    'live.head.sha !== reference.head.sha',
+    'reference.base?.sha !== live.base.sha',
+    'fresh.run_attempt !== 1',
+    'jobData.total_count > 100',
+    'event.conclusion !== "failure"',
+    '["cancelled","skipped","timed_out"].includes(job.conclusion)',
+    'github.rest.actions.reRunWorkflow',
+  ]) assert.ok(repair.includes(guard),'recovery lost safety guard: '+guard);
+  assert.match(repair,/actions: write/);
+  assert.match(repair,/concurrency:/);
+  assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
+  assert.match(repair,/new release-ready SUCCESS still required/);
 });

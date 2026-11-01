@@ -53,15 +53,120 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // Independent Site Video CI policy and source-only E2E contracts cannot
+  // change public services runtime, consent or payment. Protected Core/actionlint
+  // and its exact-head Site Video job still validate these files.
+  '.github/workflows/site-video-browser.yml',
+  'scripts/ci-site-video-scope.mjs',
+  'tests/ci-site-video-scope.test.mjs',
+  'tests/site-video-admin-e2e-gate.test.mjs',
+  'tests/ci-heavy-draft-policy.test.mjs',
+  // Other independent CI harnesses, with no application runtime dependency.
+  '.github/workflows/admin-seo-dashboard.yml',
+  '.github/workflows/release-reaudit.yml',
+  'scripts/public-poster-readiness.mjs',
+  'scripts/csp-navigation-diagnostics.mjs',
+  'scripts/verify-release-reaudit.mjs',
+  'tests/ci-head-cancellation.test.mjs',
+  'tests/ci-stale-run-deduplication.test.mjs',
+  'tests/csp-public-discovery-verifier.test.mjs',
+  'tests/csp-navigation-diagnostics.test.mjs',
+  'tests/public-audit-readiness.test.mjs',
+  'tests/release-reaudit.test.mjs',
+  // Another mandatory exact-HEAD specialist owns the Ideas/Coaching workflow.
+  '.github/workflows/hh-ideas-coaching-public.yml',
 ]);
 const sourceTests = new Set(PUBLIC_SOURCE_TESTS);
+// Scoped PR #2702: these EXACT files are owned by the independent Mandala
+// workflow (source, Node/TS, same-origin/consent tests and true encoded-media
+// acceptance on manual release). No checkout, booking, public-service route,
+// middleware or payment code is touched. New/unknown filenames remain FULL.
+const MANDALA_OWNED_HYPNO_FILES = new Set([
+  '.github/workflows/holistic-support-mandala.yml',
+  'app/api/holistic-support/hypno-strategy/route.js',
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-hypno-compact.module.css',
+  'components/mandala-hypno-compact.tsx',
+  'components/mandala-hypnocorrection-mobile.module.css',
+  'components/mandala-hypnocorrection-mobile.tsx',
+  'components/mandala-personal-meditation.module.css',
+  'components/mandala-personal-meditation.tsx',
+  'docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md',
+  'lib/mandala/adaptive-meditation-course.mjs',
+  'lib/mandala/hypno-psych-strategy.ts',
+  'lib/mandala/hypno-visual-overlay.mjs',
+  'lib/mandala/personal-meditation-script.mjs',
+  'lib/mandala/video-affirmations.ts',
+  'tests/adaptive-meditation-course.test.mjs',
+  'tests/mandala-hypnocorrection-mobile.test.mjs',
+  'tests/mandala-meditation-courses.test.mjs',
+  'tests/mandala-workspace-tabs.test.mjs',
+  'tests/meditation-regeneration.test.mjs',
+  'tests/personal-meditation-script.test.mjs',
+  'tests/video-affirmations.test.mjs',
+]);
+// Unlike editor-only changes, the new course contact UI calls the EXISTING
+// /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
+// browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+const MANDALA_COURSE_ENQUIRY_FILES = new Set([
+  'components/meditation-course-enquiry.module.css',
+  'components/meditation-course-enquiry.tsx',
+  'tests/meditation-course-enquiry.test.mjs',
+]);
+// Only reviewed new files may enter the focused route as A. Everything else
+// (including new routes and unreviewed tests) fails closed to all browsers.
+const MANDALA_REVIEWED_ADDITIONS = new Set([
+  'app/api/holistic-support/hypno-strategy/route.js',
+  'components/mandala-hypnocorrection-mobile.module.css',
+  'components/mandala-hypnocorrection-mobile.tsx',
+  'components/meditation-course-enquiry.module.css',
+  'components/meditation-course-enquiry.tsx',
+  'docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md',
+  'lib/mandala/adaptive-meditation-course.mjs',
+  'lib/mandala/hypno-psych-strategy.ts',
+  'lib/mandala/hypno-visual-overlay.mjs',
+  'tests/adaptive-meditation-course.test.mjs',
+  'tests/mandala-hypnocorrection-mobile.test.mjs',
+  'tests/mandala-meditation-courses.test.mjs',
+  'tests/meditation-course-enquiry.test.mjs',
+  'tests/meditation-regeneration.test.mjs',
+]);
 const scriptCases = new Map(PUBLIC_BROWSER_CASES.map(name => ['scripts/' + name, name]));
+// The Ideas/Coaching source owner checks these exact files. Public Services
+// must still run its real Ideas browser when the shared mobile QA harness
+// changes, but must not launch unrelated payment, Reiki or Alchemy journeys.
+const IDEAS_SCOPED_BROWSER_HARNESS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'scripts/verify-coaching-lounge-mobile.mjs',
+  'scripts/verify-holistic-support-browser.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
+// These are the only pre-reviewed NEW helper/test filenames allowed to use the
+// real Ideas focused browser gate; unknown additions still run all 13.
+const IDEAS_SCOPED_ADDITIONS = new Set([
+  'scripts/ci-mobile-browser-batch.mjs',
+  'tests/ci-ideas-coaching-optimization.test.mjs',
+]);
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
-// One proven isolated presentation leaf: two existing suites exercise the exact
-// Alchemy screen/viewport/consent in RU/EN/ES. All JSX, forms and payments stay full.
+// Narrow, source-test-covered styling files avoid a second Next build and
+// browser install in Public Services. Core owns the same production candidate
+// build; real browser journeys remain available by manual workflow_dispatch.
+// Forms, consent, auth, payment, HTML/JSX and unknown CSS are never exempt.
+const SOURCE_COVERED_VISUAL_ONLY = new Set([
+  'components/alchemy-soul-landing.module.css',
+]);
 const PRESENTATION_CASES = new Map([
-  ['components/alchemy-soul-landing.module.css',
-    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']],
+  // Actual public UX still gets the related real Chromium browser journeys,
+  // not the unrelated 13-case checkout/Reiki/Alchemy matrix.
+  ['components/direction-offers.tsx',
+    ['verify-direction-focus-mobile.mjs', 'verify-public-services-production.mjs']],
+  ['components/academy-course-video-playlist.tsx',
+    ['verify-public-services-production.mjs']],
+]);
+// This is a test helper, not a contact implementation. Public Services has
+// one importer; App R1 and release re-audit run in their own workflows.
+const HARNESS_CASES = new Map([
+  ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
 function full(reason) {
@@ -78,7 +183,17 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
+      selected.add('verify-public-services-production.mjs');
+      continue;
+    }
     if (sourceTests.has(file)) continue;
+    if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
+    if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
+      selected.add('verify-ideas-mobile-browser.mjs');
+      continue;
+    }
     const browserCase = scriptCases.get(file);
     if (browserCase) {
       selected.add(browserCase);
@@ -86,6 +201,10 @@ export function planPublicServicesChangedPaths(files) {
     }
     if (PRESENTATION_CASES.has(file)) {
       for (const name of PRESENTATION_CASES.get(file)) selected.add(name);
+      continue;
+    }
+    if (HARNESS_CASES.has(file)) {
+      for (const name of HARNESS_CASES.get(file)) selected.add(name);
       continue;
     }
     if (file === METRIC_SCRIPT) {
@@ -147,7 +266,9 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
-      if (status !== 'M' && !(status === 'A' && TRUSTED_CI_CONTRACT_FILES.has(file)))
+      if (status !== 'M' && !(status === 'A' &&
+        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
+         MANDALA_REVIEWED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
@@ -155,6 +276,40 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
+}
+
+// Temporary backlog optimization: keep full original Chromium/WebKit for
+// unknown, auth, consent, payments, booking and cart paths. Only the reviewed
+// presentation-only focused cases can defer their duplicate real browser to
+// explicit manual QA while Core and source tests still run on PR.
+const SAFE_FOCUSED_PR_CASES = new Set([
+  'verify-ideas-mobile-browser.mjs',
+  'verify-direction-focus-mobile.mjs',
+  'verify-holistic-topics-browser.mjs',
+  'verify-holistic-support-recommendations-mobile.mjs',
+]);
+export function requiresPublicServicesHeavyPr(plan) {
+  if (!plan || plan.mode === 'full') return true;
+  if (plan.mode === 'focused') {
+    const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
+    return !cases.length || cases.some(name => !SAFE_FOCUSED_PR_CASES.has(name));
+  }
+  return false;
+}
+
+// Install WebKit only for cases that actually execute WebKit. The full
+// payment/consent matrix and unknowns always retain both engines.
+const CHROMIUM_ONLY_CASES = new Set([
+  'verify-alchemy-one-screen.mjs',
+  'verify-public-services-production.mjs',
+  'verify-service-cart-browser.mjs',
+  'verify-direction-focus-mobile.mjs',
+]);
+export function publicPlaywrightEngines(plan) {
+  if (!plan || !plan.browser) return 'none';
+  const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
+  return cases.length > 0 && cases.every(name => CHROMIUM_ONLY_CASES.has(name))
+    ? 'chromium' : 'chromium webkit';
 }
 
 function main() {
@@ -168,6 +323,8 @@ function main() {
     appendFileSync(process.env.GITHUB_OUTPUT,
       ['mode=' + plan.mode, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
+        'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
+        'engines=' + publicPlaywrightEngines(plan),
         'cases=' + plan.cases].join('\n') + '\n');
   }
   if (process.env.GITHUB_STEP_SUMMARY) {

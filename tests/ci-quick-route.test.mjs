@@ -179,3 +179,23 @@ function validPngWithColor(value){
   return Buffer.concat([out,chunk('IHDR',ihdr),
     chunk('IDAT',deflateSync(Buffer.from([0,value,0,0,255]))),chunk('IEND',Buffer.alloc(0))]);
 }
+
+test('temporary backlog route leaves private, policy and unknown changes on full specialist gate', () => {
+  const paths = [
+    'app/[locale]/app/messages/page.tsx','lib/practitioners/direct-messages.js',
+    'components/app/mobile-profile.jsx','app/[locale]/services/page.tsx',
+    'lib/wallet/reconcile.js','lib/ai/provider-api.js','tests/privacy-consent.test.mjs',
+    'docs/operations/CI_RELEASE_POLICY.md','.github/workflows/hh-pr-core-release.yml',
+    'scripts/ci-quick-route.mjs','package.json','middleware.ts',
+    'supabase/migrations/001.sql','unrecognized/file.js'
+  ];
+  for (const path of paths) assert.equal(decideRoute([row(path)],trusted),'FULL',path);
+  for (const path of ['app/[locale]/about/page.tsx','lib/mandala/cinematic-director.mjs','components/public-greeting.jsx','docs/guide.md'])
+    assert.equal(decideRoute([row(path)],trusted),'CORE',path);
+  assert.equal(decideRoute([row('components/public-greeting.jsx','D')],trusted),'FULL');
+  const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  assert.match(gate,/needs\.scope\.outputs\.route == 'FULL'/);
+  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  const loose=readFileSync('.github/workflows/hh-loose-release-ready-once.yml','utf8');
+  assert.ok(loose.includes("      - '.github/workflows/hh-pr-core-release.yml'"));
+});

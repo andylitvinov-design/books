@@ -259,7 +259,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && needs.scope.outputs.route == 'FULL'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
