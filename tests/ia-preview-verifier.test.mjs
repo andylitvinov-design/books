@@ -48,3 +48,13 @@ test('private-note exclusion remains executable and rejects a leaked practitione
   await privacy({ content: async () => 'Synthetic client-visible report' }, assert)
   await assert.rejects(privacy({ content: async () => 'DO NOT DISPLAY — PRIVATE SYNTHETIC PRACTITIONER NOTE' }, assert))
 })
+
+test('IA owner browser uses the real verified bridge with loopback-only synthetic identity', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ia-v2.yml', import.meta.url), 'utf8')
+  assert.match(workflow, /postgres:17-alpine/)
+  assert.match(workflow, /tests\/helpers\/app-db-setup\.mjs/)
+  assert.match(source, /HH_APP_TEST_RUNTIME.*isolated/)
+  assert.match(source, /context\.request\.post\(origin \+ '\/api\/app\/practitioner\/open'/)
+  assert.match(source, /legacy admin cookie must remain unauthorized/)
+  assert.match(source, /real verified practitioner bridge/)
+})

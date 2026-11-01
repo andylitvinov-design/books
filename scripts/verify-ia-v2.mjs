@@ -4,12 +4,14 @@ import assert from 'node:assert/strict'
 import { observePublicNavigation, resizePublicViewport } from './ia-public-navigation-diagnostics.mjs'
 import { randomBytes, randomUUID, createHmac } from 'node:crypto'
 import { createServer } from 'node:https'
-import { request as httpRequest } from 'node:http'
+import { request as httpRequest, createServer as createHttpServer } from 'node:http'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { once } from 'node:events'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { chromium, webkit, expect } from '@playwright/test'
+import { createServerClient } from '@supabase/ssr'
+import pg from 'pg'
 import { createPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createClient } from '../lib/clients/service.js'
 import { getOwnerCabinetLink, rotateCabinetAccess, revokeCabinetAccess } from '../lib/clients/access.js'
@@ -24,12 +26,34 @@ const evidence = '/tmp/ia222-evidence'
 mkdirSync(evidence, { recursive: true })
 const token = randomBytes(32).toString('base64url'), key = randomBytes(32).toString('base64')
 const redactions = [token, key]
-const environment = { NODE_ENV: 'production', VERCEL_ENV: 'preview', PRESCRIPTIONS_KV_REST_API_URL: apiOrigin, PRESCRIPTIONS_KV_REST_API_TOKEN: token, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: key, PRESCRIPTIONS_ADMIN_TOKEN: token, PRESCRIPTIONS_ADMIN_PIN: '' }
+// Only the isolated loopback CI fixture may enable the test runtime. The app
+// still executes its real verified identity, owner lookup and v2 session bridge.
+assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+assert.ok(!process.env.VERCEL, 'Synthetic owner authentication is CI-only')
+const adminDb = new URL(process.env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid')
+assert.equal(adminDb.hostname, '127.0.0.1')
+assert.equal(adminDb.pathname, '/hh_app_test')
+const authOrigin = 'http://127.0.0.1:54321'
+const authKey = 'sb_publishable_synthetic_012345678901234567890'
+const ownerId = '10000000-0000-4000-8000-000000000001'
+const ownerSession = '20000000-0000-4000-8000-000000000001'
+const ownerEmail = 'andy.litvinov@gmail.com' // Existing owner allowlist; synthetic local identity only.
+const ownerClaims = {sub:ownerId,session_id:ownerSession,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+3600}
+const ownerJwt = Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url') + '.' +
+  Buffer.from(JSON.stringify(ownerClaims)).toString('base64url') + '.' + Buffer.from('synthetic-ci-signature').toString('base64url')
+const ownerUser = {id:ownerId,aud:'authenticated',email:ownerEmail,user_metadata:{full_name:'Synthetic owner'},
+  app_metadata:{provider:'google'},created_at:'2026-10-01T00:00:00Z',last_sign_in_at:new Date().toISOString()}
+const environment = { NODE_ENV: 'test', VERCEL_ENV: 'preview', HH_APP_TEST_RUNTIME:'isolated', HH_APP_ENABLED:'true',
+  HH_APP_SUPABASE_URL:authOrigin, HH_APP_SUPABASE_PUBLISHABLE_KEY:authKey,
+  HH_APP_DATABASE_URL:'postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test',
+  HH_APP_ENCRYPTION_KEY:Buffer.alloc(32).toString('base64'), HH_APP_ALLOWED_ORIGINS:'https://localhost:3203',
+  PRESCRIPTIONS_KV_REST_API_URL: apiOrigin, PRESCRIPTIONS_KV_REST_API_TOKEN: token,
+  PRESCRIPTIONS_DATA_ENCRYPTION_KEY: key, PRESCRIPTIONS_ADMIN_TOKEN: token, PRESCRIPTIONS_ADMIN_PIN: '' }
 const certificate = { key: readFileSync('/tmp/ia222-key.pem'), cert: readFileSync('/tmp/ia222-cert.pem') }
 const results = []
 const publicNavigationDiagnostics = []
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
-let bridge, proxy, app, browser, secondBrowser, logs = ''
+let bridge, proxy, authProvider, app, browser, secondBrowser, logs = ''
 const pass = message => { results.push({ status: 'PASS', message }); console.log(`PASS: ${message}`) }
 const sanitize = text => redactions.reduce((value, secret) => value.replaceAll(secret, '[redacted]'), String(text))
 async function redis(command) {
@@ -46,6 +70,28 @@ async function startApp() {
   }
 }
 async function stopApp() { if (app && app.exitCode === null) { const stopped = once(app, 'exit'); app.kill('SIGTERM'); await stopped } }
+async function authenticateOwner(context) {
+  const jar = new Map()
+  const client = createServerClient(authOrigin, authKey, {
+    auth:{experimental:{appendPkceFlowIdToRedirects:true}},
+    cookieOptions:{name:'hh-app-auth',httpOnly:true,secure:false,sameSite:'lax',path:'/'},
+    cookies:{encode:'tokens-only',getAll(){return [...jar].map(([name,value])=>({name,value}))},
+      setAll(items){for(const {name,value} of items)jar.set(name,value)}},
+  })
+  const {error}=await client.auth.setSession({access_token:ownerJwt,refresh_token:'synthetic-local-refresher'})
+  assert.equal(error,null,'Local synthetic identity must be verified by the provider double')
+  assert.ok([...jar.keys()].some(name=>/^hh-app-auth(?:\.\d+)?$/.test(name)))
+  await context.addCookies([...jar].map(([name,value])=>({name,value,domain:'127.0.0.1',path:'/',httpOnly:true,sameSite:'Lax',secure:false})))
+  const denied=await context.request.get(origin+'/admin',{maxRedirects:0})
+  assert.ok([303,307,308].includes(denied.status()),'SDK-only identity must not bypass admin bridge')
+  const opened=await context.request.post(origin + '/api/app/practitioner/open',{
+    data:{destination:'cabinet'},headers:{Origin:origin},timeout:30000,
+  })
+  assert.equal(opened.status(),200,'real verified practitioner bridge must issue the owner session')
+  assert.equal((await opened.json()).redirectUrl,'/admin')
+  assert.ok((await context.cookies(origin+'/admin')).some(cookie=>cookie.name==='prescriptions_admin' && /^v2\.[A-Za-z0-9_-]{43}$/.test(cookie.value)))
+}
+
 async function go(page, path) {
   const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.evaluate(() => document.fonts.ready)
@@ -336,6 +382,23 @@ try {
     incoming.pipe(upstream)
   })
   proxy.listen(3444, '127.0.0.1'); await once(proxy, 'listening')
+  // Seed the same isolated owner fixture used by site-video admin E2E.
+  const db = new pg.Client({connectionString:adminDb.toString()})
+  await db.connect()
+  try {
+    const changed=await db.query('update auth.users set email=$1 where id=$2 returning id',[ownerEmail,ownerId])
+    assert.equal(changed.rowCount,1)
+    const inserted=await db.query("insert into app.accounts(id,display_name,onboarding_state,status) values($1,$2,'active','active') on conflict(id) do nothing returning id",[ownerId,'Synthetic CI Owner'])
+    assert.equal(inserted.rowCount,1)
+  } finally { await db.end() }
+  authProvider=createHttpServer((request,response)=>{
+    const path=new URL(request.url || '/',authOrigin).pathname
+    if(request.method==='GET' && path==='/auth/v1/user' && request.headers.authorization==='Bearer '+ownerJwt){
+      response.writeHead(200,{'Content-Type':'application/json'});response.end(JSON.stringify(ownerUser));return
+    }
+    response.writeHead(401,{'Content-Type':'application/json'});response.end(JSON.stringify({code:'unauthorized'}))
+  })
+  authProvider.listen(54321,'127.0.0.1'); await once(authProvider,'listening')
   const store = createPrescriptionStore({ environment })
   assert.equal(store.assessmentStorage, 'encrypted-kv')
   const a = createClient({ fullName: 'Synthetic Client A', preferredLocale: 'en' }), b = createClient({ fullName: 'Synthetic Client B', preferredLocale: 'ru' })
@@ -437,6 +500,10 @@ try {
   pass('All original remedy/book routes: ' + inventory.stdout.trim())
   const owner = await browser.newContext(common)
   await owner.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
+  const legacy=await owner.request.get(origin+'/admin',{maxRedirects:0})
+  assert.ok([303,307,308].includes(legacy.status()), 'legacy admin cookie must remain unauthorized')
+  await owner.clearCookies()
+  await authenticateOwner(owner)
   const admin = await owner.newPage()
   // Isolated synthetic document: exercise the actual newly dedicated preview
   // route with the same owner permissions as the practitioner UI. Never use
@@ -604,7 +671,7 @@ try {
   sp.on('pageerror', error => errors.push(error.message))
   await verifyPublicHeaderMatrix(sp, 'webkit')
   await verifyPublicDiscoveryNavigation(sp, 'webkit')
-  await safari.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
+  await authenticateOwner(safari)
   await go(sp, `/admin/documents/${previewId}/session-preview?locale=ru`)
   await expect(sp.getByRole('heading', { name: 'Гомеопатическая рекомендация' })).toBeVisible()
   await expect(sp.locator('.canonical-progress-item')).toHaveCount(2)
@@ -624,7 +691,7 @@ try {
 } finally {
   writeFileSync(`${evidence}/public-navigation-diagnostics.json`, JSON.stringify(publicNavigationDiagnostics, null, 2))
   await browser?.close(); await secondBrowser?.close(); await stopApp()
-  bridge?.close(); proxy?.close()
+  bridge?.close(); proxy?.close(); authProvider?.close()
   writeFileSync(`${evidence}/results.json`, JSON.stringify(results, null, 2))
   writeFileSync(`${evidence}/app.log`, sanitize(logs))
 }
