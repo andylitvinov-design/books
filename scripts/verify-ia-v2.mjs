@@ -686,7 +686,7 @@ try {
   await sp.screenshot({ path: `${evidence}/report-premium-mobile-ru-webkit.png`, fullPage: false })
   pass('WebKit 390px: secure original report viewer remains readable with exactly two measurements')
   await go(sp, '/ru/library')
-  await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="house"]')).toBeVisible()
+  await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="home"]')).toBeVisible()
   assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
   await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
   assert.deepEqual(errors, [])

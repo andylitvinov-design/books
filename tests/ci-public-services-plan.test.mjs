@@ -410,6 +410,87 @@ test('required Public Services PR gate follows exact-head risk without suppressi
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });
 
+test('hypnocorrection grouping uses Mandala owner and only real service enquiry E2E', () => {
+  const files=[
+  ".github/workflows/holistic-support-mandala.yml",
+  "app/api/holistic-support/hypno-strategy/route.js",
+  "components/mandala-free-video-studio.tsx",
+  "components/mandala-hypno-compact.module.css",
+  "components/mandala-hypno-compact.tsx",
+  "components/mandala-hypnocorrection-mobile.module.css",
+  "components/mandala-hypnocorrection-mobile.tsx",
+  "components/mandala-personal-meditation.module.css",
+  "components/mandala-personal-meditation.tsx",
+  "docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md",
+  "lib/mandala/adaptive-meditation-course.mjs",
+  "lib/mandala/hypno-psych-strategy.ts",
+  "lib/mandala/hypno-visual-overlay.mjs",
+  "lib/mandala/personal-meditation-script.mjs",
+  "lib/mandala/video-affirmations.ts",
+  "tests/adaptive-meditation-course.test.mjs",
+  "tests/mandala-hypnocorrection-mobile.test.mjs",
+  "tests/mandala-meditation-courses.test.mjs",
+  "tests/mandala-workspace-tabs.test.mjs",
+  "tests/meditation-regeneration.test.mjs",
+  "tests/personal-meditation-script.test.mjs",
+  "tests/video-affirmations.test.mjs",
+  "components/meditation-course-enquiry.module.css",
+  "components/meditation-course-enquiry.tsx",
+  "tests/meditation-course-enquiry.test.mjs"
+];
+  const editorOnly=files.filter(file=>!file.startsWith('components/meditation-course-enquiry')&&
+    file!=='tests/meditation-course-enquiry.test.mjs');
+  const editor=planPublicServicesChangedPaths(editorOnly);
+  assert.deepEqual([editor.mode,editor.build,editor.browser],['contracts',false,false],
+    'one Mandala specialist must own editor, consented AI strategy and local Canvas recording');
+  const mixed=planPublicServicesChangedPaths([...files,
+    'scripts/ci-public-services-plan.mjs','tests/ci-public-services-plan.test.mjs']);
+  assert.equal(mixed.mode,'focused');
+  assert.equal(mixed.cases,'verify-public-services-production.mjs',
+    'real course contact must keep its relevant first-party enquiry E2E');
+  assert.equal(requiresPublicServicesHeavyPr(mixed),true);
+  const mandala=pathsOf('holistic-support-mandala.yml');
+  for(const file of editorOnly.filter(f=>f.startsWith('components/')||
+      f.startsWith('lib/mandala/')||f.startsWith('app/api/holistic-support/')||
+      f.startsWith('tests/'))) {
+    assert.equal(covers(mandala,file),true,'Mandala specialist must own '+file);
+  }
+  for(const unsafe of [
+    'app/api/service-enquiries/route.js', 'app/api/payments/talismans/checkout/route.js',
+    'components/commerce/service-cart.tsx', 'components/holistic-support-mobile.tsx',
+    'app/ru/services/imagery-therapy/page.tsx', 'middleware.ts',
+    'components/mandala-unknown-new-feature.tsx'
+  ]) assert.equal(planPublicServicesChangedPaths([...files,unsafe]).mode,'full',
+    'unreviewed/shared/payment changes must not bypass original E2E: '+unsafe);
+});
+
+test('additions approved for the existing #2702 group are narrow and fail closed on unknown A',()=>{
+  const z=String.fromCharCode(0),head='b'.repeat(40),base='a'.repeat(40);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const plan=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,file])=>[status,file]).join(z)+z);
+    throw Error('Unexpected command: '+args.join(' '));
+  });
+  const exact=[
+    ['M','components/mandala-free-video-studio.tsx'],
+    ['M','.github/workflows/holistic-support-mandala.yml'],
+    ['A','components/mandala-hypnocorrection-mobile.tsx'],
+    ['A','app/api/holistic-support/hypno-strategy/route.js'],
+    ['A','tests/mandala-hypnocorrection-mobile.test.mjs'],
+    ['A','components/meditation-course-enquiry.tsx'],
+    ['A','tests/meditation-course-enquiry.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs']
+  ];
+  assert.equal(plan(exact).cases,'verify-public-services-production.mjs');
+  assert.equal(plan(exact).mode,'focused');
+  assert.equal(plan([...exact,['A','app/api/holistic-support/other-provider/route.js']]).mode,'full');
+  assert.equal(plan([...exact,['A','components/mandala-unknown-feature.tsx']]).mode,'full');
+  assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
+});
+
 test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
@@ -493,4 +574,31 @@ test('common public display changes use only relevant browser cases, not unrelat
   assert.match(yml,/steps\.scope\.outputs\.engines/);
   assert.match(yml,/playwright install --with-deps chromium\n/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
+});
+
+test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
+  const source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
+  const config=readFileSync(new URL('../lib/app/config.js',import.meta.url),'utf8');
+  for(const guard of [
+    'response.status() === 503',
+    '/api/catalog/ratings',
+    '/api/service-enquiries/booking-status',
+    '/api/app/bootstrap',
+    'responseEvidence.push(url.pathname)',
+    'const unavailable = responseEvidence',
+    'if (!process.env.HH_APP_SUPABASE_URL)',
+    'const expectedUnavailable = new Set()',
+    'expectedUnavailable.has(entry.path)',
+    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path')",
+    'assert.deepEqual(unexpected, [], "Unexpected browser console errors")'
+  ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
+  assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
+    'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');
+  const appBootstrap=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
+  assert.ok(appBootstrap.includes("const config = getAppConfig()"),
+    'unconfigured bootstrap API must be fail-closed before authenticated data');
+  assert.ok(appBootstrap.includes("joined === 'bootstrap' && method === 'GET'"),
+    'only the read-only bootstrap endpoint is allowlisted');
+  assert.ok(!source.includes('responseEvidence.push(response.json()'),
+    'Body reads after browser resource closure are not reliable evidence');
 });
