@@ -38,6 +38,7 @@ import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holisti
 import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPresetAudio, startPresetMixAudio, startUploadedAudio } from "@/lib/mandala/local-video-music";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
+import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 
@@ -1838,19 +1839,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
   const audioTheme=audioThemeOverride||theme;
-  const audioMatches = recommendMandalaAudio({
+  // Four actual, distinct first-party files accompany each selected film
+  // scenario. Keep the existing 22 composed melodies as safe fallbacks.
+  const scenarioTracks=activeFreeFilmPreset?scenarioAudioTracks(activeFreeFilmPreset):[];
+  const matchingScenarioTracks=scenarioTracks.filter(track=>
+    (audioKind==="all"||audioKind===track.kind)&&
+    (audioMood==="all"||track.moods.includes(audioMood))&&
+    (audioPace==="all"||track.pace===audioPace)&&
+    (!audioVoiceFriendly||track.voiceSafe));
+  const baseAudioMatches=recommendMandalaAudio({
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,wish,
   });
-  const featuredMelodies = recommendMandalaAudio({
+  const classicMatches=classicalAudioTracks.filter(track=>
+    (audioKind==="all"||audioKind===track.kind)&&
+    (audioMood==="all"||track.moods.includes(audioMood))&&
+    (audioPace==="all"||track.pace===audioPace));
+  const audioMatches=[...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
+  const availableAudioTracks=[...scenarioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
     theme:audioTheme,kind:"melody",wish,
-  }).slice(0,4);
+  })).slice(0,4);
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
-  const selectedAudio = mandalaAudioTracks.find(item=>item.id===music);
+  const selectedAudio = availableAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
     ?attachedAudio.file.name:attachedAudio.kind==="presets"
-      ?attachedAudio.ids.map(id=>mandalaAudioTracks.find(item=>item.id===id)?.name[locale]||id).join(" + ")
-      :mandalaAudioTracks.find(item=>item.id===attachedAudio.id)?.name[locale]||attachedAudio.id;
+      ?attachedAudio.ids.map(id=>availableAudioTracks.find(item=>item.id===id)?.name[locale]||id).join(" + ")
+      :availableAudioTracks.find(item=>item.id===attachedAudio.id)?.name[locale]||attachedAudio.id;
   const searchTerm=audioSearch.trim().toLocaleLowerCase(locale);
   const searchedAudio=audioMatches
     .filter(track=>!searchTerm || [track.name[locale],track.detail[locale],track.kind]
@@ -3802,7 +3817,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.quickMusicRail} role="group" aria-label={
           locale==="ru"?"Музыкальные дорожки":locale==="es"?"Pistas musicales":"Music tracks"}>
-          {featuredMelodies.slice(0,3).map((track,index)=>{
+          {featuredMelodies.slice(0,4).map((track,index)=>{
             const id=track.id as PresetId;
             const checked=attachedPresetIds.includes(id);
             const listening=samplePreviewId===id&&soundPreview;
@@ -3814,7 +3829,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 src={[
                   "/videos/holistic-house/film-collection-v2/meadow-morning.jpg",
                   "/videos/holistic-house/film-collection-v2/wildflower-dance.jpg",
-                  "/videos/holistic-house/film-collection-v2/calm-sea.jpg"
+                  "/videos/holistic-house/film-collection-v2/calm-sea.jpg",
+                  "/videos/holistic-house/film-collection-v2/coastal-freedom.jpg"
                 ][index]}/>
               <button type="button" className={videoStyles.quickMusicCheck}
                 role="checkbox" aria-checked={checked} data-video-quick-music-check={id}
