@@ -19,7 +19,9 @@ const browser = await chromium.launch();
 const diagnostics = { runtime: "production build; isolated synthetic database", console: [], pageErrors: [], signedOutResponses: {}, devIssueOverlay: false };
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  // Reject unmocked writes; synthetic page-level fixtures may fulfill first.
+  await context.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
   const signedOutCodes = {
     '/api/service-enquiries/booking-status': 'BOOKING_PROOF_REQUIRED',
     '/api/app/bootstrap': 'SIGN_IN_REQUIRED',
@@ -72,6 +74,15 @@ try {
   const createPage = async (width) => {
     const page = await context.newPage();
     attachDiagnostics(page);
+    // The draft-link assertions exercise the private-browsing fallback. The
+    // regular receipt redirect has a separate synthetic release-audit case.
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'hh-service-enquiry-receipt:v1') throw new DOMException('blocked', 'SecurityError');
+        return set.call(this, key, value);
+      };
+    });
     await page.setViewportSize({ width, height: 844 });
     return page;
   };
@@ -360,10 +371,13 @@ try {
     await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
+    // Reiki is online-only: selecting its topic intentionally switches the
+    // current Toronto mode to online instead of displaying a false empty state.
     await esShowcase.locator('[data-services-kind="reiki"]').click();
     // The same approved EN/RU behavior: Reiki is online-only and resets Toronto.
     await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
     // Explicit Toronto still yields a real empty state; user can restore online.
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
@@ -424,7 +438,7 @@ try {
       await visible(target);
       assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
         "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] button');
+      const choices = target.locator('[data-choice-layout="service"] > button');
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
@@ -635,21 +649,31 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
+          // The former three-offer widget was replaced by the express review.
+          // Verify the real current funnel without submitting any visitor data.
           const featured = main.locator("[data-free-review-intro-video]");
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
-            "The introduction never autoplays before opt-in");
-          const chooser = main.locator("#" + captureId + "[data-personal-express-enquiry]");
-          await visible(chooser);
-          const reveal = chooser.locator("[data-express-reveal]");
-          assert.equal(await reveal.getAttribute("aria-expanded"), "false");
+            "Introductory recording never autoplays before opt-in");
+          const capture = main.locator("#" + captureId + "[data-personal-express-enquiry]");
+          await visible(capture);
+          const reveal = capture.locator("[data-express-reveal]");
+          await expect(reveal).toHaveAttribute("aria-expanded", "false");
+          await expect(capture.locator("[data-express-inline-disclosure]")).toBeHidden();
           await reveal.click();
-          await visible(chooser.locator("[data-express-inline-disclosure]"));
-          assert.equal(await chooser.locator('input[name="express-review-focus"]').count(), 2);
-          assert.equal(await chooser.locator('input[type="checkbox"][required]').isChecked(), false,
-            "Contact consent remains explicit and unchecked");
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "Opening the form does not create a CRM lead");
+          await expect(reveal).toHaveAttribute("aria-expanded", "true");
+          const disclosure = capture.locator("[data-express-inline-disclosure]");
+          await visible(disclosure);
+          await expect(disclosure.locator("[data-express-focus]")).toHaveCount(2);
+          const chooser = disclosure.locator("[data-contact-channel-chooser]");
+          await expect(chooser).toHaveCount(1);
+          const consent = chooser.locator('input[type="checkbox"][required]');
+          await expect(consent).not.toBeChecked();
+          await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+          await expect(chooser.locator('[data-lead-saved]')).toHaveCount(0);
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
+            "Expanded information must fit the phone width");
+
           if (width === 390) {
             const hub = await page.context().newPage();
             await hub.setViewportSize({width, height: 844});

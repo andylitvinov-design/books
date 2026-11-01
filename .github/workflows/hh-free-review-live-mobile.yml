@@ -27,6 +27,8 @@ on:
       - 'tests/private-material-handoff.test.mjs'
       - 'components/site-video-player.tsx'
       - 'data/service-video-library.ts'
+      - 'scripts/ci-heavy-impact.mjs'
+      - 'tests/ci-heavy-impact.test.mjs'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -56,11 +58,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 
 # Superseded PR HEADs may be cancelled; verified production push and manual QA must not.
 concurrency:
-  group: hh-free-review-mobile-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-free-review-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   read-only-mobile:
@@ -76,24 +79,43 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - name: Build the real PR app and check focused route/CRM contracts
+      - name: Classify modified test-only Free Review PR
+        if: github.event_name == 'pull_request'
+        id: impact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-heavy-impact.mjs free-review
+      - name: Verify current PR before heavy browser or build
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
+      - name: Verify focused Free Review route and CRM contracts
         if: github.event_name == 'pull_request'
         timeout-minutes: 12
         run: |
           npm ci --include=dev --no-audit --no-fund
           node --test tests/retired-situation-promo-sitewide.test.mjs tests/constellation-landing-video.test.mjs tests/free-review-conversion.test.mjs tests/private-material-handoff.test.mjs tests/coaching-intake-form.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/consultation-capture-choice.test.mjs tests/free-diagnosis-three-offers.test.mjs tests/personal-testimonials-prefetch.test.mjs
           npx eslint components/free-diagnosis-offers.tsx components/personal-express-enquiry.tsx components/compact-lead-capture.tsx app/'[locale]'/services/free-consultation/page.tsx components/sitewide-antistress-banner.tsx components/free-entry-landing.tsx components/personal-testimonials.tsx components/free-drawing-intake.tsx components/coaching-intake-form.tsx components/consultation-choice-capture.tsx lib/coaching/intake-model.js tests/private-material-handoff.test.mjs
-          npx tsc --noEmit
-          npm run build > /tmp/hh-review-next-build.log 2>&1 || { tail -n 140 /tmp/hh-review-next-build.log; exit 1; }
+          # Whole-project TypeScript belongs to the unconditional production release-ready gate.
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Build exact PR production site for real browser acceptance
+        if: github.event_name == 'pull_request' && steps.impact.outputs.browser == 'true'
+        timeout-minutes: 12
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build > /tmp/hh-review-next-build.log 2>&1 || { tail -n 140 /tmp/hh-review-next-build.log; exit 1; }
       - name: Install disposable Chromium and WebKit runners
+        if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'
         timeout-minutes: 12
         run: |
           npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
           /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Verify PR's local production build, not old live alias
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.impact.outputs.browser == 'true'
         timeout-minutes: 10
         run: |
           npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-review-next-server.log 2>&1 & SERVER_PID=$!

@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 // Read-only exact-HEAD and exact-BASE coverage of applicable specialist workflows.
 // Runs from the PR merge checkout; no third-party API and no write permissions.
-import { readFileSync, readdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, readdirSync, appendFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
+import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk,
+  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -88,36 +91,142 @@ export function githubReader(repo, token, transport = fetch) {
   };
 }
 
-function assertSame(pr, ctx, allowBaseAdvance = false) {
+// Loose BASE is permitted only for recognizable, non-sensitive source paths.
+// A surprising path, CI/policy change, credential-related name, private-data
+// surface, API, or billing/security feature retains fresh production-base
+// matching. This is deliberately independent of FAST UI routing: normal
+// application code still requires Core and all applicable specialist checks.
+export function requiresCurrentProductionBase(changed) {
+  if (!Array.isArray(changed) || changed.length === 0) return true;
+  const ordinaryRoots = /^(?:app|components|lib|tests|public|content|data|docs)\//;
+  const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+  const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
+  return changed.some(file =>
+    typeof file !== 'string' ||
+    !ordinaryRoots.test(file) ||
+    file.split('/').some(segment => segment === '.' || segment === '..' || segment === '') ||
+    sensitiveName.test(file) ||
+    sensitiveRoots.test(file)
+  );
+}
+
+function assertSame(pr, ctx, requireCurrentBase = false) {
   if (pr.number !== ctx.number || pr.state !== 'open' || pr.draft ||
-      pr.head?.sha !== ctx.head || (!allowBaseAdvance && pr.base?.sha !== ctx.base) || pr.base?.ref !== TARGET ||
-      pr.base?.repo?.full_name !== ctx.repo || pr.head?.repo?.full_name !== ctx.repo) {
+      pr.head?.sha !== ctx.head ||
+      !/^[0-9a-f]{40}$/i.test(pr.base?.sha || '') ||
+      (requireCurrentBase && pr.base.sha !== ctx.base) ||
+      pr.base?.ref !== TARGET || pr.base?.repo?.full_name !== ctx.repo ||
+      pr.head?.repo?.full_name !== ctx.repo || pr.mergeable === false ||
+      pr.mergeable_state === 'dirty') {
     throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED');
   }
 }
 
+// These broad domain/browser diagnostics remain visible in Actions. Only a
+// proven FAST presentation change may stop waiting for an unchanged BASE copy.
+const FAST_ADVISORY_WORKFLOWS = new Set([
+  '.github/workflows/hh-public-services-production.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/hh-app-browser.yml',
+  '.github/workflows/ia-v2.yml',
+  '.github/workflows/opora-module-ci.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-benchmark-public-browser.yml',
+]);
+
+// Load only the BASE-pinned parser, without PR dependencies or npm scripts.
+// A failed install never waives checks: callers fall back to STRICT.
+export function loadTrustedTypescript(base) {
+  if (!/^[0-9a-f]{40}$/.test(base || '')) return null;
+  let dir;
+  try {
+    const read=path=>execFileSync('git',['show',base+':'+path],{encoding:'utf8',maxBuffer:100_000,stdio:['ignore','pipe','pipe']});
+    const manifest=read('lib/ci/fast-ui-parser/package.json');
+    const lock=read('lib/ci/fast-ui-parser/parser-lock.json');
+    const pkg=JSON.parse(manifest), parsed=JSON.parse(lock);
+    const entry=parsed.packages?.['node_modules/typescript'];
+    if (Object.keys(pkg).sort().join(',') !== 'dependencies,name,private,version' ||
+        pkg.name !== 'hh-fast-ui-parser' || pkg.private !== true || pkg.version !== '1.0.0' ||
+        JSON.stringify(pkg.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        JSON.stringify(parsed.packages?.['']?.dependencies) !== JSON.stringify({typescript:'5.9.3'}) ||
+        Object.keys(parsed.packages || {}).sort().join(',') !== ',node_modules/typescript' ||
+        entry?.version !== '5.9.3' || entry.resolved !== 'https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz' ||
+        entry.integrity !== 'sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==') return null;
+    dir=mkdtempSync(join(tmpdir(),'hh-ci-ui-parser-'));
+    writeFileSync(join(dir,'package.json'),manifest,{mode:0o600});
+    writeFileSync(join(dir,'package-lock.json'),lock,{mode:0o600});
+    const env={PATH:process.env.PATH || '/usr/bin:/bin',CI:'true',npm_config_userconfig:join(dir,'user.npmrc'),
+      npm_config_globalconfig:join(dir,'global.npmrc'),npm_config_cache:join(dir,'cache')};
+    execFileSync('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],
+      {cwd:dir,env,timeout:45_000,maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']});
+    return createRequire(join(dir,'package.json'))('typescript');
+  } catch {
+    console.warn('Trusted UI parser unavailable; routing this change to STRICT.');
+    return null;
+  }
+  finally { if (dir) rmSync(dir,{recursive:true,force:true}); }
+}
+
 export async function verify(api,ctx,files,options={}) {
-  // Specialist workflows may run for up to 40 minutes; keep waiting fail-closed
-  // long enough for their results instead of rejecting a still-running check.
-  const maxWait = Math.max(0,Math.min(40*60_000,Number(options.maxWaitMs ?? 35*60_000)));
-  const pollMs = Math.max(100,Math.min(30_000,Number(options.pollMs ?? 20_000)));
-  const allowBaseAdvance = Array.isArray(files.changedRows);
+  // Distinguish an absent workflow from a queued run and genuine execution.
+  // Only a running specialist may use the long completion deadline.
+  const boundedMs = (value, maximum, minimum = 0) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw Error('INVALID_SPECIALIST_WAIT_CONFIG');
+    return Math.max(minimum, Math.min(maximum, n));
+  };
+  const maxWait = boundedMs(options.maxWaitMs ?? 35*60_000, 40*60_000);
+  const missingGrace = Math.min(maxWait, boundedMs(options.missingGraceMs ?? 60_000, 120_000));
+  const queuedGrace = Math.min(maxWait, boundedMs(options.queuedGraceMs ?? 180_000, 300_000));
+  const pollMs = boundedMs(options.pollMs ?? 20_000, 30_000, 100);
+  const now = options.now ?? Date.now;
+  const sleep = options.sleep ?? delay;
+  const pinnedChangeRows = Array.isArray(files.changedRows) && files.changedRows.length > 0;
   const pr = await api.pr(ctx.number);
-  assertSame(pr,ctx,allowBaseAdvance);
-  const changedRows=files.changedRows ?? await api.changed(ctx.number);
+  // Loose base is never allowed for legacy/unverified live file listings.
+  // Only exact merged checkout rows can prove what was tested.
+  assertSame(pr,ctx,!pinnedChangeRows);
+  const changedRows=pinnedChangeRows ? files.changedRows : await api.changed(ctx.number);
   if (changedRows.some(row => row.status === 'renamed' && typeof row.previous_filename !== 'string')) {
     throw Error('PR_CHANGED_FILES_RENAME_SOURCE_MISSING');
   }
   const changed=changedRows.flatMap(row => row.previous_filename ? [row.filename, row.previous_filename] : [row.filename]);
   if (!changed.length || changedRows.length >= 3000 || changed.some(x=>typeof x!=='string')) throw Error('PR_CHANGED_FILES_MISSING_OR_TRUNCATED');
-  const risk=classifyReleaseRisk(changed);
+  // BASE/HEAD workflow definitions and the actual merge snapshot stay
+  // immutable even when the production target moves after the check started.
+  const requireCurrentBase=!pinnedChangeRows || requiresCurrentProductionBase(changed);
+  assertSame(pr,ctx,requireCurrentBase);
+  let risk=classifyReleaseRisk(changed);
+  const readSource=options.readSource ?? ((rev,path)=>execFileSync('git',['show',rev+':'+path],
+    {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
+  const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
+  if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
+  if (risk !== 'FAST') {
+    let loaded=false, parser;
+    const loadTypescript=()=>{
+      if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
+      return parser;
+    };
+    risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
+  }
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
-  const {expected, delegated}=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
-  if (risk === 'FAST' && expected.length === 0 && delegated.length === 0) {
-    assertSame(await api.pr(ctx.number),ctx,allowBaseAdvance);
-    return {risk,expected:[],delegated:[],executed:[],advisory:{nonApplicable:[]},packageImpact:{mode:'none',reason:'presentation-only'},head:ctx.head,base:ctx.base};
-  }
+  const routed=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
+  const delegated=routed.delegated;
+  const replacements=new Set(delegated.map(item=>item.replacement));
+  const syntaxWorkflow=WORKFLOW_PREFIX+'hh-actionlint.yml';
+  // The unchanged BASE-owned actionlint workflow must independently validate
+  // every modified YAML; never let a PR replace or omit that enforcement.
+  const trustedSyntax=pinnedChangeRows && baselineExpected.includes(syntaxWorkflow) &&
+    files.base.has(syntaxWorkflow) && files.base.get(syntaxWorkflow) === files.current.get(syntaxWorkflow) &&
+    !changed.includes(syntaxWorkflow);
+  const concurrencyAdvisory=trustedSyntax ? concurrencyOnlyAdvisory({
+    ...files,changedRows,expected:routed.expected,
+  }) : new Set();
+  for (const replacement of replacements) concurrencyAdvisory.delete(replacement);
+  const advisoryPaths=new Set(risk === 'FAST' ? [...FAST_ADVISORY_WORKFLOWS].filter(name=>
+    files.base.has(name) && files.base.get(name) === files.current.get(name) && !replacements.has(name)) : []);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name));
   // BASE/HEAD rules enumerate applicable PR specialists. Only completed/pending
   // PR workflow runs proven non-applicable may be advisory. Same-HEAD push
   // failures and orphan/unassociated runs remain fail-closed: there is no
@@ -126,11 +235,16 @@ export async function verify(api,ctx,files,options={}) {
   const catalog = new Set([...files.base.keys(), ...files.current.keys()]);
   const retired = new Set(delegated.map(item => item.retired));
   const workflowPath = item => item.slice(0, item.lastIndexOf(':'));
-  const deadline=Date.now()+maxWait;
-  let state;
+  const start = now();
+  const deadline = start + maxWait;
+  const missingDeadline = start + missingGrace;
+  const queuedDeadline = start + queuedGrace;
+  let state, fastDiagnostics=[];
   for (;;) {
     const allRuns=await api.runs(ctx.head);
-    state=inspectWorkflowRuns({expected,runs:allRuns,pr});
+    fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
+    state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
@@ -141,10 +255,30 @@ export async function verify(api,ctx,files,options={}) {
       }));
     }
     if (!state.missing.length && !state.pending.length) break;
-    if (Date.now() >= deadline) {
-      throw Error('SPECIALIST_MISSING_OR_PENDING:' + JSON.stringify({missing:state.missing,pending:state.pending}));
+    // GitHub may take a few seconds to register a newly triggered workflow.
+    // After the short discovery grace, absence is a configuration/dispatch
+    // failure, NOT a 35-minute running test. Never waive an expected workflow.
+    const timestamp = now();
+    if (state.missing.length && timestamp >= missingDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_TRIGGERED:' +
+        JSON.stringify({missing:state.missing,pending:state.pending}));
     }
-    await delay(pollMs);
+    // A registered but queued/requested/waiting workflow is not an executing
+    // test. Give the GitHub runner queue a separate bounded startup window.
+    const notStarted = state.pending.filter(item => !item.endsWith(':in_progress'));
+    if (notStarted.length && timestamp >= queuedDeadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:NOT_STARTED:' +
+        JSON.stringify({queued:notStarted,running:state.pending.filter(item => item.endsWith(':in_progress'))}));
+    }
+    if (timestamp >= deadline) {
+      throw Error('SPECIALIST_MISSING_OR_PENDING:RUNNING_TIMEOUT:' +
+        JSON.stringify({pending:state.pending}));
+    }
+    const nextDeadline = Math.min(deadline,
+      state.missing.length ? missingDeadline : Infinity,
+      notStarted.length ? queuedDeadline : Infinity);
+    const interval = (state.missing.length || notStarted.length) ? Math.min(pollMs, 10_000) : pollMs;
+    await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];
   for (const run of state.passed) {
@@ -152,10 +286,11 @@ export async function verify(api,ctx,files,options={}) {
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path)});
   }
   const fresh=await api.pr(ctx.number);
-  assertSame(fresh,ctx,allowBaseAdvance);
+  assertSame(fresh,ctx,requireCurrentBase);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
@@ -169,7 +304,10 @@ async function main() {
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
   if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
-  const result=await verify(api,ctx,files);
+  // The verified merge parent is always the trusted tested BASE. Only
+  // non-sensitive ordinary paths permit a newer live production BASE; security,
+  // payment, privacy, auth, policy and unknown paths still require freshness.
+  const result=await verify(api,{...ctx,base:testedBase},files);
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +

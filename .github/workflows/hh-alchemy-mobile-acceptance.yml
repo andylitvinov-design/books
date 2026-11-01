@@ -35,9 +35,8 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  # Only superseded commits of this PR cancel; manual acceptance is independent.
-  group: hh-alchemy-mobile-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-alchemy-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   alchemy-mobile:
@@ -178,7 +177,7 @@ jobs:
           exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
-        if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true')
+        if: always() && github.event_name != 'pull_request'
         with:
           name: alchemy-mobile-geometry
           path: artifacts/public-services-production/alchemy-one-screen-geometry*.json

@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 
+// Synthetic submissions must never target a deployed service, even if browser
+// interception fails or a service worker takes over a request.
+export function assertSyntheticLoopback(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error('SYNTHETIC_LOOPBACK_REQUIRED'); }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+    throw new Error('SYNTHETIC_LOOPBACK_REQUIRED');
+  }
+}
+
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
   await expect(chooser).toHaveCount(1);
@@ -55,6 +66,10 @@ export async function openContactChannelChooser(scope, expect) {
  * A messenger link cannot exist until an explicitly consented enquiry is saved.
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
+  // Choice changes reset the form in a React passive effect. Let that real
+  // rendering cycle settle before opening it, especially on mobile WebKit.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const chooser = scope.locator('[data-contact-channel-chooser]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');
@@ -75,14 +90,20 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   const submit = form.locator('button[type="submit"]');
   await expect(submit).toBeDisabled();
-  // The optional name is intentionally hidden in a native <details>; the
-  // actual visitor must open the disclosure before filling the text field.
-  const optionalName = form.locator('details:has(input[autocomplete="name"])');
-  await expect(optionalName).toHaveCount(1);
-  await expect(optionalName).not.toHaveAttribute('open', '');
-  await optionalName.locator('summary').click();
-  await expect(optionalName).toHaveAttribute('open', '');
-  await optionalName.locator('input[autocomplete="name"]').fill('Public QA Visitor');
+  // Name is optional and lives in a collapsed disclosure on current mobile UI.
+  // Exercise the real disclosure before typing; never force-fill a hidden input.
+  const nameDisclosure = form.locator('details:has(input[autocomplete="name"])');
+  const name = nameDisclosure.locator('input[autocomplete="name"]');
+  await expect(nameDisclosure).toHaveCount(1);
+  await expect(nameDisclosure).not.toHaveAttribute('open', '');
+  await nameDisclosure.locator('summary').click();
+  // A concurrent React refresh can replace the native disclosure immediately
+  // after its first click. Reopen it once if that actually happened.
+  if (!await name.isVisible() && !await nameDisclosure.evaluate(node => node.open)) {
+    await nameDisclosure.locator('summary').click();
+  }
+  await expect(name).toBeVisible();
+  await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
   await form.locator('input[type="checkbox"]').check();
@@ -111,6 +132,7 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
  * in-memory route; no production CRM write or external WhatsApp/Telegram call.
  */
 export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
+  assertSyntheticLoopback(page.url());
   const chooser = scope.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
   await expect(chooser).toHaveCount(1);
   const trigger = chooser.locator('button[data-contact-order]');

@@ -1,7 +1,23 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { assertSyntheticLoopback, openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser } from '../scripts/helpers/contact-channel-verifier.mjs';
 const read = p => readFileSync(new URL("../"+p,import.meta.url),"utf8");
+test('synthetic consent helper refuses public and non-loopback origins', () => {
+ for (const url of ['http://localhost:3123/x', 'http://127.0.0.1:3123/x', 'http://[::1]:3123/x']) assert.doesNotThrow(() => assertSyntheticLoopback(url));
+ for (const url of ['https://holistichouse.vercel.app/en/services', 'https://localhost.example.com/', 'file:///tmp/a', 'not-a-url']) assert.throws(() => assertSyntheticLoopback(url), /SYNTHETIC_LOOPBACK_REQUIRED/);
+});
+test('synthetic Public Services browser blocks service workers before interception', () => {
+ assert.match(read('scripts/verify-public-services-production.mjs'), /newContext\(\{[^\n]*serviceWorkers:\s*['"]block['"]/);
+ assert.match(read('scripts/verify-release-reaudit.mjs'), /newContext\(\{[^\n]*reducedMotion:\s*'reduce',\s*serviceWorkers:\s*'block'/);
+ assert.match(read('scripts/verify-release-reaudit.mjs'), /context\.route\('\*\*\/api\/\*\*'[\s\S]*?route\.abort/);
+});
+test('both synthetic submit helpers reject deployed origins before touching the page', async () => {
+ const page = {url: () => 'https://holistichouse.vercel.app/en/services'};
+ for (const helper of [openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser]) {
+  await assert.rejects(() => helper(null, null, page), /SYNTHETIC_LOOPBACK_REQUIRED/);
+ }
+});
 test("Alchemy one-screen chapters preserve one visual each",()=>{
  const s=read("components/alchemy-soul-landing.tsx"),css=read("components/alchemy-soul-landing.module.css");
  const panels=[["featured-video","video","<SiteVideoPlayer"],["hero","photo","<StaticPortrait"],
@@ -61,6 +77,21 @@ test("Alchemy browser waits for semantic DOM readiness, preserving every release
  assert.match(source,/payment opened without confirmed booking/);
  assert.match(source,/booking submit enabled before phone and consent/);
  assert.doesNotMatch(source,/data-compact-phone-trigger/);
+});
+
+test("Alchemy/browser routes use semantic readiness with real booking and privacy oracles",()=>{
+ const s=read("scripts/verify-alchemy-one-screen.mjs");
+ assert.match(s,/page\.goto\([^\n]+waitUntil:"domcontentloaded",timeout:45000/);
+ assert.doesNotMatch(s,/waitUntil:"networkidle"/);
+ assert.match(s,/assert\.equal\(response\?\.status\(\), 200/);
+ assert.match(s,/data-session-booking-flow/);
+ assert.match(s,/data-booking-payment-options/);
+ assert.match(s,/booking submit enabled before phone and consent/);
+ assert.doesNotMatch(s,/data-compact-phone-trigger/);
+ const pub=read("scripts/verify-public-services-production.mjs");
+ assert.doesNotMatch(pub,/waitUntil:\s*"networkidle"/);
+ assert.ok((pub.match(/waitUntil:\s*"domcontentloaded"/g)||[]).length >= 9);
+ assert.match(pub,/data-booking-payment-options/);
  const css=read("components/alchemy-soul-landing.module.css");
  assert.match(css,/\.page\[lang="ru"\] \.requestSection\{gap:6px;padding-top:9px;padding-bottom:9px\}/);
 });
@@ -90,4 +121,19 @@ test("public services browser uses DOM readiness while preserving every real pri
  assert.match(source,/naturalWidth > 100/);
  assert.match(source,/naturalWidth > 20/);
  assert.doesNotMatch(source,/continue-on-error/);
+});
+
+test("Public Services real consent flow opens optional contact name disclosure before typing",()=>{
+ const chooser=read("components/contact-channel-chooser.tsx");
+ const helper=read("scripts/helpers/contact-channel-verifier.mjs");
+ assert.match(chooser,/<details className={styles.optionalName}>/);
+ assert.match(chooser,/autoComplete="name"/);
+ assert.ok(helper.includes('const nameDisclosure = form.locator(\'details:has(input[autocomplete="name"])\')'));
+ assert.ok(helper.includes('const name = nameDisclosure.locator(\'input[autocomplete="name"]\')'));
+ const reveal=helper.indexOf("await nameDisclosure.locator('summary').click()");
+ const input=helper.indexOf("await name.fill('Public QA Visitor')");
+ assert.ok(reveal>=0 && input>reveal,"optional contact name disclosure must open before actual browser fill");
+ assert.match(helper,/await expect\(name\)\.toBeVisible\(\)/);
+ assert.match(helper,/contactConsent,true/);
+ assert.match(helper,/submissions\.length,1/);
 });
