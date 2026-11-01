@@ -2160,6 +2160,8 @@
 /* The quick music rail is now the unique three-layer Include/Listen control.
    Keep it visible above the full first-party sound library in Audio workspace. */
 
+/* Keep horizontally scrolling scene rails inside the mobile editor grid. */
+.quickBuilder,.sceneLibrary,.sceneLibrary [data-free-film-compilation-catalog]{grid-template-columns:minmax(0,1fr)}
 /* 39 first-party soundtracks; preserve the canonical one-player audio rail. */
 .audioTrackRow[data-audio-kind="melody"] .audioTileGlyph{background:#f2e5de;color:#885442}
 .audioTrackRow[data-audio-id="soft-piano"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
