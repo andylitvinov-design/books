@@ -379,7 +379,7 @@ test('Holistic Support mock screenshots run after merge or on exact existing #24
   assert.match(core, /^  release-ready:/m);
 });
 
-test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
+test('Mandala Ready retains protected original-animation and manual media acceptance', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
   const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
@@ -390,7 +390,12 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
+  const protectedAnimationGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/hh-free-procedural-video-')))";
+  for(const step of ['Build','Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px'])
+    assert.ok(source.includes('      - name: '+step+'\n        '+protectedAnimationGate),
+      'P0 original animation requires real encoded Chromium/WebKit and FFprobe: '+step);
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));

@@ -213,13 +213,18 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala PR keeps current unit contracts; full legacy browser/build only by manual request', () => {
+test('Mandala PR retains contracts and restricts real media to manual or exact procedural P0 branch', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
   assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
-  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
+  const scopedGeneratedMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/hh-free-procedural-video-')))";
+  for (const name of ['Build','Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px']) {
+    assert.ok(yaml.includes('      - name: '+name+'\n        '+scopedGeneratedMediaGate),
+      'real media must run only on manual validation or the exact P0 procedural video PR: '+name);
+  }
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {

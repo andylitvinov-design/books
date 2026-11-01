@@ -669,13 +669,23 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
-test('Mandala PR runs focused source contracts and manual dispatch owns exhaustive media engines', () => {
+test('Mandala PR retains real media verification for procedural P0 and manual dispatch', () => {
   const yaml = workflow('holistic-support-mandala.yml');
   const source = readFileSync(join(root, 'scripts', 'verify-holistic-mandala-browser.mjs'), 'utf8');
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  assert.ok(yaml.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"), 'full media browser must be manual-only');
+  const proceduralMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/hh-free-procedural-video-')))";
+  for (const step of [
+    'Build', 'Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px',
+  ]) assert.ok(yaml.includes('      - name: '+step+'\n        '+proceduralMediaGate),
+    'P0 procedural video PR and manual acceptance must run real Chromium/WebKit and FFprobe: '+step);
+  for(const sourceCheck of ['node scripts/verify-free-video-worlds.mjs',
+    'node scripts/verify-cartoon-media.mjs',
+    'node scripts/verify-holistic-mandala-browser.mjs'])
+    assert.ok(yaml.includes(sourceCheck),'do not remove real media QA: '+sourceCheck);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);

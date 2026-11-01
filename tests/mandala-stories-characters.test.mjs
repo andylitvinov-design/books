@@ -70,7 +70,8 @@ test("one original video preview and export share the selected symbolic layer",(
     "first preview + animated preview + first recording frame + recorded frames");
   assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory/,
     "film scene, cut positions and character overlay all invalidate the previous export");
-  assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory\]\);/);
+  assert.match(s,/cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory, creationMode, currentFreeVideoPlan, backgroundOnly, photoConsent, photoUrl\]\);/,
+    "changing generation mode, approved plan, background, or photo permissions invalidates a stale personal export");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);
