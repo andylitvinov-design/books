@@ -29,7 +29,7 @@ type Props={
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
     edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]})=>void|boolean;
-  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;
+  onCreate?:()=>void;canCreate?:boolean;rendering?:boolean;createFeedback?:string;
 };
 const copy={
  ru:{
@@ -97,7 +97,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
+ audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(null);
@@ -382,6 +382,7 @@ export function MandalaAutoVideoDirector({
            <Play size={17} fill="currentColor" aria-hidden="true"/>
            {rendering?t.waiting:t.create}
          </button>:null}
+         {createFeedback?<p role="status" className={css.notice}>{createFeedback}</p>:null}
          {!canCreate&&!disabled?<p className={css.notice}>{t.blocked}</p>:null}
        </div>:null}
        <p className={css.notice}>{t.safety}</p>
