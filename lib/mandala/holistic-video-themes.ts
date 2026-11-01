@@ -255,8 +255,14 @@ export function paintRealThemedVideoFrame(
   c.fillStyle = "#fff9e8";
   c.font = "600 " + Math.max(12, Math.min(29, w * .042)) + "px Georgia,serif";
   if (title.trim()) c.fillText(title.slice(0, 72), w / 2, h * .88, w * .86);
-  c.fillStyle = "rgba(255,248,226,.87)";
-  c.font = "600 " + Math.max(10, w * .023) + "px Arial,sans-serif";
-  c.fillText("H O L I S T I C   H O U S E", w / 2, h * .078, w * .9);
+  // V2 masters already contain the title; V3 licensed clips carry source
+  // attribution at the bottom and still need the existing top label.
+  const bakedBrandVisible=video.currentSrc.includes("/film-collection-v2/") &&
+    h/w >= (video.videoHeight/video.videoWidth)*.9;
+  if (!bakedBrandVisible) {
+    c.fillStyle = "rgba(255,248,226,.87)";
+    c.font = "600 " + Math.max(10, w * .023) + "px Arial,sans-serif";
+    c.fillText("H O L I S T I C   H O U S E", w / 2, h * .078, w * .9);
+  }
   c.restore();
 }

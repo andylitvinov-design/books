@@ -36,12 +36,12 @@ test("compile four real approved shots and provider-safe prompt", () => {
   assert.equal(draft.prompt.includes(raw),false);
 });
 
-test("six shots, real supported 60s durations and visual exclusion",()=>{
+test("four licensed shots, real supported 60s durations and visual exclusion",()=>{
   const draft=buildFirstVideoDraft({locale:"ru",wish:"Новая дорога к цели",aspect:"portrait",
     durationSeconds:60,avoid:"море и вода",style:"dream"});
-  assert.equal(draft.plan.shotCount,6);
+  assert.equal(draft.plan.shotCount,4);
   assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),60);
-  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,6);
+  assert.equal(new Set(draft.plan.shots.map(s=>s.sceneId)).size,4);
   assert.ok(draft.plan.shots.every(s=>!/sea|water|coast|stream|wave/i.test(s.visualCue)));
   assert.match(draft.prompt,/60s/);
   const changed=buildFirstVideoDraft({locale:"ru",wish:"Важный новый путь",promptOverride:"Свет и солнце"});
@@ -78,7 +78,7 @@ test("prompt-first UI uses original MediaRecorder and protected optional AI rout
   assert.match(ui,/data-first-video-wish/);
   assert.match(ui,/data-first-video-filters/);
   assert.match(ui,/data-first-video-hydrated/);
-  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !wish\.trim\(\)\}/);
+  assert.match(ui,/disabled=\{disabled \|\| !hydrated \|\| !ready \|\| !draft \|\| !wish\.trim\(\)\}/);
   assert.match(src,/useLayoutEffect\(\(\) => \{\s*const job=jobRef\.current;/);
   assert.match(src,/backgroundOnly\?null:frameUrl/);
   assert.match(src,/data-video-result-mode/);
@@ -121,7 +121,7 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   const other=buildFirstVideoDraft({locale:"ru",wish:"Горы",durationSeconds:20,variant:1});
   assert.equal(original.plan.shots[0].sceneId,"mountain-air");
   assert.equal(other.plan.shots[0].sceneId,"mountain-air");
-  assert.match(original.prompt,/горные вершины/i);
+  assert.match(original.prompt,/горные просторы/i);
   assert.ok(!original.prompt.includes("sunlight awakening across a wide meadow"),"no generic English opening meadow");
   assert.notDeepEqual(original.plan.shots.map(s=>s.sceneId),other.plan.shots.map(s=>s.sceneId));
   assert.notEqual(original.prompt,other.prompt);
@@ -129,12 +129,12 @@ test("mountains in Russian lead to real mountain shots, localized scenes and gen
   for(const locale of ["en","es"]){
     const draft=buildFirstVideoDraft({locale,wish:locale==="es"?"Montañas":"Mountains"});
     assert.equal(draft.plan.shots[0].sceneId,"mountain-air");
-    assert.ok(draft.prompt.includes(locale==="es"?"cumbres montañosas":"broad open mountain sky"));
+    assert.ok(draft.prompt.includes(locale==="es"?"Montañas abiertas":"Open mountains"));
   }
   const forest=buildFirstVideoDraft({locale:"ru",wish:"Лес и деревья"});
   assert.equal(forest.plan.shots[0].sceneId,"fern-awakening");
   const cascada=buildFirstVideoDraft({locale:"es",wish:"Cascada"});
-  assert.equal(cascada.plan.shots[0].sceneId,"light-waterfall");
+  assert.equal(cascada.plan.shots[0].sceneId,"gentle-falls");
 });
 
 test("Gemini free first; rate-limit fallback to OpenRouter free; no paid models or silent output",async()=>{
@@ -236,7 +236,7 @@ test("Food/Еда/Comida creates honest harvest storyboard instead of silently t
   assert.equal(ru.plan.shots[0].sceneId,"golden-harvest");
   assert.equal(ru.descriptionLimited,true);
   assert.match(ru.prompt,/Тема «Еда»/);
-  assert.match(ru.prompt,/поле урожая/);
+  assert.match(ru.prompt,/Солнечные поля/);
   assert.match(ru.limitationNote,/нет кадров блюд/);
   assert.equal(ru.plan.shots.every(s=>Boolean(s.providerPrompt)),true);
   const variant=buildFirstVideoDraft({locale:"ru",wish:"Еда",variant:1,...options});
@@ -369,7 +369,7 @@ test("six one-tap creative templates compile to real free RU/EN/ES video storybo
       assert.equal(draft.aiMediaGenerated,false);
       assert.equal(draft.plan.localPreview,true);
       assert.equal(draft.plan.paidRenderApproved,false);
-      assert.equal(draft.plan.shots.length,selection.preferences.durationSeconds===60?6:4);
+      assert.equal(draft.plan.shots.length,4);
       assert.equal(draft.plan.shots.reduce((total,shot)=>total+shot.durationSeconds,0),
         selection.preferences.durationSeconds);
       assert.ok(draft.plan.shots.every(shot=>shot.sceneId&&shot.durationSeconds>0));
