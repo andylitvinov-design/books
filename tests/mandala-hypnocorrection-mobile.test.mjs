@@ -48,7 +48,7 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/psychocorrection:\{tab:"Гипнокоррекция"/);
+  assert.match(studio,/psychocorrection:\{tab:"Коррекция",title:"Гипнокоррекция и установки"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
   assert.match(studio,/onOpenAudioEditor=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
