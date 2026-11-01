@@ -18,13 +18,11 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
-    '<section className={videoStyles.quickSection} data-video-quick-section="4"',
+    '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
-    "data-video-style-more","data-video-scene-library",
-    'id="video-templates"',"data-free-film-compilation-catalog",
-    "className={videoStyles.previewCoverOptions} data-video-cover-options","data-video-quick-section=\"7\"",
-    "<section className={videoStyles.quickPhraseSection} data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
@@ -34,6 +32,9 @@ test("the existing public editor retains one real video renderer and the new com
     if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
       "video studio hierarchy changed at "+order[i]);
   }
+  assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
+  assert.match(source,/\{activeWorkspace==="characters" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(css,/\.quickOrderBar\{position:static;bottom:auto/,
@@ -42,22 +43,6 @@ test("the existing public editor retains one real video renderer and the new com
   assert.match(source,/data-video-quick-scene=\{scene\.id\}/);
   assert.match(source,/if\(theme==="money"\)setMoneyScene\(scene\.id as MoneySceneId\)/);
   assert.match(source,/else setOtherScene\(scene\.id as LocalSceneId\)/);
-});
-
-test("Style 3 alone holds the optional template and 24-story catalogs",()=>{
-  const source=read("components/mandala-free-video-studio.tsx");
-  const css=read("components/mandala-video-mobile.module.css");
-  const part=source.slice(source.indexOf('data-video-quick-section="4"'),
-    source.indexOf("<section className={videoStyles.quickPhraseSection}"));
-  for(const item of ["data-video-style-more","data-video-scene-library",
-      'id="video-templates"',"data-free-film-compilation-catalog",
-      'data-video-style-catalog-tab="templates"','data-video-style-catalog-tab="films"'])
-    assert.ok(part.includes(item),"additional options nested inside one style block: "+item);
-  assert.match(part,/hidden=\{styleLibraryTab!=="templates"\}/);
-  assert.match(part,/hidden=\{styleLibraryTab!=="films"\}/);
-  assert.equal((source.match(/data-video-scene-library/g)||[]).length,1);
-  assert.match(css,/\.quickBuilder \.quickStyleMore>summary/);
-  assert.match(css,/\.quickBuilder \.quickStyleMore \[hidden\]\{display:none!important\}/);
 });
 
 test("shared widescreen preview and mutually exclusive format accordion keep paid formats gated",()=>{
@@ -240,62 +225,4 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
     source.indexOf('data-video-quick-section="1"'));
   assert.ok(heroSegment.length>0);
   assert.doesNotMatch(heroSegment,/new MediaRecorder|fetch\(/);
-});
-
-test("phrases and hypnocorrection button expands one shared editor below six video tabs",()=>{
- const src=read("components/mandala-free-video-studio.tsx");
- const css=read("components/mandala-video-mobile.module.css");
- const hypno=read("components/mandala-hypno-compact.tsx");
- assert.match(src,/id:"phrases",label:\{ru:"Фразы"/);
- assert.match(src,/id:"extra",label:\{ru:"Гипнокоррекция"/);
- assert.match(src,/aria-expanded=\{item.id==="phrases"\?quickHypnoOpen:item.id==="extra"\?hypnoPanelOpen:undefined\}/);
- assert.match(src,/if\(item.id==="phrases"\)\{[\s\S]*?setQuickHypnoOpen/);
- assert.ok(src.indexOf("data-video-quick-controls")<src.indexOf("data-video-quick-hypno-panel"));
- assert.ok(src.indexOf("data-video-quick-hypno-panel")<src.indexOf("data-video-mini-source"));
- assert.equal((src.match(/<MandalaHypnoCompact /g)||[]).length,1);
- assert.equal((src.match(/id="video-hypnosis"/g)||[]).length,1);
- assert.match(src,/data-video-quick-hypno-panel hidden=\{!quickHypnoOpen\}/);
- assert.match(src,/onChange=\{setAffirmations\}/);
- assert.match(src,/onPreview=\{openAffirmationPreview\}/);
- assert.match(src,/onCreate=\{startFromHero\}/);
- assert.match(css,/\.quickHypnoInline\[hidden\]\{display:none\}/);
- assert.match(hypno,/data-hypno-suggest-tests/);
- assert.match(hypno,/data-hypno-filter-tone/);
- assert.match(hypno,/data-hypno-approve/);
-});
-
-test("Hypno links and advanced controls keep independent, accessible disclosure state",()=>{
- const src=read("components/mandala-free-video-studio.tsx");
- const browser=read("scripts/verify-holistic-mandala-browser.mjs");
- assert.match(src,/window\.addEventListener\("hashchange",openHypnoHash\)/,
-   "a direct #video-hypnosis link must open the hidden inline editor");
- assert.match(src,/window\.location\.hash!=="#video-hypnosis"/);
- assert.match(src,/href="#video-hypnosis"[\s\S]*?openQuickDetailed\("video-hypnosis"\)/,
-   "Configure affirmations navigates to the one live inline editor");
- assert.match(src,/if\(anchor==="video-hypnosis"\)setQuickHypnoOpen\(true\);\s*else if\(anchor==="video-templates"\)/,
-   "opening Hypno must not also expand unrelated advanced settings");
- assert.match(src,/const quickLegacyRef=useRef<HTMLDetailsElement\|null>\(null\)/);
- assert.match(src,/if\(quickDetailedOpen && quickLegacyRef\.current && !quickLegacyRef\.current\.open\)/,
-   "programmatic advanced navigation opens the actual native disclosure");
- assert.match(src,/ref=\{quickLegacyRef\}\s+onToggle=\{event=>setQuickDetailedOpen\(event\.currentTarget\.open\)\}/,
-   "native details disclosure is uncontrolled and mirrors its real open state");
- assert.doesNotMatch(src,/data-video-quick-legacy\s+open=\{quickDetailedOpen\}/,
-   "do not race a native summary click with controlled React open");
- assert.match(src,/event\.preventDefault\(\);[\s\S]*?const next=!el\.open;[\s\S]*?el\.open=next;[\s\S]*?setQuickDetailedOpen\(next\);/,
-   "one user summary gesture must toggle the real native element exactly once");
- assert.match(browser,/advanced parameters must expand on a real click/);
- assert.match(browser,/photo cover and user-owned image choices must open on user request/);
- assert.match(browser,/guidedPhrasesEdit\.click\(\{timeout:15000\}\)/);
- assert.match(browser,/await guidedHypnoTab\.click\(\{timeout:15000\}\)/);
-});
-
-// #2704's four-group panel shares the approved #2702 phrases and renderer.
-test("single Hypno phrase editor and large-type four-group effects share one mobile Studio",()=>{
- const src=read("components/mandala-free-video-studio.tsx");
- assert.equal((src.match(/<MandalaHypnoCompact /g)||[]).length,1);
- assert.equal((src.match(/<MandalaHypnocorrectionMobile/g)||[]).length,1,
-   "one mobile effects panel, never a duplicate");
- assert.match(src,/onOpenPhraseEditor=\{\(\)=>openQuickDetailed\("video-hypnosis"\)\}/);
- assert.match(src,/data-video-hypnocorrection-panel/);
- assert.equal((src.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,4);
 });

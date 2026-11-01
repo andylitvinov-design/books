@@ -72,8 +72,8 @@ permissions:
 concurrency:
   # Keep push and each PR independent: an unrelated PR must not cancel
   # production visual verification for this exact published commit.
-  group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   mobile-visual-parity:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -100,12 +100,14 @@ jobs:
       - name: Full TypeScript on non-production PR or production push
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
-      - name: Install Chromium and WebKit
+      - name: Install Chromium and WebKit (post-merge visual audit)
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/hh-support-mock-tools
           npm install --prefix /tmp/hh-support-mock-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-support-mock-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Check 320 / 390 / 430 in Chromium and WebKit
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p artifacts/holistic-support-mock-fidelity
           npx next dev --hostname 127.0.0.1 --port 3118 > /tmp/hh-support-mock-next.log 2>&1 &
@@ -123,7 +125,7 @@ jobs:
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs
       - name: Keep only public synthetic geometry and screenshots
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: holistic-support-mock-browser

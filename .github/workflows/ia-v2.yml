@@ -30,12 +30,16 @@ on:
       - 'next.config.*'
       - 'package.json'
       - 'package-lock.json'
+      # Public practitioner directory/checkout use Public Services acceptance,
+      # not synthetic encrypted owner/client IA with Redis and two browsers.
+      - '!lib/practitioners/public-*'
+      - '!lib/practitioners/taoist-talisman-cart.js'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: ia-v2-${{ github.ref }}
-  cancel-in-progress: true
+  group: ia-v2-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   verify:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}

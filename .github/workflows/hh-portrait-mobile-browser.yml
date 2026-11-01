@@ -20,12 +20,13 @@ on:
       - 'scripts/verify-portrait-mobile.mjs'
       - 'tests/portrait-report-actions.test.mjs'
       - '.github/workflows/hh-portrait-mobile-browser.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 
 concurrency:
-  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-portrait-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   synthetic-mobile:
@@ -33,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit]
+        browser: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["chromium","webkit"]' || '["chromium"]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 23
     services:
@@ -70,15 +71,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci --no-audit --no-fund
-      - name: Isolated Playwright browser
+      - name: Current Portrait profile/assessment source contracts for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check scripts/verify-portrait-mobile.mjs
+          node --test tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs
+      - name: Isolated Playwright browser (manual deep QA only)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p /tmp/hh-portrait-playwright
           npm install --prefix /tmp/hh-portrait-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-portrait-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-portrait-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize isolated synthetic database
+        if: github.event_name == 'workflow_dispatch'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Five profile navigation with four scored sectors, goal check-in, mobile EN/RU
+        if: github.event_name == 'workflow_dispatch'
         run: |
           node tests/helpers/app-auth-double.mjs > /tmp/hh-portrait-auth.log 2>&1 & PROVIDER_PID=$!
           npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-portrait-next.log 2>&1 & APP_PID=$!
@@ -89,7 +98,7 @@ jobs:
           done
           node scripts/verify-portrait-mobile.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         with:
           name: portrait-mobile-${{ matrix.browser }}
           path: artifacts/portrait-mobile/

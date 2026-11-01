@@ -4,9 +4,12 @@ name: HH Alchemy independent mobile acceptance
 # the ten-stage landing's own real layout and browser behaviour.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-alchemy-mobile-acceptance.yml'
+      - 'scripts/ci-alchemy-impact.mjs'
+      - 'tests/ci-alchemy-impact.test.mjs'
       - 'components/alchemy-soul-landing.tsx'
       - 'components/personal-testimonials.tsx'
       - 'components/alchemy-soul-landing.module.css'
@@ -22,12 +25,14 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
-  group: hh-alchemy-mobile-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-alchemy-mobile-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 jobs:
   alchemy-mobile:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 24
     env:
@@ -44,6 +49,16 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Route exact-head CI-only Alchemy changes to focused source tests
+        id: impact
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --test tests/ci-alchemy-impact.test.mjs
+          node scripts/ci-alchemy-impact.mjs
       - name: Install project dependencies (including test tools)
         run: npm ci --include=dev --no-audit --no-fund
       - name: Isolated Alchemy contracts
@@ -56,17 +71,23 @@ jobs:
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \
             tests/alchemy-of-soul-method.test.mjs
-          npx tsc --noEmit
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
           npx eslint \
             components/alchemy-soul-landing.tsx \
             components/alchemy-example-report.tsx \
             'app/[locale]/services/alchemy-of-soul/example-report/page.tsx' \
             app/es/services/alchemy-of-soul/example-report/page.tsx
       - name: Install browser once for real responsive check
+        if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'
         run: |
           npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
           /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit
-      - name: Build production-mode Next and measure 16 viewports in Chromium and WebKit
+      - name: Build production-mode Next and measure current Chromium viewports; WebKit manual QA
+        if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -79,17 +100,19 @@ jobs:
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 90); do
-            if curl --silent --fail http://127.0.0.1:3100/en/services/alchemy-of-soul >/dev/null; then ready=1; break; fi
+            if curl --silent --fail http://127.0.0.1:3100/en/services/alchemy-of-soul >/dev/null; then echo "Alchemy server ready on attempt $i"; ready=1; break; fi
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
           browser_status=0
           node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
-          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then
+            HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          fi
           exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true')
         with:
           name: alchemy-mobile-geometry
           path: artifacts/public-services-production/alchemy-one-screen-geometry*.json

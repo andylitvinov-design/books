@@ -6,26 +6,25 @@ import {buildPersonalMeditationScript,isMeditationSafetyResponse} from "../lib/m
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("standalone meditation-course button opens the existing working composer below six video tabs",()=>{
+test("meditation-course workspace opens the existing working composer within the six video tabs",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const composer=read("components/mandala-personal-meditation.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const before=studio.indexOf("data-video-quick-controls");
-  const entry=studio.indexOf("data-video-meditation-course-toggle");
+  const entry=studio.indexOf('activeWorkspace==="courses" ? <section');
   const panel=studio.indexOf("data-video-meditation-course-panel");
-  const hypno=studio.indexOf("data-video-quick-hypno-panel");
-  assert.ok(before>0&&entry>before&&panel>entry&&hypno>panel,
-    "the new course entry is discoverable directly below the original video controls");
-  assert.match(studio,/aria-expanded=\{quickCourseOpen\}/);
+  const hypno=studio.indexOf("data-video-hypnocorrection-panel");
+  assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
+    "the course composer belongs to the existing six-tab Video Studio");
+  assert.match(studio,/data-video-quick-control=\{item.id\}/);
   assert.match(studio,/<MandalaPersonalMeditation coursePreview/);
-  assert.match(studio,/studioMode==="therapy" && !quickCourseOpen/,
+  assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="courses"/,
     "do not mount two visible personal meditation editors");
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
   assert.match(composer,/data-meditation-course-request/);
   assert.match(composer,/maxLength=\{160\}/);
   assert.match(composer,/\{script\?\(coursePreview\?course.regenerate:t.regenerate\):t.generate\}/);
-  assert.match(css,/\.meditationCourseEntry\{/);
-  assert.match(css,/min-height:61px/);
+  assert.match(css,/\.workspaceCourses\{/);
 });
 
 test("one generated meditation unlocks exactly eight topic previews and an honest service inquiry",()=>{

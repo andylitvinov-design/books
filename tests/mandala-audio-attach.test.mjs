@@ -11,9 +11,7 @@ const browser=read("scripts/verify-holistic-mandala-browser.mjs");
 
 test("audio-only mobile list: no fake video images, real readable controls and filters",()=>{
   const start=studio.indexOf('<section className={videoStyles.audioSection}');
-  // The 49-question director moved above the advanced disclosure; the audio
-  // area ends at independent extra settings, not at the director.
-  const end=studio.indexOf('<details className={videoStyles.extraControls}',start);
+  const end=studio.indexOf('<section className={videoStyles.hypnosisSection}',start);
   assert.ok(start>0 && end>start);
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
@@ -114,9 +112,11 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   const quickStart=studio.indexOf('data-video-quick-section="5"');
   const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
   const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
-  // Keep the real audio player's boundary independent of the director order.
-  const fullEnd=studio.indexOf('<details className={videoStyles.extraControls}',fullStart);
-  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
+  const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
+    "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.match(studio,/\{activeWorkspace==="audio" \? deepAudioPane : null\}/);
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
