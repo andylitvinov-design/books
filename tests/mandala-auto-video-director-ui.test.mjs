@@ -186,7 +186,7 @@ test("mock actions are connected: four goal images, 3×2 text themes, four scena
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/data-video-phrase-audioguide/);
- assert.match(studio,/onClick=\{\(\)=>\{\s*const pane=document\.querySelector<HTMLDetailsElement>\("\[data-video-audio-details\]"\)/);
+ assert.match(studio,/data-video-phrase-audioguide[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ArrowLeft, Download, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Expand, Headphones, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { MandalaFreeVideoStudio } from "@/components/mandala-free-video-studio";
@@ -300,6 +300,10 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
         className={styles.hiddenPhotoInput} onChange={handleImage}/>
       <MandalaFreeVideoStudio locale={locale} frameUrl={pngHref} photoUrl={imageUrl}
         onPickPhoto={() => fileInput.current?.click()} photoError={imageError} />
+      <Link className={styles.voiceStudioLink} href={'/'+locale+'/holistic-support/voice-studio'} prefetch={false}>
+        <Headphones size={18} aria-hidden="true" />
+        {locale==='ru'?'Выбрать голос · 6 голосов RU/EN':locale==='es'?'Elegir voz · 6 voces en ruso e inglés':'Choose a voice · 6 RU/EN voices'}
+      </Link>
       <details className={styles.advancedWorkbench} data-mandala-advanced>
         <summary>{t.advanced}</summary>
       <div className={styles.toolbar}>
