@@ -5,6 +5,8 @@ on:
     paths:
       - 'data/video-catalog/dareful-verified-candidate-wave-20261101.json'
       - 'scripts/preview-dareful-candidates.mjs'
+      - 'scripts/render-dareful-candidate-masters.mjs'
+      - 'tests/dareful-draft-master-contract.test.mjs'
       - 'tests/dareful-preview-candidates.test.mjs'
       - '.github/workflows/hh-dareful-candidate-previews.yml'
   workflow_dispatch:
@@ -25,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate fixed source allowlist, no publication or duplicate IDs
-        run: node --test tests/dareful-preview-candidates.test.mjs
+        run: node --test tests/dareful-preview-candidates.test.mjs tests/dareful-draft-master-contract.test.mjs
       - name: Prepare nine-frame contact sheets from four licensed source URLs
         run: |
           if ! command -v ffmpeg >/dev/null; then
@@ -38,5 +40,16 @@ jobs:
         with:
           name: hh-dareful-editorial-contact-sheets-${{ github.run_id }}
           path: artifacts/dareful-wave-previews/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Render H264 moving candidate drafts without publishing to the site
+        run: node scripts/render-dareful-candidate-masters.mjs
+      - name: Upload playable five-second videos for editorial review, not LIVE assets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-editorial-mp4-drafts-${{ github.run_id }}
+          path: artifacts/dareful-wave-masters/
           if-no-files-found: warn
           retention-days: 7

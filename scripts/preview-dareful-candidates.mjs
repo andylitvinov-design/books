@@ -48,7 +48,6 @@ function ffmpegPreview(source,destination){
   "-vf","fps=1,scale=360:640:force_original_aspect_ratio=increase,crop=360:640,tile=3x3:nb_frames=9",
   "-frames:v","1","-q:v","4","-y",destination
  ],{cwd:root,encoding:"utf8",timeout:90000,maxBuffer:250000});
- if(ffmpegPreview.status===0){} // status checked on return below
  return command.status===0?null:String(command.stderr||command.error||"preview_failed").slice(0,500);
 }
 export async function previewCandidates(){

@@ -82,7 +82,10 @@ test('all major campaign surfaces expose the dedicated info landing without remo
   assert.match(academy, /app\/course\?program=stress/)
   assert.match(publicCourses, /courses\/antistress/)
   assert.match(publicCourses, /app\/course\?program=stress/)
-  assert.match(courseSeo, /ОПОРА Антистресс/)
+  assert.ok(courseSeo.includes('permanentRedirect(`/${locale}/academy`)'),
+    'legacy /courses points to full Academy, not one standalone course')
+  assert.match(read('app/[locale]/courses/antistress/page.tsx'), /ОПОРА Антистресс/,
+    'dedicated /courses/antistress still has public Russian SEO')
   assert.match(spanishSeo, /OPORA Antiestrés/)
   assert.doesNotMatch(reportBanner, /courses\/antistress/, 'screening results keep exactly one score-independent optional course link')
 })

@@ -63,7 +63,7 @@ test("static JSON-backed gallery only activates approved pre-encoded films",()=>
 
 test("all twelve produced CC-BY H.264 film files have matching SHA-256, posters and credits",()=>{
  const scenes=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
- assert.equal(scenes.length,12);
+ assert.ok(scenes.length>=12,'new licensed MP4s must be allowed after the original twelve');
  for(const scene of scenes){
   const file=new URL("../public"+scene.video,import.meta.url);
   const poster=new URL("../public"+scene.poster,import.meta.url);
