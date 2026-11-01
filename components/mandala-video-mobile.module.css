@@ -2190,3 +2190,9 @@
 .audioTrackRow[data-audio-id="heart-harmony"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
 .audioTrackRow[data-audio-id="quiet-stars"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
 .audioTrackRow[data-audio-id="bright-path"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
+
+/* Keep the goal editor and its optional fields at stable native iPhone scale. */
+@media(max-width:600px){
+ .studio{max-width:100%;min-width:0}
+ .studio :is(input[type="text"],input[type="search"],textarea,select){font-size:16px!important;min-width:0;max-width:100%}
+}
