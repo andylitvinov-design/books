@@ -91,11 +91,10 @@ function selectCandidates(prs,now,rotatedSize=12,urgentSize=4,priorityNumber=nul
     top.push(anchor);
     chosen.add(anchor.number);
   }
-  // If P0 (or P1) has more than four PRs, rotate the remaining fast
-  // slots through that tier. The old fixed top-four arrangement delayed
-  // the fifth P0 until it happened to enter the generic 12-PR rotation.
-  const tier=anchor?priorityFor(anchor,now).tier:null;
-  const peers=ranked.filter(pr=>priorityFor(pr,now).tier===tier &&
+  // Rotate fast slots within the highest ten-level operational rank.
+  // The independent audit ring still prevents starvation of other ranks.
+  const rank=anchor?priorityFor(anchor,now).mergeRank:null;
+  const peers=ranked.filter(pr=>priorityFor(pr,now).mergeRank===rank &&
     !chosen.has(pr.number));
   const available=urgentSize-top.length;
   if(available>0 && peers.length>available){
@@ -500,7 +499,9 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     : selectCandidates(review,now);
   const priorityTop=selected.slice(0,4).map(pr=>{
     const priority=priorityFor(pr,now);
-    return '#'+pr.number+' '+priority.tier+'('+priority.score+': '+priority.source+')';
+    return '#'+pr.number+' '+priority.tier+'/R'+
+      String(priority.mergeRank).padStart(2,'0')+
+      '('+priority.score+': '+priority.source+')';
   }).join(' | ');
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
