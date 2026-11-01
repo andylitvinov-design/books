@@ -9,7 +9,7 @@ test('Control Tower skips canceled/skipped callbacks while preserving separate P
 });
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
-const {trustedContext,planCandidates,run}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+const {trustedContext,planCandidates,run,workerBusyOrCooling}=require('../scripts/ci-pr-queue-dispatcher.cjs');
 const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42,payload:{inputs:{}}};
@@ -225,6 +225,50 @@ test('stale conflict cleanup dry-run never changes PR labels',async()=>{
  assert.equal(r.wouldClearStaleConflict,1);
  assert.equal(r.staleConflictCleared,0);
  assert.equal(f.calls.removed.length,0);
+});
+test('completed audit-only push does not consume a Repair Worker cooldown',()=>{
+ const audit={event:'push',status:'completed',conclusion:'success',
+  created_at:new Date(NOW-2000).toISOString(),
+  updated_at:new Date(NOW-1000).toISOString()};
+ assert.equal(workerBusyOrCooling([audit],NOW),false);
+ assert.equal(workerBusyOrCooling([{...audit,status:'in_progress'}],NOW),true);
+ assert.equal(workerBusyOrCooling(null,NOW),true);
+});
+test('real worker success has short grace, failure has longer backoff',()=>{
+ const run=(secondsAgo,conclusion='success')=>({
+  event:'workflow_dispatch',status:'completed',conclusion,
+  updated_at:new Date(NOW-secondsAgo*1000).toISOString()});
+ assert.equal(workerBusyOrCooling([run(10)],NOW),true);
+ assert.equal(workerBusyOrCooling([run(40)],NOW),false);
+ assert.equal(workerBusyOrCooling([run(100,'failure')],NOW),true);
+ assert.equal(workerBusyOrCooling([run(140,'failure')],NOW),false);
+ assert.equal(workerBusyOrCooling([run(140,'failure'),run(10)],NOW),true);
+ assert.equal(workerBusyOrCooling([{event:'workflow_dispatch',status:'completed',
+  conclusion:'success',updated_at:'invalid'}],NOW),true);
+});
+test('completed push audit cannot starve a ready source-repair dispatch',async()=>{
+ const audit={event:'push',status:'completed',conclusion:'success',
+  created_at:new Date(NOW-5000).toISOString(),
+  updated_at:new Date(NOW-2000).toISOString()};
+ const f=fixture([pr(1)],{comments:{1:[proof()]},recent:[audit]});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+  capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
+ assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
+});
+test('running audit or recent real completion still blocks source dispatch',async()=>{
+ for(const recent of [
+  [{event:'push',status:'in_progress',created_at:new Date(NOW-5000).toISOString()}],
+  [{event:'workflow_dispatch',status:'completed',conclusion:'success',
+    updated_at:new Date(NOW-10000).toISOString()}]
+ ]){
+  const f=fixture([pr(1)],{comments:{1:[proof()]},recent});
+  const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn});
+  assert.equal(r.dispatchAccepted,0);
+  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN,1);
+ }
 });
 test('real conflict requires a fresh dirty merge state',async()=>{
  const plain=pr(9,'conflict');const f=fixture([plain],{});
