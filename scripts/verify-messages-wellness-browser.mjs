@@ -12,6 +12,13 @@ await mkdir(dir,{recursive:true})
 const accountId='11111111-1111-4111-8111-111111111111'
 const orderId='22222222-2222-4222-8222-222222222222'
 const requestId='33333333-3333-4333-8333-333333333333'
+const crmThreadId='44444444-4444-4444-8444-444444444444'
+const crmThread={
+  id:crmThreadId,contactId:'55555555-5555-4555-8555-555555555555',
+  name:'Synthetic Telegram Contact',channel:'telegram',lifecycle:'lead',
+  unreadCount:11,needsReply:true,reply:{ok:true},lastInboundAt:'2026-10-28T11:33:00Z',
+}
+
 const synthetic={
   id:orderId,status:'in_progress',createdAt:'2026-10-27T14:02:00Z',
   practitionerName:'Test Practitioner',unread:1,serviceCopy:{
@@ -37,7 +44,11 @@ async function intercept(page){
        :{accountId,ownerMessenger:true,ownerAuthorized:true,hasPractice:true,
          requests:[client],businessEnquiries:[],services:[],freeExpressV2Enabled:false})
    if(path==='/api/app/crm/messenger')
-     return json(route,200,{accountId,threads:[],messages:[],nextThreadsCursor:null,nextMessagesCursor:null})
+     return json(route,200,{accountId,threads:[crmThread],
+       messages:url.searchParams.has('thread')?[{
+         id:'66666666-6666-4666-8666-666666666666',text:'Synthetic Telegram message',
+         direction:'in',createdAt:'2026-10-28T11:33:00Z',status:'received',
+       }]:[],followups:[],channels:[],nextThreadsCursor:null,nextMessagesCursor:null})
    if(path==='/api/app/direct-messages')
      return json(route,200,{accountId,threads:[]})
    if(path==='/api/app/practitioner-client-messages')
@@ -134,6 +145,59 @@ for(const browserType of [chromium,webkit]){
     if(width===390)await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})
     await customer.getByRole('button',{name:/Synthetic Client/}).click()
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
+    const fullscreen=await customer.locator('[class*="window"]').first().evaluate(el=>{
+      const r=el.getBoundingClientRect()
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      return {position:getComputedStyle(el).position,top:r.top,width:r.width,height:r.height,
+        visualHeight:window.visualViewport?.height||window.innerHeight,
+        navDisplay:nav?getComputedStyle(nav).display:'missing'}
+    })
+    assert.equal(fullscreen.position,'fixed',key+' selected chat is full-screen')
+    assert.ok(Math.abs(fullscreen.height-fullscreen.visualHeight)<=4,
+      key+' full visual viewport '+JSON.stringify(fullscreen))
+    assert.ok(fullscreen.width>=width-2,key+' conversation is edge to edge')
+    assert.equal(fullscreen.navDisplay,'none',key+' dock hidden while chat open')
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-client-dialog.png',fullPage:false})
+    // Going back to the list is explicit, like Telegram, rather than reaching
+    // behind an open chat to click the old Orders/Clients navigation.
+    await customer.locator('[class*="personBar"] button[class*="back"]').click()
+    assert.equal(await customer.getAttribute('data-detail-open'),'false',
+      key+' back restores the client list')
+
+    await customer.getByRole('button',{name:/Synthetic Telegram Contact/}).click()
+    const crmDraft=customer.locator('#crm-messenger-compose')
+    await crmDraft.waitFor({state:'visible',timeout:15000})
+    await crmDraft.fill('Synthetic unsent draft')
+    const crmToolbar=customer.locator('[class*="detailConversation"] [class*="compose"]').first()
+    const crmSend=crmToolbar.locator(':scope > button').last()
+    const chatGeometry=await crmSend.evaluate(el=>{
+      const send=el.getBoundingClientRect()
+      const frame=el.closest('[class*="window"]')?.getBoundingClientRect()
+      const bot=document.querySelector('[data-salesbot-operator-mode="manual-only"]')
+      const assistant=bot?.getBoundingClientRect()
+      const textarea=document.querySelector('#crm-messenger-compose')?.getBoundingClientRect()
+      return {sendRight:send.right,sendBottom:send.bottom,frameBottom:frame?.bottom,
+        textareaTop:textarea?.top,assistantTop:assistant?.top,assistantBottom:assistant?.bottom}
+    })
+    assert.ok(chatGeometry.sendBottom<=chatGeometry.frameBottom+2,
+      key+' Send remains within chat '+JSON.stringify(chatGeometry))
+    assert.ok(Math.abs(chatGeometry.assistantTop-chatGeometry.textareaTop)<=6,
+      key+' AI stays inline beside the input '+JSON.stringify(chatGeometry))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-crm-compose.png',fullPage:false})
+    await page.setViewportSize({width,height:430})
+    await page.waitForFunction(()=>{
+      const el=document.querySelector('[data-simple-messages][data-detail-open="true"] [class*="window"]')
+      return el&&Math.abs(el.getBoundingClientRect().height-
+        (window.visualViewport?.height||window.innerHeight))<=4
+    })
+    const compactSend=await crmSend.evaluate(el=>({
+      bottom:el.getBoundingClientRect().bottom,
+      visualBottom:(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||window.innerHeight),
+    }))
+    assert.ok(compactSend.bottom<=compactSend.visualBottom+3,
+      key+' Send fits reduced visual viewport '+JSON.stringify(compactSend))
+    await page.setViewportSize({width,height:844})
+    await customer.locator('[class*="personBar"] button[class*="back"]').click()
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
     const orderButton=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
     await orderButton.click()
