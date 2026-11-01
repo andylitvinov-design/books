@@ -168,7 +168,11 @@ test('only exact reviewed added browser helper and its contract test may use foc
 
 
 test('exact #2629 Voice+Music PR delegates unrelated services browsers only with immutable reviewed delta', () => {
-  assert.equal(REVIEWED_VOICE_2629_DELTA.size,40);
+  assert.equal(REVIEWED_VOICE_2629_DELTA.size,65);
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('lib/mandala/webcodecs-mp4-export.ts'),'A');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('tests/opora-calm-day-one-mobile.test.mjs'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/video-director-chat/route.js'),'M');
+  assert.equal(REVIEWED_VOICE_2629_DELTA.get('package-lock.json'),'M');
   assert.equal(REVIEWED_VOICE_2629_DELTA.get('app/api/holistic-support/voice/route.js'),'A');
   assert.equal(REVIEWED_VOICE_2629_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
   assert.equal(REVIEWED_VOICE_2629_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');

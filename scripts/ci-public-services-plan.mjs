@@ -274,7 +274,7 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
-// Exact, temporary Voice+Music release exception. All 38 source paths are
+// Exact, temporary reviewed #2629 Voice+Music+WebKit release path set is
 // owned by dedicated Mandala API/source/Chromium/macOS WebKit encoded-media
 // checks, plus protected Core build, security and actionlint. The two policy
 // files below are self-verified by this unit suite. DO NOT generalize to
@@ -321,6 +321,33 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/voice-studio-provider.test.mjs", "A"],
   ["tests/voice-studio.test.mjs", "A"],
   ["tests/wav-pcm-mixer.test.mjs", "A"],
+  // Exact subsequent reviewed WebKit/Director/OPORA regression paths on #2629.
+  // Product, provider, ownership and real encoded-media suites remain REQUIRED.
+  ["app/api/holistic-support/video-director-chat/route.js", "M"],
+  ["components/mandala-video-director-chat.module.css", "M"],
+  ["components/mandala-video-director-chat.tsx", "M"],
+  ["lib/mandala/recording-codecs.mjs", "M"],
+  ["lib/mandala/video-chat-ai.mjs", "M"],
+  ["lib/mandala/video-chat-intent.mjs", "M"],
+  ["lib/mandala/webcodecs-mp4-export.ts", "A"],
+  ["package-lock.json", "M"],
+  ["package.json", "M"],
+  ["scripts/benchmarking/first-video-live-export.mjs", "M"],
+  ["scripts/verify-hypno-wave-browser.mjs", "M"],
+  ["scripts/verify-opora-as56-browser.mjs", "M"],
+  ["tests/first-video-director.test.mjs", "M"],
+  ["tests/mandala-hypnocorrection-mobile.test.mjs", "M"],
+  ["tests/mandala-stories-characters.test.mjs", "M"],
+  ["tests/mandala-webcodecs-mp4.test.mjs", "A"],
+  ["tests/opora-antistress-course-landing.test.mjs", "M"],
+  ["tests/opora-as54-live-v6.test.mjs", "M"],
+  ["tests/opora-as56-authenticated-pipeline.test.mjs", "M"],
+  ["tests/opora-as56-browser-fixture.test.mjs", "M"],
+  ["tests/opora-calm-day-one-mobile.test.mjs", "M"],
+  ["tests/opora-gentle-immersion.test.mjs", "M"],
+  ["tests/opora-post-save-course-program.test.mjs", "M"],
+  ["tests/opora-seven-skills-v5.test.mjs", "M"],
+  ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
