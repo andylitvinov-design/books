@@ -238,8 +238,9 @@ jobs:
   # Linux Playwright WebKit does not implement Canvas captureStream in this
   # runner image. Prove the *actual encoded* voice/video via WebKit on macOS,
   # the closest supported CI platform to iPhone Safari. Never mock a download.
+  # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-')) }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-')) }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:
