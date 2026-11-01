@@ -471,9 +471,12 @@ const runEngine = async ([engine, browserType]) => {
           {timeout:15000});
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
-        await quick.locator('[data-video-quick-theme="energy"]').click();
         await quick.locator("[data-first-video-wish]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
+        // The first-video form can classify a typed wish automatically; the
+        // user's subsequent explicit theme selection must take precedence.
+        await quick.locator('[data-video-quick-theme="energy"]').click();
+        await expect(quick.locator('[data-video-quick-theme="energy"]')).toHaveAttribute("aria-pressed","true");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="energy"]').getAttribute("aria-pressed"),"true");
