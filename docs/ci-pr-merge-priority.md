@@ -74,3 +74,14 @@ response no longer blocks the **entire** queue while other PR updates succeed.
 Every error remains counted and visible in the job summary. The chain stops
 if a batch made zero confirmed updates, on API rate exhaustion, or at the
 hard dispatch limit; stale per-PR writes are still guarded by fresh PR reads.
+
+## GitHub label catalog API budget
+
+Label descriptions must be **100 characters or fewer** under GitHub's REST
+create-label contract. The five optional direction override descriptions were
+previously too long, resulting in recurring HTTP 422 validation responses on
+every classification. The catalog now validates name uniqueness, six-digit
+color and description length before any API call. A 422 is treated as an
+existing-label race only after GitHub confirms the exact label with a GET;
+validation errors fail closed. Successful runs no longer spend repeated API
+writes on those invalid labels.

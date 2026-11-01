@@ -24,7 +24,7 @@ const LABELS=[
   ...POLICY.directions.map(d=>({name:'hh:direction:'+d.id,color:'5319e7',
     description:'Auto-classified development direction: '+d.name})),
   ...POLICY.directions.map(d=>({name:'hh:direction-override:'+d.id,color:'d4c5f9',
-    description:'Optional owner direction override (priority still inherited): '+d.name})),
+    description:'Owner direction override, inherited P-level: '+d.name})),
   ...POLICY.levels.map(l=>({name:'hh:priority:'+l.id,
     color:['b60205','e99695','fbca04','0e8a16','c5def5'][l.id-1],
     description:'Inherited direction priority P'+l.id+' — '+l.name})),
@@ -40,6 +40,14 @@ const LABELS=[
     description:'Current queue stage: '+stage+' (informational only)'
   }))
 ];
+// GitHub REST create-label rejects descriptions >100 characters with HTTP 422.
+// Validate the WHOLE catalog once, so invalid policy can never create
+// repeated false "raced label" reports on every scheduled run.
+if(new Set(LABELS.map(l=>l.name)).size!==LABELS.length ||
+   LABELS.some(l=>typeof l.description!=='string'||
+     l.description.length<1||l.description.length>100||
+     !/^[0-9a-f]{6}$/i.test(l.color)))
+  throw Error('Invalid GitHub label catalog policy');
 
 async function readOpenPRs(github,owner,repo,limited){
   const all=[];
@@ -64,19 +72,29 @@ async function ensureKnownLabels(github,owner,repo,limited,dryRun,log){
     if(response.data.length<100)break;
     if(page===5)throw Error('HH_DIRECTION_TOO_MANY_LABELS');
   }
-  let created=0;
+  let created=0,confirmedRace=0;
   for(const label of LABELS){
     if(known.has(label.name))continue;
-    if(!dryRun){
-      try{
-        await limited('create-label',()=>github.rest.issues.createLabel({owner,repo,...label}));
-      }catch(error){
-        if(error.status!==422)throw error; // another worker won the same label
-      }
+    if(dryRun){created++;continue;}
+    try{
+      await limited('create-label',()=>github.rest.issues.createLabel({owner,repo,...label}));
+      created++;
+      known.add(label.name);
+    }catch(error){
+      // 422 can mean validation failure or rate/abuse throttling, NOT just
+      // "already exists". Only an exact readback proves a concurrent writer
+      // created this same label. Otherwise fail closed, preserving queue jobs.
+      if(error.status!==422)throw error;
+      const check=await limited('verify-created-label',()=>github.rest.issues.getLabel({
+        owner,repo,name:label.name
+      }));
+      if(check?.data?.name!==label.name)throw error;
+      confirmedRace++;
+      known.add(label.name);
     }
-    created++;
   }
-  log((dryRun?'WOULD_CREATE':'CREATED')+' '+created+' direction/rank/stage labels');
+  log((dryRun?'WOULD_CREATE':'CREATED')+' '+created+
+    ' direction/rank/stage labels; confirmedExistingRace='+confirmedRace);
   return created;
 }
 function selectReclassification(items,now=Date.now(),max=MAX_WRITES){
