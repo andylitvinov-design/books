@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, verifyCoreRunIdentity, makeOwnerBranchUpdater} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -290,4 +290,64 @@ test('obsolete release-ready recovery is absent while interrupted-core recovery 
   assert.ok(source.includes('event.head_repository?.full_name !== fullRepo'));
   assert.ok(source.includes('github-token: ${{ github.token }}'));
   assert.doesNotMatch(source,/--admin|--force|bypass_rulesets|continue-on-error:/);
+});
+
+test('historical Core run cannot masquerade as current HEAD via mutable PR association',async()=>{
+  const current=pr(2881), oldSha='a'.repeat(40);
+  const old={name:'HH PR core release gate',head_sha:oldSha,head_branch:current.head.ref,
+    event:'pull_request',pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}]};
+  let reads=0;
+  const github={rest:{git:{getCommit:async()=>{reads++;return {data:{parents:[{sha:'c'.repeat(40)}]}};}}}};
+  assert.equal(await verifyCoreRunIdentity(old,current,github,'andylitvinov-design','books',async(n,fn)=>fn()),false);
+  assert.equal(reads,1);
+});
+test('legitimate synthetic merge verifies immutable exact source parent',async()=>{
+  const current=pr(2882), synthetic='d'.repeat(40);
+  const r={name:'HH PR core release gate',head_sha:synthetic,head_branch:current.head.ref,
+    event:'pull_request',pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}]};
+  const github={rest:{git:{getCommit:async()=>({data:{parents:[{sha:'c'.repeat(40)},{sha:SHA}]}})}}};
+  assert.equal(await verifyCoreRunIdentity(r,current,github,'andylitvinov-design','books',async(n,fn)=>fn()),true);
+  assert.equal(await verifyCoreRunIdentity({...r,pull_requests:[]},current,github,'andylitvinov-design','books',async(n,fn)=>fn()),false);
+  assert.equal(await verifyCoreRunIdentity({...r,head_sha:SHA},current,github,'andylitvinov-design','books',async(n,fn)=>fn()),true);
+});
+test('owner token is used only for exact-HEAD update-branch and cannot call other routes',async()=>{
+  const calls=[];
+  const owner='andylitvinov-design',repo='books';
+  const client=makeOwnerBranchUpdater({owner,repo,token:'test-owner-secret',fetcher:async(url,args)=>{
+    calls.push({url,args});return {status:202};
+  }});
+  const route='PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch';
+  assert.equal((await client.request(route,{owner,repo,pull_number:2636,expected_head_sha:SHA})).status,202);
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].args.headers.Authorization,'Bearer test-owner-secret');
+  assert.equal(JSON.parse(calls[0].args.body).expected_head_sha,SHA);
+  await assert.rejects(client.request('POST /repos/{owner}/{repo}/merges',{owner,repo,pull_number:2636,expected_head_sha:SHA}));
+  await assert.rejects(client.request(route,{owner,repo,pull_number:2636,expected_head_sha:'not-a-sha'}));
+  await assert.rejects(client.request(route,{owner,repo:'other',pull_number:2636,expected_head_sha:SHA}));
+  assert.equal(calls.length,1);
+});
+test('watchdog never retries old Core run even if API association points to new PR HEAD',async()=>{
+  const current={...pr(2900),state:'open',mergeable:true,mergeable_state:'clean'};
+  const oldSha='a'.repeat(40), commits=[];
+  const runRecord={id:101,name:'HH PR core release gate',event:'pull_request',
+    head_branch:current.head.ref,head_sha:oldSha,run_attempt:1,status:'completed',conclusion:'failure',
+    created_at:new Date(NOW-120*60000).toISOString(),updated_at:new Date(NOW-80*60000).toISOString(),
+    pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[current]}),get:async()=>({data:current})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+    git:{getCommit:async()=>({data:{parents:[{sha:'e'.repeat(40)}]}})},
+    issues:{createComment:async()=>{throw Error('stale repair attempted');}}
+  },request:async(route,args)=>{
+    if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[runRecord]}};
+    if(route.includes('rerun')){commits.push('rerun');throw Error('stale rerun attempted');}
+    return {data:{workflow_runs:[]}};
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+  assert.equal(result.staleCoreRuns,1);
+  assert.equal(result.coreFailures,0);
+  assert.equal(result.sourceRepairQueued,0);
+  assert.equal(result.transientCiReruns,0);
+  assert.equal(commits.length,0);
 });
