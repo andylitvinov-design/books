@@ -86,3 +86,19 @@ test('successful Core event has a separate rate-bounded free-slot wakeup',()=>{
   assert.ok(s.includes('scripts/ci-pr-slot-wakeup.cjs'));
   assert.ok(s.includes('actions: write'));
 });
+
+test('separate Direction Watcher classifies all open PRs with a ten-minute fallback',()=>{
+  const s=read('hh-pr-direction-watcher');
+  assert.ok(s.includes("cron: '1,11,21,31,41,51 * * * *'"));
+  assert.ok(s.includes("branches: ['codex/bootstrap-books']"));
+  assert.ok(s.includes("node --test tests/ci-pr-priority.test.cjs tests/ci-pr-direction-watcher.test.cjs"));
+  assert.ok(s.includes('pull-requests: read'));
+  assert.ok(s.includes('issues: write'));
+  assert.ok(s.includes('persist-credentials: false'));
+  assert.ok(s.includes("const dryRun=String(context.payload.inputs?.dry_run"));
+});
+test('Watchdog activates separate direction schedule and never creates legacy P0 labels',()=>{
+  const s=read('hh-pr-ten-minute-watchdog');
+  assert.ok(s.includes("'hh-pr-direction-watcher.yml'"));
+  assert.ok(!s.includes("'hh:priority:'+tier"));
+});
