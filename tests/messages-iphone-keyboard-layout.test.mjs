@@ -92,3 +92,20 @@ test('request composer stays mounted behind client card and the hidden pane take
   assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
   assert.match(jsx,/key=\{selected\.id\} inline autoOpen/)
 })
+
+test('priority mobile chat PRs execute the isolated browser journey without sends',()=>{
+  const workflow=read('.github/workflows/hh-messages-wellness-browser.yml')
+  const browser=read('scripts/verify-messages-wellness-browser.mjs')
+  const gate="if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'P0') }}"
+  for(const name of ['Build production Next.js before browser tests','Install synthetic browser engines',
+    'Actual iPhone-sized Orders / Clients / request conversations']){
+    assert.equal(workflow.split('      - name: '+name+'\n')[1]?.split('\n')[0]?.trim(),gate,name)
+  }
+  assert.match(workflow,/ready_for_review/)
+  assert.match(browser,/Loopback browser environment only/)
+  assert.match(browser,/SYNTHETIC_READ_ONLY/)
+  assert.match(browser,/route\.abort\(\)/)
+  assert.match(browser,/accountRequest:true/)
+  assert.match(browser,/\[320,354,390,430\]/)
+  assert.match(browser,/\[chromium,webkit\]/)
+})

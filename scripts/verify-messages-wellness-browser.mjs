@@ -33,6 +33,11 @@ const client={
 const json=(route,status,body)=>route.fulfill({status,contentType:'application/json',
   headers:{'Cache-Control':'no-store'},body:JSON.stringify(body)})
 async function intercept(page){
+ // A synthetic UI test must never reach a third-party provider or real user.
+ await page.route('**/*',route=>{
+   if(new URL(route.request().url()).origin!==origin)return route.abort()
+   return route.continue()
+ })
  await page.route('**/api/app/**',async route=>{
    const url=new URL(route.request().url()),path=url.pathname
    if(route.request().method()!=='GET')return json(route,403,{error:'SYNTHETIC_READ_ONLY'})

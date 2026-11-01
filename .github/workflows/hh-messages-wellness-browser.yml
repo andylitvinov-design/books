@@ -1,6 +1,7 @@
 name: Holistic House Messages wellness synthetic browser QA
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]
     branches: [codex/public-book-library]
     paths:
       - 'app/**/app/messages/**'
@@ -50,16 +51,16 @@ jobs:
           node --check scripts/verify-messages-wellness-browser.mjs
           if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]]; then npx --no-install tsc --noEmit --pretty false; fi
       - name: Build production Next.js before browser tests
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'P0') }}
         run: npm run build
       - name: Install synthetic browser engines
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'P0') }}
         run: |
           mkdir -p /tmp/hh-messages-visual-tools
           npm install --prefix /tmp/hh-messages-visual-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-messages-visual-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Actual iPhone-sized Orders / Clients / request conversations
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'P0') }}
         run: |
           mkdir -p artifacts/messages-wellness
           npx next start --hostname 127.0.0.1 --port 3127 >/tmp/hh-messages-visual-next.log 2>&1 &
@@ -80,7 +81,7 @@ jobs:
           done
           node scripts/verify-messages-wellness-browser.mjs
       - name: Preserve synthetic rendered screenshots only
-        if: always() && github.event_name != 'pull_request'
+        if: ${{ always() && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'P0')) }}
         uses: actions/upload-artifact@v4
         with:
           name: messages-wellness-synthetic-chromium-webkit
