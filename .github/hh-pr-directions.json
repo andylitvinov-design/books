@@ -380,6 +380,26 @@
       ]
     },
     {
+      "id": "ci-maintenance",
+      "level": 5,
+      "name": "Legacy CI tests / regression fixtures",
+      "scopes": [
+        "ci-tests",
+        "ci-coverage"
+      ],
+      "terms": [
+        "regression coverage",
+        "test fixture",
+        "test oracle",
+        "legacy test",
+        "test maintenance"
+      ],
+      "paths": [
+        "tests/regression/",
+        "tests/fixtures/"
+      ]
+    },
+    {
       "id": "other",
       "level": 5,
       "name": "Other / unclassified / experiment",
