@@ -9,6 +9,10 @@ const policy=read("lib/mandala/auto-video-director.mjs");
 test("Auto Video Director uses the original video workspace, player and recording",()=>{
   assert.ok(studio.includes("<MandalaAutoVideoDirector"));
   assert.ok(studio.includes("scenes={FREE_FILM_CATALOG}"));
+  assert.ok(studio.includes("aspect={aspect}"));
+  assert.ok(director.includes('aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"'));
+  assert.ok(!director.includes("4 genuine MP4 clips · 16:9"));
+
   assert.ok(studio.includes("onApply={applyAutoFilm}"));
   assert.ok(studio.includes("showGoalInput={false}"));
   assert.ok(studio.includes('data-workspace-section="video"'));
