@@ -70,6 +70,7 @@ import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTi
 
 import { appFetch } from '@/lib/app/client-fetch'
 import {directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
+import { useVisualBottomDock } from './use-visual-bottom-dock'
 import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
   readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
   takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
@@ -151,6 +152,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     recordId = path[1],
     root = `/${locale}/app`
   const practiceInner = page === 'practice'
+  const mobileDockRef = useRef(null)
+  useVisualBottomDock(mobileDockRef, state === 'ready' && !practiceInner && page !== 'runs', page + ':' + (recordId || ''))
   const retestLifetime = useRef({ mounted: false, epoch: 0 })
   const retestScope = useRef(null)
   retestScope.current = { accountId: data?.account?.id, page, recordId,
@@ -827,7 +830,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
-      {!documentReader && !practiceInner && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : locale === 'es' ? 'Navegación rápida' : 'Quick navigation'} data-hh-five-tab-dock>
+      {!documentReader && !practiceInner && page !== 'runs' && <nav ref={mobileDockRef} className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : locale === 'es' ? 'Navegación rápida' : 'Quick navigation'} data-hh-five-tab-dock>
         <Link href={locale === 'ru' ? '/ru' : locale === 'es' ? '/es' : '/'} prefetch={false}
           className="hh-mobile-app-nav-home"
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}

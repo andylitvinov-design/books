@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
@@ -9,6 +9,7 @@ import {
   Sparkles, UserRound, Users
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
+import { useVisualBottomDock } from './app/use-visual-bottom-dock'
 import styles from './practice-showcase.module.css'
 
 const COPY = {
@@ -207,6 +208,8 @@ export default function PracticeShowcase({ locale = 'en' }) {
   const [busy, setBusy] = useState('')
   const [pendingAction, setPendingAction] = useState('')
   const [nextAction, setNextAction] = useState('')
+  const mobileDockRef = useRef(null)
+  useVisualBottomDock(mobileDockRef)
   const signedIn = session === 'signed'
 
   const checkSession = useCallback(async (signal) => {
@@ -468,7 +471,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
       </section>
     </div>}
 
-    <nav className={styles.bottomNav} aria-label={locale==='ru'?'Быстрая навигация':locale==='es'?'Navegación rápida':'Quick navigation'} data-hh-five-tab-dock>
+    <nav ref={mobileDockRef} className={styles.bottomNav} aria-label={locale==='ru'?'Быстрая навигация':locale==='es'?'Navegación rápida':'Quick navigation'} data-hh-five-tab-dock>
       {TABS.map(({key, label, Icon}) =>
         <button key={key} type="button" data-mobile-tab={key} className={styles.navItem + (key === 'practice' ? ' ' + styles.navActive : '')}
           onClick={() => void openAction(key)} aria-current={key === 'practice' ? 'page' : undefined}>

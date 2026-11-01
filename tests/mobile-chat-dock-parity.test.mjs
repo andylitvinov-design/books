@@ -79,3 +79,27 @@ test('protected Practice panels reuse the private Messages dock without a Reques
  assert.match(protectedCss,/hh-app--practice-inner:has\(\[data-service-slide-editor\]\) \.hh-mobile-app-nav/)
  assert.match(protectedCss,/hh-app--practice-inner:has\(input:focus,textarea:focus\) \.hh-mobile-app-nav/)
 })
+
+test('all bottom-docked mobile contexts follow the iPhone visual viewport and clean up',()=>{
+ const hook=read('components/app/use-visual-bottom-dock.ts')
+ const practice=read('components/practice-showcase.jsx')
+ const messages=read('components/app/messages-bottom-navigation.jsx')
+ const cabinet=read('components/app/app-workspace.jsx')
+ const support=read('components/holistic-support-mobile.tsx')
+ for(const src of [practice,messages,cabinet,support]){
+   assert.match(src,/useVisualBottomDock\(/)
+   assert.match(src,/ref=\{mobileDockRef\}/)
+ }
+ assert.match(hook,/visualViewport/)
+ assert.match(hook,/viewport\.offsetTop \+ viewport\.height/)
+ assert.match(hook,/visualBottom - rect\.bottom/)
+ assert.match(hook,/getBoundingClientRect/)
+ assert.match(hook,/style\.display === "none"/)
+ assert.match(hook,/style\.removeProperty\("transform"\)/)
+ assert.match(hook,/window\.cancelAnimationFrame\(frame\)/)
+ assert.match(hook,/ResizeObserver\(update\)/)
+ assert.match(hook,/addEventListener\("focusout", update\)/)
+ assert.match(hook,/removeEventListener\("focusout", update\)/)
+ assert.match(hook,/viewport\?\.addEventListener\("resize", update/)
+ assert.match(hook,/viewport\?\.removeEventListener\("resize", update/)
+})

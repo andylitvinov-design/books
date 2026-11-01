@@ -1,3 +1,6 @@
+"use client"
+import {useRef} from 'react'
+import {useVisualBottomDock} from './use-visual-bottom-dock'
 import Link from 'next/link'
 import {BookOpen,MessageCircle,House,Leaf,UserRound} from 'lucide-react'
 
@@ -12,7 +15,9 @@ const ITEMS=[
 ]
 export default function MessagesBottomNavigation({locale='en',activeSection='messages'}){
   const accountLocale=locale==='es'?'en':locale
-  return <nav className="hh-mobile-app-nav" data-hh-five-tab-dock
+  const mobileDockRef=useRef(null)
+  useVisualBottomDock(mobileDockRef)
+  return <nav ref={mobileDockRef} className="hh-mobile-app-nav" data-hh-five-tab-dock
     aria-label={locale==='ru'?'Быстрая навигация':locale==='es'?'Navegación rápida':'Quick navigation'}>
     {ITEMS.map(({path,Icon,en,ru,es})=>{
       const active=path===activeSection

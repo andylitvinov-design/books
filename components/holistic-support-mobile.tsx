@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useVisualBottomDock } from "./app/use-visual-bottom-dock";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
@@ -529,6 +530,8 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [opened, setOpened] = useState<string[]>([]);
   const [talismanCatalogOpen, setTalismanCatalogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const mobileDockRef = useRef<HTMLElement | null>(null);
+  useVisualBottomDock(mobileDockRef);
 
   // Google returns to the same public page with a one-use non-personal
   // OAuth continuation flag. The client-side scoring/photo dashboard never
@@ -1198,7 +1201,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
       </section> : null}
 
-      <nav className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
+      <nav ref={mobileDockRef} className={styles.bottomNav} aria-label={t.newUi} data-support-mobile-bottom-nav>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}><Home size={24} aria-hidden="true" /><span>{t.navHome}</span></Link>
         <Link href={"/" + locale + "/practice"} prefetch={false}><Compass size={24} aria-hidden="true" /><span>{t.navPractices}</span></Link>
         <Link href={"/" + locale + "/app/messages?tab=chats"} prefetch={false} data-support-mobile-messages>
