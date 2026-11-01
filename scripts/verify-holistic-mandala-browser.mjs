@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { chromium, webkit, expect } from "@playwright/test";
+import {decodeSceneFrames,matchSceneSamples} from "./benchmarking/video-scene-match.mjs";
 
 const BASE = (process.env.HH_TEST_PUBLIC_ORIGIN || "http://127.0.0.1:3100").replace(/\/$/, "");
 const PNG = Buffer.from(
@@ -1801,6 +1802,10 @@ const runEngine = async ([engine, browserType]) => {
             "Auto Director reuses the only live editable video stage");
           const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
             nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          const selectedPaths=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("src")));
+          assert.equal(selectedPaths.length,4);
+          for(const path of selectedPaths)assert.match(path||"",/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/);
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
           // The legacy quick-duration control is intentionally in a collapsed
           // details panel. Exercise the actually visible Video workspace button.
@@ -1862,6 +1867,12 @@ const runEngine = async ([engine, browserType]) => {
               for(let j=0;j<frames[i].length;j++)delta+=Math.abs(frames[i][j]-frames[i-1][j]);
               assert.ok(delta/frames[i].length>1,'adjacent scene samples must visibly differ');
             }
+            const sourceFrames=selectedPaths.map(path=>decodeSceneFrames(join(process.cwd(),'public',path.slice(1))));
+            const outputFrames=decodeSceneFrames(file);
+            const times=[0.75,2.25,3.75,5.25,6.5,7.5,8.5,9.5];
+            const sceneSamples=times.map(time=>outputFrames[Math.round(time*4)]);
+            assert.ok(sceneSamples.every(Boolean),'first and last scene samples must decode');
+            matchSceneSamples(sceneSamples,sourceFrames,[0,0,1,1,2,2,3,3]);
             const pcm=spawnSync('ffmpeg',['-v','error','-i',file,'-map','0:a:0','-t','2',
               '-ar','8000','-ac','1','-f','s16le','pipe:1'],{maxBuffer:100000,timeout:30000});
             assert.equal(pcm.status,0,'soundtrack must decode');
