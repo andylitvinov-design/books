@@ -293,11 +293,11 @@ test('approved migration destinations contain the exact retired scope and the or
       contracts:['tests/benchmark-free-tests-first-pilot.test.mjs','tests/free-review-conversion.test.mjs','tests/benchmark-reference-matrix.test.mjs','scripts/benchmarking/plan.mjs'],
     },{
       from:'hh-portrait-sectors.yml',into:'hh-profile-axis-matching.yml',
-      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/app-workspace.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
+      patterns:["'components/app/test-explorer-visual.jsx'","'components/app/portrait-test-quick-actions.jsx'","'components/app/portrait-test-quick-actions.module.css'","'lib/profile/portrait-test-suggestions.js'","'tests/portrait-report-actions.test.mjs'","'tests/portrait-sector-take-test.test.mjs'","'components/app/test-explorer.module.css'","'lib/assessments/portrait-sectors.js'","'tests/portrait-sectors.test.mjs'","'tests/portrait-rays-responsive.test.mjs'","'tests/portrait-one-screen-mobile.test.mjs'","'scripts/verify-app-r1.mjs'","'.github/workflows/hh-portrait-sectors.yml'"],
       contracts:['tests/portrait-sectors.test.mjs','tests/portrait-rays-responsive.test.mjs','tests/portrait-ray-labels.test.mjs','tests/psych-portrait.test.mjs','tests/portrait-report-actions.test.mjs','tests/portrait-sector-take-test.test.mjs','tests/portrait-one-screen-mobile.test.mjs','tests/axis-offer-matcher.test.mjs'],
     },{
       from:'cabinet-today-ci.yml',into:'hh-cabinet-journey.yml',
-      patterns:["'components/app/cabinet-today.*'","'components/app/app-workspace.jsx'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
+      patterns:["'components/app/cabinet-today.*'","'lib/app/cabinet-today.mjs'","'tests/cabinet-today.test.mjs'","'.github/workflows/cabinet-today-ci.yml'"],
       contracts:['tests/cabinet-today.test.mjs','tests/cabinet-learning-journey.test.mjs','components/app/cabinet-today.jsx','npx --no-install tsc --noEmit'],
     },
   ];
@@ -939,4 +939,64 @@ test('Tantra Photo Cards has an approved BASE-trusted Reiki owner for phase-2 re
     [{retired:old,replacement:successor}]);
   assert.throws(()=>resolveExpectedSpecialists({base:trusted,current:new Map([[successor,owner+'\n# changed in retirement']]),changed,expected}),
     /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});
+
+
+// Exact-Merge specialist discovery is the single source of truth for PR impact.
+// Shared auth/DB/checkout remain owned by Core, IA, App Browser and Billing.
+test('Messenger-only PRs skip unrelated specialist workflow dispatch without skipping safety and E2E', () => {
+  const root = '.github/workflows/';
+  const all = new Map(readdirSync(root).filter(f => /\.ya?ml$/.test(f)).map(f =>
+    [root + f, readFileSync(root + f, 'utf8')]));
+  const changed = [
+    'components/app/messages-simple-inbox.jsx',
+    'components/app/messages-orders-clients.module.css',
+    'components/app/messages-hub.jsx',
+    'app/api/app/direct-messages/route.js',
+    'lib/app/direct-message-push.js',
+    'tests/messages-inbox-unified.test.mjs',
+  ];
+  const applicable = expectedWorkflows({base: all, current: all, changed});
+  const present = name => applicable.includes(root + name + '.yml');
+  for (const module of [
+    'hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-public-services-production','site-video-browser','hh-personal-coaching-session',
+    'hh-interpretation-database','hh-my-progress-release','hh-public-test-collections',
+    'hh-portrait-mobile-browser','hh-profile-axis-matching','hh-cabinet-journey',
+  ]) assert.equal(present(module), false, 'Messenger must not dispatch ' + module);
+  for (const owner of [
+    'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
+    'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
+  ]) assert.equal(present(owner), true, 'Messenger needs ' + owner);
+  const core = parsePrTrigger(all.get(root + 'hh-pr-core-release.yml'));
+  assert.ok(matchesTrigger(core, changed), 'Core remains unconditionally required');
+
+  const changedShell = ['components/app/app-workspace.jsx'];
+  const shellRuns = expectedWorkflows({base: all, current: all, changed:changedShell});
+  for (const owner of ['hh-app-r1','hh-app-browser','ia-v2']) {
+    assert.ok(shellRuns.includes(root + owner + '.yml'), 'Shared shell stays covered by ' + owner);
+  }
+  for (const unrelated of ['hh-course-presets','practice-visual-browser','practice-visual-services',
+    'hh-my-progress-release','hh-public-test-collections','hh-cabinet-journey']) {
+    assert.ok(!shellRuns.includes(root + unrelated + '.yml'), 'Shared shell should not fan out ' + unrelated);
+  }
+
+  const sensitive = expectedWorkflows({base: all, current: all, changed:[
+    'app/api/payments/checkout/route.js',
+    'supabase/migrations/20261101_app_private_message_policy.sql',
+  ]});
+  for (const owner of ['hh-billing-isolated','ia-v2','hh-app-r1','hh-app-browser']) {
+    assert.ok(sensitive.includes(root + owner + '.yml'), 'Sensitive change must retain ' + owner);
+  }
+  // Each specialist still owns actual edits to its own module.
+  for (const [owner, file] of [
+    ['hh-course-presets','components/app/my-course.jsx'],
+    ['practice-visual-browser','components/practice-showcase.jsx'],
+    ['practice-visual-services','components/app/simple-service-editor.jsx'],
+    ['site-video-browser','components/site-video-manager.tsx'],
+    ['hh-public-services-production','components/contact-channel-chooser.tsx'],
+    ['hh-interpretation-database','lib/interpretation/engine.js'],
+    ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
+  ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
+    'Own-module change must retain specialist ' + owner);
 });

@@ -62,3 +62,31 @@ After the queue reaches 10 or fewer open production PRs, reassess the temporary 
 - The native auto-merge workflow's `pull_request_target` recovery remains restricted to a missing required check on a clean behind PR with a verified ruleset and no active repair lease. A separate `workflow_run` hook may retry only a **first-attempt, exact-HEAD, same-repository, completed interrupted/jobless core workflow** (no completed failing code jobs), at most once per run. A new `release-ready: SUCCESS` is still required; re-runs neither approve nor merge PRs.
 - GitHub `workflow_run` listeners require their trusted workflow YAML on the **repository default branch** (`codex/bootstrap-books`), even though the release target is `codex/public-book-library`. Roll the identical reviewed workflow to default through a separate protected delivery after this production PR merges; do not claim the new listener active before confirming default-branch parity.
 - Any actual failed code/security/consent/payment check, draft PR, merge conflict, changed HEAD, uncertain job association, repeated interruption, or ambiguous historical run must stay red. Do not auto-retry a deterministic failing test or create an empty commit to cause a recheck.
+
+## Component-owned specialist dispatch (1 November 2026)
+
+The BASE-trusted `lib/ci/specialist-aggregate.mjs` must continue deriving exact-HEAD
+specialist requirements from the verified PR merge diff and the immutable
+BASE/HEAD workflow manifests. Do not add a second independent classifier.
+
+Specialist `pull_request.paths` and production `push.paths` must track the
+module they actually test. A shared catch-all such as `app/api/app/**`, the
+Next app API dispatcher, or `components/app/app-workspace.jsx` may not launch
+unrelated Course Presets, Practice Visual, Personal Coaching, Site Video,
+Public Services, Profile, Cabinet, or Interpretation suites merely because
+Messenger changed. Owned course/editor/report/service/API paths remain live;
+manual dispatch is retained for full diagnostics.
+
+**Coverage that cannot be removed:** unconditional Core/type/lint/build,
+security and authentication (IA/App), payment/billing/RLS/database checks, and
+Messenger's consent/privacy plus necessary Chromium/WebKit browser journeys.
+A migration, dependency or unknown sensitive shared change still requires the
+protected broad suites. The existing BASE-vs-HEAD manifest union prevents a
+candidate PR from deleting a required check by narrowing its own trigger.
+
+`tests/ci-specialist-aggregate.test.mjs` now exercises Messenger-only and
+sensitive changed-file scenarios through the real `expectedWorkflows` API.
+Retiring a whole YAML workflow still requires a separately approved,
+BASE-pinned replacement; this routing change deletes none of the protected
+workflow definitions. Review workflow runtime and Actions run counts after
+merge before authorizing any second-phase deletion.
