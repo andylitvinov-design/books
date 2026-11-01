@@ -35,6 +35,49 @@ function fixture(items,opts={}){
   }};
   return {github,counts};
 }
+test('all GitHub label descriptions respect the strict 100-character API limit',()=>{
+  assert.equal(new Set(LABELS.map(x=>x.name)).size,LABELS.length);
+  for(const label of LABELS){
+    assert.ok(label.description.length>0&&label.description.length<=100,
+      label.name+' invalid description length '+label.description.length);
+    assert.match(label.color,/^[a-f0-9]{6}$/i);
+  }
+});
+test('GitHub 422 validation is NOT mistaken for successful label creation',async()=>{
+  const f=fixture([pr(1)],{missingLabels:true});
+  let verified=0;
+  f.github.rest.issues.createLabel=async()=>{
+    const error=new Error('Validation Failed: description too long');
+    error.status=422;throw error;
+  };
+  f.github.rest.issues.getLabel=async()=>{
+    verified++;
+    const error=new Error('Not Found');error.status=404;throw error;
+  };
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(verified,1);
+  assert.equal(result.reason,'LABEL_CATALOG_UNAVAILABLE');
+  assert.equal(result.updated,0);
+  assert.equal(result.createdLabels,0);
+  assert.equal(f.counts.adds.length,0,'never label a PR with an unverified catalog');
+});
+test('genuine concurrent label creation requires exact-name readback',async()=>{
+  const f=fixture([pr(1)]);
+  const missing=LABELS[0];
+  f.github.rest.issues.listLabelsForRepo=async()=>({data:
+    LABELS.filter(l=>l.name!==missing.name).map(l=>({name:l.name}))});
+  f.github.rest.issues.createLabel=async()=>{const error=new Error('Already exists');
+    error.status=422;throw error;};
+  let read=0;
+  f.github.rest.issues.getLabel=async({name})=>{
+    read++;return {data:{name}};
+  };
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(read,1);
+  assert.equal(result.createdLabels,0,'already-existing race is not a new creation');
+  assert.equal(result.updated,1);
+  assert.equal(f.counts.adds.length,1);
+});
 test('every open production PR is inventoried, but writes are capped',async()=>{
   const items=Array.from({length:50},(_,i)=>pr(i+1,i%2?'feat(reiki): learning':'fix(video): Create'));
   const f=fixture(items);
