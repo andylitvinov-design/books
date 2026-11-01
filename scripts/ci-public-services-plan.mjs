@@ -377,6 +377,27 @@ function reviewedMeditationRail2483(env,rows) {
   return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
 }
 
+
+// Strict, one-off PR #2808 owner review: all 36 consent/attribution paths,
+// including the original checkout and owner-notification files, must match
+// status AND filename on the exact PR head and tested production merge.
+// Core, dedicated PostgreSQL17 tenant/RLS, Telegram digest, Reiki/order,
+// Free Review WebKit and billing checks still run separately. Public Services
+// retains real EN/RU/ES contact/consent Chromium browser acceptance.
+// No new/unknown payment route, auth, webhook or deletion can qualify.
+const REVIEWED_ATTRIBUTION_2808 = new Map([[".github/workflows/hh-practice-telegram-digest.yml","M"],["app/api/payments/talismans/checkout/route.js","M"],["app/api/service-enquiries/route.js","M"],["components/analytics-consent.tsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/compact-lead-capture.tsx","M"],["components/contact-channel-chooser.tsx","M"],["components/enquiry-attribution-choice.tsx","A"],["components/free-express-wizard.tsx","M"],["components/home-free-diagnosis-banner.tsx","M"],["components/public-page-traffic.tsx","M"],["components/services-hero-quick-request.tsx","M"],["components/taoist-talisman-cart.tsx","M"],["lib/analytics/enquiry-attribution.d.mts","A"],["lib/analytics/enquiry-attribution.mjs","A"],["lib/analytics/enquiry-public-catalog.mjs","A"],["lib/app/client-telegram-transport.js","M"],["lib/app/owner-enquiry-notice.mjs","A"],["lib/app/public-enquiry-telegram.js","M"],["lib/practitioners/daily-digest.mjs","M"],["lib/practitioners/daily-telegram-digest.js","M"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["scripts/helpers/contact-channel-verifier.mjs","M"],["scripts/verify-free-express-wizard-v2.mjs","M"],["scripts/verify-free-review-live-mobile.mjs","M"],["scripts/verify-public-services-production.mjs","M"],["supabase/migrations/20261031183000_hh_public_enquiry_traffic_attribution.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/enquiry-attribution.test.mjs","A"],["tests/holistic-taoist-one-click-order.test.mjs","M"],["tests/owner-enquiry-notice.test.mjs","A"],["tests/owner-telegram-enquiry-pilot.test.mjs","M"],["tests/personal-cart-photo-order.test.mjs","M"],["tests/public-enquiry-attribution-rls.integration.mjs","A"],["tests/reiki-mobile-order-crm.test.mjs","M"]]);
+function reviewedEnquiryAttribution2808(env,rows) {
+  if(env.GITHUB_HEAD_REF!=='codex/hh-enquiry-attribution-telegram-20261031' ||
+     rows.length!==REVIEWED_ATTRIBUTION_2808.size*2)return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_ATTRIBUTION_2808.get(path)!==status)return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_ATTRIBUTION_2808.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -422,6 +443,13 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           reason:'EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',
           build:false, browser:false, metrics:false, cases:'none' };
       return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
+    }
+    if(env.GITHUB_REF==='refs/pull/2808/merge'){
+      if(reviewedEnquiryAttribution2808(env,rows))
+        return {mode:'focused',reason:'EXACT_CONSENTED_ENQUIRY_ATTRIBUTION',
+          build:true,browser:true,metrics:false,
+          cases:'verify-public-services-production.mjs'};
+      return full('UNREVIEWED_ATTRIBUTION_DELTA');
     }
     // GitHub-provided PR ref + head name, and the *complete* expected
     // name-status set must match. No other branch or additional file is scoped.

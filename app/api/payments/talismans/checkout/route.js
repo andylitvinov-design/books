@@ -7,6 +7,7 @@ import { requireUUID, AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { configuredTalismanBasket } from '@/lib/commerce/talisman-checkout'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
+import { readPublicEnquiryAttribution } from '@/lib/analytics/enquiry-attribution.mjs'
 
 export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
@@ -54,12 +55,12 @@ export async function POST(request) {
       operationId: input.operationId, serviceTitle:'Daoist Fu talismans · checkout pending payment',
       description, sourcePath, locale,
       contact: {email, displayName: '', phone:''}, contactConsent:true, website:'',
-    })
+    }, readPublicEnquiryAttribution(request))
     if (enquiry.saved !== true || enquiry.contactPending !== false ||
         !/^HH-[A-F0-9]{12}$/.test(enquiry.referenceCode || ''))
       throw new AppError('CHECKOUT_INTENT_UNCONFIRMED',503)
     after(async () => {
-      try { await dispatchPublicServiceEnquiryTelegram(config, enquiry.id) }
+      try { await dispatchPublicServiceEnquiryTelegram(config, enquiry.id, input.operationId) }
       catch { console.error('HH_TALISMAN_ORDER_OWNER_NOTICE_UNCONFIRMED') }
     })
     return auth.apply(NextResponse.json({

@@ -46,7 +46,9 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
-  assert.match(enquiry, /onClick=\{\(\) => setExpanded\(open => !open\)\}/);
+  assert.match(enquiry, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(enquiry, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /useEffect\(\(\) => \{/);
   assert.match(enquiry, /setExpanded\(false\)/);
   assert.match(enquiry, /revealRef\.current\?\.focus\(\)/);

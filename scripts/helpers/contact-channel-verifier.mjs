@@ -106,7 +106,12 @@ export async function openRegisteredContactChannelChooser(scope, expect, page) {
   await name.fill('Public QA Visitor');
   await form.locator('input[autocomplete="email"]').fill('enquiry-qa@example.test');
   await expect(submit).toBeDisabled();
-  await form.locator('input[type="checkbox"]').check();
+  const replyConsent=form.locator('input[type="checkbox"][required]');
+   await expect(replyConsent).toHaveCount(1);
+   const sourceConsent=form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+   await expect(sourceConsent).toHaveCount(1);
+   await expect(sourceConsent).not.toBeChecked();
+   await replyConsent.check();
   await submit.click();
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
   assert.equal(submissions.length,1,'Exactly one explicitly consented synthetic registration');
@@ -163,7 +168,12 @@ export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
   await expect(form).toBeVisible();
   await expect(form.locator('input[type="email"]')).toHaveCount(0);
   await form.locator('[data-phone-country-input] input[type="tel"]').fill('4165550123');
-  await form.locator('input[type="checkbox"]').check();
+  const replyConsent=form.locator('input[type="checkbox"][required]');
+   await expect(replyConsent).toHaveCount(1);
+   const sourceConsent=form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+   await expect(sourceConsent).toHaveCount(1);
+   await expect(sourceConsent).not.toBeChecked();
+   await replyConsent.check();
   await form.locator('button[data-contact-channel-submit="whatsapp"]').click();
 
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);

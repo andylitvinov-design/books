@@ -19,7 +19,10 @@ async function tapFocusAndVerify(page, enquiry, focus) {
   // WebKit may leave the large label behind that toolbar. A user would scroll
   // the card into a visible touch position first: do the same, and ASSERT the
   // real card receives a hit before making exactly ONE native touch tap.
+  // Real touch users scroll before selecting: settle the viewport-aware target
+  // once, without repeating any tap or changing consent on their behalf.
   await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  await card.scrollIntoViewIfNeeded({timeout:15000});
   const targetHit = await card.evaluate(node => {
     const rect = node.getBoundingClientRect();
     const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
@@ -251,15 +254,19 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
             "no modal after clicking the hero CTA");
           assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+          assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
             "opening the form is not contact consent");
+          // Optional analytics/source linking is separate from required one-off reply consent.
+          const attribution= enquiry.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          if(await attribution.count())assert.equal(await attribution.isChecked(),false,
+            "opening the form cannot opt the visitor into source attribution");
           // The protected v2 wizard and the legacy compact capture are distinct
           // safe variants. Neither navigation nor form opening creates a lead.
           const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
           if (wizardV2) {
             const lead = enquiry.locator('[data-free-express-lead]');
             assert.equal(await lead.locator('textarea').count(), 1, "one short question");
-            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
+            assert.equal(await lead.locator('input[type="checkbox"][required]').isChecked(), false,
               "explicit consent remains unchecked");
             assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
               "no CRM receipt from opening the form");
@@ -304,7 +311,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             && (width === 320 || width === 430) ? 3 : 1;
           for (let cycle = 0; cycle < cycles; cycle++) {
             await tapFocusAndVerify(page, enquiry, "energy");
-            assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+            assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
               "changing the focus cannot silently opt the user in");
             await tapFocusAndVerify(page, enquiry, "situation");
           }
@@ -316,6 +323,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           await enquiry.locator('input[type="tel"]').focus();
           await page.keyboard.press("Escape");
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
           await reveal.click();
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");

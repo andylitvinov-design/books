@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { FreeExpressGoogleClaim } from "@/components/free-express-google-claim";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import { emitPublicAnalyticsEvent, type PublicAnalyticsEvent } from "@/lib/public-analytics";
@@ -548,6 +549,7 @@ export function ContactChannelChooser({
                   onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
                 <span>{c.compactConsent}</span>
               </label>
+              <EnquiryAttributionChoice locale={locale} disabled={busy || googleBusy} />
               <label className={styles.honeypot} aria-hidden="true">
                 Website <input type="text" tabIndex={-1} autoComplete="off"
                   value={website} onChange={event => setWebsite(event.target.value)} />
@@ -670,6 +672,7 @@ export function ContactChannelChooser({
                 onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
               <span>{c.compactConsent}</span>
             </label>
+            <EnquiryAttributionChoice locale={locale} disabled={busy} />
             <label className={styles.honeypot} aria-hidden="true">
               Website <input type="text" tabIndex={-1} autoComplete="off"
                 value={website} onChange={event => setWebsite(event.target.value)} />
@@ -792,6 +795,7 @@ export function ContactChannelChooser({
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
             </label>
+            <EnquiryAttributionChoice locale={locale} disabled={busy} />
             {quick && (!cartContact || (googleReady && method === "email")) &&
               <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
                 onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>

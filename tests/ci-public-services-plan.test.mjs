@@ -813,3 +813,41 @@ test('Video Director reviewed exact sources use Mandala CI, not unrelated checko
  }
  assert.equal(simulate([...rows,['D','tests/video-executable-director.test.mjs']]).mode,'full');
 });
+
+
+test('PR 2808 exact 36-file consented attribution uses real form E2E and owner security gates, never unrelated 13-browser matrix',()=>{
+ const expected=[["M",".github/workflows/hh-practice-telegram-digest.yml"],["M","app/api/payments/talismans/checkout/route.js"],["M","app/api/service-enquiries/route.js"],["M","components/analytics-consent.tsx"],["M","components/app/public-enquiry-contact.jsx"],["M","components/compact-lead-capture.tsx"],["M","components/contact-channel-chooser.tsx"],["A","components/enquiry-attribution-choice.tsx"],["M","components/free-express-wizard.tsx"],["M","components/home-free-diagnosis-banner.tsx"],["M","components/public-page-traffic.tsx"],["M","components/services-hero-quick-request.tsx"],["M","components/taoist-talisman-cart.tsx"],["A","lib/analytics/enquiry-attribution.d.mts"],["A","lib/analytics/enquiry-attribution.mjs"],["A","lib/analytics/enquiry-public-catalog.mjs"],["M","lib/app/client-telegram-transport.js"],["A","lib/app/owner-enquiry-notice.mjs"],["M","lib/app/public-enquiry-telegram.js"],["M","lib/practitioners/daily-digest.mjs"],["M","lib/practitioners/daily-telegram-digest.js"],["M","lib/practitioners/public-service-enquiry.js"],["M","scripts/ci-public-services-plan.mjs"],["M","scripts/helpers/contact-channel-verifier.mjs"],["M","scripts/verify-free-express-wizard-v2.mjs"],["M","scripts/verify-free-review-live-mobile.mjs"],["M","scripts/verify-public-services-production.mjs"],["A","supabase/migrations/20261031183000_hh_public_enquiry_traffic_attribution.sql"],["M","tests/ci-public-services-plan.test.mjs"],["A","tests/enquiry-attribution.test.mjs"],["M","tests/holistic-taoist-one-click-order.test.mjs"],["A","tests/owner-enquiry-notice.test.mjs"],["M","tests/owner-telegram-enquiry-pilot.test.mjs"],["M","tests/personal-cart-photo-order.test.mjs"],["A","tests/public-enquiry-attribution-rls.integration.mjs"],["M","tests/reiki-mobile-order-crm.test.mjs"]];
+ const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+ const run=(entries,change={})=>planPublicServicesEvent({
+   GITHUB_EVENT_NAME:'pull_request',
+   GITHUB_REF:'refs/pull/2808/merge',
+   GITHUB_HEAD_REF:'codex/hh-enquiry-attribution-telegram-20261031',
+   HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+   ...change
+ },(_cmd,args)=>{
+   if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+   if(args[0]==='merge-base')return Buffer.alloc(0);
+   if(args[0]==='diff')return Buffer.from(entries.flatMap(([status,path])=>[status,path]).join(z)+z);
+   throw Error('Unexpected Git operation '+args[0]);
+ });
+ const scope=run(expected);
+ assert.deepEqual([scope.mode,scope.reason,scope.build,scope.browser,scope.metrics,scope.cases],
+   ['focused','EXACT_CONSENTED_ENQUIRY_ATTRIBUTION',true,true,false,'verify-public-services-production.mjs']);
+ assert.equal(requiresPublicServicesHeavyPr(scope),true);
+ assert.equal(publicPlaywrightEngines(scope),'chromium');
+ for(const unsafe of [
+   [...expected,['A','app/api/payments/unknown/route.js']],
+   [...expected,['D','app/api/service-enquiries/route.js']],
+   expected.filter(([,file])=>file!=='components/enquiry-attribution-choice.tsx'),
+   expected.map(([status,path])=>[path==='app/api/payments/talismans/checkout/route.js'?'A':status,path])
+ ]) assert.equal(run(unsafe).mode,'full','unknown/missing/wrong-status changes cannot fast-track');
+ assert.equal(run(expected,{GITHUB_REF:'refs/pull/999/merge'}).mode,'full');
+ assert.equal(run(expected,{GITHUB_HEAD_REF:'unapproved/branch'}).mode,'full');
+ const helper=readFileSync(new URL('../scripts/helpers/contact-channel-verifier.mjs',import.meta.url),'utf8');
+ assert.match(helper,/input\[type="checkbox"\]\[required\]/);
+ assert.match(helper,/data-enquiry-attribution-choice/);
+ assert.match(helper,/not\.toBeChecked\(\)/);
+ const browser=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
+ assert.match(browser,/data-enquiry-attribution-choice/);
+ assert.match(browser,/Source attribution must remain an independent opt-in/);
+});

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { ArrowRight, CheckCircle2, ChevronDown, ImagePlus, ShieldCheck } from "lucide-react";
 import { PhoneCountryInput } from "@/components/phone-country-input";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import { EXPRESS_MAX_SOURCE_BYTES, prepareFreeExpressPhoto } from "@/lib/practitioners/free-express-photo-client";
 import { COACHING_FIELDS, COACHING_GROUPS } from "@/lib/coaching/intake-model";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
@@ -427,6 +428,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
         onChange={event => { setQuestion(event.target.value); setError(""); }} /></label>
       <label className={styles.consent}><input type="checkbox" checked={replyConsent} disabled={busy || !!pending.current}
         onChange={event => setReplyConsent(event.target.checked)} /><span>{t.consent}</span></label>
+      <EnquiryAttributionChoice locale={locale} disabled={busy || !!pending.current} />
       {error && <p role="alert" className={styles.error}>{error}</p>}
       <button className={styles.primary} type="submit" disabled={busy}><ArrowRight size={18} />{busy ? t.saving : t.request}</button>
     </form>}
