@@ -10,6 +10,8 @@ on:
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'scripts/ci-pr-priority.cjs'
+      - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
   workflow_dispatch:
     inputs:
@@ -44,7 +46,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
       - name: Test watchdog decisions without network
-        run: node --test tests/ci-pr-ten-minute-watchdog.test.cjs
+        run: node --test tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs
       - name: Reconcile complete PR inventory; retry transient CI; hand off red source; dispatch guarded merge
         uses: actions/github-script@v7
         env:
@@ -127,6 +129,20 @@ jobs:
               if(after.state!=='active')
                 throw Error('HH_SCHEDULER_REPAIR_NOT_ACTIVE: '+path+' '+after.state);
               results.push({path,before:before.state,after:after.state});
+            }
+            // Manual priority overrides are prepared by a trusted push only;
+            // adding labels later never bypasses required checks or leases.
+            for(const [tier,color,description] of [
+              ['p0','b60205','P0 urgent production/CI incident'],
+              ['p1','fbca04','P1 high-impact product delivery'],
+              ['p2','0e8a16','P2 ordinary planned delivery'],
+              ['p3','c5def5','P3 maintenance or experiment']
+            ]){
+              try {
+                await github.rest.issues.createLabel({
+                  owner,repo,name:'hh:priority:'+tier,color,description
+                });
+              }catch(error){if(error.status!==422)throw error;}
             }
             // workflow_dispatch is a documented GITHUB_TOKEN recursion exception.
             // This is ONE bootstrap per trusted workflow change, not every push.
