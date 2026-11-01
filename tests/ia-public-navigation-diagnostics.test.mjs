@@ -99,3 +99,11 @@ test('mobile menu keeps a 44px touch target at narrow widths', () => {
   assert.doesNotMatch(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*40px/)
   assert.match(css, /\.house-header--services \.site-main-menu-trigger\s*\{\s*width:\s*44px;\s*min-width:\s*44px/)
 })
+
+test('header keyboard acceptance visits visible shop and cart before language', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /visibleHeaderLink/)
+  assert.match(source, /data-nav-item="shop"/)
+  assert.match(source, /data-nav-item="cart"/)
+  assert.match(source, /expect\(visibleHeaderLink\)\.toBeFocused\(\)/)
+})

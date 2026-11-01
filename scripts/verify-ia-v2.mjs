@@ -190,7 +190,14 @@ async function verifyPublicHeaderMatrix(page, engine) {
         // Use the real keyboard sequence; opening details alone does not test
         // the React Escape handler or its focus-return behavior after hydration.
         await cabinetEntry.focus()
-        await cabinetEntry.press('Tab')
+        for (const selector of ['.site-nav-shop-entry[data-nav-item="shop"]', 'a[data-nav-item="cart"]']) {
+          const visibleHeaderLink = header.locator('.site-navigation > ' + selector)
+          if (await visibleHeaderLink.isVisible()) {
+            await page.keyboard.press('Tab')
+            await expect(visibleHeaderLink).toBeFocused()
+          }
+        }
+        await page.keyboard.press('Tab')
         await expect(trigger).toBeFocused()
         await trigger.press('Enter')
         await expect(menu).toHaveJSProperty('open', true)
