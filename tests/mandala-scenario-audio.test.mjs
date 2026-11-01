@@ -99,6 +99,7 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   const studio=read("components/mandala-free-video-studio.tsx");
   const player=read("lib/mandala/local-video-music.ts");
   const pipeline=JSON.parse(read("package.json"));
+  const buildAudio=read("scripts/generate-soft-ocean-melody.mjs");
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
   assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
   assert.match(studio,/availableAudioTracks\.find/);
@@ -106,6 +107,12 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   assert.match(studio,/playQuickTrack\(id\)/);
   assert.match(player,/\/audio\/mandala\/scenarios\//);
   assert.match(player,/startPresetMixAudio/);
-  assert.match(pipeline.scripts.prebuild,/scripts\/generate-scenario-melodies\.mjs/);
-  assert.match(pipeline.scripts.predev,/scripts\/generate-scenario-melodies\.mjs/);
+  for(const stage of ["prebuild","predev"]){
+    assert.match(pipeline.scripts[stage],/scripts\/generate-soft-ocean-melody\.mjs/);
+    assert.doesNotMatch(pipeline.scripts[stage],/scripts\/generate-scenario-melodies\.mjs/,
+      "do not broaden unrelated CI ownership with a root package change");
+  }
+  assert.match(buildAudio,/npm_lifecycle_event === "prebuild"/);
+  assert.match(buildAudio,/npm_lifecycle_event === "predev"/);
+  assert.match(buildAudio,/buildScenarioMusic\(\)/);
 });
