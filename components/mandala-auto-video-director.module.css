@@ -141,3 +141,8 @@
  .storyChoices button small,.shots span{font-size:9px}
  .goalPanel .goalChoices button{font-size:11px}
 }
+
+/* Owner goal pictograms remain inline, aligned and visible at 320px. */
+.goalPanel .goalChoices button{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.goalPanel .goalChoices button svg{flex:none;width:17px;height:17px}
+@media(max-width:759px){.goalPanel .goalsTitle{display:none}}
