@@ -20,6 +20,10 @@ function harness({ locale = 'en', expanded = false, review = false, fault = null
     if (name === 'react') return { useState: initial => [initial, () => {}] }
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
     if (name === '@/lib/assessments/personal-guidance') return { nextPersonalRecommendation: () => ({}) }
+    // The disclosure does not compute report recommendations until explicit opt-in.
+    // Keep every source dependency explicit: unexpected imports still fail closed.
+    if (name === '@/lib/profile/portrait-recommendations') return { buildPortraitRecommendations: () => { throw Error('Picker disclosure must not compute portrait recommendations') } }
+    if (name === './personal-axis-matches') return { PersonalAxisMatches: 'PersonalAxisMatches' }
     if (name.endsWith('.css')) return { default: new Proxy({}, { get: (_, key) => String(key) }) }
     if (name === './client-report-actions') return { ClientReportActions: 'ClientReportActions' }
     assert.equal(name, 'lucide-react'); return {}

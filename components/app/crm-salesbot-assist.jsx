@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import {Sparkles} from 'lucide-react'
 import { SALESBOT_TOPICS } from '../../lib/crm/salesbot-flow.mjs'
 import {
   approvedSalesbotOperatorFlows, salesbotOperatorSuggestions,
@@ -43,7 +44,7 @@ const COPY = {
   },
 }
 
-export default function CrmSalesbotAssist({ accountId, threadId, locale = 'en', disabled = false, onInsert }) {
+export default function CrmSalesbotAssist({ accountId, threadId, locale = 'en', disabled = false, onInsert, iconOnly = false }) {
   const lang = COPY[locale] ? locale : 'en'
   const t = COPY[lang]
   const [open, setOpen] = useState(false)
@@ -153,9 +154,12 @@ export default function CrmSalesbotAssist({ accountId, threadId, locale = 'en', 
 
   const suggestions = salesbotOperatorSuggestions(preview, lang)
   return <div className={styles.root} data-salesbot-operator-mode="manual-only">
-    <button type="button" className={styles.launcher} aria-expanded={open}
-      aria-label={t.title} disabled={disabled || !accountId || !threadId}
-      onClick={show}>{open ? t.close : t.open}</button>
+    <button type="button" className={iconOnly?styles.launcherIcon:styles.launcher}
+      aria-expanded={open} aria-label={t.title} title={t.title}
+      disabled={disabled || !accountId || !threadId}
+      onClick={show}>
+      {iconOnly?<Sparkles size={20} aria-hidden="true"/>:open?t.close:t.open}
+    </button>
     {open && <div className={styles.panel} role="region" aria-label={t.title}>
       <p className={styles.hint}>{t.hint}</p>
       {busy && <p role="status">{t.working}</p>}

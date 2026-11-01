@@ -72,7 +72,10 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
   assert.match(player,/onFinish\|\|onClose/)
-  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
+  assert.match(today,/const closeLessonPlayer=\(\)=>\{setQuestOpen\(false\);setReviewLesson\(null\)\}/)
+  assert.match(today,/const finishLessonPlayer=\(\)=>\{closeLessonPlayer\(\);setView\('path'\)\}/)
+  assert.match(today,/onClose=\{closeLessonPlayer\}/)
+  assert.match(today,/onFinish=\{finishLessonPlayer\}/)
 })
 
 test('EN/RU mobile course stays keyboard accessible with a visible bottom action',()=>{
