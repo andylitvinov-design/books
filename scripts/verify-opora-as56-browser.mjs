@@ -3,9 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import { oporaAs60VariedDay } from '../lib/inner-growth/opora-as60-varied-content.js'
-import { OPORA_EXPERIENCE_SCENES, OPORA_EXPERIENCE_CHANNELS } from '../lib/inner-growth/opora-as60-integrated-journey.js'
+import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -41,12 +39,8 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    // The unsaved V7 lesson uses the real AS-6.0 variety edition, not the
-    // historically pinned AS-5.6 text. Test exactly what the UI renders.
-    const daily = oporaAs60VariedDay(5,locale)
-    assert.ok(daily?.purpose && daily?.purposeTitle && daily?.practice && daily?.result)
-    const t = words[locale], brief = daily.practice
-    const support = {title:daily.purposeTitle,body:daily.purpose}
+    const t = words[locale], brief = oporaExperienceGuide(5, locale)
+    const support = oporaExperienceSupport(5,locale)
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
@@ -121,17 +115,9 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(daily.result)
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
-      // The current V7 journey includes four optional experiential channels
-      // before the main practice, verified as real mounted content.
-      for (const [index,screen] of OPORA_EXPERIENCE_SCENES.slice(0,4).entries()) {
-        await click(t.next)
-        await expect(page.locator('[data-opora-current-screen="'+screen+'"]')).toBeVisible()
-        await expect(page.locator('[data-opora-experience-channel="'+OPORA_EXPERIENCE_CHANNELS[index]+'"]')).toBeVisible()
-        await assertBounds(screen)
-      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -162,11 +148,8 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // After the practice comes one optional ritual screen.
-      await expect(page.locator('[data-opora-current-screen="'+OPORA_EXPERIENCE_SCENES[4]+'"]')).toBeVisible()
-      await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.next) // Feel; navigation closes optional original guidance.
-      await expect(page.locator('[data-opora-current-screen="feel"]')).toBeVisible()
+      await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
       await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
       await assertNeutral()

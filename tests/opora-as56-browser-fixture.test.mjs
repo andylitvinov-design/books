@@ -44,9 +44,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
     'assert.equal(state.finalData, state.initialData', 'await click(t.previous)', 'await click(t.neutral)',
     "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 24)']) assert.ok(browser.includes(fragment), fragment)
   assert.doesNotMatch(browser, /route\.continue|request\.post|\.request\.fetch|createServer|process\.env\.[A-Z_]*(?:TOKEN|SECRET|PASSWORD)/)
-  assert.match(workflow, /browser: \$\{\{ fromJSON\(/)
-  assert.ok(workflow.includes("fromJSON(github.event_name == 'pull_request' && '[\"chromium\"]' || '[\"chromium\",\"webkit\"]')"),
-    'PR checks Chromium quickly; full workflow dispatch retains real WebKit coverage')
+  assert.match(workflow, /browser: \[chromium, webkit\]/)
   assert.match(workflow, /node scripts\/verify-opora-as56-browser\.mjs/)
   assert.match(workflow, /path: artifacts\/opora-as56-mobile\//)
 })

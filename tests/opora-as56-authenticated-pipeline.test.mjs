@@ -21,7 +21,7 @@ async function click(player, label) {
 }
 
 for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
-  test(`AS-5.6 ${locale} day ${day}: current five-channel experience saves an exact V7 lesson through the owner repository`, async () => {
+  test(`AS-5.6 ${locale} day ${day}: actual five-moment player saves an exact V7 lesson through the owner repository`, async () => {
     const owner = repositoryHarness({ freshPhase: true })
     const cycle = await owner.create('AS2')
     assert.equal(cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -48,7 +48,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         // The invitation requires an affirmative answer before the first action.
         await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
         assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-practice-overview']===1))
-        await advanceOporaTo(player,'practice',t.next) // AS-6.0 now includes four optional channels after goal preview.
+        await click(player,t.next) // Goal preview -> actual practice.
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')
@@ -59,8 +59,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       }
       if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
-      // Complete the fifth new optional AS-6.0 channel before reporting experience.
-      await advanceOporaTo(player,'feel',t.next)
+      await click(player,t.next)
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
