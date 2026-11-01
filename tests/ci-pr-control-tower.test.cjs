@@ -1,5 +1,12 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
+test('Control Tower skips canceled/skipped callbacks while preserving separate PR contract lane',()=>{
+ const s=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(s.includes("github.event.workflow_run.conclusion != 'cancelled'"));
+ assert.ok(s.includes("github.event.workflow_run.conclusion != 'skipped'"));
+ assert.ok(s.includes("github.event_name != 'workflow_run'"));
+ assert.ok(s.includes("group: hh-control-tower-${{ github.event_name == 'pull_request'"));
+});
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run}=require('../scripts/ci-pr-queue-dispatcher.cjs');

@@ -62,9 +62,15 @@ jobs:
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --test tests/ci-pr-control-tower.test.cjs
   dispatch:
+    # Ignore non-actionable upstream completions without reserving a runner.
+    # An independent per-PR contract concurrency lane is retained above.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
-      github.ref == 'refs/heads/codex/bootstrap-books'
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.status == 'completed' &&
+        github.event.workflow_run.conclusion != 'cancelled' &&
+        github.event.workflow_run.conclusion != 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
