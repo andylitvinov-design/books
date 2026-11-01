@@ -5,6 +5,10 @@ on:
     paths:
       - 'capacitor.holistic-house.config.json'
       - 'scripts/prepare-holistic-house-native.mjs'
+      - 'scripts/prepare-holistic-house-play-release.mjs'
+      - '.github/workflows/holistic-house-play-aab.yml'
+      - 'tests/holistic-house-play-release.test.mjs'
+      - 'docs/releases/HOLISTIC_HOUSE_GOOGLE_PLAY_RELEASE_PROGRAM_20261027.md'
       - 'scripts/brand-hh-native-artwork.mjs'
       - '.github/workflows/holistic-house-native.yml'
       - 'tests/holistic-house-native-build.test.mjs'
@@ -37,6 +41,9 @@ on:
       - 'components/native-**'
       - 'capacitor.config.json'
       - 'capacitor.holistic-house.config.json'
+      - 'scripts/prepare-holistic-house-play-release.mjs'
+      - '.github/workflows/holistic-house-play-aab.yml'
+      - 'tests/holistic-house-play-release.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -64,7 +71,7 @@ jobs:
       - name: Verify native source, consent, ownership and account isolation
         run: |
           npm run native:check
-          node --test tests/holistic-house-native-build.test.mjs
+          node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
           node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
       - name: Report native contract job completion
         if: always()
@@ -106,7 +113,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
@@ -158,6 +165,33 @@ jobs:
             hh-cap-sync-android.log
             hh-gradle-android.log
 
+      # Manual-only disposable key: preserve fast PR CI and normal production pushes.
+      - name: API 36 signed AAB and APK compiler smoke (disposable key, never published)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          HH_PLAY_VERSION_CODE: '2'
+          HH_PLAY_VERSION_NAME: '0.0.0-ci'
+          HH_ANDROID_KEYSTORE_PASSWORD: 'ci-only-not-a-production-credential'
+          HH_ANDROID_KEY_ALIAS: 'ci-hh-test'
+          HH_ANDROID_KEY_PASSWORD: 'ci-only-not-a-production-credential'
+        run: |
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
+          export HH_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/hh-ci-disposable.jks"
+          trap 'rm -f "$HH_ANDROID_KEYSTORE_PATH" android/app/hh-play-signing.gradle' EXIT
+          keytool -genkeypair -noprompt -keystore "$HH_ANDROID_KEYSTORE_PATH" \
+            -storepass "$HH_ANDROID_KEYSTORE_PASSWORD" -keypass "$HH_ANDROID_KEY_PASSWORD" \
+            -alias "$HH_ANDROID_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=CI Only, O=Holistic House Test, C=CA"
+          node scripts/prepare-holistic-house-play-release.mjs
+          (cd android && ./gradlew --no-daemon bundleRelease assembleRelease)
+          aab=android/app/build/outputs/bundle/release/app-release.aab
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$aab" && test -s "$apk"
+          jarsigner -verify "$aab"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep -F "package: name='com.holistichouse.app'"
+          echo "API 36 disposable signature, NO store upload or artifact"
+
   ios-simulator:
     # Full native builds run on verified production pushes or manual dispatch only.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -183,7 +217,7 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/push-notifications@7.0.1
       - name: Verify native source contracts before staged branding
         if: ${{ github.event_name != 'pull_request' }}
-        run: node --test tests/holistic-house-native-build.test.mjs
+        run: node --test tests/holistic-house-native-build.test.mjs tests/holistic-house-play-release.test.mjs
       - name: Verify native push privacy, consent and transport
         if: ${{ github.event_name != 'pull_request' }}
         run: node --conditions=react-server --test tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs
