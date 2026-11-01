@@ -10,12 +10,12 @@
       "gentle": {
         "self": [
           "Мне можно",
-          "Я могу",
+          "Я разрешаю себе",
           "Позволяю себе"
         ],
         "support": [
           "Тебе можно",
-          "Ты можешь",
+          "Ты можешь позволить себе",
           "Ты вправе"
         ]
       },
@@ -60,12 +60,12 @@
       "gentle": {
         "self": [
           "I may",
-          "I can",
+          "I feel free to",
           "I allow myself to"
         ],
         "support": [
           "You may",
-          "You can",
+          "You are free to",
           "You have room to"
         ]
       },
@@ -109,12 +109,12 @@
     "es": {
       "gentle": {
         "self": [
-          "Puedo",
+          "Me doy espacio para",
           "Me permito",
           "Me doy permiso para"
         ],
         "support": [
-          "Puedes",
+          "Puedes darte permiso para",
           "Te permites",
           "Tienes derecho a"
         ]

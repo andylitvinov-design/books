@@ -95,3 +95,18 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(studio,/onOpenAudio=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
 });
+
+test("each tone keeps distinct wording for the same selected story/idea",()=>{
+  for(const scenario of VIDEO_GOAL_SCENARIOS)
+    for(const locale of VIDEO_PHRASE_LOCALES){
+      for(const idea of listVideoPhraseIdeas(scenario.id,locale))
+        for(const speaker of VIDEO_PHRASE_SPEAKERS)
+          for(const length of VIDEO_PHRASE_LENGTHS){
+            const all=VIDEO_PHRASE_TONES.flatMap(tone=>listPreparedVideoPhrases({
+              scenarioId:scenario.id,ideaId:idea.id,locale,tone,speaker,length,
+            }).map(x=>x.text));
+            assert.equal(new Set(all).size,12,
+              `duplicate tone phrase for ${scenario.id}/${idea.id}/${locale}/${speaker}/${length}`);
+          }
+    }
+});

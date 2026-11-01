@@ -22,17 +22,18 @@ Use #2949 as the single authoritative 5 × 6 × 4 category/topic/scenario tree. 
 
 **Total:** 5 categories, 30 topics, 120 scenarios, 480 ideas × 3 locales × 4 tones × 2 addresses × 2 lengths × 3 variants = **69,120 materialized editorial records**.
 
-For language and editorial nuance, topic actions are reviewed in one multilingual JSON file: `data/video-catalog/video-phrase-actions-v1.json`. Tone/address/closing fragments are in `data/video-catalog/video-phrase-templates-v1.json`. The deterministic generator `lib/mandala/video-phrase-catalog.mjs` unifies them with #2949's scenario IDs. There is no AI call, prompt or external API needed to show ready-made strings. Four ideas are **topic-specific**; every story receives four action ideas with story-scoped stable IDs and story-specific arc endings. The distinct scenario title and visually associated idea are pulled from #2949. This deliberately avoids hallucinating separate medical effects or four fully unique clinical interventions for every story.
+For language and editorial nuance, topic actions are reviewed in one multilingual JSON file: `data/video-catalog/video-phrase-actions-v1.json`. Tone/address/closing fragments are in `data/video-catalog/video-phrase-templates-v1.json`. The deterministic generator `lib/mandala/video-phrase-catalog.mjs` unifies them with #2949's scenario IDs. There is no AI call, prompt or external API needed to show ready-made strings. Four ideas are **topic-specific**; every story receives four action ideas with story-scoped stable IDs and story-specific arc endings. The ideas are not claimed to be four completely new therapeutic approaches for each of the 120 scenarios. The distinct scenario title and visually associated idea are pulled from #2949. This deliberately avoids hallucinating separate medical effects or four fully unique clinical interventions for every story.
 
 ## Live database already populated
 
-The additive SQL in `sql/hh-video-phrase-catalog-v1-20261101.sql` was applied through Supabase to existing **holistichouse** project `shervdixkaxurnaecioe`. PostgreSQL table: `public.hh_video_phrase_catalog_v1`.
+The additive SQL in `sql/hh-video-phrase-catalog-v1-20261101.sql` and follow-up `sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql` were applied through Supabase to existing **holistichouse** project `shervdixkaxurnaecioe`. PostgreSQL table: `public.hh_video_phrase_catalog_v1`.
 
 Verified query outputs on 2026-11-01:
 - `COUNT(*) = 69120`; distinct 5 categories / 30 topics / 120 scenarios / 480 ideas / 3 locales.
 - Policy uses RLS and only SELECT grant to `anon` and `authenticated`. Neither has INSERT/UPDATE rights.
 - Composite index `hh_video_phrase_filter_v1_idx` supports `scenario_id,locale,idea_id,tone,speaker,phrase_length,variant`. A sample indexed `EXPLAIN ANALYZE` returned three records with ~0.1 ms SQL execution, **not** a promise of end-to-end user latency.
 - No visitor prompt, health result, contact details, user ID, private voice or generated video is stored in this table.
+- Extra tone-quality sweep: earlier gentle/confident copy contained 5,760 duplicated rows when switching tone. The additive `refine_hh_video_phrase_tone_overlap_v1` data migration corrected those six localized overlaps. **Verified: 69,120 distinct phrases within their own scenario/locale, zero duplicate groups for a given scenario + idea + locale + speaker + length.** Original schema seed and the follow-up patch are both committed so fresh databases and existing databases converge on the same editorial copy.
 
 Query sample:
 
