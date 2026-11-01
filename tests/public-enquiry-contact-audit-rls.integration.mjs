@@ -52,13 +52,16 @@ test('contact disclosure audit enforces owner and rejects another account', {ski
   const {seal,openSealed}=await import('../lib/app/crypto.js')
   const {requireUUID,AppError}=await import('../lib/assessments/contracts.js')
   const {transaction,closeDatabase}=await import('../lib/app/database.js')
-  const {publicEnquiryReplyContact}=await import('../lib/practitioners/public-enquiry-reply-links.mjs')
+  const {publicEnquiryReplyContact,publicEnquiryReplyHandoffs}=await import('../lib/practitioners/public-enquiry-reply-links.mjs')
+  const {relayContactView,redactRelayContacts}=await import('../lib/practitioners/relay-privacy.mjs')
   const config={databaseUrl:raw,test:true,encryptionKey:Buffer.alloc(32,7),encryptionKeyId:'synthetic'}
   const ciphertext=seal({submittedByVisitor:true,replyConsent:'website_reply_only_v1',email:'guest@example.test',phone:''},
    {accountId:practitioner,recordId:enquiry,field:'public_lead.contact'},config)
+  const description=seal('Synthetic client enquiry',
+   {accountId:practitioner,recordId:enquiry,field:'public_lead.message'},config)
   await db.query(`insert into app.public_service_enquiries(id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash)
    values($1,$2,'Synthetic','/en/services','en','HH-123456789ABC',$3,$4,$5,$6)`,
-   [enquiry,practitioner,'x'.repeat(90),ciphertext,'66666666-6666-4666-8666-666666666666','a'.repeat(64)])
+   [enquiry,practitioner,description,ciphertext,'66666666-6666-4666-8666-666666666666','a'.repeat(64)])
   const otherCiphertext=seal({submittedByVisitor:true,replyConsent:'website_reply_only_v1',email:'other@example.test',phone:''},
    {accountId:otherPractitioner,recordId:otherEnquiry,field:'public_lead.contact'},config)
   await db.query(`insert into app.public_service_enquiries(id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash)
@@ -89,6 +92,53 @@ test('contact disclosure audit enforces owner and rejects another account', {ski
   await assert.rejects(reveal(config,actor(owner,true),enquiry),e=>e.code==='NOT_FOUND')
   await db.query('update app.public_service_enquiries set contact_ciphertext=$1 where id=$2',[ciphertext,enquiry])
   assert.equal(Number((await db.query('select count(*) as n from app.public_enquiry_contact_disclosures')).rows[0].n),1)
+
+  // PostgreSQL-backed regression: an email-only visitor enquiry gets a
+  // DIFFERENT WhatsApp number entered manually by a practitioner. Exercise
+  // the real service mutation, operator authorization and handoff together.
+  const mutationSource=readFileSync(new URL('../lib/practitioners/public-service-enquiry.js',import.meta.url),'utf8')
+   .replace(/^import .*$/gm,'').replace(/export /g,'')+'; updatePublicServiceEnquiry'
+  const updateEnquiry=runInNewContext(mutationSource,{
+   AppError,requireUUID,transaction,randomUUID,seal,openSealed,
+   PRACTITIONER_ID:practitioner,relayContactView,redactRelayContacts,
+   BOOKABLE_SKUS:{},validConfirmedSlot:()=>null,
+  })
+  const revision=(await db.query('select revision from app.public_service_enquiries where id=$1',[enquiry])).rows[0].revision
+  await transaction(config,actor(owner,true),tx=>updateEnquiry(tx,practitioner,enquiry,{
+   action:'record_contact',channel:'whatsapp',address:'+14165550123',expectedRevision:revision,
+  },config))
+  const changed=(await db.query('select contact_ciphertext,contact_channel from app.public_service_enquiries where id=$1',[enquiry])).rows[0]
+  assert.equal(changed.contact_channel,'whatsapp')
+  const afterEdit=openSealed(changed.contact_ciphertext,
+   {accountId:practitioner,recordId:enquiry,field:'public_lead.contact'},config)
+  assert.equal(afterEdit.email,'guest@example.test')
+  assert.equal(afterEdit.phone,'+14165550123')
+  assert.equal(afterEdit.submittedByVisitor,false)
+  assert.equal(afterEdit.replyConsent,null)
+  await assert.rejects(reveal(config,actor(owner,true),enquiry),e=>e.code==='NOT_FOUND')
+  const deniedContact=publicEnquiryReplyContact(afterEdit)
+  assert.equal(deniedContact,null)
+  const deniedLinks=publicEnquiryReplyHandoffs(deniedContact,'HH-123456789ABC','Thank you')
+  assert.equal(deniedLinks.emailUrl,null)
+  assert.equal(deniedLinks.whatsAppUrl,null)
+  assert.equal(Number((await db.query('select count(*) as n from app.public_enquiry_contact_disclosures')).rows[0].n),1)
+
+  // Legacy manually rewritten ciphertext might retain old visitor consent.
+  // The real SQL guard denies it, with neither audit nor reply destination.
+  const legacyCiphertext=seal({
+   submittedByVisitor:true,replyConsent:'website_reply_only_v1',
+   email:'guest@example.test',phone:'+14165550123',
+  },{accountId:practitioner,recordId:enquiry,field:'public_lead.contact'},config)
+  await db.query("update app.public_service_enquiries set contact_ciphertext=$1,contact_channel='whatsapp' where id=$2",[legacyCiphertext,enquiry])
+  await assert.rejects(reveal(config,actor(owner,true),enquiry),e=>e.code==='NOT_FOUND')
+  const legacyResult=publicEnquiryReplyHandoffs(null,'HH-123456789ABC','Thank you')
+  assert.equal(legacyResult.whatsAppUrl,null)
+  assert.equal(legacyResult.emailUrl,null)
+  assert.equal(Number((await db.query('select count(*) as n from app.public_enquiry_contact_disclosures')).rows[0].n),1)
+
+  // Restore the genuinely submitted visitor contact for the grant-failure
+  // and direct RLS assertions below.
+  await db.query('update app.public_service_enquiries set contact_ciphertext=$1,contact_channel=null where id=$2',[ciphertext,enquiry])
   await db.query('revoke insert on app.public_enquiry_contact_disclosures from hh_app_backend')
   await assert.rejects(reveal(config,actor(owner,true),enquiry),e=>e.code==='42501')
   assert.equal(Number((await db.query('select count(*) as n from app.public_enquiry_contact_disclosures')).rows[0].n),1)
