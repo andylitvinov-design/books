@@ -383,30 +383,34 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('required Public Services PR gate follows exact-head risk without suppressing browser QA', () => {
+test('Public Services PR fast gate keeps consent contracts; full real browsers remain manual on exact ref', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
+  assert.match(src, /^  public-services:$/m);
   for (const [name, output] of [
     ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
     ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
+    ['Initialize isolated synthetic database for real public reads', 'build'],
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
-    assert.ok(step, 'missing risk-scoped QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
-      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
+    assert.ok(step, 'missing full manual QA step: ' + name);
+    assert.ok(step.startsWith("        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs." + output + " == 'true' }}\n"),
+      'PRs must not spend another 12 minutes on duplicate browsers: ' + name);
   }
-  assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
+  assert.match(src, /if: always\(\) && github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs\.build == 'true'/);
+  assert.match(src, /Fast public consent, service and Reiki contract tests/);
+  assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
+  assert.match(src, /Real production build, browser and private synthetic DB acceptance NOT run on this PR/);
+  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
     const plan = planPublicServicesChangedPaths([risky]);
     assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
-      ['full', true, true, 'all'], 'runtime/checkout risk cannot skip browsers: ' + risky);
+      ['full', true, true, 'all'], 'manual release QA must keep all cases for: ' + risky);
   }
   assert.equal(planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']).browser, false);
-  assert.ok(src.includes("if: github.event_name == 'pull_request'"));
-  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });
 
