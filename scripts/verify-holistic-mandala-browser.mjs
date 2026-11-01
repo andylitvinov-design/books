@@ -118,6 +118,40 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
+        // A shared direct link to the Audio picker must reveal the Music
+        // workspace instead of leaving the only picker in closed advanced
+        // settings. Run once per real engine at the owner iPhone width.
+        if(locale==="ru"&&width===390){
+          const deepPage=await context.newPage();
+          try{
+            const deepResponse=await deepPage.goto(url+"#video-audio",{
+              waitUntil:"domcontentloaded",timeout:90000,
+            });
+            assert.equal(deepResponse?.status(),200,"Audio deep link must serve the canonical page");
+            await deepPage.locator("[data-mandala-free-video]").waitFor({
+              state:"visible",timeout:30000,
+            });
+            await expect(deepPage.locator('[data-video-quick-control="audio"]'))
+              .toHaveAttribute("aria-pressed","true",{timeout:20000});
+            const audioPane=deepPage.locator("[data-video-audio-section]");
+            await expect(audioPane).toBeVisible();
+            assert.equal(await audioPane.count(),1,"one canonical Audio picker after deep link");
+            assert.equal(await audioPane.locator("[data-video-audio-mic]").count(),1,
+              "deep linking cannot instantiate a second voice recorder");
+            const audioGeometry=await audioPane.evaluate(element=>({
+              rect:element.getBoundingClientRect().toJSON(),
+              viewport:document.documentElement.clientWidth,
+              pageWidth:document.documentElement.scrollWidth,
+            }));
+            assert.ok(audioGeometry.rect.width>260 &&
+              audioGeometry.rect.width<=audioGeometry.viewport+2 &&
+              audioGeometry.pageWidth<=audioGeometry.viewport+2,
+              "Audio deep link mobile overflow: "+JSON.stringify(audioGeometry));
+            mkdirSync("artifacts/mandala-audio",{recursive:true});
+            await captureSyntheticOverview(deepPage,audioPane,
+              "artifacts/mandala-audio/"+engine+"-ru-390-deep-link.png");
+          }finally{await deepPage.close();}
+        }
 
         // First free video: real exported moving media in both engines.
         const firstStart=page.locator("[data-first-free-video]");
