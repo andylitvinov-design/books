@@ -792,5 +792,6 @@ test("Food storyboard is local-only, uses drawn frames and valid shot IDs in por
   assert.equal(v.aiMediaGenerated,false);
   assert.equal(v.plan.paidRenderApproved,false);
   assert.match(v.limitationNote,/moving drawn food illustrations/);
-  assert.ok(v.plan.shots.slice(0,4).every(shot=>shot.providerPrompt.includes("NOT a filmed dish")));
+  assert.ok(v.plan.shots.filter(shot=>shot.sceneId.startsWith("food-"))
+    .every(shot=>shot.providerPrompt.includes("NOT a filmed dish")));
 });
