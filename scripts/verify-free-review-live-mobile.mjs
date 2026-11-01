@@ -323,6 +323,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           await enquiry.locator('input[type="tel"]').focus();
           await page.keyboard.press("Escape");
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
           await reveal.click();
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");

@@ -29,3 +29,7 @@ assets/documents/report-coast-cover.jpg
 /artifacts/
 /playwright-report/
 /test-results/
+
+# First-party scenario MP3 performances are reproducibly synthesized at build.
+# Commit the score/metadata, not ~75 MB of derived binaries.
+/public/audio/mandala/scenarios/

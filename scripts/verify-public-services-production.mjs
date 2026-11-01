@@ -582,7 +582,14 @@ try {
             await expect(book).toHaveCount(1);
             await book.click();
             await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
-            await expect(pricing.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveCount(1);
+            // Reply permission is required; source analytics remains independent and optional.
+            const contactStep = pricing.locator('[data-booking-step="contact"]');
+            await expect(contactStep.locator('input[type="checkbox"][required]')).toHaveCount(1);
+            await expect(contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]')).toHaveCount(1);
+            assert.equal(await contactStep.locator('input[type="checkbox"][required]').isChecked(), false,
+              "Contact reply permission must not be preselected");
+            assert.equal(await contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').isChecked(), false,
+              "Enquiry source attribution must be independently opted into");
             assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
               "No cart or payment method before a server-confirmed booking");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
