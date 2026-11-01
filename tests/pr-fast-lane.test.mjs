@@ -844,17 +844,22 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
-test('native auto-merge is requested from trusted base for ready same-repository PRs', () => {
+test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
   const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.match(source, /pull_request_target:/);
   assert.match(source, /pull-requests: write/);
   assert.match(source, /head\.repo\.full_name == github\.repository/);
   assert.match(source, /draft == false/);
-  assert.match(source, /gh pr merge .*--auto --squash/);
+  assert.ok(source.includes('PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}'));
+  // A parent with an open child (even Draft) must retain its ancestry.
+  assert.ok(source.includes('gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1'));
+  assert.match(source, /if ! stacked_children=/, 'failed child lookup must fail closed');
+  assert.match(source, /0\) merge_option=--squash; export HH_EXPECTED_MERGE_METHOD=SQUASH/);
+  assert.match(source, /1\) merge_option=--merge; export HH_EXPECTED_MERGE_METHOD=MERGE/);
+  assert.ok(source.includes('gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD"'));
   assert.match(source, /attempt<=3/);
   assert.match(source, /Unable to determine if workflow can be created or updated due to timeout/);
-  assert.match(source, /--match-head-commit "\$PR_HEAD"/);
-  assert.match(source, /\.headRefOid == env\.PR_HEAD and \.autoMergeRequest != null/);
+  assert.ok(source.includes('.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD'));
   assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
 });
 

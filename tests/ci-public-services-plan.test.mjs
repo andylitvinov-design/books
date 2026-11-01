@@ -587,7 +587,9 @@ test('browser CI verifies signed-out 401 responses and rejects unmocked API writ
     "assert.equal(response.status(), 401",
     'assert.deepEqual(await response.json(), {error:code})',
     "route.abort()",
-    "assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry)), [], 'Unexpected browser console errors')"
+    'blockedEventErrors.length <= blockedServiceEvents',
+    "entry.path === '/api/marketplace/service-event'",
+    "assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry) && !blockedEventErrors.includes(entry)), [], 'Unexpected browser console errors')"
   ]) assert.ok(source.includes(guard),'Missing isolated runtime safety condition: '+guard);
   assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
     'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');

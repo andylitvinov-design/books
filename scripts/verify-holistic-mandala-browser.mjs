@@ -1786,6 +1786,16 @@ const runEngine = async ([engine, browserType]) => {
             undefined,{timeout:15000});
           assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
             "Auto Director reuses the only live editable video stage");
+          const selectedSources=await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source")));
+          await workspaceNav.locator('[data-video-quick-control="video"]').click();
+          // The legacy quick-duration control is intentionally in a collapsed
+          // details panel. Exercise the actually visible Video workspace button.
+          await page.locator('[data-video-duration="15"]').click();
+          await expect(page.locator('[data-video-duration="15"]')).toHaveAttribute("aria-pressed","true");
+          assert.deepEqual(await page.locator("[data-free-film-source]").evaluateAll(
+            nodes=>nodes.map(node=>node.getAttribute("data-free-film-source"))),selectedSources,
+            "duration changes must retain the four selected MP4 sources");
         }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;

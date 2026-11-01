@@ -17,11 +17,18 @@ await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
 const diagnostics = { runtime: "production build; isolated synthetic database", console: [], pageErrors: [], signedOutResponses: {}, devIssueOverlay: false };
+let blockedServiceEvents = 0;
 let failure;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   // Reject unmocked writes; synthetic page-level fixtures may fulfill first.
-  await context.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+  await context.route('**/api/**', route => {
+    const request = route.request();
+    if (['GET', 'HEAD'].includes(request.method())) return route.continue();
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname === '/api/marketplace/service-event' && request.method() === 'POST') blockedServiceEvents++;
+    return route.abort();
+  });
   const signedOutCodes = {
     '/api/service-enquiries/booking-status': 'BOOKING_PROOF_REQUIRED',
     '/api/app/bootstrap': 'SIGN_IN_REQUIRED',
@@ -720,7 +727,10 @@ try {
     assert.ok(expectedSignedOutErrors.filter(entry => entry.path === path).length <= (diagnostics.signedOutResponses[path] || 0),
       'Every expected signed-out console error must correspond to a real HTTP 401 response: ' + path);
   }
-  assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry)), [], 'Unexpected browser console errors');
+  const blockedEventErrors = consoleErrors.filter(entry => entry.path === '/api/marketplace/service-event' &&
+    entry.text === 'Failed to load resource: net::ERR_FAILED');
+  assert.ok(blockedEventErrors.length <= blockedServiceEvents, 'Only deliberately aborted analytics requests may explain their console errors');
+  assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry) && !blockedEventErrors.includes(entry)), [], 'Unexpected browser console errors');
   await context.close();
 } catch (error) {
   failure = error;

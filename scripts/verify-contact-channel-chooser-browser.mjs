@@ -60,7 +60,22 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     if (await nameDisclosure.getAttribute('open') === null) {
       await nameDisclosure.locator('summary').click();
     }
-    await nameInput.waitFor({state:"visible",timeout:12000});
+    try {
+      await nameInput.waitFor({state:"visible",timeout:12000});
+    } catch (error) {
+      const state = await nameInput.evaluate(input => {
+        const chain = [];
+        for (let node = input; node && chain.length < 8; node = node.parentElement) {
+          const rect = node.getBoundingClientRect();
+          const style = getComputedStyle(node);
+          chain.push({tag:node.tagName, hidden:node.hidden, open:node.tagName === 'DETAILS' ? node.open : undefined,
+            display:style.display, visibility:style.visibility, width:Math.round(rect.width), height:Math.round(rect.height)});
+        }
+        return chain;
+      }).catch(() => []);
+      console.error('Optional name visibility diagnostic:', JSON.stringify({locale, chain:state}));
+      throw error;
+    }
     await nameInput.fill("QA Visitor");
     assert.equal(await nameDisclosure.getAttribute("open"), "",
       "The optional name field must remain explicitly open");
