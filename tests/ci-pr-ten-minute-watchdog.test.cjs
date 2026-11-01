@@ -359,3 +359,14 @@ test('incomplete Core history fails closed before updating branch',async()=>{
     limited:async(_,fn)=>fn()}),false);
   assert.equal(writes,0);
 });
+
+test('hourly full-inventory reads use per-repo token; owner PAT is reserved for protected merges', () => {
+  const {readFileSync} = require('node:fs');
+  const {join} = require('node:path');
+  const source = readFileSync(join(__dirname,'..','.github','workflows','hh-pr-full-inventory.yml'),'utf8');
+  assert.match(source,/^  pull-requests: read$/m);
+  assert.match(source,/^          github-token: \$\\{\\{ github\\.token \\}\\}$/m);
+  assert.match(source,/^          GH_TOKEN: \$\\{\\{ secrets\\.HH_AUTOMERGE_TOKEN \\|\\| github\\.token \\}\\}$/m);
+  assert.doesNotMatch(source,/github-token: \$\\{\\{ secrets\\.HH_AUTOMERGE_TOKEN/);
+  assert.match(source,/if\\(token\\)/);
+});
