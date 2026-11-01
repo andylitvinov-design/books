@@ -114,7 +114,7 @@ test("resume failure returns no fake playing session and restores iOS routing", 
 });
 
 test("recording negotiates a real AAC/Opus mux and never silently removes a selected track", () => {
-  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\)\)/);
+  assert.match(studioSource, /recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
   assert.match(studioSource, /mp4a\.40\.2/);
   assert.match(studioSource, /vp8,opus/);
   assert.match(studioSource, /stream\.addTrack\(musicSession\.track\)/);
@@ -123,7 +123,7 @@ test("recording negotiates a real AAC/Opus mux and never silently removes a sele
   assert.doesNotMatch(studioSource, /stream\.getAudioTracks\(\)\.forEach\(track=>\{stream\?\.removeTrack/);
   assert.match(studioSource, /data-video-audio-player/);
   assert.match(studioSource, /presetAudioUrl\(music\)/);
-  assert.match(studioSource, /startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
+  assert.match(studioSource, /startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
   assert.match(studioSource, /data-video-audio-upload/);
   assert.match(studioSource, /data-video-music-preview/);
   assert.match(studioSource, /stopHiddenPreview/);

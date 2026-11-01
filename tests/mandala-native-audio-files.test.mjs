@@ -48,14 +48,21 @@ function loadAudio({decodeFails=false}={}) {
   }
   const audioSession={type:"ambient"};
   const exports={};
-  new Function("exports","window","navigator","Blob",result.outputText)(
-    exports,{AudioContext:Context},{audioSession},Blob);
+  const audioFetch=async (url,options)=>{
+    steps.push("wav-get:"+url);
+    assert.match(url,/^\/audio\/mandala\/[a-z-]+\.wav$/,"only own music masters");
+    assert.equal(options?.cache,"force-cache");
+    const bytes=readFileSync(new URL("../public"+url,import.meta.url));
+    return {ok:true,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+  };
+  new Function("exports","window","navigator","Blob","fetch",result.outputText)(
+    exports,{AudioContext:Context},{audioSession},Blob,audioFetch);
   return {api:exports,contexts,steps,audioSession};
 }
 
-test("all five built-in tones create playable PCM WAV files with actual nonzero sound",async()=>{
+test("optional nature and rhythmic textures remain real first-party WAV, separate from melodies",async()=>{
   const {api}=loadAudio();
-  for (const preset of ["harmony","prosperity","energy","love","meditation"]) {
+  for (const preset of ["rain","ocean","breeze","breath","pulse"]) {
     const blob=api.createAmbientPreviewWav(preset);
     assert.equal(blob.type,"audio/wav");
     const bytes=Buffer.from(await blob.arrayBuffer());
@@ -63,9 +70,9 @@ test("all five built-in tones create playable PCM WAV files with actual nonzero 
     assert.equal(bytes.toString("ascii",8,12),"WAVE");
     assert.equal(bytes.readUInt16LE(20),1,"linear PCM");
     assert.equal(bytes.readUInt16LE(22),1,"mono output");
-    assert.equal(bytes.readUInt32LE(24),44100,"44.1kHz iPhone-compatible PCM");
+    assert.equal(bytes.readUInt32LE(24),22050,"iPhone-compatible 22.05kHz PCM");
     assert.equal(bytes.readUInt16LE(34),16);
-    assert.equal(bytes.length,44+8*44100*2);
+    assert.equal(bytes.length,44+8*22050*2);
     const path = api.presetAudioUrl(preset);
     assert.equal(path, "/audio/mandala/" + preset + ".wav", "stable first-party HTTPS-served audio path");
     const stored = readFileSync(new URL("../public" + path, import.meta.url));
@@ -76,13 +83,15 @@ test("all five built-in tones create playable PCM WAV files with actual nonzero 
   }
 });
 
-test("selected preset exports the identical PCM wave heard in the native player",async()=>{
+test("composed melody export decodes the identical first-party WAV heard in the native player",async()=>{
   const h=loadAudio();
   const preset=await h.api.startPresetAudio("prosperity",75);
   assert.ok(preset, "one exactly matching native-PCM audio source is recorded");
   assert.ok(h.contexts[0].source.started && h.contexts[0].source.loop);
-  assert.equal(h.contexts[0].gain.gain.value,.75);
+  assert.equal(h.contexts[0].gain.gain.value,.5625);
   assert.ok(!h.contexts[0].gain.connections.includes(h.contexts[0].destination));
+  assert.ok(h.steps.includes("wav-get:/audio/mandala/prosperity.wav"));
+  assert.ok(h.steps.includes("decode"));
   preset.close();
   assert.equal(h.contexts[0].track.readyState,"ended");
   assert.equal(h.audioSession.type,"ambient");
@@ -133,7 +142,7 @@ test("unsupported codecs fail explicitly instead of substituting silent video",a
   assert.equal(await h.api.startUploadedAudio(file,80),null);
   assert.equal(h.audioSession.type,"ambient");
   assert.ok(h.contexts[0].closed);
-  assert.match(client,/if\(\(music !== "none" \|\| uploadedAudio\) && !musicSession\)/);
+  assert.match(client,/if\(attachedAudio && !musicSession\)/);
   assert.match(client,/data-video-audio-rights/);
   assert.match(client,/!uploadedAudio \|\| audioRights/);
 });
@@ -151,9 +160,12 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.doesNotMatch(client,/URL\.createObjectURL\(createAmbientPreviewWav/);
   assert.match(client,/audioPlaybackError/);
   assert.match(client,/data-video-audio-direct/);
-  assert.match(client,/startUploadedAudio\(uploadedAudio\.file,soundVolume\)/);
+  assert.match(client,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
   for(const phrase of ["Добавить аудиофайл","Add audio file","Añadir archivo de audio"]){
     assert.ok(client.includes(phrase),phrase);
   }
-  assert.doesNotMatch(audioSource+client,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
+  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  assert.equal((audioSource.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
+  assert.doesNotMatch((audioSource+client).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|postMessage|api\.kling|heygen|higgsfield|analytics/i);
 });

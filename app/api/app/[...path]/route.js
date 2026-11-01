@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getAppConfig, requireSameOrigin, requestOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
+import {directMessengerRecipient,directMessengerReturnPath,directMessengerSetupPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { createAppRepository } from '@/lib/app/repository'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { videoProfileFocus } from '@/lib/mandala/video-affirmation-focus.mjs'
@@ -40,7 +41,7 @@ import {
   parseGuestCookie,
   setGuestCookie,
 } from '@/lib/app/guest-session'
-import { consumeRate, transaction } from '@/lib/app/database'
+import { consumeRate } from '@/lib/app/database'
 import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
@@ -177,8 +178,8 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang'])
-      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(body.continueTo) ? 'es' : 'en'
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program', 'requestId', 'native', 'returnPath', 'profi', 'coachingMode', 'coachingLang', 'recipientSlug'])
+      const locale = body.locale === 'ru' ? 'ru' : body.locale === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(body.continueTo) ? 'es' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
@@ -188,12 +189,18 @@ async function handle(request, { params }) {
         returnPath = body.returnPath ?? null,
         profi = body.profi ?? null,
         coachingMode = body.coachingMode ?? null,
-        coachingLang = body.coachingLang ?? null
+        coachingLang = body.coachingLang ?? null,
+        recipientSlug = body.recipientSlug ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'coaching', 'coaching-intake', 'enquiry'].includes(continueTo) &&
-        !['cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-practice','practice-preview','direct-messages','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (recipientSlug !== null) {
+        if (continueTo !== 'direct-messages') throw new AppError('INVALID_CONTINUATION',400)
+        try { directMessengerRecipient(recipientSlug) }
+        catch { throw new AppError('INVALID_RECIPIENT',400) }
+      }
       if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
@@ -216,7 +223,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -226,7 +233,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'auth/callback' && method === 'GET') {
       const url = new URL(request.url),
-        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
+        locale = url.searchParams.get('locale') === 'ru' ? 'ru' : url.searchParams.get('locale') === 'es' && ['enquiry','coaching-intake','practice-preview','direct-messages'].includes(url.searchParams.get('continue')) ? 'es' : 'en',
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
@@ -236,9 +243,16 @@ async function handle(request, { params }) {
         returnPath = url.searchParams.get('returnPath'),
         profi = url.searchParams.get('profi'),
         coachingMode = url.searchParams.get('coachingMode'),
-        coachingLang = url.searchParams.get('coachingLang')
+        coachingLang = url.searchParams.get('coachingLang'),
+        recipientSlug = url.searchParams.get('recipientSlug')
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (url.searchParams.getAll('recipientSlug').length>1) throw new AppError('INVALID_CONTINUATION',400)
+      if (recipientSlug !== null) {
+        if (continueTo !== 'direct-messages') throw new AppError('INVALID_CONTINUATION',400)
+        try { directMessengerRecipient(recipientSlug) }
+        catch { throw new AppError('INVALID_RECIPIENT',400) }
+      }
       if (!validPracticeContinuation(continueTo,profi)) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
@@ -247,7 +261,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','coaching','cabinet','my-practice','practice-preview','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','practitioner-youtubeConnect','energywork','practitioner','enquiry','coaching-intake','direct-messages'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -255,7 +269,7 @@ async function handle(request, { params }) {
       if (url.searchParams.get('native') === '1') {
         if (continueTo === 'enquiry') throw new AppError('INVALID_CONTINUATION', 400)
         const handoff = new URL('holistichouse://auth/callback')
-        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','sb_flow_id']) {
+        for (const key of ['locale','intent','service','continue','program','request','profi','coachingMode','coachingLang','recipientSlug','sb_flow_id']) {
           const value = url.searchParams.get(key)
           if (value !== null) handoff.searchParams.set(key,value)
         }
@@ -272,6 +286,8 @@ async function handle(request, { params }) {
             ? `${origin}/${locale}/app/consultations?request=${encodeURIComponent(requestId)}`
           : continueTo === 'enquiry'
             ? `${origin}${returnPath}?hh_enquiry=google`
+          : continueTo === 'direct-messages'
+            ? `${origin}${directMessengerReturnPath(locale,recipientSlug)}`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
@@ -339,50 +355,15 @@ async function handle(request, { params }) {
           }),
         )
       const actor = await auth.verified()
-      await createAppRepository(config).ensureAccount(actor)
+      const account=await createAppRepository(config).ensureAccount(actor)
+      // On first Google sign-in, the client must finish explicit account
+      // consent before a private thread is created. Keep the chosen master's
+      // public slug through this existing Cabinet onboarding, never in storage.
+      const verifiedDestination=continueTo==='direct-messages'&&account.onboardingState!=='active'
+        ? origin+directMessengerSetupPath(locale,recipientSlug) : destination
       return auth.apply(
-        NextResponse.redirect(destination, { status: 303, headers: PRIVATE_HEADERS }),
+        NextResponse.redirect(verifiedDestination, { status: 303, headers: PRIVATE_HEADERS }),
       )
-    }
-    // Minimal public-page session check. Never return identity, profile, test or subscription data.
-    if (joined === 'auth/status' && method === 'GET') {
-      await auth.verified()
-      return json({ signedIn: true })
-    }
-    if (joined === 'support-journey/test-status' && method === 'GET') {
-      // Only an owned, server-confirmed completed assessment counts. No answers,
-      // scale values, result IDs, account data or health details leave this API.
-      let actor = null
-      try {
-        actor = await auth.verified()
-      } catch (error) {
-        if (error?.code !== 'SIGN_IN_REQUIRED') throw error
-      }
-      let completed = false
-      if (actor) {
-        completed = await transaction(config, actor, async db => {
-          const result = await db.query(
-            "select exists(select 1 from app.assessment_runs where account_id=$1 and status='completed') as completed",
-            [actor.id],
-          )
-          return result.rows[0]?.completed === true
-        })
-      }
-      // Never inherit a different browser guest's result after account switch.
-      // A verified account only receives its OWN server-scoped completion.
-      if (!actor && config.guestEnabled) {
-        const credential = parseGuestCookie(request.cookies.get(guestCookieName())?.value)
-        if (credential) {
-          try {
-            const guest = await createGuestRepository(config).bootstrap(credential)
-            completed = Array.isArray(guest.results) && guest.results.length > 0
-          } catch (error) {
-            // Expired/revoked guest sessions do not confer activity badges.
-            if (error?.status !== 401 && error?.status !== 404) throw error
-          }
-        }
-      }
-      return json({ completed })
     }
     if (joined === 'auth/contact-profile' && method === 'GET') {
       // Verified server-side Google identity only. Never create a lead, infer
