@@ -93,7 +93,9 @@ test('separate Direction Watcher classifies all open PRs with a ten-minute fallb
   assert.ok(s.includes("cron: '1,11,21,31,41,51 * * * *'"));
   assert.ok(s.includes("branches: ['codex/bootstrap-books']"));
   assert.ok(s.includes("node --test tests/ci-pr-priority.test.cjs tests/ci-pr-direction-watcher.test.cjs"));
-  assert.ok(s.includes('pull-requests: write'));
+  // Direction Watcher reads PR metadata and writes labels via issues: write.
+  // Requiring pull-requests: write would unnecessarily expand its permissions.
+  assert.ok(s.includes('pull-requests: read'));
   assert.ok(s.includes('issues: write'));
   assert.ok(s.includes('persist-credentials: false'));
   assert.ok(s.includes("const dryRun=String(context.payload.inputs?.dry_run"));
