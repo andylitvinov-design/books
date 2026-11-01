@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns,
+  TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
@@ -12,6 +12,64 @@ const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',
 const path='.github/workflows/messenger.yml';
 const yaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'lib/crm/**'\n      - '!lib/crm/private/**'\n      - 'lib/crm/private/approved.mjs'\n  push:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-24.04\n";
 const run=(overrides={})=>({id:151,workflow_id:30,path,head_sha:SHA,head_branch:'feat/test',event:'pull_request',status:'completed',conclusion:'success',run_attempt:1,head_repository:{full_name:repo},pull_requests:[{number:27,head:{sha:SHA},base:{ref:TARGET}}],...overrides});
+
+test('only verified concurrency-only edits can avoid unrelated specialists',()=>{
+ const file='.github/workflows/example.yml';
+ const old="on:\n  pull_request:\n    paths: ['.github/workflows/example.yml', 'app/api/**']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',
+  "  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const base=new Map([[file,old]]), current=new Map([[file,next]]);
+ const call=(changedRows,head=current)=>concurrencyOnlyAdvisory({base,current:head,changedRows,expected:[file]});
+ assert.deepEqual([...call([{filename:file,status:'M'}])],[file]);
+ assert.deepEqual([...call([{filename:file,status:'modified'},{filename:'tests/ci-head-cancellation.test.mjs',status:'modified'}])],[file]);
+ for(const extra of ['app/api/payments/route.js','app/page.tsx','scripts/unknown.mjs','tests/unknown.test.mjs'])
+  assert.deepEqual([...call([{filename:file,status:'M'},{filename:extra,status:'M'}])],[]);
+ for(const status of ['A','D','T','renamed']) assert.deepEqual([...call([{filename:file,status}])],[]);
+ for(const unsafe of [next.replace('runs-on: ubuntu-latest','runs-on: self-hosted'),next.replace('github.event.before != github.event.after','true'),next.replace('example-${{','other-${{'),next+'concurrency:\n'])
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,unsafe]]))],[]);
+ const collision=new Map([[file,next],['.github/workflows/other.yml',old]]);
+ assert.deepEqual([...call([{filename:file,status:'M'}],collision)],[]);
+ for(const prefix of ['example-pr-','example-run-','exam']) {
+  const competing=old.replace('example-${{ github.ref }}',prefix+'${{ github.ref }}');
+  assert.deepEqual([...call([{filename:file,status:'M'}],new Map([[file,next],['.github/workflows/other.yml',competing]]))],[]);
+ }
+ const relevantOld=old.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ const relevantNext=next.replace("'app/api/**'", "'tests/ci-head-cancellation.test.mjs'");
+ assert.deepEqual([...concurrencyOnlyAdvisory({base:new Map([[file,relevantOld]]),current:new Map([[file,relevantNext]]),
+  changedRows:[{filename:file,status:'M'},{filename:'tests/ci-head-cancellation.test.mjs',status:'M'}],expected:[file]})],[]);
+});
+
+test('concurrency advisory never hides push, orphan, wrong-head or unrelated runs',()=>{
+ const paths=new Set([path]);
+ assert.equal(isConcurrencyAdvisoryRun(run(),pr(),paths),true);
+ for(const variant of [run({event:'push'}),run({head_sha:'c'.repeat(40)}),run({head_repository:{full_name:'other/repo'}}),run({pull_requests:[]}),run({path:'.github/workflows/other.yml'})])
+  assert.equal(isConcurrencyAdvisoryRun(variant,pr(),paths),false);
+});
+
+test('trusted exact-merge concurrency scope ignores only its associated PR run',async()=>{
+ const file='.github/workflows/example.yml';
+ const syntax='.github/workflows/hh-actionlint.yml';
+ const old="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/example.yml']\nconcurrency:\n  group: example-${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const syntaxYaml="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths: ['.github/workflows/**']\njobs:\n  syntax:\n    runs-on: ubuntu-latest\n";
+ const condition="github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after";
+ const next=old.replace('  group: example-${{ github.ref }}\n  cancel-in-progress: true',"  group: example-${{ "+condition+" && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}\n  cancel-in-progress: ${{ "+condition+" }}");
+ const files={base:new Map([[file,old],[syntax,syntaxYaml]]),current:new Map([[file,next],[syntax,syntaxYaml]]),changedRows:[{filename:file,status:'M'}]};
+ const ctx={repo,number:27,head:SHA,base:BASE};
+ const failed=run({path:file,conclusion:'failure'});
+ const syntaxRun=run({id:153,path:syntax});
+ const api={pr:async()=>pr(),runs:async()=>[failed,syntaxRun],jobs:async()=>[{name:'actionlint-changed',status:'completed',conclusion:'success'}]};
+ const result=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(result.expected,[syntax]);
+ assert.deepEqual(result.advisory.concurrencyOnly,[file]);
+ api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
+ api.runs=async()=>[failed,syntaxRun];
+ await assert.rejects(()=>verify(api,ctx,modifiedSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
 
 test('scope reads GitHub path filters and ordered negative/reincluded patterns',()=>{
   const trigger=parsePrTrigger(yaml,path);
@@ -158,7 +216,8 @@ test('production workflow directory can be parsed without silently ignoring unkn
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
-    'holistic-house-native.yml', 'native-ci.yml'];
+    'holistic-house-native.yml'];
+  assert.ok(!names.includes('native-ci.yml'), 'Retired duplicate Native CI must not return');
   for(const critical of protectedChecks) assert.ok(names.includes(critical), 'Missing critical workflow: '+critical);
   for(const name of names) {
     const file='.github/workflows/'+name;
@@ -829,4 +888,55 @@ test('Native installer successor claims old native triggers before retiring dupl
         'native build step must never execute on ordinary PR: '+entry.slice(0,110));
     }
   }
+});
+
+
+test('stage 2 retiring duplicate native CI routes to the immutable-base successor',()=>{
+  const retired='.github/workflows/native-ci.yml';
+  const successor='.github/workflows/holistic-house-native.yml';
+  assert.ok(!readdirSync('.github/workflows').includes('native-ci.yml'),
+    'the duplicate native macOS/Android workflow is gone');
+  const original="on:\n  pull_request:\n    paths:\n      - '.github/workflows/native-ci.yml'\n";
+  const currentSource=readFileSync(successor,'utf8');
+  // Simulate a trusted production BASE that still has native-ci.yml and
+  // the identical already-shipped Holistic House Native successor.
+  const base=new Map([[retired,original],[successor,currentSource]]);
+  const current=new Map([[successor,currentSource]]);
+  const changed=[retired];
+  const expected=expectedWorkflows({base,current,changed});
+  assert.deepEqual(expected,[successor,retired].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base,current,changed,expected}),{
+    expected:[successor],
+    delegated:[{retired,replacement:successor}],
+  });
+});
+
+test('Tantra Photo Cards has an approved BASE-trusted Reiki owner for phase-2 retirement',()=>{
+  const old='.github/workflows/hh-tantra-photo-levels.yml';
+  const successor='.github/workflows/hh-reiki-all-slides-browser.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+  const owner=readFileSync(successor,'utf8');
+  for(const path of ['components/tantra-reiki-journey.tsx','components/tantra-reiki-story.tsx',
+    'components/academy-record-page.tsx','app/academy.css',
+    'tests/tantra-reiki-compact-fullwidth.test.mjs',
+    'tests/tantra-reiki-photo-levels.browser.mjs',
+    'tests/tantra-reiki-teacher-compact.test.mjs',
+    '.github/workflows/hh-tantra-photo-levels.yml']){
+    assert.ok(owner.includes("      - '"+path+"'"),'Reiki owner missing original trigger '+path);
+  }
+  for(const original of ['tests/tantra-reiki-photographic-landing.test.mjs',
+    'tests/tantra-reiki-level-one-focus.test.mjs','tests/tantra-reiki-mobile-chapters.test.mjs',
+    'npx --no-install eslint components/tantra-reiki-journey.tsx']){
+    assert.ok(owner.includes(original),'Reiki owner missing test '+original);
+  }
+  const legacy="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/hh-tantra-photo-levels.yml'\n";
+  const trusted=new Map([[old,legacy],[successor,owner]]);
+  const proposed=new Map([[successor,owner]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base:trusted,current:proposed,changed});
+  assert.deepEqual(expected,[successor,old].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base:trusted,current:proposed,changed,expected}).delegated,
+    [{retired:old,replacement:successor}]);
+  assert.throws(()=>resolveExpectedSpecialists({base:trusted,current:new Map([[successor,owner+'\n# changed in retirement']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });

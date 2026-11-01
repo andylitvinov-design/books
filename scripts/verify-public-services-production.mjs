@@ -17,12 +17,26 @@ await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
 const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const responseEvidence = [];
 let failure;
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  // Page-level synthetic mocks may fulfill requests; all unmocked API writes
+  // fail closed rather than reaching any configured provider or database.
+  await context.route('**/api/**', route =>
+    ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
   const pages = new Set();
   const attachDiagnostics = (page) => {
     pages.add(page);
+    page.on("response", response => {
+      const url = new URL(response.url());
+      if (response.request().method() === "GET" && response.status() === 503 &&
+          ["/api/catalog/ratings", "/api/service-enquiries/booking-status", "/api/app/bootstrap"].includes(url.pathname)) {
+        // Status and path are already verified above. Browser streams may
+        // close before body.json(), so do not misclassify empty reads.
+        responseEvidence.push(url.pathname);
+      }
+    });
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
@@ -56,6 +70,15 @@ try {
   const createPage = async (width) => {
     const page = await context.newPage();
     attachDiagnostics(page);
+    // The draft-link assertions exercise the private-browsing fallback. The
+    // regular receipt redirect has a separate synthetic release-audit case.
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'hh-service-enquiry-receipt:v1') throw new DOMException('blocked', 'SecurityError');
+        return set.call(this, key, value);
+      };
+    });
     await page.setViewportSize({ width, height: 844 });
     return page;
   };
@@ -410,7 +433,7 @@ try {
       await visible(target);
       assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
         "Paid format selector must be present after anchor navigation: " + label);
-      const choices = target.locator('[data-choice-layout="service"] button');
+      const choices = target.locator('[data-choice-layout="service"] > button');
       assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
       await choices.nth(1).click();
       await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
@@ -620,59 +643,31 @@ try {
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
             "Consent must remain an explicit, unchecked action");
         } else {
-          const featured = main.locator("[data-featured-constellations-video]");
+          // The former three-offer widget was replaced by the express review.
+          // Verify the real current funnel without submitting any visitor data.
+          const featured = main.locator("[data-free-review-intro-video]");
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
-            "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
+            "Introductory recording never autoplays before opt-in");
+          const capture = main.locator("#" + captureId + "[data-personal-express-enquiry]");
+          await visible(capture);
+          const reveal = capture.locator("[data-express-reveal]");
+          await expect(reveal).toHaveAttribute("aria-expanded", "false");
+          await expect(capture.locator("[data-express-inline-disclosure]")).toBeHidden();
+          await reveal.click();
+          await expect(reveal).toHaveAttribute("aria-expanded", "true");
+          const disclosure = capture.locator("[data-express-inline-disclosure]");
+          await visible(disclosure);
+          await expect(disclosure.locator("[data-express-focus]")).toHaveCount(2);
+          const chooser = disclosure.locator("[data-contact-channel-chooser]");
+          await expect(chooser).toHaveCount(1);
+          const consent = chooser.locator('input[type="checkbox"][required]');
+          await expect(consent).not.toBeChecked();
+          await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+          await expect(chooser.locator('[data-lead-saved]')).toHaveCount(0);
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
+            "Expanded information must fit the phone width");
 
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
-
-          const writtenIntake = main.locator("[data-optional-written-review]");
-          assert.equal(await writtenIntake.evaluate(el => el.open), false);
-          if (width === 390) {
-            await writtenIntake.locator(":scope > summary").click();
-            const preview = writtenIntake.locator("[data-free-drawing-intake]");
-            await visible(preview);
-            await visible(preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]'));
-            assert.equal(await preview.locator("form,textarea").count(), 0,
-              "The private answers are entered only in the protected questionnaire");
-            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-              "Expanded information must fit the phone width");
-
-            const hub = await page.context().newPage();
-            await hub.setViewportSize({width, height: 844});
-            await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
-              "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
-            await hub.close();
-          }
         }
         await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
         if (width === 390 || width === 1188) {
@@ -685,7 +680,27 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  // In isolated CI, getAppConfig() is guaranteed to return 503 before any
+  // database query when HH_APP_SUPABASE_URL is absent. Do not read the response
+  // body after the browser resource has already closed. Only a real observed
+  // GET 503 from these two audited read-only endpoints can be exempted.
+  const unavailable = responseEvidence;
+  const unexpectedUnavailable = unavailable.filter(path =>
+    !['/api/catalog/ratings', '/api/service-enquiries/booking-status', '/api/app/bootstrap'].includes(path));
+  assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
+  const expectedUnavailable = new Set();
+  if (!process.env.HH_APP_SUPABASE_URL) {
+    for (const path of unavailable) expectedUnavailable.add(path);
+  }
+  const unexpected = diagnostics.console.filter(entry => {
+    if (entry.type !== 'error') return false;
+    if (expectedUnavailable.has(entry.path) &&
+        entry.text === 'Failed to load resource: the server responded with a status of 503 (Service Unavailable)') {
+      return false;
+    }
+    return true;
+  });
+  assert.deepEqual(unexpected, [], "Unexpected browser console errors");
   await context.close();
 } catch (error) {
   failure = error;

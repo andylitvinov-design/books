@@ -3,12 +3,17 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: ['codex/public-book-library']
+  # A completed *interrupted* core run can be retried once. Workflow-run hooks
+  # require this trusted workflow to also be present on the GitHub default branch.
+  workflow_run:
+    workflows: ['HH PR core release gate']
+    types: [completed]
 permissions:
   contents: write
   pull-requests: write
 jobs:
   enable:
-    if: ${{ github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     steps:
       - name: Enable native auto-merge for this exact head
@@ -20,8 +25,251 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
             echo '::warning::No repo-scoped auto-merge token: GitHub may suppress production push workflows.'
           fi
-          gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$PR_HEAD"
+          # Stacked child PRs depend on the parent commit ancestry, so the parent
+          # must use Merge Commit. Non-stacked PRs keep the original Squash policy.
+          # Fail closed rather than accidentally arming Squash if discovery fails.
+          if ! stacked_children="$(gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1 --jq 'length')"; then
+            echo '::error::Cannot classify stacked PR ancestry; refusing auto-merge' >&2
+            exit 1
+          fi
+          case "$stacked_children" in
+            0) merge_option=--squash; export HH_EXPECTED_MERGE_METHOD=SQUASH ;;
+            1) merge_option=--merge; export HH_EXPECTED_MERGE_METHOD=MERGE ;;
+            *) echo '::error::Unexpected stacked-child count; refusing auto-merge' >&2; exit 1 ;;
+          esac
+          for ((attempt=1; attempt<=3; attempt++)); do
+            if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/auto-merge-error" >&2
+            if [[ "$(gh pr view "$PR_NUMBER" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
+              exit 0
+            fi
+            if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
+              exit 1
+            fi
+            if ((attempt < 3)); then sleep "$attempt"; fi
+          done
+          exit 1
+  recover-missing-required-ci:
+    name: recover-missing-required-ci
+    needs: enable
+    if: ${{ github.event_name == 'pull_request_target' && needs.enable.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Recover missing CI only for clean strict-behind current HEAD
+        uses: actions/github-script@v7
+        env:
+          HH_HAS_RECOVERY_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+        with:
+          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const number = context.payload.pull_request?.number;
+            const head = context.payload.pull_request?.head?.sha;
+            function log(msg) { core.info("CI_RECOVERY: " + msg); }
+            if (process.env.HH_HAS_RECOVERY_TOKEN !== "true") {
+              core.warning("CI_RECOVERY: HH_AUTOMERGE_TOKEN unavailable; cannot safely retrigger required PR checks");
+              return;
+            }
+            if (!Number.isInteger(number) || !/^[0-9a-f]{40}$/.test(head || "")) {
+              core.warning("CI_RECOVERY: invalid PR or event SHA");
+              return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 25000));
+            const live = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
+                live.head.repo?.full_name !== owner + "/" + repo || live.head.sha !== head) {
+              log("SKIP live PR state, repository, or HEAD changed");
+              return;
+            }
+            if (live.mergeable !== true || live.mergeable_state !== "behind") {
+              log("SKIP no clean behind-branch update is required: " + live.mergeable_state);
+              return;
+            }
+            const checkData = (await github.rest.checks.listForRef({owner, repo, ref: head, per_page: 100})).data;
+            if (checkData.total_count > 100 ||
+                checkData.check_runs.some(check => check.name === "release-ready" && check.app?.slug === "github-actions")) {
+              log("SKIP required release-ready already present or check list incomplete");
+              return;
+            }
+            const runData = (await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, head_sha: head, event: "pull_request", per_page: 100
+            })).data;
+            if (runData.total_count > 100 || runData.workflow_runs.some(run => run.name === "HH PR core release gate")) {
+              log("SKIP normal pull_request core CI exists for exact HEAD");
+              return;
+            }
+            const ruleset = (await github.request("GET /repos/{owner}/{repo}/rulesets/{ruleset_id}", {
+              owner, repo, ruleset_id: 26269892
+            })).data;
+            const required = ruleset.rules?.find(rule => rule.type === "required_status_checks")?.parameters;
+            if (ruleset.enforcement !== "active" ||
+                required?.strict_required_status_checks_policy !== true ||
+                required.required_status_checks?.length !== 1 ||
+                required.required_status_checks[0].context !== "release-ready" ||
+                required.required_status_checks[0].integration_id !== 15368) {
+              log("SKIP current hosted ruleset differs; never infer required checks passed");
+              return;
+            }
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: number, per_page: 100
+            });
+            if (comments.length >= 1000) {
+              log("SKIP lease history exceeds bounded review");
+              return;
+            }
+            const latest = new Map();
+            for (const comment of comments.sort((a,b) => a.id - b.id)) {
+              const body = comment.body || "";
+              if (!body.includes("HH_PR_SWEEP_LEASE_V1")) continue;
+              try {
+                const start = body.indexOf("{");
+                const end = body.indexOf("}", start);
+                const lease = JSON.parse(body.slice(start, end + 1));
+                if (!lease || lease.schema !== "HH_PR_SWEEP_LEASE_V1") {
+                  log("SKIP ambiguous lease marker");
+                  return;
+                }
+                const leaseId = lease.lease_id || "legacy:" + (lease.owner || "unknown");
+                latest.set(leaseId, lease);
+              } catch {
+                log("SKIP unparseable lease: fail closed");
+                return;
+              }
+            }
+            for (const lease of latest.values()) {
+              const activity = lease.state || lease.last_action;
+              const active = activity === "active" || activity === "claim" || activity === "heartbeat";
+              if (active && lease.head_sha === head && Date.parse(lease.expires_at || "") > Date.now()) {
+                log("SKIP live exclusive lease protects this HEAD");
+                return;
+              }
+            }
+            const fresh = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            if (fresh.head.sha !== head || fresh.state !== "open" ||
+                fresh.mergeable !== true || fresh.mergeable_state !== "behind") {
+              log("SKIP changed HEAD or mergeability before API write");
+              return;
+            }
+            try {
+              const update = await github.request("PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch", {
+                owner, repo, pull_number: number, expected_head_sha: head
+              });
+              if (update.status === 202) {
+                log("UPDATE_ACCEPTED for clean behind PR #" + number + " at " + head.slice(0, 12) +
+                    "; CI is NOT yet verified; require new current-head release-ready SUCCESS");
+              } else {
+                core.warning("CI_RECOVERY: unexpected update-branch HTTP " + update.status);
+              }
+            } catch (error) {
+              if ([409, 422].includes(error.status)) {
+                log("SKIP CAS/head conflict; no force, no retries");
+              } else {
+                core.warning("CI_RECOVERY: update-branch was not accepted: HTTP " + (error.status || "unknown"));
+              }
+            }
+
+  recover-interrupted-core:
+    name: recover-interrupted-core
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    concurrency:
+      group: hh-core-interruption-${{ github.event.workflow_run.id }}
+      cancel-in-progress: false
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Retry proven infrastructure interruption once, never failed code
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo} = context.repo;
+            const event = context.payload.workflow_run;
+            const fullRepo = owner + "/" + repo;
+            const retryConclusions = new Set(["cancelled","timed_out","startup_failure","failure"]);
+            const log = message => core.info("CORE_CI_RECOVERY: " + message);
+            if (!event || event.name !== "HH PR core release gate" ||
+                event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
+                event.event !== "pull_request" || event.status !== "completed" ||
+                event.repository?.full_name !== fullRepo ||
+                event.head_repository?.full_name !== fullRepo ||
+                !retryConclusions.has(event.conclusion) || event.run_attempt !== 1) {
+              log("SKIP no trusted first-attempt interrupted core PR run");
+              return;
+            }
+            const ageMs = Date.now() - Date.parse(event.created_at || "");
+            if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 2 * 60 * 60 * 1000) {
+              log("SKIP unbounded/old workflow run");
+              return;
+            }
+            const associated = (event.pull_requests || []).filter(pr =>
+              Number.isInteger(pr.number) && /^[0-9a-f]{40}$/.test(pr.head?.sha || "") &&
+              pr.base?.ref === "codex/public-book-library");
+            if (associated.length !== 1) {
+              log("SKIP missing or ambiguous exact-head PR association");
+              return;
+            }
+            const reference = associated[0];
+            const live = (await github.rest.pulls.get({owner,repo,pull_number:reference.number})).data;
+            if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
+                live.head.repo?.full_name !== fullRepo || live.head.ref !== event.head_branch ||
+                live.head.sha !== reference.head.sha || live.mergeable === false ||
+                live.mergeable_state === "dirty" ||
+                (reference.base?.sha && reference.base?.sha !== live.base.sha)) {
+              log("SKIP PR moved, changed base, became draft, or has conflicts");
+              return;
+            }
+            // Never treat a code failure as recoverable infrastructure failure.
+            // Zero-job runs have no code results; interrupted jobs may only be
+            // retried when every job ended as cancelled/skipped/timed_out.
+            const jobData = (await github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:event.id,per_page:100,filter:"latest"
+            })).data;
+            if (jobData.total_count > 100 || !Array.isArray(jobData.jobs)) {
+              log("SKIP incomplete job listing");
+              return;
+            }
+            const jobs = jobData.jobs;
+            const interrupted = jobs.length === 0 ||
+              (event.conclusion !== "failure" && jobs.every(job =>
+                ["cancelled","skipped","timed_out"].includes(job.conclusion)));
+            if (!interrupted) {
+              log("SKIP actual code, security or policy job failure; repair the root instead");
+              return;
+            }
+            const fresh = (await github.rest.actions.getWorkflowRun({
+              owner,repo,run_id:event.id
+            })).data;
+            if (fresh.run_attempt !== 1 || fresh.status !== "completed" ||
+                fresh.conclusion !== event.conclusion || fresh.head_sha !== event.head_sha) {
+              log("SKIP run changed or already retried");
+              return;
+            }
+            // Rerun does NOT mark checks successful, edit the PR, or bypass rules.
+            // A second failure, or any changed HEAD, requires investigation.
+            try {
+              await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
+              log("RERUN_ACCEPTED first-attempt interrupted workflow " + event.id +
+                  " on exact PR #" + reference.number + "; new release-ready SUCCESS still required");
+            } catch (error) {
+              if ([403,404,409,422].includes(error.status)) {
+                core.warning("CORE_CI_RECOVERY: rerun not permitted/eligible (HTTP " + error.status + ")");
+              } else {
+                throw error;
+              }
+            }

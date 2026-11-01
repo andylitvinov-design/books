@@ -12,6 +12,14 @@ on:
       - 'components/tantra-free-initiation.tsx'
       - 'components/tantra-free-initiation.module.css'
       - 'components/academy-record-page.tsx'
+      # BASE-trusted replacement of the redundant Tantra Reiki Photo Cards gate.
+      - 'components/tantra-reiki-journey.tsx'
+      - 'components/tantra-reiki-story.tsx'
+      - 'app/academy.css'
+      - 'tests/tantra-reiki-compact-fullwidth.test.mjs'
+      - 'tests/tantra-reiki-photo-levels.browser.mjs'
+      - 'tests/tantra-reiki-teacher-compact.test.mjs'
+      - '.github/workflows/hh-tantra-photo-levels.yml'
       - 'app/**/academy/**'
       - 'scripts/verify-reiki-referral-browser.mjs'
       - 'tests/reiki-referral-landing.test.mjs'
@@ -79,6 +87,14 @@ jobs:
           node --check scripts/verify-reiki-all-slides-browser.mjs
           node --check scripts/verify-reiki-referral-browser.mjs
           node --test tests/reiki-referral-landing.test.mjs
+      # Original photo-card source contracts now run in this shared job.
+      # No extra runner, Next build or Playwright installation on the PR path.
+      - name: Original Tantra Reiki photo-card source and accessible layout contracts
+        if: github.event_name == 'pull_request'
+        run: |
+          node --check tests/tantra-reiki-photo-levels.browser.mjs
+          node --test tests/tantra-reiki-compact-fullwidth.test.mjs tests/tantra-reiki-photographic-landing.test.mjs tests/tantra-reiki-level-one-focus.test.mjs tests/tantra-reiki-mobile-chapters.test.mjs tests/tantra-reiki-teacher-compact.test.mjs
+          npx --no-install eslint components/tantra-reiki-journey.tsx
       - name: Isolated Chromium/WebKit runtime (manual deep QA only)
         if: github.event_name == 'workflow_dispatch'
         run: |
