@@ -27,6 +27,7 @@ const COPY={
   manual:'El visitante no inició sesión en Holistic House. Esto aún no es un chat en vivo. El mensaje solo se envía cuando lo confirmas en tu correo o mensajería.',
   unverified:'Contacto facilitado por el visitante, no verificado. Úsalo solo para responder esta solicitud.',
   missing:'No hay destinatario. Puedes redactar y copiar una respuesta, pero para enviarla hace falta un canal de contacto real. Consulta la solicitud completa.',
+  copyFailed:'No se pudo copiar. Selecciona y copia el texto manualmente.',
  },
 }
 
