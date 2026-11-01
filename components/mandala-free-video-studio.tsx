@@ -22,6 +22,7 @@ import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations,
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
+import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, retimeFreeFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -2363,8 +2364,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Goal-first Auto Director uses the existing consented Free MP4 renderer, not paid video AI.
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
     setDuration(seconds);
-    setCinematicPlan(plan=>plan?.version===FREE_FILM_PLAN_VERSION
-      ? retimeFreeFilmPlan(plan,seconds) as CinematicStoryboard : null);
+    setCinematicPlan(plan=>{
+      if(plan?.version===FREE_FILM_PLAN_VERSION)
+        return retimeFreeFilmPlan(plan,seconds) as CinematicStoryboard;
+      if(plan?.version===FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION){
+        const timing=allocateFreeFilmTimeline(seconds,plan.shots.map(shot=>shot.sceneId));
+        return {...plan,durationSeconds:seconds,
+          shots:plan.shots.map((shot,index)=>({...shot,...timing[index]}))} as CinematicStoryboard;
+      }
+      return null;
+    });
   };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,outputAspect:Aspect="landscape")=>{
     if(recording||preparing)return;
