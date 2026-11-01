@@ -214,6 +214,62 @@ test('exact #2629 Voice+Music PR delegates unrelated services browsers only with
   ]) assert.equal(invoke(safeEntries,overrides).mode,'full','wrong release identity must never bypass browser gate');
 });
 
+test('exact local HEIC #2566 delegates only its reviewed photos to protected Mandala', () => {
+  const expected=[
+    ['M','components/mandala-free-video-studio.tsx'],
+    ['M','components/mandala-meditation-client.tsx'],
+    ['A','lib/mandala/prepare-browser-photo.ts'],
+    ['M','tests/holistic-mandala-meditation.test.mjs'],
+    ['M','tests/mandala-workspace-tabs.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs'],
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),separator=String.fromCharCode(0);
+  const invoke=(rows,override={})=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/2566/merge',
+    GITHUB_HEAD_REF:'fix/mandala-single-accordion-editor-20261029',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,...override,
+  },(_command,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(
+      rows.flatMap(([status,path])=>[status,path]).join(separator)+separator);
+    throw Error('unexpected git command');
+  });
+  const accepted=invoke(expected);
+  assert.deepEqual(
+    [accepted.mode,accepted.build,accepted.browser,accepted.metrics,accepted.cases,
+      requiresPublicServicesHeavyPr(accepted)],
+    ['contracts',false,false,false,'none',false]);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const path of [
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-meditation-client.tsx',
+    'lib/mandala/prepare-browser-photo.ts',
+    'tests/holistic-mandala-meditation.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+  ])assert.equal(covers(pathsOf('holistic-support-mandala.yml'),path),true,
+    'HEIC file must trigger independent Mandala CI: '+path);
+  assert.match(mandala,/node --test tests\/video-chat-ai\.test\.mjs/);
+  assert.match(mandala,/tests\/holistic-mandala-meditation\.test\.mjs/);
+  assert.match(mandala,/tests\/mandala-workspace-tabs\.test\.mjs/);
+  assert.match(mandala,/node scripts\/verify-holistic-mandala-browser\.mjs/);
+  for(const bad of [
+    expected.slice(1),[...expected,expected[0]],
+    [...expected.slice(0,-1),['M','app/api/payments/talismans/checkout/route.js']],
+    expected.map(([status,path],i)=>i===2?['D',path]:[status,path]),
+    expected.map(([status,path],i)=>i===1?['M','components/holistic-support-mobile.tsx']:[status,path]),
+  ])assert.equal(invoke(bad).mode,'full',
+    'unreviewed HEIC changes must retain all public-service E2E');
+  for(const override of [
+    {GITHUB_REF:'refs/pull/2565/merge'},
+    {GITHUB_HEAD_REF:'another-branch'},
+    {HH_PUBLIC_HEAD_SHA:'invalid'},
+  ])assert.equal(invoke(expected,override).mode,'full',
+    'wrong release identity must not reduce browser/security acceptance');
+});
+
 test('performance harness changes need production server but no browsers', () => {
   const p = planPublicServicesChangedPaths(['scripts/measure-hh-public-ttfb.mjs']);
   assert.deepEqual([p.mode, p.build, p.browser, p.metrics, p.cases],

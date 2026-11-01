@@ -36,9 +36,22 @@ test("public mandala adapts original seven Power Place geometries and stone-mosa
 
 test("private photo never leaves the browser and can be cropped or removed", () => {
   const client = read("components/mandala-meditation-client.tsx");
-  assert.match(client, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
-  assert.match(client, /image\.size > 10 \* 1024 \* 1024/);
-  assert.match(client, /URL\.createObjectURL\(image\)/);
+  assert.match(client, /type="file" accept=\{SUPPORT_PHOTO_ACCEPT\}/);
+  assert.match(client, /await prepareBrowserPhoto\(image\)/);
+  assert.match(client, /URL\.createObjectURL\(prepared\)/);
+  assert.match(client, /photoChoiceEpoch\.current/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /!photoPending/);
+  assert.match(studio, /!recording && !photoPending/, "the quick video cannot begin during HEIC preparation");
+  assert.match(studio, /if\(photoPending\)\{/, "recording callback checks stale photo before export");
+  assert.match(studio, /data-video-photo-pending/);
+  assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
+  const normalized = read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(normalized, /SUPPORT_PHOTO_MAX_INPUT_BYTES = 25_000_000/);
+  assert.match(normalized, /canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
+  assert.match(normalized, /URL\.revokeObjectURL\(objectUrl\)/);
+  assert.doesNotMatch(normalized, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon/);
   assert.match(client, /URL\.revokeObjectURL\(imageUrl\)/);
   assert.match(client, /setImageUrl\(null\)/);
   assert.match(client, /setZoom\(/);

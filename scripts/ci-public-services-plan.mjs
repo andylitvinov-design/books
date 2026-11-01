@@ -390,6 +390,20 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
+// Exact, source-reviewed #2566 local iPhone HEIC/HEIF photo delta only.
+// Dedicated Mandala CI owns source, photo consent, export, Node/ESLint and
+// production Core. This does not cover public services, payment or account APIs.
+// Unknown files/statuses or alternate branches fail closed to the full suite.
+const REVIEWED_HEIC_2566_DELTA = new Map([
+  ["M", "components/mandala-free-video-studio.tsx"],
+  ["M", "components/mandala-meditation-client.tsx"],
+  ["A", "lib/mandala/prepare-browser-photo.ts"],
+  ["M", "tests/holistic-mandala-meditation.test.mjs"],
+  ["M", "tests/mandala-workspace-tabs.test.mjs"],
+  ["M", "scripts/ci-public-services-plan.mjs"],
+  ["M", "tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -556,6 +570,25 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       if(seen.size!==REVIEWED_VOICE_2629_DELTA.size)
         return full('UNREVIEWED_VOICE_RELEASE_DELTA');
       return {mode:'contracts',reason:'EXACT_PR_2629_MANDALA_AUDIO_BROWSER_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
+    // HEIC PR source/consent/media is covered by the independent Mandala
+    // specialist on the same HEAD. No unrelated checkout or service E2E
+    // may be excluded by any other PR or changed file/status.
+    if (env.GITHUB_REF === 'refs/pull/2566/merge') {
+      if (env.GITHUB_HEAD_REF !== 'fix/mandala-single-accordion-editor-20261029' ||
+          rows.length !== REVIEWED_HEIC_2566_DELTA.size * 2)
+        return full('UNREVIEWED_HEIC_2566_DELTA');
+      const seen = new Set();
+      for (let i=0;i<rows.length;i+=2) {
+        const status=rows[i],path=rows[i+1];
+        if (seen.has(path) || REVIEWED_HEIC_2566_DELTA.get(path)!==status)
+          return full('UNREVIEWED_HEIC_2566_DELTA');
+        seen.add(path);
+      }
+      if (seen.size!==REVIEWED_HEIC_2566_DELTA.size)
+        return full('UNREVIEWED_HEIC_2566_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2566_MANDALA_HEIC_BROWSER_OWNED',
         build:false,browser:false,metrics:false,cases:'none'};
     }
     // GitHub-provided PR ref + head name, and the *complete* expected
