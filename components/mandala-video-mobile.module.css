@@ -2191,9 +2191,11 @@
 .audioTrackRow[data-audio-id="quiet-stars"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
 .audioTrackRow[data-audio-id="bright-path"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
 
-/* Safari error recovery is a primary action, never an unstyled text link. */
-.result [data-video-retry-compatible]{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:12px 0;padding:10px 14px;border:1px solid #147358;border-radius:12px;background:#e3f2e8;color:#13523d;font-weight:800;font-size:15px;text-align:center;cursor:pointer}
-.result [data-video-retry-compatible]:disabled{opacity:.5;cursor:not-allowed}
+/* Keep the goal editor and its optional fields at stable native iPhone scale. */
+@media(max-width:600px){
+ .studio{max-width:100%;min-width:0}
+ .studio :is(input[type="text"],input[type="search"],textarea,select){font-size:16px!important;min-width:0;max-width:100%}
+}
 
 /* One compact scenario shortcut ABOVE posters, below the theme heading. */
 .quickDirectorActions{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;min-width:0;margin:8px 0 10px}

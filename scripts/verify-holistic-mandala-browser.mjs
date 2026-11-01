@@ -237,7 +237,12 @@ const runEngine = async ([engine, browserType]) => {
           const create=form.locator("[data-first-video-generate]");
           await expect(create).toBeEnabled({timeout:25000});
           await create.click({timeout:15000});
-          const save=page.locator("[data-mandala-video-download]");
+          const supportsCanvasRecording=await page.evaluate(()=>
+            typeof HTMLCanvasElement.prototype.captureStream==="function"&&
+            typeof MediaRecorder!=="undefined");
+          const personalSave=page.locator("[data-mandala-video-download]");
+          const originalSave=page.locator("[data-video-original-fallback-download]");
+          const save=supportsCanvasRecording?personalSave:personalSave.or(originalSave).first();
           try{
             await save.waitFor({state:"visible",timeout:85000});
           }catch(error){
@@ -249,26 +254,31 @@ const runEngine = async ([engine, browserType]) => {
               const result=get("[data-video-result]");
               const notices=Array.from(document.querySelectorAll("[role=status],[role=alert]"))
                 .map(node=>node.textContent?.trim()?.slice(0,200)).filter(Boolean);
+              const original=get("[data-video-original-fallback-download]");
               return {promptLength:prompt?.value?.length,createDisabled:generate?.disabled,
-                progress:progress?.value,resultHidden:result?.hidden,notices};
+                progress:progress?.value,resultHidden:result?.hidden,
+                originalHref:original?.getAttribute("href")||null,notices};
             });
             throw new Error(engine+" free first-video export missing: "+JSON.stringify(state),{cause:error});
           }
-          // Verify an actual decoded file on both engines. Modern browsers
-          // export the composed portrait Canvas; WebKit without captureStream
-          // gets a clearly labelled original local MP4, not a fake montage.
-          const supportsCanvasRecording=await page.evaluate(()=>
-            typeof HTMLCanvasElement.prototype.captureStream==="function"&&
-            typeof MediaRecorder!=="undefined");
-          const mode=await page.locator("[data-video-result]").getAttribute("data-video-result-mode");
-          assert.equal(mode,supportsCanvasRecording?"rendered":"catalog",
-            engine+" must explicitly classify the delivered media");
-          if(!supportsCanvasRecording){
+          // A browser without Canvas capture may offer either the explicitly
+          // labelled unedited catalog result or a separate original-scene link.
+          // Both are decoded below; neither may claim to be a personal film.
+          if(supportsCanvasRecording){
+            await expect(page.locator("[data-video-result]")).toHaveAttribute("data-video-result-mode","rendered");
+            assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
+          }else if(await originalSave.isVisible()){
+            await expect(personalSave).toBeHidden();
+            await expect(page.locator("[data-video-result]")).toBeHidden();
+            const note=page.locator("[data-video-original-fallback]");
+            await expect(note).toBeVisible();
+            assert.match(await note.innerText(),/не готовый персональный|no es el vídeo personalizado|not your personal video/i);
+            assert.match(await originalSave.getAttribute("href"),/^\/videos\/holistic-house\/.+\.mp4$/);
+          }else{
+            await expect(page.locator("[data-video-result]")).toHaveAttribute("data-video-result-mode","catalog");
             await expect(page.locator("[data-video-catalog-fallback]")).toBeVisible();
             assert.match(await page.locator("[data-video-catalog-fallback]").innerText(),
               /исходный|original|catálogo/i);
-          }else{
-            assert.equal(await page.locator("[data-video-catalog-fallback]").count(),0);
           }
           const requestRealDownload=async()=>{
             const [file]=await Promise.all([
@@ -1876,9 +1886,9 @@ const runEngine = async ([engine, browserType]) => {
             "Typed goal must fit within iPhone content width: "+JSON.stringify(inputGeometry));
           await page.locator("[data-video-quick-propose]").click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
-          assert.match(await auto.locator("[data-auto-video-choices]").innerText(),/Отношения/,
+          assert.match(await auto.locator("[data-auto-video-matched-theme]").innerText(),/Отношения/,
             "Written love goal must influence recommended scenario theme");
-          const choices=auto.locator("[data-auto-video-story]");
+          const choices=auto.locator("[data-auto-video-option]");
           assert.ok(await choices.count()>=2,"show real selectable alternative film concepts");
           await choices.nth(1).click();
           await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
@@ -1890,6 +1900,34 @@ const runEngine = async ([engine, browserType]) => {
             "Four cards below selections are consecutive scenes, not false clickable films");
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
             "six accessible one-tap goals, no mandatory 49-question intake");
+          // Owner-reported iPhone regression: focus must not zoom, trailing
+          // whitespace must survive, user intent must change the real proposal,
+          // and one of the alternative film cards must be selectable.
+          const typedGoal=auto.locator("[data-auto-video-input]");
+          await typedGoal.fill("Любовь ");
+          await typedGoal.pressSequentially("и доверие");
+          assert.equal(await typedGoal.inputValue(),"Любовь и доверие",
+            "goal input must preserve the space between two words");
+          await auto.locator("[data-auto-video-suggest]").click();
+          await expect(auto.locator("[data-auto-video-matched-theme]")).toContainText("Отношения");
+          const alternatives=auto.locator("[data-auto-video-option]");
+          assert.ok(await alternatives.count()>=2,"at least two genuine approved alternative story choices");
+          await alternatives.nth(1).click();
+          await expect(alternatives.nth(1)).toHaveAttribute("aria-pressed","true");
+          await expect(alternatives.nth(0)).toHaveAttribute("aria-pressed","false");
+          const geometry=await typedGoal.evaluate(el=>({
+            font:Number.parseFloat(getComputedStyle(el).fontSize),
+            viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+            right:el.getBoundingClientRect().right
+          }));
+          assert.ok(geometry.font>=16 && geometry.right<=geometry.viewport+2 &&
+            geometry.scroll<=geometry.viewport+2,
+            "iPhone goal field must not trigger focus zoom or horizontal overflow: "+JSON.stringify(geometry));
+          const musicPosition=await page.locator("[data-video-quick-audio-choices]").evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          const directorPosition=await auto.evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          assert.ok(directorPosition>musicPosition,
+            "Auto Video Director must appear below the existing Music & Voice block");
+
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
           await auto.locator('[data-auto-video-goal="calm"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});

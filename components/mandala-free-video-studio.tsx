@@ -20,7 +20,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 import { MandalaPersonalMeditation } from "./mandala-personal-meditation";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
-import { suggestPersonalVideoScene, captionFromWish, graphemeInput } from "@/lib/mandala/personal-video-intent.mjs";
+import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, retimeFreeFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
@@ -162,6 +162,7 @@ const workspaceTabs=[
  {id:"video",Icon:Film},{id:"audio",Icon:Music2},{id:"characters",Icon:Sparkles},
  {id:"hypnotherapy",Icon:HandHeart},{id:"psychocorrection",Icon:HeartPulse},{id:"courses",Icon:Leaf}
 ] as const;
+
 const compactWorkspaceTabs={
  ru:{video:"Видео",audio:"Музыка",characters:"Герои",hypnotherapy:"Терапия",psychocorrection:"Коррекция",courses:"Курсы"},
  en:{video:"Video",audio:"Audio",characters:"Stories",hypnotherapy:"Therapy",psychocorrection:"Mindset",courses:"Courses"},
@@ -1013,18 +1014,18 @@ function recordingMimes(withAudio: boolean, preferWebm = false, forceMp4ForRetry
   const webm = withAudio ? [
     'video/webm;codecs="vp8,opus"', "video/webm",
   ] : ["video/webm;codecs=vp8", "video/webm"];
-  // Some current iPhones fail to decode WebM (MEDIA_ERR_SRC_NOT_SUPPORTED).
-  // Try H.264/AAC MP4 first on iOS, but require actual native playback before
-  // calling the result ready. The explicit retry remains available for WebM.
-  const appleMobile = typeof navigator !== "undefined" &&
-    /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const ordered = orderRecordingMimes({
-    mp4, webm, preferWebm, forceMp4:forceMp4ForRetry,
+  // MediaRecorder support does not prove final native playback. Choose a
+  // Safari native MP4 first on iPhone, then expose an explicit alternate retry.
+  const isApplePhone=typeof navigator!=="undefined" &&
+    /iPhone|iPad|iPod/.test(navigator.userAgent);
+  // The reported iPhone fails to decode a finalized WebM. Try an explicitly
+  // AVC/AAC-capable MP4 recorder first there; keep the alternate format for
+  // a real playback failure, without claiming that MIME support guarantees it.
+  const candidates = orderRecordingMimes({
+    mp4, webm, preferWebm, forceMp4:forceMp4ForRetry||(isApplePhone&&!preferWebm),
     userAgent:typeof navigator==="undefined"?"":navigator.userAgent,
     maxTouchPoints:typeof navigator==="undefined"?0:navigator.maxTouchPoints,
   });
-  const candidates = appleMobile && !preferWebm && !forceMp4ForRetry
-    ? [...mp4,...webm] : ordered;
   return candidates.filter(mime => MediaRecorder.isTypeSupported(mime));
 }
 
@@ -1882,6 +1883,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
+  // A successful recording (or a codec failure) must be immediately visible
+  // after the client creates the film. Safari otherwise leaves the result
+  // below the fold and gives the impression that nothing was generated.
+  useEffect(()=>{
+    if(!result || playbackStatus==="checking")return;
+    const frame=window.requestAnimationFrame(()=>{
+      document.getElementById("personal-video-result")?.scrollIntoView({
+        behavior:"smooth",block:"nearest"
+      });
+    });
+    return ()=>window.cancelAnimationFrame(frame);
+  },[result,playbackStatus]);
+
 
   // Switch actual HTMLVideoElement decoders on the identical storyboard clock
   // used for both live preview and the final MediaRecorder capture.
@@ -2397,9 +2411,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
       setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
       setPreviewPlaying(false);setSuggestion("");
-      setNotice(locale==="ru"?"Бесплатный монтаж из четырёх MP4 выбран. Дождитесь загрузки кадров и нажмите «Создать видео».":locale==="es"?
-        "Montaje gratuito de cuatro MP4 seleccionado. Espera la carga y pulsa Crear vídeo.":
-        "Four-MP4 free film selected. Once the clips load, choose Create video.");
+      setNotice(locale==="ru"?"Бесплатный монтаж выбран. Нажмите «Создать видео».":locale==="es"
+        ?"Montaje gratuito seleccionado. Pulsa Crear vídeo.":"Free film selected. Choose Create video.");
       document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"nearest"});
     }catch{
       setNotice(ui.videoUnavailable);
@@ -2881,7 +2894,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <label id="video-wish-heading" htmlFor="personal-video-wish">{ui.wishTitle}</label>
         <textarea id="personal-video-wish" data-video-wish rows={2} maxLength={160}
           value={wish} placeholder={ui.wishPlaceholder} disabled={recording||preparing}
-          onChange={event=>{setWish(graphemeInput(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}} />
+          onChange={event=>{setWish(event.currentTarget.value.slice(0,160));setSuggestion("");setCinematicPlan(null);}} />
         <p>{ui.wishHelp}</p>
         <div className={videoStyles.wishActions}>
           <button type="button" data-video-suggest disabled={recording||preparing} onClick={suggestScene}>
@@ -3118,7 +3131,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-        
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3274,8 +3286,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls
         aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab} aria-pressed={activeWorkspace===item.id}
           aria-controls="video-workspace-panel" disabled={recording||preparing}
           onClick={()=>{
             setActiveWorkspace(item.id);
@@ -3488,18 +3499,157 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {activeWorkspace==="audio" ? deepAudioPane : null}
       </section>
-      {/* One shared goal, four selectable film concepts; below the video and music. */}
-      <div data-workspace-section="video" data-video-director-after-music>
         <MandalaAutoVideoDirector
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
           scenes={FREE_FILM_CATALOG}
           disabled={recording||preparing}
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
           clipLabel={freeFilmClipLabel}
-          showGoalInput={false}
-          onGoalChange={next=>{setWish(graphemeInput(next));setSuggestion("");setCinematicPlan(null);}}
+          onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
           onApply={applyAutoFilm}/>
-      </div>
+      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
+        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
+        data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
+        <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
+        {result ? (
+          <>
+            {result.mode==="catalog"?<p className={videoStyles.warning}
+              data-video-catalog-fallback role="note">
+              {locale==="ru"
+                ?"Это исходный готовый MP4 из каталога, а не персонально смонтированное видео. Воспользуйтесь браузером с записью Canvas, чтобы создать свой ролик с выбранными параметрами."
+                :locale==="es"
+                ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
+                :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
+            </p>:null}
+            <video key={result.url} src={result.url} controls playsInline preload="auto"
+              data-mandala-video-preview
+              onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
+              onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
+              onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
+              onError={event=>{
+                const errorCode=event.currentTarget.error?.code||0;
+                setPlaybackStatus("failed");
+                setNotice(locale==="ru"
+                  ?"Safari не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Попробуйте другой формат ниже."
+                  :locale==="es"
+                  ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
+                  :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
+              }}/>
+            {playbackStatus==="checking"?<p role="status" data-video-playback-check>
+              {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
+                :locale==="es"?"Verificando. Si no aparece un fotograma, pulsa ▶."
+                :"Checking playback. Tap ▶ if no frame appears."}
+            </p>:null}
+            {playbackStatus==="failed"?<div role="alert" data-video-playback-error>
+              <p>{locale==="ru"
+                ?"Этот файл не прошёл проверку воспроизведения. Видео не готово."
+                :locale==="es"
+                ?"El archivo no pasó la comprobación de reproducción."
+                :"This video failed playback verification."}</p>
+              {result.extension==="mp4"&&recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))
+                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
+                  disabled={!canGenerate||recording||preparing}
+                  onClick={()=>void createVideo(true)}>
+                  {locale==="ru"?"Повторить запись в альтернативном WebM"
+                    :locale==="es"?"Reintentar la grabación en WebM alternativo"
+                    :"Retry recording in alternate WebM"}
+                </button>
+                :result.extension==="webm"&&recordingMimes(Boolean(attachedAudio),false,true).some(mime=>mime.startsWith("video/mp4"))
+                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
+                  disabled={!canGenerate||recording||preparing}
+                  onClick={()=>void createVideo(false,true)}>
+                  {locale==="ru"?"Повторить с MP4 вместо WebM"
+                    :locale==="es"?"Reintentar con MP4 en lugar de WebM"
+                    :"Retry with MP4 instead of WebM"}
+                </button>
+                :<p>{locale==="ru"
+                    ?"Доступный кодировщик на этом устройстве не работает. Попробуйте обновить Safari или создать видео на компьютере."
+                    :locale==="es"
+                    ?"El codificador no funciona aquí. Actualiza Safari o crea el vídeo en un ordenador."
+                    :"The available recorder codec is failing. Update Safari or try a desktop browser."}</p>}
+            </div>:null}
+            {playbackStatus==="failed" && originalFallbackMp4 ?
+              <div className={videoStyles.warning} data-video-original-fallback role="note">
+                <p>{locale==="ru"
+                  ?"Если запись на устройстве не работает, можно открыть исходную сцену MP4. Это НЕ ваш готовый фильм: выбранные длительность, формат, фото, фразы и музыка не применены."
+                  :locale==="es"
+                  ?"Si falla la grabación, puedes abrir una escena MP4 original. NO es tu vídeo personalizado: duración, formato, foto, texto y música no se aplicaron."
+                  :"If recording fails, you can open an original MP4 scene. This is NOT your personalized film: duration, format, photo, captions and music were not applied."}</p>
+                <a href={originalFallbackMp4} download="holistic-house-original-scene.mp4"
+                  data-video-original-fallback-download className={videoStyles.audioDirectLink}>
+                  {locale==="ru"?"Открыть исходную сцену MP4 (без настроек)"
+                    :locale==="es"?"Abrir escena MP4 original (sin ajustes)"
+                    :"Open original MP4 scene (without edits)"}
+                </a>
+              </div> : null}
+            {playbackStatus==="ready" ? <>
+            <div className={videoStyles.resultActions}>
+              <a className={videoStyles.download} href={result.url}
+                download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
+                onClick={event=>{
+                  if(result.mode==="catalog" || !/iPad|iPhone|iPod/.test(navigator.userAgent))return;
+                  const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
+                  if(typeof navigator.share==="function" &&
+                    (typeof navigator.canShare!=="function"||navigator.canShare({files:[file]}))){
+                    event.preventDefault();
+                    void shareVideo();
+                  }
+                }}
+                data-mandala-video-download>
+                <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
+                  ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
+                  :" · "+result.extension.toUpperCase()+" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
+              </a>
+              {result.mode!=="catalog" ? <button type="button"
+                onClick={shareVideo} data-video-share>
+                <Share2 size={18} aria-hidden="true"/>{ui.share}
+              </button> : null}
+              {result.mode!=="catalog" ? <a
+                data-video-save-direct
+                className={videoStyles.audioDirectLink}
+                href={result.url}
+                download={"holistic-house-personal."+result.extension}>
+                {locale==="ru"?"Скачать файл напрямую (если меню «Файлы» не открылось)"
+                  :locale==="es"?"Descargar el archivo directamente (si no se abre Compartir)"
+                  :"Direct file download (if Share did not open)"}
+              </a> : null}
+            </div>
+            <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
+              aria-labelledby="video-post-support-title">
+              <h4 id="video-post-support-title">{postSupport.title}</h4>
+              <p className={videoStyles.postVideoSupportLead}>{postSupport.lead}</p>
+              <div className={videoStyles.postVideoSupportGrid}>
+                <div className={videoStyles.postVideoSupportItem} data-video-upsell="consultation">
+                  <div className={videoStyles.postVideoSupportIcon}><Heart size={18} aria-hidden="true"/></div>
+                  <div className={videoStyles.postVideoSupportBody}>
+                    <strong>{postSupport.consultation}</strong>
+                    <p>{postSupport.consultationText}</p>
+                    <Link prefetch={false} href={"/"+locale+"/services#consultation"}
+                      target="_blank" rel="noopener noreferrer"
+                      data-video-upsell-action="consultation">
+                      {postSupport.consultationAction}<ArrowRight size={16} aria-hidden="true"/>
+                    </Link>
+                  </div>
+                </div>
+                <div className={videoStyles.postVideoSupportItem} data-video-upsell="energy">
+                  <div className={videoStyles.postVideoSupportIcon}><HandHeart size={18} aria-hidden="true"/></div>
+                  <div className={videoStyles.postVideoSupportBody}>
+                    <strong>{postSupport.energy}</strong>
+                    <p>{postSupport.energyText}</p>
+                    <Link prefetch={false} href={"/"+locale+"/services/remote-energy-support"}
+                      target="_blank" rel="noopener noreferrer"
+                      data-video-upsell-action="energy">
+                      {postSupport.energyAction}<ArrowRight size={16} aria-hidden="true"/>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              <p className={videoStyles.postVideoSupportPrivacy}>{postSupport.privacy}</p>
+            </aside>
+            </> : null}
+          </>
+        ):<p>{ui.myVideosInfo}</p>}
+      </section>
       {studioMode==="therapy" ? <div className={videoStyles.therapyCourse} data-workspace-section="hypnotherapy" id="guided-video-series">
       <button type="button" data-video-therapy-exit className={videoStyles.quickTherapy}
         disabled={recording||preparing}
@@ -4251,149 +4401,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
       </details>
-      <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
-        data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
-        data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
-        <h3>{playbackStatus==="ready" ? ui.videoPreview : locale==="ru" ? "Проверка видео" : locale==="es" ? "Verificación del vídeo" : "Checking your video"}</h3>
-        {result ? (
-          <>
-            {result.mode==="catalog"?<p className={videoStyles.warning}
-              data-video-catalog-fallback role="note">
-              {locale==="ru"
-                ?"Это исходный готовый MP4 из каталога, а не персонально смонтированное видео. Воспользуйтесь браузером с записью Canvas, чтобы создать свой ролик с выбранными параметрами."
-                :locale==="es"
-                ?"Este es un MP4 original del catálogo, no tu montaje personalizado. Usa un navegador compatible con la grabación Canvas para generar la versión ajustada."
-                :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
-            </p>:null}
-            <video key={result.url} src={result.url} controls playsInline preload="auto"
-              data-mandala-video-preview
-              onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
-              onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
-              onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
-              onError={event=>{
-                const errorCode=event.currentTarget.error?.code||0;
-                setPlaybackStatus("failed");
-                setNotice(locale==="ru"
-                  ?"Safari не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Попробуйте другой формат ниже."
-                  :locale==="es"
-                  ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
-                  :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
-              }}/>
-            {playbackStatus==="checking"?<p role="status" data-video-playback-check>
-              {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
-                :locale==="es"?"Verificando. Si no aparece un fotograma, pulsa ▶."
-                :"Checking playback. Tap ▶ if no frame appears."}
-            </p>:null}
-            {playbackStatus==="failed"?<div role="alert" data-video-playback-error>
-              <p>{locale==="ru"
-                ?"Этот файл не прошёл проверку воспроизведения. Видео не готово."
-                :locale==="es"
-                ?"El archivo no pasó la comprobación de reproducción."
-                :"This video failed playback verification."}</p>
-              {result.extension==="mp4"&&recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))
-                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
-                  disabled={!canGenerate||recording||preparing}
-                  onClick={()=>void createVideo(true)}>
-                  {locale==="ru"?"Создать заново в Safari-совместимом WebM"
-                    :locale==="es"?"Volver a crear en WebM compatible con Safari"
-                    :"Retry with Safari-compatible WebM"}
-                </button>
-                :result.extension==="webm"&&recordingMimes(Boolean(attachedAudio),false,true).some(mime=>mime.startsWith("video/mp4"))
-                ?<button type="button" data-video-retry-compatible className={videoStyles.download}
-                  disabled={!canGenerate||recording||preparing}
-                  onClick={()=>void createVideo(false,true)}>
-                  {locale==="ru"?"Повторить с MP4 вместо WebM"
-                    :locale==="es"?"Reintentar con MP4 en lugar de WebM"
-                    :"Retry with MP4 instead of WebM"}
-                </button>
-                :<p>{locale==="ru"
-                    ?"Доступный кодировщик на этом устройстве не работает. Попробуйте обновить Safari или создать видео на компьютере."
-                    :locale==="es"
-                    ?"El codificador no funciona aquí. Actualiza Safari o crea el vídeo en un ordenador."
-                    :"The available recorder codec is failing. Update Safari or try a desktop browser."}</p>}
-            </div>:null}
-            {playbackStatus==="failed" && originalFallbackMp4 ?
-              <div className={videoStyles.warning} data-video-original-fallback role="note">
-                <p>{locale==="ru"
-                  ?"Если запись на устройстве не работает, можно открыть исходную сцену MP4. Это НЕ ваш готовый фильм: выбранные длительность, формат, фото, фразы и музыка не применены."
-                  :locale==="es"
-                  ?"Si falla la grabación, puedes abrir una escena MP4 original. NO es tu vídeo personalizado: duración, formato, foto, texto y música no se aplicaron."
-                  :"If recording fails, you can open an original MP4 scene. This is NOT your personalized film: duration, format, photo, captions and music were not applied."}</p>
-                <a href={originalFallbackMp4} download="holistic-house-original-scene.mp4"
-                  data-video-original-fallback-download className={videoStyles.audioDirectLink}>
-                  {locale==="ru"?"Открыть исходную сцену MP4 (без настроек)"
-                    :locale==="es"?"Abrir escena MP4 original (sin ajustes)"
-                    :"Open original MP4 scene (without edits)"}
-                </a>
-              </div> : null}
-            {playbackStatus==="ready" ? <>
-            <div className={videoStyles.resultActions}>
-              <a className={videoStyles.download} href={result.url}
-                download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
-                onClick={event=>{
-                  if(result.mode==="catalog" || !/iPad|iPhone|iPod/.test(navigator.userAgent))return;
-                  const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
-                  if(typeof navigator.share==="function" &&
-                    (typeof navigator.canShare!=="function"||navigator.canShare({files:[file]}))){
-                    event.preventDefault();
-                    void shareVideo();
-                  }
-                }}
-                data-mandala-video-download>
-                <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
-                  ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
-                  :" · "+result.extension.toUpperCase()+" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
-              </a>
-              {result.mode!=="catalog" ? <button type="button"
-                onClick={shareVideo} data-video-share>
-                <Share2 size={18} aria-hidden="true"/>{ui.share}
-              </button> : null}
-              {result.mode!=="catalog" ? <a
-                data-video-save-direct
-                className={videoStyles.audioDirectLink}
-                href={result.url}
-                download={"holistic-house-personal."+result.extension}>
-                {locale==="ru"?"Скачать файл напрямую (если меню «Файлы» не открылось)"
-                  :locale==="es"?"Descargar el archivo directamente (si no se abre Compartir)"
-                  :"Direct file download (if Share did not open)"}
-              </a> : null}
-            </div>
-            <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
-              aria-labelledby="video-post-support-title">
-              <h4 id="video-post-support-title">{postSupport.title}</h4>
-              <p className={videoStyles.postVideoSupportLead}>{postSupport.lead}</p>
-              <div className={videoStyles.postVideoSupportGrid}>
-                <div className={videoStyles.postVideoSupportItem} data-video-upsell="consultation">
-                  <div className={videoStyles.postVideoSupportIcon}><Heart size={18} aria-hidden="true"/></div>
-                  <div className={videoStyles.postVideoSupportBody}>
-                    <strong>{postSupport.consultation}</strong>
-                    <p>{postSupport.consultationText}</p>
-                    <Link prefetch={false} href={"/"+locale+"/services#consultation"}
-                      target="_blank" rel="noopener noreferrer"
-                      data-video-upsell-action="consultation">
-                      {postSupport.consultationAction}<ArrowRight size={16} aria-hidden="true"/>
-                    </Link>
-                  </div>
-                </div>
-                <div className={videoStyles.postVideoSupportItem} data-video-upsell="energy">
-                  <div className={videoStyles.postVideoSupportIcon}><HandHeart size={18} aria-hidden="true"/></div>
-                  <div className={videoStyles.postVideoSupportBody}>
-                    <strong>{postSupport.energy}</strong>
-                    <p>{postSupport.energyText}</p>
-                    <Link prefetch={false} href={"/"+locale+"/services/remote-energy-support"}
-                      target="_blank" rel="noopener noreferrer"
-                      data-video-upsell-action="energy">
-                      {postSupport.energyAction}<ArrowRight size={16} aria-hidden="true"/>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-              <p className={videoStyles.postVideoSupportPrivacy}>{postSupport.privacy}</p>
-            </aside>
-            </> : null}
-          </>
-        ):<p>{ui.myVideosInfo}</p>}
-      </section>
       {studioMode==="therapy" && activeWorkspace!=="courses" ? <MandalaPersonalMeditation
         locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
         sound={attachedAudio?.kind==="file" ? attachedAudio.file.name :

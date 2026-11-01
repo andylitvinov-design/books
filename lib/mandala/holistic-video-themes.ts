@@ -46,6 +46,10 @@ export const otherVideoScenes: Record<OtherTheme, LocalScene[]> = {
     { id:"coastal-freedom", symbol:"≋", label:{en:"Freedom and space",ru:"Свобода и простор",es:"Libertad y espacio"} },
     { id:"lone-tree", symbol:"♧", label:{en:"Roots of life",ru:"Корни жизни",es:"Raíces de vida"} },
     { id:"meadow-morning", symbol:"☼", label:{en:"Fresh morning",ru:"Новое утро",es:"Mañana nueva"} },
+    { id:"food-fruit-bowl", symbol:"◉", label:{en:"Fruit bowl",ru:"Миска фруктов",es:"Cuenco de frutas"} },
+    { id:"food-vegetable-prep", symbol:"❧", label:{en:"Preparing vegetables",ru:"Приготовление овощей",es:"Preparación de verduras"} },
+    { id:"food-soup-bowl", symbol:"◌", label:{en:"Warm soup",ru:"Тёплый суп",es:"Sopa caliente"} },
+    { id:"food-bread-table", symbol:"◇", label:{en:"Bread on the table",ru:"Хлеб на столе",es:"Pan en la mesa"} },
     ...scenesFor("life"),
   ],
   health: [
