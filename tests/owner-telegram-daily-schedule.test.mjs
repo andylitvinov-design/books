@@ -65,15 +65,19 @@ test('noon strategy content excludes technical scanner and unverifiable model ou
   assert.doesNotMatch(report.markdown,/Итог отдельных этапов: ChatGPT/)
 })
 
-test('all cron paths authenticate and enforce Toronto slot, no anonymous or preview sends',()=>{
+test('owner-report cron jobs keep Toronto slots; private push recovery has a separate guarded route',()=>{
   const cron=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
   assert.deepEqual(cron.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
+    {path:'/api/internal/direct-message-push',schedule:'*/5 * * * *'},
     {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
     {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
   ])
+  const phone=readFileSync(new URL('../app/api/internal/direct-message-push/route.js',import.meta.url),'utf8')
+  assert.match(phone,/cronAuthorized\(request,process\.env\)/)
+  assert.match(phone,/VERCEL_ENV==='preview'/)
   for(const [route,slot] of [
     ['revenue-ideas-telegram','revenue'],
     ['practice-telegram-digest','operations'],

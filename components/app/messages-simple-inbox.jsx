@@ -89,7 +89,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
   locale='en',accountId,requests=[],businessEnquiries=[],telegramUrl='',
-  websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
+  websiteLoading=false,websiteUnavailable=false,onReload,initialDirectThreadId='',embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
 }){
   const t=COPY[locale]||COPY.en
   const [crmState,setCrmState]=useState({loading:crmEnabled,error:false,threads:[],partial:false})
@@ -103,6 +103,7 @@ export default function MessagesSimpleInbox({
   const [openDetail,setOpenDetail]=useState(false)
   const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
+  const openedLinkRef=useRef('')
   const [refreshNonce,setRefreshNonce]=useState(0)
   const [offline,setOffline]=useState(false)
   useEffect(()=>{
@@ -171,6 +172,18 @@ export default function MessagesSimpleInbox({
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
+
+  // Lock-screen deep links open only after the signed-in account's own
+  // verified inbox contains the thread, never from the URL UUID alone.
+  useEffect(()=>{
+    if(!accountId||!initialDirectThreadId)return
+    const opening=accountId+':'+initialDirectThreadId
+    if(openedLinkRef.current===opening)return
+    const key='direct:'+initialDirectThreadId
+    if(!rows.some(row=>row.key===key))return
+    openedLinkRef.current=opening
+    setTab('chats');setSearch('');setSelectedKey(key);setOpenDetail(true);setShowCard(false)
+  },[accountId,initialDirectThreadId,rows])
 
   useEffect(()=>{
     setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:crmEnabled,error:false,threads:[],partial:false})

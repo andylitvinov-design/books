@@ -22,7 +22,8 @@ const TEXT={
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
   freeLabel:'FREE',freeConsultation:'Get a free written personal review',freeConsultationDetail:'Personal written review with Andrey · no call or fee.',
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
-  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
+  incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.',
+  notifyTitle:'Do not miss your practitioner’s reply',notifyInfo:'Enable phone or Telegram alerts for updates after you leave the site.',notifyAction:'Notification settings'},
  ru:{title:'Сообщения',subtitle:'Заказы и общение',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
@@ -38,7 +39,8 @@ const TEXT={
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
   freeLabel:'БЕСПЛАТНО',freeConsultation:'Получить бесплатный письменный разбор',freeConsultationDetail:'Личный письменный разбор с Андреем · без звонка и оплаты.',
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
-  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
+  incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.',
+  notifyTitle:'Не пропустите ответ мастера',notifyInfo:'Настройте уведомления на телефон или в Telegram, даже когда сайт закрыт.',notifyAction:'Настроить уведомления'},
  es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
@@ -54,7 +56,8 @@ const TEXT={
   newer:'Nueva respuesta',signIn:'Inicia sesión para ver tus pedidos',search:'Buscar profesional',more:'Las solicitudes anteriores están en Consultas.',
   freeLabel:'GRATIS',freeConsultation:'Solicitar un análisis personal escrito gratuito',freeConsultationDetail:'Revisión personal escrita con Andrey · sin llamada ni pago.',
   freeReiki:'Empezar el curso gratis de prácticas Reiki',freeReikiDetail:'Cinco lecciones con meditaciones y ejercicios sencillos.',
-  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.'},
+  incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.',
+  notifyTitle:'No te pierdas la respuesta',notifyInfo:'Configura los avisos en tu teléfono o Telegram al cerrar el sitio.',notifyAction:'Configurar avisos'},
 }
 const STATES={
  en:{requested:'Waiting for practitioner',contacted:'Discussing details',reschedule_proposed:'Time change proposed',confirmed:'Confirmed by practitioner',in_progress:'In progress',completed:'Completed',declined:'Declined',cancelled:'Cancelled'},
@@ -232,6 +235,13 @@ export default function MessagesOrdersClients({locale='en',children}){
       </button>
     </div>
     {section==='orders'&&<div id="hh-orders-panel" role="tabpanel" className={styles.panel}>
+      {!loading&&!error&&orders.length>0&&!selected&&
+        <aside className={styles.notifyInvite}>
+          <Bell size={19} aria-hidden="true"/>
+          <div><strong>{t.notifyTitle}</strong><p>{t.notifyInfo}</p></div>
+          <Link href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
+            prefetch={false}>{t.notifyAction}<ArrowRight size={15} aria-hidden="true"/></Link>
+        </aside>}
       {!loading&&!error&&!selected&&ordersData&&orders.length===0&&
         <div className={styles.freeOffers} data-free-order-offers>
           <Link href={'/'+locale+'/services/free-situation-review'} className={styles.freeOffer}

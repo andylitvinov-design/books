@@ -80,15 +80,19 @@ test('private goal photo retention does not eagerly load native Sharp into the c
   assert.match(source, /PHOTO_PROCESSING_UNAVAILABLE/)
 })
 
-test('production scheduler invokes only the guarded daily housekeeping route', () => {
+test('production scheduler includes guarded housekeeping and consented phone alert recovery', () => {
   const routePath = `${root}/app/api/internal/housekeeping/route.js`
   assert.equal(existsSync(routePath), true)
   const route = readFileSync(routePath, 'utf8')
   const config = JSON.parse(readFileSync(`${root}/vercel.json`, 'utf8'))
   assert.match(route, /runHousekeepingCron/)
   assert.match(route, /PRIVATE_HEADERS/)
+  const pushRoute=readFileSync(`${root}/app/api/internal/direct-message-push/route.js`,'utf8')
+  assert.match(pushRoute,/cronAuthorized\(request,process\.env\)/)
+  assert.match(pushRoute,/VERCEL_ENV==='preview'/)
   assert.deepEqual(config.crons, [
     { path: '/api/internal/housekeeping', schedule: '0 5 * * *' },
+    { path: '/api/internal/direct-message-push', schedule: '*/5 * * * *' },
     { path: '/api/internal/revenue-ideas-telegram', schedule: '0 13,14 * * *' },
     { path: '/api/internal/practice-telegram-digest', schedule: '0 13,14,19,20 * * *' },
     { path: '/api/internal/council-archive-telegram', schedule: '0 16,17 * * *' },
