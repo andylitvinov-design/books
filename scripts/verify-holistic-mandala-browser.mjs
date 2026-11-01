@@ -1780,6 +1780,12 @@ const runEngine = async ([engine, browserType]) => {
         // Owner's six-button request: one genuine in-place content swap per workspace,
         // not a scroll-jump to a fragment or another duplicate video editor.
         const workspaceNav=page.locator("[data-video-quick-controls]");
+        const navRect=await workspaceNav.locator("button").evaluateAll(nodes=>nodes.map(node=>{
+          const box=node.getBoundingClientRect();return {top:box.top,height:box.height,right:box.right};
+        }));
+        assert.equal(navRect.length,6,"six real workspaces, no duplicate rows");
+        assert.ok(navRect.every(item=>Math.abs(item.top-navRect[0].top)<=2&&item.height>=44),
+          "all six tabs must be in one >=44px row on "+width+"px");
         await workspaceNav.scrollIntoViewIfNeeded();
         const originalHash=await page.evaluate(()=>window.location.hash);
         for (const id of ["video","audio","characters","psychocorrection","courses","hypnotherapy"]){
@@ -1868,7 +1874,7 @@ const runEngine = async ([engine, browserType]) => {
           assert.ok(inputGeometry.document<=inputGeometry.viewport+2&&
             inputGeometry.fieldRight<=inputGeometry.viewport+2,
             "Typed goal must fit within iPhone content width: "+JSON.stringify(inputGeometry));
-          await auto.locator("[data-auto-video-suggest]").click();
+          await page.locator("[data-video-quick-propose]").click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
           assert.match(await auto.locator("[data-auto-video-choices]").innerText(),/Отношения/,
             "Written love goal must influence recommended scenario theme");
@@ -1877,6 +1883,9 @@ const runEngine = async ([engine, browserType]) => {
           await choices.nth(1).click();
           await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
           await expect(choices.nth(0)).toHaveAttribute("aria-pressed","false");
+          await page.locator("[data-video-quick-goal-edit]").click();
+          assert.equal(await goalField.evaluate(input=>document.activeElement===input),true,
+            "Edit goal shortcut focuses the one canonical input");
           assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
             "Four cards below selections are consecutive scenes, not false clickable films");
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
