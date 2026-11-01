@@ -8,11 +8,13 @@ on:
     paths:
       - '.github/workflows/hh-pr-repair-worker.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
+      - 'scripts/ci-pr-repair-test-scope.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
       - 'tests/ci-pr-direction-watcher.test.cjs'
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-repair-worker.test.cjs'
+      - 'tests/ci-pr-repair-test-scope.test.cjs'
   workflow_dispatch:
     inputs:
       pr_number:
@@ -58,7 +60,7 @@ jobs:
       - name: Check trusted repair worker
         run: |
           node --check scripts/ci-pr-repair-worker.cjs
-          node --test tests/ci-pr-priority.test.cjs tests/ci-pr-repair-worker.test.cjs
+          node --test tests/ci-pr-priority.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
         uses: actions/github-script@v7
@@ -91,6 +93,12 @@ jobs:
         with:
           ref: ${{ needs.claim.outputs.sha }}
           persist-credentials: false
+      - name: Checkout trusted test selector without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -116,8 +124,18 @@ jobs:
           if(fix.status!==0 || verify.status!==0 ||
               changed.some(p=>!paths.includes(p)) || changed.length>8){
             console.log('No verified scoped fix. Manual repair required.');
-          }else{
-            for(const path of changed){
+          }else if(changed.length){
+            // Capture the candidate before tests and reject any test that changes
+            // its scope or source bytes. The selector is from trusted default.
+            const crypto=require('node:crypto');
+            const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+            const before=new Map(changed.map(p=>[p,digest(p)]));
+            const gate=spawnSync(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],{stdio:'inherit',timeout:195000});
+            const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8').split('\0').filter(Boolean);
+            const verified=gate.status===0 && after.length===changed.length &&
+              after.every(p=>before.has(p)&&before.get(p)===digest(p));
+            if(!verified)console.log('No verified relevant tests or candidate changed during testing; manual repair required.');
+            for(const path of verified?changed:[]){
               const content=fs.readFileSync(path);
               if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
               result.files.push({path,
