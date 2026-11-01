@@ -83,7 +83,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       await advanced.locator(":scope > summary").click();
       await selectedFile.waitFor({state:"hidden"});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false);
-      if(engine==="chromium") {
+      if(engine==="chromium"||engine==="webkit") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
           const v=document.querySelector("[data-mandala-master-mp4]");
@@ -142,7 +142,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]) {
       assert.equal(typed.text,customText);
       assert.equal(typed.consent,true);
       assert.deepEqual(errors,[],engine+" should not log client exceptions");
-      process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + real local nature WAV attachment + stale guard\n");
+      process.stdout.write("PASS "+engine+" "+locale+" mocked TTS + locally encoded video/audio + nature WAV attachment + stale guard\n");
     }finally{await context.close();}
   }finally{await browser.close();}
 }
