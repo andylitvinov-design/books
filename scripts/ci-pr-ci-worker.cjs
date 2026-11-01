@@ -151,9 +151,24 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
       }
       // Durable once-per-PR lease is written before mutation. If anything
       // fails, manual review may remove ATTEMPTED; no automatic retry loop.
-      await limited('claim-once',()=>github.rest.issues.addLabels({
-        owner,repo,issue_number:pr.number,labels:[ATTEMPTED]
-      }));
+      try{
+        await limited('claim-once',()=>github.rest.issues.addLabels({
+          owner,repo,issue_number:pr.number,labels:[ATTEMPTED]
+        }));
+      }catch(error){
+        if(![404,422].includes(error?.status))throw error;
+        try{
+          await limited('create-claim-label',()=>github.rest.issues.createLabel({
+            owner,repo,name:ATTEMPTED,color:'6f42c1',
+            description:'One-shot CI bootstrap attempted; do not loop on the same PR'
+          }));
+        }catch(createError){
+          if(createError?.status!==422)throw createError;
+        }
+        await limited('claim-once',()=>github.rest.issues.addLabels({
+          owner,repo,issue_number:pr.number,labels:[ATTEMPTED]
+        }));
+      }
       if(summary.apiPause)break;
       const fresh=(await limited('fresh-pr',()=>github.rest.pulls.get({
         owner,repo,pull_number:pr.number
