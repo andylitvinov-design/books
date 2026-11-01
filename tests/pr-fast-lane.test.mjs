@@ -366,8 +366,9 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     const block = s.split('  pull_request:')[1].split(/^  [a-z_]+:|^permissions:/m)[0];
     const patterns = [...block.matchAll(/^      - '([^']+)'$/gm)].map(match => match[1]);
     assert.ok(!patterns.includes('AGENTS.md'), name + ' must not run a product suite on agent instructions alone');
-    // App R1 explicitly routes its own YAML edits to cheap policy checks; other suites remain path-filtered.
-    const focusedSelfCheck = name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1');
+    // IA self-edits retain owned security/browser checks; App R1 uses its scoped classifier.
+    const focusedSelfCheck = (name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1')) ||
+      (name === 'ia-v2.yml' && s.includes('npm run test:app') && s.includes('npm run verify:ia-v2'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');
     assert.ok(patterns.some(pattern => /^app\/|^components\/|^lib\/|^tests\//.test(pattern)), name + ' lost product source coverage');
@@ -398,7 +399,12 @@ test('App R1 and IA retain specialist tests but avoid duplicate global validatio
   ]) {
     assert.ok(ia.includes('- name: ' + name + '\n        ' + skip + '\n        run: ' + command), name + ' must be scoped to non-production-PR only');
   }
-  assert.match(ia, /run: npm run test:unit/);
+  assert.match(ia, /name: IA security, ownership and navigation contracts/);
+  assert.match(ia, /run: npm run test:app/);
+  for (const file of ['ia-v2.test.mjs', 'ia-preview-verifier.test.mjs', 'admin-session-lifecycle.test.mjs', 'ia-v2-loopback-proxy.test.mjs', 'ia-public-navigation-diagnostics.test.mjs', 'app-auth-pkce.integration.mjs', 'app-migration-contract.test.mjs', 'app-guest-report-migration.test.mjs', 'app-http-security.test.mjs', 'prescriptions.test.mjs', 'prescription-access.test.mjs', 'client-account-document-save.test.mjs', 'practitioner-private-relay.test.mjs', 'admin-login-security.test.mjs', 'remote-support-privacy-contract.test.mjs', 'client-session-recorder-auth.test.mjs', 'practitioner-preview-auth.test.mjs', 'admin-auth-refresh.test.mjs', 'oauth-public-pages.test.mjs', 'public-security-headers.test.mjs', 'crm-security-contract.test.mjs', 'session-delivery-security.test.mjs', 'practice-telegram-auth-fetch.test.mjs', 'crm-consent.test.mjs', 'manual-billing-security.test.mjs', 'public-tests-auth-transparency.test.mjs']) {
+    assert.ok(ia.includes('tests/' + file), file + ' remains in the IA PR lane');
+  }
+  assert.match(ia, /name: Full unit inventory outside production PR[\s\S]*?if: \$\{\{ github\.event_name != 'pull_request' \}\}[\s\S]*?run: npm run test:unit/);
   assert.match(ia, /run: npm run build/);
   assert.match(ia, /run: npm run verify:ia-v2/);
 });
