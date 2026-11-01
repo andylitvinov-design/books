@@ -294,7 +294,17 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && github.event.workflow_run.conclusion != 'success' }}
+    # Mirror the script's cheap trust and eligibility checks before reserving a runner.
+    # The script still revalidates all evidence before any rerun.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.name == 'HH PR core release gate' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.repository.full_name == github.repository &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.run_attempt == 1 &&
+      contains(fromJSON('["cancelled","timed_out","startup_failure","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
