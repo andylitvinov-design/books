@@ -376,8 +376,8 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         await expandAllFilms.click();
-        assert.equal(await quick.locator("[data-video-scene-library] [data-free-film-preset]").count(),48,
-          "All 48 must be real selectable four-MP4 film presets, not a decorative count");
+        await expect(quick.locator("[data-video-scene-library] [data-free-film-preset]")).toHaveCount(48,
+          {timeout:10000}); // All 48 must be real selectable four-MP4 presets.
         await expandAllFilms.click();
         const mediaGeometry=await quick.locator("[data-video-mini-source]").boundingBox();
         assert.ok(mediaGeometry&&playerRect&&mediaGeometry.width<=playerRect.width+2,
@@ -1071,8 +1071,11 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await page.locator('[data-video-affirmation-density="high"]').getAttribute("aria-pressed"),"true");
         await page.locator('[data-video-affirmation-frequency="3"]').click();
         assert.equal(await page.locator('[data-video-affirmation-frequency="3"]').getAttribute("aria-pressed"),"true");
-        await page.locator('[data-video-affirmation-visibility="small"] input').check();
-        await page.locator('[data-video-affirmation-visibility="frame"] input').check();
+        for(const mode of ["small","frame"]){
+          const checkbox=page.locator('[data-video-affirmation-visibility="'+mode+'"] input');
+          await checkbox.evaluate(element=>element.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+          await checkbox.check();
+        }
         assert.equal(await page.locator('[data-video-affirmation-visibility="frame"] input').isChecked(),true);
         await page.locator('[data-video-affirmation-visibility="frame"] input').uncheck();
         await page.locator("[data-video-affirmations-custom] summary").click();
