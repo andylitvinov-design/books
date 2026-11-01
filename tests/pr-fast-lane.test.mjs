@@ -939,8 +939,10 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
   assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
     'must honor legacy branch protection until admin migration');
-  assert.ok(enable.includes('job.name === "release-ready" && job.status === "completed"'),
+  assert.ok(enable.includes('oldRequired && !passed("release-ready")'),
     'must not bypass presently required release-ready');
+  assert.ok(enable.includes('specialistRequired && !passed("hh-specialist")'),
+    'a red specialist check blocks after migration');
   assert.ok(enable.includes('const coreRequired = Array.isArray(required) && required.includes("hh-core-verified")'),
     'must recognize migrated protection without weakening actual CI');
 
@@ -1012,7 +1014,7 @@ test('native AutoMerge wakes once after Core and reserves owner PAT for actual p
 
 test('new hh-core-verified is a short fail-closed Core-only status, not specialist approval',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  release-ready:)/m)?.[0];
+  const coreSection=source.match(/^  hh-core-verified:\n[\s\S]*?(?=^  hh-specialist:)/m)?.[0];
   assert.ok(coreSection,'new Core status must exist alongside old release-ready during migration');
   assert.match(coreSection,/^    name: hh-core-verified$/m);
   assert.match(coreSection,/^    needs: \[scope, code\]$/m);
@@ -1100,9 +1102,23 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   }
   assert.equal(await decide([good, specialist]), true, 'exact source association accepts synthetic CI SHA');
   assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified', 'hh-specialist'],
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'hh-specialist', status: 'completed', conclusion: 'success'},
+    ],
+  }), true, 'new branch protection requires both real Core and Specialist successes');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified', 'hh-specialist'],
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'hh-specialist', status: 'completed', conclusion: 'failure'},
+    ],
+  }), false, 'red Specialist must block migration');
+  assert.equal(await decide([good, specialist], live, event, 2, {
     required: ['hh-core-verified'],
     jobs: [{name: 'hh-core-verified', status: 'completed', conclusion: 'success'}],
-  }), true, 'new branch protection accepts verified Core when old release-ready is no longer required');
+  }), false, 'Core alone cannot count as a completed migration');
   assert.equal(await decide([good, specialist], live, event, 2, {
     jobs: [
       {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
@@ -1165,19 +1181,19 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('separate required specialist status cannot bypass full release-ready acceptance',()=>{
+test('legacy and plural compatibility statuses cannot bypass the real hh-specialist gate',()=>{
   const source=workflow('hh-pr-core-release.yml');
   const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
   assert.ok(special,'must publish a named independent specialist status');
   assert.match(special,/^    name: hh-specialists-verified$/m);
-  assert.match(special,/^    needs: \[release-ready\]$/m);
+  assert.match(special,/^    needs: \[hh-specialist\]$/m);
   assert.match(special,/^    if: always\(\)$/m);
   assert.match(special,/^    timeout-minutes: 3$/m);
-  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + '{{ needs.release-ready.result }}'));
+  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
   assert.ok(special.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
   assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  const full=source.split(/^  release-ready:\s*$/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
-  assert.ok(full,'must retain real legacy specialist job');
+  const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
+  assert.ok(full,'must retain independent full specialist verifier');
   assert.match(full,/ci-specialist-aggregate\.mjs/);
   assert.match(full,/timeout-minutes: 45/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
