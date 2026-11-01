@@ -4,7 +4,8 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
+import { resolveRequiredGatePolicy, assessRequiredGates } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
   if (!token) throw Error('GH_TOKEN or GITHUB_TOKEN required for route');
@@ -65,7 +66,7 @@ async function reportDeepRoutes(repo,token) {
     return response.json();
   }
   const rules=()=>get('/rules/branches/'+encodeURIComponent('codex/public-book-library'));
-  const appId=requiredGateApp(await rules());
+  const policy=resolveRequiredGatePolicy(await rules());
   const preliminary=routeSweep(snapshot.rows,snapshot.observed);
   const wanted=new Set(preliminary.unknown.map(item=>item.number));
   const candidates=snapshot.rows.filter(row=>wanted.has(row.number) && /^[a-f0-9]{40}$/.test(row.head?.sha || ''));
@@ -76,21 +77,25 @@ async function reportDeepRoutes(repo,token) {
       const row=candidates[next++];
       if (!row) return;
       try {
-        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,get('/commits/'+row.head.sha+'/check-runs?check_name=release-ready&filter=latest&per_page=100'));
-        const result=await headReads.get(row.head.sha);
-        evidence.set(row.number,{head:row.head.sha,...assessRequiredGate({head:row.head.sha,appId,checks:result.check_runs,total:result.total_count})});
+        if (!headReads.has(row.head.sha)) headReads.set(row.head.sha,Promise.all(policy.contexts.map(async context => {
+          const result=await get('/commits/'+row.head.sha+'/check-runs?check_name='+encodeURIComponent(context)+'&filter=latest&per_page=100');
+          return {context,total_count:result.total_count,check_runs:result.check_runs};
+        })));
+        const observations=await headReads.get(row.head.sha);
+        evidence.set(row.number,{head:row.head.sha,...assessRequiredGates({head:row.head.sha,policy,observations})});
       } catch(error) {
         errors.push({number:row.number,error:String(error?.message || error)});
       }
     }
   }
   await Promise.all(Array.from({length:Math.min(4,candidates.length)},()=>worker()));
-  if (requiredGateApp(await rules())!==appId) throw Error('REQUIRED_GATE_RULE_CHANGED');
+  if (JSON.stringify(resolveRequiredGatePolicy(await rules()))!==JSON.stringify(policy)) throw Error('REQUIRED_GATE_RULE_CHANGED');
   // Re-list so changed heads and newly opened PRs are never attributed old evidence.
   const fresh=await collectRouteSnapshot(repo,token);
   const routed=refineStaleRoutes(fresh.rows,evidence,fresh.observed);
   console.log(JSON.stringify({repo,observed_at:new Date(fresh.observed).toISOString(),total:fresh.total,
     ...routed,deep_checks_attempted:candidates.length,unique_heads_read:headReads.size,deep_read_errors:errors,
+    required_policy_mode:policy.mode,required_contexts:policy.contexts,
     root_grouping:'UNCLASSIFIED_REQUIRES_CONFIRMED_REGISTRY_EVIDENCE',merge_authorized:false},null,2));
 }
 
