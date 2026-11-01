@@ -144,7 +144,8 @@ test('Services: optional booking-style search lives in the dedicated directory f
   for(const page of [main,es]){
     assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
     assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<PersonalTestimonials'))
+    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<ServicesConversionHero'))
+    assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<PersonalTestimonials'))
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
     assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
@@ -201,11 +202,10 @@ test('Explore by area is compact on mobile without removing category selection o
 
 
 test('service match results use full-width orderable cards with accessible details and real contact handoff',async()=>{
-  const [ui,css,en,es,matcher]=await Promise.all([
+  const [ui,css,directory,matcher]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
-    readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
-    readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../lib/whatsapp-enquiry.js',import.meta.url),'utf8'),
   ])
   for(const key of ['resultTitle:"Your options"','resultTitle:"Ваши варианты"','resultTitle:"Tus opciones"']) assert.ok(ui.includes(key))
@@ -261,10 +261,11 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(css.includes('.editorialChannels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
   assert.ok(css.includes('.editorialCard{grid-template-columns:minmax(0,1fr) 111px;'))
   assert.ok(css.includes('.editorialCard :is(button,a):focus-visible'))
-  assert.ok(en.includes('href:\`/\${locale}/services/systemic-constellations\`'))
-  assert.ok(en.includes('free:offer.id === "situation" || offer.id === "dao"'))
-  assert.ok(es.includes('details:detail,href,areaKey:areas[id]'))
-  assert.ok(en.includes('€50 / 30 min · €100 / 60 min'))
+  // Source of editorial offers is the existing localized services directory.
+  assert.ok(directory.includes('href: "/" + locale + "/services/systemic-constellations"'))
+  assert.ok(directory.includes('free: offer.id === "situation" || offer.id === "dao"'))
+  assert.ok(directory.includes('details: t.detailed'))
+  assert.ok(directory.includes('€50 / 30 min · €100 / 60 min'))
 })
 
 test('a relationship query such as Love shows relevant orderable services first, without unrelated free cards',()=>{
