@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   parsePaths,syntaxCandidates,impactsTypes,rootFingerprint,
-  parseTypescriptDiagnostics,summarizeFindings,formatReport,
+  parseTypescriptDiagnostics,summarizeFindings,formatReport,checkJavascriptSyntax,
 } from '../scripts/ci-source-preflight.mjs';
 
 test('null-separated change paths deduplicate',()=>{
@@ -14,9 +17,9 @@ test('untrusted or truncated diff fails closed',()=>{
   for(const row of ['bad','../escape.mjs\0','/tmp/private.mjs\0','-bad.mjs\0','scripts/./a.mjs\0','a\nb.mjs\0'])
     assert.throws(()=>parsePaths(row),/INVALID_DIFF_/);
 });
-test('syntax selection excludes JSX; TypeScript covers code and manifests',()=>{
-  assert.deepEqual(syntaxCandidates(['scripts/a.mjs','tests/x.cjs','components/x.tsx','components/y.jsx']),
-    ['scripts/a.mjs','tests/x.cjs']);
+test('syntax selection covers Node JS, React JS/JSX; TypeScript covers code and manifests',()=>{
+  assert.deepEqual(syntaxCandidates(['scripts/a.mjs','tests/x.cjs','components/x.tsx','components/y.jsx','app/page.js']),
+    ['scripts/a.mjs','tests/x.cjs','components/y.jsx','app/page.js']);
   assert.equal(impactsTypes(['components/x.tsx']),true);
   assert.equal(impactsTypes(['package-lock.json']),true);
   assert.equal(impactsTypes(['docs/a.md','.github/workflows/hh-pr-core-release.yml']),false);
@@ -48,4 +51,38 @@ test('no findings means no invented failures',()=>{
   const report=formatReport([],[],false);
   assert.equal(report.status,'passed');
   assert.deepEqual(report.roots,[]);
+});
+
+test('JS/JSX syntax catches real errors without rejecting valid React components',()=>{
+  const dir = mkdtempSync(join(tmpdir(),'hh-source-js-'));
+  try {
+    const plain = join(dir,'page.js'), jsx = join(dir,'card.jsx');
+    const bad = join(dir,'bad.js'), badJsx = join(dir,'bad.jsx'), typed = join(dir,'typed.js');
+    writeFileSync(plain,'export default function Page(){return <main><span>Hello</span></main>;}');
+    writeFileSync(jsx,'export const Card = () => <article data-test="ok">Ready</article>;');
+    writeFileSync(bad,"const message = 'not closed;\n");
+    writeFileSync(badJsx,'function Broken(){return <div></section>;}');
+    writeFileSync(typed,'function example(x: number) { return x; }');
+    const findings = checkJavascriptSyntax([plain,jsx,bad,badJsx,typed]);
+    assert.deepEqual(findings.map(f=>f.code).sort(),['JS1002','JS17002','JS8010']);
+    assert.equal(formatReport([plain,jsx,bad,badJsx,typed],findings,false).rootCount,3);
+    assert.equal(findings.find(f=>f.file===bad).line,1);
+    const originalRoot = findings.find(f=>f.file===bad).root;
+    writeFileSync(bad,"// a line moved\nconst message = 'not closed;\n");
+    assert.equal(checkJavascriptSyntax([bad])[0].root,originalRoot);
+  } finally {
+    rmSync(dir,{recursive:true,force:true});
+  }
+});
+
+test('unreadable changed JavaScript fails closed instead of silently passing',()=>{
+  const dir = mkdtempSync(join(tmpdir(),'hh-source-missing-'));
+  try {
+    const findings = checkJavascriptSyntax([join(dir,'missing.js')]);
+    assert.equal(findings[0].code,'JS_READ');
+    assert.equal(findings[0].category,'infrastructure.preflight');
+    assert.equal(findings[0].root.length,20);
+  } finally {
+    rmSync(dir,{recursive:true,force:true});
+  }
 });
