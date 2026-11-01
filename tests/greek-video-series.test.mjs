@@ -30,14 +30,14 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     fileName: "greek-video-series.ts",
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  const module = { exports: {} };
+  const sandboxModule = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, require: specifier => {
+    module: sandboxModule, exports: sandboxModule.exports, require: specifier => {
       assert.equal(specifier, "@/data/academy/catalog");
       return catalog;
     },
   }, { timeout: 2000 });
-  const ru = JSON.parse(JSON.stringify(module.exports.greekVideoSeries("ru")));
+  const ru = JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("ru")));
   assert.deepEqual(ru.map(series => [series.id, series.lessons.length]), [
     ["greek-dionysus", 7], ["greek-demeter", 5],
   ]);
@@ -46,8 +46,8 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     assert.deepEqual(series.lessons.map(video => video.order),
       Array.from({ length: series.lessons.length }, (_, index) => index + 1));
   }
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("en"))), []);
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("es"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("en"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("es"))), []);
 });
 
 test("Dionysus and Demeter retain their own original, complete numbered episode sequences", () => {
