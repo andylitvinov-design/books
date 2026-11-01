@@ -4,6 +4,11 @@ import test from "node:test";
 
 const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
+test("voice browser opens the compact studio advanced audio controls before using them",()=>{
+  assert.match(source,/data-video-advanced-toggle/);
+  assert.match(source,/advancedToggle\.click\(\)[\s\S]*?musicSettings\.waitFor\(\{state:"visible"/);
+});
+
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
   const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);

@@ -88,6 +88,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // the visible Phrases workspace. The deprecated legacy disclosure is
       // intentionally hidden; tests must not click an invisible summary.
       await page.locator('[data-video-quick-control="video"]').click();
+      const advancedToggle=page.locator("[data-video-advanced-toggle]");
+      if(await advancedToggle.isVisible() && await advancedToggle.getAttribute("aria-expanded")==="false")
+        await advancedToggle.click();
       const musicSettings=page.locator("[data-video-audio-details]");
       await musicSettings.waitFor({state:"visible",timeout:25000});
       // A previously opened disclosure must not be toggled closed. Exercise

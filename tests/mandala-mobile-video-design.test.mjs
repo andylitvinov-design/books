@@ -335,7 +335,8 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "single original audio editor mounted in either workspace");
   assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
     "single original Hypno editor mounted in either workspace");
-  assert.match(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/);
+  assert.match(studio,/activeWorkspace==="video" \? deepAudioPane/);
+  assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane/);
   assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
     "the sole phrase editor remains mounted to preserve its project state");
   for(const title of ["Видео-терапия","Своё фото / цель",

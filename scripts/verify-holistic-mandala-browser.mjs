@@ -24,8 +24,16 @@ const viewports = [
   { locale: "ru", width: 375 },
   { locale: "ru", width: 390 },
   { locale: "ru", width: 430 },
+  { locale: "en", width: 320 },
+  { locale: "en", width: 354 },
+  { locale: "en", width: 375 },
   { locale: "en", width: 390 },
+  { locale: "en", width: 430 },
+  { locale: "es", width: 320 },
+  { locale: "es", width: 354 },
+  { locale: "es", width: 375 },
   { locale: "es", width: 390 },
+  { locale: "es", width: 430 },
 ];
 
 // A real, local PCM recording for native audio player + MediaRecorder E2E.
@@ -104,7 +112,7 @@ async function verifyDesktopAudioControls() {
 await verifyDesktopAudioControls();
 if (process.env.HH_MANDALA_DESKTOP_AUDIO_ONLY === '1') process.exit(0);
 // Run both real engines concurrently, but cap resource use at one isolated
-// context per engine (two total); preserve all six viewports per engine.
+// context per engine (two total); preserve every locale and viewport case.
 const engines = [["webkit", webkit], ["chromium", chromium]];
 // Avoid simultaneous RU390 video encoding in Chromium and WebKit.
 let releaseWebkitRu390;
@@ -2114,9 +2122,9 @@ const runEngine = async ([engine, browserType]) => {
           await auto.locator("[data-auto-video-confirm]").click();
           await expect(workspaceNav.locator('[data-video-quick-control="phrases"]'))
             .toHaveAttribute("aria-pressed","true");
-          await expect(page.locator('[data-video-phrase-audioguide]')).toBeVisible();
-          await page.locator("[data-video-phrase-audioguide]").click();
-          await expect(page.locator("[data-video-audio-details]")).toHaveAttribute("open","");
+          await expect(page.locator('[data-video-phrase-audio-shortcut]')).toBeVisible();
+          await page.locator("[data-video-phrase-audio-shortcut]").click();
+          await expect(page.locator("#phrase-audio-settings")).toHaveAttribute("open","");
           await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
             undefined,{timeout:15000});
           assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,

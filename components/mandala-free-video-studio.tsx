@@ -4082,7 +4082,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-labelledby="quick-phrases-heading">
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
@@ -4090,7 +4090,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audioguide disabled={recording||preparing}
+          data-video-phrase-audio-shortcut disabled={recording||preparing}
           onClick={()=>{
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
@@ -4199,7 +4199,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <details data-video-audio-details className={videoStyles.quickExtras}>
           <summary>{locale==="ru"?"Все мелодии и голос":locale==="es"?"Todos los sonidos y voz":"All soundtracks and voice"}</summary>
-          {activeWorkspace==="video"||activeWorkspace==="phrases" ? deepAudioPane : null}
+          {activeWorkspace==="video" ? deepAudioPane : null}
         </details>
       </section>
         <MandalaAutoVideoDirector

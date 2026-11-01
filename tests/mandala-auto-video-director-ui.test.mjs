@@ -185,8 +185,8 @@ test("mock actions are connected: four goal images, 3×2 text themes, four scena
  assert.match(director,/onContinue\?\.\(\)/);
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
- assert.match(studio,/data-video-phrase-audioguide/);
- assert.match(studio,/data-video-phrase-audioguide[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
+ assert.match(studio,/data-video-phrase-audio-shortcut/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
@@ -215,8 +215,9 @@ test("audio guidance remains actionable from both the compact Video screen and S
  const style=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/if\(anchor==="video-audio"\|\|anchor==="voice-studio"\|\|anchor==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
  assert.match(studio,/if\(hash==="video-audio"\|\|hash==="voice-studio"\|\|hash==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
- assert.match(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane : null/);
+ assert.match(studio,/activeWorkspace==="video" \? deepAudioPane : null/);
+ assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane : null/);
  assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
- assert.match(studio,/data-video-phrase-audioguide/);
+ assert.match(studio,/data-video-phrase-audio-shortcut/);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
 });

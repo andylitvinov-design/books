@@ -38,7 +38,8 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    assert.ok(studio.includes("activeWorkspace"),"local selection retained");
  }
  assert.match(studio,/data-workspace-section="practices"/);
- assert.match(studio,/\{activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
@@ -144,7 +145,7 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
   assert.match(studio,/data-video-topic-section/);
   assert.match(studio,/data-video-director-goal-controls/);
   assert.match(studio,/data-video-director-topic-controls/);
-  assert.match(studio,/data-video-phrase-audioguide/);
+  assert.match(studio,/data-video-phrase-audio-shortcut/);
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-audio-details/);
 });
