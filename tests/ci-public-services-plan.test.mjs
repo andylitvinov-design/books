@@ -403,13 +403,13 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   // process is awaited and must succeed BEFORE server/browser QA can start.
   const production = src.split('      - name: Production build and public browser acceptance\n')[1]
     ?.split('      - uses: actions/upload-artifact@v4\n')[0] || '';
-  assert.match(production, /case "\\$HH_PUBLIC_BROWSER_ENGINES" in/);
-  assert.match(production, /npm install --prefix \/tmp\/hh-public-services-tools/);
-  assert.match(production, /playwright install --with-deps chromium webkit/);
-  assert.match(production, /npm run build > artifacts\/public-services-production\/build\.log/);
-  assert.match(production, /wait "\\$browser_pid" \\|\\| browser_code=\\$\\?/);
-  assert.match(production, /if \\(\\( browser_code != 0 \\)\\); then/);
-  assert.match(production, /echo "browser_ready=true" >> "\\$GITHUB_OUTPUT"/);
+  assert.ok(production.includes('case "$HH_PUBLIC_BROWSER_ENGINES" in'));
+  assert.ok(production.includes('npm install --prefix /tmp/hh-public-services-tools'));
+  assert.ok(production.includes('playwright install --with-deps chromium webkit'));
+  assert.ok(production.includes('npm run build > artifacts/public-services-production/build.log'));
+  assert.ok(production.includes('wait "$browser_pid" || browser_code=$?'));
+  assert.ok(production.includes('if (( browser_code != 0 )); then'));
+  assert.ok(production.includes('echo "browser_ready=true" >> "$GITHUB_OUTPUT"'));
   assert.match(src, /uses: actions\/cache\/restore@v4/);
   assert.match(src, /uses: actions\/cache\/save@v4/);
   assert.match(src, /steps\.production_qa\.outputs\.browser_ready == 'true'/);
