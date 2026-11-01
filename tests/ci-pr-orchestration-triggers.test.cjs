@@ -7,7 +7,8 @@ test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
   assert.ok(s.includes("workflows: ['HH PR core release gate']"));
-  assert.ok(s.includes("github.event.workflow_run.conclusion == 'failure'"));
+  assert.ok(s.includes("github.event.workflow_run.status == 'completed'"));
+  assert.ok(s.includes("github.event.workflow_run.event == 'pull_request'"));
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
 });

@@ -834,3 +834,13 @@ test('failed legacy gate still pending is not prematurely labeled as root failur
   assert.equal(result.releaseGateQueued,0);
   assert.equal(result.legacyRequiredPending,1);
 });
+
+test('a completed Core CI event inspects its exact PR without waiting for rotation',()=>{
+  const pool=Array.from({length:170},(_,i)=>pr(i+1));
+  const baseline=selectCandidates(pool,NOW);
+  const missing=pool.find(item=>!baseline.some(p=>p.number===item.number));
+  assert.ok(missing);
+  const result=selectCandidates(pool,NOW,12,4,missing.number);
+  assert.equal(result.length,baseline.length);
+  assert.ok(result.some(item=>item.number===missing.number));
+});
