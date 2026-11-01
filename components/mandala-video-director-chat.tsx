@@ -5,7 +5,7 @@ import type {ChangeEvent,FormEvent} from "react";
 import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {compileExecutableVideoScenario,parseAiVideoCutSuggestion} from "@/lib/mandala/video-executable-director.mjs";
-import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
+import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults,goalFirstVideoChatDraft} from "@/lib/mandala/video-chat-intent.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -78,8 +78,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,
  onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
  const t=copy[locale];
- const [draft,setDraft]=useState<Draft>(()=>initial(goal));
- const [step,setStep]=useState<Step>(()=>nextVideoChatStep(initial(goal)) as Step);
+ const proposeFromGoal=(value:string):Draft|null=>{
+   if(!value.trim())return null;
+   const recommended=recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes});
+   return goalFirstVideoChatDraft(value,recommended.theme) as Draft|null;
+ };
+ const [draft,setDraft]=useState<Draft>(()=>
+   proposeFromGoal(goal)||initial(isGenericVideoRequest(goal)?"":goal));
+ const [step,setStep]=useState<Step>(()=>nextVideoChatStep(draft) as Step);
  const [lines,setLines]=useState<ChatLine[]>([{id:0,role:"assistant",text:t.intro}]);
  const [input,setInput]=useState("");
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
@@ -106,12 +112,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const question=(next:Step)=>next==="done"?t.done:next==="ready"?t.ready:t[next];
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
-   if(goal.trim()===draft.goal.trim()||!goal.trim())return;
-   setDraft(previous=>({...previous,goal:goal.replace(/\s+/gu," ").slice(0,800)}));
+   if(goal.trim()===draft.goal.trim())return;
+   const next=proposeFromGoal(goal)||initial(isGenericVideoRequest(goal)?"":goal);
+   setDraft(next);
    setSymbolicAllowed(false);setAlternative(0);
-   // A new goal entered outside the chat cannot inherit external-AI consent.
+   // New goals invalidate the old AI suggestion, approval and consent.
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
-   setStep(previous=>previous==="ready"||previous==="done"?"review":previous);
+   setStep(nextVideoChatStep(next) as Step);
  // Avoid reacting to every local answer: identical text does not trigger changes.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[goal]);
@@ -146,7 +154,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  // Explicit opt-in; the local deterministic guide remains available instantly.
  // The model may only phrase a question, never modify filters or render jobs.
  useEffect(()=>{
-   if(!aiConsent||!draft.goal.trim()||step==="goal"||step==="ready"||step==="done")return;
+   if(!aiConsent||!draft.goal.trim()||step==="goal"||step==="review"||step==="ready"||step==="done")return;
    const key=locale+":"+draft.goal.trim();
    if(aiAskedKeyRef.current===key)return;
    aiAskedKeyRef.current=key;
@@ -248,13 +256,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      if(isGenericVideoRequest(value)){
        addLine("assistant",t.goal);return;
      }
-     const parsed=parseVideoChatIntent(value);
-     const next:Draft={...draft,goal:parsed.text,mood:parsed.mood as Mood|null,
-       aspect:parsed.aspect as Aspect|null,duration:parsed.duration as Length|null,
-       music:parsed.music as Music|null,phrases:parsed.phrases};
-     setDraft(next);onGoalChange(parsed.text);setSymbolicAllowed(false);setAlternative(0);
-     const following=nextVideoChatStep(next) as Step;
-     setStep(following);addLine("assistant",question(following));
+     const next=proposeFromGoal(value);
+     if(!next){addLine("assistant",t.goal);return;}
+     setDraft(next);onGoalChange(next.goal);setSymbolicAllowed(false);setAlternative(0);
+     // After one goal, the visitor can approve or optionally edit filter chips.
+     setStep("review");addLine("assistant",t.review);
      return;
    }
    if(step==="review"||step==="ready"||step==="done"){
@@ -269,11 +275,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        addLine("assistant",t.goal);return;
      }
      if(!hasChoice){
-       const next={...initial(value),...{goal:value}};
-       setDraft(next);onGoalChange(value);setSymbolicAllowed(false);setAlternative(0);
+       const next=proposeFromGoal(value);
+       if(!next){addLine("assistant",t.goal);return;}
+       setDraft(next);onGoalChange(next.goal);setSymbolicAllowed(false);setAlternative(0);
        setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
        setCaptureStarted(false);setCaptureObserved(false);
-       setStep("mood");addLine("assistant",t.mood);
+       setStep("review");addLine("assistant",t.review);
      }else{
        const next=mergeVideoChatPreferences(draft,value) as Draft;
        setDraft(next);setCaptureStarted(false);setCaptureObserved(false);
