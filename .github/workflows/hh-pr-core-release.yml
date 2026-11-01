@@ -92,6 +92,8 @@ jobs:
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
+                  scripts/ci-source-preflight.mjs|\
+                  tests/ci-source-preflight.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
@@ -156,6 +158,31 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify Source Preflight unit contracts
+        run: node --test tests/ci-source-preflight.test.mjs
+      - name: Source Preflight — syntax and TypeScript before costly Next build
+        id: source_preflight
+        shell: bash
+        env:
+          HH_PREFLIGHT_REPORT: ${{ runner.temp }}/hh-source-preflight.json
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            checked_base="$(git rev-parse HEAD^1)"
+          else
+            checked_base="$(git rev-parse HEAD)"
+          fi
+          args=(--base "$checked_base")
+          if [[ "${{ needs.scope.outputs.ci_only }}" != true ]]; then args+=(--full-types); fi
+          node scripts/ci-source-preflight.mjs "${args[@]}"
+      - name: Upload Source Preflight root diagnostics on failure
+        if: ${{ failure() && steps.source_preflight.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-source-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hh-source-preflight.json
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Assert fast-lane workflow contracts
         run: node --test tests/pr-fast-lane.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
