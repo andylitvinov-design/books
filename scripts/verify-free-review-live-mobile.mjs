@@ -251,15 +251,19 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
             "no modal after clicking the hero CTA");
           assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+          assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
             "opening the form is not contact consent");
+          // Optional analytics/source linking is separate from required one-off reply consent.
+          const attribution= enquiry.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          if(await attribution.count())assert.equal(await attribution.isChecked(),false,
+            "opening the form cannot opt the visitor into source attribution");
           // The protected v2 wizard and the legacy compact capture are distinct
           // safe variants. Neither navigation nor form opening creates a lead.
           const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
           if (wizardV2) {
             const lead = enquiry.locator('[data-free-express-lead]');
             assert.equal(await lead.locator('textarea').count(), 1, "one short question");
-            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
+            assert.equal(await lead.locator('input[type="checkbox"][required]').isChecked(), false,
               "explicit consent remains unchecked");
             assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
               "no CRM receipt from opening the form");
@@ -304,7 +308,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             && (width === 320 || width === 430) ? 3 : 1;
           for (let cycle = 0; cycle < cycles; cycle++) {
             await tapFocusAndVerify(page, enquiry, "energy");
-            assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+            assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
               "changing the focus cannot silently opt the user in");
             await tapFocusAndVerify(page, enquiry, "situation");
           }
