@@ -64,6 +64,11 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
       await nameDisclosure.locator('summary').click();
       clicked = true;
     }
+    // Hydration may close a disclosure immediately after its first click.
+    // Retry the native summary interaction, without forcing DOM state.
+    if (await nameDisclosure.getAttribute('open') === null) {
+      await nameDisclosure.locator('summary').click();
+    }
     const afterClick = await disclosureNode?.evaluate(node => ({open:node.open, connected:node.isConnected})).catch(() => null);
     try {
       await nameInput.waitFor({state:"visible",timeout:12000});
