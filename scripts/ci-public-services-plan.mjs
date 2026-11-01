@@ -108,6 +108,23 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // Unlike editor-only changes, the new course contact UI calls the EXISTING
 // /api/service-enquiries endpoint. Keep its genuine Public Services enquiry
 // browser owner, but do not run 12 unrelated Reiki, Storefront or Alchemy E2Es.
+// These EXISTING, isolated files are directly owned by Holistic Support
+// Mandala's source, consent, audio/video and Playwright tests. They contain no
+// checkout, booking, client-account, payment, app-wide routing or auth code.
+// Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
+const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  'app/[locale]/holistic-support/mandala/page.tsx',
+  'components/mandala-cinematic-director.tsx',
+  'components/mandala-video-mobile.module.css',
+  'scripts/verify-holistic-mandala-browser.mjs',
+  'tests/cinematic-studio.test.mjs',
+  'tests/mandala-approved-mobile-studio.test.mjs',
+  'tests/mandala-audio-attach.test.mjs',
+  'tests/mandala-auto-video-director-ui.test.mjs',
+  'tests/mandala-mobile-video-design.test.mjs',
+  'tests/mandala-stories-characters.test.mjs',
+  'tests/mandala-therapy-video-intro.test.mjs',
+]);
 const MANDALA_COURSE_ENQUIRY_FILES = new Set([
   'components/meditation-course-enquiry.module.css',
   'components/meditation-course-enquiry.tsx',
@@ -183,7 +200,7 @@ export function planPublicServicesChangedPaths(files) {
   let performance = false;
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
-    if (MANDALA_OWNED_HYPNO_FILES.has(file)) continue;
+    if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
