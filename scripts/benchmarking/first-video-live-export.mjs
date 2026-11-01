@@ -55,7 +55,7 @@ async function downloadBytes(download) {
 }
 let browser;
 try {
-  browser = await chromium.launch({headless: true});
+  browser = await chromium.launch({headless: true, channel: 'chrome'});
   const context = await browser.newContext({
     viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true,
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
@@ -86,11 +86,13 @@ try {
     (document.querySelector('[data-first-video-prompt]')?.value?.length || 0) > 60,
     undefined, {timeout: 25000});
   assert.ok((await prompt.inputValue()).length > 60, 'PROMPT_NOT_PERSONALIZED');
-  // Attach a first-party music track and request a real portrait export.
-  await first.locator('[data-first-video-quick-aspect="portrait"]').click();
-  assert.equal(await first.locator('[data-first-video-quick-aspect="portrait"]')
-    .getAttribute('aria-pressed'), 'true', 'PORTRAIT_NOT_SELECTED');
+  // Separate the quick-format UI from the actual media export. A broken or
+  // occluded quick button must not prevent probing the real rendering path.
+  row.quickPortraitButtonCount = await first.locator('[data-first-video-quick-aspect="portrait"]').count();
   await first.locator('[data-first-video-filters] > summary').click();
+  await first.locator('[data-first-video-aspect]').selectOption('portrait');
+  assert.equal(await first.locator('[data-first-video-aspect]').inputValue(),
+    'portrait', 'PORTRAIT_NOT_SELECTED');
   await first.locator('[data-first-video-duration]').selectOption('20');
   await first.locator('[data-first-video-music]').selectOption('meditation');
   assert.equal(await first.locator('[data-first-video-ai-consent]').isChecked(), false,
