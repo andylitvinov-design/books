@@ -74,12 +74,12 @@ function reservationStatus(task,comments,now){
  return 'FREE';
 }
 // A single 100-comment page is not proof of complete ownership history.
-// Read up to 299 comments; exactly 300 or any incomplete API response
-// fails closed so older exact-HEAD claims or owner leases are never ignored.
+// Follow every page until a short page proves completeness. The caller
+// enforces its API request budget and rate reserve; exhaustion fails closed.
 async function readCompleteIssueComments(github,owner,repo,issueNumber,limited){
  if(!Number.isSafeInteger(issueNumber)||issueNumber<1)return null;
  const comments=[];
- for(let page=1;page<=3;page++){
+ for(let page=1;Number.isSafeInteger(page);page++){
   const result=await limited('owner-comments-page-'+page,()=>
    github.rest.issues.listComments({owner,repo,issue_number:issueNumber,
     per_page:100,page}));

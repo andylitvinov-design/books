@@ -117,16 +117,19 @@ test('more than 100 comments still preserve exact-head source proof',async()=>{
  assert.deepEqual(pages,[1,2]);
  assert.equal(result.dispatchAccepted,1);
 });
-test('over 299 comments without a completed final page stops dispatch',async()=>{
- const f=fixture([pr(1)]);
- let pages=[];
+test('more than 300 comments are fully read before exact-head dispatch',async()=>{
+ const f=fixture([pr(1)]);const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
-  pages.push(page);return {data:Array.from({length:100},()=>({body:'older note'}))};
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'older note'})):[proof()]};
  };
  const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.deepEqual(pages,[1,2,3]);
- assert.equal(result.blocked.OWNER_HISTORY_INCOMPLETE,1);
- assert.equal(result.dispatchAccepted,0);
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.dispatchAccepted,1);
+});
+test('comment history API budget exhaustion fails closed without a dispatch',async()=>{
+ const f=fixture([pr(1)]);
+ f.github.rest.issues.listComments=async()=>({data:Array.from({length:100},()=>({body:'older note'}))});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.dispatched.length,0);
 });
 test('duplicate task reservation suppresses repeated dispatch',async()=>{
  const t=taskFor(pr(1),{tier:'P1'}),body=commentBody(reservation(t,NOW,1));

@@ -30,6 +30,7 @@ const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
+const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -247,18 +248,10 @@ async function ensureQueueLabel(github, owner, repo, pr, name, description, colo
 
 async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
-  // Limit comment pagination. If it cannot be checked completely, do not
-  // duplicate a repair claim on an older exact HEAD.
-  const comments=[];
-  for(let page=1;page<=3;page++){
-    const {data}=await limited('repair-comments',()=>github.rest.issues.listComments({
-      owner,repo,issue_number:pr.number,per_page:100,page
-    }));
-    if(!Array.isArray(data)) return false;
-    comments.push(...data);
-    if(data.length<100) break;
-    if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
-  }
+  // Complete history is required to avoid duplicating an older receipt.
+  // The watchdog's existing API budget and rate reserve bound pagination.
+  const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  if(!comments){log('SKIP repair handoff: incomplete comment history');return false;}
   if(comments.some(c=>(c.body||'').includes(marker))) {
     // If a receipt exists but its queue label failed, retry only the label.
     if((pr.labels || []).some(label=>label.name===REPAIR_LABEL))return false;
