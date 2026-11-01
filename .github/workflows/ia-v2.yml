@@ -118,7 +118,11 @@ jobs:
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
-        run: node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/direct-message-media-transport.test.mjs
+        run: |
+          node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs
+          # Server-only imports have React Server conditional exports in Next.js.
+          # Execute the full private-media policy tests with their real server condition.
+          node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Full historical IA suite for non-Messenger or unverified changes
         if: ${{ steps.messenger-scope.outputs.messenger_only != 'true' }}
         run: npm run test:unit
