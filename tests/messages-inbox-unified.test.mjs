@@ -81,9 +81,13 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   assert.match(workspace,/const mobileNav = \[/)
   const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
   assert.equal((mobile.match(/id: '/g)||[]).length,4)
-  assert.match(mobile,/id: 'progress'/)
-  assert.match(mobile,/id: 'settings'/)
+  assert.match(mobile,/id: 'practice'/)
   assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
+  assert.match(mobile,/id: 'materials'/)
+  assert.match(mobile,/id: 'profile'/)
+  assert.doesNotMatch(mobile,/id: 'progress'|id: 'settings'/,
+    'Progress and Settings remain in the account menu, not the main Messenger dock')
+  assert.match(workspace,/mobileNavIsActive\(id\)/)
 })
 
 test('empty personal inbox is compact; does not hide or mislabel existing Telegram CRM data',()=>{

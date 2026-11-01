@@ -131,3 +131,25 @@ test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>
   assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],path)
  }
 })
+
+
+test('mobile navigation remains pinned for practitioner and expanded Reiki filters',()=>{
+ const css=read('components/holistic-support-mobile.module.css')
+ const messenger=read('components/app/messages-bottom-navigation.jsx')
+ const browser=read('scripts/verify-holistic-support-mock-fidelity.mjs')
+ const tabs=front.match(/const TABS = \[([\s\S]*?)\n\]/)?.[1]
+ const primary=['home','practice','messages','materials','profile']
+ const keys=[...tabs.matchAll(/key:'([^']+)'/g)].map(x=>x[1])
+ assert.deepEqual(keys.filter(key=>primary.includes(key)),primary)
+ assert.equal(keys.indexOf('messages'),2)
+ assert.ok(keys.length<=6&&keys.every(key=>primary.includes(key)||['ai','video-ai'].includes(key)))
+ assert.match(front,/key:'messages', label:'inbox', Icon:MessageCircle/)
+ for(const label of ['Главная','Практика','Сообщения','Материалы','Профиль'])
+   assert.ok(messenger.includes(label))
+ assert.match(account,/mobileNavIsActive\(id\)/)
+ assert.match(css,/\.bottomNav \{ position: fixed/)
+ assert.doesNotMatch(css,/data-active-tab="filter"\]\) \.bottomNav\s*\{\s*position:\s*static/)
+ assert.match(css,/scroll-padding-bottom: calc\(100px \+ env\(safe-area-inset-bottom\)\)/)
+ assert.match(browser,/dockGeometry\.position,"fixed"/)
+ assert.match(browser,/clear\.actionBottom<=clear\.dockTop-2/)
+})

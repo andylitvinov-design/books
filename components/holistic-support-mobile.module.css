@@ -721,18 +721,15 @@
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
 }
 
-/* Focused mobile Reiki filter: do not float global navigation over the report and
-   certificate controls. After closing the filter, normal docked nav resumes. */
+/* The Reiki filter retains a genuinely fixed bottom dock: reserve space
+   for its real Apply/certificate actions instead of demoting navigation. */
 @media (max-width: 640px) {
   .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
-    padding-bottom: 10px;
+    padding-bottom: calc(125px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
-  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
-    position: static;
-    inset: auto;
-    z-index: auto;
-    border-radius: 18px 18px 0 0;
-    box-shadow: none;
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) [data-support-reiki-apply] {
+    scroll-margin-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 }
 
