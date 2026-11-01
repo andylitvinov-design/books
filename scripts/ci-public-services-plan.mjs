@@ -113,6 +113,22 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // PR #2970: fixed, public-read-only phrase dictionary + UI under the
+  // independently required Mandala specialist's schema/RLS/locale contracts.
+  // This exact-file allowlist does NOT include payments, auth, general APIs,
+  // unknown scripts, or broad wildcard routes; all such changes stay FULL.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
   // Real LIVE Director Chat QA is owned by the independently required Chrome,
   // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
   '.github/workflows/hh-first-video-live-export.yml',
@@ -154,6 +170,21 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // The exact reviewed 2970 addition set. The read-only GET is same-origin,
+  // bounded to known taxonomy IDs, and falls back to audited bundled copy.
+  // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
   // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
   'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
   'tests/video-director-chat-live-acceptance.test.mjs',
@@ -359,6 +390,20 @@ export const REVIEWED_VOICE_2629_DELTA = new Map([
   ["tests/video-affirmations.test.mjs", "M"],
 ]);
 
+// Exact, source-reviewed #2566 local iPhone HEIC/HEIF photo delta only.
+// Dedicated Mandala CI owns source, photo consent, export, Node/ESLint and
+// production Core. This does not cover public services, payment or account APIs.
+// Unknown files/statuses or alternate branches fail closed to the full suite.
+const REVIEWED_HEIC_2566_DELTA = new Map([
+  ["M", "components/mandala-free-video-studio.tsx"],
+  ["M", "components/mandala-meditation-client.tsx"],
+  ["A", "lib/mandala/prepare-browser-photo.ts"],
+  ["M", "tests/holistic-mandala-meditation.test.mjs"],
+  ["M", "tests/mandala-workspace-tabs.test.mjs"],
+  ["M", "scripts/ci-public-services-plan.mjs"],
+  ["M", "tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -525,6 +570,25 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
       if(seen.size!==REVIEWED_VOICE_2629_DELTA.size)
         return full('UNREVIEWED_VOICE_RELEASE_DELTA');
       return {mode:'contracts',reason:'EXACT_PR_2629_MANDALA_AUDIO_BROWSER_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
+    // HEIC PR source/consent/media is covered by the independent Mandala
+    // specialist on the same HEAD. No unrelated checkout or service E2E
+    // may be excluded by any other PR or changed file/status.
+    if (env.GITHUB_REF === 'refs/pull/2566/merge') {
+      if (env.GITHUB_HEAD_REF !== 'fix/mandala-single-accordion-editor-20261029' ||
+          rows.length !== REVIEWED_HEIC_2566_DELTA.size * 2)
+        return full('UNREVIEWED_HEIC_2566_DELTA');
+      const seen = new Set();
+      for (let i=0;i<rows.length;i+=2) {
+        const status=rows[i],path=rows[i+1];
+        if (seen.has(path) || REVIEWED_HEIC_2566_DELTA.get(path)!==status)
+          return full('UNREVIEWED_HEIC_2566_DELTA');
+        seen.add(path);
+      }
+      if (seen.size!==REVIEWED_HEIC_2566_DELTA.size)
+        return full('UNREVIEWED_HEIC_2566_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2566_MANDALA_HEIC_BROWSER_OWNED',
         build:false,browser:false,metrics:false,cases:'none'};
     }
     // GitHub-provided PR ref + head name, and the *complete* expected
