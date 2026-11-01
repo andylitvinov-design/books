@@ -36,6 +36,10 @@ jobs:
           node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs tests/practitioner-request-voice.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: New wellness layout and private flow contracts
         run: node --conditions=react-server --test tests/messages-wellness-v2.test.mjs
+      - name: Guest enquiry one-off consent and truthful reply handoff
+        run: node --test tests/public-enquiry-reply-handoff.test.mjs
+      - name: Lint guest reply composer and recipient policy
+        run: npx --no-install eslint components/app/public-enquiry-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs tests/public-enquiry-reply-handoff.test.mjs
       - name: Lint edited Messages components and route
         run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/practice-request-conversation.jsx lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
