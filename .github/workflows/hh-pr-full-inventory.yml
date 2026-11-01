@@ -201,7 +201,7 @@ jobs:
              "; non-Draft: "+nonDraft.length+"; other-base: "+(all.length-production.length),
              "Already armed: "+armed.length+"; non-Draft candidates: "+pending.length+
              "; QA inspected: "+checksRead+"; independently verified eligible: "+eligible.length+
-             " (focused alternate: "+eligible.filter(x=>x.via==="FOCUSED_QA").length+")",
+             " (independent QA fallback: "+eligible.filter(x=>x.via==="INDEPENDENT_QA").length+")",
              "New confirmed ARMED: "+autoArmed+"; MERGED: "+merged+
              "; unattempted eligible: "+Math.max(0,eligible.length-attempts),
              "Inventory: COMPLETE; details: "+(detailErrors?"PARTIAL ("+detailErrors+" errors)":"COMPLETE"),
