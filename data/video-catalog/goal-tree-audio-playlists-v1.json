@@ -1,0 +1,2210 @@
+{
+  "version": "hh-goal-tree-4-existing-audio-20261101",
+  "sourceTaxonomy": "PR #2949 — canonical five-category story taxonomy",
+  "sourceAudio": "PR #2948 — 48 executable film presets × four original recordings",
+  "rights": "first_party_original_recordings",
+  "notes": "Each of the 120 editorial scenarios receives four DIFFERENT real MP3s; no MP3 repeats within its category. The same first-party recording may be reused across DIFFERENT goal categories. These are audio-ready playlists, not proof that unbound video storyboards have licensed MP4s.",
+  "categoryOrder": [
+    "body",
+    "business",
+    "energy",
+    "love",
+    "stress"
+  ],
+  "totals": {
+    "categories": 5,
+    "topics": 30,
+    "scenarios": 120,
+    "audioPlacements": 480,
+    "physicalDistinctAudioFiles": 192
+  },
+  "categoryStats": {
+    "body": {
+      "scenarios": 24,
+      "trackPlacements": 96,
+      "distinctRecordings": 96
+    },
+    "business": {
+      "scenarios": 24,
+      "trackPlacements": 96,
+      "distinctRecordings": 96
+    },
+    "energy": {
+      "scenarios": 24,
+      "trackPlacements": 96,
+      "distinctRecordings": 96
+    },
+    "love": {
+      "scenarios": 24,
+      "trackPlacements": 96,
+      "distinctRecordings": 96
+    },
+    "stress": {
+      "scenarios": 24,
+      "trackPlacements": 96,
+      "distinctRecordings": 96
+    }
+  },
+  "assignments": [
+    {
+      "scenarioId": "body-release-s1",
+      "categoryId": "body",
+      "topicId": "body-release",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Тихая река",
+        "en": "Quiet river",
+        "es": "Río tranquilo"
+      },
+      "audioIds": [
+        "score-gentle-rest-1",
+        "score-morning-energy-2",
+        "score-rooted-freedom-3",
+        "score-water-and-breath-4"
+      ]
+    },
+    {
+      "scenarioId": "body-release-s2",
+      "categoryId": "body",
+      "topicId": "body-release",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Тёплый свет",
+        "en": "Warm light",
+        "es": "Luz cálida"
+      },
+      "audioIds": [
+        "score-gentle-new-day-2",
+        "score-quiet-awakening-3",
+        "score-ocean-breath-4",
+        "score-coastal-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "body-release-s3",
+      "categoryId": "body",
+      "topicId": "body-release",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Мягкая волна",
+        "en": "Gentle wave",
+        "es": "Ola suave"
+      },
+      "audioIds": [
+        "score-morning-energy-3",
+        "score-rooted-freedom-4",
+        "score-water-and-breath-1",
+        "score-light-and-space-2"
+      ]
+    },
+    {
+      "scenarioId": "body-release-s4",
+      "categoryId": "body",
+      "topicId": "body-release",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Возвращение в тело",
+        "en": "Coming back to the body",
+        "es": "Volver al cuerpo"
+      },
+      "audioIds": [
+        "score-quiet-awakening-4",
+        "score-ocean-breath-1",
+        "score-coastal-renewal-2",
+        "score-natural-stillness-3"
+      ]
+    },
+    {
+      "scenarioId": "body-sleep-s1",
+      "categoryId": "body",
+      "topicId": "body-sleep",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Сумеречный сад",
+        "en": "Twilight garden",
+        "es": "Jardín al anochecer"
+      },
+      "audioIds": [
+        "score-rooted-freedom-1",
+        "score-water-and-breath-2",
+        "score-light-and-space-3",
+        "score-forest-morning-4"
+      ]
+    },
+    {
+      "scenarioId": "body-sleep-s2",
+      "categoryId": "body",
+      "topicId": "body-sleep",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Тихое небо",
+        "en": "Quiet sky",
+        "es": "Cielo sereno"
+      },
+      "audioIds": [
+        "score-ocean-breath-2",
+        "score-coastal-renewal-3",
+        "score-natural-stillness-4",
+        "score-flowing-vitality-1"
+      ]
+    },
+    {
+      "scenarioId": "body-sleep-s3",
+      "categoryId": "body",
+      "topicId": "body-sleep",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Колыбель леса",
+        "en": "Forest lullaby",
+        "es": "Arrullo del bosque"
+      },
+      "audioIds": [
+        "score-water-and-breath-3",
+        "score-light-and-space-4",
+        "score-forest-morning-1",
+        "score-quiet-water-2"
+      ]
+    },
+    {
+      "scenarioId": "body-sleep-s4",
+      "categoryId": "body",
+      "topicId": "body-sleep",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Вечер у очага",
+        "en": "Evening by the hearth",
+        "es": "Noche junto al hogar"
+      },
+      "audioIds": [
+        "score-coastal-renewal-4",
+        "score-natural-stillness-1",
+        "score-flowing-vitality-2",
+        "score-flowers-of-change-3"
+      ]
+    },
+    {
+      "scenarioId": "body-breath-s1",
+      "categoryId": "body",
+      "topicId": "body-breath",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Пространство для вдоха",
+        "en": "Room to breathe",
+        "es": "Espacio para respirar"
+      },
+      "audioIds": [
+        "score-light-and-space-1",
+        "score-forest-morning-2",
+        "score-quiet-water-3",
+        "score-fresh-light-4"
+      ]
+    },
+    {
+      "scenarioId": "body-breath-s2",
+      "categoryId": "body",
+      "topicId": "body-breath",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Горный воздух",
+        "en": "Mountain air",
+        "es": "Aire de montaña"
+      },
+      "audioIds": [
+        "score-natural-stillness-2",
+        "score-flowing-vitality-3",
+        "score-flowers-of-change-4",
+        "score-soft-reset-1"
+      ]
+    },
+    {
+      "scenarioId": "body-breath-s3",
+      "categoryId": "body",
+      "topicId": "body-breath",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Волна дыхания",
+        "en": "Breathing wave",
+        "es": "Ola de respiración"
+      },
+      "audioIds": [
+        "score-forest-morning-3",
+        "score-quiet-water-4",
+        "score-fresh-light-1",
+        "score-gentle-space-2"
+      ]
+    },
+    {
+      "scenarioId": "body-breath-s4",
+      "categoryId": "body",
+      "topicId": "body-breath",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Дыхание деревьев",
+        "en": "Breathing with trees",
+        "es": "Respirar con los árboles"
+      },
+      "audioIds": [
+        "score-flowing-vitality-4",
+        "score-flowers-of-change-1",
+        "score-soft-reset-2",
+        "score-calm-recharge-3"
+      ]
+    },
+    {
+      "scenarioId": "body-comfort-s1",
+      "categoryId": "body",
+      "topicId": "body-comfort",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Тепло внутри",
+        "en": "Warmth within",
+        "es": "Calor interior"
+      },
+      "audioIds": [
+        "score-quiet-water-1",
+        "score-fresh-light-2",
+        "score-gentle-space-3",
+        "score-forest-balance-4"
+      ]
+    },
+    {
+      "scenarioId": "body-comfort-s2",
+      "categoryId": "body",
+      "topicId": "body-comfort",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Лёгкость движений",
+        "en": "Ease of movement",
+        "es": "Facilidad de movimiento"
+      },
+      "audioIds": [
+        "score-flowers-of-change-2",
+        "score-soft-reset-3",
+        "score-calm-recharge-4",
+        "score-rooted-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "body-comfort-s3",
+      "categoryId": "body",
+      "topicId": "body-comfort",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Спокойная осанка",
+        "en": "A grounded posture",
+        "es": "Postura estable"
+      },
+      "audioIds": [
+        "score-fresh-light-3",
+        "score-gentle-space-4",
+        "score-forest-balance-1",
+        "score-breathing-flow-2"
+      ]
+    },
+    {
+      "scenarioId": "body-comfort-s4",
+      "categoryId": "body",
+      "topicId": "body-comfort",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Тихий контакт",
+        "en": "Gentle contact",
+        "es": "Contacto amable"
+      },
+      "audioIds": [
+        "score-soft-reset-4",
+        "score-calm-recharge-1",
+        "score-rooted-renewal-2",
+        "score-gentle-breath-3"
+      ]
+    },
+    {
+      "scenarioId": "body-care-s1",
+      "categoryId": "body",
+      "topicId": "body-care",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Доброе утро",
+        "en": "A kind morning",
+        "es": "Una mañana amable"
+      },
+      "audioIds": [
+        "score-gentle-space-1",
+        "score-forest-balance-2",
+        "score-breathing-flow-3",
+        "score-fresh-chapter-4"
+      ]
+    },
+    {
+      "scenarioId": "body-care-s2",
+      "categoryId": "body",
+      "topicId": "body-care",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Время для себя",
+        "en": "Time for me",
+        "es": "Tiempo para mí"
+      },
+      "audioIds": [
+        "score-calm-recharge-2",
+        "score-rooted-renewal-3",
+        "score-gentle-breath-4",
+        "score-steady-activation-1"
+      ]
+    },
+    {
+      "scenarioId": "body-care-s3",
+      "categoryId": "body",
+      "topicId": "body-care",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Тёплая ладонь",
+        "en": "A kind hand",
+        "es": "Una mano amable"
+      },
+      "audioIds": [
+        "score-forest-balance-3",
+        "score-breathing-flow-4",
+        "score-fresh-chapter-1",
+        "score-gentle-rest-2"
+      ]
+    },
+    {
+      "scenarioId": "body-care-s4",
+      "categoryId": "body",
+      "topicId": "body-care",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Мой естественный ритм",
+        "en": "My natural rhythm",
+        "es": "Mi ritmo natural"
+      },
+      "audioIds": [
+        "score-rooted-renewal-4",
+        "score-gentle-breath-1",
+        "score-steady-activation-2",
+        "score-gentle-new-day-3"
+      ]
+    },
+    {
+      "scenarioId": "body-confidence-s1",
+      "categoryId": "body",
+      "topicId": "body-confidence",
+      "legacyVideoTheme": "goals",
+      "arc": "journey",
+      "label": {
+        "ru": "Сильные корни",
+        "en": "Strong roots",
+        "es": "Raíces firmes"
+      },
+      "audioIds": [
+        "score-breathing-flow-1",
+        "score-fresh-chapter-2",
+        "score-gentle-rest-3",
+        "score-morning-energy-4"
+      ]
+    },
+    {
+      "scenarioId": "body-confidence-s2",
+      "categoryId": "body",
+      "topicId": "body-confidence",
+      "legacyVideoTheme": "goals",
+      "arc": "shelter",
+      "label": {
+        "ru": "Открытая поза",
+        "en": "An open stance",
+        "es": "Una postura abierta"
+      },
+      "audioIds": [
+        "score-gentle-breath-2",
+        "score-steady-activation-3",
+        "score-gentle-new-day-4",
+        "score-quiet-awakening-1"
+      ]
+    },
+    {
+      "scenarioId": "body-confidence-s3",
+      "categoryId": "body",
+      "topicId": "body-confidence",
+      "legacyVideoTheme": "goals",
+      "arc": "awakening",
+      "label": {
+        "ru": "Прямой путь",
+        "en": "A steady path",
+        "es": "Camino firme"
+      },
+      "audioIds": [
+        "score-fresh-chapter-3",
+        "score-gentle-rest-4",
+        "score-morning-energy-1",
+        "score-rooted-freedom-2"
+      ]
+    },
+    {
+      "scenarioId": "body-confidence-s4",
+      "categoryId": "body",
+      "topicId": "body-confidence",
+      "legacyVideoTheme": "goals",
+      "arc": "connection",
+      "label": {
+        "ru": "Спокойная сила",
+        "en": "Quiet strength",
+        "es": "Fuerza serena"
+      },
+      "audioIds": [
+        "score-steady-activation-4",
+        "score-gentle-new-day-1",
+        "score-quiet-awakening-2",
+        "score-ocean-breath-3"
+      ]
+    },
+    {
+      "scenarioId": "work-support-s1",
+      "categoryId": "business",
+      "topicId": "work-support",
+      "legacyVideoTheme": "money",
+      "arc": "journey",
+      "label": {
+        "ru": "Устойчивая почва",
+        "en": "Steady ground",
+        "es": "Suelo firme"
+      },
+      "audioIds": [
+        "score-rooted-freedom-2",
+        "score-open-horizon-3",
+        "score-inspiring-motion-4",
+        "score-forest-morning-1"
+      ]
+    },
+    {
+      "scenarioId": "work-support-s2",
+      "categoryId": "business",
+      "topicId": "work-support",
+      "legacyVideoTheme": "money",
+      "arc": "shelter",
+      "label": {
+        "ru": "Ясное утро",
+        "en": "A clear morning",
+        "es": "Mañana clara"
+      },
+      "audioIds": [
+        "score-steady-foundation-3",
+        "score-coastal-renewal-4",
+        "score-find-my-way-1",
+        "score-financial-clarity-2"
+      ]
+    },
+    {
+      "scenarioId": "work-support-s3",
+      "categoryId": "business",
+      "topicId": "work-support",
+      "legacyVideoTheme": "money",
+      "arc": "awakening",
+      "label": {
+        "ru": "Путь мастерства",
+        "en": "Path of mastery",
+        "es": "Camino del dominio"
+      },
+      "audioIds": [
+        "score-open-horizon-4",
+        "score-inspiring-motion-1",
+        "score-forest-morning-2",
+        "score-clear-future-3"
+      ]
+    },
+    {
+      "scenarioId": "work-support-s4",
+      "categoryId": "business",
+      "topicId": "work-support",
+      "legacyVideoTheme": "money",
+      "arc": "connection",
+      "label": {
+        "ru": "Спокойный рабочий день",
+        "en": "A balanced workday",
+        "es": "Jornada equilibrada"
+      },
+      "audioIds": [
+        "score-coastal-renewal-1",
+        "score-find-my-way-2",
+        "score-financial-clarity-3",
+        "score-flowers-of-change-4"
+      ]
+    },
+    {
+      "scenarioId": "money-stability-s1",
+      "categoryId": "business",
+      "topicId": "money-stability",
+      "legacyVideoTheme": "money",
+      "arc": "journey",
+      "label": {
+        "ru": "Золотая тропа",
+        "en": "Golden path",
+        "es": "Sendero dorado"
+      },
+      "audioIds": [
+        "score-inspiring-motion-2",
+        "score-forest-morning-3",
+        "score-clear-future-4",
+        "score-gentle-resource-1"
+      ]
+    },
+    {
+      "scenarioId": "money-stability-s2",
+      "categoryId": "business",
+      "topicId": "money-stability",
+      "legacyVideoTheme": "money",
+      "arc": "shelter",
+      "label": {
+        "ru": "Порядок и ясность",
+        "en": "Order and clarity",
+        "es": "Orden y claridad"
+      },
+      "audioIds": [
+        "score-find-my-way-3",
+        "score-financial-clarity-4",
+        "score-flowers-of-change-1",
+        "score-first-light-2"
+      ]
+    },
+    {
+      "scenarioId": "money-stability-s3",
+      "categoryId": "business",
+      "topicId": "money-stability",
+      "legacyVideoTheme": "money",
+      "arc": "awakening",
+      "label": {
+        "ru": "Дерево возможностей",
+        "en": "Tree of possibilities",
+        "es": "Árbol de posibilidades"
+      },
+      "audioIds": [
+        "score-forest-morning-4",
+        "score-clear-future-1",
+        "score-gentle-resource-2",
+        "score-gentle-space-3"
+      ]
+    },
+    {
+      "scenarioId": "money-stability-s4",
+      "categoryId": "business",
+      "topicId": "money-stability",
+      "legacyVideoTheme": "money",
+      "arc": "connection",
+      "label": {
+        "ru": "Тихая финансовая опора",
+        "en": "Financial grounding",
+        "es": "Apoyo financiero sereno"
+      },
+      "audioIds": [
+        "score-financial-clarity-1",
+        "score-flowers-of-change-2",
+        "score-first-light-3",
+        "score-collaboration-growth-4"
+      ]
+    },
+    {
+      "scenarioId": "work-focus-s1",
+      "categoryId": "business",
+      "topicId": "work-focus",
+      "legacyVideoTheme": "goals",
+      "arc": "journey",
+      "label": {
+        "ru": "Один луч",
+        "en": "One ray of light",
+        "es": "Un solo rayo"
+      },
+      "audioIds": [
+        "score-clear-future-2",
+        "score-gentle-resource-3",
+        "score-gentle-space-4",
+        "score-focused-action-1"
+      ]
+    },
+    {
+      "scenarioId": "work-focus-s2",
+      "categoryId": "business",
+      "topicId": "work-focus",
+      "legacyVideoTheme": "goals",
+      "arc": "shelter",
+      "label": {
+        "ru": "Точка внимания",
+        "en": "Point of focus",
+        "es": "Punto de atención"
+      },
+      "audioIds": [
+        "score-flowers-of-change-3",
+        "score-first-light-4",
+        "score-collaboration-growth-1",
+        "score-rooted-renewal-2"
+      ]
+    },
+    {
+      "scenarioId": "work-focus-s3",
+      "categoryId": "business",
+      "topicId": "work-focus",
+      "legacyVideoTheme": "goals",
+      "arc": "awakening",
+      "label": {
+        "ru": "Чистый горизонт",
+        "en": "Clear horizon",
+        "es": "Horizonte despejado"
+      },
+      "audioIds": [
+        "score-gentle-resource-4",
+        "score-gentle-space-1",
+        "score-focused-action-2",
+        "score-opportunity-horizon-3"
+      ]
+    },
+    {
+      "scenarioId": "work-focus-s4",
+      "categoryId": "business",
+      "topicId": "work-focus",
+      "legacyVideoTheme": "goals",
+      "arc": "connection",
+      "label": {
+        "ru": "Ритм действий",
+        "en": "Rhythm of action",
+        "es": "Ritmo de acción"
+      },
+      "audioIds": [
+        "score-first-light-1",
+        "score-collaboration-growth-2",
+        "score-rooted-renewal-3",
+        "score-gentle-decision-4"
+      ]
+    },
+    {
+      "scenarioId": "work-decision-s1",
+      "categoryId": "business",
+      "topicId": "work-decision",
+      "legacyVideoTheme": "goals",
+      "arc": "journey",
+      "label": {
+        "ru": "Первый шаг",
+        "en": "First step",
+        "es": "Primer paso"
+      },
+      "audioIds": [
+        "score-gentle-space-2",
+        "score-focused-action-3",
+        "score-opportunity-horizon-4",
+        "score-fresh-chapter-1"
+      ]
+    },
+    {
+      "scenarioId": "work-decision-s2",
+      "categoryId": "business",
+      "topicId": "work-decision",
+      "legacyVideoTheme": "goals",
+      "arc": "shelter",
+      "label": {
+        "ru": "Перекрёсток",
+        "en": "Crossroads",
+        "es": "Encrucijada"
+      },
+      "audioIds": [
+        "score-collaboration-growth-3",
+        "score-rooted-renewal-4",
+        "score-gentle-decision-1",
+        "score-warm-prosperity-2"
+      ]
+    },
+    {
+      "scenarioId": "work-decision-s3",
+      "categoryId": "business",
+      "topicId": "work-decision",
+      "legacyVideoTheme": "goals",
+      "arc": "awakening",
+      "label": {
+        "ru": "Смелый выбор",
+        "en": "A considered choice",
+        "es": "Una elección consciente"
+      },
+      "audioIds": [
+        "score-focused-action-4",
+        "score-opportunity-horizon-1",
+        "score-fresh-chapter-2",
+        "score-first-step-3"
+      ]
+    },
+    {
+      "scenarioId": "work-decision-s4",
+      "categoryId": "business",
+      "topicId": "work-decision",
+      "legacyVideoTheme": "goals",
+      "arc": "connection",
+      "label": {
+        "ru": "Открытая дверь",
+        "en": "The open door",
+        "es": "La puerta abierta"
+      },
+      "audioIds": [
+        "score-rooted-renewal-1",
+        "score-gentle-decision-2",
+        "score-warm-prosperity-3",
+        "score-gentle-new-day-4"
+      ]
+    },
+    {
+      "scenarioId": "work-opportunity-s1",
+      "categoryId": "business",
+      "topicId": "work-opportunity",
+      "legacyVideoTheme": "money",
+      "arc": "journey",
+      "label": {
+        "ru": "Новый горизонт",
+        "en": "New horizon",
+        "es": "Nuevo horizonte"
+      },
+      "audioIds": [
+        "score-opportunity-horizon-2",
+        "score-fresh-chapter-3",
+        "score-first-step-4",
+        "score-new-opportunities-1"
+      ]
+    },
+    {
+      "scenarioId": "work-opportunity-s2",
+      "categoryId": "business",
+      "topicId": "work-opportunity",
+      "legacyVideoTheme": "money",
+      "arc": "shelter",
+      "label": {
+        "ru": "Навстречу возможностям",
+        "en": "Meeting opportunity",
+        "es": "Encuentro con oportunidades"
+      },
+      "audioIds": [
+        "score-gentle-decision-3",
+        "score-warm-prosperity-4",
+        "score-gentle-new-day-1",
+        "score-clear-direction-2"
+      ]
+    },
+    {
+      "scenarioId": "work-opportunity-s3",
+      "categoryId": "business",
+      "topicId": "work-opportunity",
+      "legacyVideoTheme": "money",
+      "arc": "awakening",
+      "label": {
+        "ru": "Рост в саду",
+        "en": "Growth in the garden",
+        "es": "Crecimiento en el jardín"
+      },
+      "audioIds": [
+        "score-fresh-chapter-4",
+        "score-first-step-1",
+        "score-new-opportunities-2",
+        "score-rooted-freedom-3"
+      ]
+    },
+    {
+      "scenarioId": "work-opportunity-s4",
+      "categoryId": "business",
+      "topicId": "work-opportunity",
+      "legacyVideoTheme": "money",
+      "arc": "connection",
+      "label": {
+        "ru": "Свет будущего",
+        "en": "Light of tomorrow",
+        "es": "Luz del mañana"
+      },
+      "audioIds": [
+        "score-warm-prosperity-1",
+        "score-gentle-new-day-2",
+        "score-clear-direction-3",
+        "score-steady-foundation-4"
+      ]
+    },
+    {
+      "scenarioId": "work-speaking-s1",
+      "categoryId": "business",
+      "topicId": "work-speaking",
+      "legacyVideoTheme": "goals",
+      "arc": "journey",
+      "label": {
+        "ru": "Свой голос",
+        "en": "Finding my voice",
+        "es": "Encontrar mi voz"
+      },
+      "audioIds": [
+        "score-first-step-2",
+        "score-new-opportunities-3",
+        "score-rooted-freedom-4",
+        "score-open-horizon-1"
+      ]
+    },
+    {
+      "scenarioId": "work-speaking-s2",
+      "categoryId": "business",
+      "topicId": "work-speaking",
+      "legacyVideoTheme": "goals",
+      "arc": "shelter",
+      "label": {
+        "ru": "Спокойная сцена",
+        "en": "A calm stage",
+        "es": "Escenario tranquilo"
+      },
+      "audioIds": [
+        "score-gentle-new-day-3",
+        "score-clear-direction-4",
+        "score-steady-foundation-1",
+        "score-coastal-renewal-2"
+      ]
+    },
+    {
+      "scenarioId": "work-speaking-s3",
+      "categoryId": "business",
+      "topicId": "work-speaking",
+      "legacyVideoTheme": "goals",
+      "arc": "awakening",
+      "label": {
+        "ru": "Встреча с людьми",
+        "en": "Meeting the audience",
+        "es": "Encuentro con el público"
+      },
+      "audioIds": [
+        "score-new-opportunities-4",
+        "score-rooted-freedom-1",
+        "score-open-horizon-2",
+        "score-inspiring-motion-3"
+      ]
+    },
+    {
+      "scenarioId": "work-speaking-s4",
+      "categoryId": "business",
+      "topicId": "work-speaking",
+      "legacyVideoTheme": "goals",
+      "arc": "connection",
+      "label": {
+        "ru": "Уверенный выход",
+        "en": "Stepping forward",
+        "es": "Salir con confianza"
+      },
+      "audioIds": [
+        "score-clear-direction-1",
+        "score-steady-foundation-2",
+        "score-coastal-renewal-3",
+        "score-find-my-way-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-vitality-s1",
+      "categoryId": "energy",
+      "topicId": "energy-vitality",
+      "legacyVideoTheme": "energy",
+      "arc": "journey",
+      "label": {
+        "ru": "Солнечный поток",
+        "en": "Sunlit flow",
+        "es": "Flujo solar"
+      },
+      "audioIds": [
+        "score-forest-morning-3",
+        "score-fresh-light-4",
+        "score-quiet-water-1",
+        "score-gentle-space-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-vitality-s2",
+      "categoryId": "energy",
+      "topicId": "energy-vitality",
+      "legacyVideoTheme": "energy",
+      "arc": "shelter",
+      "label": {
+        "ru": "Живая река",
+        "en": "Living river",
+        "es": "Río vivo"
+      },
+      "audioIds": [
+        "score-natural-stillness-4",
+        "score-flowers-of-change-1",
+        "score-calm-recharge-2",
+        "score-soft-reset-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-vitality-s3",
+      "categoryId": "energy",
+      "topicId": "energy-vitality",
+      "legacyVideoTheme": "energy",
+      "arc": "awakening",
+      "label": {
+        "ru": "Огонёк внутри",
+        "en": "A light within",
+        "es": "Una luz interior"
+      },
+      "audioIds": [
+        "score-fresh-light-1",
+        "score-quiet-water-2",
+        "score-gentle-space-3",
+        "score-breathing-flow-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-vitality-s4",
+      "categoryId": "energy",
+      "topicId": "energy-vitality",
+      "legacyVideoTheme": "energy",
+      "arc": "connection",
+      "label": {
+        "ru": "Пробуждение света",
+        "en": "Awakening light",
+        "es": "Despertar de luz"
+      },
+      "audioIds": [
+        "score-flowers-of-change-2",
+        "score-calm-recharge-3",
+        "score-soft-reset-4",
+        "score-rooted-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "energy-morning-s1",
+      "categoryId": "energy",
+      "topicId": "energy-morning",
+      "legacyVideoTheme": "energy",
+      "arc": "journey",
+      "label": {
+        "ru": "Рассвет в горах",
+        "en": "Mountain sunrise",
+        "es": "Amanecer en las montañas"
+      },
+      "audioIds": [
+        "score-quiet-water-3",
+        "score-gentle-space-4",
+        "score-breathing-flow-1",
+        "score-forest-balance-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-morning-s2",
+      "categoryId": "energy",
+      "topicId": "energy-morning",
+      "legacyVideoTheme": "energy",
+      "arc": "shelter",
+      "label": {
+        "ru": "Первый луч",
+        "en": "First light",
+        "es": "Primera luz"
+      },
+      "audioIds": [
+        "score-calm-recharge-4",
+        "score-soft-reset-1",
+        "score-rooted-renewal-2",
+        "score-steady-activation-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-morning-s3",
+      "categoryId": "energy",
+      "topicId": "energy-morning",
+      "legacyVideoTheme": "energy",
+      "arc": "awakening",
+      "label": {
+        "ru": "Солнечный сад",
+        "en": "Sunlit garden",
+        "es": "Jardín soleado"
+      },
+      "audioIds": [
+        "score-gentle-space-1",
+        "score-breathing-flow-2",
+        "score-forest-balance-3",
+        "score-fresh-chapter-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-morning-s4",
+      "categoryId": "energy",
+      "topicId": "energy-morning",
+      "legacyVideoTheme": "energy",
+      "arc": "connection",
+      "label": {
+        "ru": "Утро возможностей",
+        "en": "A new morning",
+        "es": "Una mañana posible"
+      },
+      "audioIds": [
+        "score-soft-reset-2",
+        "score-rooted-renewal-3",
+        "score-steady-activation-4",
+        "score-gentle-breath-1"
+      ]
+    },
+    {
+      "scenarioId": "energy-inspiration-s1",
+      "categoryId": "energy",
+      "topicId": "energy-inspiration",
+      "legacyVideoTheme": "energy",
+      "arc": "journey",
+      "label": {
+        "ru": "Искра идеи",
+        "en": "Spark of an idea",
+        "es": "Chispa de una idea"
+      },
+      "audioIds": [
+        "score-breathing-flow-3",
+        "score-forest-balance-4",
+        "score-fresh-chapter-1",
+        "score-morning-energy-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-inspiration-s2",
+      "categoryId": "energy",
+      "topicId": "energy-inspiration",
+      "legacyVideoTheme": "energy",
+      "arc": "shelter",
+      "label": {
+        "ru": "Крылья мечты",
+        "en": "Room to dream",
+        "es": "Espacio para soñar"
+      },
+      "audioIds": [
+        "score-rooted-renewal-4",
+        "score-steady-activation-1",
+        "score-gentle-breath-2",
+        "score-gentle-new-day-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-inspiration-s3",
+      "categoryId": "energy",
+      "topicId": "energy-inspiration",
+      "legacyVideoTheme": "energy",
+      "arc": "awakening",
+      "label": {
+        "ru": "Поле открытий",
+        "en": "Field of discovery",
+        "es": "Campo de descubrimientos"
+      },
+      "audioIds": [
+        "score-forest-balance-1",
+        "score-fresh-chapter-2",
+        "score-morning-energy-3",
+        "score-gentle-rest-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-inspiration-s4",
+      "categoryId": "energy",
+      "topicId": "energy-inspiration",
+      "legacyVideoTheme": "energy",
+      "arc": "connection",
+      "label": {
+        "ru": "Рисунок света",
+        "en": "Painting with light",
+        "es": "Pintar con luz"
+      },
+      "audioIds": [
+        "score-steady-activation-2",
+        "score-gentle-breath-3",
+        "score-gentle-new-day-4",
+        "score-ocean-breath-1"
+      ]
+    },
+    {
+      "scenarioId": "energy-inner-strength-s1",
+      "categoryId": "energy",
+      "topicId": "energy-inner-strength",
+      "legacyVideoTheme": "energy",
+      "arc": "journey",
+      "label": {
+        "ru": "Корни силы",
+        "en": "Roots of strength",
+        "es": "Raíces de fuerza"
+      },
+      "audioIds": [
+        "score-fresh-chapter-3",
+        "score-morning-energy-4",
+        "score-gentle-rest-1",
+        "score-rooted-freedom-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-inner-strength-s2",
+      "categoryId": "energy",
+      "topicId": "energy-inner-strength",
+      "legacyVideoTheme": "energy",
+      "arc": "shelter",
+      "label": {
+        "ru": "Центр силы",
+        "en": "A steady center",
+        "es": "Centro estable"
+      },
+      "audioIds": [
+        "score-gentle-breath-4",
+        "score-gentle-new-day-1",
+        "score-ocean-breath-2",
+        "score-quiet-awakening-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-inner-strength-s3",
+      "categoryId": "energy",
+      "topicId": "energy-inner-strength",
+      "legacyVideoTheme": "energy",
+      "arc": "awakening",
+      "label": {
+        "ru": "Тихое пламя",
+        "en": "Quiet flame",
+        "es": "Llama tranquila"
+      },
+      "audioIds": [
+        "score-morning-energy-1",
+        "score-gentle-rest-2",
+        "score-rooted-freedom-3",
+        "score-light-and-space-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-inner-strength-s4",
+      "categoryId": "energy",
+      "topicId": "energy-inner-strength",
+      "legacyVideoTheme": "energy",
+      "arc": "connection",
+      "label": {
+        "ru": "Гора внутри",
+        "en": "A mountain within",
+        "es": "Una montaña interior"
+      },
+      "audioIds": [
+        "score-gentle-new-day-2",
+        "score-ocean-breath-3",
+        "score-quiet-awakening-4",
+        "score-coastal-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "energy-fresh-start-s1",
+      "categoryId": "energy",
+      "topicId": "energy-fresh-start",
+      "legacyVideoTheme": "life",
+      "arc": "journey",
+      "label": {
+        "ru": "Чистая страница",
+        "en": "Blank page",
+        "es": "Página en blanco"
+      },
+      "audioIds": [
+        "score-gentle-rest-3",
+        "score-rooted-freedom-4",
+        "score-light-and-space-1",
+        "score-water-and-breath-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-fresh-start-s2",
+      "categoryId": "energy",
+      "topicId": "energy-fresh-start",
+      "legacyVideoTheme": "life",
+      "arc": "shelter",
+      "label": {
+        "ru": "Открытая дверь",
+        "en": "An opening door",
+        "es": "Una puerta que se abre"
+      },
+      "audioIds": [
+        "score-ocean-breath-4",
+        "score-quiet-awakening-1",
+        "score-coastal-renewal-2",
+        "score-flowing-vitality-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-fresh-start-s3",
+      "categoryId": "energy",
+      "topicId": "energy-fresh-start",
+      "legacyVideoTheme": "life",
+      "arc": "awakening",
+      "label": {
+        "ru": "Путь перемен",
+        "en": "A path through change",
+        "es": "Camino de cambio"
+      },
+      "audioIds": [
+        "score-rooted-freedom-1",
+        "score-light-and-space-2",
+        "score-water-and-breath-3",
+        "score-forest-morning-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-fresh-start-s4",
+      "categoryId": "energy",
+      "topicId": "energy-fresh-start",
+      "legacyVideoTheme": "life",
+      "arc": "connection",
+      "label": {
+        "ru": "Новый сад",
+        "en": "A garden begins",
+        "es": "Comienza un jardín"
+      },
+      "audioIds": [
+        "score-quiet-awakening-2",
+        "score-coastal-renewal-3",
+        "score-flowing-vitality-4",
+        "score-natural-stillness-1"
+      ]
+    },
+    {
+      "scenarioId": "energy-purpose-s1",
+      "categoryId": "energy",
+      "topicId": "energy-purpose",
+      "legacyVideoTheme": "goals",
+      "arc": "journey",
+      "label": {
+        "ru": "Путеводная звезда",
+        "en": "Guiding star",
+        "es": "Estrella guía"
+      },
+      "audioIds": [
+        "score-light-and-space-3",
+        "score-water-and-breath-4",
+        "score-forest-morning-1",
+        "score-fresh-light-2"
+      ]
+    },
+    {
+      "scenarioId": "energy-purpose-s2",
+      "categoryId": "energy",
+      "topicId": "energy-purpose",
+      "legacyVideoTheme": "goals",
+      "arc": "shelter",
+      "label": {
+        "ru": "Мой компас",
+        "en": "My compass",
+        "es": "Mi brújula"
+      },
+      "audioIds": [
+        "score-coastal-renewal-4",
+        "score-flowing-vitality-1",
+        "score-natural-stillness-2",
+        "score-flowers-of-change-3"
+      ]
+    },
+    {
+      "scenarioId": "energy-purpose-s3",
+      "categoryId": "energy",
+      "topicId": "energy-purpose",
+      "legacyVideoTheme": "goals",
+      "arc": "awakening",
+      "label": {
+        "ru": "Дерево смысла",
+        "en": "Tree of meaning",
+        "es": "Árbol del sentido"
+      },
+      "audioIds": [
+        "score-water-and-breath-1",
+        "score-forest-morning-2",
+        "score-fresh-light-3",
+        "score-quiet-water-4"
+      ]
+    },
+    {
+      "scenarioId": "energy-purpose-s4",
+      "categoryId": "energy",
+      "topicId": "energy-purpose",
+      "legacyVideoTheme": "goals",
+      "arc": "connection",
+      "label": {
+        "ru": "Встреча с будущим",
+        "en": "Meeting tomorrow",
+        "es": "Encuentro con el futuro"
+      },
+      "audioIds": [
+        "score-flowing-vitality-2",
+        "score-natural-stillness-3",
+        "score-flowers-of-change-4",
+        "score-calm-recharge-1"
+      ]
+    },
+    {
+      "scenarioId": "love-closeness-s1",
+      "categoryId": "love",
+      "topicId": "love-closeness",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Тёплая встреча",
+        "en": "Warm meeting",
+        "es": "Encuentro cálido"
+      },
+      "audioIds": [
+        "score-trust-in-time-4",
+        "score-soft-reset-1",
+        "score-rooted-renewal-2",
+        "score-soft-boundaries-3"
+      ]
+    },
+    {
+      "scenarioId": "love-closeness-s2",
+      "categoryId": "love",
+      "topicId": "love-closeness",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Навстречу друг другу",
+        "en": "Moving closer",
+        "es": "Acercarnos"
+      },
+      "audioIds": [
+        "score-gentle-space-1",
+        "score-kind-connection-2",
+        "score-forest-balance-3",
+        "score-fresh-chapter-4"
+      ]
+    },
+    {
+      "scenarioId": "love-closeness-s3",
+      "categoryId": "love",
+      "topicId": "love-closeness",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Общее пространство",
+        "en": "Shared space",
+        "es": "Espacio compartido"
+      },
+      "audioIds": [
+        "score-soft-reset-2",
+        "score-rooted-renewal-3",
+        "score-soft-boundaries-4",
+        "score-gentle-breath-1"
+      ]
+    },
+    {
+      "scenarioId": "love-closeness-s4",
+      "categoryId": "love",
+      "topicId": "love-closeness",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Свет между нами",
+        "en": "Light between us",
+        "es": "Luz entre nosotros"
+      },
+      "audioIds": [
+        "score-kind-connection-3",
+        "score-forest-balance-4",
+        "score-fresh-chapter-1",
+        "score-warm-connection-2"
+      ]
+    },
+    {
+      "scenarioId": "love-trust-s1",
+      "categoryId": "love",
+      "topicId": "love-trust",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Мост доверия",
+        "en": "Bridge of trust",
+        "es": "Puente de confianza"
+      },
+      "audioIds": [
+        "score-rooted-renewal-4",
+        "score-soft-boundaries-1",
+        "score-gentle-breath-2",
+        "score-gentle-new-day-3"
+      ]
+    },
+    {
+      "scenarioId": "love-trust-s2",
+      "categoryId": "love",
+      "topicId": "love-trust",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Мягкая опора",
+        "en": "Gentle support",
+        "es": "Apoyo amable"
+      },
+      "audioIds": [
+        "score-forest-balance-1",
+        "score-fresh-chapter-2",
+        "score-warm-connection-3",
+        "score-gentle-rest-4"
+      ]
+    },
+    {
+      "scenarioId": "love-trust-s3",
+      "categoryId": "love",
+      "topicId": "love-trust",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Открытый сад",
+        "en": "Welcoming garden",
+        "es": "Jardín abierto"
+      },
+      "audioIds": [
+        "score-soft-boundaries-2",
+        "score-gentle-breath-3",
+        "score-gentle-new-day-4",
+        "score-trust-and-space-1"
+      ]
+    },
+    {
+      "scenarioId": "love-trust-s4",
+      "categoryId": "love",
+      "topicId": "love-trust",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Два берега",
+        "en": "Two shores",
+        "es": "Dos orillas"
+      },
+      "audioIds": [
+        "score-fresh-chapter-3",
+        "score-warm-connection-4",
+        "score-gentle-rest-1",
+        "score-rooted-freedom-2"
+      ]
+    },
+    {
+      "scenarioId": "love-heart-s1",
+      "categoryId": "love",
+      "topicId": "love-heart",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Сияние сердца",
+        "en": "Heart glow",
+        "es": "Resplandor del corazón"
+      },
+      "audioIds": [
+        "score-gentle-breath-4",
+        "score-gentle-new-day-1",
+        "score-trust-and-space-2",
+        "score-quiet-awakening-3"
+      ]
+    },
+    {
+      "scenarioId": "love-heart-s2",
+      "categoryId": "love",
+      "topicId": "love-heart",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Цветущий сад",
+        "en": "Blossoming garden",
+        "es": "Jardín florecido"
+      },
+      "audioIds": [
+        "score-warm-connection-1",
+        "score-gentle-rest-2",
+        "score-rooted-freedom-3",
+        "score-open-hearted-4"
+      ]
+    },
+    {
+      "scenarioId": "love-heart-s3",
+      "categoryId": "love",
+      "topicId": "love-heart",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Тёплый луч",
+        "en": "A warm ray",
+        "es": "Un rayo cálido"
+      },
+      "audioIds": [
+        "score-gentle-new-day-2",
+        "score-trust-and-space-3",
+        "score-quiet-awakening-4",
+        "score-coastal-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "love-heart-s4",
+      "categoryId": "love",
+      "topicId": "love-heart",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Дверь сердца",
+        "en": "Door of the heart",
+        "es": "Puerta del corazón"
+      },
+      "audioIds": [
+        "score-gentle-rest-3",
+        "score-rooted-freedom-4",
+        "score-open-hearted-1",
+        "score-water-and-breath-2"
+      ]
+    },
+    {
+      "scenarioId": "love-boundaries-s1",
+      "categoryId": "love",
+      "topicId": "love-boundaries",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Круг света",
+        "en": "Circle of light",
+        "es": "Círculo de luz"
+      },
+      "audioIds": [
+        "score-trust-and-space-4",
+        "score-quiet-awakening-1",
+        "score-coastal-renewal-2",
+        "score-calm-together-3"
+      ]
+    },
+    {
+      "scenarioId": "love-boundaries-s2",
+      "categoryId": "love",
+      "topicId": "love-boundaries",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Моё пространство",
+        "en": "My own space",
+        "es": "Mi espacio"
+      },
+      "audioIds": [
+        "score-rooted-freedom-1",
+        "score-open-hearted-2",
+        "score-water-and-breath-3",
+        "score-forest-morning-4"
+      ]
+    },
+    {
+      "scenarioId": "love-boundaries-s3",
+      "categoryId": "love",
+      "topicId": "love-boundaries",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Мягкое нет",
+        "en": "A kind no",
+        "es": "Un no amable"
+      },
+      "audioIds": [
+        "score-quiet-awakening-2",
+        "score-coastal-renewal-3",
+        "score-calm-together-4",
+        "score-natural-stillness-1"
+      ]
+    },
+    {
+      "scenarioId": "love-boundaries-s4",
+      "categoryId": "love",
+      "topicId": "love-boundaries",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Равновесие",
+        "en": "Finding balance",
+        "es": "Encontrar equilibrio"
+      },
+      "audioIds": [
+        "score-open-hearted-3",
+        "score-water-and-breath-4",
+        "score-forest-morning-1",
+        "score-welcoming-heart-2"
+      ]
+    },
+    {
+      "scenarioId": "love-self-s1",
+      "categoryId": "love",
+      "topicId": "love-self",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Доброе зеркало",
+        "en": "Kind reflection",
+        "es": "Reflejo amable"
+      },
+      "audioIds": [
+        "score-coastal-renewal-4",
+        "score-calm-together-1",
+        "score-natural-stillness-2",
+        "score-flowers-of-change-3"
+      ]
+    },
+    {
+      "scenarioId": "love-self-s2",
+      "categoryId": "love",
+      "topicId": "love-self",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Забота о себе",
+        "en": "Caring for myself",
+        "es": "Cuidarme"
+      },
+      "audioIds": [
+        "score-water-and-breath-1",
+        "score-forest-morning-2",
+        "score-welcoming-heart-3",
+        "score-quiet-water-4"
+      ]
+    },
+    {
+      "scenarioId": "love-self-s3",
+      "categoryId": "love",
+      "topicId": "love-self",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Тихое принятие",
+        "en": "Quiet acceptance",
+        "es": "Aceptación serena"
+      },
+      "audioIds": [
+        "score-calm-together-2",
+        "score-natural-stillness-3",
+        "score-flowers-of-change-4",
+        "score-trust-in-time-1"
+      ]
+    },
+    {
+      "scenarioId": "love-self-s4",
+      "categoryId": "love",
+      "topicId": "love-self",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Внутренний дом",
+        "en": "An inner home",
+        "es": "Hogar interior"
+      },
+      "audioIds": [
+        "score-forest-morning-3",
+        "score-welcoming-heart-4",
+        "score-quiet-water-1",
+        "score-gentle-space-2"
+      ]
+    },
+    {
+      "scenarioId": "love-dialogue-s1",
+      "categoryId": "love",
+      "topicId": "love-dialogue",
+      "legacyVideoTheme": "relationships",
+      "arc": "journey",
+      "label": {
+        "ru": "Мост слов",
+        "en": "Bridge of words",
+        "es": "Puente de palabras"
+      },
+      "audioIds": [
+        "score-natural-stillness-4",
+        "score-flowers-of-change-1",
+        "score-trust-in-time-2",
+        "score-soft-reset-3"
+      ]
+    },
+    {
+      "scenarioId": "love-dialogue-s2",
+      "categoryId": "love",
+      "topicId": "love-dialogue",
+      "legacyVideoTheme": "relationships",
+      "arc": "shelter",
+      "label": {
+        "ru": "Слушать сердцем",
+        "en": "Listening with care",
+        "es": "Escuchar con cuidado"
+      },
+      "audioIds": [
+        "score-welcoming-heart-1",
+        "score-quiet-water-2",
+        "score-gentle-space-3",
+        "score-kind-connection-4"
+      ]
+    },
+    {
+      "scenarioId": "love-dialogue-s3",
+      "categoryId": "love",
+      "topicId": "love-dialogue",
+      "legacyVideoTheme": "relationships",
+      "arc": "awakening",
+      "label": {
+        "ru": "Честная встреча",
+        "en": "An honest meeting",
+        "es": "Encuentro sincero"
+      },
+      "audioIds": [
+        "score-flowers-of-change-2",
+        "score-trust-in-time-3",
+        "score-soft-reset-4",
+        "score-rooted-renewal-1"
+      ]
+    },
+    {
+      "scenarioId": "love-dialogue-s4",
+      "categoryId": "love",
+      "topicId": "love-dialogue",
+      "legacyVideoTheme": "relationships",
+      "arc": "connection",
+      "label": {
+        "ru": "Разговор при свете",
+        "en": "Conversation in light",
+        "es": "Conversación a la luz"
+      },
+      "audioIds": [
+        "score-quiet-water-3",
+        "score-gentle-space-4",
+        "score-kind-connection-1",
+        "score-forest-balance-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-anxiety-s1",
+      "categoryId": "stress",
+      "topicId": "stress-anxiety",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Тихая гавань",
+        "en": "Quiet harbor",
+        "es": "Puerto tranquilo"
+      },
+      "audioIds": [
+        "score-rooted-renewal-1",
+        "score-soft-boundaries-2",
+        "score-gentle-rest-3",
+        "score-gentle-new-day-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-anxiety-s2",
+      "categoryId": "stress",
+      "topicId": "stress-anxiety",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Спокойная вода",
+        "en": "Still water",
+        "es": "Agua tranquila"
+      },
+      "audioIds": [
+        "score-gentle-breath-2",
+        "score-fresh-chapter-3",
+        "score-warm-connection-4",
+        "score-quiet-awakening-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-anxiety-s3",
+      "categoryId": "stress",
+      "topicId": "stress-anxiety",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Защитный круг",
+        "en": "Gentle circle",
+        "es": "Círculo protector"
+      },
+      "audioIds": [
+        "score-soft-boundaries-3",
+        "score-gentle-rest-4",
+        "score-gentle-new-day-1",
+        "score-trust-and-space-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-anxiety-s4",
+      "categoryId": "stress",
+      "topicId": "stress-anxiety",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Я здесь",
+        "en": "Here and now",
+        "es": "Aquí y ahora"
+      },
+      "audioIds": [
+        "score-fresh-chapter-4",
+        "score-warm-connection-1",
+        "score-quiet-awakening-2",
+        "score-rooted-freedom-3"
+      ]
+    },
+    {
+      "scenarioId": "stress-fast-calm-s1",
+      "categoryId": "stress",
+      "topicId": "stress-fast-calm",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Одна пауза",
+        "en": "One pause",
+        "es": "Una pausa"
+      },
+      "audioIds": [
+        "score-gentle-rest-1",
+        "score-gentle-new-day-2",
+        "score-trust-and-space-3",
+        "score-water-and-breath-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-fast-calm-s2",
+      "categoryId": "stress",
+      "topicId": "stress-fast-calm",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Пять чувств",
+        "en": "Five senses",
+        "es": "Cinco sentidos"
+      },
+      "audioIds": [
+        "score-warm-connection-2",
+        "score-quiet-awakening-3",
+        "score-rooted-freedom-4",
+        "score-open-hearted-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-fast-calm-s3",
+      "categoryId": "stress",
+      "topicId": "stress-fast-calm",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Мягкий выдох",
+        "en": "Gentle exhale",
+        "es": "Exhalación suave"
+      },
+      "audioIds": [
+        "score-gentle-new-day-3",
+        "score-trust-and-space-4",
+        "score-water-and-breath-1",
+        "score-coastal-renewal-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-fast-calm-s4",
+      "categoryId": "stress",
+      "topicId": "stress-fast-calm",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Вернуться в момент",
+        "en": "Back to now",
+        "es": "Volver al ahora"
+      },
+      "audioIds": [
+        "score-quiet-awakening-4",
+        "score-rooted-freedom-1",
+        "score-open-hearted-2",
+        "score-natural-stillness-3"
+      ]
+    },
+    {
+      "scenarioId": "stress-after-day-s1",
+      "categoryId": "stress",
+      "topicId": "stress-after-day",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Закат забот",
+        "en": "Setting down the day",
+        "es": "Dejar atrás el día"
+      },
+      "audioIds": [
+        "score-trust-and-space-1",
+        "score-water-and-breath-2",
+        "score-coastal-renewal-3",
+        "score-calm-together-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-after-day-s2",
+      "categoryId": "stress",
+      "topicId": "stress-after-day",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Закрыть день",
+        "en": "Closing the day",
+        "es": "Cerrar el día"
+      },
+      "audioIds": [
+        "score-rooted-freedom-2",
+        "score-open-hearted-3",
+        "score-natural-stillness-4",
+        "score-forest-morning-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-after-day-s3",
+      "categoryId": "stress",
+      "topicId": "stress-after-day",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Тихий вечер",
+        "en": "Quiet evening",
+        "es": "Tarde tranquila"
+      },
+      "audioIds": [
+        "score-water-and-breath-3",
+        "score-coastal-renewal-4",
+        "score-calm-together-1",
+        "score-quiet-water-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-after-day-s4",
+      "categoryId": "stress",
+      "topicId": "stress-after-day",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Возвращение к себе",
+        "en": "Returning to myself",
+        "es": "Volver a mí"
+      },
+      "audioIds": [
+        "score-open-hearted-4",
+        "score-natural-stillness-1",
+        "score-forest-morning-2",
+        "score-welcoming-heart-3"
+      ]
+    },
+    {
+      "scenarioId": "stress-release-s1",
+      "categoryId": "stress",
+      "topicId": "stress-release",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Река уносит",
+        "en": "Let the river flow",
+        "es": "Dejar fluir el río"
+      },
+      "audioIds": [
+        "score-coastal-renewal-1",
+        "score-calm-together-2",
+        "score-quiet-water-3",
+        "score-flowers-of-change-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-release-s2",
+      "categoryId": "stress",
+      "topicId": "stress-release",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Снять груз",
+        "en": "Putting down a burden",
+        "es": "Dejar la carga"
+      },
+      "audioIds": [
+        "score-natural-stillness-2",
+        "score-forest-morning-3",
+        "score-welcoming-heart-4",
+        "score-soft-reset-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-release-s3",
+      "categoryId": "stress",
+      "topicId": "stress-release",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Мягкая волна",
+        "en": "A gentle wave",
+        "es": "Una ola suave"
+      },
+      "audioIds": [
+        "score-calm-together-3",
+        "score-quiet-water-4",
+        "score-flowers-of-change-1",
+        "score-trust-in-time-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-release-s4",
+      "categoryId": "stress",
+      "topicId": "stress-release",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Лёгкие плечи",
+        "en": "Room to unwind",
+        "es": "Espacio para aflojarse"
+      },
+      "audioIds": [
+        "score-forest-morning-4",
+        "score-welcoming-heart-1",
+        "score-soft-reset-2",
+        "score-gentle-space-3"
+      ]
+    },
+    {
+      "scenarioId": "stress-before-event-s1",
+      "categoryId": "stress",
+      "topicId": "stress-before-event",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Перед дверью",
+        "en": "At the doorway",
+        "es": "Ante la puerta"
+      },
+      "audioIds": [
+        "score-quiet-water-1",
+        "score-flowers-of-change-2",
+        "score-trust-in-time-3",
+        "score-forest-balance-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-before-event-s2",
+      "categoryId": "stress",
+      "topicId": "stress-before-event",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Опора в пути",
+        "en": "Support on the path",
+        "es": "Apoyo en el camino"
+      },
+      "audioIds": [
+        "score-welcoming-heart-2",
+        "score-soft-reset-3",
+        "score-gentle-space-4",
+        "score-kind-connection-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-before-event-s3",
+      "categoryId": "stress",
+      "topicId": "stress-before-event",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Спокойный взгляд",
+        "en": "A steady gaze",
+        "es": "Mirada serena"
+      },
+      "audioIds": [
+        "score-flowers-of-change-3",
+        "score-trust-in-time-4",
+        "score-forest-balance-1",
+        "score-rooted-renewal-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-before-event-s4",
+      "categoryId": "stress",
+      "topicId": "stress-before-event",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Сила присутствия",
+        "en": "Being present",
+        "es": "Estar presente"
+      },
+      "audioIds": [
+        "score-soft-reset-4",
+        "score-gentle-space-1",
+        "score-kind-connection-2",
+        "score-gentle-breath-3"
+      ]
+    },
+    {
+      "scenarioId": "stress-safety-s1",
+      "categoryId": "stress",
+      "topicId": "stress-safety",
+      "legacyVideoTheme": "health",
+      "arc": "journey",
+      "label": {
+        "ru": "Тёплый дом",
+        "en": "A warm home",
+        "es": "Hogar cálido"
+      },
+      "audioIds": [
+        "score-trust-in-time-1",
+        "score-forest-balance-2",
+        "score-rooted-renewal-3",
+        "score-soft-boundaries-4"
+      ]
+    },
+    {
+      "scenarioId": "stress-safety-s2",
+      "categoryId": "stress",
+      "topicId": "stress-safety",
+      "legacyVideoTheme": "health",
+      "arc": "shelter",
+      "label": {
+        "ru": "Крепкие корни",
+        "en": "Deep roots",
+        "es": "Raíces profundas"
+      },
+      "audioIds": [
+        "score-gentle-space-2",
+        "score-kind-connection-3",
+        "score-gentle-breath-4",
+        "score-fresh-chapter-1"
+      ]
+    },
+    {
+      "scenarioId": "stress-safety-s3",
+      "categoryId": "stress",
+      "topicId": "stress-safety",
+      "legacyVideoTheme": "health",
+      "arc": "awakening",
+      "label": {
+        "ru": "Спокойное место",
+        "en": "A welcoming place",
+        "es": "Lugar tranquilo"
+      },
+      "audioIds": [
+        "score-forest-balance-3",
+        "score-rooted-renewal-4",
+        "score-soft-boundaries-1",
+        "score-gentle-rest-2"
+      ]
+    },
+    {
+      "scenarioId": "stress-safety-s4",
+      "categoryId": "stress",
+      "topicId": "stress-safety",
+      "legacyVideoTheme": "health",
+      "arc": "connection",
+      "label": {
+        "ru": "Добрый свет",
+        "en": "Kind light",
+        "es": "Luz amable"
+      },
+      "audioIds": [
+        "score-kind-connection-4",
+        "score-gentle-breath-1",
+        "score-fresh-chapter-2",
+        "score-warm-connection-3"
+      ]
+    }
+  ]
+}
