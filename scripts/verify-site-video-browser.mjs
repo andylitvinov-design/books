@@ -16,6 +16,7 @@ const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:310
 const evidence = '/tmp/site-video-evidence'
 mkdirSync(evidence, { recursive: true })
 const results = []
+const skippedResults = []
 function pass(label) { results.push(label); console.log(`PASS: ${label}`) }
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 let server, app, browser
@@ -122,12 +123,42 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
+  let russianPresentationVerified = false
   for (const home of ['/', '/ru']) {
     await navigate(home)
+    // The withdrawn 2026-10-01 intro remains retired; this is a different
+    // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
+    const presentation = page.locator('[data-video-slot="home-presentation"]')
+    if (home === '/ru') {
+      // A production-domain check may run before this PR is deployed.
+      // Local/preview builds MUST show the approved RU presentation.
+      if (!live || await presentation.count()) {
+        await expect(presentation).toHaveCount(1)
+        await expect(presentation).toHaveAttribute('data-video-locale', 'ru')
+        await expect(presentation.locator('iframe')).toHaveCount(0)
+        const play = presentation.locator('button.site-video-play')
+        await expect(play).toBeEnabled({ timeout: 30000 })
+        await play.click()
+        await expect(presentation.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 })
+        russianPresentationVerified = true
+      }
+    } else if (await presentation.count()) {
+      // English is visible only if a separately approved English YouTube
+      // presentation exists; never reuse the Russian publication.
+      await expect(presentation).toHaveAttribute('data-video-locale', 'en')
+      await expect(presentation.locator('iframe')).toHaveCount(0)
+    }
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
   }
-  pass(`${live ? 'Production' : 'Local'}: EN/RU AI home intros hidden; Services and Homeopathy approved videos remain playable`)
+  pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
+  if (russianPresentationVerified) {
+    pass(`${live ? 'Production' : 'Local'}: approved RU presentation click-to-iframe verified`)
+  } else {
+    const skipped = 'SKIPPED: production RU presentation slot absent; click-to-iframe not verified'
+    skippedResults.push(skipped)
+    console.log(skipped)
+  }
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
@@ -268,7 +299,7 @@ try {
   }
   assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors')
   pass('No page JavaScript errors')
-  writeFileSync(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ mode: live ? 'read-only production' : 'isolated Redis browser', passed: results }, null, 2))
+  writeFileSync(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ mode: live ? 'read-only production' : 'isolated Redis browser', passed: results, skipped: skippedResults }, null, 2))
   console.log(`VERIFIED: ${results.length} scenario groups`)
 } catch (error) {
   if (!live) { try { console.error('Isolated application log:', readFileSync(`${evidence}/local-app.log`, 'utf8')) } catch { /* not started */ } }

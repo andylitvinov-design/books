@@ -407,6 +407,26 @@ a.service-home-start-card:hover {
   margin: 0;
 }
 
+/* First owner-approved full Holistic House introduction. Click-to-play
+   reuses the published YouTube player; never eager-load an iframe. */
+.house-home--services .home-presentation-video {
+  box-sizing: border-box;
+  width: min(1040px, calc(100% - 32px));
+  margin: 22px auto 36px;
+}
+.house-home--services .home-presentation-video > header {
+  margin-bottom: 12px;
+}
+.house-home--services .home-presentation-video h2 {
+  font-size: clamp(27px, 3vw, 40px);
+}
+@media (max-width: 767px) {
+  .house-home--services .home-presentation-video {
+    width: calc(100% - 24px);
+    margin-block: 18px 28px;
+  }
+}
+
 .service-home-services { max-width: 1320px; margin: 0 auto; padding: 44px 5vw 28px; }
 .service-home-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .service-home-section-heading h2, .service-home-library h2 {
