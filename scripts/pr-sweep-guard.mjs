@@ -13,7 +13,7 @@ async function collectRouteSnapshot(repo, token) {
     repository(owner:$owner,name:$name) {
       pullRequests(first:100,after:$cursor,states:OPEN,baseRefName:"codex/public-book-library",orderBy:{field:CREATED_AT,direction:DESC}) {
         totalCount pageInfo { hasNextPage endCursor }
-        nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName headRefOid }
+        nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName baseRefOid headRefOid }
       }
     }
   }`;
@@ -31,7 +31,7 @@ async function collectRouteSnapshot(repo, token) {
     total=prs.totalCount;
     rows.push(...prs.nodes.map(pr=>({number:pr.number,created_at:pr.createdAt,state:'open',draft:pr.isDraft,
       mergeable:pr.mergeable==='MERGEABLE' ? true : pr.mergeable==='CONFLICTING' ? false : null,
-      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},base:{ref:pr.baseRefName}})));
+      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},base:{ref:pr.baseRefName,sha:pr.baseRefOid}})));
     if (!prs.pageInfo.hasNextPage) {
       if (rows.length!==total) throw Error('SWEEP_CHANGED_DURING_READ');
       return {rows,observed:Date.now(),total};

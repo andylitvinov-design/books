@@ -62,6 +62,6 @@ jobs:
         run: node scripts/ci-prune-stale-runs.mjs
       - name: Group unresolved PR merge-conflict candidates (read-only)
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
 
