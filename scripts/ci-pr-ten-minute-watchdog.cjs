@@ -221,9 +221,10 @@ async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, 
       branch:pr.head.ref,event:'pull_request',per_page:100
     }));
   if (!history || !Array.isArray(history.workflow_runs) ||
-      (history.total_count || 0)>100 ||
-      history.workflow_runs.some(r=>r.name===CORE_NAME &&
-        r.head_branch===pr.head.ref && r.event==='pull_request')) return false;
+      !Number.isSafeInteger(history.total_count) || history.total_count>100 ||
+      history.total_count !== history.workflow_runs.length ||
+      history.workflow_runs.some(r=>r.head_branch===pr.head.ref &&
+        r.event==='pull_request')) return false;
   if (!dryRun) {
     // Use the existing dedicated repo-scoped token, not GITHUB_TOKEN. The
     // latter would suppress downstream pull_request CI events.
