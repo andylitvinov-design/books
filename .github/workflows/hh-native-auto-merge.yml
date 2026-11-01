@@ -180,9 +180,143 @@ jobs:
               }
             }
 
+
+  enable-after-successful-core:
+    name: enable-after-successful-core
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    concurrency:
+      group: hh-core-success-auto-merge-${{ github.event.workflow_run.id }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Verify successful exact-HEAD release gate and resolve live PR
+        id: target
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const event = context.payload.workflow_run;
+            const fullRepo = owner + "/" + repo;
+            const log = message => core.info("CI_COMPLETED_AUTOMERGE: " + message);
+            if (!event || event.name !== "HH PR core release gate" ||
+                event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
+                event.event !== "pull_request" || event.status !== "completed" ||
+                event.conclusion !== "success" || event.repository?.full_name !== fullRepo ||
+                event.head_repository?.full_name !== fullRepo ||
+                !/^[0-9a-f]{40}$/.test(event.head_sha || "")) {
+              log("SKIP untrusted, non-core or non-success workflow run");
+              return;
+            }
+            // A workflow_run has a PR-head SHA; do not use the default-branch GITHUB_SHA.
+            const associated = (event.pull_requests || []).filter(pr =>
+              Number.isInteger(pr.number) && pr.base?.ref === "codex/public-book-library" &&
+              pr.head?.sha === event.head_sha && pr.head?.ref === event.head_branch);
+            if (associated.length !== 1) {
+              log("SKIP missing or ambiguous exact-HEAD PR association");
+              return;
+            }
+            const number = associated[0].number;
+            const live = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+            if (live.state !== "open" || live.draft ||
+                live.base.ref !== "codex/public-book-library" ||
+                live.head.repo?.full_name !== fullRepo ||
+                live.head.ref !== event.head_branch ||
+                live.head.sha !== event.head_sha || live.mergeable === false ||
+                live.mergeable_state === "dirty") {
+              log("SKIP moved HEAD, draft, external repo, changed base or merge conflict");
+              return;
+            }
+            // Never trust the workflow's overall conclusion alone: release-ready
+            // must be SUCCESS in this exact completed core workflow run.
+            const result = (await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: event.id, per_page: 100, filter: "latest"
+            })).data;
+            if (result.total_count > 100 || !Array.isArray(result.jobs) ||
+                result.jobs.filter(job =>
+                  job.name === "release-ready" && job.conclusion === "success").length !== 1) {
+              log("SKIP no single successful release-ready job on this run");
+              return;
+            }
+            // Fail closed if the production branch no longer requires release-ready.
+            const production = (await github.rest.repos.getBranch({
+              owner, repo, branch: "codex/public-book-library"
+            })).data;
+            const checks = production.protection?.required_status_checks?.checks;
+            if (!production.protected || !Array.isArray(checks) ||
+                !checks.some(check => check.context === "release-ready" &&
+                  check.app_id === 15368)) {
+              log("SKIP release-ready branch protection not verified");
+              return;
+            }
+            core.setOutput("pr_number", String(number));
+            core.setOutput("head_sha", live.head.sha);
+            core.setOutput("head_branch", live.head.ref);
+            log("READY for native auto-merge PR #" + number + " HEAD " +
+              live.head.sha.slice(0, 12) + "; native branch protection remains authoritative");
+
+      - name: Arm native auto-merge without bypassing GitHub protection
+        if: steps.target.outputs.pr_number != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.target.outputs.pr_number }}
+          PR_HEAD: ${{ steps.target.outputs.head_sha }}
+          PR_HEAD_BRANCH: ${{ steps.target.outputs.head_branch }}
+        run: |
+          set -euo pipefail
+          if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
+            echo '::warning::HH_AUTOMERGE_TOKEN missing; GITHUB_TOKEN merges may not trigger production push workflows.'
+          fi
+          # Recheck live identity immediately before writing. The merge command
+          # additionally applies --match-head-commit as an optimistic SHA lease.
+          if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')" != true ]]; then
+            echo 'CI_COMPLETED_AUTOMERGE: SKIP PR no longer matches validated HEAD/base'
+            exit 0
+          fi
+          # A stacked parent must preserve ancestry via Merge Commit; other PRs
+          # use the established Squash method. Never guess if discovery fails.
+          if ! stacked_children="$(gh pr list --repo "$GH_REPO" --state open --base "$PR_HEAD_BRANCH" --json number --limit 1 --jq 'length')"; then
+            echo '::error::Cannot classify stacked children; refusing auto-merge'
+            exit 1
+          fi
+          case "$stacked_children" in
+            0) merge_option=--squash; expected=SQUASH ;;
+            1) merge_option=--merge; expected=MERGE ;;
+            *) echo '::error::Unexpected stacked-child count'; exit 1 ;;
+          esac
+          export EXPECTED_METHOD="$expected"
+          current="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json autoMergeRequest --jq '.autoMergeRequest.mergeMethod // ""')"
+          if [[ "$current" == "$expected" ]]; then
+            echo 'CI_COMPLETED_AUTOMERGE: already armed with correct method'
+            exit 0
+          fi
+          if [[ -n "$current" ]]; then
+            echo "::error::Existing auto-merge method $current differs from required $expected"
+            exit 1
+          fi
+          if gh pr merge "$PR_NUMBER" --repo "$GH_REPO" --auto "$merge_option" --match-head-commit "$PR_HEAD"; then
+            echo "CI_COMPLETED_AUTOMERGE: armed PR #$PR_NUMBER ($expected) for exact HEAD $PR_HEAD"
+            exit 0
+          fi
+          # A concurrent pull_request_target job may have armed the same SHA.
+          if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '(.headRefOid == env.PR_HEAD) and (.autoMergeRequest.mergeMethod == env.EXPECTED_METHOD)')" == true ]]; then
+            echo 'CI_COMPLETED_AUTOMERGE: concurrent identical auto-merge arm confirmed'
+            exit 0
+          fi
+          echo '::error::Failed to arm exact-HEAD native auto-merge; leave to repair/sweep'
+          exit 1
+
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:
