@@ -2333,7 +2333,8 @@
  .studio .quickVideoNav button[aria-pressed="true"],
  .studio .quickVideoNav button:first-child:not([aria-pressed="false"]){
    color:#155e47;border-color:#176f54;background:#edf7ee;box-shadow:inset 0 0 0 1px #a9d9c0}
- .studio .quickBuilder>.workspaceHeading{order:2;margin:0}
+ .studio .quickBuilder>.quickVideoNav{order:2}
+ .studio .quickBuilder>.workspaceHeading{order:3;margin:0}
  .studio .quickBuilder>[data-video-quick-section="1"]{order:3;display:grid;gap:7px;
    margin:0;padding:11px 10px 12px!important;border:1px solid #e3e6db;border-radius:15px;
    background:linear-gradient(150deg,#fffef9,#faf8ef);box-shadow:0 4px 16px #304a3411}
