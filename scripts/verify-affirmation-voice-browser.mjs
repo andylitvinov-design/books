@@ -100,7 +100,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
-      const chosenPhrase=phrases.locator('[data-video-quick-affirmation="0"]');
+      // The current Phrases workspace uses the canonical Hypno phrase cards,
+      // not the retired data-video-quick-affirmation buttons.
+      const readyPhrases=phrases.locator('[data-hypno-ready]');
+      await readyPhrases.click();
+      await expect(readyPhrases).toHaveAttribute("aria-pressed","true");
+      const chosenPhrase=phrases.locator('[data-hypno-phrase="0"]');
+      await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
+      // Exercise the real visitor's individual phrase selection twice and
+      // ensure the approved text is actually restored before TTS submission.
+      await chosenPhrase.click();
+      await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
