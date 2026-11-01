@@ -58,7 +58,7 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
-test('core Draft skips heavy checkout but cannot pass release-ready, and Ready restores full checks', () => {
+test('core Draft skips heavy checkout but cannot pass specialist verification, and Ready restores full checks', () => {
   const core = read('hh-pr-core-release.yml');
   assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
   assert.ok(core.includes("  merge_group:"));
@@ -68,7 +68,7 @@ test('core Draft skips heavy checkout but cannot pass release-ready, and Ready r
   assert.ok(scope.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(core.includes("run: npm ci --no-audit --no-fund"));
   assert.ok(core.includes("run: npm run build"));
-  const gate = core.split('  release-ready:')[1];
+  const gate = core.split('  hh-specialists-verified:')[1]?.split('  release-ready:')[0];
   assert.ok(gate);
   assert.ok(gate.includes("    if: always()"));
   assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));

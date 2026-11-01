@@ -99,7 +99,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
 test('PR automation policy and agent entry point require specialist safety gates', () => {
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-  assert.match(docs, /sole required GitHub status is `release-ready`/);
+  assert.match(docs, /legacy required GitHub status remains `release-ready`/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
   assert.match(docs, /production advance alone does not require updating the PR branch/);
