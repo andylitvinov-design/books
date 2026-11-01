@@ -247,3 +247,10 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.ok(heroSegment.length>0);
   assert.doesNotMatch(heroSegment,/new MediaRecorder|fetch\(/);
 });
+
+test("mobile scene catalogue tracks shrink inside the video workspace",()=>{
+  const css=read("components/mandala-video-mobile.module.css");
+  assert.match(css,/\.quickBuilder\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css,/\.quickBuilder\s*>\s*\.sceneLibrary\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(css,/\.sceneLibrary\s*\[data-free-film-compilation-catalog\]\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+});

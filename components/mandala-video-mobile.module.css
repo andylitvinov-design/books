@@ -869,7 +869,7 @@
    Source: owner's first cream/emerald generated mock, same guest video-editor route.
    All controls address existing local video state. The historic working editor
    remains available in an opt-in disclosure. No remote pictures or AI calls. */
-.quickBuilder{display:grid;gap:11px;min-width:0;margin:0 0 13px;padding:0 1px;color:#143d35}
+.quickBuilder{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;min-width:0;margin:0 0 13px;padding:0 1px;color:#143d35}
 .quickHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 9px 10px}
 .quickHeader>div{min-width:0}
@@ -1783,7 +1783,7 @@
 .previewMiniSource small{color:#6b7c72;font:700 11px/1.3 Arial,Helvetica,sans-serif}
 .previewMiniSource .quickFormatDemo{max-width:228px;justify-self:end;box-shadow:0 2px 8px rgba(6,56,40,.13)}
 .previewMiniSource .quickFormatDemo .quickPreviewPlay{width:44px;height:44px}
-.quickBuilder>.sceneLibrary{display:grid;gap:10px;padding:13px 13px 14px;border-radius:22px;
+.quickBuilder>.sceneLibrary{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:13px 13px 14px;border-radius:22px;
   background:#fffdf7;border:1px solid #e8e9de;box-shadow:0 6px 20px #193e2d0e}
 .sceneLibraryHeading{display:grid;gap:4px}
 .sceneLibraryHeading h3{display:flex;align-items:center;gap:8px;
@@ -1792,7 +1792,7 @@
 .sceneLibraryHeading p{color:#688075;font:500 12px/1.38 Arial,Helvetica,sans-serif}
 .sceneLibrary .templates{margin:2px 0 0;padding:3px 0 11px;border:0;
   border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
-.sceneLibrary [data-free-film-compilation-catalog]{margin:0;padding:3px 0 10px;border:0;
+.sceneLibrary [data-free-film-compilation-catalog]{grid-template-columns:minmax(0,1fr);margin:0;padding:3px 0 10px;border:0;
   border-bottom:1px solid #dfe9dc;border-radius:0;background:transparent;box-shadow:none}
 .sceneLibrary .templates .sectionHeading{margin-bottom:5px}
 .sceneLibrary .templates .sectionHeading h3,

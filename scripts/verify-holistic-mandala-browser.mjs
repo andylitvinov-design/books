@@ -336,6 +336,10 @@ const runEngine = async ([engine, browserType]) => {
           "the same unified library includes the existing 4-MP4 film presets");
         const expandAllFilms=quick.locator("[data-video-scene-library] [data-free-film-more]");
         try {
+          await expandAllFilms.scrollIntoViewIfNeeded();
+          const buttonBounds=await expandAllFilms.boundingBox();
+          assert.ok(buttonBounds && buttonBounds.x >= 0 && buttonBounds.x + buttonBounds.width <= width + 1,
+            "catalogue expansion must be reachable inside the viewport");
           await expandAllFilms.click();
         } catch (error) {
           const geometry=await expandAllFilms.evaluate(element=>{
