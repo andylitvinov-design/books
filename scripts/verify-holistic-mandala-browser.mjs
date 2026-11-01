@@ -1841,6 +1841,38 @@ const runEngine = async ([engine, browserType]) => {
           await workspaceNav.locator('[data-video-quick-control="video"]').click();
           const auto=page.locator("[data-auto-video-director]");
           await auto.waitFor({state:"visible",timeout:12000});
+          // Regression from the owner's physical iPhone: the compact Auto
+          // Director belongs BELOW the video and music, not over the hero.
+          const musicBox=await page.locator("[data-video-quick-audio-choices]").boundingBox();
+          const directorBox=await auto.boundingBox();
+          assert.ok(musicBox&&directorBox&&directorBox.y>=musicBox.y+musicBox.height-2,
+            "Auto Director must follow the actual Music and Voice section");
+          const goalField=page.locator("[data-first-video-wish]");
+          await goalField.fill("Любовь");
+          await goalField.press("End");
+          await goalField.press("Space");
+          await expect(goalField).toHaveValue("Любовь ");
+          await goalField.pressSequentially("и близость");
+          await expect(goalField).toHaveValue("Любовь и близость");
+          const inputGeometry=await page.evaluate(()=>({
+            viewport:document.documentElement.clientWidth,
+            document:document.documentElement.scrollWidth,
+            fieldRight:document.querySelector("[data-first-video-wish]")?.getBoundingClientRect().right,
+          }));
+          assert.ok(inputGeometry.document<=inputGeometry.viewport+2&&
+            inputGeometry.fieldRight<=inputGeometry.viewport+2,
+            "Typed goal must fit within iPhone content width: "+JSON.stringify(inputGeometry));
+          await auto.locator("[data-auto-video-suggest]").click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.match(await auto.locator("[data-auto-video-choices]").innerText(),/Отношения/,
+            "Written love goal must influence recommended scenario theme");
+          const choices=auto.locator("[data-auto-video-story]");
+          assert.ok(await choices.count()>=2,"show real selectable alternative film concepts");
+          await choices.nth(1).click();
+          await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+          await expect(choices.nth(0)).toHaveAttribute("aria-pressed","false");
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "Four cards below selections are consecutive scenes, not false clickable films");
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
             "six accessible one-tap goals, no mandatory 49-question intake");
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
