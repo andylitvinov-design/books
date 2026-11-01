@@ -19,6 +19,20 @@ Sources to review per recording:
 
 Do not mirror YouTube/Spotify/Apple Music audio, celebrity recordings, music protected by Content ID without permission, or CC BY-NC/ND performances into the public picker.
 
+
+## Independently reviewed source candidates (not yet imported)
+
+On 2026-11-01, the originating **Wikimedia Commons file pages** were reviewed for recording-level licensing. These are **candidate recordings, not entries in the live soundtrack registry**: downloading, checking recording/composition provenance, verifying SHA-256, hearing the master, cutting/loudness-normalizing, and committing the resulting MP3 must still happen through the importer. A public page's CC0 claim is evidence to review, not a substitute for verifying authenticity and applicable rights.
+
+| Familiar recording | Performer / publisher shown | Recording permission shown | Source file and intended genres |
+| --- | --- | --- | --- |
+| Beethoven — Für Elise, WoO 59 | Gaodifan (V. Gao), self-made recording, 2006 | CC0 / dedicated public domain | https://commons.wikimedia.org/wiki/File:FurElise.ogg — calm melodic piano; Body, Love |
+| Erik Satie — Gymnopédie No. 1 | Teknopazzo, own work; source media corrected in 2022 | CC0 | https://commons.wikimedia.org/wiki/File:Gymnopedie_No._1..ogg — gentle meditation, Body, Stress |
+| Frédéric Chopin — Nocturne Op. 9 No. 2 | Membeth, own piano recording, 2013 | CC0 | https://commons.wikimedia.org/wiki/File:Chopin.Nocturne.Es-Dur.opus.9.2.ogg — calm romantic piano, Love, Stress |
+| Erik Satie — Gymnopédie No. 1 (alternate performance) | Kevin MacLeod, arrangement/performance, ISRC USUAN1100787 | CC BY 3.0 with mandatory on-site attribution | https://commons.wikimedia.org/wiki/File:Gymnopedie_No._1_(ISRC_USUAN1100787).mp3 — Body, Love |
+
+For CC BY 3.0, show the arranger/performer, exact track title, source URL, license URL and an indication that the 32-second audio was shortened and normalized. Check both underlying public-domain composition and recording before publication. If any source is disputed, or fails identity/attribution or SHA checks, skip it. Never publish a mere Wikimedia transcode hotlink as a product asset.
+
 ## Offline operator workflow (no cloud API, no recurring bill)
 1. Review source and license for this **exact** recording. Download the file yourself from its legitimate page, not a streaming player URL. Save it as `output/audio-inbox/original.wav` (the `output/` folder is gitignored). Collect evidence of performer, composer, license, source page and date.
 2. Obtain the verified SHA-256: `shasum -a 256 output/audio-inbox/original.wav` (macOS) or `sha256sum output/audio-inbox/original.wav` (Linux). Prepare `output/audio-inbox/original.json`:
