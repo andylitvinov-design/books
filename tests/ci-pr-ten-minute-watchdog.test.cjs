@@ -588,25 +588,43 @@ test('GraphQL outage falls back to no more than six rotating REST snapshots',asy
   assert.equal(result.inspected,6);
 });
 
-test('legacy branch-check migration remains a single valid fail-closed step',()=>{
+test('manual branch-check migration validates pinned Core evidence and both protected controls',()=>{
   const {readFileSync}=require('node:fs');
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
-  assert.equal((source.match(/^          gh api "repos\/\$GH_REPO\/rulesets\/26269892"/gm)||[]).length,1);
+  assert.ok(source.includes('  workflow_dispatch:'));
+  assert.ok(!source.includes('  push:'));
+  assert.ok(!source.includes('  schedule:'));
+  assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
+  assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
+  assert.ok(source.includes('set -euo pipefail'));
+  assert.ok(source.includes('Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.'));
+  // Verify immutable approved Core evidence before policy mutations.
+  assert.ok(source.includes('repos/$GH_REPO/actions/runs/41328294027'));
+  assert.ok(source.includes('repos/$GH_REPO/pulls/2935'));
+  for(const gate of ['hh-core-verified','hh-specialist','release-ready'])
+    assert.ok(source.includes('.name == "'+gate+'"'),gate);
+  assert.ok(source.includes('Approved Core, Specialist and legacy compatibility jobs are not all green'));
+  // The first ruleset/classic read MUST precede mutation, and a second read
+  // MUST verify the two new mandatory contexts. One PUT, one PATCH only.
+  const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
+  const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
+  const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
+  const beforeClassic=source.indexOf('gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic.json"');
+  const patchClassic=source.indexOf('gh api --method PATCH ');
+  const afterClassic=source.indexOf('gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic-after.json"');
+  assert.ok(beforeRules>=0&&beforeRules<putRules&&putRules<afterRules);
+  assert.ok(beforeClassic>=0&&beforeClassic<patchClassic&&patchClassic<afterClassic);
+  assert.equal((source.match(/^          gh api --method PUT /gm)||[]).length,1);
   assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
-  assert.ok(source.includes("GH_TOKEN: " + '$' + "{{ secrets.HH_BRANCH_ADMIN_TOKEN }}"));
-  assert.ok(!source.includes("secrets.HH_AUTOMERGE_TOKEN"));
-  assert.ok(source.includes("  workflow_dispatch:"));
-  assert.ok(!source.includes("  push:"));
-
-  assert.ok(source.includes("grep -Fxq '    name: hh-core-verified'"));
-  assert.ok(source.includes("grep -Fxq '    name: hh-specialists-verified'"));
-  assert.ok(!source.includes("base64 --decode | grep -q "));
-  assert.ok(source.includes("jq '{strict: .strict, contexts: [], checks: ["));
-  assert.ok(source.includes('.strict == $priorStrict and'));
-  assert.ok(!source.includes('"strict":false,"contexts":[],"checks"'));
-  assert.ok(source.includes('{context:"hh-specialists-verified",app_id:15368}'));
-  assert.ok(source.includes('["hh-core-verified","hh-specialists-verified"]'));
-  assert.ok(source.includes('Legacy required check migrated: release-ready -> hh-core-verified + hh-specialists-verified'));
+  assert.ok(source.includes('.enforcement == "active"'));
+  assert.ok(source.includes('required_review_thread_resolution == true'));
+  assert.ok(source.includes('non_fast_forward'));
+  assert.ok(source.includes('deletion'));
+  assert.ok(source.includes('Already migrated: both required status sources read back cleanly.'));
+  assert.ok(source.includes('["hh-core-verified","hh-specialist"]'));
+  assert.ok(source.includes('Both controls VERIFIED: required hh-core-verified + hh-specialist'));
+  assert.ok(!source.includes('base64 --decode | grep -q '));
+  assert.ok(!source.includes('gh api --method DELETE '));
 });
 
 test('event-driven merge and inventory respect legacy protection until admin migration',()=>{
