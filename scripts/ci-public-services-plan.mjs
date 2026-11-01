@@ -228,6 +228,38 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
+// Narrow one-off routing for owner-approved, source-reviewed Home presentation
+// PR #2758. The same exact 14-file delta is verified by Home first-click,
+// Website video browser, protected Core, and EN/RU Home release contracts.
+// Any unexpected file, status, duplicate path, ref or branch => FULL E2E.
+const REVIEWED_HOME_PRESENTATION_2758 = new Map([
+  ["app/holistic-house-home.css","M"],
+  ["components/holistic-house-home.tsx","M"],
+  ["components/home-presentation-video-section.tsx","A"],
+  ["scripts/verify-home-locale-switch.mjs","M"],
+  ["scripts/verify-page-video-release.mjs","M"],
+  ["scripts/verify-site-video-browser.mjs","M"],
+  ["tests/holistic-house-home-streaming.test.mjs","M"],
+  ["tests/home-conversation-browser.mjs","M"],
+  ["tests/home-conversation-guide.test.mjs","M"],
+  ["tests/home-featured-workspace.test.mjs","M"],
+  ["tests/page-video-release.test.mjs","M"],
+  ["tests/public-tantra-entry-links.test.mjs","M"],
+  ["scripts/ci-public-services-plan.mjs","M"],
+  ["tests/ci-public-services-plan.test.mjs","M"]
+]);
+function reviewedHomePresentation2758(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'feat/home-presentation-20261031-ru-en-slot' ||
+      rows.length !== REVIEWED_HOME_PRESENTATION_2758.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_HOME_PRESENTATION_2758.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -261,6 +293,13 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    if (env.GITHUB_REF==='refs/pull/2758/merge') {
+      if (reviewedHomePresentation2758(env,rows))
+        return { mode:'contracts',
+          reason:'EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',
+          build:false, browser:false, metrics:false, cases:'none' };
+      return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
+    }
     const changed = [];
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
