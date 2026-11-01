@@ -443,3 +443,19 @@ test('temporary public-service fast lane retains payment/consent/unknown real br
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
   assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
+
+test('independent Site Video CI orchestration never triggers unrelated thirteen-case public checkout E2E',()=>{
+  const files=[
+    '.github/workflows/site-video-browser.yml',
+    'scripts/ci-site-video-scope.mjs',
+    'tests/ci-site-video-scope.test.mjs',
+    'tests/site-video-admin-e2e-gate.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+  ];
+  const plan=planPublicServicesChangedPaths(files);
+  assert.deepEqual([plan.mode,plan.build,plan.browser],['contracts',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  const mixed=planPublicServicesChangedPaths([...files,'app/api/payments/talismans/checkout/route.js']);
+  assert.deepEqual([mixed.mode,requiresPublicServicesHeavyPr(mixed)],['full',true]);
+});
