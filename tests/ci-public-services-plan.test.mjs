@@ -389,14 +389,30 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
   assert.match(src, /^  workflow_dispatch:$/m);
   for (const [name, output] of [
     ['Cache exact Playwright Chromium and WebKit browsers', 'browser'],
-    ['Install Chromium and WebKit for isolated public acceptance', 'browser'],
     ['Production build and public browser acceptance', 'build'],
   ]) {
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
-    assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
+    // A named id can precede the mandatory conditional. It is still checked
+    // immediately at the beginning of the step, not in an unrelated comment.
+    assert.ok(step.slice(0, 300).includes("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
       'sensitive PR browser and build must remain blocking: ' + name);
   }
+  // Exact Playwright installation is no longer a sequential third job step.
+  // The FULL build and both engine installations overlap, but the browser
+  // process is awaited and must succeed BEFORE server/browser QA can start.
+  const production = src.split('      - name: Production build and public browser acceptance\n')[1]
+    ?.split('      - uses: actions/upload-artifact@v4\n')[0] || '';
+  assert.match(production, /case "\\$HH_PUBLIC_BROWSER_ENGINES" in/);
+  assert.match(production, /npm install --prefix \/tmp\/hh-public-services-tools/);
+  assert.match(production, /playwright install --with-deps chromium webkit/);
+  assert.match(production, /npm run build > artifacts\/public-services-production\/build\.log/);
+  assert.match(production, /wait "\\$browser_pid" \\|\\| browser_code=\\$\\?/);
+  assert.match(production, /if \\(\\( browser_code != 0 \\)\\); then/);
+  assert.match(production, /echo "browser_ready=true" >> "\\$GITHUB_OUTPUT"/);
+  assert.match(src, /uses: actions\/cache\/restore@v4/);
+  assert.match(src, /uses: actions\/cache\/save@v4/);
+  assert.match(src, /steps\.production_qa\.outputs\.browser_ready == 'true'/);
   assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
@@ -855,4 +871,16 @@ test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full u
     assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
   }
   assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
+});
+
+test('Business browser QA remains complete but reuses two engine processes', () => {
+  const business = readFileSync(new URL('../scripts/verify-business-quiz-mobile.mjs', import.meta.url), 'utf8');
+  assert.match(business, /browsers\.set\(webkit,await webkit\.launch\(\)\)/);
+  assert.match(business, /browsers\.set\(chromium,await chromium\.launch\(\)\)/);
+  assert.match(business, /for\(const locale of \['en','ru','es'\]\)/);
+  assert.match(business, /for\(const width of \[320,375,390,430\]\)/);
+  assert.match(business, /browser\.newPage\(/);
+  assert.match(business, /waitUntil:'domcontentloaded'/);
+  assert.match(business, /page\.waitForFunction\(/);
+  assert.doesNotMatch(business, /networkidle/);
 });
