@@ -9,6 +9,12 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
  ]){const page=await browser.newPage({viewport:{width,height:844},isMobile:true,hasTouch:true});
   const writes=[];await page.route('**/*',route=>{const r=route.request();let u=new URL(r.url());if(!['GET','HEAD'].includes(r.method()))writes.push(`${r.method()} ${u.pathname}`);return u.origin==='http://127.0.0.1:3100'&&['GET','HEAD'].includes(r.method())?route.continue():route.abort();});
   await page.goto(`http://127.0.0.1:3100/${locale}/holistic-support/mandala`,{waitUntil:'domcontentloaded',timeout:90000});
+  // A real visitor must expand the approved advanced director; mounting
+  // a hidden hydrated form does not make it visible to Playwright.
+  const firstDetails=page.locator('[data-video-first-video-advanced]');
+  await firstDetails.waitFor({state:'attached',timeout:60000});
+  if(await firstDetails.getAttribute('open')===null)
+    await firstDetails.locator(':scope > summary').click();
   await page.locator('[data-first-free-video][data-first-video-hydrated="true"]').waitFor({state:'visible',timeout:60000});
   if(engine==='chromium'&&locale==='ru'){
     const first=page.locator('[data-first-free-video]');
