@@ -29,39 +29,42 @@ type Props={
 };
 const copy={
  ru:{title:"AI-видеорежиссёр",subtitle:"Подбираю реальные видеосюжеты · бесплатно",intro:"Привет! Какое видео вы хотите создать? Опишите идею или выберите тему — я помогу настроить ролик.",
+  filterNames:{mood:"Атмосфера",aspect:"Формат",duration:"Время",music:"Музыка",phrases:"Фразы"},
   goal:"Какое видео вы представляете? Можно написать одной фразой.",mood:"Какая атмосфера нужна — мягкая или динамичная?",aspect:"Где будете смотреть ролик? Выберите формат.",duration:"Какой длины сделать ролик?",music:"Какую музыку добавить?",phrases:"Добавить поддерживающие фразы на экран?",review:"Я подобрал сюжет по вашим ответам. Проверьте сцены и параметры перед созданием.",ready:"Сценарий утверждён. Можно запускать запись настоящего видео.",
   done:"Видео готово. Откройте его для просмотра, скачивания и отправки.",error:"Не получилось распознать ответ. Выберите вариант ниже или уточните словами.",
   unsupported:"Для указанного конкретного объекта пока нет подходящего реального MP4. Могу предложить символический монтаж из доступных видеосцен — он не будет изображать запрошенный объект.",
   missing:"Подходящий монтаж из разрешённых сцен не найден. Измените тему или откройте редактор.", symbolic:"Предложить метафорический сюжет",retryGoal:"Изменить запрос",alternate:"Другой сюжет",confirm:"Подтвердить сценарий",create:"Создать видео",creating:"Собираем видео на устройстве…",loading:"Загружаем выбранные видеосцены…",open:"Открыть готовое видео",editor:"Расширенный редактор",startAgain:"Новый ролик",edit:"Изменить настройки",note:"Видео собирается из разрешённых MP4, не из новых AI-кадров. Ваш текст не передаётся внешним AI-сервисам.",
-  noteAi:"С вашего разрешения текст идеи отправляется подтверждённому бесплатному AI. Фото и голос остаются на устройстве.",
+  noteAi:"С вашего разрешения текст идеи и выбранные настройки отправляются подтверждённому бесплатному AI. Фото и голос остаются на устройстве.",
   placeholder:"Напишите, что хотите создать или изменить…",send:"Отправить",photo:"Добавить своё фото",audio:"Добавить голос или звук",promptChanged:"Обновил параметры. Проверьте сценарий снова.",
-  aiConsent:"Разрешить бесплатному AI сформулировать вопрос по моей идее (отправить текст внешнему провайдеру)",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
+  aiConsent:"Разрешить бесплатному AI сформулировать вопрос по моей идее (отправить текст и настройки внешнему провайдеру)",aiBusy:"AI уточняет вопрос…",aiFallback:"Бесплатный AI сейчас недоступен — продолжим с локальными настройками.",
   assetTimeout:"Сцены или права на запись пока недоступны. Выберите другой сюжет либо проверьте настройки.",
   auto:"Подобрать настройки автоматически",timeout:"Запись не началась. Проверьте доступность сцен и попробуйте снова.",blocked:"Результат не прошёл проверку или запись не удалась. Воспользуйтесь настройками и повторите создание.",stages:["Начало","Погружение","Развитие","Завершение"],
   themeChips:["Хочу больше спокойствия","Любовь и близость","Энергия и бодрость","Уверенность в себе"],
   moodChoices:[["Мягкая","slow"],["Динамичная","dynamic"]],aspectChoices:[["Вертикальный 9:16","portrait"],["Горизонтальный 16:9","landscape"],["Квадрат 1:1","square"]],
   musicChoices:[["Нежная музыка","love"],["Спокойная","meditation"],["Гармония","harmony"],["Без музыки","none"]],phraseChoices:[["Да, добавить","yes"],["Нет","no"]]},
  en:{title:"AI Video Director",subtitle:"Real approved footage · free",intro:"Hi! What video would you like to create? Describe it or choose a topic; I'll guide the settings.",
+  filterNames:{mood:"Mood",aspect:"Format",duration:"Length",music:"Music",phrases:"Phrases"},
   goal:"What kind of video do you imagine? Describe it briefly.",mood:"What mood should it have — gentle or dynamic?",aspect:"Where will you use the video? Choose a format.",duration:"How long should it be?",music:"What soundtrack would you like?",phrases:"Add supportive phrases to the screen?",review:"Here's a story assembled from available footage. Review it before creating.",ready:"Story approved. You can now create the real video.",
   done:"Your video is ready. Open it to play, download or share.",error:"I couldn't interpret that choice. Try the options below or another phrase.",
   unsupported:"That specific subject is not available in our verified MP4 catalog. I can propose a symbolic story using existing footage, but it won't show that subject.",
   missing:"No compatible licensed clips were found. Change the goal or open the editor.",symbolic:"Use a symbolic story",retryGoal:"Change idea",alternate:"Another story",confirm:"Confirm story",create:"Create video",creating:"Recording video on this device…",loading:"Loading the selected video clips…",open:"Open finished video",editor:"Advanced editor",startAgain:"New video",edit:"Change settings",note:"Uses approved existing MP4 footage, not newly AI-generated frames. Your text is not sent to an external AI service.",
-  noteAi:"With your permission, only the idea text is sent to confirmed free AI. Photos and voice stay on your device.",
+  noteAi:"With your permission, the idea text and selected settings are sent to confirmed free AI. Photos and voice stay on your device.",
   placeholder:"Describe a video or tell me what to change…",send:"Send",photo:"Add my photo",audio:"Add my voice or audio",promptChanged:"Updated the settings. Please confirm the story again.",
-  aiConsent:"Let free AI personalize one question (send my idea text to an external provider)",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
+  aiConsent:"Let free AI personalize one question (send my idea text and settings externally)",aiBusy:"AI is personalizing…",aiFallback:"Free AI is unavailable, so we will continue locally.",
   assetTimeout:"Sources or recording permissions are not ready. Try another story or check settings.",
   auto:"Suggest settings for me",timeout:"Recording did not begin. Check the video sources and retry.",blocked:"Recording or playback verification failed. Adjust settings and retry.",stages:["Opening","Arriving","Exploring","Closing"],
   themeChips:["I want more calm","Love and connection","Energy and vitality","Confidence and focus"],
   moodChoices:[["Gentle","slow"],["Dynamic","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Landscape 16:9","landscape"],["Square 1:1","square"]],
   musicChoices:[["Warm melody","love"],["Meditative","meditation"],["Harmony","harmony"],["Silent","none"]],phraseChoices:[["Yes, add them","yes"],["No","no"]]},
  es:{title:"Director de vídeo IA",subtitle:"Escenas reales autorizadas · gratis",intro:"¡Hola! ¿Qué vídeo quieres crear? Describe tu idea o elige un tema; te guiaré por los ajustes.",
+  filterNames:{mood:"Ambiente",aspect:"Formato",duration:"Tiempo",music:"Música",phrases:"Frases"},
   goal:"¿Qué tipo de vídeo imaginas? Descríbelo en una frase.",mood:"¿Qué ambiente buscas: suave o dinámico?",aspect:"¿Dónde usarás el vídeo? Elige el formato.",duration:"¿Qué duración prefieres?",music:"¿Qué música prefieres?",phrases:"¿Añadir frases de apoyo en pantalla?",review:"Encontré una historia con escenas disponibles. Comprueba los ajustes antes de crear.",ready:"Historia aprobada. Ya puedes crear el vídeo real.",
   done:"El vídeo está listo. Ábrelo para ver, guardar o compartir.",error:"No entendí esa elección. Prueba las opciones o escribe de otra manera.",
   unsupported:"Ese objeto específico no está en el catálogo de MP4. Puedo proponer una historia simbólica, pero no mostrará ese objeto.",
   missing:"No se encontraron escenas autorizadas compatibles. Cambia el tema o usa el editor.",symbolic:"Usar una historia simbólica",retryGoal:"Cambiar idea",alternate:"Otra historia",confirm:"Confirmar historia",create:"Crear vídeo",creating:"Grabando vídeo en este dispositivo…",loading:"Cargando las escenas…",open:"Abrir vídeo terminado",editor:"Editor avanzado",startAgain:"Nuevo vídeo",edit:"Cambiar ajustes",note:"Montaje de MP4 autorizados, no fotogramas nuevos generados por IA. Tu texto no se envía a un servicio IA externo.",
-  noteAi:"Con tu permiso, solo el texto de la idea se envía a IA gratuita verificada. Fotos y voz permanecen en tu dispositivo.",
+  noteAi:"Con tu permiso, el texto de la idea y los ajustes elegidos se envían a IA gratuita verificada. Fotos y voz permanecen en tu dispositivo.",
   placeholder:"Describe el vídeo o lo que quieres cambiar…",send:"Enviar",photo:"Añadir mi foto",audio:"Añadir voz o audio",promptChanged:"Ajustes actualizados. Confirma la historia otra vez.",
-  aiConsent:"Permitir que la IA gratuita personalice una pregunta (enviar texto a un proveedor externo)",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
+  aiConsent:"Permitir que la IA gratuita personalice una pregunta (enviar texto y ajustes a un proveedor externo)",aiBusy:"La IA personaliza la pregunta…",aiFallback:"La IA gratuita no está disponible; continuaremos localmente.",
   assetTimeout:"Las escenas o permisos aún no están disponibles. Prueba otra historia o revisa los ajustes.",
   auto:"Sugerir ajustes automáticamente",timeout:"No se inició la grabación. Comprueba las escenas y vuelve a intentarlo.",blocked:"Falló la grabación o verificación. Ajusta los parámetros e inténtalo otra vez.",stages:["Inicio","Entrada","Desarrollo","Cierre"],
   themeChips:["Quiero más calma","Amor y conexión","Energía y vitalidad","Confianza y enfoque"],
@@ -273,7 +276,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
-     <button type="button" className={css.iconButton} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
+     <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
    </header>
    <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
      {lines.map(line=><div key={line.id} className={line.role==="assistant"?css.assistant:css.user}>
@@ -282,7 +285,19 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      {(step==="review"||step==="ready"||step==="done")&&selected&&reviewAvailable?<div className={css.storyCard} data-video-chat-storyboard>
        <div className={css.storyTop}><Film size={19}/><strong>{selected.label[locale]}</strong></div>
        <div className={css.meta}>{draft.duration} s · {draft.aspect==="portrait"?"9:16":draft.aspect==="square"?"1:1":"16:9"} · {draft.music==="none"?"Silent":draft.music} · 4 MP4</div>
-       <div className={css.shots}>
+       <div className={css.filterSummary} role="group" aria-label={t.edit}>
+       {(["mood","aspect","duration","music","phrases"] as const).map(key=><button
+         key={key} type="button" disabled={disabled||captureStarted}
+         data-video-chat-change-filter={key}
+         onClick={()=>{setStep(key);addLine("assistant",question(key));}}>
+         <span>{t.filterNames[key]}</span>
+         <strong>{key==="duration"?draft.duration+" s":
+           key==="phrases"?(draft.phrases?"✓":"—"):
+           key==="aspect"?(draft.aspect==="portrait"?"9:16":draft.aspect==="square"?"1:1":"16:9"):
+           String(draft[key])}</strong>
+       </button>)}
+     </div>
+     <div className={css.shots}>
          {selected.clips.map((id,index)=>{
            const source=sourceById.get(id);
            return <div key={id} className={css.shot}>

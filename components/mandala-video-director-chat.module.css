@@ -96,3 +96,10 @@
  color:#557468;background:#fcfffb;font:500 11px/1.35 system-ui,-apple-system,sans-serif}
 .aiOptIn input{flex:none;accent-color:#16896b;width:17px;height:17px}
 .aiOptIn span{flex:1}
+
+.filterSummary{display:flex;gap:6px;flex-wrap:wrap;padding:3px 0}
+.filterSummary button{display:flex;flex-direction:column;gap:2px;min-height:43px;min-width:64px;
+ padding:5px 9px;border:1px solid #cfe6d8;border-radius:11px;background:#f3fbf7;
+ text-align:left;cursor:pointer;color:#205b49}
+.filterSummary button span{font-size:10px;font-weight:600;color:#5b806d}
+.filterSummary button strong{font-size:12px;line-height:1.1}
