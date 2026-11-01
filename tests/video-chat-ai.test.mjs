@@ -8,7 +8,8 @@ const payload={locale:'ru',consent:true,goal:'Я хочу создать вид�
 test('server contract requires explicit consent and bounded allowlisted fields',()=>{
  assert.equal(parseVideoChatAiInput({...payload,consent:false}),null);
  assert.equal(parseVideoChatAiInput({...payload,extra:'unexpected'}),null);
- assert.equal(parseVideoChatAiInput({...payload,goal:'x'.repeat(161)}),null);
+ assert.ok(parseVideoChatAiInput({...payload,goal:'x'.repeat(161)}), '161 characters remain a valid client request');
+ assert.equal(parseVideoChatAiInput({...payload,goal:'x'.repeat(801)}),null);
  assert.equal(parseVideoChatAiInput({...payload,draft:{...payload.draft,music:'paid'} }),null);
  assert.equal(parseVideoChatAiInput(payload).step,'mood');
 });
