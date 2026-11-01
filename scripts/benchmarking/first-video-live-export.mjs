@@ -139,21 +139,32 @@ try {
   const seconds = Number(probe.format?.duration || video.duration || 0);
   assert.ok(seconds >= 17 && seconds <= 26, 'WRONG_VIDEO_DURATION');
   const energy = rmsPcm(mediaFile);
-  assert.ok(energy > 0.003, 'SOUNDTRACK_IS_SILENT');
-  const a = movingPixels(mediaFile, 1);
-  const b = movingPixels(mediaFile, 11);
-  assert.equal(a.length, 96 * 54 * 3, 'FRAME_A_UNDECODABLE');
-  assert.equal(b.length, a.length, 'FRAME_B_UNDECODABLE');
-  let delta = 0;
-  for (let i = 0; i < a.length; i++) delta += Math.abs(a[i] - b[i]);
-  const avgPixelDifference = delta / a.length;
-  assert.ok(avgPixelDifference > 0.35, 'EXPORTED_FRAMES_NOT_MOVING');
-  assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
-  Object.assign(row, {status: 'PASS', downloadedVideo: true, encodedBytes: bytes.length,
+  Object.assign(row, {downloadedVideo: true, encodedBytes: bytes.length,
     container: filename.endsWith('.webm') ? 'webm' : 'mp4',
     width: video.width, height: video.height, durationSeconds: Number(seconds.toFixed(2)),
-    audioStreamPresent: true, decodedAudioRms: Number(energy.toFixed(4)),
-    pixelDifference: Number(avgPixelDifference.toFixed(2))});
+    audioStreamPresent: true, decodedAudioRms: Number(energy.toFixed(4))});
+  assert.ok(energy > 0.003, 'SOUNDTRACK_IS_SILENT');
+  // A single pair can coincide with the same repeated shot in a short loop.
+  // Sample several separate seconds to distinguish a real moving video from
+  // a static or frozen Canvas recording without uploading any frame images.
+  const times = [1, 3, 6, 10, 14, 18];
+  const frames = times.map(t => movingPixels(mediaFile, t));
+  for (const [index, frame] of frames.entries()) {
+    assert.equal(frame.length, 96 * 54 * 3, 'FRAME_UNDECODABLE_' + times[index]);
+  }
+  const differences = frames.slice(1).map((frame, index) => {
+    let delta = 0;
+    const first = frames[0];
+    for (let i = 0; i < frame.length; i++) delta += Math.abs(frame[i] - first[i]);
+    return Number((delta / frame.length).toFixed(3));
+  });
+  const avgPixelDifference = Math.max(...differences);
+  row.motionSampleSeconds = times;
+  row.motionAverageDeltas = differences;
+  row.pixelDifference = avgPixelDifference;
+  assert.ok(avgPixelDifference > 0.35, 'EXPORTED_FRAMES_NOT_MOVING');
+  assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
+  row.status = 'PASS';
   console.log('LIVE_FIRST_VIDEO_REAL_EXPORT_PASS', JSON.stringify(row));
   await context.close();
 } catch (error) {
