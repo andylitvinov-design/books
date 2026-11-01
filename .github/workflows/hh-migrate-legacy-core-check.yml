@@ -1,0 +1,80 @@
+# One-time audited migration of legacy *branch protection* required check.
+# Ruleset #26269892 has already made release-ready optional, but old branch
+# protection still requires it. Change only the required-status-check settings.
+name: HH migrate legacy required Core status
+on:
+  push:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-migrate-legacy-core-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-migrate-legacy-core-check
+  cancel-in-progress: false
+jobs:
+  replace-legacy-check:
+    if: ${{ github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Replace only legacy release-ready with existing Core gate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GH_TOKEN" ]] || { echo 'Missing repo-admin HH_AUTOMERGE_TOKEN; no settings changed' >&2; exit 1; }
+          before="$(mktemp)"
+          policy="$(mktemp)"
+          change="$(mktemp)"
+          after="$(mktemp)"
+          trap 'rm -f "$before" "$policy" "$change" "$after"' EXIT
+          # Verify the replacement job is already on production, not only a PR.
+          gh api "repos/$GH_REPO/contents/.github/workflows/hh-pr-core-release.yml?ref=codex/public-book-library" --jq '.content' |
+            base64 --decode | grep -q '^    name: hh-core-verified$' || {
+              echo 'Production does not yet have hh-core-verified; refusing migration' >&2; exit 1;
+            }
+          gh api "repos/$GH_REPO/rulesets/26269892" > "$policy"
+          jq -e '
+            .enforcement == "active" and .bypass_actors == [] and
+            .conditions.ref_name.include == ["refs/heads/codex/public-book-library"] and
+            ([.rules[].type] | index("deletion") != null and index("non_fast_forward") != null) and
+            any(.rules[]; .type == "pull_request" and
+              .parameters.required_review_thread_resolution == true)
+          ' "$policy" >/dev/null || {
+            echo 'Production ruleset is not the audited protection; refusing migration' >&2; exit 1;
+          }
+          endpoint="repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks"
+          gh api "$endpoint" > "$before" || {
+            echo 'Legacy branch protection requires repository-administration permission' >&2; exit 1;
+          }
+          if jq -e '
+            .strict == false and .contexts == ["hh-core-verified"] and
+            ([.checks[]? | select(.context == "hh-core-verified" and .app_id == 15368)] | length) == 1 and
+            (.checks | length) == 1
+          ' "$before" >/dev/null; then
+            echo 'Legacy branch protection already migrated; no mutation' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          jq -e '
+            (.contexts == ["release-ready"]) and
+            (.checks | length == 1) and
+            (.checks[0].context == "release-ready" and .checks[0].app_id == 15368)
+          ' "$before" >/dev/null || {
+            echo 'Unexpected existing required checks: refusing destructive replacement' >&2; exit 1;
+          }
+          printf '%s\n' '{"strict":false,"contexts":[],"checks":[{"context":"hh-core-verified","app_id":15368}]}' > "$change"
+          gh api --method PATCH "$endpoint" --input "$change" >/dev/null
+          gh api "$endpoint" > "$after"
+          jq -e '
+            .strict == false and
+            (.contexts | index("release-ready") == null) and
+            (.checks | length == 1) and
+            .checks[0].context == "hh-core-verified" and .checks[0].app_id == 15368
+          ' "$after" >/dev/null || {
+            echo 'Migration did not read back the intended required-check state' >&2; exit 1;
+          }
+          echo 'Legacy required check migrated: release-ready -> hh-core-verified; strict=false.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'All other branch rules and ruleset #26269892 unchanged.' >> "$GITHUB_STEP_SUMMARY"
