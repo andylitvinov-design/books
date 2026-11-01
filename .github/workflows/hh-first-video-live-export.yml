@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # Research acceptance runs even on Draft; merging stays disabled until it passes.
     runs-on: ubuntu-24.04
     timeout-minutes: 9
     steps:
