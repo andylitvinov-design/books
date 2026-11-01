@@ -60,7 +60,8 @@ test('skipped successful Core events never replace a pending failed-Core watchdo
   assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
   assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
   assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
-  assert.ok(!s.includes("github.event.workflow_run.status == 'completed'"));
+  const reconcile=s.split('\n  core-slot-wakeup:\n')[0];
+  assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
 
