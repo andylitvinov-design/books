@@ -37,3 +37,10 @@ test('trusted default push re-enables schedules and dispatches one live watchdog
   assert.ok(s.includes("inputs:{dry_run:'false'}"));
   assert.ok(s.includes("github.event_name == 'push'"));
 });
+
+test('trusted workflows have PR mutation scope for their PR issue labels and handoffs',()=>{
+  for(const name of ['hh-pr-ten-minute-watchdog','hh-pr-ci-worker','hh-pr-repair-worker']){
+    const s=read(name);
+    assert.ok(s.includes('pull-requests: write'),name+' must permit PR label/comment claims');
+  }
+});

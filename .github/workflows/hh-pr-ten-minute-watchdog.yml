@@ -23,7 +23,7 @@ permissions:
   actions: write
   checks: read
   issues: write
-  pull-requests: read
+  pull-requests: write
 concurrency:
   group: hh-pr-ten-minute-watchdog
   cancel-in-progress: false
