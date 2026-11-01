@@ -81,3 +81,40 @@ test("real studio consumes edited storyboard and invalidates stale exported vide
   assert.match(ui,/onInvalidate\?\.\(\)/,"shot edits must invalidate stale output immediately");
   assert.match(studio,/onInvalidate=\{\(\)=>\{setPreviewPlaying\(false\);setCinematicPlan\(null\);\}\}/);
 });
+
+test("reframing retains the approved source shots and manual stage timings",async()=>{
+  const {reframeCinematicPlan}=await import("../lib/mandala/free-film-timeline.mjs");
+  const shots=allocateAdaptiveFilmTimeline(30,clips,[5,8,9,8])
+    .map((shot,i)=>({...shot,theme:"relationships",slotId:"stage-"+i}));
+  const plan={version:"hh-free-film-v2",aspect:"portrait",durationSeconds:30,
+    activePresetId:"warm-connection",shots};
+  for(const aspect of ["landscape","square","portrait"]){
+    const framed=reframeCinematicPlan(plan,aspect);
+    assert.equal(framed.aspect,aspect);
+    assert.equal(framed.version,plan.version);
+    assert.equal(framed.activePresetId,plan.activePresetId);
+    assert.equal(framed.durationSeconds,30);
+    assert.strictEqual(framed.shots,shots,"aspect-only change keeps the approved clip objects");
+    assert.deepEqual(framed.shots.map(shot=>shot.durationSeconds),[5,8,9,8]);
+  }
+  assert.equal(plan.aspect,"portrait","reframing is immutable");
+  assert.throws(()=>reframeCinematicPlan(plan,"random"),/invalid_cinematic_aspect/);
+  assert.throws(()=>reframeCinematicPlan({shots:[]},"square"),/invalid_cinematic_aspect/);
+});
+
+test("all format controls call the same plan-preserving reframe handler",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/const changeVideoAspect=\(nextAspect:Aspect\)=>\{/);
+  assert.match(studio,/setCinematicPlan\(plan=>plan\?reframeCinematicPlan\(plan,nextAspect\)/);
+  for(const [selector,handler] of [
+    ["data-video-aspect={format}","changeVideoAspect(format)"],
+    ["data-video-quick-aspect={value}","changeVideoAspect(value)"],
+    ["data-video-advanced-aspect","changeVideoAspect(event.currentTarget.value as Aspect)"],
+  ]){
+    const at=studio.indexOf(selector);
+    assert.ok(at>=0,"missing source control "+selector);
+    assert.ok(studio.slice(at,at+500).includes(handler),"format control loses montage "+selector);
+  }
+  assert.doesNotMatch(studio,/setAspect\((?:format|value)\);setCinematicPlan\(null\)/);
+  assert.doesNotMatch(studio,/data-video-aspect=\{format\}[\s\S]{0,240}onPointerUp=/);
+});

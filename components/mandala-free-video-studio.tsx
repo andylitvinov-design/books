@@ -26,7 +26,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, retimeAdaptiveFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -2557,6 +2557,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   // Goal-first Auto Director uses the existing consented Free MP4 renderer, not paid video AI.
+  // Output framing changes must never discard a confirmed four-scene montage.
+  const changeVideoAspect=(nextAspect:Aspect)=>{
+    if(recording||preparing)return;
+    setAspect(nextAspect);
+    setCinematicPlan(plan=>plan?reframeCinematicPlan(plan,nextAspect) as CinematicStoryboard:null);
+  };
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
     setDuration(seconds);
     setCinematicPlan(plan=>{
@@ -3134,7 +3140,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","square","landscape"] as Aspect[]).map((format,i)=>
                 <button type="button" key={format} data-video-aspect={format}
                   aria-pressed={aspect===format}
-                  onClick={()=>{setAspect(format);setCinematicPlan(null);}} onPointerUp={()=>{setAspect(format);setCinematicPlan(null);}}>
+                  onClick={()=>changeVideoAspect(format)}>
                   <span className={videoStyles.formatIcon} data-format={format} aria-hidden="true"/>
                   {["9:16","1:1","16:9"][i]}
                 </button>)}
@@ -4344,7 +4350,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {(["portrait","landscape","square"] as const).map((value,index)=>
                 <button type="button" key={value} data-video-quick-aspect={value}
                   disabled={recording||preparing} aria-pressed={aspect===value}
-                  onClick={()=>{setAspect(value);setCinematicPlan(null);}}>{["9:16","16:9","1:1"][index]}</button>)}
+                  onClick={()=>changeVideoAspect(value)}>{["9:16","16:9","1:1"][index]}</button>)}
             </div></fieldset>
             <fieldset><legend>{quick.length}</legend><div>
               {durations.map(value=><button type="button" key={value}
@@ -4582,7 +4588,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.catalogFilters} data-video-catalog-filters>
           <label><span>{ui.format}</span>
             <select data-video-advanced-aspect value={aspect} disabled={recording||preparing}
-              onChange={event=>setAspect(event.currentTarget.value as Aspect)}>
+              onChange={event=>changeVideoAspect(event.currentTarget.value as Aspect)}>
               <option value="portrait">9:16</option>
               <option value="square">1:1</option>
               <option value="landscape">16:9</option>
