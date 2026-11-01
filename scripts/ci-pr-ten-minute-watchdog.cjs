@@ -401,6 +401,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }
   const prod = all.filter(p=>p.base?.ref===PROD);
   const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
+  // Labels in the complete PR inventory are the durable work queue. Do not
+  // require the current Watchdog tick to create a NEW label before waking
+  // an idle worker: a previous handoff may have been interrupted.
+  const hasLabel=(pr,name)=>(pr.labels||[]).some(l=>l.name===name);
+  const ciQueueBacklog=review.filter(p=>hasLabel(p,CI_BOOTSTRAP_LABEL) &&
+    !hasLabel(p,'hh:ci-bootstrap-attempted')).length;
+  const repairQueueBacklog=review.filter(p=>hasLabel(p,REPAIR_LABEL) ||
+    hasLabel(p,CONFLICT_LABEL)).length;
   const wake=context.eventName==='workflow_run' &&
     context.payload?.workflow_run?.event==='pull_request' &&
     context.payload.workflow_run.status==='completed'
@@ -421,10 +429,10 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
-    ciBootstrapQueued:0,ciWorkerDispatched:0,
+    ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
-    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
+    transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
@@ -649,7 +657,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Dispatch the no-cost CI worker as soon as a new missing-Core queue item
   // appears. A ten-minute scheduled worker remains the fallback. Never send
   // duplicate dispatches when the worker is already running or very recent.
-  if(summary.ciBootstrapQueued && !budget.exhausted && !dryRun){
+  if((summary.ciBootstrapQueued || ciQueueBacklog) && ciRoom && hasMergeToken && !budget.exhausted && !dryRun){
     try {
       const response=(await limited('ci-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -665,14 +673,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             inputs:{dry_run:'false'}
           }));
         summary.ciWorkerDispatched++;
-        log('DISPATCHED bounded CI worker for new legacy Core queue item');
+        log('DISPATCHED bounded CI worker for durable legacy Core queue');
       } else log('CI worker active/recent or API reserve low; schedule will retry');
     }catch(error){log('CI worker dispatch unavailable; schedule fallback: '+error.message);}
   }
   // Repair is a real separate default-branch workflow, not merely a label.
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
-  if ((summary.sourceRepairQueued || summary.conflictLabelsQueued) &&
+  if ((summary.sourceRepairQueued || summary.conflictLabelsQueued || repairQueueBacklog) &&
       hasMergeToken && ciRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(

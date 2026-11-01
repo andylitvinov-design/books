@@ -2,9 +2,7 @@ name: HH zero-cost PR CI worker
 on:
   schedule:
     - cron: '4,14,24,34,44,54 * * * *'
-  workflow_run:
-    workflows: ['HH PR 10-minute watchdog']
-    types: [completed]
+  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
   workflow_dispatch:
     inputs:
       dry_run:
@@ -30,12 +28,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   bootstrap:
-    if: >-
-      github.repository == 'andylitvinov-design/books' &&
-      github.ref == 'refs/heads/codex/bootstrap-books' &&
-      (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event != 'push'))
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
