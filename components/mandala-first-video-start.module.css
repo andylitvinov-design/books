@@ -63,3 +63,9 @@
 .ready{display:flex;align-items:center;gap:7px;margin:7px 0;color:#106d50;font-size:12px;font-weight:800;text-decoration:underline}
 @media(max-width:380px){.root{padding:9px;border-radius:13px}.head h3{font-size:16px!important}.promptActions button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.disclosure>summary>svg{transition:none}}
+
+/* iOS Safari zooms the entire viewport whenever an editable field is <16px. */
+@media (hover:none) and (pointer:coarse){
+  .root :is(textarea,input[type="text"],select){font-size:16px!important;line-height:1.4}
+  .root :is(textarea,input[type="text"],select){max-width:100%;min-width:0}
+}
