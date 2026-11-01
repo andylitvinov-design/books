@@ -12,11 +12,11 @@ const css=read("components/holistic-support-inline-guide.module.css");
 const page=read("app/[locale]/holistic-support/mobile/page.tsx");
 const source=read("lib/assessments/support-guide-tests.js");
 
-test("original four-scale three-column dashboard and lower player stay intact",()=>{
+test("five-scale three-column dashboard and lower player stay intact",()=>{
   for(const value of ["className={styles.topGrid}","className={styles.assessment}",
     "className={styles.profile}","className={styles.tools}","data-support-recommendations",
     "data-support-mobile-bottom-nav","support-meditation-player","support-healing-panel"]) assert.ok(parent.includes(value),value);
-  assert.match(parent, /const checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning"\]/);
+  assert.match(parent, /const checkinOrder: CheckinArea\[\] = \["energy", "money", "relationships", "meaning", "stress"\]/);
   assert.match(parent, /guideOpen && !goalFilterOpen \? <HolisticSupportInlineGuide/);
   assert.match(parent, /onClick=\{onRecommendations\}/);
   assert.doesNotMatch(parent,/data-support-journey-step="[1-5]"/);
@@ -116,7 +116,7 @@ test("free text, topic changes and unknown questions never force an AI call or a
 });
 
 test("real optional next-step routes use established test explorer, academy and studio",()=>{
-  for(const id of ["energy","business","relationships","effectiveness"])assert.ok(getTopicJourney(id));
+  for(const id of ["energy","business","relationships","effectiveness","stress"])assert.ok(getTopicJourney(id));
   assert.match(guide,/client\/tests\?journey=/);
   assert.match(guide,/\/explore\/business/);
   assert.match(guide,/\/academy/);
