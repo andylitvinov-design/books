@@ -20,3 +20,11 @@ test('missing, inconsistent, duplicate, dry-run and foreign log evidence cannot 
  const dry=parseDispatcherLog(run,log({...summary,dryRun:true,dispatchAccepted:0,workerRuns:[]}));
  assert.equal(dry.complete,true);assert.equal(dry.events.length,0);
 });
+test('accepts the recorded dispatcher summary without inventing dispatches',()=>{
+ const actualRun={...run,id:41359744944,created_at:'2026-11-01T22:58:10Z',updated_at:'2026-11-01T22:58:53Z'};
+ const actualSummary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:'2026-11-01T22:58:38.287Z',dryRun:false,
+  discovered:190,production:176,actionable:18,candidates:16,inspected:16,dispatchAccepted:0,wouldDispatch:0,
+  blocked:{SOURCE_PROOF_MISSING:2,OWNER_LEASE_ACTIVE:1,CONFLICT_NOT_VERIFIED:11,RESERVED_REQUIRES_REVIEW:1,ALREADY_HANDLED:1},workerRuns:[]};
+ const parsed=parseDispatcherLog(actualRun,'2026-11-01T22:58:50.4403387Z HH_CONTROL_TOWER: '+JSON.stringify(actualSummary));
+ assert.equal(parsed.complete,true);assert.equal(parsed.events.length,0);assert.equal(parsed.blocked.CONFLICT_NOT_VERIFIED,11);
+});
