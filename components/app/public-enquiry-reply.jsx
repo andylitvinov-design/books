@@ -1,6 +1,7 @@
 'use client'
 import {useState} from 'react'
 import {Copy} from 'lucide-react'
+import PublicEnquiryOperatorReply from './public-enquiry-operator-reply'
 import styles from './public-enquiry-reply.module.css'
 
 const COPY={
@@ -10,6 +11,7 @@ const COPY={
   manual:'This is not a live guest chat. Copying a draft does not send anything. Only a verified platform operator can look up a consented reply address in the separate private CRM.',
   unverified:'Contact provided by the visitor · not independently verified. Use it only to reply to this request.',
   missing:'No reply address is available. You can prepare and copy a draft, but sending requires a real reply channel. See the full request.',
+  operator:'Verified platform operators may separately check a consented reply address. It remains private from practitioners.',
   copyFailed:'Copy was unavailable. Select and copy the text manually.',
  },
  ru:{
@@ -18,6 +20,7 @@ const COPY={
   manual:'Это не онлайн-чат с гостем. Копирование черновика не отправляет сообщение. Только уполномоченный оператор платформы может получить разрешённый контакт через отдельную защищённую CRM.',
   unverified:'Контакт оставлен посетителем и не подтверждён отдельно. Используйте его только для ответа по этой заявке.',
   missing:'Нет адреса для отправки. Вы можете подготовить и скопировать ответ, но для доставки нужен действующий канал связи. Откройте полную заявку.',
+  operator:'Подтверждённый оператор платформы может отдельно открыть контакт с согласием. В общей карточке мастера он скрыт.',
   copyFailed:'Копирование недоступно. Выделите и скопируйте текст вручную.',
  },
  es:{
@@ -25,12 +28,13 @@ const COPY={
   email:'Abrir correo para enviar',whatsapp:'Abrir WhatsApp para enviar',copy:'Copiar respuesta',copied:'Respuesta copiada',
   manual:'No es un chat en vivo. Copiar el borrador no envía nada. Solo un operador verificado de la plataforma puede consultar un destinatario autorizado en el CRM privado.',
   unverified:'Contacto facilitado por el visitante, no verificado. Úsalo solo para responder esta solicitud.',
-  missing:'No hay destinatario. Puedes redactar y copiar una respuesta, pero para enviarla hace falta un canal de contacto real. Consulta la solicitud completa.',
+  missing:'No hay destinatario. Puedes redactar y copiar una respuesta, pero para enviarlo hace falta un canal real. Consulta la solicitud completa.',
+  operator:'Solo un operador verificado puede consultar por separado el contacto consentido, oculto a los profesionales.',
   copyFailed:'No se pudo copiar. Selecciona y copia el texto manualmente.',
  },
 }
 
-export default function PublicEnquiryReply({request,locale='en'}){
+export default function PublicEnquiryReply({request,locale='en',operatorMode=false,accountId=''}){
  const t=COPY[locale]||COPY.en
  const [draft,setDraft]=useState('')
  const [notice,setNotice]=useState('')
@@ -44,7 +48,7 @@ export default function PublicEnquiryReply({request,locale='en'}){
  }
  return <section className={styles.composer} aria-label={t.title} data-public-enquiry-reply>
   <h3>{t.title}</h3>
-  <p className={styles.notice}>{t.missing}</p>
+  <p className={styles.notice}>{operatorMode?t.operator:t.missing}</p>
   <>
    <label htmlFor={'hh-public-enquiry-reply-'+request.id}>{t.message}</label>
    <textarea id={'hh-public-enquiry-reply-'+request.id} value={draft}
@@ -55,6 +59,8 @@ export default function PublicEnquiryReply({request,locale='en'}){
       <Copy size={17} aria-hidden="true"/>{t.copy}</button>
    </div>
   </>
+  {operatorMode&&accountId&&<PublicEnquiryOperatorReply key={request.id} request={request}
+    accountId={accountId} locale={locale} draft={draft}/>}
   <p className={styles.manual}>{t.manual}</p>
   {notice&&<p role="status" className={styles.feedback}>{notice}</p>}
  </section>

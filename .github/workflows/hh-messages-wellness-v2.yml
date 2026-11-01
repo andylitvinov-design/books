@@ -37,11 +37,40 @@ jobs:
       - name: New wellness layout and private flow contracts
         run: node --conditions=react-server --test tests/messages-wellness-v2.test.mjs
       - name: Guest enquiry one-off consent and truthful reply handoff
-        run: node --test tests/public-enquiry-reply-handoff.test.mjs
+        run: node --test tests/public-enquiry-reply-handoff.test.mjs tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       - name: Lint guest reply composer and recipient policy
-        run: npx --no-install eslint components/app/public-enquiry-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs tests/public-enquiry-reply-handoff.test.mjs
+        run: npx --no-install eslint components/app/public-enquiry-reply.jsx components/app/public-enquiry-operator-reply.jsx lib/practitioners/public-enquiry-reply-links.mjs lib/practitioners/public-enquiry-operator-contact.js 'app/api/app/messages/public-enquiries/[id]/reply-contact/route.js' tests/public-enquiry-reply-handoff.test.mjs tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs
       - name: Lint edited Messages components and route
         run: npx --no-install eslint 'app/[locale]/app/messages/page.tsx' components/app/messages-orders-clients.jsx components/app/messages-hub.jsx components/app/messages-simple-inbox.jsx components/app/practice-request-conversation.jsx lib/practitioners/request-media.js lib/practitioners/request-media-policy.mjs lib/practitioners/client-messages.js tests/messages-wellness-v2.test.mjs tests/practitioner-request-multimedia.test.mjs
       - name: TypeScript check
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
+
+  guest-contact-audit-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hh_operator_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_operator_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      HH_TEST_ADMIN_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/hh_operator_test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_CONTACT_AUDIT_RLS: synthetic-only
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Isolated PostgreSQL operator audit, RLS and cross-account denial
+        run: node --conditions=react-server --test --test-concurrency=1 tests/public-enquiry-contact-audit-rls.integration.mjs

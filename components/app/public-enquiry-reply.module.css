@@ -11,3 +11,6 @@
 .actions a.primary{background:#087e65;color:white}
 .actions a[aria-disabled="true"],.actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:430px){.composer{padding:12px}.actions a,.actions button{flex:1 1 100%}}
+
+.operatorPanel{display:grid;gap:8px;border-top:1px solid #e6dacf;padding-top:11px}
+.operatorPanel .actions{display:flex;flex-wrap:wrap;gap:8px}
