@@ -12,7 +12,7 @@ test("meditation-course workspace opens the existing working composer within the
   const css=read("components/mandala-video-mobile.module.css");
   const before=studio.indexOf("data-video-quick-controls");
   const entry=studio.indexOf('activeWorkspace==="courses" ? <section');
-  const panel=studio.indexOf("data-video-meditation-course-panel");
+  const panel=studio.indexOf("data-video-meditation-course-panel className");
   const hypno=studio.indexOf("data-video-hypnocorrection-panel");
   assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
     "the course composer belongs to the existing six-tab Video Studio");
