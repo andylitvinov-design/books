@@ -1,0 +1,168 @@
+name: HH full open-PR production coordinator
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+  push:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-pr-full-inventory.yml']
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  issues: read
+  pull-requests: write
+concurrency:
+  group: hh-pr-full-inventory
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Full pagination and guarded native auto-merge
+        uses: actions/github-script@v7
+        env:
+          HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+        with:
+          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const PROD="codex/public-book-library", fullRepo=owner+"/"+repo;
+            const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
+            const skip=k=>skipped.set(k,(skipped.get(k)||0)+1);
+            const found=new Map(); let pages=0;
+            for(let page=1;page<=1000;page++){
+              const {data}=await github.rest.pulls.list({owner,repo,state:"open",per_page:100,page});
+              if(!Array.isArray(data))throw Error("Incomplete PR page "+page);
+              pages++;
+              for(const pr of data){if(pr.state==="open")found.set(pr.number,pr);}
+              if(data.length<100)break;
+              if(page===1000)throw Error("PR pagination exceeded bound");
+            }
+            const all=[...found.values()];
+            const production=all.filter(p=>p.base?.ref===PROD);
+            const nonDraft=production.filter(p=>!p.draft);
+            const armed=nonDraft.filter(p=>p.auto_merge);
+            const pending=nonDraft.filter(p=>!p.auto_merge&&p.head?.repo?.full_name===fullRepo);
+            pending.sort((a,b)=>String(a.updated_at).localeCompare(String(b.updated_at)));
+            const ruleset=(await github.request("GET /repos/{owner}/{repo}/rulesets/{ruleset_id}",{
+              owner,repo,ruleset_id:26269892
+            })).data;
+            const pullRule=ruleset.rules?.find(r=>r.type==="pull_request");
+            if(ruleset.enforcement!=="active"||!pullRule||
+               pullRule.parameters?.required_review_thread_resolution!==true)
+              throw Error("Production ruleset not verified");
+            const methods=new Set(pullRule.parameters?.allowed_merge_methods||[]);
+            const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
+            const eligible=[]; let detailErrors=0,checksRead=0;
+            async function latestChecks(sha){
+              const runs=(await github.rest.checks.listForRef({owner,repo,ref:sha,per_page:100})).data;
+              if(!Array.isArray(runs.check_runs)||runs.total_count>100)return null;
+              const names=new Map();
+              for(const check of [...runs.check_runs].sort((a,b)=>b.id-a.id)){
+                if(!names.has(check.name))names.set(check.name,check);
+              }
+              return names;
+            }
+            function passed(names){
+              const gate=names?.get("release-ready");
+              return !!gate&&gate.status==="completed"&&gate.conclusion==="success"&&
+                gate.app?.slug==="github-actions"&&
+                ![...names.values()].some(c=>red.has(c.conclusion));
+            }
+            for(const pr of pending){
+              try{
+                const checks=await latestChecks(pr.head.sha);
+                checksRead++;
+                if(!checks){skip("INCOMPLETE_CHECKS");continue;}
+                if(!passed(checks)){skip("NO_GREEN_GATE_OR_RED_CHECK");continue;}
+                const status=(await github.rest.repos.getCombinedStatusForRef({
+                  owner,repo,ref:pr.head.sha,per_page:100
+                })).data;
+                if((status.total_count||0)>100){skip("INCOMPLETE_STATUS");continue;}
+                const byContext=new Map();
+                for(const s of status.statuses||[])if(!byContext.has(s.context))byContext.set(s.context,s.state);
+                if([...byContext.values()].some(x=>x==="failure"||x==="error")){
+                  skip("RED_COMMIT_STATUS");continue;
+                }
+                const live=(await github.rest.pulls.get({owner,repo,pull_number:pr.number})).data;
+                if(live.state!=="open"||live.draft||live.auto_merge||live.base.ref!==PROD||
+                   live.head.sha!==pr.head.sha||live.head.repo?.full_name!==fullRepo){
+                  skip("CHANGED_HEAD_BASE_STATE");continue;
+                }
+                if(live.mergeable!==true||live.mergeable_state!=="clean"){
+                  skip("NOT_CLEAN_MERGEABLE");continue;
+                }
+                const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
+                const method=children.length?"merge":"squash";
+                if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
+                eligible.push({number:pr.number,head:pr.head.sha,base:live.base.sha,method});
+              }catch(e){detailErrors++;skip("DETAIL_ERROR");core.warning("HH_FULL_OPEN_PR: #"+pr.number+" "+e.message);}
+            }
+            let attempts=0,merged=0,autoArmed=0;
+            const errors=[],token=process.env.HH_HAS_AUTOMERGE_TOKEN==="true";
+            if(token){
+             for(const c of eligible){
+              if(attempts>=12||merged+autoArmed>=6)break;
+              try{
+               const live=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
+               if(live.state!=="open"||live.draft||live.auto_merge||
+                  live.head.sha!==c.head||live.base.sha!==c.base||
+                  live.base.ref!==PROD||live.mergeable!==true||live.mergeable_state!=="clean"){
+                 skip("CHANGED_BEFORE_ARM");continue;
+               }
+               // Never rely on a stale success while the full inventory was being scanned.
+               if(!passed(await latestChecks(c.head))){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
+               const comments=await github.paginate(github.rest.issues.listComments,{
+                 owner,repo,issue_number:c.number,per_page:100
+               });
+               if(comments.length>=1000){skip("LEASE_HISTORY_TOO_LARGE");continue;}
+               const leases=new Map();let ambiguous=false;
+               for(const comment of comments.sort((a,b)=>a.id-b.id)){
+                 const body=comment.body||"";
+                 if(!body.includes("HH_PR_SWEEP_LEASE_V1"))continue;
+                 try{
+                   const start=body.indexOf("{"),end=body.indexOf("}",start);
+                   const lease=JSON.parse(body.slice(start,end+1));
+                   if(lease.schema!=="HH_PR_SWEEP_LEASE_V1")throw Error("Unrecognized lease");
+                   leases.set(lease.lease_id||("legacy:"+lease.owner),lease);
+                 }catch{ambiguous=true;break;}
+               }
+               if(ambiguous||[...leases.values()].some(l=>
+                  ["active","claim","heartbeat"].includes(l.state||l.last_action)&&
+                  l.head_sha===c.head&&Date.parse(l.expires_at||"")>Date.now())){
+                 skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
+               }
+               attempts++;
+               const result=await exec.getExecOutput("gh",[
+                 "pr","merge",String(c.number),"--repo",fullRepo,"--auto",
+                 c.method==="merge"?"--merge":"--squash","--match-head-commit",c.head
+               ],{ignoreReturnCode:true,silent:true});
+               if(result.exitCode!==0){
+                 errors.push("#"+c.number+": "+(result.stderr||result.stdout||"native denied").slice(0,180));continue;
+               }
+               const after=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
+               if(after.merged&&after.merged_at){merged++;log("MERGED #"+c.number+" "+(after.merge_commit_sha||"UNKNOWN"));}
+               else if(after.state==="open"&&after.head.sha===c.head&&
+                 String(after.auto_merge?.merge_method||"").toLowerCase()===c.method){
+                 autoArmed++;log("ARMED #"+c.number+" "+c.method);
+               }else errors.push("#"+c.number+" command accepted but state not confirmed");
+              }catch(e){errors.push("#"+c.number+": "+e.message.slice(0,180));}
+             }
+            }else log("AUDIT_ONLY: dedicated HH_AUTOMERGE_TOKEN missing; no action with push-suppressing fallback token");
+            const report=[
+             "Open: "+all.length+"; pages: "+pages+"; production: "+production.length+
+             "; non-Draft: "+nonDraft.length+"; other-base: "+(all.length-production.length),
+             "Already armed: "+armed.length+"; unarmed inspected: "+checksRead+
+             "; eligible exact-HEAD green: "+eligible.length,
+             "New confirmed ARMED: "+autoArmed+"; MERGED: "+merged+
+             "; unattempted eligible: "+Math.max(0,eligible.length-attempts),
+             "Inventory: COMPLETE; details: "+(detailErrors?"PARTIAL ("+detailErrors+" errors)":"COMPLETE"),
+             "Writer: "+(token?"dedicated token":"audit only"),
+             "Skip reasons: "+JSON.stringify(Object.fromEntries(skipped)),
+             "Native errors: "+(errors.join("; ")||"none")
+            ];
+            for(const r of report)log(r);
+            await core.summary.addHeading("HH PR inventory: all open pages").addRaw(report.join("\n\n")).write();
