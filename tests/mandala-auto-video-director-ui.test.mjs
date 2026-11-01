@@ -36,3 +36,10 @@ test("free local-only planning never charges or exports the private goal",()=>{
   assert.ok(!policy.includes("localStorage"));
   assert.ok(!policy.includes("sessionStorage"));
 });
+
+test("Auto Director respects current 16:9, 9:16 or 1:1 selection rather than resetting the movie",()=>{
+  assert.match(studio,/const applyAutoFilm=\(presetId:string,seconds:10\|15\|20\|30\|60,outputAspect:Aspect=aspect\)/);
+  assert.match(studio,/compileFreeFilmPreset\(preset,locale,seconds,outputAspect\)/);
+  assert.match(studio,/setAspect\(outputAspect\)/);
+  assert.match(studio,/setCinematicPlan\(plan\)/);
+});
