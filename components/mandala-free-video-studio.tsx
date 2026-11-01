@@ -1602,6 +1602,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [notice, setNotice] = useState("");
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  const [exportUnavailable, setExportUnavailable] = useState(false);
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1858,6 +1859,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if (job) stopJob(job, true);
     setResult(null);
     setNotice("");
+    setExportUnavailable(false);
   }, [signature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
@@ -1953,7 +1955,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const snapshotKey=signature;
     preparingRef.current=true;
     setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
-    setResult(null);setPlaybackStatus("checking");setPreviewPlaying(false);
+    setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
@@ -1963,6 +1965,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(attachedAudio && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
         setNotice(ui.soundUnavailable);
+        setExportUnavailable(true);
         return;
       }
       const image=await loadSceneImage(snapshot);
@@ -1987,6 +1990,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(!backgroundOnly||attachedAudio||caption||affirmations.enabled||
           !film?.src.startsWith("/videos/holistic-house/")){
           setNotice(t.unsupported);
+          setExportUnavailable(true);
           return;
         }
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
@@ -2045,6 +2049,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (musicSession) {
           setMusicWarning(ui.musicFallback);
           setNotice(ui.musicFallback);
+          setExportUnavailable(true);
           stream.getTracks().forEach(track => track.stop());
           stream=null;
           return;
@@ -2061,7 +2066,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       };
       recorder.onerror = () => {
         stopJob(job,true);
-        if (aliveRef.current) setNotice(t.failed);
+        if (aliveRef.current && sourceRef.current===snapshotKey){
+          setNotice(t.failed);
+          setExportUnavailable(true);
+        }
       };
       recorder.onstop = async () => {
         // Do not stop the source or the audio session before the recorder has
@@ -2075,7 +2083,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         setProgress(100);
         const rawType=recorder.mimeType || mimeType;
         const encoded = new Blob(chunks,{type:rawType});
-        if(!encoded.size){setNotice(t.failed);return;}
+        if(!encoded.size){setNotice(t.failed);setExportUnavailable(true);return;}
         // Check actual container bytes. iOS can report a MIME that does not
         // match the encoded stream; never label a bogus MP4/WebM as complete.
         let isMp4=false, isWebm=false;
@@ -2137,6 +2145,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       jobRef.current=null;
       setRecording(false);
       setNotice(t.failed);
+      if(sourceRef.current===snapshotKey&&aliveRef.current)setExportUnavailable(true);
     } finally {
       preparingRef.current=false;
       if(aliveRef.current)setPreparing(false);
@@ -4038,6 +4047,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       )}
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
       {notice?<p role="status" className={videoStyles.notice} aria-live="polite">{notice}</p>:null}
+      {exportUnavailable && !result && originalFallbackMp4 ?
+        <div className={videoStyles.warning} data-video-original-fallback role="note">
+          <p>{locale==="ru"
+            ?"Запись видео на устройстве не удалась. Можно открыть исходный MP4. Это НЕ готовый персональный ролик: фото, звук, текст, формат и длительность не применены."
+            :locale==="es"
+            ?"Falló la grabación. Puedes abrir el MP4 original. NO es el vídeo personalizado: foto, sonido, texto, formato y duración no están incluidos."
+            :"Recording failed. You can open the original MP4. It is NOT your personal video: photo, sound, text, aspect and duration have not been applied."}</p>
+          <a href={originalFallbackMp4} download="holistic-house-original-scene.mp4"
+            className={videoStyles.audioDirectLink} data-video-original-fallback-download>
+            {locale==="ru"?"Открыть исходную сцену MP4 (без настроек)"
+              :locale==="es"?"Abrir escena MP4 original (sin ajustes)"
+              :"Open original MP4 scene (without edits)"}
+          </a>
+        </div>:null}
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
 
