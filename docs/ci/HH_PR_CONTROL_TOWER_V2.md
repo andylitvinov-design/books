@@ -15,11 +15,11 @@ Only known durable queue labels enable work: `hh:repair-needed`, `hh:ci-needed`,
 
 The task identity `HH_PR_TASK_V1` is SHA256 of repo, PR, HEAD, lane and reason; a first-party issue-comment reservation prevents a second automated dispatch of the same HEAD. The marker is **not** permission for any worker to change code: each worker revalidates owner, branch, lease, SHA and evidence.
 
-Capacity reads GitHub Actions workflow *and job* inventory (not just total runs). When capacity data is missing or incomplete, the dispatcher fails closed and does not schedule a worker. It runs at most two dispatches in one cycle and never dispatches two jobs to the same worker. CI and Repair have independent lane budgets. The first cap is intentionally conservative, to avoid saturating GitHub-hosted runners.
+Capacity reads GitHub Actions workflow *and job* inventory (not just total runs). When capacity is unverified, dispatcher fails closed. A bounded mismatch of at most two workflow runs may authorize only short Repair, with pessimistic runner-job reserves and an independent worker-history check; CI bootstrap remains blocked. It runs at most two dispatches in one cycle and never dispatches two jobs to the same worker. CI and Repair have independent lane budgets. The first cap is intentionally conservative, to avoid saturating GitHub-hosted runners.
 
 ## Triggers and exact statuses
 
-- Event-driven: completed Watchdog, CI Worker and Repair Worker, using trusted `workflow_run` metadata.
+- Event-driven: completed CI Worker and Repair Worker through trusted `workflow_run` metadata. Watchdog directly wakes the single-writer dispatcher only when its durable CI/Repair queue contains actionable work; no callback storm from empty or skipped Watchdog completions.
 - Reconciliation: cron `7,17,27,37,47,57` UTC, subject to GitHub's actual scheduler delivery. Manual `workflow_dispatch` defaults to dry-run.
 - On code pushes to default: audit only. Do not generate another full event storm.
 - `DISPATCH_ACCEPTED` means the GitHub API accepted an exact-HEAD workflow dispatch, **not** that the repair was performed. `RESERVED` without a verified worker should not be retried blindly after TTL. Inspect the assigned task and worker history first.

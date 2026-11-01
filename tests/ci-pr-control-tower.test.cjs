@@ -392,3 +392,15 @@ test('event wake never acts during dry-run, push or untrusted workflow_run',asyn
   assert.equal(f.calls.dispatch.length,0);
  }
 });
+
+
+test('Watchdog wakes the dispatcher only for durable work, not every completed Core callback',()=>{
+ const fs=require('node:fs');
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(!workflow.includes("      - 'HH PR 10-minute watchdog'"));
+ assert.ok(workflow.includes("      - 'HH PR source Repair Worker'"));
+ assert.ok(workflow.includes("      - 'HH zero-cost PR CI worker'"));
+ const coordinator=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ assert.ok(coordinator.includes('notifyControlTower({github,owner,repo'));
+ assert.ok(coordinator.includes('summary.controlTowerWake='));
+});

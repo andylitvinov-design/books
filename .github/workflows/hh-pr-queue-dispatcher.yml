@@ -4,7 +4,6 @@ on:
     - cron: '7,17,27,37,47,57 * * * *'
   workflow_run:
     workflows:
-      - 'HH PR 10-minute watchdog'
       - 'HH PR source Repair Worker'
       - 'HH zero-cost PR CI worker'
     types: [completed]

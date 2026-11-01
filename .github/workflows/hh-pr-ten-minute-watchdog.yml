@@ -10,6 +10,8 @@ on:
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'scripts/ci-pr-control-tower-wakeup.cjs'
+      - 'tests/ci-pr-control-tower-wakeup.test.cjs'
       - 'scripts/ci-pr-slot-wakeup.cjs'
       - 'tests/ci-pr-slot-wakeup.test.cjs'
       - 'scripts/ci-pr-priority.cjs'
@@ -56,7 +58,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
       - name: Test watchdog decisions without network
-        run: node --test tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs
+        run: node --test tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs
       - name: Reconcile complete PR inventory; retry transient CI; hand off red source; dispatch guarded merge
         uses: actions/github-script@v7
         env:
