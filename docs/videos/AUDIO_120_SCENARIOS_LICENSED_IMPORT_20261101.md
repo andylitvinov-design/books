@@ -50,7 +50,7 @@ Do not mirror YouTube/Spotify/Apple Music audio, celebrity recordings, music pro
 ```
 
 3. Run `node scripts/import-reviewed-audio.mjs --manifest output/audio-inbox/original.json --dry-run`. Correct all metadata/rightsholder blockers before proceeding.
-4. Run the same command without `--dry-run`. The script verifies source SHA-256, converts using local FFmpeg to a 32-second 96 kbps MP3 with gentle fades, and atomically registers exact file hash and attribution in `data/video-catalog/curated-audio-imports.json`. Never publish a track based on metadata alone.
+4. Run the same command without `--dry-run`. The script verifies source SHA-256, converts using local FFmpeg to a 32-second 44.1 kHz stereo / 160 kbps MP3 with controlled -23 LUFS integrated loudness and gentle fades, and atomically registers exact file hash and attribution in `data/video-catalog/curated-audio-imports.json`. Never publish a track based on metadata alone.
 5. Commit the actual `public/audio/mandala/curated/curated-*.mp3` together with the updated attribution registry. Run `node --test tests/import-reviewed-audio.test.mjs`; review playback, clipping, rights display and exported final video's audio.
 6. Only then wire imported metadata into the Video Studio selection UI. The current registry is empty: **no external performance has yet been imported or exposed as a usable track**. This preserves legal and playback honesty.
 
