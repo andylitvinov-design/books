@@ -13,6 +13,9 @@ const MINUTE = 60_000;
 const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
+const MAX_DEEP = 22;
+const API_RESERVE = 350;
+const MAX_HISTORY = 30;
 
 function selectCandidates(prs, now, rotatedSize = 36, urgentSize = 8) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
@@ -47,6 +50,72 @@ function transientFailure(run, jobs, now) {
     ['timed_out','startup_failure'].includes(job.conclusion) ||
     job.steps?.some(step => step.conclusion === 'failure' &&
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
+}
+
+
+/**
+ * One GraphQL page per 100 production PRs exposes their latest aggregate CI
+ * status and merge blockers. Merge rights remain in the existing guard.
+ */
+async function queryInventory(github, owner, repo) {
+  if (typeof github.graphql !== 'function') throw Error('graphql-unavailable');
+  const query =
+    'query($owner:String!,$repo:String!,$cursor:String) {' +
+    ' repository(owner:$owner,name:$repo) {' +
+    ' all:pullRequests(states:OPEN,first:1){totalCount}' +
+    ' production:pullRequests(states:OPEN,baseRefName:"codex/public-book-library",' +
+    ' first:100,after:$cursor,orderBy:{field:UPDATED_AT,direction:DESC}) {' +
+    ' totalCount pageInfo{hasNextPage endCursor}' +
+    ' nodes { number isDraft createdAt updatedAt headRefOid headRefName' +
+    ' headRepository{nameWithOwner} mergeStateStatus' +
+    ' autoMergeRequest{enabledAt} statusCheckRollup{state} } } } }';
+  const rows=[];
+  let cursor=null,total=null,allTotal=null,seen=0;
+  for(let page=0;page<MAX_HISTORY;page++){
+    const result=await github.graphql(query,{owner,repo,cursor});
+    const data=result?.repository,prs=data?.production;
+    if(!prs||!Array.isArray(prs.nodes)||!Number.isInteger(prs.totalCount)||
+        !Number.isInteger(data.all?.totalCount)) throw Error('graphql-incomplete');
+    if(total!==null&&(total!==prs.totalCount||allTotal!==data.all.totalCount))
+      throw Error('graphql-inventory-changed');
+    total=prs.totalCount;allTotal=data.all.totalCount;seen+=prs.nodes.length;
+    for(const p of prs.nodes){
+      if(!Number.isInteger(p.number)||!/^[a-f0-9]{40}$/i.test(p.headRefOid||''))
+        continue;
+      rows.push({number:p.number,draft:p.isDraft,created_at:p.createdAt,
+        updated_at:p.updatedAt,auto_merge:p.autoMergeRequest,
+        mergeStateStatus:p.mergeStateStatus,rollup:p.statusCheckRollup?.state||'EXPECTED',
+        head:{sha:p.headRefOid,ref:p.headRefName,
+          repo:{full_name:p.headRepository?.nameWithOwner}},base:{ref:PROD}});
+    }
+    if(!prs.pageInfo?.hasNextPage){
+      if(seen!==total)throw Error('graphql-pagination-incomplete');
+      return {open:allTotal,production:rows};
+    }
+    if(!prs.pageInfo.endCursor||prs.pageInfo.endCursor===cursor)
+      throw Error('graphql-pagination-cursor');
+    cursor=prs.pageInfo.endCursor;
+  }
+  throw Error('graphql-pagination-bound');
+}
+function classifyQuick(pr){
+  if(pr.mergeStateStatus==='DIRTY')return 'DIRTY';
+  if(pr.mergeStateStatus==='BEHIND')return 'BEHIND';
+  if(pr.rollup==='FAILURE'||pr.rollup==='ERROR')return 'RED';
+  if(pr.rollup==='SUCCESS')return pr.auto_merge?'ARMED':'GREEN_UNARMED';
+  if(pr.rollup==='PENDING')return 'PENDING';
+  return 'MISSING';
+}
+async function reserveApiBudget(github,log){
+  try{
+    const result=await github.rest.rateLimit.get();
+    const remaining=result.data.resources?.core?.remaining;
+    if(!Number.isSafeInteger(remaining))throw Error('missing-core-rate');
+    return {remaining,deep:Math.max(0,Math.min(MAX_DEEP,Math.floor((remaining-API_RESERVE)/4)))};
+  }catch(e){
+    log('API budget unavailable, deep limit 8: '+e.message);
+    return {remaining:null,deep:8};
+  }
 }
 
 async function listOpen(github, owner, repo) {
@@ -174,4 +243,4 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,queryInventory,classifyQuick,reserveApiBudget};
