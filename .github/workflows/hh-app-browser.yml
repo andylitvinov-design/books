@@ -41,7 +41,7 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: app-r1-browser-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  group: app-r1-browser-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   browser:
@@ -94,7 +94,9 @@ jobs:
         run: node scripts/ci-pr-readiness.mjs
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
+      # PR source-only fast lane uses Node built-ins; locked install remains for full QA.
       - run: npm ci --no-audit --no-fund
+        if: github.event_name != 'pull_request'
       # Temporary backlog fast lane: PRs keep real source/CI contracts; the
       # synthetic PostgreSQL + Chromium/WebKit journeys run on manual dispatch
       # or the existing dedicated App R1 branch push, not every PR commit.
