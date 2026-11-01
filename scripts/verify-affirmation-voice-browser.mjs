@@ -235,7 +235,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // A real phrase edit must invalidate the old voice attachment. The
       // visitor changes the wording in its visible workspace, then returns.
       await page.locator('[data-video-quick-control="phrases"]').click();
-      const nextPhrase=page.locator('[data-video-quick-affirmation="1"]');
+      const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
+      await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});

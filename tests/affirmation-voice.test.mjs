@@ -85,7 +85,13 @@ test("six-voice affirmation editor is visible in the Phrases workspace rather th
     "the warning for stale narration stays beside the visible controls");
   const browser=read("scripts/verify-affirmation-voice-browser.mjs");
   assert.match(browser,/data-video-quick-control="phrases"/);
-  assert.match(browser,/data-video-quick-affirmation="0"/);
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(compact,/data-hypno-ready/);
+  assert.match(compact,/data-hypno-phrase=\{i\}/);
+  assert.match(browser,/data-hypno-ready/);
+  assert.match(browser,/data-hypno-phrase="0"/);
+  assert.match(browser,/data-hypno-phrase="4"/);
+  assert.doesNotMatch(browser,/data-video-quick-affirmation="/, "the removed quick-affirmation UI must not drive voice acceptance");
   assert.match(browser,/data-video-quick-control="video"/);
   assert.doesNotMatch(browser,/advanced\.locator\(":scope > summary"\)\.click/,
     "do not test inaccessible old controls");
