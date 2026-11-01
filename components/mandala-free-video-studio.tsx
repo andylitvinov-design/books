@@ -3323,6 +3323,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Compact first-video tool follows the third Style section,
             main video screen and the six control buttons. */}
         <MandalaFirstVideoStart locale={locale} wish={wish}
+          renderOptions={{quality,brightness,audioVolumePercent:soundVolume}}
           disabled={recording||preparing} preparing={preparing} recording={recording}
           progress={progress} resultReady={Boolean(result)&&playbackStatus==="ready"} ready={canGenerate}
           onWishChange={value=>{setWish(value);setSuggestion("");}}

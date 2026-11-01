@@ -139,6 +139,20 @@ const runEngine = async ([engine, browserType]) => {
           await expect.poll(()=>promptField.inputValue(),{timeout:20000})
             .not.toBe(firstVariant);
           assert.match(await promptField.inputValue(),/горные вершины/i);
+          // Exercise actual hydrated iPhone filters; these values MUST
+          // survive in the real HTTP body, not merely decorate the UI.
+          const aiFilters=form.locator("[data-first-video-filters]");
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-theme]").selectOption("energy");
+          await form.locator("[data-first-video-style]").selectOption("nature");
+          await form.locator("[data-first-video-aspect]").selectOption("portrait");
+          await form.locator("[data-first-video-duration]").selectOption("30");
+          await form.locator("[data-first-video-motion]").selectOption("dynamic");
+          await form.locator("[data-first-video-music]").selectOption("harmony");
+          await form.locator("[data-first-video-avoid]").fill("море");
+          await form.locator("[data-first-video-caption]").check();
+          await aiFilters.locator("summary").click();
           // Mock only the external language model; real form + request.
           const apiRoute="**/api/holistic-support/first-video-prompt";
           const aiCalls=[];
@@ -164,6 +178,22 @@ const runEngine = async ([engine, browserType]) => {
             const input=JSON.parse(aiCalls[0].body||"{}");
             assert.equal(input.wish,"Горы");
             assert.equal(input.consent,true);
+            assert.equal(input.schemaVersion,"hh-first-video-prompt-v1");
+            assert.deepEqual({
+              theme:input.theme,style:input.style,aspect:input.aspect,
+              durationSeconds:input.durationSeconds,motion:input.motion,
+              music:input.music,caption:input.caption,avoid:input.avoid,
+            },{
+              theme:"energy",style:"nature",aspect:"portrait",
+              durationSeconds:30,motion:"dynamic",music:"harmony",
+              caption:true,avoid:"море",
+            },"all actual filter choices must reach Gemini");
+            assert.deepEqual(new Set(input.selectedFields),new Set([
+              "theme","style","aspect","durationSeconds","motion","music","caption","avoid",
+            ]));
+            assert.deepEqual(input.renderOptions,{
+              quality:"hd",brightness:"soft",audioVolumePercent:75,
+            },"existing outer video editor settings must not be lost");
             await expect.poll(()=>promptField.inputValue(),{timeout:12000})
               .toContain("Горные вершины и облака");
             await expect(form).toContainText("Gemini");
@@ -179,6 +209,16 @@ const runEngine = async ([engine, browserType]) => {
             page.off("requestfailed",captureNetworkFailure);
             await page.unroute(apiRoute);
           }
+          // Restore the fast, silent 20s real-video QA path after the consented
+          // request assertion; no expensive 30s/audio export is introduced.
+          await aiFilters.locator("summary").click();
+          await expect(aiFilters).toHaveJSProperty("open",true,{timeout:12000});
+          await form.locator("[data-first-video-duration]").selectOption("20");
+          await form.locator("[data-first-video-motion]").selectOption("slow");
+          await form.locator("[data-first-video-music]").selectOption("none");
+          await form.locator("[data-first-video-caption]").uncheck();
+          await form.locator("[data-first-video-avoid]").fill("");
+          await aiFilters.locator("summary").click();
           const typedWish="Хочу спокойный рассвет у моря и мягкую дорогу к новой цели";
           await form.locator("[data-first-video-wish]").fill(typedWish);
           await page.waitForFunction(expected=>{
