@@ -22,3 +22,6 @@ Review Actions summary from HH PR 10-minute watchdog: priorityTop shows PR numbe
 
 ## Priority backlog fairness (follow-up)
 The highest-impact PR remains anchored. When the top priority tier has more items than the four fast slots, unused fast slots rotate among its other PRs each ten-minute cycle. The independent 12-slot round-robin still covers the complete eligible inventory, so an influx of urgent P0 work cannot indefinitely hide ordinary tasks. A Core completion wake is inspected first, without ejecting the highest-impact PR.
+
+## CI incidents versus historical coverage
+Generic `fix(ci)` is not automatically P0. Delivery-control incidents involving Watchdog, AutoMerge, Core CI, protected releases or blocked CI slots are P0; other confirmed pipeline failures default to P1; routine regression-coverage fixes default to P2. Manual `hh:priority:p0` overrides inferred priority for proven production blockers. This prevents obsolete test repairs from monopolizing urgent slots.
