@@ -28,7 +28,7 @@ const COPY = {
     talisman:'Талисманы', reiki:'Рейки', course:'Курсы', masters:'Мастера',
     service:'Услуга', meditationOne:'Медитация', talismanOne:'Талисман',
     reikiOne:'Рейки поддержка', courseOne:'Курс', materialOne:'Материал',
-    home:'Главная', practice:'Практика', forms:'Заявки', assets:'Материалы',
+    home:'Главная', practice:'Практика', forms:'Заявки', assets:'Материалы', videoAi:'ИИ',
     signIn:'Войти с Google', signedIn:'Google подключён', gate:'Макет открыт без регистрации. Для создания и управления войдите через Google.',
     hint:'После входа вы вернётесь на эту же страницу. Ваши редакторы и данные остаются в основном кабинете.',
     authCancelled:'Вход не завершён. Можно повторить с любой кнопки.',
@@ -58,7 +58,7 @@ const COPY = {
     talisman:'Talismans', reiki:'Reiki', course:'Courses', masters:'Masters',
     service:'Service', meditationOne:'Meditation', talismanOne:'Talisman',
     reikiOne:'Reiki support', courseOne:'Course', materialOne:'Material',
-    home:'Home', practice:'Practice', forms:'Requests', assets:'Materials',
+    home:'Home', practice:'Practice', forms:'Requests', assets:'Materials', videoAi:'AI',
     signIn:'Continue with Google', signedIn:'Google connected', gate:'Explore the design without signing in. Google is required to manage your practice.',
     hint:'You return to this same page after sign-in. All editors and data remain in your existing cabinet.',
     authCancelled:'Google sign-in was not completed. Select any action to try again.',
@@ -88,7 +88,7 @@ const COPY = {
     talisman:'Talismanes', reiki:'Reiki', course:'Cursos', masters:'Maestros',
     service:'Servicio', meditationOne:'Meditación', talismanOne:'Talismán',
     reikiOne:'Apoyo Reiki', courseOne:'Curso', materialOne:'Material',
-    home:'Inicio', practice:'Práctica', forms:'Solicitudes', assets:'Materiales',
+    home:'Inicio', practice:'Práctica', forms:'Solicitudes', assets:'Materiales', videoAi:'IA',
     signIn:'Entrar con Google', signedIn:'Google conectado', gate:'Explora el diseño sin iniciar sesión. Google es necesario para gestionar tu práctica.',
     hint:'Tras iniciar sesión volverás a esta misma página. Tus editores y datos siguen en tu espacio actual.',
     authCancelled:'No se completó el acceso. Puedes intentarlo de nuevo.',
@@ -139,6 +139,7 @@ const TABS = [
   { key:'requests', label:'forms', Icon:ClipboardList },
   { key:'materials', label:'assets', Icon:BookOpen },
   { key:'profile', label:'settings', Icon:UserRound },
+  { key:'video-ai', label:'videoAi', Icon:Sparkles },
 ]
 
 function destination(locale, key) {
@@ -150,6 +151,7 @@ function destination(locale, key) {
     home:'/' + locale,
     // The highlighted tab retains the same signed-in preview; editors live in their own tools.
     practice:'/' + locale + '/practice',
+    'video-ai':'/' + locale + '/holistic-support/mandala#video-director-chat',
     create:root + '?panel=services&create=1&starter=session',
     service:root + '?panel=services&create=1&starter=session',
     intro:root + '?panel=services&create=1&starter=intro',
@@ -281,7 +283,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
       return
     }
     // Public exploration and the approved showcase never demand a Google session.
-    if (['home','masters','community'].includes(key)) {
+    if (['home','masters','community','video-ai'].includes(key)) {
       router.push(destination(locale, key))
       return
     }

@@ -250,7 +250,7 @@ jobs:
   # the closest supported CI platform to iPhone Safari. Never mock a download.
   # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-')) }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/support-video-ai-')) }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:

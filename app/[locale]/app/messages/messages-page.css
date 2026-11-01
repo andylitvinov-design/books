@@ -84,13 +84,15 @@
  }
 }
 
-/* A selected mobile conversation is a full-screen view. The cabinet dock and
-   page scrollbar must not sit above a reply or consume keyboard space. */
+/* A selected conversation stops ABOVE the dock; its composer never pushes the
+   six-button navigation upward. While typing, the keyboard hides the dock through
+   the existing focused-editor rule above, and the chat fills the visual viewport. */
 @media(max-width:760px){
  body:has(.hh-messages-page [data-simple-messages][data-detail-open="true"]){
   overflow:hidden
  }
- .hh-app.hh-messages-page:has([data-simple-messages][data-detail-open="true"]) .hh-mobile-app-nav{
-  display:none!important
+ .hh-app.hh-messages-page .hh-mobile-app-nav{
+  position:fixed;bottom:0;z-index:4010;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
  }
 }

@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
 const copy = {
-  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", language: "Language", close: "Close" },
-  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть" },
-  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar" },
+  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", videoAi: "AI", language: "Language", close: "Close" },
+  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", videoAi: "ИИ", language: "Язык", close: "Закрыть" },
+  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", videoAi: "IA", language: "Idioma", close: "Cerrar" },
 } as const;
 
 /** The free video editor is a part of the approved Support experience, not
@@ -17,6 +17,13 @@ const copy = {
 export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  useEffect(() => {
+    const syncChat = () => setChatOpen(window.location.hash === "#video-director-chat");
+    syncChat();
+    window.addEventListener("hashchange", syncChat);
+    return () => window.removeEventListener("hashchange", syncChat);
+  }, []);
   return (
     <>
       <header className={styles.mandalaAppHeader} data-support-app-header>
@@ -60,6 +67,12 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           onClick={() => setSettingsOpen(open => !open)}>
           <Settings2 size={24} aria-hidden="true" /><span>{t.settings}</span>
         </button>
+        <Link href={chatOpen ? "#video-quick-heading" : "#video-director-chat"} prefetch={false}
+          onClick={() => setSettingsOpen(false)} data-support-video-ai
+          aria-current={chatOpen ? "page" : undefined}
+          aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>
+          <Sparkles size={24} aria-hidden="true" /><span>{t.videoAi}</span>
+        </Link>
       </nav>
     </>
   );

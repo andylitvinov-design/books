@@ -584,13 +584,14 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
-  // Five prominent mobile destinations mirror the Orders / Clients design.
+  // Preserve five mobile destinations and append the same public AI Video chat.
   // The complete six-section Cabinet remains available in its account menu.
   const mobileNav = [
     { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
     { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+    { id: 'video-ai', label: locale === 'ru' ? 'ИИ' : locale === 'es' ? 'IA' : 'AI', href: '/' + locale + '/holistic-support/mandala#video-director-chat', icon: Sparkles },
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
