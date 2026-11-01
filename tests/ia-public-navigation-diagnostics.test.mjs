@@ -85,3 +85,11 @@ test('viewport settling rejects unfinished requests and removes its observers', 
  assert.match(source,/await resizePublicViewport\(page, \{ width, height: 900 \}\)\s+assert.equal\(\(await go\(page, path\)\)/)
  assert.match(source,/assert\.deepEqual\(errors, \[\]\)/)
 })
+
+test('IA browser acceptance verifies the global My Space dialog on public pages', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /Global My Space dialog is available across public routes/)
+  assert.match(source, /cabinetEntry\.click\(\)/)
+  assert.match(source, /home-personal-space-dialog/)
+  assert.doesNotMatch(source, /all other public routes retain the direct Cabinet link/)
+})
