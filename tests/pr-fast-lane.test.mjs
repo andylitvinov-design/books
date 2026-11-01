@@ -1157,3 +1157,21 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
+
+test('separate required specialist status cannot bypass full release-ready acceptance',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
+  assert.ok(special,'must publish a named independent specialist status');
+  assert.match(special,/^    name: hh-specialists-verified$/m);
+  assert.match(special,/^    needs: \[release-ready\]$/m);
+  assert.match(special,/^    if: always\(\)$/m);
+  assert.match(special,/^    timeout-minutes: 3$/m);
+  assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + '{{ needs.release-ready.result }}'));
+  assert.ok(special.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
+  assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
+  const full=source.split(/^  release-ready:\s*$/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
+  assert.ok(full,'must retain real legacy specialist job');
+  assert.match(full,/ci-specialist-aggregate\.mjs/);
+  assert.match(full,/timeout-minutes: 45/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

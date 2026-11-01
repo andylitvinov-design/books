@@ -336,4 +336,26 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-
+  # A distinct, cheap status for branch protection after the admin migration.
+  # Until then, the legacy release-ready status stays required. Do not re-run
+  # the expensive specialist test; propagate its exact outcome, including red.
+  hh-specialists-verified:
+    name: hh-specialists-verified
+    needs: [release-ready]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Require full specialist aggregate on the same Core workflow
+        env:
+          SPECIALIST_RESULT: ${{ needs.release-ready.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Specialist validation missing, cancelled or failed; refusing a green status' >&2
+            exit 1
+          }
+          echo 'Full specialist aggregation succeeded; safe required status propagated.' >> "$GITHUB_STEP_SUMMARY"
