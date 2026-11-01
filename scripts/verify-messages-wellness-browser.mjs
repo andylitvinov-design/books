@@ -26,7 +26,7 @@ const synthetic={
   message:'Synthetic-only enquiry, no private data',durationMinutes:45,
 }
 const client={
-  id:requestId,requestKind:'practice',contact:{displayName:'Synthetic Client'},
+  id:requestId,requestKind:'practice',accountRequest:true,contact:{displayName:'Synthetic Client'},
   createdAt:'2026-10-27T15:12:00Z',lastConversationAt:'2026-10-28T11:22:00Z',
   message:'Synthetic-only client enquiry',needsReply:true,newMessageCount:1,status:'requested',
 }
