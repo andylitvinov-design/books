@@ -10,6 +10,9 @@ const MARKER = 'HH_PR_REPAIR_WORKER_V1';
 const SHA = /^[0-9a-f]{40}$/i;
 const PATH = /^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
 const MAX_FILES = 8;
+const MAX_CANDIDATES = 4;
+const MAX_READS = 24;
+const RATE_RESERVE = 100;
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -28,10 +31,12 @@ function eligible(pr, fullRepo) {
 function activeSweepLease(comments, sha, now) {
   for (const c of comments) {
     if (!(c.body || '').includes('HH_PR_SWEEP_LEASE_V1')) continue;
-    const match = /\{[^\r\n]*"schema"\s*:\s*"HH_PR_SWEEP_LEASE_V1"[^\r\n]*\}/.exec(c.body);
-    if (!match) return true;
+    const start=(c.body || '').indexOf('{');
+    const end=(c.body || '').indexOf('}',start);
+    if (start<0 || end<0) return true;
     try {
-      const lease = JSON.parse(match[0]);
+      const lease = JSON.parse(c.body.slice(start,end+1));
+      if (lease.schema !== 'HH_PR_SWEEP_LEASE_V1') return true;
       if (lease.head_sha === sha && ['active','claim','heartbeat'].includes(lease.state || lease.last_action) &&
         Date.parse(lease.expires_at) > now) return true;
     } catch { return true; }
@@ -39,7 +44,7 @@ function activeSweepLease(comments, sha, now) {
   return false;
 }
 function safeFiles(items) {
-  return Array.isArray(items) && items.length <= 100 &&
+  return Array.isArray(items) && items.length < 100 &&
     items.filter(f => ['added','modified'].includes(f.status) &&
       PATH.test(f.filename) && !f.filename.startsWith('tests/') &&
       !f.filename.startsWith('.github/') &&
@@ -52,27 +57,40 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
   const skip = reason => { log('SKIP ' + reason); return {status:'skipped',reason}; };
+  let reads=0, remaining=null;
+  const limited=async(label,fn)=>{
+    if(reads>=MAX_READS || (remaining !== null && remaining < RATE_RESERVE))
+      throw Error('HH_REPAIR_API_BUDGET_PAUSE:'+label);
+    reads++;
+    const response=await fn();
+    const rate=response?.headers?.['x-ratelimit-remaining'];
+    if(rate!==undefined && Number.isFinite(Number(rate)))remaining=Number(rate);
+    return response;
+  };
   if (fullRepo !== 'andylitvinov-design/books') return skip('WRONG_REPOSITORY');
   if (!dryRun && !hasToken) return skip('HH_AUTOMERGE_TOKEN_MISSING');
+  try {
   let candidates = [];
   if (Number.isSafeInteger(number) && number > 0) candidates = [{number}];
   else {
     const found = await Promise.all([SOURCE,CONFLICT].map(labels =>
-      github.rest.issues.listForRepo({owner,repo,state:'open',labels,
-        sort:'updated',direction:'asc',per_page:40})));
+      limited('repair-queue',()=>github.rest.issues.listForRepo({owner,repo,state:'open',labels,
+        sort:'updated',direction:'asc',per_page:40}))));
     if (found.some(r => !Array.isArray(r.data))) return skip('INCOMPLETE_QUEUE');
-    candidates = [...new Map(found.flatMap(r=>r.data).filter(i=>i.pull_request)
-      .map(i=>[i.number,i])).values()].slice(0,30);
+    const all=[...new Map(found.flatMap(r=>r.data).filter(i=>i.pull_request)
+      .map(i=>[i.number,i])).values()];
+    const offset=all.length ? (Math.floor(now/600000)*MAX_CANDIDATES)%all.length : 0;
+    candidates=[...all.slice(offset),...all.slice(0,offset)].slice(0,MAX_CANDIDATES);
   }
   for (const item of candidates) {
-    const pr = (await github.rest.pulls.get({owner,repo,pull_number:item.number})).data;
+    const pr = (await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:item.number}))).data;
     if (!eligible(pr,fullRepo) ||
         (expectedSha && pr.head.sha !== expectedSha)) continue;
     // If the branch is a parent of another open PR, never modify its history.
-    const children = (await github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1})).data;
+    const children = (await limited('stacked-children',()=>github.rest.pulls.list({owner,repo,state:'open',base:pr.head.ref,per_page:1}))).data;
     if (!Array.isArray(children) || children.length) continue;
     // An incomplete comment history cannot prove the absence of a repair lease.
-    const comments = (await github.rest.issues.listComments({owner,repo,issue_number:pr.number,per_page:100,page:1})).data;
+    const comments = (await limited('repair-lease',()=>github.rest.issues.listComments({owner,repo,issue_number:pr.number,per_page:100,page:1}))).data;
     if (!Array.isArray(comments) || comments.length >= 100) continue;
     const marker = '<!-- ' + MARKER + ' ' + pr.head.sha + ' -->';
     if (comments.some(c => (c.body || '').includes(marker)) ||
@@ -80,10 +98,11 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
     const conflict = pr.labels.some(l=>l.name===CONFLICT);
     let files = [];
     if (!conflict) {
-      const response = (await github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1})).data;
+      const response = (await limited('changed-files',()=>github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page:1}))).data;
       files = safeFiles(response);
       if (!files || files.length === 0) continue;
     }
+    if (remaining !== null && remaining < RATE_RESERVE) return skip('GITHUB_API_RESERVE');
     if (dryRun) {
       log('WOULD_CLAIM #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
       return {status:'dry_run',number:pr.number,sha:pr.head.sha,files};
@@ -109,6 +128,11 @@ async function claim({github,core,context,number=0,expectedSha='',dryRun=false,h
     return {status:'claimed',number:pr.number,sha:pr.head.sha,files};
   }
   return skip('NO_UNCLAIMED_OWNER_PR');
+  } catch(error) {
+    if (String(error.message).startsWith('HH_REPAIR_API_BUDGET_PAUSE:'))
+      return skip('GITHUB_API_BUDGET_PAUSE');
+    throw error;
+  }
 }
 function validCandidate(candidate, sha) {
   return !!(candidate && candidate.head_sha === sha && Array.isArray(candidate.files) &&

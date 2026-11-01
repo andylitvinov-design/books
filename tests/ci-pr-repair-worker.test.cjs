@@ -96,3 +96,14 @@ test('no safe patch sends owner to manual repair without source push',async()=>{
   assert.equal(r.status,'manual_required');
   assert.equal(f.log.labels,1);assert.equal(f.log.commit,0);
 });
+
+test('low API quota pauses repair without a source claim',async()=>{
+  const f=fixture();
+  f.github.rest.issues.listForRepo=async()=>({
+    headers:{'x-ratelimit-remaining':'72'},
+    data:[{number:11,pull_request:{}}]});
+  const r=await claim({github:f.github,core,context,hasToken:true,number:0});
+  assert.equal(r.reason,'GITHUB_API_BUDGET_PAUSE');
+  assert.equal(f.log.comments,0);
+  assert.equal(f.log.commit,0);
+});
