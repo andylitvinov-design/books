@@ -6,7 +6,7 @@
 - **44 actual local H.264 MP4 master clips**: 12 money-v1 + 20 film-v2 + 12 Dareful CC BY v3. Local JPG poster for each.
 - **24 presets / 6 currently executable theme buckets**; each preset references 4 *different* clip IDs (96 placements), but cross-preset sharing is extensive. **Only 36 of 44 approved MP4 IDs are used**.
 - From dedicated clip capacity, 52 *additional independent MP4 masters* are needed to allocate four non-shared, same-theme clips to each current preset. This assumes all 44 existing masters can be allocated exactly once and does not yet cover new stress topics.
-- The 22 authored instrumental melody IDs in `scripts/generate-mandala-melodies.mjs` were referenced by the editor but their static `.wav` files were **not committed** to the production branch. 17 texture/nature WAV files already exist. `scripts/ensure-mandala-melodies.mjs` now prepares the 22 real 32s WAV masters in `predev` and `prebuild`; no API or paid service.
+- The previous 22 authored instrumental melody IDs in `scripts/generate-mandala-melodies.mjs` were referenced by the editor but their static `.wav` files were **not committed** to the production branch. 17 texture/nature WAV files already exist. `scripts/ensure-mandala-melodies.mjs` now prepares all 24 real 32s WAV masters (22 originals + 2 new classical-theme variations) in `predev` and `prebuild`; no API or paid service.
 
 | Existing theme bucket | Current MP4 masters | Dedicated slots (4 scenarios × 4) | Minimum new distinct MP4 |
 |---|---:|---:|---:|
@@ -60,7 +60,7 @@
 
 ## Soundtracks: beautiful & recognisable
 
-- **Ready by build**: 22 original authored instrumental melodies (piano, harp, celesta, flute, strings, handpan etc.), plus 17 existing optional nature/texture audio tracks.
+- **Ready by build**: 22 original authored instrumental melodies + 2 newly synthesized public-domain theme variations (Beethoven’s *Ode to Joy* and traditional *Greensleeves*) (piano, harp, celesta, flute, strings, handpan etc.), plus 17 existing optional nature/texture audio tracks.
 - For **famous classical themes**, a public-domain composition (for example Beethoven's *Ode to Joy* / *Für Elise*, or Bach's *Prelude in C Major*) is **not equivalent to a public-domain audio recording**. Obtain a recording with explicit commercial synchronization and distribution rights, ideally CC0, or generate an original performance from a verified public-domain score; retain creator, license, evidence, file SHA-256 and source URL.
 - Mixkit's [Free Music License](https://mixkit.co/license/modal/musicFree/) allows music **within videos** subject to its restrictions, but forbids redistribution as stand-alone music-only tracks, games and other uses; **do not** import it as a downloadable raw music library. Use the standard reviewed music policy before any additional tracks become selectable.
 - Aim for 4 musically distinct scored options per scenario (gentle piano, strings, nature + melody, and warm uplifting track) without forcing four loud layers into one mix. Respect voice intelligibility (music ducking) and mobile Safari recording constraints.
@@ -70,5 +70,5 @@
 - Scenario → four genuinely different H.264/AAC-capable real moving clips, owned or licensed, with no shared source footage across scenarios in the *dedicated* pool.
 - Approved manifest and physical files agree. Source origin and licenses remain traceable. No unknown remote URLs, no copyrighted commercial soundtracks without verified rights.
 - Every active user goal has four meaningful variants; a topic with insufficient video is clearly flagged not-ready, never silently filled with an unrelated clip.
-- 22 WAV melodies are built and serve HTTP 200, decode, preview and export with audio. Test `npm run media:music:verify` after build and physically reopen the generated MP4 on iPhone.
+- 24 WAV melodies are built and serve HTTP 200, decode, preview and export with audio. Test `npm run media:music:verify` after build and physically reopen the generated MP4 on iPhone.
 - RUN `node --test tests/scenario-media-coverage.test.mjs` before merge; release only through actual production CI and Vercel verification.
