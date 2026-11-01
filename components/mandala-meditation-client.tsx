@@ -206,6 +206,8 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
   function toggleFocusMode() { setFocusMode(value => !value); }
 
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
+  // Drop delayed local HEIC decodes after this editor unmounts, without leaking object URLs.
+  useEffect(() => () => { photoChoiceEpoch.current++; }, []);
 
   useEffect(() => {
     if (!focusMode) return;

@@ -1,38 +1,71 @@
 name: HH PR core release gate
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   scope:
     name: classify-change
+    # Draft PRs avoid full checkout; original full code is required after ready_for_review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
+      ci_only: ${{ steps.diff.outputs.ci_only }}
+      route: ${{ steps.fast.outputs.route }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Verify live PR readiness before costly CI
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-pr-readiness.mjs
       - name: Classify strictly documentation-only PRs
         id: diff
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           docs_only=false
+          ci_only=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
-            git diff --no-renames --name-only -z "$BASE_SHA" HEAD > /tmp/hh-pr-changed-files.z
+            # pull_request checkout uses a synthetic merge commit. Production
+            # may advance after the PR event base SHA was recorded. Compare
+            # ONLY against the verified merge checkout's first parent.
+            diff_base="$BASE_SHA"
+            if [[ -n "${PR_HEAD_SHA:-}" ]]; then
+              checkout_sha="$(git rev-parse HEAD)"
+              first_parent="$(git rev-parse HEAD^1 2>/dev/null || true)"
+              second_parent="$(git rev-parse HEAD^2 2>/dev/null || true)"
+              if [[ "$second_parent" == "$PR_HEAD_SHA" && -n "$first_parent" ]]; then
+                git merge-base --is-ancestor "$BASE_SHA" "$first_parent" || {
+                  echo 'Event base is not an ancestor of the merge checkout parent' >&2
+                  exit 1
+                }
+                diff_base="$first_parent"
+              elif [[ "$checkout_sha" != "$PR_HEAD_SHA" ]]; then
+                echo 'Checkout does not match exact PR HEAD or its merge ref' >&2
+                exit 1
+              fi
+            fi
+            git diff --no-renames --name-only -z "$diff_base" HEAD > /tmp/hh-pr-changed-files.z
             docs_only=true
+            ci_only=true
             count=0
             while IFS= read -r -d '' f; do
               [[ -z "$f" ]] && continue
@@ -41,15 +74,73 @@ jobs:
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
               esac
+              # CI-only allowlist is exact, never includes application, SQL,
+              # dependency manifests, auth, billing, RLS or provider code.
+              case "$f" in
+                  .github/workflows/*.yml|\
+                  .github/workflows/*.yaml|\
+                  docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/specialist-aggregate.mjs|\
+                  lib/ci/fast-static-ui-text.mjs|\
+                  lib/ci/fast-ui-parser/package.json|\
+                  lib/ci/fast-ui-parser/parser-lock.json|\
+                  tests/ci-fast-static-ui-text.test.mjs|\
+                  docs/operations/CI_RELEASE_POLICY.md|\
+                  lib/ci/pr-sweep-guard.mjs|\
+                  scripts/ci-quick-route.mjs|\
+                  tests/ci-quick-route.test.mjs|\
+                  scripts/ci-specialist-aggregate.mjs|\
+                  scripts/ci-pr-readiness.mjs|\
+                  scripts/pr-sweep-guard.mjs|\
+                  tests/pr-fast-lane.test.mjs|\
+                  tests/ci-specialist-aggregate.test.mjs|\
+                  tests/ci-specialist-wait.test.mjs|\
+                  tests/ci-workflow-globs.test.mjs|\
+                  tests/workflow-next-route-filters.test.mjs|\
+                  tests/pr-sweep-guard.test.mjs|\
+                  tests/ci-heavy-draft-policy.test.mjs|\
+                  tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-head-cancellation.test.mjs|\
+                  tests/ci-stale-run-deduplication.test.mjs) ;;
+                *) ci_only=false ;;
+              esac
             done < /tmp/hh-pr-changed-files.z
-            [[ "$count" -gt 0 ]] || docs_only=false
+            if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
           fi
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only" >> "$GITHUB_STEP_SUMMARY"
+          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+      - name: Route exact image and proven public JSX changes without Next build
+        id: fast
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          route=CORE
+          tested_base="$(git rev-parse HEAD^1)"
+          tested_head="$(git rev-parse HEAD^2)"
+          [[ "$tested_head" == "$HH_HEAD_SHA" ]] || { echo 'Fast router refuses stale PR head' >&2; exit 1; }
+          git merge-base --is-ancestor "$HH_EVENT_BASE_SHA" "$tested_base" || {
+            echo 'Fast router refuses unverified production base' >&2
+            exit 1
+          }
+          # A new or modified router in this PR is NOT trusted. Until its
+          # production BASE version exists, Core always runs in full.
+          if git cat-file -e "$tested_base:scripts/ci-quick-route.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-quick-route"
+            git show "$tested_base:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs"
+            route="$(HH_TESTED_BASE_SHA="$tested_base" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-quick-route/ci-quick-route.mjs")"
+          fi
+          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo "Unknown fast route" >&2; exit 1 ;; esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Verified CI route: $route (HEAD $HH_HEAD_SHA; BASE $tested_base)" >> "$GITHUB_STEP_SUMMARY"
   code:
     name: core-lint-types-build
     needs: scope
-    if: needs.scope.outputs.docs_only != 'true'
+    if: needs.scope.outputs.docs_only != 'true' && needs.scope.outputs.route != 'ASSETS' && needs.scope.outputs.route != 'TEXT'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -66,16 +157,32 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Assert fast-lane workflow contracts
         run: node --test tests/pr-fast-lane.test.mjs
+      - name: Verify specialist ownership and Messenger isolation on CI-policy changes
+        if: needs.scope.outputs.ci_only == 'true'
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" != pull_request || -z "$BASE_SHA" ]]; then
             npm run lint
             exit 0
+          fi
+          if [[ -n "${PR_HEAD_SHA:-}" ]]; then
+            checkout_sha="$(git rev-parse HEAD)"
+            first_parent="$(git rev-parse HEAD^1 2>/dev/null || true)"
+            second_parent="$(git rev-parse HEAD^2 2>/dev/null || true)"
+            if [[ "$second_parent" == "$PR_HEAD_SHA" && -n "$first_parent" ]]; then
+              git merge-base --is-ancestor "$BASE_SHA" "$first_parent" || exit 1
+              BASE_SHA="$first_parent"
+            elif [[ "$checkout_sha" != "$PR_HEAD_SHA" ]]; then
+              echo 'Changed-file lint refusing unexpected PR checkout' >&2
+              exit 1
+            fi
           fi
           files=()
           while IFS= read -r -d '' f; do
@@ -86,16 +193,17 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
-      - name: Full TypeScript check
-        run: npx --no-install tsc --noEmit --pretty false
-      - name: Exact proposed release production build
+      - name: Exact proposed release production build and TypeScript check
+        # CI-only changes still run Core lint and guard-unit; a full app build
+        # adds no coverage for workflow/router/test changes.
+        if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
   release-ready:
     name: release-ready
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       actions: read
@@ -107,24 +215,58 @@ jobs:
           SCOPE_RESULT: ${{ needs.scope.result }}
           CODE_RESULT: ${{ needs.code.result }}
           DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            exit 1
+          fi
           [[ "$SCOPE_RESULT" == success ]] || exit 1
           if [[ "$DOCS_ONLY" == true ]]; then
             [[ "$CODE_RESULT" == skipped ]] || exit 1
+          elif [[ "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
+            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || exit 1
+            echo "Trusted quick route $ROUTE: no Next.js build needed" >> "$GITHUB_STEP_SUMMARY"
           else
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
-          echo 'Core checks passed; exact-head specialist aggregation still required on PR events.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Core routing passed; exact-head risk-routed specialist validation follows on PR events.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 2
+      # Keep the exact PR production-base commit available without cloning every branch.
+      - name: Pin exact production base for shallow checkout
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          fi
+          git cat-file -e "$BASE_SHA^{commit}"
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || { echo 'Unexpected checkout commit' >&2; exit 1; }
+          first_parent="$(git rev-parse HEAD^1)"
+          second_parent="$(git rev-parse HEAD^2)"
+          [[ "$second_parent" == "$PR_HEAD_SHA" ]] || { echo 'Merge checkout has the wrong PR head' >&2; exit 1; }
+          if [[ "$first_parent" != "$BASE_SHA" ]]; then
+            relation="$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_SHA...$first_parent" --jq '.status')"
+            [[ "$relation" == ahead ]] || { echo 'Merge checkout base is not a descendant of the event base' >&2; exit 1; }
+          fi
+          echo "HH_TRUSTED_BASE_SHA=$first_parent" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Fail closed on all applicable exact-head specialist workflows
-        if: github.event_name == 'pull_request'
+      - name: Validate exact-head risk and required specialist workflows
+        if: github.event_name == 'pull_request' && needs.scope.outputs.route == 'FULL'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -141,10 +283,13 @@ jobs:
           }
           # On the bootstrap PR only, the baseline has no aggregator yet.
           # Once shipped, ALWAYS run the immutable base-SHA validator, never PR code.
-          if git cat-file -e "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" 2>/dev/null; then
             mkdir -p "$RUNNER_TEMP/hh-ci-trusted/scripts" "$RUNNER_TEMP/hh-ci-trusted/lib/ci"
-            git show "$HH_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
-            git show "$HH_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
+            git show "$HH_TRUSTED_BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/specialist-aggregate.mjs"
+            if git cat-file -e "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" 2>/dev/null; then
+              git show "$HH_TRUSTED_BASE_SHA:lib/ci/fast-static-ui-text.mjs" > "$RUNNER_TEMP/hh-ci-trusted/lib/ci/fast-static-ui-text.mjs"
+            fi
             node "$RUNNER_TEMP/hh-ci-trusted/scripts/ci-specialist-aggregate.mjs"
           else
             # First rollout is safe only with native auto-merge disabled and

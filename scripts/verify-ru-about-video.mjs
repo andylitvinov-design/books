@@ -54,7 +54,7 @@ try {
         assert.equal(await intro.locator('.site-video-title, .site-video-description, .site-video-duration-text, .site-video-play-label').count(), 0);
         await expect(intro.locator('.site-video-duration')).toHaveCount(1);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('ИИ-аватар');
-        await expect(intro.locator('.site-video-watch-link')).not.toBeVisible();
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         const frameBox = await intro.locator('.site-video-frame').boundingBox();
         const figureBox = await intro.locator('figure').boundingBox();
         assert.ok(figureBox.height < frameBox.height + 64, 'Excessive caption height');
@@ -68,11 +68,9 @@ try {
         await summary.press('Enter');
         await expect(intro.locator('details')).toHaveAttribute('open', '');
         await expect(intro.locator('.site-video-more')).toContainText('Буду рад вместе исследовать вашу ситуацию');
-        // About is deliberately website-only (internalOnly): the transcript
-        // is keyboard-accessible, but no offsite HeyGen watch link leaks.
-        // Keep the exact inline player assertion below as the real playback gate.
-        assert.equal(await intro.locator('.site-video-watch-link').count(), 0,
-          'Website-only RU About keeps external watch links hidden even after transcript expansion');
+        // This published About intro is explicitly internal-only; even an
+        // expanded transcript cannot expose an external HeyGen share link.
+        await expect(intro.locator('.site-video-watch-link')).toHaveCount(0);
         await summary.press('Enter');
         await expect(intro.locator('.site-video-more')).not.toBeVisible();
         await intro.getByRole('button', { name: /^Смотреть видео:/ }).click();
@@ -87,20 +85,12 @@ try {
       const response = await page.goto(`${origin}/en/about`, { waitUntil: 'domcontentloaded' });
       assert.equal(response.status(), 200);
       await expect(page.locator('#psychic-alchemy-video')).toBeVisible();
-      // English hero is the full introduction. The ten testimonial videos
-      // intentionally use the compact, no-autoplay player on About.
-      assert.equal(await page.locator('#psychic-alchemy-video .site-video-player--minimal').count(), 0,
-        'English intro must retain its full hero presentation');
-      const compactTestimonials=page.locator('[data-personal-testimonials="about"]');
-      await expect(compactTestimonials.locator('.site-video-player--minimal')).toHaveCount(10);
-      // About now uses the owner-approved 10-video provenance-checked
-      // testimonial archive, not the retired three-item about-video-grid.
-      // Check actual public video components, not a decorative count.
-      const testimonials = page.locator('[data-personal-testimonials="about"]');
-      await expect(testimonials.locator('[data-testimonial-video-id]')).toHaveCount(10);
-      await expect(testimonials.locator('.site-video-player')).toHaveCount(10);
-      assert.equal(await testimonials.locator('iframe').count(), 0,
-        'testimonials must not load third-party media until the user presses Play');
+      // The English intro is a distinct poster, while the About archive now
+      // renders ten original public testimonials with matching local posters.
+      await expect(page.locator('#psychic-alchemy-video button')).toBeVisible();
+      await expect(page.locator('[data-personal-testimonials="about"] [data-testimonial-video-id]')).toHaveCount(10);
+      await expect(page.locator('[data-personal-testimonials="about"] .site-video-player')).toHaveCount(10);
+      await expect(page.locator('[data-personal-testimonials="about"] iframe')).toHaveCount(0);
       await page.close();
     } finally { await browser.close(); }
   }

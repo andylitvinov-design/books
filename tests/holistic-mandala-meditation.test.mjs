@@ -46,6 +46,17 @@ test("private photo never leaves the browser and can be cropped or removed", () 
   assert.match(client, /setOffsetX\(/);
   assert.match(client, /setOffsetY\(/);
   assert.match(client, /setSquarePhoto\(/);
+  assert.match(client, /photoChoiceEpoch\.current/);
+  assert.match(client, /photoPending=\{photoPending\}/);
+  const studio=read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /!photoPending/);
+  assert.match(studio, /data-video-photo-pending/);
+  assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
+  const normalized=read("lib/mandala/prepare-browser-photo.ts");
+  assert.match(normalized,/image\/jpeg/);
+  assert.match(normalized,/canvas\.toBlob\(resolve, "image\/jpeg", quality\)/);
+  assert.match(normalized,/URL\.revokeObjectURL\(objectUrl\)/);
+  assert.doesNotMatch(normalized,/fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon/);
   assert.match(client, /maxLength=\{140\}/);
   assert.doesNotMatch(client, /fetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon/);
 });
