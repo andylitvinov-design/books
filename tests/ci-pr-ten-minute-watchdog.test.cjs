@@ -12,9 +12,9 @@ const pr = number => ({
 const core = () => ({info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 const context = {repo:{owner:'andylitvinov-design',repo:'books'}};
 
-test('full pool is covered by rotating slices within six 10-minute checks',()=>{
+test('full pool is covered by rotating slices within sixteen 10-minute checks',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1)), numbers=new Set();
-  for(let tick=0;tick<6;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
+  for(let tick=0;tick<16;tick++) for(const p of selectCandidates(prs,NOW+tick*600000)) numbers.add(p.number);
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
@@ -80,4 +80,32 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(labels,1);
   assert.equal(result.activeActions,18);
   assert.equal(result.queuedActions,32);
+});
+
+test('rate-reserve stops deep checks and no merge dispatch is sent',async()=>{
+  let checks=0;
+  const github={rest:{
+    pulls:{list:async()=>({headers:{'x-ratelimit-remaining':'0'},data:[pr(66)]})},
+    actions:{listWorkflowRunsForRepo:async()=>{throw Error('capacity must be skipped');}},
+    checks:{listForRef:async()=>{checks++;throw Error('checks must be skipped');}}
+  }};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.apiRateLimited,true);
+  assert.equal(result.apiBudgetReason,'GITHUB_RATE_RESERVE');
+  assert.equal(result.apiRequests,1);
+  assert.equal(result.inspected,0);
+  assert.equal(checks,0);
+  assert.equal(result.mergeCoordinatorDispatched,0);
+});
+test('bounded rotation inventories all open PRs while limiting detailed calls',async()=>{
+  const all=Array.from({length:179},(_,i)=>pr(i+1));
+  const github={rest:{
+    pulls:{list:async({page})=>({data:all.slice((page-1)*100,page*100)})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false,dryRun:true});
+  assert.equal(result.open,179);
+  assert.ok(result.inspected<=16);
+  assert.ok(result.apiRequests<=65);
 });

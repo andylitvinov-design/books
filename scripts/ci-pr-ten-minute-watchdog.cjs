@@ -14,8 +14,11 @@ const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
 const REPAIR_LABEL = 'hh:repair-needed';
+// Preserve per-repository API quota for event-driven merge / CI workflows.
+const MAX_API_CALLS = 65;
+const MIN_RATE_REMAINING = 100;
 
-function selectCandidates(prs, now, rotatedSize = 30, urgentSize = 6) {
+function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
   if (!sorted.length) return [];
   const offset = (Math.floor(now / (10 * MINUTE)) * rotatedSize) % sorted.length;
@@ -56,25 +59,36 @@ function transientFailure(run, jobs, now) {
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
 }
 
-async function listOpen(github, owner, repo) {
+async function listOpen(github, owner, repo, limited) {
   const all = [];
   for (let page = 1; page <= 30; page++) {
-    const {data} = await github.rest.pulls.list({owner, repo, state:'open', per_page:100, page});
+    const {data} = await limited('list-open',()=>github.rest.pulls.list({owner, repo, state:'open', per_page:100, page}));
     if (!Array.isArray(data)) throw Error('Incomplete open PR page '+page);
     all.push(...data);
     if (data.length < 100) return all;
   }
   throw Error('Open PR inventory exceeded 3000; refusing partial inventory');
 }
-async function listJobs(github, owner, repo, id) {
-  const {data} = await github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:id, per_page:100, filter:'latest'});
+async function listJobs(github, owner, repo, id, limited) {
+  const {data} = await limited('core-jobs',()=>github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:id, per_page:100, filter:'latest'}));
   return data.total_count <= 100 ? data.jobs : null;
 }
 
-async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log) {
+async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, log, limited) {
   const marker = `<!-- ${MARKER} ${pr.head.sha} -->`;
-  const comments = await github.paginate(github.rest.issues.listComments, {owner,repo,issue_number:pr.number,per_page:100});
-  if (comments.length > 1000 || comments.some(c => (c.body || '').includes(marker))) return false;
+  // Limit comment pagination. If it cannot be checked completely, do not
+  // duplicate a repair claim on an older exact HEAD.
+  const comments=[];
+  for(let page=1;page<=3;page++){
+    const {data}=await limited('repair-comments',()=>github.rest.issues.listComments({
+      owner,repo,issue_number:pr.number,per_page:100,page
+    }));
+    if(!Array.isArray(data)) return false;
+    comments.push(...data);
+    if(data.length<100) break;
+    if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
+  }
+  if(comments.some(c=>(c.body||'').includes(marker)))return false;
   const failed = (jobs || []).filter(j=>j.conclusion === 'failure').map(j=>j.name).slice(0,7);
   const body = `${marker}
 **PR Control Tower: требуется исправление исходного кода**
@@ -90,23 +104,23 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     `**not** a claim that source code has already been fixed.
 `;
   if (!dryRun) {
-    await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body});
+    await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,body}));
     // A durable GitHub label makes this a discoverable Repair queue; it does not
     // claim to launch a paid/unconfigured AI coder. Failure must not lose handoff.
     if (!(pr.labels || []).some(label => label.name === REPAIR_LABEL)) {
       try {
         try {
-          await github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]});
+          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
         } catch (error) {
           if (error.status !== 404 && error.status !== 422) throw error;
           // Repository may not have the label yet. Create once, then assign.
           try {
-            await github.rest.issues.createLabel({owner,repo,name:REPAIR_LABEL,
-              color:'d93f0b',description:'Current PR HEAD needs source-code repair after CI failure'});
+            await limited('repair-label-create',()=>github.rest.issues.createLabel({owner,repo,name:REPAIR_LABEL,
+              color:'d93f0b',description:'Current PR HEAD needs source-code repair after CI failure'}));
           } catch (createError) {
             if (createError.status !== 422) throw createError;
           }
-          await github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]});
+          await limited('repair-label',()=>github.rest.issues.addLabels({owner,repo,issue_number:pr.number,labels:[REPAIR_LABEL]}));
         }
       } catch (error) { log(`#${pr.number} Repair label unavailable: ${error.message}`); }
     }
@@ -118,7 +132,35 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 async function run({github, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
-  const all = await listOpen(github,owner,repo);
+  const budget={requests:0,remaining:null,exhausted:false,reason:null};
+  const limited=async(name,operation)=>{
+    if(budget.exhausted||budget.requests>=MAX_API_CALLS){
+      budget.exhausted=true;
+      budget.reason ||= 'LOCAL_REQUEST_BUDGET';
+      throw Error('HH_API_BUDGET_EXHAUSTED: '+name);
+    }
+    budget.requests++;
+    try{
+      const result=await operation();
+      const remaining=result?.headers?.['x-ratelimit-remaining'];
+      if(remaining!==undefined&&Number.isFinite(Number(remaining))){
+        budget.remaining=Number(remaining);
+        if(budget.remaining<MIN_RATE_REMAINING){
+          budget.exhausted=true;
+          budget.reason='GITHUB_RATE_RESERVE';
+          log('PAUSE GitHub API: remaining='+budget.remaining);
+        }
+      }
+      return result;
+    }catch(error){
+      if([403,429].includes(error?.status)&&/rate.limit|abuse|secondary/i.test(String(error?.message))){
+        budget.exhausted=true;
+        budget.reason='GITHUB_RATE_LIMIT';
+      }
+      throw error;
+    }
+  };
+  const all=await listOpen(github,owner,repo,limited);
   const prod = all.filter(p=>p.base?.ref===PROD);
   const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
   const selected = selectCandidates(review,now);
@@ -126,12 +168,12 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     transientCiReruns:0,sourceRepairQueued:0,missingCore:0,blockedByCapacity:false,
     activeActions:null,queuedActions:null,checkedAt:new Date(now).toISOString(),
-    dryRun,hasMergeToken};
+    dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
   let active = Infinity, queued = Infinity;
   try {
     const [a,q] = await Promise.all(['in_progress','queued'].map(status =>
-      github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:1})));
+      limited('ci-capacity',()=>github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:1}))));
     active = a.data.total_count;
     queued = q.data.total_count;
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
@@ -142,14 +184,15 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
   let handoffs = 0;
   for (const pr of selected) {
+    if(budget.exhausted) break;
     summary.inspected++;
     let checks;
     try {
       // Query the exact release gate only: many specialist checks may exceed
       // GitHub's first-page 100 limit. Full coordinator still validates ALL
       // required checks, rules and leases before native auto-merge.
-      checks = (await github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
-        check_name:'release-ready',per_page:100,filter:'latest'})).data;
+      checks = (await limited('head-checks',()=>github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+        check_name:'release-ready',per_page:100,filter:'latest'}))).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
     if (gateIsGreen(checks)) {
       if (!pr.auto_merge) summary.greenUnarmed++;
@@ -158,10 +201,10 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     let runs;
     try {
       // Restrict to the release gate: hundreds of specialist checks can share the same SHA.
-      runs = (await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+      runs = (await limited('core-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
         owner,repo,workflow_id:'hh-pr-core-release.yml',head_sha:pr.head.sha,
         event:'pull_request',per_page:100
-      })).data;
+      }))).data;
     } catch(e) { log(`#${pr.number} CI run lookup unavailable: ${e.message}`); continue; }
     if ((runs.total_count || 0)>100 || !Array.isArray(runs.workflow_runs)) continue;
     const coreRuns = runs.workflow_runs.filter(r=> r.name===CORE_NAME && r.head_sha===pr.head.sha &&
@@ -174,36 +217,40 @@ async function run({github, core, context, dryRun=false, hasMergeToken=false, no
     summary.coreFailures++;
     if (now-Date.parse(latest.updated_at || latest.created_at) < 15*MINUTE) continue;
     let jobs=null;
-    try {jobs=await listJobs(github,owner,repo,latest.id);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
+    try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
     if (ciRoom && summary.transientCiReruns < MAX_STALE_RUNS && transientFailure(latest,jobs,now)) {
       if (!dryRun) {
         try {
-          await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id});
+          await limited('retry-failed-ci',()=>github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id}));
         } catch(e) { log(`CI retry #${pr.number} failed: ${e.message}`);continue; }
       }
       summary.transientCiReruns++;
       log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if (handoffs < MAX_HANDOFFS && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log)) {handoffs++;summary.sourceRepairQueued++;} }
+      try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
       catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
     }
   }
   if (summary.greenUnarmed && hasMergeToken) {
     try {
-      const info=(await github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-        owner,repo,workflow_id:FULL,per_page:10})).data;
+      const info=(await limited('merge-coordinator-runs',()=>github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+        owner,repo,workflow_id:FULL,per_page:10}))).data;
       const recent=info.workflow_runs || [];
       const busy=recent.some(r=>['queued','in_progress','waiting','requested'].includes(r.status));
       const justRan=recent.some(r=>now-Date.parse(r.created_at)<20*MINUTE);
       if (!busy&&!justRan) {
-        if (!dryRun) await github.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
-          owner,repo,workflow_id:FULL,ref:DEFAULT});
+        if (!dryRun) await limited('dispatch-guarded-merge',()=>github.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches',{
+          owner,repo,workflow_id:FULL,ref:DEFAULT}));
         summary.mergeCoordinatorDispatched++;
         log(`${dryRun?'WOULD_DISPATCH':'DISPATCHED'} guarded native merge coordinator for ${summary.greenUnarmed} unarmed-green PR(s)`);
       } else log(`Full merge coordinator already active/recent; no duplicate dispatch`);
     } catch(e) {log('Merge coordinator dispatch unavailable: '+e.message);}
   } else if (summary.greenUnarmed&&!hasMergeToken) log('Green PRs exist, but dedicated HH_AUTOMERGE_TOKEN absent: audit-only to avoid suppressed production events');
-  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\n');
+  summary.apiRequests=budget.requests;
+  summary.apiRateLimited=budget.exhausted;
+  summary.apiRemaining=budget.remaining;
+  summary.apiBudgetReason=budget.reason;
+  const report=Object.entries(summary).map(([key,value])=>`${key}: ${value}`).join('\\n');
   log(report.replaceAll('\n','; '));
   await core.summary.addHeading('HH PR 10-minute watchdog').addCodeBlock(report).write();
   return summary;
