@@ -121,3 +121,17 @@ test('owner cron repair uses one safe lease and never equates reenable with sche
   assert.ok(!s.includes('pull_request:'));
   assert.ok(!s.includes('schedule:'));
 });
+
+test('one-time cron retry uses injected v9 getOctokit after verified pre-toggle failure',()=>{
+  const s=read('hh-pr-cron-owner-repair');
+  assert.ok(s.includes('uses: actions/github-script@v9'));
+  assert.ok(s.includes('const ownerGithub=getOctokit(token);'));
+  assert.ok(!s.includes("require('@actions/github')"));
+  assert.ok(s.includes('HH_CRON_OWNER_REPAIR_RETRY_20261101'));
+  assert.ok(s.includes('HH_CRON_OWNER_REPAIR_20261101'));
+  assert.ok(s.includes("initial.length!==1"));
+  assert.ok(s.includes('run_id:41347536058'));
+  assert.ok(s.includes('c9e4ce27562ec4b2b58434903a00aeb5647afb25'));
+  assert.ok(s.includes("failed.conclusion!=='failure'"));
+  assert.ok(s.includes('getWorkflowRun'));
+});
