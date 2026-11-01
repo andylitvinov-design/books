@@ -27,6 +27,7 @@ import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -873,13 +874,13 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
 }
 function compileFreeFilmPreset(
   preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect,
-  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]},
+  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];excludedMotifs?:readonly string[]},
 ):CinematicStoryboard {
-  // Reorder only these four approved real MP4 scenes, no invented source.
+  // Accept replacement footage only from the same audited 44-scene catalogue.
+  // Explicit avoid-water/forest/night exclusions remain enforced after editing.
   const clipIds=edit?.clipIds??preset.clips;
-  if(clipIds.length!==4||new Set(clipIds).size!==4||
-    clipIds.some(id=>!preset.clips.includes(id)))
-    throw Error("invalid_free_film_reorder");
+  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])]))
+    throw Error("invalid_free_film_replacement");
   const timings=allocateAdaptiveFilmTimeline(
     durationSeconds,clipIds,edit?.durationSecondsByStage??null);
   const base=buildCinematicStoryboard({
@@ -2577,7 +2578,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
   };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
-    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[]},
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];excludedMotifs?:readonly string[]},
     outputAspect:Aspect=aspect)=>{
     if(recording||preparing)return false;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
