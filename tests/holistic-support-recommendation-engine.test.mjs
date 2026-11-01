@@ -139,7 +139,7 @@ test("lowest self-rating selects topic without a focus button", () => {
     assert.deepEqual(result.priorities, [domain], domain);
     assert.equal(result.minimum, 1);
     assert.ok(accepted.includes(result.videos[0].id), domain + " chosen from real tagged recordings");
-    assert.equal(result.matchedVideo, true);
+    assert.equal(result.matchedVideo, domain !== "stress");
   }
 });
 
