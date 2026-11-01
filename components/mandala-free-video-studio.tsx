@@ -3513,6 +3513,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {attachedAudio ? <span className={videoStyles.quickSoundBadge} data-video-live-audio aria-live="polite">
           <Music2 size={13} aria-hidden="true"/>{appliedAudioName}
         </span> : null}
+        <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
+          data-video-preview-toggle aria-pressed={previewPlaying}
+          aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+          title={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
+          disabled={!source||recording||preparing}
+          onClick={()=>{if(previewPlaying){stopMovieSound();setPreviewPlaying(false);}else openAffirmationPreview();}}>
+          {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
+            <Play size={32} fill="currentColor" aria-hidden="true"/>}
+        </button>
+      </section>
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        {workspaceTabs.map(item=><button type="button" key={item.id}
+          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-controls="video-workspace-panel" disabled={recording||preparing}
+          onClick={()=>{
+            setActiveWorkspace(item.id);
+            if(item.id!=="practices")setIntroPlaying(false);
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
+          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
+      </nav>
+      {/* Play the published introduction separately; the Canvas stays usable. */}
+      {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
+        data-workspace-section="practices" data-video-therapy-info>
         {introVideoId ? (
           introPlaying ? (
             <div className={videoStyles.therapyIntroOverlay} data-video-therapy-intro="playing"
@@ -3568,27 +3593,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <small>Video therapy film not yet linked</small></span>
           </a>
         ) : null}
-        {!introPlaying && <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
-          data-video-preview-toggle aria-pressed={previewPlaying}
-          aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
-          title={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
-          disabled={!source||recording||preparing}
-          onClick={()=>{if(previewPlaying){stopMovieSound();setPreviewPlaying(false);}else openAffirmationPreview();}}>
-          {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
-            <Play size={32} fill="currentColor" aria-hidden="true"/>}
-        </button>}
-      </section>
-      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
-        {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={recording||preparing}
-          onClick={()=>{
-            setActiveWorkspace(item.id);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
-      </nav>
+      </section> : null}
+
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
@@ -3655,7 +3661,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
           </div>
         </section>
-      {activeWorkspace ? <header className={videoStyles.workspaceHeading} id="video-workspace-panel"
+      {activeWorkspace!=="video" ? <header className={videoStyles.workspaceHeading} id="video-workspace-panel"
         data-video-workspace-heading role="region" aria-live="polite" aria-label={workspaceCopy[locale][activeWorkspace].title}>
         <small>HOLISTIC HOUSE · VIDEO STUDIO</small>
         <h3>{workspaceCopy[locale][activeWorkspace].title}</h3>
@@ -3700,7 +3706,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
           
         </section>
-        <div data-workspace-section="video">
+        <details className={videoStyles.quickExtras} data-workspace-section="video"
+          data-video-first-video-advanced>
+          <summary>{locale==="ru"?"Дополнительно: видео по подробному описанию":locale==="es"?"Avanzado: vídeo desde descripción":"Advanced: video from description"}</summary>
         {/* Compact first-video tool follows the third Style section,
             main video screen and the six control buttons. */}
         <MandalaFirstVideoStart locale={locale} wish={wish}
@@ -3718,7 +3726,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(job)stopJob(job,true);
             firstVideoRequestRef.current=false;
           }}/>
-        </div>
+        </details>
 
 
 
