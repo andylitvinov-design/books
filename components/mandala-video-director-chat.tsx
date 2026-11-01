@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {ChangeEvent,FormEvent} from "react";
-import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
+import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles,X} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {compileExecutableVideoScenario,parseAiVideoCutSuggestion} from "@/lib/mandala/video-executable-director.mjs";
 import {hasVideoChatFilter,isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,nextVideoChatStep,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
@@ -102,6 +102,27 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const counter=useRef(0);
  const threadRef=useRef<HTMLDivElement|null>(null);
  const windowRef=useRef<HTMLElement|null>(null);
+ // A deep link from the sixth tab opens the SAME Video Director conversation,
+ // not a second chat instance or a provider call. Back/forward restore it.
+ const [dockChat,setDockChat]=useState(false);
+ useEffect(()=>{
+   const sync=()=>setDockChat(window.location.hash==="#video-director-chat");
+   sync();
+   window.addEventListener("hashchange",sync);
+   window.addEventListener("popstate",sync);
+   return()=>{window.removeEventListener("hashchange",sync);window.removeEventListener("popstate",sync);};
+ },[]);
+ useEffect(()=>{
+   if(!dockChat||window.innerWidth>700)return;
+   const before=document.body.style.overflow;
+   document.body.style.overflow="hidden";
+   return()=>{document.body.style.overflow=before;};
+ },[dockChat]);
+ const closeDockChat=()=>{
+   if(window.location.hash==="#video-director-chat")
+     window.history.replaceState(window.history.state,"",window.location.pathname+window.location.search);
+   setDockChat(false);
+ };
  const composerRef=useRef<HTMLTextAreaElement|null>(null);
  useEffect(()=>{
    // Preserve a guest's text if they started typing before hydration.
@@ -377,11 +398,13 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
+  return <section id="video-director-chat" ref={windowRef} className={css.window} data-dock-chat={dockChat?"true":"false"} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
      <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
+     {dockChat?<button type="button" className={css.iconButton} onClick={closeDockChat}
+       aria-label={locale==="ru"?"Закрыть видеочат":locale==="es"?"Cerrar chat de vídeo":"Close video chat"}><X size={20}/></button>:null}
    </header>
    <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
      {lines.map(line=><div key={line.id} className={line.role==="assistant"?css.assistant:css.user}>

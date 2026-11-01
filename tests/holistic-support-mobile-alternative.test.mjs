@@ -76,7 +76,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);
-  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(css, /font-size: 17px/);
   assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
@@ -89,6 +89,9 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   const inbox = read("components/app/messages-hub.jsx");
   assert.match(client, /data-support-mobile-bottom-nav/);
   assert.match(client, /data-support-mobile-messages/);
+  assert.match(client, /data-support-mobile-ai/);
+  assert.match(client, /holistic-support\/mandala#video-director-chat/);
+  assert.match(read("components/holistic-support-mandala-dock.tsx"), /data-mandala-support-ai/);
   assert.match(client, /href=\{"\/" \+ locale \+ "\/app\/messages\?tab=chats"\} prefetch=\{false\}/);
   for (const pair of ['navMessages: "Messages"', 'navMessages: "Сообщения"', 'navMessages: "Mensajes"'])
     assert.ok(client.includes(pair), pair);
@@ -101,7 +104,7 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
   const dock = css.slice(css.indexOf(".bottomNav {"), css.indexOf(".bottomNav >"));
-  assert.match(dock, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(dock, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.bottomNav > :is\(a,button\)/);
   assert.match(css, /safe-area-inset-bottom/);
 });

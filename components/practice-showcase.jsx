@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   ArrowRight, BarChart3, Bell, BookOpen, ChevronRight, ClipboardList,
   FileText, Heart, Home, Leaf, LockKeyhole, MessageCircle, Play, Plus,
@@ -475,6 +476,10 @@ export default function PracticeShowcase({ locale = 'en' }) {
           <Icon size={21} aria-hidden="true"/><span>{t[label]}</span>
         </button>
       )}
+      <Link className={styles.navItem} href={'/'+locale+'/holistic-support/mandala#video-director-chat'}
+        prefetch={false} data-practice-ai-video aria-label={locale==='ru'?'ИИ · создание видео':locale==='es'?'IA · crear vídeo':'AI video chat'}>
+        <Sparkles size={21} aria-hidden="true"/><span>{locale==='ru'?'ИИ':locale==='es'?'IA':'AI'}</span>
+      </Link>
     </nav>
   </div>
 }

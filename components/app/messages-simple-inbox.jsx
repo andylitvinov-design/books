@@ -197,8 +197,15 @@ export default function MessagesSimpleInbox({
       // the orders header. Safari's visual viewport tracks the real space
       // left above its software keyboard (including viewport scrolling).
       if(openDetail){
-        const height=Math.max(1,Math.floor(visual?.height||window.innerHeight))
         const top=Math.max(0,Math.floor(visual?.offsetTop||0))
+        const visualBottom=visual?visual.offsetTop+visual.height:window.innerHeight
+        // An open thread leaves room for the real fixed dock. When an input
+        // receives focus, CSS hides that dock and the editor follows Safari's
+        // reduced visual viewport instead of pushing navigation upward.
+        const dock=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+        const dockTop=dock&&!focused&&window.getComputedStyle(dock).display!=='none'
+          ?dock.getBoundingClientRect().top:visualBottom
+        const height=Math.max(1,Math.floor(Math.min(visualBottom,dockTop)-top))
         windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
         windowElement.style.setProperty('--hh-mobile-window-top',top+'px')
         windowElement.dataset.keyboardOpen=focused?'true':'false'
