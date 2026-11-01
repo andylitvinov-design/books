@@ -37,7 +37,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!interactive || (!open && !quick)}',
     'Оставьте контакт, чтобы записаться или узнать подробности',
     'Leave your contact to enquire or join',
     'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
@@ -46,7 +46,12 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<details className=\{styles\.optionalName\} open=\{nameOpen\}>/);
+  assert.match(src, /setNameOpen\(value => !value\)/);
+  assert.match(src, /setNameOpen\(false\)/);
+  assert.match(src, /<details className=\{styles\.optionalNote\} open=\{noteOpen\}>/);
+  assert.match(src, /setNoteOpen\(value => !value\)/);
+  assert.match(src, /setNoteOpen\(false\)/);
   assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
   assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
   assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
@@ -64,6 +69,15 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(css, /@container \(max-width: 300px\)/);
   assert.match(src, /onChannelClick\?\./);
   assert.match(src, /scrollIntoView/);
+});
+
+test("contact controls wait for the reset associated with the currently selected offer", () => {
+  const src = read("components/contact-channel-chooser.tsx");
+  assert.match(src, /settledResetSignature === resetSignature/);
+  assert.match(src, /JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
+  assert.equal((src.match(/setSettledResetSignature\(resetSignature\)/g)||[]).length, 2);
+  assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return/);
+  assert.match(src, /if \(!interactive \|\| googleBusy \|\| busy\) return/);
 });
 
 test("primary capture components render channel chooser after service selection while downloads remain immediate", () => {

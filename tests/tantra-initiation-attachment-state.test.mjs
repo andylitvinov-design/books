@@ -26,7 +26,9 @@ let ClientChoice;
 const dependencies = (name) => {
   if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
   if (name === "react") return {
-    useState: () => [currentChoice, value => { currentChoice = value; }],
+    useState: initial => typeof initial === "boolean"
+      ? [true, () => {}]
+      : [currentChoice, value => { currentChoice = value; }],
     useEffect: () => {},
   };
   if (name === "lucide-react") return new Proxy({}, { get: (_, key) => key });
@@ -37,11 +39,11 @@ const dependencies = (name) => {
   throw new Error("Unexpected import: " + name);
 };
 const instantiate = source => {
-  const module = { exports: {} };
+  const fixtureModule = { exports: {} };
   new Function("require", "module", "exports", compile(source))(
-    dependencies, module, module.exports,
+    dependencies, fixtureModule, fixtureModule.exports,
   );
-  return module.exports;
+  return fixtureModule.exports;
 };
 ClientChoice = instantiate(clientSource).TantraInitiationChoice;
 const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = instantiate(serverSource);
@@ -65,23 +67,6 @@ function render(locale, choice = "free") {
   };
 }
 const intents = ["free", "personal", "session", "answers", "feedback"];
-
-function flatten(node) {
-  if (!node || typeof node !== "object") return [];
-  if (Array.isArray(node)) return node.flatMap(flatten);
-  return [node, ...flatten(node.props?.children)];
-}
-function render(locale, choice = "free") {
-  currentChoice = choice;
-  const nodes = flatten(TantraInitiationForm({ locale }));
-  return {
-    nodes,
-    links: nodes.filter(node => node.type === "contact-channel-chooser"),
-    selects: nodes.filter(node => node.type === "select"),
-    options: nodes.filter(node => node.type === "option"),
-    anchors: nodes.filter(node => node.type === "span" && /^apply-/.test(node.props?.id || "")),
-  };
-}
 
 test("EN/RU/ES shows one choice, five deep links and one CRM-first phone handoff", () => {
   for (const locale of ["en", "ru", "es"]) {

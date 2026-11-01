@@ -141,8 +141,8 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.match(s, /HH_PUBLIC_CASES/);
   assert.match(s, /wait "\$lane_a_pid"/);
   assert.match(s, /wait "\$lane_b_pid"/);
-  assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
-    'obsolete contact-channel browser duplicate must not run');
+  assert.ok(s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
+    'the contact consent and reset browser journey must remain available');
   for (const required of [
     'npm run build', 'playwright install --with-deps chromium webkit',
     'run_case "verify-service-cart-browser.mjs"',

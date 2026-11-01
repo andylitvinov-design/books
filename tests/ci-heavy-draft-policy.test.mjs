@@ -642,7 +642,10 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   for (const [filename,names] of configs) {
     const source=read(filename);
     for (const name of names) {
-      assert.ok(source.includes('      - name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      if(filename==='hh-public-journey-wave1.yml') {
+        assert.ok(source.includes('      - name: '+name), 'exact-head public journey stage is required: '+name);
+        assert.ok(!source.includes('      - name: '+name+"\n        if: github.event_name != 'pull_request'"), 'public journey must run on Ready PRs: '+name);
+      } else assert.ok(source.includes('      - name: '+name+"\n        if: github.event_name != 'pull_request'"),
         filename+' must defer duplicate PR build/browser for '+name);
     }
     assert.match(source,/workflow_dispatch:/,filename+' manual QA lost');

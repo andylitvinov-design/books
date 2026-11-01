@@ -50,8 +50,9 @@ test('successor preserves both original real browsers with one local build and o
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
   assert.match(source, /^  push:/m, 'Post-merge audit runs full real-browser journeys');
   for(const name of ['Build exact candidate once for both real-browser suites', 'Install Chromium and WebKit once for both journeys', 'Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server']) {
-    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
-      'ordinary PR defers expensive build/browser, but post-merge and manual keep: '+name);
+    assert.ok(source.includes('- name: '+name), 'required browser stage is missing: '+name);
+    assert.ok(!source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'exact-head PR browser coverage must not be deferred until after merge: '+name);
   }
   assert.match(source, /workflow_dispatch:/, 'Manual full matrix remains available');
 });

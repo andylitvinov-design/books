@@ -12,6 +12,46 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
 await mkdir("artifacts/holistic-topic-mobile", { recursive: true });
 const evidence = [];
 
+// A search re-fetches the public catalogue. Waiting only for the first article
+// can succeed on the previous budget, immediately before React clears it.
+// Wait for the exact synthetic result identities, including EUR/CAD exclusion.
+async function waitForConsultationFixtures(page, locale, ids, label) {
+  const expected = ids.map(id => "/" + locale + "/services/fixture/" + id).sort();
+  await page.waitForFunction(async wanted => {
+    const isExact = () => {
+      const results = document.querySelector("#holistic-inline-results");
+      if (!results || results.hidden) return false;
+      const articles = [...results.querySelectorAll("article")];
+      const links = articles.flatMap(article => [...article.querySelectorAll("a[href]")])
+        .map(link => link.getAttribute("href")).sort();
+      return articles.length === wanted.length &&
+        links.length === wanted.length &&
+        links.every((href, index) => href === wanted[index]);
+    };
+    if (!isExact()) return false;
+    // Reject the stale previous React commit if the async directory rerender
+    // clears articles on the following frames; never relax EUR/CAD assertions.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return isExact();
+  }, expected, { timeout: 15000 });
+  const actual = await page.locator("#holistic-inline-results article a[href]")
+    .evaluateAll(links => links.map(link => link.getAttribute("href")).sort());
+  assert.deepEqual(actual, expected, label + " only the requested published EUR fixture; CAD and stale results excluded");
+}
+
+// The user must perform a NEW search against the isolated public directory.
+ // Seeing an old card that happens to satisfy the next budget is insufficient.
+async function searchConsultationFixtures(page, finder) {
+  const fresh = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/public/remote-energy-support-masters" &&
+      url.searchParams.get("kind") === "consultation" &&
+      response.status() === 200;
+  }, {timeout:15000});
+  await finder.locator("[data-support-search]").click();
+  await fresh;
+}
+
 for (const engine of [chromium, webkit]) {
   const browser = await engine.launch({ headless: true });
   try {
@@ -21,6 +61,7 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          serviceWorkers: "block", // Isolate the synthetic practitioner fixture from SW.
         });
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
@@ -50,6 +91,10 @@ for (const engine of [chromium, webkit]) {
             priceOptions: [{ duration: 30, price: 50 }, { duration: 60, price: 100 }],
             reviewCount: 0, reviewAverage: 0,
           }];
+          // A fresh directory response is intentionally asynchronous: keep
+          // the loading/clear commit observable and reject stale previous
+          // result arrays. Fixtures are still isolated and fully synthetic.
+          if (isConsultation) await new Promise(resolve => setTimeout(resolve,75));
           await route.fulfill({ status: 200, contentType: "application/json",
             body: JSON.stringify(isConsultation ? { consultations } : { masters }) });
         });
@@ -57,6 +102,10 @@ for (const engine of [chromium, webkit]) {
           const response = await page.goto(origin + "/" + locale + "/holistic-support",
             { waitUntil: "domcontentloaded", timeout: 60000 });
           assert.equal(response?.status(), 200, label + " HTTP status");
+          await page.waitForFunction(() => {
+            const button = document.querySelector('[data-holistic-topic="business"]');
+            return !!button && Object.keys(button).some(key => key.startsWith("__reactProps$"));
+          }, null, {timeout:15000});
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
@@ -109,19 +158,25 @@ for (const engine of [chromium, webkit]) {
 
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="20"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["eur20"], label + " EUR 20");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="100"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["eur20", "eur100"], label + " EUR 100");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
           await finder.locator('[data-support-budget="free"]').click();
-          await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await page.waitForFunction(() => document.querySelector('[data-support-budget="free"]')
+            ?.getAttribute("aria-pressed") === "true", null, {timeout:15000});
+          await searchConsultationFixtures(page, finder);
+          await waitForConsultationFixtures(page, locale, ["free"], label + " free");
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 

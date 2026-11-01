@@ -56,7 +56,10 @@ test("handoff analytics rejects caller drift and records channel selection only"
   const links = readFileSync(new URL("../components/acquisition-event-link.tsx", import.meta.url), "utf8");
   assert.match(links, /if \(analyticsConsent !== "granted"\) return/);
   assert.match(links, /detail: \{ event \}/);
-  assert.match(links, /onClick=\{\(\) => \{ onClick\?\.\(\); emit\(event\)/);
+  // Both native and Next client routes must share the same opt-in event handler.
+  assert.match(links, /const handleClick = \(\) => \{ onClick\?\.\(\); emit\(event\); if \(analyticsEvent\) emit\(analyticsEvent\); \}/);
+  assert.match(links, /if \(nativeNavigation\) return <a[^>]*onClick=\{handleClick\}/);
+  assert.match(links, /return <Link[^>]*onClick=\{handleClick\}/);
   assert.doesNotMatch(links, /FormData|problem|goal|obstacle|tried|answers/);
   const analytics = readFileSync(analyticsModule, "utf8");
   const publicAnalytics = readFileSync(new URL("../lib/public-analytics.ts", import.meta.url), "utf8");

@@ -324,7 +324,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} stayAfterSave label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
         </div>
         <details className={styles.freeAlternative}>
           <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : locale === "es" ? "¿Prefieres comenzar con una revisión gratuita por escrito?" : "Prefer to start with a free written situation review?"}</summary>

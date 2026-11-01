@@ -95,6 +95,6 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
   assert.match(chooser, /data-contact-channel": "whatsapp"/);
   assert.match(chooser, /data-contact-channel": "telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
-  assert.match(chooser, /if \(busy \|\| saved\) return/);
+  assert.match(chooser, /if \(!interactive \|\| busy \|\| saved\) return;/);
   assert.match(chooser, /setError\(c\.error\)/);
 });

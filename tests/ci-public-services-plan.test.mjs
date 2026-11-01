@@ -383,7 +383,7 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('Public Services preserves protected high-risk real-browser QA and fast low-risk contracts', () => {
+test('required Public Services PR gate follows exact-head risk without suppressing browser QA', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
@@ -395,20 +395,23 @@ test('Public Services preserves protected high-risk real-browser QA and fast low
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
     assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
-      'sensitive PR browser and build must remain blocking: ' + name);
+      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
   }
-  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
+  // Fast source/consent acceptance applies to every non-Draft PR, while
+  // the original risk-scoped browser suite remains required for sensitive code.
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
-  assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
+  assert.match(src, /tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
   assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
-  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
     const plan = planPublicServicesChangedPaths([risky]);
     assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
-      ['full', true, true, 'all'], 'full manual browser QA risk planner for: ' + risky);
+      ['full', true, true, 'all'], 'runtime/checkout risk cannot skip browsers: ' + risky);
   }
   assert.equal(planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']).browser, false);
+  assert.ok(src.includes("if: github.event_name == 'pull_request'"));
+  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });
 
@@ -493,7 +496,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
 });
 
-test('impact planner preserves sensitive required browser acceptance while low-risk PR uses source contracts', () => {
+test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
     'scripts/verify-ideas-mobile-browser.mjs',
@@ -521,7 +524,7 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  assert.match(yml,/pr_heavy == 'true'/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
@@ -578,22 +581,21 @@ test('common public display changes use only relevant browser cases, not unrelat
   assert.match(yml,/playwright install --with-deps chromium webkit/);
 });
 
-test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
+test('browser CI verifies signed-out 401 responses and rejects unmocked API writes',()=>{
   const source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
   const config=readFileSync(new URL('../lib/app/config.js',import.meta.url),'utf8');
   for(const guard of [
-    'response.status() === 503',
-    '/api/catalog/ratings',
+    'response.status() === 401',
     '/api/service-enquiries/booking-status',
     '/api/app/bootstrap',
-    'responseEvidence.push(url.pathname)',
-    'const unavailable = responseEvidence',
-    'if (!process.env.HH_APP_SUPABASE_URL)',
-    'const expectedUnavailable = new Set()',
-    'expectedUnavailable.has(entry.path)',
-    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path')",
-    'assert.deepEqual(unexpected, [], "Unexpected browser console errors")'
-  ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
+    'diagnostics.signedOutResponses[url.pathname]',
+    "assert.equal(response.status(), 401",
+    'assert.deepEqual(await response.json(), {error:code})',
+    "route.abort()",
+    'blockedEventErrors.length <= blockedServiceEvents',
+    "entry.path === '/api/marketplace/service-event'",
+    "assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry) && !blockedEventErrors.includes(entry)), [], 'Unexpected browser console errors')"
+  ]) assert.ok(source.includes(guard),'Missing isolated runtime safety condition: '+guard);
   assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
     'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');
   const appBootstrap=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
@@ -603,4 +605,14 @@ test('browser CI accepts only observed credential-free 503 paths without body-re
     'only the read-only bootstrap endpoint is allowlisted');
   assert.ok(!source.includes('responseEvidence.push(response.json()'),
     'Body reads after browser resource closure are not reliable evidence');
+});
+
+test('public browser fixture applies each real review migration once',()=>{
+  const yaml=workflow('hh-public-services-production.yml');
+  const setup=readFileSync(new URL('./helpers/app-db-setup.mjs',import.meta.url),'utf8');
+  assert.match(yaml,/node --conditions=react-server tests\/helpers\/app-db-setup\.mjs/);
+  for(const file of ['20261017170000_hh_service_reviews.sql','20261028143352_hh_catalog_star_ratings_20261028.sql']) {
+    assert.equal(setup.split(file).length-1,1,'fixture must apply '+file+' once');
+    assert.ok(!yaml.includes(file),'workflow must not reapply '+file);
+  }
 });
