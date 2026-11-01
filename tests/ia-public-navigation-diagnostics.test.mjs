@@ -107,3 +107,9 @@ test('header keyboard acceptance visits visible shop and cart before language', 
   assert.match(source, /data-nav-item="cart"/)
   assert.match(source, /expect\(visibleHeaderLink\)\.toBeFocused\(\)/)
 })
+
+test('IA acceptance scrolls each menu destination into view without omitting it', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.match(source, /for \(const link of await links\.all\(\)\)\s*\{\s*await link\.scrollIntoViewIfNeeded\(\)/)
+  assert.match(source, /await inViewport\(link, label \+ '\/site-menu-link'\)/)
+})

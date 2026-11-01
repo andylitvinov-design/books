@@ -111,7 +111,12 @@ async function verifySiteMenu(page, header, { locale, surface, label, expectedMe
   await trigger.focus()
   await trigger.press('Enter')
   await expect(menu).toHaveJSProperty('open', true)
-  for (const link of await links.all()) await inViewport(link, label + '/site-menu-link')
+  // The menu is deliberately scrollable; each destination must become
+  // reachable within the viewport, not fit simultaneously at every height.
+  for (const link of await links.all()) {
+    await link.scrollIntoViewIfNeeded()
+    await inViewport(link, label + '/site-menu-link')
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Open site menu overflow: ' + label)
   await trigger.press('Tab')
   await expect(links.first()).toBeFocused()
