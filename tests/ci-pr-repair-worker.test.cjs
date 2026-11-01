@@ -11,13 +11,13 @@ const pr=(extra={})=>({number:11,state:'open',draft:false,user:{login:owner},
     repo:{full_name:owner+'/'+repo}},labels:[{name:'hh:repair-needed'}],...extra});
 const sourceFiles=[{filename:'lib/a.ts',status:'modified'}];
 function fixture(options={}){
-  const p=options.pr||pr(), log={comments:0,assigned:0,labels:0,removed:[],read:0,commit:0};
+  const p=options.pr||pr(), log={comments:0,commentBodies:[],assigned:0,labels:0,removed:[],read:0,commit:0};
   const github={rest:{pulls:{
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
       listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
-      createComment:async()=>{log.comments++},
+      createComment:async({body})=>{log.comments++;log.commentBodies.push(body)},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
     repos:{getContent:async()=>{log.read++;return {data:{type:'file',sha:newSha}}}},
@@ -226,4 +226,38 @@ test('resolved conflict-only label is cleared after a second exact-head live ver
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'skipped');
   assert.equal(cleared,1);assert.equal(f.log.comments,0);
+});
+
+test('active external lease stays owned after nominal expiry',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z');
+ const expired={schema:'HH_PR_SWEEP_LEASE_V1',head_sha:sha,
+  state:'heartbeat',expires_at:'2026-11-01T21:30:00Z'};
+ assert.equal(activeSweepLease([{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify(expired)}],sha,now),true);
+});
+test('Repair Worker records claim and true source publish as distinct signed HEAD receipts',async()=>{
+ const f=fixture(),contextWithRun={...context,runId:41350000001};
+ core.outputs={};
+ const c=await claim({github:f.github,core,context:contextWithRun,hasToken:true,number:11});
+ assert.equal(c.status,'claimed');
+ assert.match(f.log.commentBodies[0],/HH_PR_TASK_V1/);
+ assert.match(f.log.commentBodies[0],/"state":"CLAIMED"/);
+ assert.match(f.log.commentBodies[0],/"outcome":"CLAIM_ONLY_NO_SOURCE_WRITE"/);
+ const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+   base64:Buffer.from('const a=1;\n').toString('base64')}]};
+ const pub=await publish({github:f.github,core,context:contextWithRun,prNumber:11,
+   expectedSha:sha,candidate,writer:f.writer});
+ assert.equal(pub.status,'committed');
+ assert.match(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
+ assert.match(f.log.commentBodies.at(-1),/"new_sha":"d{40}"/);
+ assert.match(f.log.commentBodies.at(-1),/"outcome":"VERIFIED_SOURCE_COMMIT"/);
+ assert.match(f.log.commentBodies.at(-1),/actions\/runs\/41350000001/);
+});
+test('empty autofix emits MANUAL receipt, never PUBLISHED',async()=>{
+ const f=fixture();
+ const result=await publish({github:f.github,core,context:{...context,runId:3},
+  prNumber:11,expectedSha:sha,candidate:{head_sha:sha,files:[]},writer:f.writer});
+ assert.equal(result.status,'manual_required');
+ assert.match(f.log.commentBodies.at(-1),/"state":"MANUAL"/);
+ assert.doesNotMatch(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
 });

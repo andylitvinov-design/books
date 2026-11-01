@@ -64,7 +64,11 @@ function reservationStatus(task,comments,now){
   const body=String(c.body||'');if(!body.includes('HH_PR_SWEEP_LEASE_V1'))return false;
   const m=body.match(/\{[\s\S]*?\}/);if(!m)return true;
   try{const l=JSON.parse(m[0]);if(l.head_sha!==task.head_sha)return false;
-   const expiry=Date.parse(l.expires_at||l.lease_expires||'');return !Number.isFinite(expiry)||expiry>now;
+   // An expired *active* external lease is NOT proof that its owner stopped.
+   // Require an explicit release / new source HEAD, never steal by clock alone.
+   if(['active','claim','heartbeat'].includes(l.state||l.last_action))return true;
+   const expiry=Date.parse(l.expires_at||l.lease_expires||'');
+   return !Number.isFinite(expiry)||expiry>now;
   }catch{return true;}
  }))return 'OWNER_LEASE_ACTIVE';
  return 'FREE';
