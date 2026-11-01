@@ -357,7 +357,7 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
-test('Holistic Support mock screenshots run only after merge; PR retains current source contracts', () => {
+test('Support mock browser is post-merge except exact #2483, preserving PR source contracts', () => {
   const source = read('hh-support-mobile-mock-browser.yml');
   const core = read('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
@@ -366,19 +366,19 @@ test('Holistic Support mock screenshots run only after merge; PR retains current
     'Install Chromium and WebKit (post-merge visual audit)',
     'Check 320 / 390 / 430 in Chromium and WebKit'
   ]) {
-    assert.ok(source.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
-      'Only post-merge runs may allocate duplicated browser matrices: '+name);
+    assert.ok(source.includes('- name: '+name+"\n        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number == 2483 }}"),
+      'Only post-merge or exact reviewed #2483 may allocate mock browser matrices: '+name);
   }
   assert.ok(source.includes("if: always() && github.event_name != 'pull_request'"),
     'PRs must not allocate duplicate screenshot artifacts');
-  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'),
+  assert.ok(source.includes('tests/greek-video-series.test.mjs') && source.includes('node --test tests/holistic-meditation-mobile-categories.test.mjs'),
     'PR source contracts must still execute');
   assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'),
     'Parity source contract must not be removed');
   assert.match(core, /^  release-ready:/m);
 });
 
-test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
+test('Mandala Ready executes full encoded video/browser for procedural release and manual QA', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
   const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
@@ -389,7 +389,13 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
+  const scopedGeneratedMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/hh-free-procedural-video-')))";
+  for (const name of ['Build','Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px']) {
+    assert.ok(source.includes('      - name: '+name+'\n        '+scopedGeneratedMediaGate),
+      'real media must run only on manual validation or the exact P0 procedural video PR: '+name);
+  }
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
@@ -410,7 +416,7 @@ test('Support Mobile Draft skips costly mock browser; Ready and production push 
   assert.equal((source.match(/^concurrency:/gm)||[]).length,1);
   assert.ok(source.includes("group: hh-support-mobile-mock-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),'never cancel production push');
-  assert.ok(source.includes('node --test tests/greek-video-series.test.mjs'));
+  assert.ok(source.includes('tests/greek-video-series.test.mjs') && source.includes('node --test tests/holistic-meditation-mobile-categories.test.mjs'));
   assert.ok(source.includes('tests/holistic-support-mobile-mock-parity.test.mjs'));
   assert.ok(source.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
@@ -429,7 +435,7 @@ test('wave 5: Support Mock delegates only duplicate production PR TypeScript to 
   assert.ok(mock.includes("  mobile-visual-parity:\n    if: $"+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
   assert.ok(mock.includes('- name: Full TypeScript on non-production PR or production push\n        if: $'+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"+'\n        run: npx --no-install tsc --noEmit --pretty false'));
   assert.match(mock,/node-version: '22'\s*\n          cache: npm/);
-  assert.match(mock,/node --test tests\/greek-video-series\.test\.mjs/);
+  assert.match(mock,/node --test tests\/holistic-meditation-mobile-categories\.test\.mjs[\s\S]*?tests\/greek-video-series\.test\.mjs/);
   assert.match(mock,/npx eslint/);
   assert.match(mock,/playwright install --with-deps chromium webkit/);
   assert.ok(mock.includes('node scripts/verify-holistic-support-mock-fidelity.mjs'));
