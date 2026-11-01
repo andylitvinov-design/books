@@ -138,6 +138,13 @@ const runEngine = async ([engine, browserType]) => {
             assert.equal(await audioPane.count(),1,"one canonical Audio picker after deep link");
             assert.equal(await audioPane.locator("[data-video-audio-mic]").count(),1,
               "deep linking cannot instantiate a second voice recorder");
+            const firstAudioCard=audioPane.locator("[data-audio-id]").first();
+            const cover=await firstAudioCard.locator('[class*="audioTileGlyph"]').boundingBox();
+            const play=await firstAudioCard.locator("[data-video-audio-play]").boundingBox();
+            assert.ok(cover&&play&&play.width>=44&&play.height>=44&&
+              play.x>=cover.x+cover.width+4 && play.x<=cover.x+cover.width+20,
+              "the real photo must remain visible next to 44px Play on iPhone: "+
+              JSON.stringify({cover,play}));
             const audioGeometry=await audioPane.evaluate(element=>({
               rect:element.getBoundingClientRect().toJSON(),
               viewport:document.documentElement.clientWidth,
