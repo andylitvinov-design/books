@@ -33,7 +33,7 @@ test('manual reply handoffs require valid reference, destination and message, ne
  assert.deepEqual(publicEnquiryReplyHandoffs(consented,ref,' '),{emailUrl:null,whatsAppUrl:null})
  assert.deepEqual(publicEnquiryReplyHandoffs({email:'bad',phone:'123'},ref,'Reply'),{emailUrl:null,whatsAppUrl:null})
 })
-test('website leads keep private relay contact isolated and use explicit external handoff, not a fake web send',()=>{
+test('website leads keep private relay contact isolated and use explicit external handoff, not a fake web send',async()=>{
  const store=read('lib/practitioners/public-service-enquiry.js')
  const inbox=read('components/app/messages-simple-inbox.jsx')
  const reply=read('components/app/public-enquiry-reply.jsx')
@@ -42,7 +42,12 @@ test('website leads keep private relay contact isolated and use explicit externa
  const css=read('components/app/messages-simple-inbox.module.css')
  assert.match(store,/contact: relayContactView\(/)
  assert.match(store,/replyContact: publicEnquiryReplyContact\(manuallyRecorded\)/)
- assert.match(inbox,/requestKind!=='public'/)
+ if(inbox.includes("inMessagesTab(selected,'chats')")){
+  const {inMessagesTab}=await import('../lib/app/messages-inbox-tabs.mjs')
+  assert.equal(inMessagesTab({kind:'request',item:{accountRequest:true,requestKind:'private'}},'chats'),true)
+  assert.equal(inMessagesTab({kind:'request',item:{accountRequest:true,requestKind:'public'}},'chats'),false)
+  assert.equal(inMessagesTab({kind:'request',item:{}},'chats'),false)
+ }else assert.match(inbox,/requestKind!=='public'/)
  assert.match(inbox,/selected\.item\.requestKind==='public'&&<PublicEnquiryReply key=\{selected\.id\}/)
  assert.match(inbox,/selected\?\.kind==='request'&&<div className=\{styles\.requestPane\} hidden=\{showCard\}/)
  assert.match(css,/\.requestPane\[hidden\]\{display:none!important\}/)
