@@ -467,7 +467,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   const z=String.fromCharCode(0),head='b'.repeat(40),base='a'.repeat(40);
   const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
   const plan=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
-    if(args[0]==='rev-parse')return Buffer.from(head+'\\n');
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
     if(args[0]==='merge-base')return Buffer.alloc(0);
     if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,file])=>[status,file]).join(z)+z);
     throw Error('Unexpected command: '+args.join(' '));
