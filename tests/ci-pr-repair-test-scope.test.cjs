@@ -45,6 +45,12 @@ test('CLI executes a real related test and rejects failure',()=>{
   assert.notEqual(spawnSync(process.execPath,[gate,'src/missing.mjs'],{cwd:f.root}).status,0);
   f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\ntest('skip',{skip:true},()=>{});\n");
   assert.notEqual(spawnSync(process.execPath,[gate,'src/a.mjs'],{cwd:f.root}).status,0);
+  f.put('tests/a.test.mjs',"import '../src/a.mjs';\nimport test from 'node:test';\nif(false){\ntest('never',()=>{});\n}\n");
+  assert.notEqual(spawnSync(process.execPath,[gate,'src/a.mjs'],{cwd:f.root}).status,0);
+  f.put('src/b.mjs','export const b=1;\n');
+  f.put('tests/b.test.mjs',"import '../src/b.mjs';\nimport test from 'node:test';\ntest('real',()=>{});\n");
+  execFileSync('git',['add','tests/b.test.mjs'],{cwd:f.root});
+  assert.notEqual(spawnSync(process.execPath,[gate,'src/a.mjs','src/b.mjs'],{cwd:f.root}).status,0);
  }finally{f.cleanup()}
 });
 

@@ -49,13 +49,23 @@ function main(){
  if(!tests)throw Error('NO_VERIFIED_BOUNDED_RELATED_TESTS');
  console.log('HH_REPAIR_RELATED_TESTS '+JSON.stringify(tests));
  const env={...process.env};delete env.NODE_TEST_CONTEXT;
- const result=spawnSync(process.execPath,['--test','--test-reporter=tap',...tests],
-   {encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000,env});
- if(result.stdout)process.stdout.write(result.stdout);
- if(result.stderr)process.stderr.write(result.stderr);
- const passes=[...(result.stdout||'').matchAll(/^# pass (\d+)\s*$/gm)];
- if(result.status!==0||result.error||!passes.length||Number(passes.at(-1)[1])<1)
-   throw Error('RELATED_TESTS_FAILED_OR_TIMED_OUT_OR_ALL_SKIPPED');
+ const deadline=Date.now()+180000;
+ for(const file of tests){
+   const remaining=deadline-Date.now();
+   if(remaining<=0)throw Error('RELATED_TESTS_TIMED_OUT');
+   const result=spawnSync(process.execPath,['--test','--test-reporter=tap',file],
+     {encoding:'utf8',maxBuffer:4*1024*1024,timeout:remaining,env});
+   const out=result.stdout||'';
+   const passes=[...out.matchAll(/^# pass (\d+)\s*$/gm)];
+   const total=[...out.matchAll(/^# tests (\d+)\s*$/gm)];
+   const pass=passes.length?Number(passes.at(-1)[1]):0;
+   const count=total.length?Number(total.at(-1)[1]):0;
+   // Node reports a test file with no registered tests as one passing test.
+   const empty=count===1&&pass===1&&out.split(/\r?\n/).includes('# Subtest: '+file);
+   if(result.status!==0||result.error||pass<1||empty)
+     throw Error('RELATED_TESTS_FAILED_OR_TIMED_OUT_OR_EMPTY: '+file);
+   console.log('HH_REPAIR_TEST_PASS '+file+' pass='+pass);
+ }
 }
 if(require.main===module){try{main()}catch(error){console.error('HH_REPAIR_TEST_GATE '+error.message);process.exitCode=1;}}
 module.exports={selectTests};
