@@ -6,7 +6,8 @@ const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, 
 
 test('My Progress uses a valid broad dynamic Next.js pathname and production push only', () => {
   const s = workflow('hh-my-progress-release.yml');
-  assert.match(s, /'app\/\*\*\/app\/\*\*\/page\.jsx'/);
+  assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
+  assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
   assert.match(s, /push:\s*\n\s*branches: \['codex\/public-book-library'\]/);
@@ -14,7 +15,10 @@ test('My Progress uses a valid broad dynamic Next.js pathname and production pus
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
   const s = workflow('practice-visual-services.yml');
-  assert.match(s, /'app\/api\/app\/\*\*\/route\.js'/);
+  assert.ok(s.includes("      - 'app/api/app/practice/**'"));
+  assert.ok(s.includes("      - 'app/api/app/services/**'"));
+  assert.ok(!s.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!s.includes("      - 'components/app/messages-simple-inbox.module.css'"));
   assert.match(s, /'app\/\*\*\/practice\/page\.jsx'/);
   assert.doesNotMatch(s, /app\/api\/app\/\[\.\.\.path\]/);
   assert.doesNotMatch(s.split(/^permissions:/m)[0], /^  push:/m);
