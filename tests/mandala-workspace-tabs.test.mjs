@@ -134,3 +134,28 @@ test("free personal video starts before the separate diagnostic marketing CTA",(
  const promoPos=page.indexOf("styles.slimDiagnostic");
  assert.ok(studioPos>=0&&promoPos>studioPos);
 });
+
+test("video studio lazily loads optional editor workspaces and collapsed tools", () => {
+  // Main video preview and functioning Auto Director remain available on entry.
+  assert.match(studio, /import \{ MandalaAutoVideoDirector \} from "\.\/mandala-auto-video-director";/);
+  for (const [name, path] of [
+    ["MandalaGuidedCourse", "mandala-guided-course"],
+    ["MandalaHypnocorrectionMobile", "mandala-hypnocorrection-mobile"],
+    ["MandalaCinematicDirector", "mandala-cinematic-director"],
+    ["MandalaVideoDirectorChat", "mandala-video-director-chat"],
+    ["MandalaFirstVideoStart", "mandala-first-video-start"],
+    ["MandalaStoriesCharacters", "mandala-stories-characters"],
+    ["MandalaPersonalMeditation", "mandala-personal-meditation"],
+    ["MandalaCloudVoiceStudio", "mandala-cloud-voice-studio"],
+  ]) {
+    assert.ok(studio.includes(`const ${name} = dynamic(() => import("./${path}").then(module => module.${name}));`),
+      name + " should be loaded on demand");
+    assert.ok(!studio.includes(`import { ${name} } from "./${path}";`));
+  }
+  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
+  assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
+  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
+  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
+  assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
+  assert.match(studio, /<MandalaAutoVideoDirector/);
+});

@@ -239,6 +239,22 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await firstStart.locator("[data-first-video-generate]").count(),1);
         assert.equal(await firstStart.locator("[data-first-video-filters]").getAttribute("open"),null);
         if(locale==="ru"&&width===390){
+          // Closing a lazily loaded disclosure must not discard its draft.
+          const retainedFilters=firstStart.locator("[data-first-video-filters]");
+          await retainedFilters.locator("summary").click();
+          await firstStart.locator("[data-first-video-duration]").selectOption("30");
+          await firstAdvanced.locator(":scope > summary").click();
+          await firstAdvanced.locator(":scope > summary").click();
+          await expect(firstStart.locator("[data-first-video-duration]")).toHaveValue("30");
+          await retainedFilters.locator("summary").click();
+          const voiceDetails=page.locator("[data-video-voice-studio]");
+          await voiceDetails.locator(":scope > summary").click();
+          const voiceChoice=voiceDetails.locator("[data-voice-id]").last();
+          await voiceChoice.click();
+          await expect(voiceChoice).toHaveAttribute("aria-pressed","true");
+          await voiceDetails.locator(":scope > summary").click();
+          await voiceDetails.locator(":scope > summary").click();
+          await expect(voiceChoice).toHaveAttribute("aria-pressed","true");
           // Use ONE real visitor page instead of running two heavy Canvas/video
           // decoders concurrently on the CI worker. Hydration must finish
           // before user input; no synthetic dispatch or mocked media allowed.
