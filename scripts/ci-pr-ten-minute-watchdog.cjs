@@ -72,13 +72,19 @@ function boundedRestFallback(selected) {
   return [...selected.slice(0,2),...selected.slice(4,8)].slice(0,MAX_REST_FALLBACK_LOOKUPS);
 }
 
-function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4) {
+function selectCandidates(prs, now, rotatedSize = 12, urgentSize = 4, priorityNumber = null) {
   const sorted = [...prs].sort((a, b) => a.number - b.number);
   if (!sorted.length) return [];
   const offset = (Math.floor(now / (10 * MINUTE)) * rotatedSize) % sorted.length;
   const rotated = Array.from({length: Math.min(sorted.length, rotatedSize)}, (_, i) => sorted[(offset + i) % sorted.length]);
   const recent = [...prs].sort((a,b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0)).slice(0, urgentSize);
-  return [...new Map([...recent, ...rotated].map(p => [p.number, p])).values()];
+  const list=[...new Map([...recent, ...rotated].map(p => [p.number, p])).values()];
+  // Workflow-run completion wakes the exact PR first, not just today's rotation.
+  if(Number.isSafeInteger(priorityNumber) && !list.some(p=>p.number===priorityNumber)){
+    const priority=prs.find(p=>p.number===priorityNumber);
+    if(priority)list[list.length-1]=priority;
+  }
+  return list;
 }
 
 function latestByName(checks) {
@@ -375,7 +381,18 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }
   const prod = all.filter(p=>p.base?.ref===PROD);
   const review = prod.filter(p=>!p.draft && p.head?.repo?.full_name===owner+'/'+repo && /^[a-f0-9]{40}$/.test(p.head?.sha || ''));
-  const selected = selectCandidates(review,now);
+  const wake=context.eventName==='workflow_run' &&
+    context.payload?.workflow_run?.event==='pull_request' &&
+    context.payload.workflow_run.status==='completed'
+      ? context.payload.workflow_run : null;
+  let priorityNumber=null;
+  if(wake){
+    const linked=(wake.pull_requests || []).filter(p=>Number.isSafeInteger(p.number));
+    const matches=review.filter(p=>p.head.ref===wake.head_branch &&
+      (!linked.length || linked.some(item=>item.number===p.number)));
+    if(matches.length===1)priorityNumber=matches[0].number;
+  }
+  const selected = selectCandidates(review,now,12,4,priorityNumber);
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
     releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
