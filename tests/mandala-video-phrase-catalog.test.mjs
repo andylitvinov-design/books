@@ -135,3 +135,18 @@ test("manual phrase-path selection survives locale switching without a state-res
   assert.doesNotMatch(picker,/useEffect\(\(\)=>\{if\(recommended\)setPath\(recommended\)/);
   assert.match(picker,/const scenarioKey=path\.scenarioId\+"\:"\+locale/);
 });
+
+test("public phrase SQL preserves strict RLS and read-only grants, without patient input",()=>{
+  const seed=readFileSync(new URL("../sql/hh-video-phrase-catalog-v1-20261101.sql",import.meta.url),"utf8");
+  const revisions=["hh-video-phrase-tone-copy-revision-v1-20261101.sql",
+    "hh-video-phrase-story-arc-copy-v1-20261101.sql"].map(file=>
+      readFileSync(new URL("../sql/"+file,import.meta.url),"utf8"));
+  assert.match(seed,/alter table public\.hh_video_phrase_catalog_v1 enable row level security/i);
+  assert.match(seed,/revoke all on table public\.hh_video_phrase_catalog_v1 from public,anon,authenticated/i);
+  assert.match(seed,/grant select on table public\.hh_video_phrase_catalog_v1 to anon,authenticated/i);
+  assert.match(seed,/for select to anon,authenticated\s+using \(true\)/i);
+  assert.match(seed,/hh_video_phrase_filter_v1_idx/);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/grant\s+(insert|update|delete|all)\s+on\s+table\s+public\.hh_video_phrase_catalog_v1\s+to\s+(?:anon|authenticated)/i);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/security\s+definer/i);
+  assert.doesNotMatch([seed,...revisions].join("\n"),/public\.profiles|auth\.users|patient_id|user_id\s*=|client_email/i);
+});
