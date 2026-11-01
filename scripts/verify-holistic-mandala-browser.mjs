@@ -1812,6 +1812,34 @@ const runEngine = async ([engine, browserType]) => {
           await auto.waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
             "six accessible one-tap goals, no mandatory 49-question intake");
+          // Owner-reported iPhone regression: focus must not zoom, trailing
+          // whitespace must survive, user intent must change the real proposal,
+          // and one of the alternative film cards must be selectable.
+          const typedGoal=auto.locator("[data-auto-video-input]");
+          await typedGoal.fill("Любовь ");
+          await typedGoal.pressSequentially("и доверие");
+          assert.equal(await typedGoal.inputValue(),"Любовь и доверие",
+            "goal input must preserve the space between two words");
+          await auto.locator("[data-auto-video-suggest]").click();
+          await expect(auto.locator("[data-auto-video-matched-theme]")).toContainText("Отношения");
+          const alternatives=auto.locator("[data-auto-video-option]");
+          assert.ok(await alternatives.count()>=2,"at least two genuine approved alternative story choices");
+          await alternatives.nth(1).click();
+          await expect(alternatives.nth(1)).toHaveAttribute("aria-pressed","true");
+          await expect(alternatives.nth(0)).toHaveAttribute("aria-pressed","false");
+          const geometry=await typedGoal.evaluate(el=>({
+            font:Number.parseFloat(getComputedStyle(el).fontSize),
+            viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+            right:el.getBoundingClientRect().right
+          }));
+          assert.ok(geometry.font>=16 && geometry.right<=geometry.viewport+2 &&
+            geometry.scroll<=geometry.viewport+2,
+            "iPhone goal field must not trigger focus zoom or horizontal overflow: "+JSON.stringify(geometry));
+          const musicPosition=await page.locator("[data-video-quick-audio-choices]").evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          const directorPosition=await auto.evaluate(el=>el.getBoundingClientRect().top+scrollY);
+          assert.ok(directorPosition>musicPosition,
+            "Auto Video Director must appear below the existing Music & Voice block");
+
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
           await auto.locator('[data-auto-video-goal="calm"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
