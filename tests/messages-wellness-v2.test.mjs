@@ -92,11 +92,11 @@ test('zero owned orders shows exactly two real free offer links, and truthful EN
     '/academy/reiki/free-practitioner-course',
     'andy-about.png',
     'reiki-practitioner-sunrise.webp',
-    'Записаться на бесплатную консультацию',
+    'Получить бесплатный письменный разбор',
     'Личный письменный разбор',
     'Пройти бесплатный курс практик Рейки',
-    'Request a free personal consultation',
-    'Solicitar una consulta gratuita',
+    'Get a free written personal review',
+    'Solicitar un análisis personal escrito gratuito',
     '!selected&&!loading&&!error&&orders.length>0',
   ])assert.ok(ui.includes(required),required)
   assert.equal([...ui.matchAll(/data-free-order-offer=/g)].length,2)
@@ -139,4 +139,47 @@ test('CSP class is identical on Spanish app routes in server and client',()=>{
  assert.ok(client.includes('^\\/(ru|en|es)\\/app'))
  assert.ok(edge.includes('^\\/(ru|en|es)\\/app'))
  assert.equal(client.includes('^\\/(ru|en)\\/app'),false)
+})
+
+test('owner-approved Messenger restores truthful compact empty Orders art and copy',()=>{
+ const ui=source('components/app/messages-orders-clients.jsx')
+ const css=source('components/app/messages-orders-clients.module.css')
+ assert.match(ui,/!detailMode&&!loading&&!error&&ordersData&&<div className=\{styles.introCard\}>/)
+ assert.match(ui,/className=\{styles.emptyHint\} role="status"/)
+ assert.match(ui,/t.emptyHelp/)
+ assert.match(ui,/freeConsultation:'Получить бесплатный письменный разбор'/)
+ assert.match(css,/\.root \.emptyHint\{/)
+ assert.match(css,/\.root \.introCard\{min-height:86px/)
+ // The two actual free entry links remain intact; no fake order/booking records.
+ assert.equal((ui.match(/data-free-order-offer=/g)||[]).length,2)
+ assert.doesNotMatch(ui,/setOrders\(\[|demoOrders|fakeOrders|paymentStatus:'paid'/)
+})
+
+test('CRM message compose is an accessible single-row icon helper + message + Send',()=>{
+ const crm=source('components/app/crm-messenger.jsx')
+ const css=source('components/app/crm-messenger.module.css')
+ const bot=source('components/app/crm-salesbot-assist.jsx')
+ const botCss=source('components/app/crm-salesbot-assist.module.css')
+ assert.match(crm,/className=\{styles.readLabel\}/)
+ assert.match(crm,/aria-label=\{t.read\} title=\{t.read\}/)
+ assert.match(crm,/conversationOnly\|\|compact\?<Send size=\{20\} aria-hidden="true"\/>/)
+ assert.match(crm,/iconOnly=\{conversationOnly\}/)
+ assert.match(crm,/requestId:pending.id,purpose:'customer_reply'/)
+ assert.match(css,/\.detailConversation \.salesbotAssistSlot\{/)
+ assert.match(css,/grid-template-columns:44px minmax\(0,1fr\) 46px/)
+ assert.match(css,/\.detailConversation \.readLabel\{/)
+ assert.match(bot,/iconOnly\?<Sparkles size=\{20\} aria-hidden="true"\/>/)
+ assert.match(botCss,/\.launcherIcon\+\.panel\{/)
+ assert.doesNotMatch(crm,/type="file"|capture="user"|MediaRecorder/)
+})
+
+test('client list shows distinct useful preview and source, never duplicate Telegram text',()=>{
+ const ui=source('components/app/messages-simple-inbox.jsx')
+ const css=source('components/app/messages-simple-inbox.module.css')
+ assert.match(ui,/preview:item.needsReply\?t.previewNeedsReply:t.previewHistory/)
+ assert.match(ui,/previewNeedsReply:'Откройте переписку, чтобы ответить'/)
+ assert.match(ui,/className=\{styles.sourceTag\}/)
+ assert.match(ui,/crmEnabled=\{false\} embedded|crmEnabled=true/)
+ assert.match(css,/\.shell\[data-embedded="true"\] \.person,/)
+ assert.match(css,/\.shell\[data-embedded="true"\] \.back\{/)
 })
