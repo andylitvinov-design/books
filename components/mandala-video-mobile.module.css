@@ -2506,3 +2506,116 @@
  .studio .quickVideoNav button{font-size:8px;letter-spacing:-.02em;overflow-wrap:anywhere}
  .studio .quickMusicRail{grid-auto-columns:174px}
 }
+
+
+/* Owner approved 01-Nov final flow. Only the existing Studio modules are
+   rearranged: player -> 6 workspaces -> 4 pictured goals -> single topic input
+   + six text choices -> 4 real film options -> words/audio-guidance CTA.
+   No parallel AI/recording/storage/payment controls. */
+.quickTopicHost{display:block;width:100%;min-width:0;max-width:100%}
+.phraseAudioNext{display:flex;align-items:center;justify-content:center;
+ gap:9px;width:100%;min-height:48px;padding:10px 12px;
+ border:1px solid #b7d7c3;border-radius:12px;background:#e9f5ed;
+ color:#175a45;font:800 13px/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.phraseAudioNext>svg:last-child{margin-left:auto}
+.phraseAudioNext:disabled{opacity:.5;cursor:not-allowed}
+.advancedVideoToggle{display:flex;align-items:center;gap:8px;width:100%;
+ min-height:44px;padding:9px 12px;border:1px solid #ccdfd0;border-radius:12px;
+ background:#fafcf6;color:#24604c;font:750 12px/1.25 Arial,Helvetica,sans-serif;
+ cursor:pointer}
+.advancedVideoToggle>svg:last-child{margin-left:auto}
+.studio[data-video-advanced-open="true"] .advancedVideoToggle>svg:last-child{transform:rotate(180deg)}
+.studio[data-active-workspace]:not([data-active-workspace="video"]) .advancedVideoToggle{display:none!important}
+.phraseAudioNext:focus-visible,.advancedVideoToggle:focus-visible{
+ outline:3px solid #d5a756;outline-offset:2px}
+@media(max-width:759px){
+ .studio .quickBuilder{gap:7px;padding-bottom:10px}
+ .studio .quickBuilder>.quickBrandBar{min-height:52px;padding:2px 5px}
+ .studio .quickBrandIdentity strong{font:650 clamp(19px,5vw,24px)/1 Georgia,serif}
+ .studio .quickBrandIdentity small{font-size:10px;line-height:1.2}
+ .studio .previewStage .hero,.studio[data-video-studio-mode="therapy"] .previewStage .hero{
+   aspect-ratio:2.78/1!important;border:1px solid #d9e1d5;border-radius:16px!important}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroPromo{
+   background-image:linear-gradient(100deg,#112e263d,#1028200b),
+   url('/images/holistic-house/reiki-practitioner-sunrise.webp')!important;
+   background-position:center 46%!important;background-size:cover!important}
+ .studio .previewStage .hero[data-hero-promo="true"] .heroCanvas{opacity:.17}
+ .studio .previewStage .heroShade{background:linear-gradient(90deg,#101d1aa9,transparent 72%),
+   linear-gradient(0deg,#12251f65,transparent 60%)}
+ .studio .heroEditorial{left:12px;bottom:11px;max-width:51%}
+ .studio .heroEditorial h2{font-size:clamp(18px,4.9vw,24px)!important}
+ .studio .heroEditorial p{font-size:clamp(9px,2.45vw,11px)!important}
+ .studio .quickVideoNav{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:5px 0 0}
+ .studio .quickVideoNav button{min-width:0;min-height:58px;gap:4px;
+   padding:5px 1px;border:1px solid #e3e8df;border-radius:11px;
+   background:#fffefb;color:#415b50;font:650 clamp(9px,2.45vw,11px)/1.1 Arial,Helvetica,sans-serif;
+   text-align:center;overflow-wrap:normal;hyphens:auto}
+ .studio .quickVideoNav button svg{width:19px;height:19px}
+ .studio .quickVideoNav button[aria-pressed="true"]{
+   border-color:#198164;background:#e9f6ee;color:#145c45;box-shadow:inset 0 0 0 1px #b3dcc4}
+ .studio .quickBuilder>[data-video-quick-section="1"]{order:3;display:grid;gap:7px;
+   padding:11px 10px 12px!important;border:1px solid #e2e6db;border-radius:17px;
+   background:#fffdfa;box-shadow:0 3px 14px #304a3410}
+ .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+   font:800 clamp(15px,4vw,19px)/1.2 Arial,Helvetica,sans-serif}
+ .studio .quickBuilder>[data-video-topic-section]{order:4;display:grid;
+   margin:0;padding:11px 10px 12px;border:1px solid #e2e6db;border-radius:17px;
+   background:#fffdfa;box-shadow:0 3px 14px #304a3410}
+ .studio .quickBuilder>[data-auto-video-director]{order:5;min-width:0;margin:0}
+ .studio .quickBuilder>[data-video-result]{order:6;margin:0}
+ .studio .quickBuilder>[data-video-result-empty]{display:none!important}
+ .studio .quickBuilder>.advancedVideoToggle{order:7;margin:0}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{order:5}
+ .studio .quickBuilder>[data-video-quick-phrases]{order:4;padding:12px 10px;
+   background:#fffdfa;border-radius:16px}
+ .studio .quickBuilder>[data-video-quick-audio-choices]{
+   padding:10px 9px;border-radius:16px;background:#fffdfa}
+ .studio[data-active-workspace="video"] .quickBuilder>[data-video-quick-audio-choices]{
+   display:none!important}
+ .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-audio-choices]{
+   display:grid!important}
+ .studio .quickBuilder>[data-video-order-bar]{order:18}
+ .studio .quickBuilder>.quickHeader,
+ .studio .quickBuilder>.quickBenefits,
+ .studio .quickBuilder>.quickDisclosure{display:none!important}
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-quick-section="4"],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-first-video-advanced],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>.sceneLibrary,
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-video-quick-tier],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickBuilder>[data-free-film-compilation-catalog],
+ .studio[data-active-workspace="video"][data-video-advanced-open="false"] .quickThemeAdvanced{
+   display:none!important}
+ .studio[data-active-workspace="video"][data-video-advanced-open="true"] .quickThemeAdvanced{
+   display:block!important}
+ .studio[data-active-workspace="phrases"] [data-video-hypnosis-section],
+ .studio[data-active-workspace="effects"] [data-video-effects-panel],
+ .studio[data-active-workspace="practices"] [data-video-meditation-course-panel],
+ .studio[data-active-workspace="pro"] [data-video-quick-personal],
+ .studio[data-active-workspace="editor"] [data-video-final-editor]{
+   max-width:100%;min-width:0;border-radius:16px;background:#fffdfa;color:#194738}
+ .studio .workspaceHeading{order:3;min-width:0;margin:0;padding:12px;
+   border:1px solid #e1e9df;border-radius:16px;background:#fffdfa}
+ .studio .workspaceHeading h3{font:800 19px/1.23 Arial,Helvetica,sans-serif}
+ .studio .workspaceHeading p{font:500 12px/1.4 Arial,Helvetica,sans-serif}
+ .studio .quickBuilder [data-video-quick-section="1"] .quickThemeAdvanced[open]{
+   max-width:100%;overflow-x:hidden}
+ .studio .quickVideoNav button:focus-visible{outline:3px solid #d5ad67;outline-offset:2px}
+}
+@media(max-width:355px){
+ .studio .quickVideoNav{gap:3px}
+ .studio .quickVideoNav button{font-size:clamp(8px,2.7vw,9.6px);padding:4px 1px;min-height:55px}
+ .studio .quickVideoNav button svg{width:16px;height:16px}
+ .studio .quickBuilder>[data-video-topic-section]{padding:10px 7px}
+ .studio .quickBuilder>[data-video-quick-section="1"]{padding:10px 7px!important}
+}
+
+/* The ONE music library is shared by Style (advanced) and Support Phrases.
+   Default entry stays short; a deliberate Advanced action reveals it. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-advanced-open="true"]
+   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:9}
+ .studio[data-active-workspace="phrases"]
+   .quickBuilder>[data-video-quick-audio-choices]{display:grid!important;order:5}
+ .studio[data-active-workspace="video"] .quickBuilder>.advancedVideoToggle{display:flex;order:8}
+ .studio .quickBuilder>[data-video-topic-section]{scroll-margin-top:12px}
+}

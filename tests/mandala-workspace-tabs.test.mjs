@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","editor","pro","effects","phrases","practices"]);
+ assert.deepEqual(ids,["video","phrases","effects","practices","pro","editor"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -17,7 +17,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  assert.match(studio,/Психокоррекция/);
  assert.match(studio,/Гипноэффекты/);
  assert.match(studio,/Курсы и медитации/);
- assert.match(studio,/pro:\{tab:"PRO",title:"Герои и кинорежиссура"/);
+ assert.match(studio,/pro:\{tab:"PRO генерация",title:"PRO генерация"/);
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
@@ -38,7 +38,7 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    assert.ok(studio.includes("activeWorkspace"),"local selection retained");
  }
  assert.match(studio,/data-workspace-section="practices"/);
- assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+ assert.match(studio,/\{activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane : null\}/);
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
@@ -135,11 +135,16 @@ test("free personal video starts before the separate diagnostic marketing CTA",(
  assert.ok(studioPos>=0&&promoPos>studioPos);
 });
 
-test("mock's six first-row labels lead to original workspaces and the music editor",()=>{
- for(const label of ['tab:"Видео"','tab:"Музыка"','tab:"Герои"','tab:"Терапия"','tab:"Коррекция"','tab:"Курсы"'])
-   assert.ok(studio.includes(label),"missing approved mobile label "+label);
- assert.match(studio,/data-video-music-editor/);
- assert.match(studio,/\{deepAudioPane\}/);
- assert.match(css,/\.resultEmptyPreview\{/);
- assert.match(studio,/data-video-result-example/);
+test("final approved six tabs lead to exactly one real workspace each",()=>{
+  const expected=['tab:"Стиль видео"','tab:"Фразы поддержки"','tab:"Гипноэффект"',
+    'tab:"Курс практик"','tab:"PRO генерация"','tab:"Монтаж"'];
+  for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
+  assert.match(studio,/data-video-quick-control=\{item.id\}/);
+  assert.match(studio,/setActiveWorkspace\(item.id\)/);
+  assert.match(studio,/data-video-topic-section/);
+  assert.match(studio,/data-video-director-goal-controls/);
+  assert.match(studio,/data-video-director-topic-controls/);
+  assert.match(studio,/data-video-phrase-audioguide/);
+  assert.match(studio,/data-video-final-editor/);
+  assert.match(studio,/data-video-audio-details/);
 });

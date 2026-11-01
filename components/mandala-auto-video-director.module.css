@@ -247,3 +247,108 @@
  .goalPanel .goalChoices button{min-height:44px;font-size:clamp(11px,3vw,13px)}
  .goalPanel .goalActions button{min-height:44px}
 }
+
+
+/* Owner-approved Video Studio: ONE picture-based objective row, ONE 3x2 topic
+   selector and ONE real four-story Director. No duplicated goal input. */
+.srOnly{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);
+ white-space:nowrap}
+.goalPanel{display:grid;gap:0;min-width:0}
+.goalPanel .goalChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.goalPanel .goalChoices button{position:relative;display:flex;flex-direction:column;
+ justify-content:flex-start;align-items:stretch;gap:4px;min-width:0;min-height:128px;
+ padding:4px 4px 7px;overflow:hidden;border:1px solid #e0e5da;border-radius:12px;
+ background:#fffefa;color:#173c32;cursor:pointer;text-align:left}
+.goalPanel .goalChoices button[aria-pressed="true"]{border:2px solid #128568;
+ background:#f1faf4;box-shadow:0 0 0 1px #bce4d1}
+.categoryPoster{display:block;width:100%;height:auto;aspect-ratio:1.6;min-height:42px;
+ object-fit:cover;border-radius:8px}
+.categoryIcon{position:absolute;left:10px;top:13px;display:grid;place-items:center;
+ width:34px;height:34px;border-radius:50%;background:#fffef9ec;color:#08705a;
+ box-shadow:0 1px 5px #1637292c}
+.goalPanel .goalChoices button strong{font:750 11px/1.2 Arial,Helvetica,sans-serif;
+ overflow-wrap:anywhere;hyphens:auto}
+.categorySelected{position:absolute;right:5px;top:5px;display:grid;place-items:center;
+ width:22px;height:22px;background:#086a50;color:#fff;border-radius:50%}
+.topicPanel{display:grid;gap:8px;min-width:0}
+.topicHead{display:grid;grid-template-columns:minmax(0,1fr) minmax(140px,46%);
+ align-items:center;gap:8px;min-width:0}
+.topicHead h3{display:flex;align-items:center;gap:6px;font:800 17px/1.2 Arial,Helvetica,sans-serif;
+ letter-spacing:-.02em;color:#153f36;margin:0}
+.topicHead h3 svg{flex:none;color:#1c795d}
+.topicHead>button{display:flex;align-items:center;justify-content:center;
+ min-width:0;min-height:44px;gap:5px;padding:6px 8px;border:1px solid #d0e8d8;
+ border-radius:13px;background:#ecf7ef;color:#24614e;cursor:pointer;
+ font:650 10.5px/1.25 Arial,Helvetica,sans-serif;text-align:left}
+.topicHead>button svg{flex:none;width:15px;height:15px}
+.topicHead>button span{min-width:0}
+.topicInput{display:block;min-width:0}
+.topicInput input{display:block;width:100%;height:46px;min-width:0;max-width:100%;
+ border-radius:11px;border:1px solid #cbd8d3;background:#fff;
+ padding:10px 12px;color:#193e34;font:500 16px/1.25 system-ui,-apple-system,sans-serif}
+.popularHeading{margin:0;color:#385e4e;font:750 11.5px/1.2 Arial,Helvetica,sans-serif}
+.topicChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.topicChoices button{display:flex;align-items:center;justify-content:flex-start;
+ min-width:0;min-height:48px;gap:6px;padding:8px 7px;border:1px solid #dde4dc;
+ border-radius:11px;background:#fff;color:#20473b;cursor:pointer;
+ font:650 11px/1.22 Arial,Helvetica,sans-serif;text-align:left}
+.topicChoices button svg{width:19px;height:19px;flex:none;color:#1b735b}
+.topicChoices button span{min-width:0;overflow-wrap:anywhere;hyphens:auto}
+.topicChoices button[aria-pressed="true"]{border-color:#138164;
+ background:#eaf5ee;box-shadow:inset 0 0 0 1px #bde0cb}
+.topicChoices :is(button,input):focus-visible,.goalChoices button:focus-visible,
+.allScenes:focus-visible{outline:3px solid #c39b56;outline-offset:2px}
+.allScenes{display:inline-flex;align-items:center;gap:3px;justify-content:flex-end;
+ flex:none;min-height:40px;margin-left:auto;padding:5px 2px;
+ border:0;background:transparent;color:#206b50;cursor:pointer;
+ font:700 11px/1.15 Arial,Helvetica,sans-serif}
+.allScenes svg{flex:none}
+.storyboardDisclosure{min-width:0;margin:6px 0 7px;padding:0 2px;color:#325a47}
+.storyboardDisclosure>summary{display:flex;align-items:center;min-height:35px;cursor:pointer;
+ color:#2b7058;font:700 11px/1.2 Arial,Helvetica,sans-serif}
+.storyboardDisclosure[open]{padding:7px;border:1px solid #d9e8dc;border-radius:11px;
+ background:#f7faf6}
+@media(max-width:759px){
+ .goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .goalPanel .goalChoices button{min-height:116px;padding:3px 3px 6px;gap:3px}
+ .categoryPoster{aspect-ratio:1.4;min-height:38px;border-radius:7px}
+ .categoryIcon{left:6px;top:9px;width:31px;height:31px}
+ .categoryIcon svg{width:19px;height:19px}
+ .goalPanel .goalChoices button strong{font-size:clamp(9px,2.65vw,11px)}
+ .topicHead h3{font-size:clamp(14px,3.8vw,17px)}
+ .topicHead>button{font-size:clamp(9px,2.45vw,10.5px)}
+ .topicChoices{gap:6px}
+ .topicChoices button{font-size:clamp(9.8px,2.7vw,11px);min-height:48px;padding:6px 5px}
+ .topicChoices button svg{width:17px;height:17px}
+ .root{padding:9px 8px 10px;margin:0;border-radius:15px;background:#fffdfa}
+ .head{display:flex;align-items:center;gap:6px;min-width:0}
+ .head>div{min-width:0;flex:1}
+ .head svg{flex:none}
+ .head h3{font:800 clamp(13px,3.7vw,17px)/1.2 Arial,Helvetica,sans-serif}
+ .head p{display:none}
+ .result{border-top:0;padding-top:1px;margin-top:3px}
+ .result h4,.result>.meta,.result>div>.meta,.result .demoNote{display:none}
+ .result .variantsTitle{font-size:11px}
+ .result>div>.variantsTitle:first-of-type{display:none}
+ .storyChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:4px 0 3px}
+ .storyChoices button{min-height:0;padding:3px 3px 6px}
+ .storyPoster{aspect-ratio:1.45}
+ .storyChoices button strong{font-size:clamp(9px,2.5vw,11px)}
+ .storyChoices button small{font-size:clamp(9px,2.45vw,10px)}
+ .confirm{display:flex;justify-content:center;align-items:center;gap:9px;
+    min-height:57px;margin-top:7px;padding:9px 12px;border-radius:11px;
+    background:linear-gradient(105deg,#075b45,#087657);font-size:clamp(12px,3.3vw,15px);
+    line-height:1.22;text-align:center}
+ .confirm span{flex:1;max-width:360px}
+ .confirm svg{flex:none}
+ .appliedActions .create{min-height:48px}
+}
+@media(max-width:355px){
+ .topicHead{grid-template-columns:minmax(0,1fr) minmax(129px,45%);gap:5px}
+ .topicHead>button{padding:5px}
+ .topicHead>button svg:first-child{display:none}
+ .topicChoices button{gap:3px}
+ .topicChoices button svg{width:15px;height:15px}
+ .goalPanel .goalChoices button strong{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.goalPanel *,.topicPanel *{transition:none!important}}

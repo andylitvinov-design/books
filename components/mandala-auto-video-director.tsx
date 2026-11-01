@@ -2,7 +2,7 @@
 
 import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
@@ -26,6 +26,9 @@ type Props={
   clipLabel:(id:string)=>string;
   audioAttached?:boolean;audioTrackLabel?:string;onOpenAudio?:()=>void;
   onGoalChange:(value:string)=>void;
+  onCategoryChange?:(theme:VideoTheme)=>void;
+  onContinue?:()=>void;
+  onShowAll?:()=>void;
   onInvalidate?:()=>void;
   onApply:(presetId:string,durationSeconds:10|15|20|30|60,
     edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]})=>void|boolean;
@@ -33,8 +36,8 @@ type Props={
 };
 const copy={
  ru:{
-   title:"Auto Video Director",
-   intro:"Один общий запрос → четыре варианта сценария",
+   title:"3. Выберите ваш сценарий (4 варианта)",
+   intro:"Четыре варианта из проверенных видео по вашей цели",
    goalsTitle:"Что хотелось бы изменить?",
    placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
    suggest:"Подобрать сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
@@ -51,8 +54,8 @@ const copy={
    timeline:"Монтажная шкала",openMontage:"Открыть монтаж (необязательно)",montageHelp:"Измените порядок и длительность сцен, затем подтвердите сценарий.",reorder:"Порядок сцены",less:"Укоротить",more:"Удлинить",audioHint:"Музыка, голос и фразы настраиваются в существующих разделах видеостудии.",replaceScene:"Заменить клип",replacementHint:"Доступны только проверенные видео из каталога.",
  },
  en:{
-   title:"Auto Video Director",
-   intro:"One goal → four story options",
+   title:"3. Choose your story (4 options)",
+   intro:"Four licensed film options based on your goal",
    goalsTitle:"What would you like to change?",
    placeholder:"For example: I want less anxiety and more calm",
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
@@ -69,8 +72,8 @@ const copy={
    timeline:"Montage timeline",openMontage:"Open montage (optional)",montageHelp:"Adjust shot order and durations, then confirm the storyboard.",reorder:"Reorder shot",less:"Shorten",more:"Lengthen",audioHint:"Music, voice and captions remain in the existing studio sections.",replaceScene:"Replace clip",replacementHint:"Only licensed catalogue videos are available.",
  },
  es:{
-   title:"Auto Video Director",
-   intro:"Un objetivo → cuatro opciones de vídeo",
+   title:"3. Elige tu historia (4 opciones)",
+   intro:"Cuatro películas con licencia adaptadas a tu objetivo",
    goalsTitle:"¿Qué te gustaría cambiar?",
    placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
@@ -87,6 +90,33 @@ const copy={
    timeline:"Línea de montaje",openMontage:"Abrir montaje (opcional)",montageHelp:"Cambia el orden y la duración; después confirma el guion.",reorder:"Ordenar escena",less:"Acortar",more:"Alargar",audioHint:"Música, voz y frases se ajustan en las secciones actuales.",replaceScene:"Cambiar clip",replacementHint:"Solo están disponibles vídeos aprobados del catálogo.",
  }
 } as const;
+const videoGoalCategories=[
+ {id:"strength",theme:"energy",poster:"clear-morning",Icon:Zap,
+   label:{ru:"Поддержка силы",en:"Strength & energy",es:"Fuerza y energía"}},
+ {id:"calm",theme:"health",poster:"gentle-falls",Icon:Leaf,
+   label:{ru:"Антистресс и расслабление",en:"Stress relief & calm",es:"Calma y descanso"}},
+ {id:"love",theme:"relationships",poster:"partners",Icon:Heart,
+   label:{ru:"Гармония и любовь",en:"Harmony & love",es:"Armonía y amor"}},
+ {id:"possibilities",theme:"money",poster:"wealth-sunrise",Icon:Coins,
+   label:{ru:"Деньги и возможности",en:"Money & opportunities",es:"Dinero y oportunidades"}}
+] as const;
+const popularTopicOrder={
+ strength:["confidence","connection","fresh-start","stability","calm","vitality"],
+ calm:["calm","vitality","confidence","fresh-start","connection","stability"],
+ love:["connection","fresh-start","confidence","calm","stability","vitality"],
+ possibilities:["stability","confidence","vitality","fresh-start","connection","calm"]
+} as const;
+const popularTopicCopy={
+ ru:{confidence:"Обрести уверенность",connection:"Больше близости",
+   "fresh-start":"Начать новый этап",stability:"Опора в работе",
+   calm:"Спокойствие и сон",vitality:"Энергия и сила"},
+ en:{confidence:"Build confidence",connection:"More closeness",
+   "fresh-start":"Start a new chapter",stability:"Support at work",
+   calm:"Calm and sleep",vitality:"Energy and strength"},
+ es:{confidence:"Ganar confianza",connection:"Más cercanía",
+   "fresh-start":"Empezar nueva etapa",stability:"Apoyo en el trabajo",
+   calm:"Calma y sueño",vitality:"Energía y fuerza"}
+} as const;
 const allowedDurations=[10,15,20,30,60] as const;
 const allThemes=["energy","money","relationships","goals","life","health"] as const;
 const themeLabels={
@@ -97,18 +127,19 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
+ audioAttached=false,audioTrackLabel="",onOpenAudio,onGoalChange,onCategoryChange,onContinue,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
  const [proposal,setProposal]=useState<ReturnType<typeof recommendAutoVideo>|null>(()=>
-   recommendAutoVideo({goal:goal.trim()||AUTO_VIDEO_GOALS.find(item=>item.id==="connection")?.labels[locale]||"",
-     goalId:goal.trim()?null:"connection",locale,fallbackTheme:theme,presets,scenes}));
+   recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
  const [proposalContext,setProposalContext]=useState<{goal:string;theme:VideoTheme}|null>({goal,theme});
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
- const [selectedGoalId,setSelectedGoalId]=useState<string|null>(goal.trim()?null:"connection");
+ const [selectedGoalId,setSelectedGoalId]=useState<string|null>(null);
+ const [selectedCategoryId,setSelectedCategoryId]=useState<keyof typeof popularTopicOrder>("strength");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
+ const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [timelineEdits,setTimelineEdits]=useState<{
@@ -117,6 +148,7 @@ export function MandalaAutoVideoDirector({
  const [confirmedTimelineKey,setConfirmedTimelineKey]=useState<string|null>(null);
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
+   setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
  },[]);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
@@ -138,6 +170,7 @@ export function MandalaAutoVideoDirector({
    captions:readonly string[]=stageCaptions)=>{
    if(!chosen)return;
    onInvalidate?.(); // An edited cut must not leave a stale downloadable movie.
+   setConfirmedTimelineKey(null);
    setTimelineEdits({presetId:chosen.id,totalSeconds:length,
      clipIds:[...clipIds],durations:[...durations],captions:[...captions]});
  };
@@ -170,72 +203,126 @@ export function MandalaAutoVideoDirector({
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
-   // The selected ready goal also becomes the editable shared wish.
-   // No test result or private objective is sent outside this component.
-   const nextGoal=AUTO_VIDEO_GOALS.find(item=>item.id===goalId)?.labels[locale]||"";
+   const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
+   if(!item)return;
+   onInvalidate?.();
+   // All six suggestions write to the ONE shared wish and update real scene theme.
+   const nextGoal=popularTopicCopy[locale][goalId as keyof typeof popularTopicCopy.ru]||item.labels[locale];
+   const categoryId=goalId==="connection"?"love":goalId==="calm"?"calm":
+     goalId==="stability"?"possibilities":"strength";
+   const nextTheme=videoGoalCategories.find(entry=>entry.id===categoryId)!.theme;
    onGoalChange(nextGoal);
-   setProposalContext({goal:nextGoal,theme});
+   onCategoryChange?.(nextTheme);
+   setSelectedCategoryId(categoryId);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
    setSelectedGoalId(goalId);
-   setOverrideId(null);setSeconds(null);setTimelineEdits(null);
-   setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,fallbackTheme:theme,presets,scenes}));
+   setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,
+     fallbackTheme:nextTheme,presets,scenes}));
  };
- const primaryGoalIds=new Set(["confidence","connection","fresh-start","stability"]);
- const renderGoal=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
+ const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
+   if(disabled)return;
+   onInvalidate?.();
+   onCategoryChange?.(nextTheme);
+   setSelectedCategoryId(categoryId);
+   setSelectedGoalId(null);setOverrideId(null);setSeconds(null);
+   setTimelineEdits(null);setConfirmedTimelineKey(null);
+   setProposalContext({goal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
+     preferredTheme:nextTheme,presets,scenes}));
+ };
+ const renderTopic=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
    const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
-     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:Sparkles;
+     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:
+     item.id==="calm"?Moon:Star;
    return <button key={item.id} type="button" data-auto-video-goal={item.id}
-       aria-pressed={showProposal&&selectedGoalId===item.id}
+       aria-pressed={selectedGoalId===item.id}
        disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
-       <Icon size={17} aria-hidden="true"/>{item.labels[locale]}
+       <Icon size={18} aria-hidden="true"/><span>{
+         popularTopicCopy[locale][item.id as keyof typeof popularTopicCopy.ru]||item.labels[locale]
+       }</span>
      </button>;
  };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
-   <p className={css.goalsTitle}>{t.goalsTitle}</p>
-   <div className={css.goalChoices} role="group" aria-label={t.goalsTitle}>
-     {AUTO_VIDEO_GOALS.filter(item=>primaryGoalIds.has(item.id)).map(renderGoal)}
+   <div className={css.goalChoices} role="group" aria-label={
+     locale==="ru"?"Выберите цель видео":locale==="es"?"Elige tu objetivo":"Choose your video goal"}>
+     {videoGoalCategories.map(item=><button type="button" key={item.id}
+       data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
+       aria-pressed={selectedCategoryId===item.id} disabled={disabled}
+       onClick={()=>chooseCategory(item.theme,item.id)}>
+       {scenePoster(item.poster)?<img src={scenePoster(item.poster)!}
+         className={css.categoryPoster} alt="" loading="lazy"/>:null}
+       <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
+       <strong>{item.label[locale]}</strong>
+       {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+         <Check size={15} strokeWidth={3}/></span>:null}
+     </button>)}
    </div>
-   <details className={css.extraGoals} data-auto-video-more-goals>
-     <summary>{t.moreGoals}</summary>
-     <div className={css.goalChoices}>
-       {AUTO_VIDEO_GOALS.filter(item=>!primaryGoalIds.has(item.id)).map(renderGoal)}
-     </div>
-   </details>
-   <div className={css.entry}>
-     <label className={css.goal}><span className={css.notice}>{t.input}</span>
-       <input type="text" data-auto-video-input value={goal}
-         maxLength={160} disabled={disabled} placeholder={t.placeholder}
-         onChange={event=>{
-           onGoalChange(event.currentTarget.value);
-           setProposal(null);setProposalContext(null);setOverrideId(null);setSeconds(null);
-           setSelectedGoalId(null);setTimelineEdits(null);
-         }}/>
-     </label>
-     <div className={css.goalActions}>
-       <button type="button" data-auto-video-suggest disabled={disabled||!goal.trim()}
-         onClick={choose}><Sparkles size={16} aria-hidden="true"/>{t.suggest}</button>
-       <button type="button" className={css.clarifyButton} data-auto-video-clarify
-         disabled={disabled} aria-expanded={refineOpen}
-         onClick={()=>setRefineOpen(open=>!open)}>
-         <Target size={16} aria-hidden="true"/>{t.clarify}
-       </button>
-     </div>
+ </div>;
+ const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
+   <div className={css.topicHead}>
+     <h3><Leaf size={19} aria-hidden="true"/>
+       {locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}</h3>
+     <button type="button" data-auto-video-clarify
+       disabled={disabled} aria-expanded={refineOpen}
+       onClick={()=>setRefineOpen(open=>!open)}>
+       <Sparkles size={16} aria-hidden="true"/>
+       <span>{locale==="ru"?"Я помогу: разберём проблему и определим запрос. Free.":
+         locale==="es"?"Te ayudo a aclarar tu petición. Gratis.":
+         "I'll help clarify your situation and goal. Free."}</span>
+       <ArrowRight size={16} aria-hidden="true"/>
+     </button>
+   </div>
+   <label className={css.topicInput}>
+     <span className={css.srOnly}>{t.input}</span>
+     <input type="text" data-auto-video-input value={goal}
+       maxLength={160} disabled={disabled} placeholder={t.placeholder}
+       onChange={event=>{
+         const value=event.currentTarget.value;
+         onInvalidate?.();onGoalChange(value);
+         setProposalContext({goal:value,theme});
+         setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
+         setOverrideId(null);setSeconds(null);setSelectedGoalId(null);
+         setTimelineEdits(null);setConfirmedTimelineKey(null);
+       }}/>
+   </label>
+   <p className={css.popularHeading}>
+     {locale==="ru"?"Популярные темы — выберите или напишите свою":
+       locale==="es"?"Temas populares: elige o escribe el tuyo":
+       "Popular topics — choose one or write your own"}
+   </p>
+   <div className={css.topicChoices} role="group" aria-label={
+      locale==="ru"?"Популярные темы":locale==="es"?"Temas populares":"Popular topics"}>
+     {popularTopicOrder[selectedCategoryId].map(id=>{
+       const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
+       return item?renderTopic(item):null;
+     })}
    </div>
    {refineOpen?<div className={css.refinePanel} data-auto-video-refine-panel>
      <label htmlFor="auto-video-refine">{t.refine}</label>
      <textarea id="auto-video-refine" rows={2} maxLength={120}
        disabled={disabled} value={refineText} onChange={event=>setRefineText(event.currentTarget.value)}/>
      <button type="button" disabled={disabled||!refineText.trim()} onClick={()=>{
-       onGoalChange([goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160));
-       setProposal(null);setProposalContext(null);setSelectedGoalId(null);setRefineOpen(false);
-       setTimelineEdits(null);
+       const next=[goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160);
+       onInvalidate?.();onGoalChange(next);
+       setProposal(recommendAutoVideo({goal:next,locale,fallbackTheme:theme,presets,scenes}));
+       setProposalContext({goal:next,theme});
+       setSelectedGoalId(null);setOverrideId(null);setRefineOpen(false);setRefineText("");
+       setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}>{t.addRefine}<ArrowRight size={15} aria-hidden="true"/></button>
    </div>:null}
  </div>;
  return <section className={css.root} data-auto-video-director aria-labelledby="auto-video-heading">
    <div className={css.head}><Sparkles size={22} aria-hidden="true"/>
      <div><h3 id="auto-video-heading">{t.title}</h3><p>{t.intro}</p></div>
+     {onShowAll?<button type="button" className={css.allScenes}
+       data-auto-video-all-scenes onClick={onShowAll}>
+       {locale==="ru"?"Все сценарии":locale==="es"?"Todas las escenas":"All stories"}
+       <ArrowRight size={16} aria-hidden="true"/>
+     </button>:null}
    </div>
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
+   {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
      {!goal.trim()?<p className={css.demoNote} data-auto-video-preview-example>
        {locale==="ru"?"Пример сценария · выберите тему или напишите цель":locale==="es"
@@ -248,14 +335,14 @@ export function MandalaAutoVideoDirector({
        <p className={css.meta} data-auto-video-matched-theme>{t.topic}: {themeLabels[locale][proposal.theme as VideoTheme]}</p>
        {proposal.confidence==="low"||proposal.confidence==="medium"?<p className={css.warning}>{t.uncertain}</p>:null}
        {proposal.requiresNewAiFootage?<p className={css.warning}>{t.warning}</p>:null}
-       <p className={css.variantsTitle}>{t.variants}</p>
        <div className={css.storyChoices} role="group" aria-label={t.variants} data-auto-video-story-options>
          {alternatives.map((id,index)=>{
            const option=presets.find(item=>item.id===id);
            return option?<button key={id} type="button" data-auto-video-option={id}
              aria-pressed={chosen.id===id} disabled={disabled}
              onClick={()=>{if(chosen?.id!==id)onInvalidate?.();
-               setOverrideId(id===proposal.presetId?null:id);setTimelineEdits(null);}}>
+               setOverrideId(id===proposal.presetId?null:id);setTimelineEdits(null);
+               setConfirmedTimelineKey(null);}}>
              {scenePoster(option.clips[0])?<img src={scenePoster(option.clips[0])!}
                alt="" loading="lazy" className={css.storyPoster}/>:null}
              <span className={css.storyNumber}>{index+1}. {chosen.id===id?<Check size={15} aria-hidden="true"/>:null}</span>
@@ -264,6 +351,9 @@ export function MandalaAutoVideoDirector({
            </button>:null;
          })}
        </div>
+       <details className={css.storyboardDisclosure} data-auto-video-storyboard-details>
+         <summary>{locale==="ru"?"Предпросмотр 4 кадров и настройки монтажа":
+           locale==="es"?"Ver las 4 escenas y editar":"Preview 4 shots and edit"}</summary>
        <p className={css.variantsTitle}>{t.storyboard}</p>
        <ol className={css.shots} data-auto-video-storyboard>
          {stageClipIds.map((clip,index)=>{
@@ -363,6 +453,8 @@ export function MandalaAutoVideoDirector({
              aria-pressed={proposal.theme===value}
              onClick={()=>{
                onInvalidate?.();setOverrideId(null);setTimelineEdits(null);
+               setConfirmedTimelineKey(null);
+               setProposalContext({goal,theme});
                setProposal(recommendAutoVideo({goal,goalId:selectedGoalId,locale,fallbackTheme:theme,presets,scenes,
                  preferredTheme:value}));
              }}>{themeLabels[locale][value]}</button>)}
@@ -370,17 +462,25 @@ export function MandalaAutoVideoDirector({
          <div className={css.adjust}><span>{t.duration}:</span>
            {allowedDurations.map(n=><button type="button" key={n} disabled={disabled}
              aria-pressed={length===n} onClick={()=>{if(length!==n)onInvalidate?.();
-               setSeconds(n);setTimelineEdits(null);}}>{n} s</button>)}
+               setSeconds(n);setTimelineEdits(null);setConfirmedTimelineKey(null);}}>{n} s</button>)}
          </div>
+       </details>
        </details>
        <button type="button" data-auto-video-confirm className={css.confirm}
          disabled={disabled} onClick={()=>{
            const accepted=onApply(chosen.id,length as 10|15|20|30|60,{
              clipIds:stageClipIds,durationSecondsByStage:stageDurations,
              excludedMotifs:proposal.excludedMotifs,captionTexts:stageCaptions});
-           if(accepted!==false)setConfirmedTimelineKey(timelineKey);
+           if(accepted!==false){
+             setConfirmedTimelineKey(timelineKey);
+             onContinue?.(); // Changes only the active existing workspace.
+           }
          }}>
-         <Check size={18} aria-hidden="true"/> {t.accept}
+         <Heart size={19} aria-hidden="true"/>
+         <span>{locale==="ru"?"Подобрать слова поддержки, настроить аудиогид":
+           locale==="es"?"Elegir frases de apoyo y configurar el audio":
+           "Choose supportive phrases & set up audio guidance"}</span>
+         <ArrowRight size={18} aria-hidden="true"/>
        </button>
        {activePresetId===chosen.id&&confirmedTimelineKey===timelineKey?<div className={css.appliedActions}>
          <p className={css.notice} role="status">{t.applied}</p>
