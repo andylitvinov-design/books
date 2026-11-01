@@ -18,6 +18,9 @@ import { getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-
 import { loopbackHeaders, loopbackLocation } from './ia-v2-loopback-proxy.mjs'
 assert.equal(process.env.CI, 'true', 'Only isolated CI execution is supported')
 assert.equal(process.argv.length, 2, 'No runtime URL or live mode is accepted')
+// Only the trusted, exact-merge Messenger CI selector can request a private IA lane.
+// The default/manual path retains every original public navigation matrix.
+const messengerOnly=process.env.HH_IA_MESSENGER_ONLY==='true'
 const exec = promisify(execFile)
 const origin = 'https://127.0.0.1:3444', apiOrigin = 'https://127.0.0.1:4443'
 const evidence = '/tmp/ia222-evidence'
@@ -373,6 +376,7 @@ try {
   pass('TLS proxy preserves negative same-origin checks and establishes only secure host-bound sessions')
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
+  if (!messengerOnly) {
   assert.equal((await go(page, '/')).status(), 200)
   assert.equal(await page.locator('html').getAttribute('lang'), 'en')
   for (const locale of ['en', 'ru', 'es']) {
@@ -425,6 +429,18 @@ try {
   pass('Old public routes remain available; localized Library sitemap and exact entry privacy headers')
   const inventory = await exec(process.execPath, ['scripts/verify-homeopathy-routes.mjs', origin])
   pass('All original remedy/book routes: ' + inventory.stdout.trim())
+  } else {
+    // Public navigation/layout acceptance is owned by separate public-service QA.
+    // Keep real private entry headers on every locale and all owner/client
+    // encryption, origin, access isolation, rotation and WebKit checks below.
+    for(const path of ['/en/client','/ru/client','/es/client']){
+      const response=await publicContext.request.get(origin+path)
+      assert.match(response.headers()['cache-control'],/no-store/,path)
+      assert.match(response.headers()['x-robots-tag'],/noindex/,path)
+      assert.equal(response.headers()['referrer-policy'],'no-referrer',path)
+    }
+    pass('Messenger-only: EN/RU/ES private no-store/noindex headers; public menu matrices deferred to public QA')
+  }
   const owner = await browser.newContext(common)
   await owner.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
   const admin = await owner.newPage()
@@ -592,8 +608,10 @@ try {
   secondBrowser = await webkit.launch()
   const safari = await secondBrowser.newContext({ ...common, viewport: { width: 390, height: 844 } }), sp = await safari.newPage()
   sp.on('pageerror', error => errors.push(error.message))
-  await verifyPublicHeaderMatrix(sp, 'webkit')
-  await verifyPublicDiscoveryNavigation(sp, 'webkit')
+  if(!messengerOnly){
+    await verifyPublicHeaderMatrix(sp, 'webkit')
+    await verifyPublicDiscoveryNavigation(sp, 'webkit')
+  }
   await safari.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
   await go(sp, `/admin/documents/${previewId}/session-preview?locale=ru`)
   await expect(sp.getByRole('heading', { name: 'Гомеопатическая рекомендация' })).toBeVisible()
@@ -601,12 +619,15 @@ try {
   assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'WebKit 390px report must not overflow')
   await sp.screenshot({ path: `${evidence}/report-premium-mobile-ru-webkit.png`, fullPage: false })
   pass('WebKit 390px: secure original report viewer remains readable with exactly two measurements')
-  await go(sp, '/ru/library')
-  await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="house"]')).toBeVisible()
-  assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
-  await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
+  if(!messengerOnly){
+    await go(sp, '/ru/library')
+    await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="house"]')).toBeVisible()
+    assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
+    await sp.screenshot({ path: `${evidence}/library-ru-webkit.png`, fullPage: true })
+    pass('WebKit narrow navigation')
+  }
   assert.deepEqual(errors, [])
-  pass('WebKit narrow navigation and no public JavaScript errors')
+  pass('No public or private browser JavaScript errors')
   results.push({ status: 'BLOCKED', message: 'Deployed Preview/Production private-storage configuration and real-data isolation are not inspected by this synthetic harness.' })
 } catch (error) {
   results.push({ status: 'FAIL', message: sanitize(error.message) })
