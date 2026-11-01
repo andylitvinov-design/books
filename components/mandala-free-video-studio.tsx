@@ -1641,6 +1641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
   const [therapyJumpRequested,setTherapyJumpRequested] = useState(false);
   const [scores,setScores] = useState<Record<(typeof checkOrder)[number],number>>({energy:5,money:5,relationships:5,goals:5});
@@ -1849,8 +1850,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
   const audioTheme=audioThemeOverride||theme;
-  // Four actual, distinct first-party files accompany each selected film
-  // scenario. Keep the existing 22 composed melodies as safe fallbacks.
+  // The existing 48 scenario packs each provide four original, distinct tracks.
+  // Preserve the canonical scenario/classical collection in this compact UI.
   const scenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
   const matchingScenarioTracks=scenarioTracks.filter(track=>
     (audioKind==="all"||audioKind===track.kind)&&
@@ -2706,10 +2707,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     stopMovieSound();setPreviewPlaying(false);
   };
-  /** Auto Video Director chooses and attaches the first actual music file.
-   * Respect explicit manual music/silence and the visitor's local audio.
-   * Preview still requires Play; selection never autoplays a device speaker.
-   */
+  /** Attach one of the scenario's real music files only with visitor auto-music enabled.
+   * Manual silence/recordings take precedence and music preview never autoplays. */
   const selectScenarioMusic=(presetId:string)=>{
     if(!audioAuto||uploadedAudio||micRecording)return;
     const track=scenarioAudioTracks(presetId)[0];
@@ -3240,7 +3239,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
-      <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations}
+      <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations} requestText={wish}
         onChange={setAffirmations} disabled={recording||preparing}
         scenes={hypnoScenes} activeScene={theme==="money"?(moneyScene||"golden-rain"):otherScene}
         activePoster={activeFilm?.poster||null} onSelectTheme={selectCategory}
@@ -3249,7 +3248,63 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if(theme==="money")setMoneyScene(id as MoneySceneId);
           else setOtherScene(id as LocalSceneId);
           setPreviewPlaying(false);
-        }} onPreview={openAffirmationPreview} onCreate={startFromHero}/>
+        }} onPreview={openAffirmationPreview} onCreate={startFromHero}>
+      <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
+        <div className={videoStyles.phraseAudioHeading}>
+          <span><Mic size={23} aria-hidden="true"/></span>
+          <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
+            <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
+        </div>
+        <p className={videoStyles.phraseVoiceNotice}>{attachedAudio?.kind==="file"
+          ?locale==="ru"?"Ваша запись прикреплена. В итоговое видео входит одна выбранная звуковая дорожка.":locale==="es"?"Tu grabación está adjunta; se exporta una pista de audio.":"Your recording is attached; the video exports one audio track."
+          :locale==="ru"?"Готовые AI-голоса пока не подключены к экспорту. Можно записать свой голос или загрузить разрешённую аудиозапись.":locale==="es"?"Las voces de IA aún no se exportan. Puedes grabar o subir tu propia voz.":"AI voice presets are not yet export-ready. You can record or upload your own voice."}</p>
+        <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
+          onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
+            document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
+          <AudioLines size={20} aria-hidden="true"/>
+          {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
+          <ChevronDown size={18} aria-hidden="true"/>
+        </button>
+      </section>
+      <section className={videoStyles.phraseMusicSection} data-hypno-music>
+        <div className={videoStyles.phraseAudioHeading}>
+          <span><Music2 size={23} aria-hidden="true"/></span>
+          <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
+            <p>{locale==="ru"?"Выберите и прослушайте мелодии; отметка добавит их в видео.":locale==="es"?"Escucha y marca las pistas para incluirlas en el vídeo.":"Preview and tick a track to include it in the video."}</p></div>
+        </div>
+        <div className={videoStyles.phraseMusicList} role="group"
+          aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>
+          {featuredMelodies.slice(0,3).map(track=>{
+            const id=track.id as PresetId;
+            const checked=attachedPresetIds.includes(id);
+            const listening=samplePreviewId===id&&soundPreview;
+            return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
+              <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
+                aria-pressed={checked} disabled={recording||preparing||micRecording}
+                onClick={()=>toggleQuickMusic(id)}>
+                <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
+                <span>{track.name[locale]}</span>
+              </button>
+              <button type="button" className={videoStyles.phraseMusicPlay}
+                data-phrase-music-play={id} aria-pressed={listening}
+                aria-label={(listening?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                disabled={recording||preparing||micRecording}
+                onClick={()=>playQuickTrack(id)}>{listening
+                  ?<Pause size={20} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}</button>
+            </div>;
+          })}
+        </div>
+        <p className={videoStyles.phraseMusicStatus} aria-live="polite">
+          {attachedPresetIds.length?locale==="ru"?"Музыка добавлена к видео":locale==="es"?"Música añadida al vídeo":"Music attached to video"
+            :locale==="ru"?"Музыка не выбрана":locale==="es"?"No has elegido música":"No music selected"}
+        </p>
+      </section>
+      <details id="phrase-audio-settings" className={videoStyles.phraseAudioSettings}
+        open={phraseAudioExpanded} onToggle={event=>setPhraseAudioExpanded(event.currentTarget.open)}>
+        <summary>{locale==="ru"?"Запись голоса и расширенные аудионастройки":locale==="es"?"Grabación de voz y audio avanzado":"Voice recording and advanced audio"}<ChevronDown size={18} aria-hidden="true"/></summary>
+        {activeWorkspace==="phrases" ? deepAudioPane : null}
+      </details>
+      </MandalaHypnoCompact>
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
         <summary>{ui.wishTitle}</summary>
       <section className={videoStyles.wishPanel} data-video-intent aria-labelledby="video-wish-heading">
@@ -3840,24 +3895,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-labelledby="quick-phrases-heading">
-        <div className={videoStyles.quickSectionHeading}>
-          <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Установки и поддерживающие фразы":locale==="es"?"Frases de apoyo":"Supportive affirmations"}</h3>
-          <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
-            onClick={()=>openQuickDetailed("video-hypnosis")}><Sparkles size={15} aria-hidden="true"/>
-            {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
-        </div>
-        <div className={videoStyles.quickPhraseRail} role="group" aria-label={locale==="ru"?"Фразы по теме":locale==="es"?"Frases por tema":"Phrases by theme"}>
-          {quickSupportPhrases[locale][theme].map((phrase,index)=><button type="button" key={phrase}
-            data-video-quick-affirmation={index}
-            aria-pressed={affirmations.enabled&&affirmations.custom.trim()===phrase}
-            disabled={recording||preparing} onClick={()=>{
-              setAffirmations(current=>({...current,enabled:true,selected:[],custom:phrase,visibility:["large"]}));
-              setPreviewPlaying(false);
-            }}><span aria-hidden="true">“</span>{phrase}</button>)}
-        </div>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
         {deepHypnoPane}
-
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
