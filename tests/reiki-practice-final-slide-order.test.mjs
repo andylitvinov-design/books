@@ -15,8 +15,8 @@ const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 64, 'the duplicate first-lesson save screen is retired while original intros stay')
-  assert.deepEqual(ranges.map(({ count }) => count), [7, 15, 17, 15, 7])
+  assert.equal(sequence.length, 68, 'the duplicate first-lesson save screen is retired while original intros stay')
+  assert.deepEqual(ranges.map(({ count }) => count), [8, 16, 18, 16, 7])
 
   const endings = [
     { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
