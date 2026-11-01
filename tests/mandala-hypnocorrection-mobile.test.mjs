@@ -55,7 +55,7 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
-  assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,4);
+  assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw the real hypno overlay");
   for(const name of ['"phrases"','"audio"','"visual"','"meditation"'])assert.ok(ui.includes(name));
   for(const name of ["25-й кадр","Бинауральные ритмы","Импульс энергии и света",
     "Быстрая настройка с Wave","Сгенерировать медитацию"])assert.ok(ui.includes(name));
