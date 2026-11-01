@@ -20,7 +20,7 @@ const COPY={
     replyWebsite:'Reply in the protected client cabinet',openCase:'Full request',manual:'Open WhatsApp to reply',
     email:'Reply by email',unavailable:'Website requests could not be loaded.',crmUnavailable:'Connected messenger conversations could not be loaded.',
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
-    more:'More conversations',other:'Other requests',portal:'Private website conversations'},
+    more:'More conversations',other:'Other requests',portal:'Private website conversations',previewNeedsReply:'Open the conversation to reply',previewHistory:'Open message history'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
     tabs:'Разделы сообщений',chats:'Переписка',requestsTab:'Заявки',emptyChats:'Пока нет переписок.',emptyRequests:'Пока нет заявок.',noMatches:'Ничего не найдено.',
     choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
@@ -29,7 +29,7 @@ const COPY={
     replyWebsite:'Ответить в защищённом кабинете',openCase:'Вся заявка',manual:'Ответить через WhatsApp',
     email:'Ответить по email',unavailable:'Не удалось загрузить заявки сайта.',crmUnavailable:'Не удалось загрузить переписки подключённых мессенджеров.',
     offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
-    more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
+    more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте',previewNeedsReply:'Откройте переписку, чтобы ответить',previewHistory:'Открыть историю сообщений'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
     tabs:'Carpetas de mensajes',chats:'Recibidos',requestsTab:'Solicitudes',emptyChats:'Aún no hay conversaciones.',emptyRequests:'Aún no hay solicitudes.',noMatches:'No se encontraron personas.',
     choose:'Elige una persona para abrir la conversación',back:'Volver',card:'Ficha',refresh:'Actualizar',loading:'Cargando conversaciones…',
@@ -38,7 +38,7 @@ const COPY={
     replyWebsite:'Responder en el portal privado',openCase:'Solicitud completa',manual:'Responder por WhatsApp',
     email:'Responder por correo',unavailable:'No se pudieron cargar las solicitudes web.',crmUnavailable:'No se pudieron cargar las conversaciones de mensajería conectadas.',
     offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
-    more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio'},
+    more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio',previewNeedsReply:'Abre el chat para responder',previewHistory:'Abrir historial de mensajes'},
 }
 const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Messenger'}
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
@@ -129,12 +129,12 @@ export default function MessagesSimpleInbox({
       key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
       source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
-      preview:item.needsReply?t.waiting:channelNames[item.channel]||item.channel,
+      preview:item.needsReply?t.previewNeedsReply:t.previewHistory,
     }))
     const portal=directThreads.map(item=>({
       key:'direct:'+item.id,kind:'direct',id:item.id,peerMasterSlug:item.peerMasterSlug||'',name:item.peerName||t.portal,
       source:t.direct,unread:Number(item.unread)||0,needsReply:(Number(item.unread)||0)>0,
-      at:item.updatedAt,preview:t.portal,
+      at:item.updatedAt,preview:t.previewHistory,
     }))
     const incoming=requests.filter(item=>validId(item.id)).map(item=>({
       key:'request:'+item.id,kind:'request',id:item.id,item,
