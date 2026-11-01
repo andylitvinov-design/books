@@ -3299,7 +3299,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             firstVideoRequestRef.current=false;
           }}/>
         <MandalaAutoVideoDirector
-          locale={locale} goal={wish} theme={theme} presets={FREE_FILM_PRESETS}
+          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
           scenes={FREE_FILM_CATALOG}
           disabled={recording||preparing}
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
