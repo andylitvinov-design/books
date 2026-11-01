@@ -14,6 +14,7 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 import { MandalaGuidedCourse } from "./mandala-guided-course";
 import { MandalaCinematicDirector } from "./mandala-cinematic-director";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
+import { MandalaVideoDirectorChat } from "./mandala-video-director-chat";
 import { MandalaFirstVideoStart } from "./mandala-first-video-start";
 import { MandalaStoriesCharacters } from "./mandala-stories-characters";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
@@ -3054,26 +3055,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
         locale==="es"?"Aún se están cargando los cuatro vídeos.":
         "Four original videos are still loading.");
-      return;
+      return false;
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       // Audio controls are inside the collapsed advanced editor.
       // Reveal the real attach action instead of scrolling to hidden content.
       openQuickDetailed("video-audio");
-      return;
+      return false;
     }
     if(uploadedAudio&&!audioRights){
       setNotice(ui.audioRightsHelp);
       openQuickDetailed("video-audio");
-      return;
+      return false;
     }
     if(activeFilm&&!premiumReady){
       primeNativeMasterFromUserGesture();
       setNotice(quick.loading);
-      return;
+      return false;
     }
     startFromHero();
+    return true;
   };
 
   const deepAudioPane = (
@@ -3583,6 +3585,54 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Sparkles size={18} aria-hidden="true"/>{quick.smart}
           </button>
         </header>
+        {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
+            Visual styling reuses the approved Messenger pattern without importing CRM data. */}
+        <MandalaVideoDirectorChat
+          locale={locale} goal={wish} theme={theme}
+          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          renderOptions={{quality,brightness,volumePercent:soundVolume}}
+          disabled={recording||preparing} canCreate={canGenerate}
+          rendering={recording||preparing} renderProgress={progress}
+          resultReady={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready")}
+          resultFailed={Boolean(exportUnavailable||(result&&playbackStatus==="failed"))}
+          onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
+          onConfirm={({scenario})=>{
+            // The ONLY executable boundary: one validated scenario -> existing
+            // MP4 timeline, audio selection, on-screen text, Canvas and MediaRecorder.
+            // An AI string never becomes a guessed media URL or paid render.
+            if(uploadedAudio||attachedAudio?.kind==="file"){
+              setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
+                :locale==="es"?"Configura primero la voz añadida en el panel de audio."
+                :"Please review your existing voice recording in the audio settings first.");
+              return false;
+            }
+            if(!scenario.readyToExecute||scenario.version!=="hh-executable-video-scenario-v1")
+              return false;
+            const ok=applyAutoFilm(scenario.presetId,
+              scenario.durationSeconds as 10|15|20|30|60,
+              scenario.edit,scenario.aspect as Aspect);
+            if(!ok)return false;
+            const soundtrack=scenario.audio.trackId as AmbientMusic;
+            chooseMusic(soundtrack);
+            setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
+            setAudioAuto(false);setSpeed(scenario.rendering.motion as Speed);
+            setSoundVolume(scenario.audio.volumePercent);
+            setQuality(scenario.rendering.quality as Quality);
+            setBrightness(scenario.rendering.brightness as Brightness);
+            // Stage captions come from scenario.shots in the verified film
+            // plan. Disable the other two overlay tracks to avoid duplicate
+            // affirmations or text unrelated to the user's approved cut.
+            setCaptionMode("none");
+            setAffirmations(current=>({...current,enabled:false,selected:[]}));
+            setPreviewPlaying(false);
+            return true;
+          }}
+          onCreate={createQuickVideo}
+          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
+          onOpenEditor={()=>openQuickDetailed("video-settings")}
+          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
+          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
         <div className={videoStyles.quickBenefits} aria-label={approvedMobileCopy[locale].introTitle}>
           {approved.benefits.map((benefit,index)=>{
             const Icon=[Sparkles,Heart,Leaf,Music2][index];
@@ -4016,7 +4066,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ?(locale==="ru"?"Не прикреплён":locale==="es"?"Sin adjuntar":"Not attached")
             :appliedAudioName}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
-          onGoalChange={next=>{setWish(next.slice(0,160));setSuggestion("");setCinematicPlan(null);}}
+          onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
           canCreate={canGenerate} rendering={recording||preparing}/>
