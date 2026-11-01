@@ -22,3 +22,6 @@ The toolbar in iOS Safari or an in-app browser is outside webpage DOM/CSS. Websi
 5. Do not treat screenshot B's native Safari browser toolbar as a web app layout error.
 
 No API, RLS, CRM schema, auth, credentials, payment, provider or client-data changes in this patch.
+
+## Additional verified Reiki filter root cause
+The mobile Reiki filter forcibly switched `.bottomNav` from `fixed` to `static`, which physically moved the menu away from the viewport bottom. Its filter now reserves bottom scroll padding instead; rendered Chromium/WebKit test requires fixed positioning, a visible-viewport bottom match, and a reachable Apply action. Other open six-tab AI changes (#2974/#2975) must preserve this fix when they merge. #2940 owns the separate protected Practice shared dock; its `workspace.css` edits overlap and require reconciliation.
