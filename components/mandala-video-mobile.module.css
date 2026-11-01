@@ -2162,3 +2162,31 @@
 
 /* Keep horizontally scrolling scene rails inside the mobile editor grid. */
 .quickBuilder,.sceneLibrary,.sceneLibrary [data-free-film-compilation-catalog]{grid-template-columns:minmax(0,1fr)}
+/* 39 first-party soundtracks; preserve the canonical one-player audio rail. */
+.audioTrackRow[data-audio-kind="melody"] .audioTileGlyph{background:#f2e5de;color:#885442}
+.audioTrackRow[data-audio-id="soft-piano"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="kalimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="harp"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="flute"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="celesta"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="strings"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="marimba"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/golden-harvest.jpg')}
+.audioTrackRow[data-audio-id="lullaby"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="handpan"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="forest"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/fern-awakening.jpg')}
+.audioTrackRow[data-audio-id="stream"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mossy-stream.jpg')}
+.audioTrackRow[data-audio-id="waterfall"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/gentle-falls.jpg')}
+.audioTrackRow[data-audio-id="fireplace"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/desert-light.jpg')}
+.audioTrackRow[data-audio-id="night"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/mountain-air.jpg')}
+.audioTrackRow[data-audio-id="birdsong"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/morning-dew.jpg')}
+.audioTrackRow[data-audio-id="singing-bowl"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="wind-chimes"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="crystal"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/radiant-portal.jpg')}
+.audioTrackRow[data-audio-id="cosmos"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/lone-tree.jpg')}
+.audioTrackRow[data-audio-id="soft-beat"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/solar-surge.jpg')}
+.audioTrackRow[data-audio-id="earth-drum"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/river-power.jpg')}
+.audioTrackRow[data-audio-id="warm-morning"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/meadow-morning.jpg')}
+.audioTrackRow[data-audio-id="wings-of-light"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/sunbeam-flow.jpg')}
+.audioTrackRow[data-audio-id="heart-harmony"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wildflower-dance.jpg')}
+.audioTrackRow[data-audio-id="quiet-stars"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/calm-sea.jpg')}
+.audioTrackRow[data-audio-id="bright-path"] .audioTileGlyph{background-image:url('/videos/holistic-house/film-collection-v2/wealth-sunrise.jpg')}
