@@ -19,7 +19,10 @@ async function tapFocusAndVerify(page, enquiry, focus) {
   // WebKit may leave the large label behind that toolbar. A user would scroll
   // the card into a visible touch position first: do the same, and ASSERT the
   // real card receives a hit before making exactly ONE native touch tap.
+  // Real touch users scroll before selecting: settle the viewport-aware target
+  // once, without repeating any tap or changing consent on their behalf.
   await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  await card.scrollIntoViewIfNeeded({timeout:15000});
   const targetHit = await card.evaluate(node => {
     const rect = node.getBoundingClientRect();
     const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
