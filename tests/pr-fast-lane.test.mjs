@@ -914,12 +914,11 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
   assert.ok(enable, 'missing event-driven enable job');
   assert.match(source, /^  workflow_run:\s*$/m);
-  for (const name of [
-    'HH PR core release gate',
-    'Holistic Support mandala release checks',
-    'HH workflow syntax — actionlint',
-    'Holistic House public services production acceptance',
-  ]) assert.ok(source.includes("      - '" + name + "'"), 'missing CI completion callback: ' + name);
+  const workflowRun=source.split('  workflow_run:\n')[1]?.split('    types: [completed]')[0];
+  assert.ok(workflowRun,'the trusted Core completion hook must exist');
+  const callbacks=[...workflowRun.matchAll(/^\s+- '([^']+)'/gm)].map(match=>match[1]);
+  assert.deepEqual(callbacks,['HH PR core release gate'],
+    'Core release-ready already aggregates specialists; redundant callbacks exhaust the owner PAT');
   assert.ok(enable.includes("github.event_name == 'workflow_run'"), 'not event-driven');
   assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'must wake on successful CI');
   assert.ok(enable.includes('run.event !== "pull_request"'), 'must ignore other triggers');
@@ -969,4 +968,29 @@ test('event-driven AutoMerge zero-required fallback remains normal protected exa
   assert.ok(enable.includes('run.status !== "completed"'),
     'never fall back while a current specialist workflow is still running');
   assert.doesNotMatch(enable, /--admin|--force|bypass_rulesets|continue-on-error:|checkout@/);
+});
+
+test('native AutoMerge wakes once after Core and reserves owner PAT for actual protected merge', () => {
+  const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+  const marker='  workflow_run:\n', start=source.indexOf(marker);
+  const end=source.indexOf('    types: [completed]',start);
+  assert.ok(start>=0 && end>start,'Core workflow_run event must be preserved');
+  const callbacks=[...source.slice(start,end).matchAll(/^\s+- '([^']+)'/gm)].map(match=>match[1]);
+  assert.deepEqual(callbacks,['HH PR core release gate'],
+    'no duplicate specialist CI wakeups that exhaust owner token');
+  const readyStart=source.indexOf('      - name: Verify live PR and completed exact-head CI');
+  const armStart=source.indexOf('      - name: Enable native auto-merge for this exact head',readyStart);
+  assert.ok(readyStart>0 && armStart>readyStart);
+  const readOnly=source.slice(readyStart,armStart);
+  assert.ok(readOnly.includes('github-token: ${{ github.token }}'),
+    'read-only preflight must use per-repo Actions token');
+  assert.doesNotMatch(readOnly,/HH_AUTOMERGE_TOKEN/,
+    'owner PAT must not be spent on every read-only CI wakeup');
+  assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'),
+    'protected merge still uses the explicitly configured owner token');
+  assert.ok(readOnly.includes('coreRun.conclusion !== "success"'));
+  assert.ok(readOnly.includes('expectedHead !== pr.head.sha'));
+  assert.ok(source.includes('1) merge_option=--merge'));
+  assert.ok(source.includes('recover-missing-required-ci:'));
+  assert.ok(source.includes('recover-interrupted-core:'));
 });
