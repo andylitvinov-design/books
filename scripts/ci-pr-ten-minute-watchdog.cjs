@@ -14,6 +14,10 @@ const MARKER = 'HH_PR_10MIN_SOURCE_REPAIR_V1';
 const MAX_STALE_RUNS = 2;
 const MAX_HANDOFFS = 2;
 const REPAIR_LABEL = 'hh:repair-needed';
+// Core passing while the independent release/specialist gate fails is not
+// evidence of a broken TypeScript/build source. Keep it out of source Repair.
+const RELEASE_GATE_LABEL = 'hh:release-gate-review';
+const MAX_RELEASE_GATE_LABELS = 2;
 const CONFLICT_LABEL = 'hh:conflict-repair-needed';
 const CI_BOOTSTRAP_LABEL = 'hh:ci-needed';
 const MAX_CONFLICT_HANDOFFS = 2;
@@ -115,6 +119,31 @@ function transientFailure(run, jobs, now) {
     ['timed_out','startup_failure'].includes(job.conclusion) ||
     job.steps?.some(step => step.conclusion === 'failure' &&
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
+}
+
+function classifyCoreFailureJobs(jobs) {
+  // No complete job evidence => no source-repair claim or gate diagnosis.
+  if (!Array.isArray(jobs) || !jobs.length) return 'UNVERIFIED';
+  const byName=new Map(jobs.map(job=>[job.name,job]));
+  const failed=jobs.filter(job=>['failure','timed_out','startup_failure'].includes(job.conclusion));
+  if (!failed.length) return 'UNVERIFIED';
+  const gateOnly=new Set(['release-ready','hh-specialists-verified']);
+  const core=byName.get('hh-core-verified');
+  const scope=byName.get('classify-change');
+  const build=byName.get('core-lint-types-build');
+  if (failed.every(job=>gateOnly.has(job.name)) &&
+      core?.conclusion==='success' &&
+      scope?.conclusion==='success' &&
+      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+    return 'RELEASE_GATE_ONLY';
+  if (failed.some(job=>!gateOnly.has(job.name))) return 'SOURCE_OR_PREFLIGHT';
+  return 'UNVERIFIED';
+}
+function latestCompletedFailedGate(checks, name) {
+  if (!Array.isArray(checks?.check_runs) || checks.total_count>100) return false;
+  const gate=latestByName(checks.check_runs).get(name);
+  return gate?.status==='completed' &&
+    ['failure','timed_out','startup_failure','cancelled','action_required'].includes(gate.conclusion);
 }
 
 async function listOpen(github, owner, repo, limited) {
@@ -347,6 +376,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   const selected = selectCandidates(review,now);
   const summary = {open:all.length,production:prod.length,eligibleToInspect:review.length,inspected:0,
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
+    releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
@@ -481,6 +511,15 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         } catch(e) { log('#'+pr.number+' required legacy CI unavailable: '+e.message); }
         if (!gateIsGreen(legacy,'release-ready')) {
           summary.legacyRequiredPending++;
+          // A known failed legacy gate after green Core is not an instruction
+          // to run an AI source repair. Do not label still-pending checks.
+          if (latestCompletedFailedGate(legacy,'release-ready') &&
+              summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
+            summary.releaseGateOnly++;
+            if (await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
+              'Core passed; investigate required release gate, base or specialist result',
+              'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+          }
           continue;
         }
       }
@@ -541,9 +580,25 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }
       summary.transientCiReruns++;
       log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
-    } else if (handoffs < MAX_HANDOFFS && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
-      catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
+    } else if (latest.conclusion === 'failure' && latest.run_attempt >= 1) {
+      const root=classifyCoreFailureJobs(jobs);
+      if(root==='RELEASE_GATE_ONLY') {
+        summary.releaseGateOnly++;
+        // This may be a production BASE_ADVANCED result or failed specialist
+        // aggregation; the exact log must determine which. No source claim.
+        if(summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
+          if(await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
+            'Core passed; investigate required release gate, base or specialist result',
+            'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+        }
+        log('#'+pr.number+' gate-only Core failure; no speculative source repair');
+      } else if(root==='UNVERIFIED') {
+        summary.coreFailureUnverified++;
+        log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
+      } else if(handoffs < MAX_HANDOFFS) {
+        try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
+        catch(e){log(`#${pr.number} repair handoff unavailable: ${e.message}`);}
+      }
     }
   }
   // Dispatch the no-cost CI worker as soon as a new missing-Core queue item
@@ -594,4 +649,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate};
