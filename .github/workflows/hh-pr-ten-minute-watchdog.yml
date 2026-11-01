@@ -41,13 +41,20 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_HAS_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
         with:
-          github-token: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}
+          # All read-only triage and PR handoffs use the short-lived GitHub token.
+          # Only the verified branch-update adapter below uses the owner token.
+          github-token: ${{ github.token }}
           script: |
-            const {run} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
+            const {run,makeOwnerBranchUpdater} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
+            const dedicated = process.env.HH_AUTOMERGE_TOKEN;
+            const repairGithub = dedicated ? makeOwnerBranchUpdater({
+              token: dedicated, fetcher: fetch, owner: context.repo.owner, repo: context.repo.repo
+            }) : null;
             await run({
               github, core, context,
-              repairGithub: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true' ? github : null,
-              hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
+              repairGithub,
+              hasMergeToken: Boolean(dedicated),
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
             });
