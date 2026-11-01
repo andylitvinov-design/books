@@ -269,3 +269,18 @@ jobs:
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
           node scripts/verify-affirmation-voice-browser.mjs
+          # Gate on the *actual* WebKit four-scene H264/AAC movie, not mock TTS.
+          # Validate approved source IDs, scene order, motion, black gaps and audio.
+          HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 \
+            HH_LIVE_VIDEO_REQUIRE_STOCK=true \
+            HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
+            HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1 \
+            node scripts/benchmarking/first-video-live-export.mjs
+      - name: Preserve anonymous WebKit encoded video evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-webkit-four-scene-${{ github.sha }}
+          path: artifacts/benchmarking/first-video-live-export.json
+          if-no-files-found: warn
+          retention-days: 7
