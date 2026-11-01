@@ -689,13 +689,18 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
   const release = source.split(/^  release-ready:/m)[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
-    assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
+    assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
+    assert.doesNotMatch(job, /fetch-depth:\s*0/, `${name} must avoid full-history Git fetch`);
     assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
-    assert.doesNotMatch(job, /fetch-depth:\s*2/);
+    assert.match(job, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/,
+      `${name} must deepen only the verified first parent when ancestry is shallow`);
+    assert.match(job, /tested_head="\$\(git rev-parse HEAD\^2\)"/,
+      `${name} must verify the second parent is exact PR HEAD`);
+    assert.match(job, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
   }
-  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 2);
+  assert.equal((source.match(/fetch-depth:\s*0/g) ?? []).length, 0);
   assert.match(release, /fetch-depth:\s*2/, 'aggregation only needs exact commit content, not ancestry');
-  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 1);
+  assert.equal((source.match(/fetch-depth:\s*2/g) ?? []).length, 3);
   assert.equal((release.match(/Pin exact production base for shallow checkout/g) ?? []).length, 1);
   assert.equal((release.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) ?? []).length, 1);
   assert.equal((release.match(/git cat-file -e "\$BASE_SHA\^\{commit\}"/g) ?? []).length, 2);
