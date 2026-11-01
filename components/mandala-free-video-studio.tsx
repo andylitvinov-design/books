@@ -2983,8 +2983,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               key={track.id} data-audio-id={track.id} data-audio-kind={track.kind}>
               <button type="button" className={videoStyles.audioTrackSelect}
                 data-video-music={track.id} aria-pressed={!uploadedAudio&&music===track.id}
+                aria-label={( !uploadedAudio&&music===track.id?audioUi.picked:audioUi.pick)+" — "+track.name[locale]}
                 onClick={()=>{setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
                 <span className={videoStyles.audioTileGlyph} aria-hidden="true"/>
+                <span className={videoStyles.audioPlaySlot} aria-hidden="true"/>
                 <span className={videoStyles.audioTileText}>
                   <strong>{track.name[locale]}{index===0&&audioSort==="best"?<Sparkles size={14} aria-label={audioUi.suggested}/>:null}</strong>
                   <small>{track.detail[locale]}</small>

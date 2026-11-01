@@ -706,7 +706,7 @@ test('only complete PR #2483 public meditation rail diff delegates to real Chrom
   const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2483/merge',
     GITHUB_HEAD_REF:'codex/meditation-category-rail-20261028',
     HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
-  const exact=[["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"]];
+  const exact=[["M",".github/workflows/hh-support-mobile-mock-browser.yml"],["M","app/[locale]/holistic-support/mobile/page.tsx"],["M","components/holistic-support-mobile.module.css"],["M","components/holistic-support-mobile.tsx"],["M","data/academy/holistic-support-meditations.ts"],["M","tests/greek-video-series.test.mjs"],["A","tests/holistic-meditation-mobile-categories.test.mjs"],["M","tests/holistic-support-mobile-alternative.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"],["M","scripts/verify-holistic-support-mock-fidelity.mjs"]];
   const plan=(rows,override={})=>planPublicServicesEvent({...env,...override},(_cmd,args)=>{
     if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
     if(args[0]==='merge-base')return Buffer.alloc(0);
