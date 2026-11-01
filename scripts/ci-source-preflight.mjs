@@ -3,13 +3,16 @@
 // Emits stable root fingerprints so one source defect is not counted as multiple CI failures.
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const MAX_FILES = 3000;
 const MAX_FINDINGS = 100;
-const JS_SYNTAX = /\.(?:mjs|cjs)$/i;
+const JS_SYNTAX = /\.(?:mjs|cjs|js|jsx)$/i;
+const NODE_SYNTAX = /\.(?:mjs|cjs)$/i;
+const REACT_JS_SYNTAX = /\.(?:js|jsx)$/i;
 const TS_IMPACT = /\.(?:tsx?|jsx?)$|^(?:tsconfig(?:\.[^/]*)?\.json|next-env\.d\.ts|package(?:-lock)?\.json)$/i;
 
 export function parsePaths(raw) {
@@ -68,9 +71,49 @@ function run(command,args,maxMs=180000) {
   const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:12*1024*1024,timeout:maxMs,env:process.env});
   return {ok:!r.error&&r.status===0,output:(r.stdout||'')+'\n'+(r.stderr||''),message:r.error?r.error.message:''};
 }
+// Syntax-only TypeScript compiler pass: parses JSX in .js and .jsx as well as plain JS.
+// No dependency graph, typecheck or emit; detect JS-only grammar errors such as TS8010.
+export function checkJavascriptSyntax(paths) {
+  const candidates = paths.filter(p => REACT_JS_SYNTAX.test(p));
+  if (!candidates.length) return [];
+  const findings = [], readable = [];
+  for (const file of candidates) {
+    try { readFileSync(file, 'utf8'); readable.push(file); }
+    catch {
+      const category = 'infrastructure.preflight', code = 'JS_READ';
+      const message = 'Changed JavaScript/JSX file is not readable';
+      findings.push({ category, code, file, message, root: rootFingerprint(category, file, code, message) });
+    }
+    if (findings.length >= MAX_FINDINGS) return findings;
+  }
+  if (!readable.length) return findings;
+  try {
+    const program = ts.createProgram(readable, {
+      allowJs: true, checkJs: false, noEmit: true, noResolve: true,
+      noLib: true, jsx: ts.JsxEmit.Preserve,
+    });
+    for (const diagnostic of program.getSyntacticDiagnostics()) {
+      if (findings.length >= MAX_FINDINGS) break;
+      if (!diagnostic.file) throw Error('Missing source file in JavaScript syntax diagnostic');
+      const category = 'source.javascript_syntax', code = 'JS' + diagnostic.code;
+      const file = diagnostic.file.fileName.replace(/\\/g, '/');
+      const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
+      const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ').slice(0, 500);
+      findings.push({ category, code, file, line: line + 1, column: character + 1,
+        message, root: rootFingerprint(category, file, code, message) });
+    }
+  } catch (error) {
+    const category = 'infrastructure.preflight', code = 'JS_PARSER';
+    const file = 'scripts/ci-source-preflight.mjs';
+    const message = ('JavaScript syntax parser unavailable: ' + (error?.message || String(error))).slice(0, 500);
+    findings.push({ category, code, file, message, root: rootFingerprint(category, file, code, message) });
+  }
+  return findings.slice(0, MAX_FINDINGS);
+}
+
 function checkSyntax(paths) {
   const findings=[];
-  for (const file of syntaxCandidates(paths)) {
+  for (const file of syntaxCandidates(paths).filter(p => NODE_SYNTAX.test(p))) {
     const r=run(process.execPath,['--check',file],15000);
     if (!r.ok) {
       const message=(r.output.match(/SyntaxError:\s*(.+)/)?.[1]?.trim()||
@@ -80,6 +123,8 @@ function checkSyntax(paths) {
     }
     if (findings.length>=MAX_FINDINGS) break;
   }
+  if (findings.length < MAX_FINDINGS)
+    findings.push(...checkJavascriptSyntax(paths).slice(0, MAX_FINDINGS - findings.length));
   return findings;
 }
 function checkTypes() {
