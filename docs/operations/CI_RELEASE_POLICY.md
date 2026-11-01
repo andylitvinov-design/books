@@ -77,7 +77,9 @@ Public Services, Profile, Cabinet, or Interpretation suites merely because
 Messenger changed. Owned course/editor/report/service/API paths remain live;
 manual dispatch is retained for full diagnostics.
 
-**Coverage that cannot be removed:** unconditional Core/type/lint/build,
+**Coverage that cannot be removed:** unconditional Core classification/lint
+(and TypeScript/Next build for application changes; CI-policy-only changes retain
+Core/actionlint and workflow-ownership contract tests),
 security and authentication (IA/App), payment/billing/RLS/database checks, and
 Messenger's consent/privacy plus necessary Chromium/WebKit browser journeys.
 A migration, dependency or unknown sensitive shared change still requires the
