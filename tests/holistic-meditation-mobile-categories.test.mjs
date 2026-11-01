@@ -38,6 +38,12 @@ test("six original meditation directions share one mobile player across EN/RU/ES
     "category switch resets playback and source filters");
   assert.doesNotMatch(handler,/setGoalSelection\(null\)/,
     "switching original videos must retain the accepted goal, currency, amounts and format choices");
+  assert.match(ui,/const meditationCategory: MeditationCategory = meditationCategoryOverride \?\? "all"/,
+    "initial catalogue stays complete until a user explicitly selects a topic");
+  assert.match(ui,/if \(goalMatch && choice === "meditation"\)/,
+    "an accepted personal goal still ranks the full published catalogue");
+  assert.match(ui,/if \(suggested && choice === "meditation"\)/,
+    "check-in recommendations still rank full source-backed recordings");
   assert.equal((ui.match(/<iframe\b/g)||[]).length,1,"only the canonical video player");
   assert.match(ui,/youtube-nocookie\.com\/embed/);
 });

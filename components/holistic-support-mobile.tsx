@@ -558,9 +558,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
     focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
-  const meditationCategory: MeditationCategory = meditationCategoryOverride ?? (
-    focus === "money" ? "money" : focus === "relationships" ? "relationships"
-      : focus === "goals" ? "meaning" : "energy");
+  // Check-in and goal changes rank verified recordings, but must not silently
+  // hide other published films. Category narrowing is an EXPLICIT visitor choice.
+  const meditationCategory: MeditationCategory = meditationCategoryOverride ?? "all";
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, videos, locale]);
