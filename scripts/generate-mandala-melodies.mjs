@@ -154,8 +154,7 @@ export function renderMelody(song){
 }
 const out=resolve(dirname(fileURLToPath(import.meta.url)),"../public/audio/mandala");
 const direct=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url);
-if(direct){
-  const verify=process.argv.includes("--check");
+export function writeMelodyMasters({verify=false}={}){
   if(!verify)mkdirSync(out,{recursive:true});
   const report=[];
   for(const song of SONGS){
@@ -167,5 +166,6 @@ if(direct){
     const hash=createHash("sha256").update(pcm).digest("hex");
     report.push({id:song.id,seconds:DURATION_SECONDS,bytes:pcm.byteLength,sha256:hash});
   }
-  console.log(JSON.stringify({verified:verify,masters:report.length,songs:report},null,2));
+  return {verified:verify,masters:report.length,songs:report};
 }
+if(direct)console.log(JSON.stringify(writeMelodyMasters({verify:process.argv.includes("--check")}),null,2));

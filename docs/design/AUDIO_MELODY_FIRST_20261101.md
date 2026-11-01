@@ -13,8 +13,8 @@ Goal: The visitor hears an original melodic instrumental piece, not an isolated 
 
 ## Deterministic build
 - Original authored scores: scripts/generate-mandala-melodies.mjs. Master IDs and exact same-origin WAV export path: lib/mandala/local-video-music.ts.
-- Store scores, not 31MB of derived PCM binaries, in source Git. Remove 22 obsolete tracked WAV versions; prebuild and predev generate their replacements deterministically under public/audio/mandala with the same filenames.
-- Mandala specialized CI regenerates WAV before audio regression tests. No runtime external requests, music providers or serverless render costs.
+- Store scores, not 31MB of derived PCM binaries, in source Git. Remove 22 obsolete tracked WAV versions; the existing prebuild and predev audio pipeline calls scripts/generate-soft-ocean-melody.mjs, which now writes all 22 compositions under public/audio/mandala using identical filenames.
+- Mandala specialized CI regenerates WAV directly before audio regression tests; the established audio build entrypoint regenerates them for production and local dev. No runtime external requests, music providers or serverless render costs.
 - Run node scripts/generate-mandala-melodies.mjs --check for byte-for-byte build parity once masters exist.
 
 ## Acceptance / limits
