@@ -940,3 +940,33 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
     'core interruption repair must not run for every specialist completion');
   assert.doesNotMatch(enable, /checkout@|--admin|--delete-branch|continue-on-error:/);
 });
+
+
+test('event-driven AutoMerge zero-required fallback remains normal protected exact-base merge only', () => {
+  const source = workflow('hh-native-auto-merge.yml');
+  const enable = source.split('  enable:\n')[1]?.split('  recover-missing-required-ci:\n')[0];
+  assert.ok(enable, 'missing trusted event-driven AutoMerge');
+  assert.ok(enable.includes('core.setOutput("base", pr.base.sha);'));
+  assert.ok(enable.includes('PR_BASE_SHA: ${{ steps.ready.outputs.base }}'));
+  assert.ok(enable.includes("if grep -Eq 'Pull request is in (clean|unstable) status'"),
+    'direct merge fallback must respond only to exact GitHub zero-required queue rejection');
+  assert.ok(enable.includes('repos/$GH_REPO/rulesets/26269892'),
+    're-read production hosted ruleset immediately before fallback');
+  assert.ok(enable.includes('"$enforcement" != active || "$required_count" != 0'),
+    'required contexts restored: normal protected fallback must stop');
+  assert.ok(enable.includes('repos/$GH_REPO/git/ref/heads/codex/public-book-library'),
+    'must independently read current production tip');
+  assert.ok(enable.includes('"$current_base" != "$PR_BASE_SHA"'),
+    'never merge after the production base changes');
+  assert.ok(enable.includes('(.headRefOid == env.PR_HEAD)'),
+    'immediately recheck exact PR HEAD');
+  assert.ok(enable.includes('(.autoMergeRequest == null)'),
+    'must not replace existing native AutoMerge');
+  assert.ok(enable.includes('gh pr merge "$PR_NUMBER" "$merge_option" --match-head-commit "$PR_HEAD"'),
+    'fallback must use the same protected merge method and optimistic HEAD lease');
+  assert.ok(enable.includes('coreRun.conclusion !== "success"'),
+    'never fall back if the current Core CI failed');
+  assert.ok(enable.includes('run.status !== "completed"'),
+    'never fall back while a current specialist workflow is still running');
+  assert.doesNotMatch(enable, /--admin|--force|bypass_rulesets|continue-on-error:|checkout@/);
+});
