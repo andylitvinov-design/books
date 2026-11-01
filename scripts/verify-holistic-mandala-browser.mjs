@@ -1925,6 +1925,16 @@ const runEngine = async ([engine, browserType]) => {
             "goal gives four actual source scenes");
           assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
             "proposal must not start rendering before user confirms");
+          const captionEditor=auto.locator("[data-auto-video-montage]");
+          await captionEditor.locator("summary").click();
+          const captionText=captionEditor.locator('[data-auto-video-stage-caption="0"]');
+          await captionText.fill("Я могу быть спокойным");
+          assert.equal(await captionText.inputValue(),"Я могу быть спокойным",
+            "a client-authored caption remains editable without AI upload");
+          assert.equal(await auto.locator(
+            '[data-auto-video-text-track] [data-caption-active="true"]').count(),1,
+            "only the explicitly authored caption occupies the first text lane");
+          await expect(captionEditor.locator("[data-auto-video-sound-track]")).toBeVisible();
           await auto.locator("[data-auto-video-confirm]").click();
           await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
             undefined,{timeout:15000});
