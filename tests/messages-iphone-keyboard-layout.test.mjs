@@ -106,6 +106,7 @@ test('priority mobile chat PRs execute the isolated browser journey without send
   assert.match(browser,/SYNTHETIC_READ_ONLY/)
   assert.match(browser,/route\.abort\(\)/)
   assert.match(browser,/accountRequest:true/)
-  assert.match(browser,/\[320,354,390,430\]/)
+  assert.match(browser,/\[320,354,375,390,430\]/)
   assert.match(browser,/\[chromium,webkit\]/)
+  assert.doesNotMatch(browser,/if\(width===390\)await page\.screenshot/)
 })

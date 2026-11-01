@@ -71,7 +71,7 @@ const labels={
 for(const browserType of [chromium,webkit]){
  const browser=await browserType.launch({headless:true})
  try{
-  for(const locale of ['ru','en','es'])for(const width of [320,354,390,430]){
+  for(const locale of ['ru','en','es'])for(const width of [320,354,375,390,430]){
    const key=[browserType.name(),locale,width].join('-')
    const page=await browser.newPage({viewport:{width,height:844},
      deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'})
@@ -136,7 +136,7 @@ for(const browserType of [chromium,webkit]){
       key+' section order '+JSON.stringify(metrics))
     assert.ok(metrics.card.width>200&&metrics.card.right<=width+3,
       key+' order card fits '+JSON.stringify(metrics))
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-orders.png',fullPage:false})
+    await page.screenshot({path:dir+'/'+key+'-orders.png',fullPage:false})
     await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
     const customer=page.locator('[data-embedded="true"][data-simple-messages]')
     await customer.waitFor({state:'visible',timeout:30000})
@@ -147,7 +147,7 @@ for(const browserType of [chromium,webkit]){
       key+' no nested tabs')
     const clientWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
     assert.ok(clientWidth<=width+3,key+' clients overflow '+clientWidth)
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})
+    await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})
     await customer.getByRole('button',{name:/Synthetic Client/}).click()
     assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
     const fullscreen=await customer.locator('[class*="window"]').first().evaluate(el=>{
@@ -162,7 +162,7 @@ for(const browserType of [chromium,webkit]){
       key+' full visual viewport '+JSON.stringify(fullscreen))
     assert.ok(fullscreen.width>=width-2,key+' conversation is edge to edge')
     assert.equal(fullscreen.navDisplay,'none',key+' dock hidden while chat open')
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-client-dialog.png',fullPage:false})
+    await page.screenshot({path:dir+'/'+key+'-client-dialog.png',fullPage:false})
     // Going back to the list is explicit, like Telegram, rather than reaching
     // behind an open chat to click the old Orders/Clients navigation.
     await customer.locator('[class*="personBar"] button[class*="back"]').click()
@@ -188,7 +188,7 @@ for(const browserType of [chromium,webkit]){
       key+' Send remains within chat '+JSON.stringify(chatGeometry))
     assert.ok(Math.abs(chatGeometry.assistantTop-chatGeometry.textareaTop)<=6,
       key+' AI stays inline beside the input '+JSON.stringify(chatGeometry))
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-crm-compose.png',fullPage:false})
+    await page.screenshot({path:dir+'/'+key+'-crm-compose.png',fullPage:false})
     await page.setViewportSize({width,height:430})
     await page.waitForFunction(()=>{
       const el=document.querySelector('[data-simple-messages][data-detail-open="true"] [class*="window"]')
@@ -201,6 +201,7 @@ for(const browserType of [chromium,webkit]){
     }))
     assert.ok(compactSend.bottom<=compactSend.visualBottom+3,
       key+' Send fits reduced visual viewport '+JSON.stringify(compactSend))
+    await page.screenshot({path:dir+'/'+key+'-keyboard-simulated.png',fullPage:false})
     await page.setViewportSize({width,height:844})
     await customer.locator('[class*="personBar"] button[class*="back"]').click()
     await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
@@ -221,7 +222,7 @@ for(const browserType of [chromium,webkit]){
     })
     assert.ok(geometry.bottom<=geometry.navTop+3,
       key+' Send stays above navigation '+JSON.stringify(geometry))
-    if(width===390)await page.screenshot({path:dir+'/'+key+'-chat.png',fullPage:false})
+    await page.screenshot({path:dir+'/'+key+'-chat.png',fullPage:false})
     assert.equal(new URL(page.url()).pathname,'/'+locale+'/app/messages',
       key+' must remain on private Messenger route')
     report.push({key,status:'pass',metrics,clientWidth,
