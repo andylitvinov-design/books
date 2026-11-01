@@ -5,7 +5,7 @@
  * --apply updates the EXISTING preset catalog only when every scenario can
  * receive four dedicated same-theme clips; never ships partial storyboards.
  */
-import {readFileSync,writeFileSync,existsSync,statSync} from "node:fs";
+import {readFileSync,existsSync,statSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {resolve,dirname} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -15,7 +15,6 @@ import {loadActiveFilmPresets} from "./read-live-film-presets.mjs";
 import {SONGS,SAMPLE_RATE,DURATION_SECONDS} from "./generate-mandala-melodies.mjs";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const load=name=>JSON.parse(readFileSync(resolve(root,name),"utf8"));
-const presetsPath="data/video-catalog/free-film-presets-v2.json";
 const presetData=loadActiveFilmPresets();
 const sceneData=load("data/video-catalog/scene-taxonomy.json");
 const args=new Set(process.argv.slice(2));
@@ -54,16 +53,7 @@ audit.audioMastersExpected=SONGS.length;
 audit.audioMastersMissing=audioAbsent;
 const plan=planDedicatedScenarioMedia(presetData.presets,sceneData.scenes);
 const queue=args.has("--queue")?createScenarioAcquisitionQueue(presetData.presets,sceneData.scenes):null;
-if(args.has("--apply")){
-  // Legacy scenes still live inline in the TSX component; rebalance cannot
-  // change only v2 JSON while claiming all 48 scenarios have unique footage.
-  throw Error("dedicated_rebalance_requires_atomic_migration_of_inline_and_json_presets");
-  if(audit.errors.length||!plan.ready||audioAbsent.length)
-    throw Error("media_not_ready_for_dedicated_rebalance");
-  const next={...presetData,presets:presetData.presets.map(p=>({...p,clips:plan.assignments[p.id]}))};
-  writeFileSync(resolve(root,presetsPath),JSON.stringify(next,null,2)+"\n");
-  audit.dedicatedRebalanceApplied=true;
-}
+if(args.has("--apply"))throw Error("dedicated_rebalance_requires_atomic_migration_of_inline_and_json_presets");
 if(args.has("--json")||args.has("--queue"))console.log(JSON.stringify(args.has("--queue")?queue:{...audit,...(args.has("--plan")?{plan}:{})},null,2));
 else {
   console.log("Video Studio | "+audit.scenarios+" scenarios | "+audit.approvedScenes+
