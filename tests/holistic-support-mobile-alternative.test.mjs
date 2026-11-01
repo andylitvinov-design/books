@@ -462,3 +462,13 @@ test("Reiki options show 3 formats and report modes, with session-only provider 
   assert.match(css, /grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(gallery, /24 (?:offers|предложения|ofertas)/);
 });
+
+test("fifth stress focus reaches real talisman viewer without new SKU or a promised outcome", () => {
+  const viewer=read("components/holistic-support-talisman-viewer.tsx");
+  assert.match(viewer,/type Focus = "energy" \| "money" \| "relationships" \| "goals" \| "stress"/);
+  assert.match(viewer,/stress: "fu-balance"/);
+  assert.match(viewer,/id: "stress", Icon: Wind/);
+  for(const name of ["Anti-stress","Антистресс","Antiestrés"])assert.ok(viewer.includes(name));
+  assert.match(viewer,/No promised results/);
+  assert.match(viewer,/Без обещания результата/);
+});
