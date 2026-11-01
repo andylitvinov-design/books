@@ -71,6 +71,10 @@ length and locale changes; only changing the *underlying video request/theme*
 offers a fresh automatic recommendation. This avoids clobbering user input
 when the site language changes.
 
+## Compatibility with production mobile Phrases PR #2971
+
+The independently published #2971 added a single large mobile `MandalaHypnoCompact` editor with custom idea/phrase selection and real voice/music choices. The full 69,120-entry tree now appears in an **optional, collapsed catalog inside that same editor**, before its existing voice and music panels. This preserves the short first-time path, the approved one-column phrase UI, exactly one microphone/audio form and the actual export/preview state. The old hardcoded quick phrase rail is removed. Selecting a catalog phrase writes to the same canonical `AffirmationSettings`; no parallel video editor is mounted.
+
 ## Application path
 
 - **Client:** `MandalaPhraseCatalog` mounted once inside existing `mandala-free-video-studio.tsx` in the **phrases** workspace, replacing the previous `quickSupportPhrases[locale][theme]` hardcoded list. One large **Audio guide / music / voice** button calls the **existing** video-audio editor. No duplicate music picker, microphone, media renderer, or public page.

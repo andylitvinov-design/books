@@ -494,12 +494,11 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
-  assert.match(studio,/<MandalaPhraseCatalog locale=\{locale\}/);
-  const phrasePicker=read("components/mandala-phrase-catalog.tsx");
-  assert.match(phrasePicker,/data-video-quick-affirmation=\{phrase\.variant-1\}/);
-  assert.match(phrasePicker,/data-video-phrase-idea=\{item\.id\}/);
-  assert.match(phrasePicker,/data-video-phrase-audioguide/);
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
+  assert.match(studio,/\{deepHypnoPane\}/);
+  assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
+  assert.doesNotMatch(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
   assert.match(studio,/data-video-quick-audio-track=\{id\}/);
@@ -510,7 +509,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
-  assert.match(css,/\.quickPhraseRail,/);
+  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);
   assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
 });

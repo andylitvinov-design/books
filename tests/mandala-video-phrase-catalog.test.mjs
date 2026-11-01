@@ -92,7 +92,11 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(widget,/data-video-phrase-audioguide/);
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.doesNotMatch(studio,/quickSupportPhrases/);
-  assert.match(studio,/onOpenAudio=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
+  assert.match(studio,/data-video-phrase-catalog-details/);
+  assert.match(studio,/setPhraseAudioExpanded\(true\)/);
+  assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
+  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
+    "reuse the approved single phrase editor");
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
 });
 
