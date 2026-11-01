@@ -2520,7 +2520,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setPreviewPlaying(false);setSuggestion("");
       setNotice(locale==="ru"?"Бесплатный монтаж выбран. Нажмите «Создать видео».":locale==="es"
         ?"Montaje gratuito seleccionado. Pulsa Crear vídeo.":"Free film selected. Choose Create video.");
-      document.getElementById("video-hero")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+      // Confirm does not render or jump away from the next action.
+      // After the React commit, scroll to the genuine local Create control.
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-auto-video-create]")?.scrollIntoView({
+          behavior:"smooth",block:"nearest"
+        })));
     }catch{
       setNotice(ui.videoUnavailable);
     }
