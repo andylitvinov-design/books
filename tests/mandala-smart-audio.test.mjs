@@ -92,3 +92,10 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.doesNotMatch(studio+audioSource,/XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen|higgsfield/i);
   assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });
+
+test("published audio helper copy accurately describes the 39 first-party WAV catalog in EN/RU/ES",()=>{
+  assert.match(studio,/originalAudio:"39 original first-party WAV soundtracks/);
+  assert.match(studio,/originalAudio:"39 авторских WAV-дорожек/);
+  assert.match(studio,/originalAudio:"39 pistas WAV originales del sitio/);
+  assert.doesNotMatch(studio,/originalAudio:"13 /,"obsolete soundtrack count must not be displayed");
+});
