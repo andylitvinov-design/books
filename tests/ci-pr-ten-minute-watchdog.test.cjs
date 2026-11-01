@@ -18,23 +18,23 @@ test('full pool is covered by rotating slices within sixteen 10-minute checks',(
   assert.equal(numbers.size,179);
   assert.ok(selectCandidates(prs,NOW).some(p=>p.number===179));
 });
-test('all P0 PRs receive fast inspection despite a large low-priority backlog',()=>{
+test('all P1 direction PRs receive fast inspection despite a large low-priority backlog',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1));
   const p0=Array.from({length:14},(_,i)=>i+20);
-  for(const number of p0)prs[number-1].labels=[{name:'hh:priority:p0'}];
+  for(const number of p0)prs[number-1].title='fix(video): renderer regression';
   const seen=new Set();
   for(let tick=0;tick<6;tick++){
     const picked=selectCandidates(prs,NOW+tick*600000);
     assert.ok(picked.length<=16);
-    const high=picked.filter(p=>p.labels?.some(l=>l.name==='hh:priority:p0'));
-    assert.ok(high.length>=4,'P0 backlog must occupy all four fast slots');
+    const high=picked.filter(p=>p.title?.includes('(video)'));
+    assert.ok(high.length>=4,'P1 direction backlog must occupy all four fast slots');
     for(const p of high)seen.add(p.number);
   }
-  assert.ok(p0.every(n=>seen.has(n)),'all P0s must be inspected within six cycles');
+  assert.ok(p0.every(n=>seen.has(n)),'all P1 direction PRs must be inspected within six cycles');
 });
-test('exact Core completion wake does not evict the top P0 while preserving fairness',()=>{
+test('exact Core completion wake does not evict the top P1 direction while preserving fairness',()=>{
   const prs=Array.from({length:179},(_,i)=>pr(i+1));
-  prs[69].labels=[{name:'hh:priority:p0'}];
+  prs[69].title='fix(video): customer Create is broken';
   const picked=selectCandidates(prs,NOW,12,4,159);
   assert.equal(picked[0].number,159);
   assert.equal(picked[1].number,70);
@@ -974,4 +974,15 @@ test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()
   const source=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
   assert.ok(source.includes("github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || 'periodic'"));
   assert.ok(source.includes('cancel-in-progress: false'));
+});
+
+
+test('highest available direction wins; manually owned PRs do not monopolize fast slots',()=>{
+  const prs=Array.from({length:170},(_,i)=>pr(i+1));
+  prs[9].title='fix(video): owner has manual merge conflict';
+  prs[9].labels=[{name:'hh:repair-manual'}];
+  prs[39].title='feat(voice): narrated therapeutic session';
+  const choice=selectCandidates(prs,NOW);
+  assert.equal(choice[0].number,40,'free P2 must beat held P1');
+  assert.ok(choice.some(p=>p.number===10),'held P1 remains in fair audit rotation eventually');
 });
