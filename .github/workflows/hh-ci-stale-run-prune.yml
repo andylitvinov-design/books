@@ -77,30 +77,38 @@ jobs:
           }
           temp="$(mktemp -d)"
           trap 'rm -rf "$temp"' EXIT
-          # Evidence must be a real successful pull_request Core workflow
-          # on production with BOTH new, named, successful jobs in one run.
-          gh api "repos/$GH_REPO/actions/workflows/hh-pr-core-release.yml/runs?event=pull_request&per_page=30" > "$temp/runs.json"
-          verified=false
-          while IFS= read -r run_id; do
-            gh api "repos/$GH_REPO/actions/runs/$run_id/jobs?per_page=100" > "$temp/jobs.json"
-            if jq -e '
-              .total_count <= 100 and
-              ([.jobs[] | select(.name == "hh-core-verified" and .status == "completed" and .conclusion == "success")] | length) == 1 and
-              ([.jobs[] | select(.name == "hh-specialist" and .status == "completed" and .conclusion == "success")] | length) == 1
-            ' "$temp/jobs.json" >/dev/null; then
-              verified=true
-              echo "Observed real passing replacement jobs in Core run $run_id" >> "$GITHUB_STEP_SUMMARY"
-              break
-            fi
-          done < <(jq -r --arg repo "$GH_REPO" '
-            [.workflow_runs[] | select(.event == "pull_request" and .conclusion == "success" and
-              .head_repository.full_name == $repo and
-              ((.pull_requests // []) | any(.base.ref == "codex/public-book-library")))]
-            | .[:8][] | .id' "$temp/runs.json")
-          [[ "$verified" == true ]] || {
-            echo '::error::No confirmed green hh-core-verified + hh-specialist on one production PR. No protection changed.' >&2
+          # Pin one immutable successful Core run and a merged PR on production.
+          # Busy repositories evict older runs from the latest-30 list, and
+          # GitHub may clear workflow_run.pull_requests after PR merge.
+          # This evidence is independently re-read, never trusted from input.
+          gh api "repos/$GH_REPO/actions/runs/41328294027" > "$temp/approved-run.json"
+          gh api "repos/$GH_REPO/pulls/2935" > "$temp/approved-pr.json"
+          jq -e --arg repo "$GH_REPO" '
+            .id == 41328294027 and .event == "pull_request" and
+            .name == "HH PR core release gate" and
+            .path == ".github/workflows/hh-pr-core-release.yml" and
+            .status == "completed" and .conclusion == "success" and
+            .head_repository.full_name == $repo and .repository.full_name == $repo and
+            .head_branch == "ci/activate-one-time-status-migrator-20261101"
+          ' "$temp/approved-run.json" >/dev/null
+          approved_head="$(jq -r '.head_sha' "$temp/approved-run.json")"
+          [[ "$approved_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          jq -e --arg expected_head "$approved_head" '
+            .number == 2935 and .state == "closed" and .merged == true and
+            .base.ref == "codex/public-book-library" and
+            .head.sha == $expected_head and .merge_commit_sha != null
+          ' "$temp/approved-pr.json" >/dev/null
+          gh api "repos/$GH_REPO/actions/runs/41328294027/jobs?per_page=100" > "$temp/jobs.json"
+          jq -e '
+            .total_count <= 100 and
+            ([.jobs[] | select(.name == "hh-core-verified" and .status == "completed" and .conclusion == "success")] | length) == 1 and
+            ([.jobs[] | select(.name == "hh-specialist" and .status == "completed" and .conclusion == "success")] | length) == 1 and
+            ([.jobs[] | select(.name == "release-ready" and .status == "completed" and .conclusion == "success")] | length) == 1
+          ' "$temp/jobs.json" >/dev/null || {
+            echo '::error::Approved Core, Specialist and legacy compatibility jobs are not all green; no protection changed.' >&2
             exit 1
           }
+          echo 'Pinned release evidence: merged PR #2935; Core run 41328294027; all three required transition checks SUCCESS.' >> "$GITHUB_STEP_SUMMARY"
           # Administration:read must work for BOTH controls before any write.
           # A 403 or 404 is a strict HOLD, not permission to weaken protection.
           gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"
