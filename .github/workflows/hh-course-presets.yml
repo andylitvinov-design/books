@@ -28,7 +28,16 @@ on:
       - 'data/academy/energywork-ai-schema.js'
       - 'lib/academy/energywork-course-repository.js'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
+      - 'app/api/app/course/**'
       - 'app/api/app/\[...path\]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
+      - 'app/api/app/courses/**'
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'components/energywork-ai-learner.*'
       - 'components/principles-of-energywork.tsx'

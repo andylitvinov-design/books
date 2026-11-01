@@ -18,7 +18,6 @@ on:
       - 'lib/profile/unified-profile.js'
       - 'components/app/unified-profile-layers.jsx'
       - 'components/app/unified-profile-layers.module.css'
-      - 'components/app/app-workspace.jsx'
       - 'app/[locale]/personality-profiles/page.tsx'
       - 'tests/unified-profile-layers.test.mjs'
       - 'components/personality-profiles-builder.tsx'
