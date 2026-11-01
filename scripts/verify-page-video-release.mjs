@@ -182,6 +182,7 @@ async function exercise(engine, browserType) {
     await chooseRussianHome(page);
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0);
     const approvedRussian = page.locator('[data-video-slot="home-presentation"][data-video-locale="ru"]');
+    let russianPresentationVerified = false;
     // Production-domain sweeps may run before this PR is actually on LIVE.
     if (new URL(origin).hostname !== 'holistichouse.vercel.app' || await approvedRussian.count()) {
       await expect(approvedRussian).toHaveCount(1);
@@ -191,10 +192,11 @@ async function exercise(engine, browserType) {
       await play.click();
       await expect(approvedRussian.locator('iframe')).toHaveAttribute(
         'src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/G0Db6yOCMto\?/, { timeout: 10000 });
+      russianPresentationVerified = true;
     }
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1);
     assert.deepEqual(pageErrors, [], 'Unexpected page JavaScript errors');
-    results.push({ engine, retiredHomeIntroHidden: true, approvedRussianPresentation: true, pageJavaScriptErrors: pageErrors });
+    results.push({ engine, retiredHomeIntroHidden: true, approvedRussianPresentation: russianPresentationVerified ? true : null, russianPresentationStatus: russianPresentationVerified ? "verified-click-to-iframe" : "skipped-live-slot-absent", pageJavaScriptErrors: pageErrors });
   } catch (error) {
     const geometry = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].map(el => ({ tag: el.tagName, className: String(el.className).slice(0,120), rect: el.getBoundingClientRect().toJSON() })).filter(item => item.rect.width > 1 && (item.rect.right > innerWidth + 2 || item.rect.left < -2)).slice(0,25) })).catch(() => null);
     await page.screenshot({ path: `${evidence}/${label}-six-videos-failed-${engine}.png`, fullPage: true }).catch(() => {});
