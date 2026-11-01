@@ -1,0 +1,107 @@
+name: HH zero-cost PR CI worker
+on:
+  schedule:
+    - cron: '2,12,22,32,42,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Inspect only; do not create a one-shot CI bootstrap commit'
+        type: boolean
+        default: true
+        required: false
+  push:
+    branches: ['codex/bootstrap-books']
+    paths:
+      - '.github/workflows/hh-pr-ci-worker.yml'
+      - 'scripts/ci-pr-ci-worker.cjs'
+      - 'tests/ci-pr-ci-worker.test.cjs'
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: read
+concurrency:
+  group: hh-pr-ci-worker
+  cancel-in-progress: false
+jobs:
+  bootstrap:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - name: Checkout trusted worker only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Test deterministic worker without network
+        run: |
+          node --check scripts/ci-pr-ci-worker.cjs
+          node --test tests/ci-pr-ci-worker.test.cjs
+      - name: Bootstrap at most one legacy PR without Core CI
+        uses: actions/github-script@v7
+        env:
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+        with:
+          # Only this repo-scoped GITHUB_TOKEN reads the queue and places leases.
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ci-worker.cjs');
+            const token=process.env.HH_AUTOMERGE_TOKEN;
+            // A GITHUB_TOKEN-created commit would suppress push/PR CI. Reuse
+            // the already-configured owner AutoMerge token instead. No new
+            // service, AI billing or paid API is involved.
+            const callOwner=async(method,path,payload)=>{
+              if(!token)throw Error('No existing owner source token');
+              const result=await fetch('https://api.github.com'+path,{
+                method,
+                signal:AbortSignal.timeout(20000),
+                headers:{
+                  Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json',
+                  'Content-Type':'application/json',
+                  'X-GitHub-Api-Version':'2022-11-28'
+                },
+                ...(payload?{body:JSON.stringify(payload)}:{})
+              });
+              const data=await result.json().catch(()=>({}));
+              if(!result.ok){
+                const error=new Error('Dedicated owner token HTTP '+result.status+': '+
+                  String(data.message || 'request declined').slice(0,160));
+                error.status=result.status;
+                throw error;
+              }
+              return data;
+            };
+            const sourceGit=token?{
+              bootstrap:async({owner,repo,branch,sha,number})=>{
+                const sameRepo=owner===context.repo.owner && repo===context.repo.repo;
+                if(!sameRepo || !/^[a-f0-9]{40}$/i.test(sha) ||
+                   !Number.isSafeInteger(number) || number<1 ||
+                   !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch) ||
+                   branch.includes('..') || branch.includes('//') ||
+                   branch.endsWith('/'))throw Error('Unsafe legacy PR source ref');
+                const prefix='/repos/'+owner+'/'+repo;
+                const parent=await callOwner('GET',prefix+'/git/commits/'+sha);
+                if(!/^[a-f0-9]{40}$/i.test(parent?.tree?.sha || ''))
+                  throw Error('No verified parent commit tree');
+                const commit=await callOwner('POST',prefix+'/git/commits',{
+                  message:'chore(ci): one-time legacy Core CI bootstrap for PR #'+number,
+                  tree:parent.tree.sha,parents:[sha]
+                });
+                if(!/^[a-f0-9]{40}$/i.test(commit?.sha || '') || commit.sha===sha)
+                  throw Error('Source-preserving CI commit not accepted');
+                // No force: a concurrently changed branch rejects a stale
+                // update. This produces real pull_request.synchronize.
+                const safeBranch=branch.split('/').map(encodeURIComponent).join('/');
+                await callOwner('PATCH',prefix+'/git/refs/heads/'+safeBranch,{
+                  sha:commit.sha,force:false
+                });
+                return {sha:commit.sha};
+              }
+            }:null;
+            await run({
+              github,core,context,sourceGit,
+              dryRun:context.eventName==='push' ||
+                String(context.payload.inputs?.dry_run ?? 'false')==='true'
+            });
