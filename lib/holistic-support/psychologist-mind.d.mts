@@ -28,6 +28,10 @@ export type PsychologistIntent = {
   confirmedTrigger?: string; confirmedReaction?: string;
   courseId?: string; motifId?: string; symbolId?: string;
   selfGuidedOnly?: boolean; intentionCode?: string;
+  sceneId?: string; metaphorId?: string; storyArcId?: string;
+  includeClinical?: boolean; objectiveCode?: string;
+  sessionNumber?: number; variationIndex?: number;
+  historySceneIds?: string[]; historyMetaphorIds?: string[];
 };
 export type PsychologistProfile = {
   confirmedFocus?: PsychologistFocus; preferredStyle?: string;
@@ -43,7 +47,7 @@ export type PsychologyInput = {
   preferences?: {
     style?: "gentle" | "practical" | "poetic";
     channel?: "visual" | "auditory" | "tactile" | "neutral";
-    avoidElements?: string[]; noImagery?: boolean;
+    avoidElements?: string[]; noImagery?: boolean; noMetaphor?: boolean;
   };
 };
 export type PsychologySession = {
@@ -159,6 +163,11 @@ export type PsychologyMeditationSegment = {
 export type PsychologyMeditationDraft = {
   version: "psychologist-meditation-v1"; status: string;
   motifId: string | null; symbolId?: string | null; script: string | null;
+  sceneId?: string; metaphorId?: string | null; storyArcId?: string;
+  sessionNumber?: number; sessionObjective?: string;
+  storySelection?: {scene:string;metaphor:string;arc:string};
+  voiceSegments?: Array<{id:string;text:string;estimatedPauseAfterMs:number;timingApproximate:true}>;
+  requiresTtsTimingVerification?: true;
   title?: string; language?: PsychologistLocale;
   intentionCode?: string; plannedDurationSeconds: number;
   segments: PsychologyMeditationSegment[];
@@ -177,12 +186,31 @@ export type PsychologyMotifLibrary = {
   motifs:Array<{id:string;title:string;tier:string;selfGuided:boolean;clinicalReviewRequired:boolean}>;
   noFixedInterpretations:true;modelUsed:false;saved:false;
 };
+export type PsychologyMeditationSeries = {
+  version: "psychologist-meditation-series-v1";
+  status: string; scripts: PsychologyMeditationDraft[];
+  published: false; rendered: false; saved: false;
+  requiresHumanContentReview: true;
+  requiresFreshSafetyCheckBeforeEachSession: true;
+  sessionCount: number; uniqueSceneCount?: number; uniqueMetaphorCount?: number;
+  language?: PsychologistLocale; courseRecipeId?: string | null;
+};
+export type PsychologyStoryCatalog = {
+  version: "meditation-story-architect-v2";
+  status?: string; locale: PsychologistLocale;
+  scenes: Array<{id:string;title:string;selfGuided:boolean;clinicalReviewRequired:boolean}>;
+  metaphors: Array<{id:string;title:string;selfGuided:boolean;clinicalReviewRequired:boolean}>;
+  arcs: Array<{id:string;title:string;selfGuided:true}>;
+  selfGuidedOnly: boolean; clinicalReferencesVisible?: boolean;
+  generatedMedia: false; requiresImageryConsent?: true;
+};
 export function consultPsychologistMind(
   input?: (PsychologyDialogueInput & {task:"dialogue"}) |
-    (PsychologyInput & {task?:"program"|"video_course"|"course_options"|"meditation"|"kip_library"|"symbol_explore"}) |
+    (PsychologyInput & {task?:"program"|"video_course"|"course_options"|"meditation"|"meditation_series"|"story_library"|"kip_library"|"symbol_explore"}) |
     {task: string}
 ): PsychologyProgram | PsychologyDialogueTurn | PsychologyVideoCourseDraft |
-   PsychologyMeditationDraft | PsychologyCourseOptions | PsychologyMotifLibrary | {
+   PsychologyMeditationDraft | PsychologyMeditationSeries | PsychologyStoryCatalog |
+   PsychologyCourseOptions | PsychologyMotifLibrary | {
   version: "psychologist-mind-v1"; status: string;
   modelUsed: false; saved: false;
 };
