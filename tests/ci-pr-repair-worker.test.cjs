@@ -66,14 +66,19 @@ test('Repair Worker reads owner lease and exact-head source receipt beyond page 
  assert.deepEqual(pages,[1,2]);
  assert.equal(result.status,'claimed');assert.equal(f.log.comments,1);
 });
-test('Repair Worker fails closed when history cannot be fully paginated',async()=>{
- const f=fixture();
- let pages=[];
+test('Repair Worker reads source receipt beyond 300 comments',async()=>{
+ const f=fixture();const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
-  pages.push(page);return {data:Array.from({length:100},()=>({body:'old'}))};
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
- assert.deepEqual(pages,[1,2,3]);
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.status,'claimed');
+});
+test('Repair Worker fails closed when comment history exhausts the API budget',async()=>{
+ const f=fixture();
+ f.github.rest.issues.listComments=async()=>({data:Array.from({length:100},()=>({body:'old'}))});
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
 });
 test('dry run and absent owner token never claim or modify source',async()=>{
