@@ -910,3 +910,33 @@ test('stage 2 retiring duplicate native CI routes to the immutable-base successo
     delegated:[{retired,replacement:successor}],
   });
 });
+
+test('Tantra Photo Cards has an approved BASE-trusted Reiki owner for phase-2 retirement',()=>{
+  const old='.github/workflows/hh-tantra-photo-levels.yml';
+  const successor='.github/workflows/hh-reiki-all-slides-browser.yml';
+  assert.equal(APPROVED_SPECIALIST_REPLACEMENTS[old],successor);
+  const owner=readFileSync(successor,'utf8');
+  for(const path of ['components/tantra-reiki-journey.tsx','components/tantra-reiki-story.tsx',
+    'components/academy-record-page.tsx','app/academy.css',
+    'tests/tantra-reiki-compact-fullwidth.test.mjs',
+    'tests/tantra-reiki-photo-levels.browser.mjs',
+    'tests/tantra-reiki-teacher-compact.test.mjs',
+    '.github/workflows/hh-tantra-photo-levels.yml']){
+    assert.ok(owner.includes("      - '"+path+"'"),'Reiki owner missing original trigger '+path);
+  }
+  for(const original of ['tests/tantra-reiki-photographic-landing.test.mjs',
+    'tests/tantra-reiki-level-one-focus.test.mjs','tests/tantra-reiki-mobile-chapters.test.mjs',
+    'npx --no-install eslint components/tantra-reiki-journey.tsx']){
+    assert.ok(owner.includes(original),'Reiki owner missing test '+original);
+  }
+  const legacy="on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - '.github/workflows/hh-tantra-photo-levels.yml'\n";
+  const trusted=new Map([[old,legacy],[successor,owner]]);
+  const proposed=new Map([[successor,owner]]);
+  const changed=[old];
+  const expected=expectedWorkflows({base:trusted,current:proposed,changed});
+  assert.deepEqual(expected,[successor,old].sort());
+  assert.deepEqual(resolveExpectedSpecialists({base:trusted,current:proposed,changed,expected}).delegated,
+    [{retired:old,replacement:successor}]);
+  assert.throws(()=>resolveExpectedSpecialists({base:trusted,current:new Map([[successor,owner+'\n# changed in retirement']]),changed,expected}),
+    /UNTRUSTED_SPECIALIST_REPLACEMENT/);
+});

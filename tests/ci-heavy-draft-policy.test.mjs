@@ -633,9 +633,6 @@ test('mobile-install PR retains private-message contracts; post-merge/manual run
 
 test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplicate builds are manual/post-merge',()=>{
   const configs=[
-    ['hh-tantra-photo-levels.yml',['Compile Next.js production pages without unrelated repository-wide prebuild fixture checks',
-      'Install pinned browser engine test runner','Verify public EN/RU/ES mobile cards in Chromium and WebKit',
-      'TypeScript static validation']],
     ['youtube-phone-uploader.yml',['Next.js production build','Install isolated Chromium and WebKit for phone UX acceptance',
       'Reproduce iPhone-sized scrolling in real Chromium/WebKit']],
     ['hh-public-journey-wave1.yml',['Build exact candidate once for both real-browser suites',
@@ -653,8 +650,13 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
     assert.match(source,/workflow_dispatch:/,filename+' manual QA lost');
     assert.doesNotMatch(source,/continue-on-error:\s*true/,filename+' cannot hide source failures');
   }
-  const photo=read('hh-tantra-photo-levels.yml');
-  assert.match(photo,/tests\/tantra-reiki-photographic-landing\.test\.mjs/);
+  const owner=read('hh-reiki-all-slides-browser.yml');
+  for(const original of ['tests/tantra-reiki-compact-fullwidth.test.mjs',
+    'tests/tantra-reiki-photographic-landing.test.mjs','tests/tantra-reiki-level-one-focus.test.mjs',
+    'tests/tantra-reiki-mobile-chapters.test.mjs','tests/tantra-reiki-teacher-compact.test.mjs',
+    'components/tantra-reiki-journey.tsx','.github/workflows/hh-tantra-photo-levels.yml']) {
+    assert.ok(owner.includes(original),'Existing Reiki owner must cover retired Tantra Photo source: '+original);
+  }
   const youtube=read('youtube-phone-uploader.yml');
   assert.match(youtube,/tests\/youtube-upload-readback\.test\.mjs/);
   const journey=read('hh-public-journey-wave1.yml');
