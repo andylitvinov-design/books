@@ -383,13 +383,13 @@ export default function MessagesSimpleInbox({
             <PracticeRequestConversation key={selected.id} inline autoOpen
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
-            <>
+            <div>
               {selected.item.requestKind==='public'&&<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}/>}
               <div className={styles.requestActions}>
                 <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
                   {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
               </div>
-            </>}
+            </div>}
         </div>}
         {!showCard&&selected?.kind==='business'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
