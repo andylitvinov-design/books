@@ -2,7 +2,7 @@ name: Holistic House axis-to-offer matching
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    branches: ['codex/public-book-library', 'feat/holistic-intelligence-core-20261029']
+    branches: ['codex/public-book-library']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
@@ -71,7 +71,6 @@ on:
       - 'app/api/holistic-agent/program/route.js'
       - '.github/workflows/hh-profile-axis-matching.yml'
       - 'components/app/test-explorer-visual.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
