@@ -97,7 +97,6 @@ on:
       - 'supabase/migrations/*request_bound_voice_media*'
       - 'tests/practitioner-request-voice.test.mjs'
       - 'components/app/practice-workspace.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/messenger-notification-settings.*'
       - 'lib/app/messenger-notification-*.js'
       - 'app/api/app/notification-channels/**'
