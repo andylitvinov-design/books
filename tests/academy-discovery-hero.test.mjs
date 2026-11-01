@@ -241,6 +241,13 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- assert.match(art,/Egypt_bookofthedead.jpg/);
- assert.match(art,/Marble_statue_of_Athena/);
+ const mirror=read("scripts/cache-ancient-coaching-photos.mjs");
+ for(const [slug,asset,original] of [
+  ["egyptian","egyptian-cover.jpg","Egypt_bookofthedead.jpg"],
+  ["greek","greek-cover.jpg","Marble statue of Athena, Louvre.jpg"],
+ ]){
+  assert.ok(art.includes(`${slug}:'/images/holistic-house/coaching-ancient/${asset}'`));
+  assert.ok(mirror.includes(`file:'${original}',path:traditionCoachingArt.${slug}`));
+ }
+ assert.ok(mirror.includes("manifest.length!==18"));
 });
