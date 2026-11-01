@@ -62,7 +62,7 @@ async function prepareLocalAudio(audio:BrowserMovieAudio,seconds:number):Promise
     source.loop=entry.loop;
     const gain=offline.createGain();
     // Smooth music edges; narration's short fade-in preserves first syllables.
-    const fadeIn=entry.loop?.25:.035, fadeOut=entry.loop?.7:.10;
+    const fadeIn=entry.loop ? 0.25 : 0.035, fadeOut=entry.loop ? 0.7 : 0.10;
     gain.gain.setValueAtTime(0,0);
     gain.gain.linearRampToValueAtTime(gainValue,fadeIn);
     gain.gain.setValueAtTime(gainValue,Math.max(fadeIn,seconds-fadeOut));
