@@ -662,83 +662,77 @@ const runEngine = async ([engine, browserType]) => {
           });
         }
 
-        // Older deep features still run: the original audio attach, aspect,
-        // duration and phrase tests continue under the single advanced section.
+        // Existing capabilities now have explicit, real visible six-tab owners.
+        // The old all-in-one legacy disclosure is intentionally mounted but hidden.
         await quick.locator('[data-video-quick-style="0"]').click();
         const detailed=page.locator("[data-video-quick-legacy]");
-        await detailed.waitFor({state:"visible",timeout:12000});
-        // React controls this native <details> via onToggle. After a busy
-        // real-media interaction, a delayed React commit can close a correctly
-        // opened disclosure. Only repeat an actual user summary click if the
-        // native open property remains false; never mutate it in the test.
-        const detailedSummary=detailed.locator(':scope > summary');
-        if(!(await detailed.evaluate(element=>element.open))){
-          await detailedSummary.click();
-        }
-        try {
-          await expect(detailed).toHaveJSProperty("open",true,{timeout:10000});
-        } catch(firstOpenError) {
-          if(await detailed.evaluate(element=>element.open))throw firstOpenError;
-          console.warn(engine+" "+locale+" "+width+"px advanced disclosure not committed; retrying one real summary click");
-          await detailedSummary.click();
-          await expect(detailed).toHaveJSProperty("open",true,{timeout:15000});
-        }
-        await expect(detailed.locator('[data-video-quick-duration="30"]'))
-          .toBeVisible({timeout:15000});
-        assert.equal(await detailed.locator("[data-video-quick-aspect]").count(),3);
+        assert.equal(await detailed.count(),1,"legacy wiring remains mounted for compatibility");
+        assert.equal(await detailed.isVisible(),false,
+          "the retired all-in-one controls cannot clutter the compact editor");
         assert.equal(await detailed.locator("[data-video-quick-duration]").count(),5,
-          "Director adds the 15-second option while preserving 10/20/30/60");
-        assert.equal(await detailed.locator('[data-video-quick-duration="15"]').count(),1);
-        await detailed.locator('[data-video-quick-duration="30"]').click();
-        assert.equal(await page.locator('[data-video-duration="30"]').getAttribute("aria-pressed"),"true");
-        await detailed.locator('[data-video-quick-aspect="landscape"]').click();
-        assert.equal(await page.locator('[data-video-aspect="landscape"]').getAttribute("aria-pressed"),"true");
-        await detailed.locator('[data-video-quick-aspect="portrait"]').click();
-        await detailed.locator('[data-video-quick-phrases="ready"]').click();
+          "original timing options remain in source; user edits the visible Editor");
+        const workspaceQuick=quick.locator("[data-video-quick-controls]");
+        await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        await expect(page.locator('[data-video-duration="30"]')).toBeVisible({timeout:15000});
+        assert.equal(await page.locator("[data-video-aspect]").count(),3);
+        assert.equal(await page.locator("[data-video-duration]").count(),5);
+        await page.locator('[data-video-duration="30"]').click();
+        await expect(page.locator('[data-video-duration="30"]')).toHaveAttribute("aria-pressed","true");
+        await page.locator('[data-video-aspect="landscape"]').click();
+        await expect(page.locator('[data-video-aspect="landscape"]')).toHaveAttribute("aria-pressed","true");
+        await page.locator('[data-video-aspect="portrait"]').click();
+        await expect(page.locator('[data-video-aspect="portrait"]')).toHaveAttribute("aria-pressed","true");
+        await workspaceQuick.locator('[data-video-quick-control="phrases"]').click();
+        const readyPhrases=page.locator('[data-video-quick-phrases="ready"]');
+        await expect(readyPhrases).toBeVisible();
+        await readyPhrases.click();
         assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),true);
-        await detailed.locator('[data-video-quick-phrases="ready"]').click();
+        await readyPhrases.click();
         assert.equal(await page.locator("[data-hypno-overview-enable]").isChecked(),false);
-        await detailed.locator("[data-video-quick-attach]").click();
-        assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
-          "compact attachment must apply the selected WAV to MediaRecorder");
-        assert.ok((await page.locator("[data-video-audio-attached]").textContent()||"").trim().length>8,
-          "the applied soundtrack name remains in the original audio editor");
-        await detailed.locator("[data-video-quick-section='5'] button").filter({hasText:
-          {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
-        assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
-          "explicit silent selection detaches the soundtrack");
+        await workspaceQuick.locator('[data-video-quick-control="video"]').click();
+        const audioDetails=page.locator("[data-video-audio-details]");
+        if(!(await audioDetails.evaluate(el=>el.open)))await audioDetails.locator(":scope > summary").click();
+        await expect(audioDetails).toHaveJSProperty("open",true,{timeout:12000});
+        const audioPane=page.locator("[data-video-audio-section]");
+        await expect(audioPane).toBeVisible();
+        await audioPane.locator('[data-video-music="harmony"]').click();
+        await audioPane.locator("[data-video-audio-attach]").click();
+        assert.equal(await audioPane.locator("[data-video-audio-attach]").isDisabled(),true,
+          "one explicit Attach adds the actual first-party WAV to the export");
+        assert.ok((await audioPane.locator("[data-video-audio-attached]").textContent()||"").trim().length>8);
+        await audioPane.locator('[data-video-music="none"]').first().click();
+        await audioPane.locator("[data-video-audio-attach]").click();
+        assert.equal(await audioPane.locator("[data-video-audio-attach]").isDisabled(),true,
+          "explicit Silent detaches soundtrack without a second audio engine");
         await quick.locator("[data-auto-video-input]").fill("");
-        // Keep detail view open for pre-existing complete 8-session,
-        // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
-        await picks.waitFor({state:"visible",timeout:12000});
-        assert.equal(await picks.locator("a").count(),4,"four actionable daily recommendations");
-        for (const link of await picks.locator("a").all()) assert.ok((await link.getAttribute("href"))?.startsWith("/"+locale+"/"),
+        assert.equal(await picks.locator("a").count(),4,
+          "original four localized daily recommendations remain in the existing catalog");
+        for(const link of await picks.locator("a").all())assert.ok((await link.getAttribute("href"))?.startsWith("/"+locale+"/"),
           "recommendations must link to existing localized pages");
         const supportTop=page.locator("[data-video-support-layout]");
-        await supportTop.waitFor({state:"visible",timeout:12000});
-        assert.equal(await supportTop.locator('input[type="range"]').count(),4);
+        assert.equal(await supportTop.locator('input[type="range"]').count(),4,
+          "original four scored attention dimensions remain available");
         const therapyButton=page.locator("[data-video-therapy-toggle]");
-        await therapyButton.waitFor({state:"visible",timeout:12000});
+        assert.equal(await therapyButton.count(),1);
         assert.equal(await therapyButton.getAttribute("aria-pressed"),"false");
-        assert.equal(await page.locator("[data-video-mode-switch]").count(),0,"removed segmented mode picker");
+        assert.equal(await page.locator("[data-video-mode-switch]").count(),0,"removed duplicate mode picker");
         const inactiveTherapyBackground=await therapyButton.evaluate(el=>getComputedStyle(el).backgroundImage);
-        assert.equal(inactiveTherapyBackground,"none","ordinary video must not look therapy-active");
+        assert.equal(inactiveTherapyBackground,"none");
         assert.equal(await page.locator("[data-video-category-rail] button").count(),4);
         assert.equal(await page.locator("[data-video-photo-enabled]").isChecked(),false,
-          "background-only is the default; adding a personal photo is opt-in");
+          "background-only remains the default; personal photo still needs permission");
         assert.equal(await page.locator("[data-video-photo-picker]").count(),1);
-        // Photo and affirmation controls remain practical touch targets on
-        // 320–430px real Chromium/WebKit layouts, not only CSS declarations.
+        // Use the actually visible first screen for touch geometry, not the
+        // retired collapsed legacy opt-ins, which have zero-size rectangles.
         const previewTouchTargets=await page.locator(
-          "[data-video-preview-choices] label, [data-video-preview-choices] button, [data-video-preview-choices] a"
-        ).evaluateAll(nodes=>nodes.map(node=>({
-          height:node.getBoundingClientRect().height,
-          width:node.getBoundingClientRect().width,
+          '[data-video-quick-controls] button, [data-video-director-goal-controls] [data-auto-video-goal]'
+        ).evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length>0).map(node=>({
+          height:node.getBoundingClientRect().height,width:node.getBoundingClientRect().width,
         })));
-        assert.equal(previewTouchTargets.length,4,"two opt-ins and two actionable links");
+        assert.equal(previewTouchTargets.length,10,"six real workspaces and four first-line goals");
         assert.ok(previewTouchTargets.every(rect=>rect.height>=44&&rect.width>=44),
-          engine+" "+locale+" "+width+"px compact video touch targets: "+JSON.stringify(previewTouchTargets));
+          engine+" "+locale+" "+width+"px visible tab and goal touch targets: "+JSON.stringify(previewTouchTargets));
         const hero=page.locator("[data-video-mandala-hero]");
         await hero.waitFor({state:"visible",timeout:12000});
         // Reference-state capture: the approved owner screenshot starts with
