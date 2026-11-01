@@ -540,7 +540,13 @@ try {
   await expect(admin.getByRole('heading', { name: 'Гомеопатическая рекомендация' })).toBeVisible()
   await expect(admin.locator('.canonical-progress-item')).toHaveCount(2)
   await expect(admin.locator('.canonical-report-analysis')).toContainText('Synthetic analysis')
-  await expect(admin.locator('.canonical-remedy-profiles')).toContainText('Colchicum')
+  // Remedy profiles are now native collapsed disclosures, not the retired
+  // .canonical-remedy-profiles wrapper. Exercise the visible summary and expansion. 
+  const remedyDisclosure = admin.locator('details.canonical-remedy-profile-disclosure').first()
+  await expect(remedyDisclosure.locator('summary')).toContainText('Colchicum')
+  await remedyDisclosure.locator('summary').click()
+  await expect(remedyDisclosure).toHaveAttribute('open', '')
+  await expect(remedyDisclosure.locator('.canonical-remedy-profile-content')).toContainText('Colchicum')
   assert.ok(!(await admin.content()).includes('DO NOT DISPLAY — PRIVATE SYNTHETIC'))
   const mobileBounds = await admin.evaluate(() => ({
     innerWidth,
