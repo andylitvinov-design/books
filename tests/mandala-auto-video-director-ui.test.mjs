@@ -97,3 +97,22 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.ok(approved.every(scene=>scene.poster?.startsWith("/videos/holistic-house/")&&
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });
+
+test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
+ const labels={
+  ru:["Видео","Музыка","Герои","Терапия","Коррекция","Курсы"],
+  en:["Video","Music","Heroes","Therapy","Correction","Courses"],
+  es:["Vídeo","Música","Héroes","Terapia","Corrección","Cursos"],
+ };
+ const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
+ for(const language of Object.keys(labels)){
+   const start=source.indexOf(" "+language+":{");
+   const next=language==="ru"?source.indexOf(" en:{",start):language==="en"?
+     source.indexOf(" es:{",start):source.indexOf("} as const;",start);
+   assert.ok(start>=0&&next>start,"localized workspace "+language);
+   const group=source.slice(start,next);
+   for(const label of labels[language])assert.ok(group.includes('tab:"'+label+'"'),language+" "+label);
+ }
+ assert.match(studio,/aria-pressed=\{activeWorkspace===item.id\|\|\(!activeWorkspace&&item.id==="video"\)\}/,
+   "Video tab is selected on the initial one-screen mock");
+});
