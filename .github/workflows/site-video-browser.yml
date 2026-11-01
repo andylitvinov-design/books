@@ -1,5 +1,6 @@
 name: Website video browser verification
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
@@ -51,6 +52,8 @@ on:
       - 'tests/ru-about-video-presentation.test.mjs'
       - 'public/images/holistic-house/video-posters/**'
       - '.github/workflows/site-video-browser.yml'
+      - 'scripts/ci-site-video-scope.mjs'
+      - 'tests/ci-site-video-scope.test.mjs'
       - 'app/**/about/page.tsx'
       - 'tests/psychic-alchemy-intro-video.test.mjs'
       - 'tests/site-video*.mjs'
@@ -99,8 +102,8 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: site-video-browser-${{ github.ref }}
-  cancel-in-progress: true
+  group: site-video-browser-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   browser:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -119,6 +122,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -129,6 +133,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Route exact tested-merge Site Video risk
+        id: impact
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-site-video-scope.mjs
       - name: Check Spanish translation and affected components
         run: |
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
@@ -146,6 +155,7 @@ jobs:
       - name: Original About video source lint
         run: npx --no-install eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
       - name: Install isolated browser test dependencies without changing the app lockfile
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         timeout-minutes: 12
         run: |
           # Use the official Ubuntu archive only in this ephemeral runner.
@@ -156,13 +166,17 @@ jobs:
           ln -s /tmp/video-browser-tools/node_modules/@playwright node_modules/@playwright
           /tmp/video-browser-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - run: sudo apt-get install -y redis-tools
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
       - name: Create ephemeral local test certificate
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/video-test-key.pem -out /tmp/video-test-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
       - name: Build actual application with locked production dependencies
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Exercise editor against isolated Redis
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
           sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
           node scripts/verify-site-video-browser.mjs
@@ -188,7 +202,7 @@ jobs:
         if: github.event_name == 'push'
         run: node scripts/verify-page-video-release.mjs --live
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.full == 'true')
         with:
           name: site-video-browser-evidence
           path: /tmp/site-video-evidence/
@@ -196,7 +210,7 @@ jobs:
 
   admin-verified-owner-browser:
     name: Isolated verified-owner video editor, real actions and Redis
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 32
     permissions:
@@ -234,6 +248,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -244,13 +259,20 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Route exact tested-merge Site Video risk
+        id: impact
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-site-video-scope.mjs
       - name: Verify synthetic owner bridge, E2E isolation and scripts before database setup
         run: |
           node --check scripts/verify-site-video-admin-browser.mjs
           node --test tests/site-video-admin-e2e-gate.test.mjs tests/admin-session-lifecycle.test.mjs
       - name: Initialize disposable empty PostgreSQL with exact app migrations
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Install pinned Chromium and Redis client for authenticated E2E
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
           mkdir -p /tmp/hh-video-admin-browser
           npm install --prefix /tmp/hh-video-admin-browser --no-audit --no-fund @playwright/test@1.63.0
@@ -258,15 +280,17 @@ jobs:
           /tmp/hh-video-admin-browser/node_modules/.bin/playwright install --with-deps chromium
           sudo apt-get install -y redis-tools
       - name: Prepare a loopback TLS certificate for the synthetic Redis gateway
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/video-test-key.pem -out /tmp/video-test-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
           sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
       - name: Exercise REAL practitioner/open and protected editor publication with fake local identity
+        if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         env:
           NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
         run: node scripts/verify-site-video-admin-browser.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || steps.impact.outputs.full == 'true')
         with:
           name: site-video-admin-owner-browser-synthetic
           path: /tmp/site-video-admin-evidence/

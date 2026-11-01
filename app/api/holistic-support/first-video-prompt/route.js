@@ -9,44 +9,29 @@ import { getAppConfig, requireSameOrigin } from "@/lib/app/config";
 import { consumeRate } from "@/lib/app/database";
 import { PRIVATE_HEADERS, readBody, safeError } from "@/lib/app/http";
 import { generateFreeFirstVideoPrompt, freeFirstVideoProviders } from "@/lib/mandala/first-video-free-providers.mjs";
+import { FIRST_VIDEO_PROMPT_ALLOWED_FIELDS, parseFirstVideoPromptInput } from "@/lib/mandala/first-video-prompt-contract.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 30;
 
-const allowedFields = ["locale","wish","theme","style","aspect","durationSeconds","consent"];
-const locales = ["en","ru","es"];
-const themes = ["auto","money","energy","relationships","goals","life","health"];
-const styles = ["warm","nature","dream","minimal"];
-const aspects = ["landscape","portrait","square"];
 const unavailable = code => new AppError(code, 503);
 
 function validateBody(body) {
-  onlyKeys(body,allowedFields);
-  if(body.consent !== true)throw new AppError("VIDEO_PROMPT_CONSENT_REQUIRED",403);
-  if(!locales.includes(body.locale) ||
-     !themes.includes(body.theme) ||
-     !styles.includes(body.style) ||
-     !aspects.includes(body.aspect) ||
-     ![20,30,60].includes(body.durationSeconds) ||
-     typeof body.wish !== "string" ||
-     body.wish.length < 3 || body.wish.length > 800 ||
-     body.wish.trim().length < 3 ||
-     /[\u0000-\u0008\u000B-\u001F\u007F]/u.test(body.wish))
-    throw new AppError("INVALID_VIDEO_PROMPT",400);
-  return {
-    locale:body.locale, theme:body.theme, style:body.style,
-    aspect:body.aspect, durationSeconds:body.durationSeconds,
-    wish:body.wish.trim(),
-  };
+  // Single allowlist shared by the client contract and every provider.
+  onlyKeys(body,FIRST_VIDEO_PROMPT_ALLOWED_FIELDS);
+  if(body.consent!==true)throw new AppError("VIDEO_PROMPT_CONSENT_REQUIRED",403);
+  const input=parseFirstVideoPromptInput(body);
+  if(!input)throw new AppError("INVALID_VIDEO_PROMPT",400);
+  return input;
 }
 
 export async function POST(request) {
   try {
     const config=getAppConfig();
     requireSameOrigin(request,config);
-    const input=validateBody(await readBody(request,3500));
+    const input=validateBody(await readBody(request,6000));
     // Only confirmed free-tier Gemini and free OpenRouter; no paid fallback.
     if(process.env.HH_FIRST_VIDEO_AI_ENABLED!=="true" ||
        !freeFirstVideoProviders(process.env).length)
@@ -63,6 +48,13 @@ export async function POST(request) {
         console.warn("HH_FIRST_VIDEO_FREE_PROVIDER_STATUS",JSON.stringify(result.diagnostics));
       throw unavailable(result.error);
     }
+    // Observability when a backup successfully rescued a failed model.
+    // Only coarse, allowlisted provider/model/status info; no user text, keys,
+    // prompt body or upstream response is logged or returned in JSON.
+    if(result.diagnostics?.length)
+      console.info("HH_FIRST_VIDEO_FREE_PROVIDER_RECOVERY",
+        JSON.stringify({provider:result.provider,model:result.model,
+          attempts:result.diagnostics}));
     // Explicit success allowlist: internal diagnostics never reach visitors.
     return NextResponse.json({prompt:result.prompt,provider:result.provider,
       model:result.model,mediaGenerated:false,localAssemblyOnly:true},

@@ -4,6 +4,8 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/hh-loose-release-ready-once.yml'
+      - '.github/workflows/hh-pr-core-release.yml'
+      - 'scripts/ci-quick-route.mjs'
   workflow_dispatch:
 permissions:
   contents: read
