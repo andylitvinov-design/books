@@ -87,7 +87,8 @@ test("mobile Courses selects one Greek channel, not the combined 12-video Greece
   assert.match(supportPage, /seriesHref: entry\.id\.startsWith\("greek-"\)/);
   assert.match(support, /"greek-dionysus": "Канал Диониса"/);
   assert.match(support, /"greek-demeter": "Канал Деметры"/);
-  assert.match(support, /choice === "pump" && program !== "all"\) return eligible/);
+  assert.match(support, /const relevantVideos = choice === "pump" && program !== "all"/);
+  assert.match(support, /catalogVideos\.slice\(0, 4\)/, "regular meditation retains exactly four featured posters");
   assert.match(support, /data-source-order=\{video\.lessonOrder\}/);
   assert.match(support, /data-support-lesson-navigation/);
   assert.match(support, /relevantVideos\[selectedLessonIndex \+ 1\]\.id/);
