@@ -392,6 +392,20 @@ async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, 
   return true;
 }
 
+
+function assessCronHealth(history,now,graceMinutes) {
+  if (!history || !Number.isSafeInteger(history.total_count) ||
+      !Array.isArray(history.workflow_runs) || history.total_count<0)
+    return {state:'UNKNOWN',last:null};
+  if(history.total_count===0)return {state:'UNOBSERVED',last:null};
+  const last=history.workflow_runs[0]?.created_at;
+  const age=now-Date.parse(last || '');
+  if(!Number.isFinite(age)||age< -5*60_000 || age>365*24*60*60_000)
+    return {state:'UNKNOWN',last:null};
+  return {state:age<=graceMinutes*60_000?'HEALTHY':'STALE',
+    last,ageMinutes:Math.max(0,Math.floor(age/60_000))};
+}
+
 async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
@@ -489,6 +503,44 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
+
+  // GitHub can silently omit cron events even when a workflow is ACTIVE and
+  // workflow_dispatch succeeds. This is observation only: do not affect the
+  // exact-head approval or CI capacity decisions based on scheduler health.
+  // Run only for the rare manual/default-branch/scheduled events; probing on
+  // every failed-Core callback would amplify Actions/API traffic.
+  summary.cronHealth='NOT_PROBED';
+  summary.cronLastSeen='NOT_PROBED';
+  if(['push','workflow_dispatch','schedule'].includes(context.eventName) && !budget.exhausted){
+    const workflows=[
+      ['watchdog','hh-pr-ten-minute-watchdog.yml',35],
+      ['ci','hh-pr-ci-worker.yml',35],
+      ['repair','hh-pr-repair-worker.yml',35],
+      ['hourly','hh-pr-full-inventory.yml',100]
+    ];
+    const states=[],lastSeen=[];
+    for(const [key,workflow_id,grace] of workflows){
+      try {
+        const {data}=await limited('cron-health-'+key,()=>github.request(
+          'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+            owner,repo,workflow_id,event:'schedule',per_page:1
+          }));
+        const assessment=assessCronHealth(data,now,grace);
+        states.push(key+':'+assessment.state);
+        lastSeen.push(key+':'+(assessment.last || 'none'));
+      } catch(error) {
+        states.push(key+':UNKNOWN');
+        lastSeen.push(key+':lookup-error');
+        log('CRON_HEALTH_LOOKUP_UNAVAILABLE '+key+' '+error.message);
+        if(budget.exhausted)break;
+      }
+    }
+    summary.cronHealth=states.join(' | ');
+    summary.cronLastSeen=lastSeen.join(' | ');
+    if(states.some(state=>state.includes('UNOBSERVED')||state.includes('STALE')))
+      core.warning('HH_CRON_LIVENESS: '+summary.cronHealth+
+        '; event-driven PR operations continue; GitHub scheduler registration needs verification');
+  }
   // This is a count of workflow runs, not runner jobs. Conservative admission control.
   let active = Infinity, queued = Infinity;
   try {
@@ -778,4 +830,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
