@@ -2143,9 +2143,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if (jobRef.current !== job || job.recorder.state !== "recording") return;
         if (now - lastFrame >= 1000 / framesPerSecond) {
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
-          paintCinematicFrame(ctx,image,effect,Math.min(duration,(now-start)/1000),aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,freeFilmVideoAt(Math.min(duration,(now-start)/1000)));
-          paintHypnoLightOverlay(ctx,Math.min(duration,(now-start)/1000),hypnoLight);
-          paintVideoAffirmations(ctx,Math.min(duration,(now-start)/1000),affirmationLines,affirmations);
+          const frameTime=Math.min(duration,(now-start)/1000);
+          const stockFrame=freeFilmVideoAt(frameTime);
+          // Keep the last real composition while a looping decoder buffers.
+          if(!usingFreeFilmCompilation || stockFrame){
+            paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame);
+            paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
+            paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations);
+          }
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
