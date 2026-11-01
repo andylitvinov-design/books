@@ -33,7 +33,8 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   }
   const scenes=page.locator('[data-video-scene-library] [data-free-film-more]');await scenes.click({timeout:20000});
   assert.equal(await page.locator('[data-video-scene-library] [data-free-film-preset]').count(),48);
-  await page.locator('[data-video-quick-control="psychocorrection"]').click();
+  // Six-workspace Studio exposes this genuine Hypno editor under Phrases.
+  await page.locator('[data-video-quick-control="phrases"]').click();
   const pane=page.locator('[data-hypno-overview]');await pane.waitFor({state:'visible'});
   const activePreview=pane.locator('[data-hypno-preview] strong');
   const beforeSmart=await activePreview.innerText();

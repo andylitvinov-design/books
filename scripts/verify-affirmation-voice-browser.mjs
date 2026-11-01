@@ -87,9 +87,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // A real visitor sets duration in the visible Music panel, then moves to
       // the visible Phrases workspace. The deprecated legacy disclosure is
       // intentionally hidden; tests must not click an invisible summary.
+      await page.locator('[data-video-quick-control="video"]').click();
       const musicSettings=page.locator("[data-video-audio-details]");
-      await musicSettings.locator(":scope > summary").click();
-      await page.locator('[data-video-audio-length="10"]').click();
+      await musicSettings.waitFor({state:"visible",timeout:25000});
+      // A previously opened disclosure must not be toggled closed. Exercise
+      // the actual visible 10 s control, not a hidden legacy copy.
+      if(await musicSettings.getAttribute("open")===null)
+        await musicSettings.locator(":scope > summary").click();
+      const lengthButton=musicSettings.locator('[data-video-audio-length="10"]');
+      await lengthButton.waitFor({state:"visible",timeout:25000});
+      await lengthButton.click();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
