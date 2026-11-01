@@ -5,7 +5,7 @@ on:
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
-  # Core release-ready already waits for all applicable specialist CI. Listening
+  # Core must verify its own gate and specialist CI before the merge review. Listening
   # to every specialist produced redundant callbacks and exhausted the shared
   # owner PAT's GitHub API rate budget (real 403 on 2026-11-01).
   workflow_run:
@@ -137,6 +137,36 @@ jobs:
               String(run.path || "").split("@")[0] === ".github/workflows/hh-pr-core-release.yml");
             if (!coreRun || coreRun.status !== "completed" || coreRun.conclusion !== "success") {
               log("SKIP core CI not green on current HEAD of PR #" + number);
+              return;
+            }
+            // Require the real Core job on the current PR's verified workflow.
+            // A successful workflow without this job is not source QA.
+            const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
+            })).data;
+            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
+                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
+                  job.status === "completed" && job.conclusion === "success")) {
+              log("SKIP current source missing verified Core job for PR #" + number);
+              return;
+            }
+            // Support both verified protection states without bypassing the
+            // old required status while the admin token is still insufficient.
+            const branchProtection = (await github.rest.repos.getBranch({
+              owner, repo, branch: "codex/public-book-library"
+            })).data;
+            const required = branchProtection.protection?.required_status_checks?.contexts;
+            const oldRequired = Array.isArray(required) && required.includes("release-ready");
+            const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            if (!branchProtection.protected || !Array.isArray(required) ||
+                (oldRequired === coreRequired)) {
+              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+              return;
+            }
+            if (oldRequired && !jobPage.jobs.some(job =>
+                job.name === "release-ready" && job.status === "completed" &&
+                job.conclusion === "success")) {
+              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||
@@ -329,7 +359,7 @@ jobs:
             try {
               await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
               log("RERUN_ACCEPTED first-attempt interrupted workflow " + event.id +
-                  " on exact PR #" + reference.number + "; new release-ready SUCCESS still required");
+                  " on exact PR #" + reference.number + "; current verified Core and specialist CI still required");
             } catch (error) {
               if ([403,404,409,422].includes(error.status)) {
                 core.warning("CORE_CI_RECOVERY: rerun not permitted/eligible (HTTP " + error.status + ")");

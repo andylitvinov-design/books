@@ -906,7 +906,7 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
   assert.match(repair,/actions: write/);
   assert.match(repair,/concurrency:/);
   assert.doesNotMatch(repair,/continue-on-error:|gh pr merge|update-branch|checkout@|force:/);
-  assert.match(repair,/new release-ready SUCCESS still required/);
+  assert.match(repair,/current verified Core and specialist CI still required/);
 });
 
 test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoids repeat ARM', () => {
@@ -929,6 +929,14 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
   assert.ok(enable.includes('branch: pr.head.ref, per_page: 100'), 'must query PR branch because CI head_sha may be synthetic');
   assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
+  assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
+  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
+    'must honor legacy branch protection until admin migration');
+  assert.ok(enable.includes('job.name === "release-ready" && job.status === "completed"'),
+    'must not bypass presently required release-ready');
+  assert.ok(enable.includes('const coreRequired = Array.isArray(required) && required.includes("hh-core-verified")'),
+    'must recognize migrated protection without weakening actual CI');
+
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
   assert.ok(enable.includes('"$current_method" == "$HH_EXPECTED_MERGE_METHOD"'), 'must avoid repeat ARM');
@@ -1055,7 +1063,7 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
       head_branch: live.head.ref, pull_requests: [{number: 42,
         base: {ref: live.base.ref}}]}},
   };
-  async function decide(runs, testedLive = live, expectedEvent = event, totalCount = runs.length) {
+  async function decide(runs, testedLive = live, expectedEvent = event, totalCount = runs.length, options = {}) {
     const outputs = {}, args = [];
     const github = {rest: {
       pulls: {get: async () => ({data: testedLive}),
@@ -1063,7 +1071,18 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
       actions: {listWorkflowRunsForRepo: async params => {
         args.push(params);
         return {data: {total_count: totalCount, workflow_runs: runs}};
-      }},
+      }, listJobsForWorkflowRun: async () => ({data: {
+        total_count: (options.jobs || []).length || 2,
+        jobs: options.jobs || [
+          {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+          {name: 'release-ready', status: 'completed', conclusion: 'success'},
+        ],
+      }})},
+      repos: {getBranch: async () => ({data: {
+        protected: true, protection: {required_status_checks: {
+          contexts: options.required || ['release-ready'],
+        }},
+      }})},
     }};
     await preflight(github, {setOutput: (k, v) => { outputs[k] = v; }, info: () => {}}, expectedEvent);
     if (args.length) {
@@ -1073,6 +1092,23 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
     return outputs.eligible === 'true';
   }
   assert.equal(await decide([good, specialist]), true, 'exact source association accepts synthetic CI SHA');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['hh-core-verified'],
+    jobs: [{name: 'hh-core-verified', status: 'completed', conclusion: 'success'}],
+  }), true, 'new branch protection accepts verified Core when old release-ready is no longer required');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    jobs: [
+      {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+      {name: 'release-ready', status: 'completed', conclusion: 'failure'},
+    ],
+  }), false, 'legacy required release-ready failure must block merging');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: ['release-ready', 'hh-core-verified'],
+  }), false, 'unknown mixed branch-protection state must block merging');
+  assert.equal(await decide([good, specialist], live, event, 2, {
+    required: [], 
+  }), false, 'unprotected status list cannot authorize native merge');
+
   assert.equal(await decide([good, {...specialist, conclusion: 'failure'}]), false, 'red specialist blocks ARM');
   assert.equal(await decide([{...good, pull_requests: []}]), false, 'missing association fails closed');
   assert.equal(await decide([{...good, pull_requests: [{
