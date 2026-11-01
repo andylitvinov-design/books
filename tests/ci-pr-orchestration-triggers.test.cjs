@@ -169,3 +169,14 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
  assert.ok(s.includes("vercel-event' || 'periodic'"));
 });
+
+test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
+ const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker'),dispatcher=read('hh-pr-queue-dispatcher');
+ assert.ok(repair.includes("kind:'repair',status:result.status"));
+ assert.ok(ci.includes("kind:'ci',status:result.started>0?'started':'skipped'"));
+ assert.ok(dispatcher.includes('completion_wake:'));
+ assert.ok(dispatcher.includes('waitForWorkerCompletion'));
+ assert.ok(dispatcher.includes('worker_run_id:'));
+ assert.ok(dispatcher.includes("'single-writer'"));
+ assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+});

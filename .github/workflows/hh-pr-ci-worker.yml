@@ -31,7 +31,7 @@ on:
       - 'tests/ci-pr-ci-worker.test.cjs'
 permissions:
   contents: read
-  actions: read
+  actions: write
   issues: write
   pull-requests: write
 concurrency:
@@ -125,7 +125,7 @@ jobs:
                 return {sha:commit.sha};
               }
             }:null;
-            await run({
+            const result=await run({
               github,core,context,sourceGit,
               prNumber:Number(context.payload.inputs?.pr_number || 0),
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
@@ -133,3 +133,5 @@ jobs:
               dryRun:context.eventName==='push' ||
                 String(context.payload.inputs?.dry_run ?? 'false')==='true'
             });
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_CI_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'ci',status:result.started>0?'started':'skipped',dryRun:result.dryRun,log:core.warning}));
