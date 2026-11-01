@@ -1,0 +1,120 @@
+name: HH one-shot owner cron registration recovery
+on:
+  push:
+    branches: ['codex/bootstrap-books']
+    paths: ['.github/workflows/hh-pr-cron-owner-repair.yml']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Audit only, never disable or enable another workflow'
+        required: false
+        type: boolean
+        default: true
+permissions:
+  actions: write
+  contents: read
+  issues: write
+concurrency:
+  group: hh-one-shot-cron-actor-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/codex/bootstrap-books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - name: Re-register never-observed cron with existing owner credential, once
+        uses: actions/github-script@v7
+        env:
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo}=context.repo;
+            const incident=2965, marker='HH_CRON_OWNER_REPAIR_20261101';
+            const issue=(await github.rest.issues.get({owner,repo,issue_number:incident})).data;
+            if(issue.state!=='open')throw Error('Cron incident already closed; no actor repair');
+            const comments=(await github.rest.issues.listComments({
+              owner,repo,issue_number:incident,per_page:100
+            })).data;
+            if(!Array.isArray(comments)||comments.length>=100)
+              throw Error('Incomplete cron-repair lease history');
+            if(comments.some(c=>(c.body||'').includes(marker))){
+              core.info('HH_CRON_REPAIR: existing once-only lease; no reactivation');
+              return;
+            }
+            const paths=[
+              'hh-pr-ten-minute-watchdog.yml',
+              'hh-pr-ci-worker.yml',
+              'hh-pr-repair-worker.yml',
+              'hh-pr-full-inventory.yml'
+            ];
+            const observations=[];
+            for(const workflow_id of paths){
+              const state=(await github.rest.actions.getWorkflow({
+                owner,repo,workflow_id
+              })).data;
+              const history=(await github.rest.actions.listWorkflowRuns({
+                owner,repo,workflow_id,event:'schedule',per_page:1
+              })).data;
+              if(!Number.isSafeInteger(history.total_count)||
+                 !Array.isArray(history.workflow_runs))
+                throw Error('Cannot verify cron history for '+workflow_id);
+              observations.push({workflow_id,state:state.state,
+                scheduled:history.total_count,
+                latest:history.workflow_runs[0]?.created_at||null});
+            }
+            await core.summary.addHeading('HH cron actor recovery: initial inventory')
+              .addCodeBlock(JSON.stringify(observations,null,2)).write();
+            const missing=observations.filter(r=>r.state==='active' && r.scheduled===0);
+            const dryRun=context.eventName==='workflow_dispatch' &&
+              String(context.payload.inputs?.dry_run??'true')!=='false';
+            if(dryRun || !missing.length){
+              core.info('HH_CRON_REPAIR: audit only / all cron histories observed');
+              return;
+            }
+            const token=process.env.HH_AUTOMERGE_TOKEN;
+            if(!token){core.warning('HH_CRON_REPAIR: existing owner credential missing; no workflow toggled');return;}
+            // Durable once-only receipt before the first state mutation:
+            // repeated default-branch pushes must never loop disable/enable.
+            await github.rest.issues.createComment({owner,repo,issue_number:incident,
+              body:'<!-- '+marker+' -->\nOne-time owner-token cron re-registration initiated for: '+
+                missing.map(r=>r.workflow_id).join(', ')+
+                '. This is an attempt, NOT proof of restored schedule delivery.'});
+            const ownerGithub=require('@actions/github').getOctokit(token);
+            const results=[];
+            for(const item of missing){
+              let disabled=false,status='NOT_CHANGED';
+              try{
+                await ownerGithub.rest.actions.disableWorkflow({
+                  owner,repo,workflow_id:item.workflow_id
+                });
+                disabled=true;
+                await ownerGithub.rest.actions.enableWorkflow({
+                  owner,repo,workflow_id:item.workflow_id
+                });
+                status='OWNER_REENABLED';
+              }catch(error){
+                status='OWNER_REENABLE_DENIED_'+String(error.status||'unknown');
+                core.warning('HH_CRON_REPAIR '+item.workflow_id+' '+status+
+                  ': '+String(error.message||'denied').slice(0,150));
+                if(disabled){
+                  // Always fail safe: never leave a formerly active workflow off.
+                  await github.rest.actions.enableWorkflow({
+                    owner,repo,workflow_id:item.workflow_id
+                  });
+                  status+=':FALLBACK_REENABLED';
+                }
+              }
+              const after=(await github.rest.actions.getWorkflow({
+                owner,repo,workflow_id:item.workflow_id
+              })).data;
+              if(after.state!=='active')
+                throw Error('CRITICAL: workflow no longer active after actor repair: '+item.workflow_id);
+              results.push({workflow_id:item.workflow_id,status,after:after.state});
+            }
+            core.info('HH_CRON_REPAIR_RESULT '+JSON.stringify(results));
+            await core.summary.addHeading('One-time cron actor re-registration results')
+              .addCodeBlock(JSON.stringify(results,null,2))
+              .addRaw('Cron only recovers after a real event=schedule run; do not infer success from this job.')
+              .write();
