@@ -25,3 +25,20 @@ Owner's approved reference is the 390 CSS-pixel iPhone mock from the Holistic Ho
 
 ## QA gate
 Verify 320/354/375/390/430 CSS px, both Chromium and WebKit, one preview, disclosure ARIA, keyboard, swipe rail, no overflow, reduced motion; run new wave/source tests, focused Mandala E2E (actual MP4/WebM bytes and frame changes), typecheck/lint/build, photo rights/audio privacy tests. No pixel-match certification without rendered screenshot/overlay at the same route/state. Merge only on exact-head CI green; confirm Vercel READY, SHA and canonical alias; physical iPhone Safari Save to Files remains a separate verification.
+
+
+## Owner-approved third workspace update — 2026-11-01 (supersedes 30 Oct accordion layout)
+
+**Identity:** anonymous guest on `/{ru,en,es}/holistic-support/mandala`, select existing third **Effects / Эффекты / Efectos** workspace. The screenshot is a mobile design reference, **not proof of the currently rendered live page**. Keep one existing Canvas/MediaRecorder player, one real local renderer, one Audio picker, original consent and EN/RU/ES.
+
+**Visible reference regions:** native header (outside editor); title «Гипнокоррекция» and short text; one purple Wave recommendation banner; original 16:9 video preview with real Play; four illustrated control rows and one emerald «Сформировать видео» action. Within the shared editor the original video is upstream of the workspace panel; this change does not fork or relocate that source player. The six workspace tabs remain available upstream and are not copied into the Hypno child.
+
+**Four rows order and geometry:**
+1. **Аудио:** scenic portrait tile on left; three compact active setting cards: «Озвучка фраз», «Гипнозвук», «Бинауральные ритмы». A green switch is shown only for actually attached authorized audio. Quiet speech/binaural remain visibly disabled until a verifiable exported sound mix exists.
+2. **Визуальные эффекты:** scenic nature tile left; three picture-backed cards: light pulse (working toggle and sliders), scene catalog (working editor), local photo (rights-gated original picker).
+3. **Личная медитация:** scenic practice tile left, one large «Сгенерировать медитацию» and three compact options for duration 3/5/8/12, tone and voice; every option goes to the *existing* local meditation editor. Text is real; a finished audio track is **not** implied.
+4. **Установки и внушения:** scenic sunlight tile left, visible text, experimental brief frame, pending speech repetition. Existing AffirmationSettings controls and consent retained.
+
+At 375–430 CSS px use a left picture tile (~28% width) plus three same-row feature cards with real Configure buttons, controls and concise readable copy; below 375 CSS px move the illustrated group heading above the three cards instead of shrinking cards below accessible sizes. Group headings remain independently collapsible, all four expanded on first visit. Keep status notes and reduced motion. No duplicate mic, editor or Create button. One primary Create delegates to original `startFromHero` (consent/rights checks, real encoded output; local usage 0 credits), while the original extra CTA is hidden only in this workspace. The original top player remains the source of preview. Do not activate a paid provider, billing or a medical claim.
+
+**QA:** exact-head Node+typecheck+lint+build; existing Mandala Chromium and WebKit at 320/354/375/390/430 RU and 390 EN/ES must tap third workspace, verify all group cards and geometry, Wave state, one Create and no overflow; capture synthetic public screenshots. Required source-output media/FFprobe test remains intact. **Not yet proof:** user-uploaded iPhone E2E, pixel overlay against owner JPEG (different DPR/crop), Vercel READY/live SHA until independently observed after merge.

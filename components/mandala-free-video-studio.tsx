@@ -4106,6 +4106,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
             onPreview={openAffirmationPreview}
+            onCreate={startFromHero}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -5072,7 +5073,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <Sparkles size={17} aria-hidden="true"/>{layout.affirmationsTab}
         </a>
       </nav>
-      {studioMode==="pump" ? <>
+      {studioMode==="pump"&&activeWorkspace!=="effects" ? <>
       <div className={videoStyles.postHeroActions} data-video-hero-actions>
         <button type="button" className={videoStyles.heroCreate}
           data-video-hero-create disabled={recording||preparing} onClick={startFromHero}>

@@ -63,3 +63,23 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
+
+
+test("owner's third workspace exposes all four image-led groups in screenshot order and one real Create handler",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+  const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
+  assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
+  assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
+  assert.match(ui,/data-hypno-card/);
+  assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
+  assert.match(ui,/data-hypno-create/);
+  assert.match(studio,/onCreate=\{startFromHero\}/);
+  assert.match(studio,/studioMode==="pump"&&activeWorkspace!=="effects"/);
+  assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css,/@media\(max-width:374px\)/);
+  for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
+  assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
+  assert.match(ui,/onCreate=\{onCreate\}/);
+});
