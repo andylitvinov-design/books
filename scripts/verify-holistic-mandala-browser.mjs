@@ -366,7 +366,10 @@ const runEngine = async ([engine, browserType]) => {
         const playerRect=await screen.boundingBox();
         assert.ok(playerRect&&playerRect.width>playerRect.height,
           engine+" "+locale+" "+width+"px central player must be widescreen");
-        assert.equal(await quick.locator('[data-video-quick-theme="life"] span').last().innerText(),
+        // This optional theme menu is initially collapsed; innerText() returns ""
+        // for hidden descendants in BOTH engines. Verify the real localized DOM
+        // label without opening an advanced control or weakening user flows.
+        assert.equal((await quick.locator('[data-video-quick-theme="life"] span').last().textContent())?.trim(),
           {ru:"Смысл и развитие",en:"Meaning & growth",es:"Sentido y desarrollo"}[locale]);
         assert.equal(await page.locator("[data-video-quick-legacy]").getAttribute("open"),null);
         assert.equal(await quick.locator("[data-video-practice-card]").count(),3,
