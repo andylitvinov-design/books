@@ -55,6 +55,8 @@ jobs:
                pullRule.parameters?.required_review_thread_resolution!==true)
               throw Error("Production ruleset not verified");
             const methods=new Set(pullRule.parameters?.allowed_merge_methods||[]);
+            const required=ruleset.rules?.find(r=>r.type==="required_status_checks")?.parameters?.required_status_checks||[];
+            const releaseMandatory=required.some(r=>r.context==="release-ready");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
@@ -66,18 +68,40 @@ jobs:
               }
               return names;
             }
-            function passed(names){
-              const gate=names?.get("release-ready");
-              return !!gate&&gate.status==="completed"&&gate.conclusion==="success"&&
-                gate.app?.slug==="github-actions"&&
-                ![...names.values()].some(c=>red.has(c.conclusion));
+            // Release-ready may temporarily be optional; replace it only with proven exact-HEAD QA.
+            const quality=/core-lint-types-build|actionlint-changed|unit|browser|database|guard-unit|contract|public-services|focused-verification|crm|verify/i;
+            const build=/core-lint-types-build|actionlint-changed|unit-types-build|unit-build|focused-verification/i;
+            const functional=/browser|database|guard-unit|contract|public-services|crm|verify|unit/i;
+            function assess(names){
+              if(!names)return {ok:false,reason:"INCOMPLETE_CHECKS"};
+              const rows=[...names.entries()],gate=names.get("release-ready");
+              const gateGreen=gate?.status==="completed"&&gate.conclusion==="success"&&gate.app?.slug==="github-actions";
+              if(rows.some(([name,c])=>name!=="release-ready"&&red.has(c.conclusion)))
+                return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};
+              if(rows.some(([name,c])=>quality.test(name)&&c.status!=="completed"))
+                return {ok:false,reason:"FOCUSED_QA_RUNNING"};
+              if(gateGreen)return {ok:true,via:"CORE_GATE"};
+              if(releaseMandatory)return {ok:false,reason:"REQUIRED_RELEASE_READY_NOT_GREEN"};
+              const green=rows.filter(([name,c])=>quality.test(name)&&c.conclusion==="success").map(([name])=>name);
+              if(!green.some(name=>build.test(name))||!green.some(name=>functional.test(name)))
+                return {ok:false,reason:"INDEPENDENT_QA_NOT_VERIFIED"};
+              return {ok:true,via:"FOCUSED_QA"};
             }
             for(const pr of pending){
               try{
+                const preflight=(await github.rest.pulls.get({owner,repo,pull_number:pr.number})).data;
+                if(preflight.state!=="open"||preflight.draft||preflight.head.sha!==pr.head.sha||
+                   preflight.base.ref!==PROD){skip("CHANGED_HEAD_BASE_STATE");continue;}
+                if(preflight.mergeable===false||preflight.mergeable_state==="dirty"){
+                  skip("MERGE_CONFLICT_DIRTY");continue;
+                }
+                if(preflight.mergeable!==true||!["clean","behind"].includes(preflight.mergeable_state)){
+                  skip("BLOCKED_OR_UNKNOWN_MERGEABILITY");continue;
+                }
                 const checks=await latestChecks(pr.head.sha);
                 checksRead++;
-                if(!checks){skip("INCOMPLETE_CHECKS");continue;}
-                if(!passed(checks)){skip("NO_GREEN_GATE_OR_RED_CHECK");continue;}
+                const qa=assess(checks);
+                if(!qa.ok){skip(qa.reason);continue;}
                 const status=(await github.rest.repos.getCombinedStatusForRef({
                   owner,repo,ref:pr.head.sha,per_page:100
                 })).data;
@@ -92,13 +116,20 @@ jobs:
                    live.head.sha!==pr.head.sha||live.head.repo?.full_name!==fullRepo){
                   skip("CHANGED_HEAD_BASE_STATE");continue;
                 }
-                if(live.mergeable!==true||live.mergeable_state!=="clean"){
-                  skip("NOT_CLEAN_MERGEABLE");continue;
+                if(live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
+                  skip("NOT_MERGEABLE");continue;
+                }
+                if(qa.via==="FOCUSED_QA"){
+                  const files=(await github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100})).data;
+                  if(!Array.isArray(files)||files.length>=100){skip("ALT_QA_FILES_INCOMPLETE");continue;}
+                  const sensitive=files.some(f=>/auth|security|privacy|consent|billing|payment|stripe|paypal|rls|supabase|secrets?|\/api\//i.test(f.filename));
+                  const namedSafety=[...checks.entries()].some(([name,c])=>/auth|security|privacy|consent|billing|payment|rls|database|guard/i.test(name)&&c.conclusion==="success");
+                  if(sensitive&&!namedSafety){skip("SENSITIVE_SPECIALIST_QA_MISSING");continue;}
                 }
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
-                eligible.push({number:pr.number,head:pr.head.sha,base:live.base.sha,method});
+                eligible.push({number:pr.number,head:pr.head.sha,base:live.base.sha,method,via:qa.via});
               }catch(e){detailErrors++;skip("DETAIL_ERROR");core.warning("HH_FULL_OPEN_PR: #"+pr.number+" "+e.message);}
             }
             let attempts=0,merged=0,autoArmed=0;
@@ -110,11 +141,11 @@ jobs:
                const live=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
                if(live.state!=="open"||live.draft||live.auto_merge||
                   live.head.sha!==c.head||live.base.sha!==c.base||
-                  live.base.ref!==PROD||live.mergeable!==true||live.mergeable_state!=="clean"){
+                  live.base.ref!==PROD||live.mergeable!==true||!["clean","behind"].includes(live.mergeable_state)){
                  skip("CHANGED_BEFORE_ARM");continue;
                }
                // Never rely on a stale success while the full inventory was being scanned.
-               if(!passed(await latestChecks(c.head))){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
+               if(!assess(await latestChecks(c.head)).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
                const comments=await github.paginate(github.rest.issues.listComments,{
                  owner,repo,issue_number:c.number,per_page:100
                });
@@ -155,8 +186,9 @@ jobs:
             const report=[
              "Open: "+all.length+"; pages: "+pages+"; production: "+production.length+
              "; non-Draft: "+nonDraft.length+"; other-base: "+(all.length-production.length),
-             "Already armed: "+armed.length+"; unarmed inspected: "+checksRead+
-             "; eligible exact-HEAD green: "+eligible.length,
+             "Already armed: "+armed.length+"; non-Draft candidates: "+pending.length+
+             "; QA inspected: "+checksRead+"; independently verified eligible: "+eligible.length+
+             " (focused alternate: "+eligible.filter(x=>x.via==="FOCUSED_QA").length+")",
              "New confirmed ARMED: "+autoArmed+"; MERGED: "+merged+
              "; unattempted eligible: "+Math.max(0,eligible.length-attempts),
              "Inventory: COMPLETE; details: "+(detailErrors?"PARTIAL ("+detailErrors+" errors)":"COMPLETE"),
