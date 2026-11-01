@@ -32,6 +32,17 @@ on:
       - 'app/api/holistic-support/hypno-strategy/**'
       - 'components/mandala-guided-course*'
       - 'components/mandala-personal-meditation*'
+      - 'components/mandala-cloud-voice-studio*'
+      - 'components/mandala-affirmation-voice*'
+      - 'tests/affirmation-voice.test.mjs'
+      - 'tests/affirmation-voice-browser-attachment.test.mjs'
+      - 'tests/wav-pcm-mixer.test.mjs'
+      - 'tests/mandala-webcodecs-mp4.test.mjs'
+      - 'scripts/verify-affirmation-voice-browser.mjs'
+      - 'app/api/holistic-support/voice/**'
+      - 'tests/voice-studio.test.mjs'
+      - 'tests/voice-studio-provider.test.mjs'
+      - 'tests/voice-studio-openrouter.test.mjs'
       - 'components/mandala-cinematic-director*'
       - 'components/mandala-auto-video-director*'
       - 'components/mandala-stories-characters*'
@@ -109,7 +120,7 @@ concurrency:
   group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
-  # Short domain contracts run on Ready; heavy legacy media/browser matrix is manual-only.
+  # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
   focused-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
@@ -133,7 +144,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Check browser acceptance script syntax before slow production build
-        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs
+        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
@@ -150,7 +161,9 @@ jobs:
           node --test tests/mandala-video-phrase-catalog.test.mjs
           npx --no-install eslint components/mandala-phrase-catalog.tsx lib/mandala/video-phrase-catalog.mjs app/api/holistic-support/video-phrases/route.js
       - name: Mandala and mobile support contracts
-        run: node --test tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/video-chat-ai.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-therapy-video-intro.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/video-scene-match.test.mjs
+        run: node --test tests/video-chat-ai.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs
+      - name: Voice provider contract and negative cases
+        run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs
       - name: Stories and Characters exact source acceptance
         run: |
           if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then
@@ -161,25 +174,25 @@ jobs:
             npx --no-install eslint components/mandala-stories-characters.tsx lib/mandala/story-addon-catalog.ts
           fi
       - name: Targeted lint
-        run: npx --no-install eslint lib/mandala/video-executable-director.mjs lib/mandala/video-chat-executable-ai.mjs app/api/holistic-support/video-director-plan/route.js lib/mandala/hypno-wave-engine.mjs lib/mandala/cinematic-kling-handoff.mjs lib/mandala/free-film-timeline.mjs components/mandala-auto-video-director.tsx components/mandala-video-director-chat.tsx lib/mandala/video-chat-intent.mjs lib/mandala/video-chat-ai.mjs app/api/holistic-support/video-director-chat/route.js lib/mandala/auto-video-director.mjs app/api/holistic-support/first-video-prompt/route.js app/api/holistic-support/hypno-strategy/route.js components/mandala-hypnocorrection-mobile.tsx components/meditation-course-enquiry.tsx components/mandala-first-video-start.tsx lib/mandala/first-video-director.mjs lib/mandala/first-video-free-providers.mjs scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts
+        run: npx --no-install eslint lib/mandala/video-executable-director.mjs lib/mandala/video-chat-executable-ai.mjs app/api/holistic-support/video-director-plan/route.js components/mandala-video-director-chat.tsx lib/mandala/video-chat-intent.mjs lib/mandala/video-chat-ai.mjs app/api/holistic-support/video-director-chat/route.js app/api/holistic-support/first-video-prompt/route.js components/mandala-first-video-start.tsx lib/mandala/first-video-director.mjs lib/mandala/first-video-free-providers.mjs scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts components/mandala-cloud-voice-studio.tsx components/mandala-affirmation-voice.tsx lib/mandala/wav-pcm-mixer.mjs lib/mandala/affirmation-voice.mjs lib/mandala/voice-studio.mjs lib/mandala/voice-studio-openrouter-provider.mjs lib/mandala/voice-audio-mix.ts 'app/[locale]/holistic-support/voice-studio/route.ts' app/api/holistic-support/voice/route.js lib/mandala/hypno-wave-engine.mjs lib/mandala/cinematic-kling-handoff.mjs lib/mandala/free-film-timeline.mjs components/mandala-auto-video-director.tsx lib/mandala/auto-video-director.mjs app/api/holistic-support/hypno-strategy/route.js components/mandala-hypnocorrection-mobile.tsx components/meditation-course-enquiry.tsx
       # Mandatory Core checks exact-head TypeScript on production-bound PRs;
       # retain independent full typing for any other future event/ref.
       - name: Typecheck
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Build
-        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         run: npm run build
 
       - name: Install isolated Chromium and WebKit (no external account)
-        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         run: |
           mkdir -p /tmp/hh-mandala-playwright
           npm install --prefix /tmp/hh-mandala-playwright --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-mandala-playwright/node_modules/@playwright node_modules/@playwright
           /tmp/hh-mandala-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Ensure ffprobe and ffmpeg for real encoded video/audio verification
-        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         run: |
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
             sudo apt-get update -qq
@@ -188,7 +201,7 @@ jobs:
           ffprobe -version | head -n 1
           ffmpeg -version | head -n 1
       - name: Public mandala photo, PNG and video browser flow · 320/390/430px
-        if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
+        if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         env:
           HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
           HH_HYPNO_SCREENSHOT_DIR: artifacts/hypno-compact
@@ -203,13 +216,20 @@ jobs:
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then cat /tmp/hh-mandala-next.log; exit 1; fi
+          # Linux Chromium supports the local recorder; WebKit runs in a
+          # separate macOS job with real Safari-platform media codecs.
+          HH_VOICE_E2E_ENGINE=chromium node scripts/verify-affirmation-voice-browser.mjs
           node scripts/verify-hypno-wave-browser.mjs
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
             node scripts/benchmarking/first-video-live-export.mjs
-          node scripts/verify-holistic-mandala-browser.mjs
+          # The voice release path requires dual-engine real encoded-audio QA.
+          # The long all-workspaces Mandala suite remains available manually.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            node scripts/verify-holistic-mandala-browser.mjs
+          fi
       - name: Upload synthetic audio-only iPhone screenshots
-        if: always() && github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'
+        if: always() && steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))
         uses: actions/upload-artifact@v4
         with:
           name: mandala-audio-mobile-${{ github.sha }}
@@ -217,10 +237,75 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Publish synthetic mobile Hypno screenshots
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots
           path: artifacts/hypno-compact/*.png
           if-no-files-found: ignore
           retention-days: 3
+
+  # Linux Playwright WebKit does not implement Canvas captureStream in this
+  # runner image. Prove the *actual encoded* voice/video via WebKit on macOS,
+  # the closest supported CI platform to iPhone Safari. Never mock a download.
+  # Video source-clock fixes require real macOS Safari encoded-output evidence.
+  voice-webkit-macos:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-')) }}
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+      HH_VOICE_E2E_ENGINE: webkit
+      # Test real WebKit native compositor rather than frozen headless media.
+      HH_VOICE_E2E_HEADED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and build exact voice release candidate
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Install WebKit and real media decoders
+        run: |
+          mkdir -p "$RUNNER_TEMP/voice-playwright"
+          npm install --prefix "$RUNNER_TEMP/voice-playwright" --no-audit --no-fund @playwright/test@1.63.0
+          ln -s "$RUNNER_TEMP/voice-playwright/node_modules/@playwright" node_modules/@playwright
+          "$RUNNER_TEMP/voice-playwright/node_modules/.bin/playwright" install webkit
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            brew install ffmpeg
+          fi
+      - name: WebKit recorded movie contains video and audible consented voice
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-voice-macos-next.log 2>&1 & NEXT_PID=$!
+          trap 'kill "$NEXT_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for ((i=1; i<=60; i++)); do
+            if curl --silent --fail http://127.0.0.1:3100/ru/holistic-support/mandala >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/hh-voice-macos-next.log; exit 1; fi
+          node scripts/verify-affirmation-voice-browser.mjs
+          # Gate on the *actual* WebKit four-scene H264/AAC movie, not mock TTS.
+          # Validate approved source IDs, scene order, motion, black gaps and audio.
+          HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 \
+            HH_LIVE_VIDEO_REQUIRE_STOCK=true \
+            HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
+            HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1 \
+            node scripts/benchmarking/first-video-live-export.mjs
+      - name: Preserve anonymous WebKit encoded video evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-webkit-four-scene-${{ github.sha }}
+          path: artifacts/benchmarking/first-video-live-export.json
+          if-no-files-found: warn
+          retention-days: 7
