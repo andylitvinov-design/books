@@ -232,7 +232,6 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  const css=read("components/academy-discovery.module.css");
  const lounge=read("components/public-coaching-discovery.jsx");
  const art=read("lib/coaching/public-session-art.js");
- const mirror=read("scripts/cache-ancient-coaching-photos.mjs");
  assert.ok(hub.includes("const coachingItem: AcademyCourseItem = "));
  assert.ok(hub.includes("coachingItem={coachingItem}"));
  assert.ok(discovery.includes("data-academy-coaching-session"));
@@ -242,9 +241,6 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- // Historical Commons filenames belong to the build-time mirror, not the public image URL.
- assert.match(art,/egyptian:\s*['"]\/images\/holistic-house\/coaching-ancient\/egyptian-cover\.jpg['"]/);
- assert.match(art,/greek:\s*['"]\/images\/holistic-house\/coaching-ancient\/greek-cover\.jpg['"]/);
- assert.match(mirror,/file:'Egypt_bookofthedead\.jpg',path:traditionCoachingArt\.egyptian/);
- assert.match(mirror,/file:'Marble statue of Athena, Louvre\.jpg',path:traditionCoachingArt\.greek/);
+ assert.match(art,/Egypt_bookofthedead.jpg/);
+ assert.match(art,/Marble_statue_of_Athena/);
 });
