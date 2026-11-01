@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -78,16 +78,17 @@ test('release audit and consent test helper changes run only their Public Servic
   }
 });
 
-test('isolated Alchemy CSS keeps real paired-browser acceptance, not 12 unrelated scripts', () => {
+test('Alchemy CSS-only uses source-tested Core build, never a duplicate full browser', () => {
   const file = 'components/alchemy-soul-landing.module.css';
   const plan = planPublicServicesChangedPaths([file]);
-  assert.equal(plan.mode, 'focused');
-  assert.equal(plan.build, true);
-  assert.equal(plan.browser, true);
+  assert.equal(plan.mode, 'contracts');
+  assert.equal(plan.build, false);
+  assert.equal(plan.browser, false);
   assert.equal(plan.metrics, false);
-  assert.deepEqual(plan.cases.split(',').sort(),
-    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']);
+  assert.equal(plan.cases, 'none');
+  assert.equal(publicPlaywrightEngines(plan), 'none');
   assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-lead-form.tsx']).mode, 'full');
+  assert.equal(planPublicServicesChangedPaths([file, 'components/alchemy-soul-landing.tsx']).mode, 'full');
 });
 
 test('the exact Public Services CI+Alchemy change verifies only its two real browser owners', () => {
@@ -539,4 +540,54 @@ test('independent Site Video CI orchestration never triggers unrelated thirteen-
   assert.equal(requiresPublicServicesHeavyPr(plan),false);
   const mixed=planPublicServicesChangedPaths([...files,'app/api/payments/talismans/checkout/route.js']);
   assert.deepEqual([mixed.mode,requiresPublicServicesHeavyPr(mixed)],['full',true]);
+});
+
+test('common public display changes use only relevant browser cases, not unrelated 13-case E2E',()=>{
+  const direction=planPublicServicesChangedPaths(['components/direction-offers.tsx']);
+  assert.equal(direction.mode,'focused');
+  assert.equal(direction.build,true);
+  assert.equal(direction.browser,true);
+  assert.deepEqual(direction.cases.split(',').sort(),[
+    'verify-direction-focus-mobile.mjs','verify-public-services-production.mjs',
+  ]);
+  assert.equal(publicPlaywrightEngines(direction),'chromium');
+  assert.equal(requiresPublicServicesHeavyPr(direction),true);
+  const video=planPublicServicesChangedPaths(['components/academy-course-video-playlist.tsx']);
+  assert.deepEqual([video.mode,video.cases],['focused','verify-public-services-production.mjs']);
+  assert.equal(publicPlaywrightEngines(video),'chromium');
+  for(const risky of ['components/consultation-choice-capture.tsx',
+    'components/alchemy-soul-lead-form.tsx',
+    'app/api/payments/talismans/checkout/route.js',
+    'middleware.ts','components/holistic-support-topic-filter.tsx']){
+    const result=planPublicServicesChangedPaths([risky]);
+    assert.equal(result.mode,'full',risky+' must retain full E2E');
+    assert.equal(publicPlaywrightEngines(result),'chromium webkit');
+  }
+  for(const file of ['scripts/verify-storefront-shop-browser.mjs',
+    'scripts/verify-talisman-google-checkout-browser.mjs',
+    'scripts/verify-reiki-mobile-order-browser.mjs']){
+    const result=planPublicServicesChangedPaths([file]);
+    assert.equal(publicPlaywrightEngines(result),'chromium webkit',file+' WebKit required');
+  }
+  const yml=workflow('hh-public-services-production.yml');
+  assert.match(yml,/HH_PUBLIC_BROWSER_ENGINES/);
+  assert.match(yml,/steps\.scope\.outputs\.engines/);
+  assert.match(yml,/playwright install --with-deps chromium\n/);
+  assert.match(yml,/playwright install --with-deps chromium webkit/);
+});
+
+test('browser CI ignores only verified APP_UNAVAILABLE 503 without silencing other errors',()=>{
+  const source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
+  for(const guard of [
+    'response.status() === 503',
+    '/api/catalog/ratings',
+    '/api/service-enquiries/booking-status',
+    "item.code !== 'APP_UNAVAILABLE'",
+    'if (!process.env.HH_APP_SUPABASE_URL)',
+    'const expectedUnavailable = new Set()',
+    'expectedUnavailable.has(entry.path)',
+    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API response')",
+    'assert.deepEqual(unexpected, [], "Unexpected browser console errors")'
+  ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
+  assert.ok(!source.includes('expectedUnavailable.set(item.path'),'Outdated response-count assumption still present');
 });

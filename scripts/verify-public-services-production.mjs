@@ -681,16 +681,21 @@ try {
   const unavailable = await Promise.all(responseEvidence);
   // This isolated CI server has no app credentials. Accept only documented,
   // observed APP_UNAVAILABLE responses, never fake successful provider data.
-  const expectedUnavailable = new Map();
+  // A verified missing-app response may emit duplicate Chromium console messages.
+  // Only two known read-only endpoints with APP_UNAVAILABLE are exempt in
+  // credential-free CI; other responses and errors still fail closed.
+  const expectedUnavailable = new Set();
+  const unexpectedUnavailable = unavailable.filter(item =>
+    !item || item.code !== 'APP_UNAVAILABLE' ||
+    !['/api/catalog/ratings', '/api/service-enquiries/booking-status'].includes(item.path));
+  assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API response');
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const item of unavailable) if (item?.code === 'APP_UNAVAILABLE')
-      expectedUnavailable.set(item.path, (expectedUnavailable.get(item.path) || 0) + 1);
+    for (const item of unavailable) expectedUnavailable.add(item.path);
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;
-    const remaining = expectedUnavailable.get(entry.path) || 0;
-    if (remaining && entry.text === 'Failed to load resource: the server responded with a status of 503 (Service Unavailable)') {
-      expectedUnavailable.set(entry.path, remaining - 1);
+    if (expectedUnavailable.has(entry.path) &&
+        entry.text === 'Failed to load resource: the server responded with a status of 503 (Service Unavailable)') {
       return false;
     }
     return true;
