@@ -813,3 +813,47 @@ test('Video Director reviewed exact sources use Mandala CI, not unrelated checko
  }
  assert.equal(simulate([...rows,['D','tests/video-executable-director.test.mjs']]).mode,'full');
 });
+
+test('Video Studio #2938 routes exact reviewed editor files to Mandala without unrelated Public Services browsers',()=>{
+  const videoOnly=[
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-meditation.module.css',
+    'components/mandala-video-director-chat.tsx',
+    'components/mandala-video-mobile.module.css',
+    'lib/mandala/video-chat-intent.mjs',
+    'scripts/verify-holistic-mandala-browser.mjs',
+    'tests/mandala-approved-mobile-studio.test.mjs',
+    'tests/mandala-audio-attach.test.mjs',
+    'tests/mandala-auto-video-director-ui.test.mjs',
+    'tests/mandala-hypnocorrection-mobile.test.mjs',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'tests/mandala-workspace-tabs.test.mjs',
+    'tests/video-chat-intent.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const specialist=pathsOf('holistic-support-mandala.yml');
+  for(const path of [
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-meditation.module.css',
+    'components/mandala-video-director-chat.tsx',
+  ])assert.equal(covers(specialist,path),true,
+    'real-source, consent and media verifier owns '+path);
+  const pub=pathsOf('hh-public-services-production.yml');
+  assert.equal(covers(pub,'components/mandala-video-director-chat.tsx'),true,
+    'existing Public Services job stays registered and runs source contracts');
+  const plan=planPublicServicesChangedPaths(videoOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for(const unsafe of [
+    'components/mandala-unknown-new-renderer.tsx',
+    'components/consultation-choice-capture.tsx',
+    'app/api/payments/checkout/route.js',
+    'components/commerce/service-cart.tsx',
+  ])assert.equal(planPublicServicesChangedPaths([...videoOnly,unsafe]).mode,'full',
+    'new/checkout/consent code always retains real Public Services E2E: '+unsafe);
+});

@@ -130,6 +130,12 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
+  // The approved 4-goal / 6-topic Video Studio director and its page theme
+  // belong to the *same* existing Mandala Node/TS/real-media browser owner.
+  // This exact-list extension does not exclude any Services/checkout code.
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
   'tests/cinematic-studio.test.mjs',
