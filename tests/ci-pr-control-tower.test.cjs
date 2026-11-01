@@ -1,5 +1,11 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
+test('only dispatcher job holds the single-writer lease, never the PR contract',()=>{
+  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+  assert.ok(!wf.split('\njobs:\n')[0].includes('concurrency:'),'workflow-level lease cancels PR contract jobs');
+  assert.ok(wf.includes('  dispatch:\n    concurrency:\n      group: hh-control-tower-single-writer'));
+  assert.ok(!wf.split('  contract:')[1].split('  dispatch:')[0].includes('concurrency:'));
+});
 test('skip skipped and cancelled Watchdog callbacks before reserving any runner',()=>{
   const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
   assert.match(workflow,/workflow_run\.conclusion != 'cancelled'/);
