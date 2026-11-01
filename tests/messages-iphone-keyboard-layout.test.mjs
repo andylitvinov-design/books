@@ -76,7 +76,8 @@ test('selected client conversation is full screen and follows visualViewport whe
   assert.match(css,/\.shell\[data-detail-open="true"\] \.window,[\s\S]*?position:fixed;z-index:4000/)
   assert.match(css,/top:var\(--hh-mobile-window-top,0px\)/)
   assert.match(css,/window\[data-keyboard-open="true"\] \.personBar/)
-  assert.match(app,/data-simple-messages\]\[data-detail-open="true"\]\) \.hh-mobile-app-nav/)
+  // A conversation keeps the dock pinned; only keyboard focus hides it.
+  assert.match(app,/body:has\(\.hh-messages-page \[data-simple-messages\]\[data-detail-open="true"\]\)/)
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot\{[\s\S]*?position:relative/)
   assert.match(crm,/\.detailConversation \.compose \.salesbotAssistSlot \[role="region"\]\{[\s\S]*?position:static/)
   assert.match(crm,/min-height:44px;height:44px/)
