@@ -152,3 +152,10 @@ test('issue-to-PR mismatch is ignored before any source mutation',async()=>{
   assert.equal(f.logs.labels,0);
   assert.equal(f.logs.source,0);
 });
+
+// A missing Core check can make an otherwise mergeable PR status 'blocked'.
+test('legacy zero-Core bootstrap accepts a mergeable PR blocked only by checks',()=>{
+  assert.equal(validPR(makePR(43,{mergeable_state:'blocked'}),repo),true);
+  assert.equal(validPR(makePR(43,{mergeable_state:'dirty'}),repo),false);
+  assert.equal(validPR(makePR(43,{mergeable:false,mergeable_state:'blocked'}),repo),false);
+});
