@@ -504,3 +504,25 @@ test('source dispatch requires a complete nonempty worker-safe changed-file scop
   assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
  }
 });
+
+test('a blocked first source does not give the shared worker to conflict before another source',async()=>{
+ const first=pr(1,'repair',{title:'fix(video): verified source'}),second=pr(2,'repair',{title:'fix(video): verified source'});
+ const conflict=pr(100,'conflict',{title:'fix(video): conflict',mergeable:false,mergeable_state:'dirty'});
+ const f=fixture([first,second,conflict],{comments:{2:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.workerRuns[0]?.lane,'repair');assert.equal(result.workerRuns[0]?.pr_number,2);
+});
+test('conflict triage has a bounded fairness turn under continuous source backlog',()=>{
+ const sources=Array.from({length:25},(_,i)=>pr(i+1,'repair'));
+ const conflict=pr(100,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const ordinary=planCandidates([...sources,conflict],NOW);
+ const fairness=planCandidates([...sources,conflict],NOW+5*600000);
+ assert.ok(ordinary.findIndex(x=>x.lane==='conflict')>ordinary.findIndex(x=>x.lane==='repair'));
+ assert.ok(fairness.findIndex(x=>x.lane==='conflict')<fairness.findIndex(x=>x.lane==='repair'));
+});
+test('rotation eventually inspects every source in a large sustained backlog',()=>{
+ const sources=Array.from({length:143},(_,i)=>pr(i+1,'repair',{title:'fix: source'}));
+ const conflict=pr(999,'conflict',{mergeable:false,mergeable_state:'dirty'});
+ const seen=new Set();for(let turn=0;turn<84;turn++)for(const task of planCandidates([...sources,conflict],NOW+turn*600000))if(task.lane==='repair')seen.add(task.pr_number);
+ assert.equal(seen.size,sources.length);
+});

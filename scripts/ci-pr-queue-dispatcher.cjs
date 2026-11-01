@@ -41,28 +41,29 @@ function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
  if(!ranked.length)return [];
- // Reserve one candidate per genuinely different worker lane. A large
- // backlog of P1 manual conflicts must not hide a lower-tier source repair
- // or an available CI bootstrap from the bounded MAX_INSPECT slice.
- // Source repair precedes conflict triage because the latter can only hand
- // non-deterministic conflicts to a human / authorized coding agent.
- const leaders=['repair','ci','conflict'].flatMap(lane=>{
-  const entry=ranked.find(pr=>laneOf(pr)===lane);
-  return entry?[entry]:[];
- });
- const picked=[...leaders];
- const chosen=new Set(picked.map(pr=>pr.number));
- // Retain fast high-priority inspection without evicting a lane leader.
- for(const pr of ranked.slice(0,3))if(!chosen.has(pr.number)&&picked.length<MAX_INSPECT){
-  picked.push(pr);chosen.add(pr.number);
- }
+ // Source and manual conflict share one worker. Inspect more than the
+ // first source before handing that worker to an owner-only conflict. One
+ // out of six ten-minute turns gives conflict triage first refusal so an
+ // indefinitely nonempty source queue cannot starve it.
+ const fairnessTurn=Math.floor(now/600000)%6===5;
+ const source=ranked.filter(pr=>laneOf(pr)==='repair');
+ const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
+ const ci=ranked.find(pr=>laneOf(pr)==='ci');
+ const picked=[],chosen=new Set();
+ const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
+ if(fairnessTurn)add(conflict);
+ add(source[0]);add(ci);
+ // Keep priority among the first three sources and rotate the remainder.
+ for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
+ const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
+ const tail=source.filter(pr=>!chosen.has(pr.number));
+ const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
+ for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
+ add(conflict);
  const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
- const offset=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
- for(let i=0;i<room;i++){
-  const pr=rest[(offset+i)%rest.length];
-  picked.push(pr);
- }
+ const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
+ for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
