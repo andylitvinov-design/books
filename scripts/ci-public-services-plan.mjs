@@ -50,9 +50,13 @@ export const PUBLIC_SOURCE_TESTS = Object.freeze([
 // Runtime, privacy, auth, checkout and unknown files still fail closed.
 const TRUSTED_CI_CONTRACT_FILES = new Set([
   '.github/workflows/hh-public-services-production.yml',
+  // Production-only pinned browser cache seed, never app runtime.
+  '.github/workflows/hh-public-playwright-cache.yml',
   'scripts/ci-public-services-plan.mjs',
   'tests/ci-public-services-plan.test.mjs',
   'tests/ci-workflow-globs.test.mjs',
+  // CI-only regression verified by protected Core and actionlint.
+  'tests/pr-fast-lane.test.mjs',
   // Independent Site Video CI policy and source-only E2E contracts cannot
   // change public services runtime, consent or payment. Protected Core/actionlint
   // and its exact-head Site Video job still validate these files.

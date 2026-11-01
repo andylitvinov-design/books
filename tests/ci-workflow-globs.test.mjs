@@ -135,7 +135,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
     'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
   assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
   assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(s, /fetch-depth: 0/);
+  assert.match(s, /fetch-depth: 2/);
   assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
   assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
   assert.match(s, /HH_PUBLIC_CASES/);
@@ -144,7 +144,7 @@ test('Public Services exact-head routing preserves source contracts and real ris
   assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
     'obsolete contact-channel browser duplicate must not run');
   for (const required of [
-    'npm run build', 'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
     'run_case "verify-service-cart-browser.mjs"',
     'run_case "verify-talisman-google-checkout-browser.mjs"',
     "'app/api/payments/**'"

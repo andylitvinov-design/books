@@ -30,7 +30,10 @@ test('13 current browser owners are unique and the old contact UI duplicate is r
   for (const file of PUBLIC_SOURCE_TESTS) {
     assert.match(source, new RegExp('node --test [^\\n]*' + file.replaceAll('.', '\\.')));
   }
-  assert.match(source, /npm run build > artifacts\/public-services-production\/build\.log/);
+  assert.match(source, /\.\/node_modules\/\.bin\/next build/);
+  for (const prereq of ['ensure-owner-video-renderer.mjs', 'cache-ancient-coaching-photos.mjs',
+    'generate-soft-ocean-melody.mjs', 'build-public-card-artwork.mjs',
+    'build-report-pdf-art.mjs']) assert.ok(source.includes('node scripts/' + prereq));
   assert.match(source, /playwright install --with-deps chromium webkit/);
   assert.match(source, /timeout-minutes: 20/);
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
@@ -397,7 +400,8 @@ test('one unchanged specialist job uses gate outputs without skipped check conte
   const src = workflow('hh-public-services-production.yml');
   assert.match(src,/^  public-services:\s*$/m);
   assert.match(src,/id: scope/);
-  assert.match(src,/fetch-depth: 0/);
+  assert.match(src,/fetch-depth: 2/);
+  assert.match(src,/Verify bounded Public Services PR ancestry before impact routing/);
   assert.match(src,/steps.scope.outputs.browser/);
   assert.match(src,/steps.scope.outputs.build/);
   assert.match(src,/steps.scope.outputs.cases/);
@@ -964,4 +968,93 @@ test('PR #2970 69,120 read-only Mandala phrases use independently checked specia
     'tests/mandala-video-phrase-catalog.test.mjs',
   ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
     'deletions remain FULL: '+deleted);
+});
+
+test('Public Services performance guards preserve the exact-head and sensitive-browser gates', () => {
+  const src = workflow('hh-public-services-production.yml');
+  for (const fragment of [
+    'fetch-depth: 2',
+    'Verify bounded Public Services PR ancestry before impact routing',
+    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'actions/cache/restore@v4',
+    'actions/cache/save@v4',
+    'hh-public-next-',
+    'steps.public_acceptance.outputs.build_ok',
+    'playwright install chromium',
+    'smoke_engines',
+    'playwright install --with-deps chromium webkit',
+    './node_modules/.bin/next build',
+  ]) assert.ok(src.includes(fragment), 'missing CI speed guard: '+fragment);
+  assert.ok(src.includes('github.event.pull_request.number'), 'cache must be PR-local');
+  assert.doesNotMatch(src, /continue-on-error:\s*true/);
+  for (const unsafe of ['app/api/payments/checkout/route.js',
+    'middleware.ts', 'components/commerce/cart-nav-link.tsx']) {
+    const plan = planPublicServicesChangedPaths([unsafe]);
+    assert.equal(plan.mode, 'full');
+    assert.equal(requiresPublicServicesHeavyPr(plan), true);
+  }
+});
+test('Core-only PR fast-lane regression cannot summon unrelated public browser E2E', () => {
+  const ciOnly = [
+    '.github/workflows/hh-public-services-production.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+    'tests/ci-workflow-globs.test.mjs',
+    'tests/pr-fast-lane.test.mjs',
+  ];
+  const plan = planPublicServicesChangedPaths(ciOnly);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.metrics,plan.cases],
+    ['contracts',false,false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(plan),false);
+  for (const unsafe of [
+    'middleware.ts', 'app/api/payments/checkout/route.js',
+    'app/api/service-enquiries/route.js', 'components/commerce/service-cart.tsx',
+  ]) {
+    const sensitive=planPublicServicesChangedPaths([...ciOnly,unsafe]);
+    assert.deepEqual([sensitive.mode,sensitive.build,sensitive.browser,sensitive.cases],
+      ['full',true,true,'all'], 'must not suppress risk gate for ' + unsafe);
+  }
+});
+
+test('trusted production Playwright cache is shared read-only without weakening sensitive PR browser coverage', () => {
+  const serviceWorkflow=workflow('hh-public-services-production.yml');
+  const seed=workflow('hh-public-playwright-cache.yml');
+  const key='hh-public-browser-blobs-';
+  assert.ok(serviceWorkflow.includes('actions/cache/restore@v4'));
+  assert.ok(!serviceWorkflow.includes('uses: actions/cache@v4'),
+    'pull-request jobs must not publish cross-PR browser caches');
+  assert.ok(serviceWorkflow.includes(key) && seed.includes(key));
+  assert.match(seed, /^  push:\s*$/m);
+  assert.ok(seed.includes("branches: ['codex/public-book-library']"));
+  assert.ok(seed.includes("if: github.ref == 'refs/heads/codex/public-book-library'"));
+  assert.ok(seed.includes('playwright@1.63.0'));
+  assert.ok(seed.includes('playwright install chromium webkit'));
+  assert.ok(seed.includes('actions/cache/save@v4'));
+  assert.ok(!seed.includes('pull_request_target:') && !seed.includes('pull_request:'),
+    'untrusted PR events cannot seed a production base cache');
+  const reviewed=[
+    '.github/workflows/hh-public-services-production.yml',
+    '.github/workflows/hh-public-playwright-cache.yml',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs',
+  ];
+  const scoped=planPublicServicesChangedPaths(reviewed);
+  assert.deepEqual([scoped.mode,scoped.build,scoped.browser,scoped.cases],
+    ['contracts',false,false,'none']);
+  for(const dangerous of ['app/api/payments/talismans/checkout/route.js',
+    'app/api/service-enquiries/route.js','components/commerce/cart.tsx','middleware.ts']) {
+    assert.equal(planPublicServicesChangedPaths([...reviewed,dangerous]).mode,'full');
+  }
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const fakeGit=(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from('A'+nul+'.github/workflows/hh-public-playwright-cache.yml'+nul+
+      'M'+nul+'scripts/ci-public-services-plan.mjs'+nul);
+    throw Error('unexpected fake git operation '+args.join(' '));
+  };
+  assert.equal(planPublicServicesEvent(env,fakeGit).mode,'contracts',
+    'new reviewed CI workflow remains in the non-browser fast lane');
 });

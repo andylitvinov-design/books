@@ -665,7 +665,17 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
   assert.match(perf,/^  push:\s*$/m);
   const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  // Public Services still compiles the entire production app, while the
+  // required Core retains unrelated prebuild coaching regression suites.
+  assert.ok(services.includes('./node_modules/.bin/next build') &&
+    services.includes('node scripts/verify-public-services-production.mjs'));
+  for (const generator of ['ensure-owner-video-renderer.mjs',
+    'cache-ancient-coaching-photos.mjs','generate-soft-ocean-melody.mjs',
+    'build-public-card-artwork.mjs','build-report-pdf-art.mjs']) {
+    assert.ok(services.includes('node scripts/' + generator),'missing prerequisite '+generator);
+  }
+  assert.ok(workflow('hh-pr-core-release.yml').includes('run: npm run build'),
+    'required Core must retain the full original prebuild suite');
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
