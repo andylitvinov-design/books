@@ -1060,3 +1060,35 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
     if(selectCandidates(prs,NOW+tick*600000).some(p=>p.number===10))audited=true;
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
+
+test('fresh environment failures are not source-repair diagnoses',()=>{
+ const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const gate={name:'hh-core-verified',conclusion:'failure'};
+ const infra={name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]};
+ const lint={name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Lint changed JS/TS sources on PR',conclusion:'failure'}]};
+ assert.equal(classifyCoreFailureJobs([infra,gate]),'CI_INFRA_OR_ENVIRONMENT');
+ assert.equal(classifyCoreFailureJobs([lint,gate]),'SOURCE_OR_PREFLIGHT');
+ assert.equal(classifyCoreFailureJobs([{...infra,steps:[...infra.steps,...lint.steps]},gate]),'SOURCE_OR_PREFLIGHT');
+});
+
+test('fresh checkout failure never queues source repair or an early rerun',async()=>{
+ let reruns=0,comments=0,labels=0;
+ const github={rest:{
+  pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
+  actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
+   listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]}]}})},
+  checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
+  repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
+  issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++},addLabels:async()=>{labels++}}
+ },paginate:async()=>[],request:async(route,args)=>{
+  if(route.includes('rerun-failed-jobs'))reruns++;
+  if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
+   id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+   pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],status:'completed',conclusion:'failure',run_attempt:1,
+   created_at:new Date(NOW-60000).toISOString(),updated_at:new Date(NOW-60000).toISOString()}]}};
+  return {data:{workflow_runs:[]}};
+ }};
+ const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
+ assert.equal(result.infraOrEnvironment,1);assert.equal(result.sourceRepairQueued,0);
+ assert.equal(reruns,0);assert.equal(comments,0);assert.equal(labels,0);
+});
