@@ -66,7 +66,7 @@ test("playback keeps visible selectors and explicit meditation topics filter hon
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
 });
 
-test("mobile mock structure and large-text 320–430 layout with no duplicate global nav", () => {
+test("mobile mock structure and six-tab large-text 320–430 layout with no duplicate global nav", () => {
   for (const key of ["energy", "money", "relationships", "goals"]) {
     assert.ok(client.includes(key), key);
   }
@@ -76,7 +76,7 @@ test("mobile mock structure and large-text 320–430 layout with no duplicate gl
   ]) assert.ok(client.includes(label), label);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);
-  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css.slice(css.indexOf(".bottomNav {"),css.indexOf(".bottomNav >")), /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(css, /font-size: 17px/);
   assert.match(css, /min-height: 43px/);
   assert.match(css, /safe-area-inset-bottom/);
@@ -101,7 +101,7 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);
   const dock = css.slice(css.indexOf(".bottomNav {"), css.indexOf(".bottomNav >"));
-  assert.match(dock, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(dock, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 350px\)[\s\S]*?\.bottomNav > :is\(a,button\)/);
   assert.match(css, /safe-area-inset-bottom/);
 });

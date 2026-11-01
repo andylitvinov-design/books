@@ -65,24 +65,25 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(req,/onViewed=\{onReload\}/)
   assert.doesNotMatch(req,/\/api\/app\/crm\/leads/)
 })
-test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=>{
+test('iPhone six-item Cabinet navigation matches Orders and Clients design',()=>{
   const workspace=read('components/app/app-workspace.jsx')
   const css=read('app/[locale]/app/[[...path]]/workspace.css')
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
   // Desktop Account navigation gained the approved My Progress destination.
-  // The iPhone dock still has four links plus its separate Home anchor.
+  // The iPhone dock has five links plus its separate Home anchor.
   assert.equal((nav.match(/id: '/g)||[]).length,7)
   assert.match(nav,/id: 'progress'/)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
-  assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
+  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
   assert.match(workspace,/const mobileNav = \[/)
   const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
-  assert.equal((mobile.match(/id: '/g)||[]).length,4)
+  assert.equal((mobile.match(/id: '/g)||[]).length,5)
   assert.match(mobile,/id: 'progress'/)
   assert.match(mobile,/id: 'settings'/)
+  assert.match(mobile,/id: 'video-ai'/)
   assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
 })
 
@@ -118,7 +119,7 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages dock mirrors the five-destination private mobile Cabinet menu',()=>{
+test('Messages dock mirrors the six-destination private mobile Cabinet menu',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
@@ -126,13 +127,15 @@ test('Messages dock mirrors the five-destination private mobile Cabinet menu',()
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
   assert.ok(nav.includes('className="hh-mobile-app-nav"'))
   assert.match(nav,/hh-mobile-app-nav-home/)
-  assert.equal((nav.match(/\{path:'/g)||[]).length,5)
+  assert.equal((nav.match(/\{path:'/g)||[]).length,6)
   const order=[...nav.matchAll(/\{path:'([^']*)'/g)].map(match=>match[1])
-  assert.deepEqual(order,['','practice','messages','materials','profile'])
+  assert.deepEqual(order,['','practice','messages','materials','profile','video-ai'])
   const mobile=workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('const navIsActive'))
-  assert.equal((mobile.match(/id: '/g)||[]).length,4)
+  assert.equal((mobile.match(/id: '/g)||[]).length,5)
   assert.ok(nav.includes("locale==='es'?'en':locale"))
+  assert.match(nav,/mandala#video-director-chat/)
   assert.doesNotMatch(css,/hh-messages-app-dock|repeat\(5,minmax\(0,1fr\)\)/)
+  assert.match(css,/repeat\(6,minmax\(0,1fr\)\)!important/)
   assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
 })
 

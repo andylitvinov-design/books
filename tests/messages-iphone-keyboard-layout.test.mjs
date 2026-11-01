@@ -69,7 +69,7 @@ test('selected client conversation is full screen and follows visualViewport whe
   const crm=read('components/app/crm-messenger.module.css')
   const app=read('app/[locale]/app/messages/messages-page.css')
   assert.match(jsx,/if\(openDetail\)\{/)
-  assert.match(jsx,/Math\.floor\(visual\?\.height\|\|window\.innerHeight\)/)
+  assert.match(jsx,/const viewportHeight=Math\.max\(1,visual\?\.height\|\|window\.innerHeight\)/)
   assert.match(jsx,/Math\.floor\(visual\?\.offsetTop\|\|0\)/)
   assert.match(jsx,/--hh-mobile-window-top/)
   assert.match(jsx,/windowElement\.dataset\.keyboardOpen=focused/)
