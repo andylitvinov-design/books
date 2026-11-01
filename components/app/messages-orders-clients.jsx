@@ -10,7 +10,7 @@ const TEXT={
  en:{title:'Messages',subtitle:'Orders and conversations in one place.',
   introOrders:'Your orders and conversations with practitioners',introOrdersBody:'Status, messages and materials together.',introClients:'Your incoming client messages',introClientsBody:'Answer requests through existing protected conversations.',searchOrders:'Search orders, services or practitioners',filterOrders:'Filter by status',chatIndicator:'Order conversation',
   orders:'My orders',clients:'My clients',conversations:'Conversations',iOrder:'I ordered',incoming:'Requests to me',
-  all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',
+  all:'All',waiting:'Waiting',working:'In progress',finished:'Completed',empty:'You have no orders yet.',emptyHelp:'Your order status and conversation with a practitioner will appear here.',
   explore:'Explore services',error:'Could not load your orders.',retry:'Try again',loading:'Loading your orders…',
   open:'Open order',back:'My orders',number:'Request',practitioner:'Practitioner',details:'Order details',
   conditions:'Selected terms',status:'Request status',noPrice:'Price to be agreed',minutes:'min',
@@ -20,13 +20,13 @@ const TEXT={
   materials:'Materials and progress',materialsInfo:'Delivered materials appear in your private Cabinet after confirmation.',
   myPractice:'My practices',payment:'Payment',paymentInfo:'A request is not a confirmed booking or payment.',
   newer:'New reply',signIn:'Sign in to see your private orders',search:'Find a practitioner',more:'Older requests are available under Consultations.',
-  freeLabel:'FREE',freeConsultation:'Request a free personal consultation',freeConsultationDetail:'Personal written review with Andrey · no call or fee.',
+  freeLabel:'FREE',freeConsultation:'Get a free written personal review',freeConsultationDetail:'Personal written review with Andrey · no call or fee.',
   freeReiki:'Start the free Reiki practice course',freeReikiDetail:'Five guided lessons, meditations and easy exercises.',
   incomingHelp:'Client requests and messages go to your existing protected practitioner inbox.'},
  ru:{title:'Сообщения',subtitle:'Заказы и общение',
   introOrders:'Здесь хранятся ваши заказы и переписка с мастерами',introOrdersBody:'Все статусы, диалоги и материалы в одном месте.',introClients:'Здесь вы видите входящие сообщения от клиентов',introClientsBody:'Отвечайте на обращения через защищённые диалоги.',searchOrders:'Поиск по заказам, мастерам, темам',filterOrders:'Фильтр по статусу',chatIndicator:'Переписка по заказу',
   orders:'Мои заказы',clients:'Мои клиенты',conversations:'Переписка',iOrder:'Я заказываю',incoming:'Мне поступили',
-  all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',
+  all:'Все',waiting:'Жду ответа',working:'В работе',finished:'Завершены',empty:'Пока нет заказов.',emptyHelp:'После оформления здесь появятся статус заказа и переписка с мастером.',
   explore:'Выбрать услугу',error:'Не удалось загрузить заказы.',retry:'Повторить',loading:'Загружаем ваши заказы…',
   open:'Открыть заказ',back:'Мои заказы',number:'Заявка',practitioner:'Мастер',details:'Детали заказа',
   conditions:'Выбранные условия',status:'Статус заявки',noPrice:'Стоимость уточняется',minutes:'мин',
@@ -36,13 +36,13 @@ const TEXT={
   materials:'Материалы и результат',materialsInfo:'Выданные материалы откроются в защищённом кабинете после подтверждения.',
   myPractice:'Мои практики',payment:'Оплата',paymentInfo:'Заявка ещё не означает запись или подтверждённую оплату.',
   newer:'Новый ответ',signIn:'Войдите, чтобы увидеть личные заказы',search:'Найти мастера',more:'Более ранние заявки доступны в разделе «Консультации».',
-  freeLabel:'БЕСПЛАТНО',freeConsultation:'Записаться на бесплатную консультацию',freeConsultationDetail:'Личный письменный разбор с Андреем · без звонка и оплаты.',
+  freeLabel:'БЕСПЛАТНО',freeConsultation:'Получить бесплатный письменный разбор',freeConsultationDetail:'Личный письменный разбор с Андреем · без звонка и оплаты.',
   freeReiki:'Пройти бесплатный курс практик Рейки',freeReikiDetail:'5 уроков с медитациями и простыми упражнениями.',
   incomingHelp:'Все заявки ваших клиентов и сообщения открываются в существующем защищённом разделе.'},
  es:{title:'Mensajes',subtitle:'Pedidos y conversaciones en un solo lugar.',
   introOrders:'Tus pedidos y conversaciones con profesionales',introOrdersBody:'Estados, mensajes y materiales en un solo lugar.',introClients:'Aquí están los mensajes de tus clientes',introClientsBody:'Responde a las consultas en conversaciones privadas.',searchOrders:'Buscar pedidos, temas o profesionales',filterOrders:'Filtrar por estado',chatIndicator:'Conversación del pedido',
   orders:'Mis pedidos',clients:'Mis clientes',conversations:'Conversaciones',iOrder:'Mis solicitudes',incoming:'Recibidos',
-  all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',
+  all:'Todos',waiting:'Pendientes',working:'En curso',finished:'Terminados',empty:'Todavía no tienes pedidos.',emptyHelp:'Aquí verás el estado de tus pedidos y el chat con el profesional.',
   explore:'Explorar servicios',error:'No se pudieron cargar tus pedidos.',retry:'Reintentar',loading:'Cargando pedidos…',
   open:'Abrir pedido',back:'Mis pedidos',number:'Solicitud',practitioner:'Profesional',details:'Detalles del pedido',
   conditions:'Opciones elegidas',status:'Estado de la solicitud',noPrice:'Precio por confirmar',minutes:'min',
@@ -52,7 +52,7 @@ const TEXT={
   materials:'Materiales y resultado',materialsInfo:'Los materiales entregados aparecen en tu cuenta privada después de la confirmación.',
   myPractice:'Mis prácticas',payment:'Pago',paymentInfo:'Una solicitud no confirma una reserva ni un pago.',
   newer:'Nueva respuesta',signIn:'Inicia sesión para ver tus pedidos',search:'Buscar profesional',more:'Las solicitudes anteriores están en Consultas.',
-  freeLabel:'GRATIS',freeConsultation:'Solicitar una consulta gratuita',freeConsultationDetail:'Revisión personal escrita con Andrey · sin llamada ni pago.',
+  freeLabel:'GRATIS',freeConsultation:'Solicitar un análisis personal escrito gratuito',freeConsultationDetail:'Revisión personal escrita con Andrey · sin llamada ni pago.',
   freeReiki:'Empezar el curso gratis de prácticas Reiki',freeReikiDetail:'Cinco lecciones con meditaciones y ejercicios sencillos.',
   incomingHelp:'Las solicitudes de tus clientes y mensajes están en la bandeja protegida existente.'},
 }
@@ -211,7 +211,7 @@ export default function MessagesOrdersClients({locale='en',children}){
         </button>
       </span>
     </header>
-    {!detailMode&&!(section==='orders'&&!loading&&!error&&ordersData?.orders?.length===0)&&<div className={styles.introCard}>
+    {!detailMode&&!loading&&!error&&ordersData&&<div className={styles.introCard}>
       <span className={styles.introIcon}><Leaf size={25} aria-hidden="true"/></span>
       <span className={styles.introCopy}><strong>{section==='orders'?t.introOrders:t.introClients}</strong>
         <small>{section==='orders'?t.introOrdersBody:t.introClientsBody}</small></span>
@@ -274,8 +274,10 @@ export default function MessagesOrdersClients({locale='en',children}){
       {loading&&<p role="status" className={styles.notice}>{t.loading}</p>}
       {error&&<p role="alert" className={styles.notice}>{signedOut?<Link href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</Link>:t.error}
         {!signedOut&&<button type="button" onClick={reload}>{t.retry}</button>}</p>}
-      {!loading&&!error&&!orders.length&&<p className={styles.emptyHint} role="status">
-        <ShoppingBag size={17} aria-hidden="true"/>{t.empty}</p>}
+      {!loading&&!error&&!orders.length&&<div className={styles.emptyHint} role="status">
+        <Leaf size={24} aria-hidden="true"/>
+        <span><strong>{t.empty}</strong><small>{t.emptyHelp}</small></span>
+      </div>}
       {!loading&&!error&&!selected&&orders.length>0&&!visible.length&&
         <p className={styles.notice}>{locale==='ru'?'По этому запросу заказов не найдено.':
           locale==='es'?'No se encontraron pedidos.':'No matching orders.'}</p>}
