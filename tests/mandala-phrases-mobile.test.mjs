@@ -80,3 +80,12 @@ test("ready, selected and custom changes are drafts until approval",()=>{
  assert.match(phrases,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingChanges\}/);
  assert.doesNotMatch(phrases,/MandalaVideoAffirmations locale=\{locale\}/);
 });
+
+test("prepared phrase catalog stages selection through the one approval gate",()=>{
+  assert.match(studio,/<MandalaPhraseCatalog/);
+  assert.match(studio,/onPhraseChoose=\{stageCatalogPhrase\}/);
+  assert.match(studio,/\{\(stageCatalogPhrase:\(text:string\)=>void\)=><>/);
+  assert.match(phrases,/setStagedCustom\(cleaned\);setStagedSelection\(\[\]\)/);
+  assert.match(phrases,/typeof children==="function"\?children\(stageCatalogPhrase\):children/);
+  assert.doesNotMatch(studio,/onPhraseChoose=\{phrase=>\{\s*setAffirmations/);
+});

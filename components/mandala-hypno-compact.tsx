@@ -170,7 +170,7 @@ export function MandalaHypnoCompact({
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
-  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
+  scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode|((stagePhrase:(text:string)=>void)=>ReactNode);
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
@@ -197,6 +197,7 @@ export function MandalaHypnoCompact({
   const [ownOpen,setOwnOpen]=useState(false);
   const [ownText,setOwnText]=useState("");
   const [stagedCustom,setStagedCustom]=useState<string|null>(null);
+  const [stagedSelection,setStagedSelection]=useState<number[]|null>(null);
   const [ideaDirty,setIdeaDirty]=useState(false);
   const [testProposal,setTestProposal]=useState<HypnoTestProposal|null>(null);
   const [testBusy,setTestBusy]=useState(false);
@@ -216,10 +217,10 @@ export function MandalaHypnoCompact({
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
   const candidates=draft?.phrases??(settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
-  const chosen=draft?.selected??settings.selected;
+  const chosen=draft?.selected??stagedSelection??settings.selected;
   const selectedCount=chosen.length;
   const displayedCustom=stagedCustom??settings.custom;
-  const hasPendingChanges=Boolean(draft)||stagedCustom!==null||ideaDirty;
+  const hasPendingChanges=Boolean(draft)||stagedCustom!==null||stagedSelection!==null||ideaDirty;
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
   const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
@@ -280,6 +281,12 @@ export function MandalaHypnoCompact({
     setProblemIndex(p.problemIndex);setGoalId(p.goal);
     filtered(p.theme,p.problemIndex,p.goal);
     setTestProposal(null);setSelectionSource("tests");setOpen(null);
+  }
+  function stageCatalogPhrase(text:string){
+    const cleaned=compactCustomAffirmationInput(text).trim();
+    if(!cleaned)return;
+    // A prepared library phrase replaces the active selection ONLY after approval.
+    setStagedCustom(cleaned);setStagedSelection([]);setDraftState(null);setApprovalKey("");
   }
   function addCustom(){
     if(!ownText.trim())return;
@@ -363,13 +370,13 @@ export function MandalaHypnoCompact({
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
       setSelectionSource(model==="gemini"?"gemini":selectionSource==="ready"?"ready":"smart");
-      setDraftState(null);setStagedCustom(null);setIdeaDirty(false);
-    }else if(stagedCustom!==null){
+      setDraftState(null);setStagedCustom(null);setStagedSelection(null);setIdeaDirty(false);
+    }else if(stagedCustom!==null||stagedSelection!==null){
       if(!selectedCount&&!displayedCustom.trim())return;
-      const next={...settings,enabled:true,custom:displayedCustom};
+      const next={...settings,enabled:true,selected:stagedSelection??settings.selected,custom:displayedCustom};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setStagedCustom(null);setIdeaDirty(false);
+      setStagedCustom(null);setStagedSelection(null);setIdeaDirty(false);
     }else if(!ideaDirty)setApprovalKey(signature);
   }
 
@@ -506,7 +513,7 @@ export function MandalaHypnoCompact({
             onChange={e=>setOwnText(e.target.value)}/>
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(ideaDirty||(!selectedCount&&!displayedCustom.trim())))}
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(ideaDirty&&stagedCustom===null||(!selectedCount&&!displayedCustom.trim())))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
@@ -590,7 +597,7 @@ export function MandalaHypnoCompact({
       </section>
 
       </details>
-      {children}
+      {typeof children==="function"?children(stageCatalogPhrase):children}
       <label className={css.enable}>
         <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
