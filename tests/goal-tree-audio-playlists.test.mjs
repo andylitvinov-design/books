@@ -79,17 +79,12 @@ test("localized goal-tree soundtrack playlist is usable without a new renderer o
   }
 });
 
-test("when canonical taxonomy PR #2949 exists, every scenario identity must match exactly",()=>{
+test("canonical #2949 taxonomy is present and all 120 audio scenario IDs match exactly",()=>{
   const paths=categories.map(category=>new URL("../data/video-catalog/video-goal-taxonomy-"+category+"-v1.json",import.meta.url));
-  if(paths.every(existsSync)){
-    const canonical=paths.flatMap(path=>JSON.parse(readFileSync(path,"utf8")).topics.flatMap(t=>t.scenarios.map(s=>s.id)));
-    assert.equal(canonical.length,120);
-    assert.deepEqual(canonical.slice().sort(),manifest.assignments.map(x=>x.scenarioId).sort());
-  }else{
-    // This stacked PR intentionally doesn't copy competing taxonomy files.
-    // This exact-ID check becomes unconditional after #2949 lands on production.
-    assert.equal(manifest.sourceTaxonomy.startsWith("PR #2949"),true);
-  }
+  assert.ok(paths.every(existsSync),"all five canonical production taxonomy files are required");
+  const canonical=paths.flatMap(path=>JSON.parse(readFileSync(path,"utf8")).topics.flatMap(t=>t.scenarios.map(s=>s.id)));
+  assert.equal(canonical.length,120);
+  assert.deepEqual(canonical.slice().sort(),manifest.assignments.map(x=>x.scenarioId).sort());
 });
 
 test("compiled MP3s share one stable URL with the existing native Video Studio",()=>{
