@@ -162,6 +162,11 @@ const workspaceTabs=[
  {id:"video",Icon:Film},{id:"audio",Icon:Music2},{id:"characters",Icon:Sparkles},
  {id:"hypnotherapy",Icon:HandHeart},{id:"psychocorrection",Icon:HeartPulse},{id:"courses",Icon:Leaf}
 ] as const;
+const compactWorkspaceTabs={
+ ru:{video:"Видео",audio:"Музыка",characters:"Герои",hypnotherapy:"Терапия",psychocorrection:"Коррекция",courses:"Курсы"},
+ en:{video:"Video",audio:"Audio",characters:"Stories",hypnotherapy:"Therapy",psychocorrection:"Mindset",courses:"Courses"},
+ es:{video:"Vídeo",audio:"Audio",characters:"Héroes",hypnotherapy:"Terapia",psychocorrection:"Ajustes",courses:"Cursos"},
+} as const;
 
 const studioCopy = {
   en: {
@@ -3120,6 +3125,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <h3 id="quick-theme-title"><Leaf size={21} aria-hidden="true"/>{locale==="ru"?"Выберите тему для видеотерапии":locale==="es"?"Elige un tema de videoterapia":"Choose your video-therapy theme"}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
+          <div className={videoStyles.quickDirectorActions} data-video-goal-actions>
+            <button type="button" data-video-quick-propose disabled={recording||preparing}
+              onClick={()=>{
+                // Keep a single goal and a single lower director; never invoke a paid provider.
+                flushSync(()=>setActiveWorkspace("video"));
+                if(!wish.trim()){
+                  const input=document.querySelector<HTMLInputElement>("[data-first-video-wish]");
+                  input?.scrollIntoView({block:"center",behavior:"smooth"});
+                  input?.focus({preventScroll:true});
+                  return;
+                }
+                const director=document.querySelector<HTMLElement>("[data-auto-video-director]");
+                director?.querySelector<HTMLButtonElement>("[data-auto-video-suggest]")?.click();
+                director?.scrollIntoView({block:"start",behavior:"smooth"});
+              }}><Sparkles size={17} aria-hidden="true"/>
+              {locale==="ru"?"Подобрать сценарий":locale==="es"?"Sugerir historia":"Suggest a story"}
+            </button>
+            <button type="button" data-video-quick-goal-edit disabled={recording||preparing}
+              onClick={()=>{
+                flushSync(()=>setActiveWorkspace("video"));
+                const input=document.querySelector<HTMLInputElement>("[data-first-video-wish]");
+                input?.scrollIntoView({block:"center",behavior:"smooth"});
+                input?.focus({preventScroll:true});
+              }}><Target size={16} aria-hidden="true"/>
+              {locale==="ru"?"Уточнить цели":locale==="es"?"Ajustar objetivo":"Edit my goal"}
+            </button>
+          </div>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
             {quickThemeOrder.map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
@@ -3242,7 +3274,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls
         aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id}
+          data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
+          aria-pressed={activeWorkspace===item.id}
           aria-controls="video-workspace-panel" disabled={recording||preparing}
           onClick={()=>{
             setActiveWorkspace(item.id);
@@ -3251,7 +3284,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }else if(item.id!=="hypnotherapy"&&studioMode==="therapy"){
               setStudioMode("pump");setTherapyJumpRequested(false);
             }
-          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
+          }}><item.Icon size={18} aria-hidden="true"/><span>{compactWorkspaceTabs[locale][item.id]}</span></button>)}
       </nav>
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
