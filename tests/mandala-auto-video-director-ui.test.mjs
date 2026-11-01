@@ -1,4 +1,5 @@
 import test from "node:test";
+import "./free-film-source-loader.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
@@ -77,7 +78,12 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/scenePoster\(clip\)/);
  assert.match(director,/data-auto-video-create/);
  assert.match(studio,/onCreate=\{createQuickVideo\}/,"the button calls the existing local MediaRecorder path");
- assert.match(studio,/canCreate=\{canGenerate\}/,"four decoded originals + selected audio stay required");
+ assert.match(studio,/canCreate=\{canStartSelectedFilm\}/,
+   "The real iPhone Create control must remain tappable for audio/photo consent");
+ assert.match(studio,/createFeedback=\{preparing\|\|exportUnavailable\?notice:""\}/,
+   "real decoder/preparation errors remain visible beside the Create action");
+ assert.match(studio,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+   "the four approved MP4s must prime after a user tap");
  assert.match(studio,/data-video-result-empty/);
  assert.match(studio,/data-video-result-play/);
  assert.match(studio,/resultVideoRef\.current/);
@@ -202,4 +208,14 @@ test("Free help opens the ONE production AI Director without adding a second pla
  assert.match(studio,/onConfirm=\{\(\{scenario\}\)=>\{/);
  assert.match(studio,/scenario\.readyToExecute/);
  assert.match(studio,/onGoalChange=\{next=>\{setWish\(next\.slice\(0,800\)\)/);
+});
+
+test("audio guidance remains actionable from both the compact Video screen and Support Phrases",()=>{
+ const style=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/if\(anchor==="video-audio"\|\|anchor==="voice-studio"\|\|anchor==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
+ assert.match(studio,/if\(hash==="video-audio"\|\|hash==="voice-studio"\|\|hash==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
+ assert.match(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane : null/);
+ assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
+ assert.match(studio,/data-video-phrase-audioguide/);
+ assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
 });

@@ -41,6 +41,7 @@ import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-mus
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
+import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -1773,6 +1774,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeFilmKey=usingFreeFilmCompilation
     ? JSON.stringify(freeFilmShots.map(shot=>[shot.theme,shot.sceneId])) : "";
   const freeFilmReady=Boolean(freeFilmKey && readyFreeFilmKey===freeFilmKey);
+  // Safari may postpone decoding hidden MP4 until a trusted Create gesture.
+  // Presence of all four verified catalogue sources unlocks the button;
+  // the actual decoded-frame check remains mandatory during export.
+  const freeFilmSourcesListed=freeFilmShots.length===4 &&
+    freeFilmShots.every(shot=>Boolean(shot.film));
   // If iOS rejects a finalized Canvas recording, preserve a real, public,
   // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
   // it as the personal montage, with applied music/photo/text or duration.
@@ -1834,8 +1840,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||""]),appliedStory]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
+  // Keep the real Create button reachable when user must attach/authorize audio.
+  const canStartSelectedFilm=freeVideoSelected && freeFilmSourcesListed &&
+    !micRecording && !preparing && !recording;
   const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
-    (!usingFreeFilmCompilation || (freeFilmShots.length===4 && freeFilmReady)) &&
+    (!usingFreeFilmCompilation || freeFilmSourcesListed) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
     !audioDurationInvalid && !micRecording && !preparing && !recording;
@@ -2180,6 +2189,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
+      // Begin priming every real source synchronously on this click, before
+      // awaiting audio or image decode; rejecting autoplay is NOT readiness.
+      const filmPreparation=usingFreeFilmCompilation
+        ? prepareFourFilmSources(freeFilmShots,freeFilmPlayerRefs.current,{
+            timeoutMs:20000,
+            onProgress:(ready:number,total:number)=>setNotice(locale==="ru"
+              ?`Подготавливаем видеосцены: ${ready} из ${total}…`
+              :locale==="es"?`Preparando escenas: ${ready} de ${total}…`
+              :`Preparing video scenes: ${ready} of ${total}…`),
+          }).then(()=>true,()=>false)
+        : Promise.resolve(true);
       musicSession = attachedAudio?.kind==="file"
         ? await startUploadedAudio(attachedAudio.file,soundVolume)
         : attachedAudio?.kind==="preset" ? await startPresetAudio(attachedAudio.id,soundVolume)
@@ -2187,6 +2207,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(attachedAudio && !musicSession) {
         setMusicWarning(ui.soundUnavailable);
         setNotice(ui.soundUnavailable);
+        setExportUnavailable(true);
+        return;
+      }
+      if(!(await filmPreparation)){
+        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        setNotice(locale==="ru"
+          ?"Не удалось загрузить все четыре MP4. Проверьте соединение и нажмите «Создать видео» ещё раз."
+          :locale==="es"
+          ?"No se pudieron cargar los cuatro MP4. Comprueba tu conexión y vuelve a pulsar Crear vídeo."
+          :"Not all four MP4 clips could be decoded. Check your connection and tap Create video again.");
         setExportUnavailable(true);
         return;
       }
@@ -2828,6 +2858,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       };
       const tab=destination[hash];if(!tab)return;
       setActiveWorkspace(tab);
+      if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
+        setShowAdvancedVideo(true);
       setStudioMode(tab==="practices"?"therapy":"pump");
       const route=window.location.pathname+window.location.search+window.location.hash;
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
@@ -2848,6 +2880,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       anchor==="video-hypnocorrection-mobile"?"effects":
       anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
+    // The compact Video surface hides the full audio gallery by default.
+    // Make the *single* real audio editor visible before navigating to it.
+    if(anchor==="video-audio"||anchor==="voice-studio"||anchor==="video-templates")
+      setShowAdvancedVideo(true);
     setStudioMode("pump");
     setQuickDetailedOpen(true);
     const token=++quickNavTokenRef.current;
@@ -2902,12 +2938,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setPreviewPlaying(false);setSuggestion("");
   };
   const createQuickVideo = () => {
-    if(usingFreeFilmCompilation&&!freeFilmReady){
-      setNotice(locale==="ru"?"Загрузка четырёх исходных видео ещё не завершилась.":
-        locale==="es"?"Aún se están cargando los cuatro vídeos.":
-        "Four original videos are still loading.");
-      return false;
-    }
+    // Real four-source decoder preflight occurs in createVideo after the tap.
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
       // Audio controls are inside the collapsed advanced editor.
@@ -3959,7 +3990,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }));
           }}
           onApply={applyAutoFilm} onCreate={createQuickVideo}
-          canCreate={canGenerate} rendering={recording||preparing}/>
+          canCreate={canStartSelectedFilm} rendering={recording||preparing}
+          createFeedback={preparing||exportUnavailable?notice:""}/>
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
@@ -4294,8 +4326,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ? (locale==="ru"?"Четыре видео готовы. Нажмите «Создать видео».":
               locale==="es"?"Los cuatro vídeos están listos. Pulsa Crear vídeo.":
               "All four clips are ready. Press Create video.")
-            : (locale==="ru"?"Загружаем четыре MP4 для монтажа…":
-              locale==="es"?"Cargando cuatro MP4…":"Loading four original MP4 clips…")}
+            : (locale==="ru"?"Исходные видео подготовятся после нажатия «Создать видео»."
+              :locale==="es"?"Los vídeos originales se prepararán al pulsar Crear vídeo."
+              :"Original MP4 clips will prepare when you press Create video.")}
         </p>:null}
       </section>
 
@@ -4534,7 +4567,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-            disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmReady)} onClick={createQuickVideo}>
+            disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmSourcesListed)} onClick={createQuickVideo}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
             {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>

@@ -361,7 +361,10 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   const compact=read("components/mandala-hypno-compact.tsx");
   assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
-  const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
+  // Restrict preview safety assertions to the real preview handler, not
+  // subsequent independent source-loading and recording operations.
+  const previewHandler=studio.match(/const openAffirmationPreview = \(\) => \{[\s\S]*?\n  \};/)?.[0] || "";
+  assert.ok(previewHandler,"one real local preview handler remains");
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
   assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);

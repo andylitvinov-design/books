@@ -76,8 +76,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\}/,
-    "free video is gated until all four genuine stock clips are ready");
+  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\}/,
+    "The Create action stays accessible while Safari prepares its approved source clips");
+  assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+    "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
@@ -212,7 +214,9 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
   assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
-  assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
+  assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
+  assert.match(src,/if\(!\(await filmPreparation\)\)/,
+    "a failed decoded-source check must never output a partial four-scene movie");
   assert.match(src,/allocateAdaptiveFilmTimeline\(/,
     "Auto Director uses the verified adaptive four-stage timeline");
   assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
