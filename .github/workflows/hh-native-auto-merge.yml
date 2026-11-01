@@ -3,6 +3,11 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: ['codex/public-book-library']
+  # A completed *interrupted* core run can be retried once. Workflow-run hooks
+  # require this trusted workflow to also be present on the GitHub default branch.
+  workflow_run:
+    workflows: ['HH PR core release gate']
+    types: [completed]
 permissions:
   contents: write
   pull-requests: write
@@ -172,5 +177,99 @@ jobs:
                 log("SKIP CAS/head conflict; no force, no retries");
               } else {
                 core.warning("CI_RECOVERY: update-branch was not accepted: HTTP " + (error.status || "unknown"));
+              }
+            }
+
+  recover-interrupted-core:
+    name: recover-interrupted-core
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    concurrency:
+      group: hh-core-interruption-${{ github.event.workflow_run.id }}
+      cancel-in-progress: false
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Retry proven infrastructure interruption once, never failed code
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo} = context.repo;
+            const event = context.payload.workflow_run;
+            const fullRepo = owner + "/" + repo;
+            const retryConclusions = new Set(["cancelled","timed_out","startup_failure","failure"]);
+            const log = message => core.info("CORE_CI_RECOVERY: " + message);
+            if (!event || event.name !== "HH PR core release gate" ||
+                event.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
+                event.event !== "pull_request" || event.status !== "completed" ||
+                event.repository?.full_name !== fullRepo ||
+                event.head_repository?.full_name !== fullRepo ||
+                !retryConclusions.has(event.conclusion) || event.run_attempt !== 1) {
+              log("SKIP no trusted first-attempt interrupted core PR run");
+              return;
+            }
+            const ageMs = Date.now() - Date.parse(event.created_at || "");
+            if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 2 * 60 * 60 * 1000) {
+              log("SKIP unbounded/old workflow run");
+              return;
+            }
+            const associated = (event.pull_requests || []).filter(pr =>
+              Number.isInteger(pr.number) && /^[0-9a-f]{40}$/.test(pr.head?.sha || "") &&
+              pr.base?.ref === "codex/public-book-library");
+            if (associated.length !== 1) {
+              log("SKIP missing or ambiguous exact-head PR association");
+              return;
+            }
+            const reference = associated[0];
+            const live = (await github.rest.pulls.get({owner,repo,pull_number:reference.number})).data;
+            if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
+                live.head.repo?.full_name !== fullRepo || live.head.ref !== event.head_branch ||
+                live.head.sha !== reference.head.sha || live.mergeable === false ||
+                live.mergeable_state === "dirty" ||
+                (reference.base?.sha && reference.base.sha !== live.base.sha)) {
+              log("SKIP PR moved, changed base, became draft, or has conflicts");
+              return;
+            }
+            // Never treat a code failure as recoverable infrastructure failure.
+            // Zero-job runs have no code results; interrupted jobs may only be
+            // retried when every job ended as cancelled/skipped/timed_out.
+            const jobData = (await github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:event.id,per_page:100,filter:"latest"
+            })).data;
+            if (jobData.total_count > 100 || !Array.isArray(jobData.jobs)) {
+              log("SKIP incomplete job listing");
+              return;
+            }
+            const jobs = jobData.jobs;
+            const interrupted = jobs.length === 0 ||
+              (event.conclusion !== "failure" && jobs.every(job =>
+                ["cancelled","skipped","timed_out"].includes(job.conclusion)));
+            if (!interrupted) {
+              log("SKIP actual code, security or policy job failure; repair the root instead");
+              return;
+            }
+            const fresh = (await github.rest.actions.getWorkflowRun({
+              owner,repo,run_id:event.id
+            })).data;
+            if (fresh.run_attempt !== 1 || fresh.status !== "completed" ||
+                fresh.conclusion !== event.conclusion || fresh.head_sha !== event.head_sha) {
+              log("SKIP run changed or already retried");
+              return;
+            }
+            // Rerun does NOT mark checks successful, edit the PR, or bypass rules.
+            // A second failure, or any changed HEAD, requires investigation.
+            try {
+              await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
+              log("RERUN_ACCEPTED first-attempt interrupted workflow " + event.id +
+                  " on exact PR #" + reference.number + "; new release-ready SUCCESS still required");
+            } catch (error) {
+              if ([403,404,409,422].includes(error.status)) {
+                core.warning("CORE_CI_RECOVERY: rerun not permitted/eligible (HTTP " + error.status + ")");
+              } else {
+                throw error;
               }
             }
