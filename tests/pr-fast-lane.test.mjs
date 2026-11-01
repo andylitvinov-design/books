@@ -69,11 +69,16 @@ test('OPORA My Courses test-only routing is exact; App R1 still verifies the ful
   assert.doesNotMatch(opora, /continue-on-error:\s*true/);
 });
 
-test('one unconditional fail-closed release-ready gate protects core code validation', () => {
+test('separate fail-closed specialist gate and legacy release-ready alias protect the migration', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
   assert.match(source, /^  merge_group:/m);
   assert.match(source, /^  release-ready:/m);
+  assert.match(source, /^  hh-specialist:/m);
+  assert.match(source, /name: hh-specialist/);
+  const alias = source.split(/^  release-ready:/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
+  assert.match(alias, /needs: \[hh-specialist\]/);
+  assert.match(alias, /SPECIALIST_RESULT/);
   assert.match(source, /^    needs: \[scope, code\]/m);
   assert.match(source, /^    if: always\(\)/m);
   assert.match(source, /git diff --no-renames --name-only -z/);
@@ -99,7 +104,7 @@ test('one unconditional fail-closed release-ready gate protects core code valida
 test('PR automation policy and agent entry point require specialist safety gates', () => {
   const docs = readFileSync(join(root, 'docs', 'operations', 'CI_RELEASE_POLICY.md'), 'utf8');
   const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-  assert.match(docs, /sole required GitHub status is `release-ready`/);
+  assert.match(docs, /The replacement checks are `hh-core-verified` \(Core\) and `hh-specialist`/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
   assert.match(docs, /production advance alone does not require updating the PR branch/);
@@ -337,7 +342,7 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
-    const lint=source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
+    const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
       'changed-file lint must also exclude unrelated target-branch updates');
   } finally {
@@ -686,8 +691,8 @@ test('Mandala PR runs focused source contracts and manual dispatch owns exhausti
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  code:/m)[1]?.split(/^  release-ready:/m)[0];
-  const release = source.split(/^  release-ready:/m)[1];
+  const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const release = source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*0/, `${name} requires ancestry for verified merge-parent selection`);
     assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
@@ -1242,4 +1247,20 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
   assert.equal(tooMany.ok,false,'three full source HEAD pages with more data must fail closed');
   assert.deepEqual(tooMany.calls.map(c=>c.page),[1,2,3]);
   assert.ok(tooMany.notes.some(s=>s.includes('beyond bounded CI pages')));
+});
+
+test('one-time status migration is production-only, requires real replacement evidence and preserves both protections', () => {
+  const migration = workflow('hh-loose-release-ready-once.yml');
+  const merge = workflow('hh-native-auto-merge.yml');
+  assert.match(migration, /refs\/heads\/codex\/public-book-library/);
+  assert.match(migration, /hh-core-verified/);
+  assert.match(migration, /hh-specialist/);
+  assert.match(migration, /No protection changed/);
+  assert.match(migration, /required_review_thread_resolution/);
+  assert.match(migration, /non_fast_forward/);
+  assert.match(migration, /branches\/codex%2Fpublic-book-library\/protection\/required_status_checks/);
+  assert.match(migration, /--method PATCH/);
+  assert.match(merge, /const dualEnforced/);
+  assert.match(merge, /const migrated/);
+  assert.match(merge, /passed\("hh-specialist"\)/);
 });

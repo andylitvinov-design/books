@@ -226,7 +226,7 @@ jobs:
         # adds no coverage for workflow/router/test changes.
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
-  # First step of the guarded release-ready migration. This optional status
+  # Core component of the guarded release-ready migration. This status
   # checks Core prerequisites only; it never replaces specialist/security gates.
   hh-core-verified:
     name: hh-core-verified
@@ -262,8 +262,8 @@ jobs:
             [[ "$CODE_RESULT" == success ]] || exit 1
           fi
           echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
-  release-ready:
-    name: release-ready
+  hh-specialist:
+    name: hh-specialist
     needs: [scope, code]
     if: always()
     runs-on: ubuntu-24.04
@@ -285,7 +285,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: core checks deferred; release-ready must remain red until Ready is fully validated.' >&2
+            echo 'Draft: core checks deferred; hh-specialist must remain red until Ready is fully validated.' >&2
             exit 1
           fi
           [[ "$SCOPE_RESULT" == success ]] || exit 1
@@ -363,12 +363,35 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-  # A distinct, cheap status for branch protection after the admin migration.
-  # Until then, the legacy release-ready status stays required. Do not re-run
-  # the expensive specialist test; propagate its exact outcome, including red.
+  # Compatibility only: the classic branch rule may still require this name.
+  # Never return success when the new full specialist check is missing or red.
+  # Remove this legacy job in a separate PR ONLY after protection readback.
+  release-ready:
+    name: release-ready
+    needs: [hh-specialist]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Preserve legacy fail-closed status until admin switch
+        shell: bash
+        env:
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+        run: |
+          set -euo pipefail
+          [[ "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Migration not yet finalized; hh-specialist is not green.' >&2
+            exit 1
+          }
+          echo 'Legacy compatibility passed by delegated hh-specialist.' >> "$GITHUB_STEP_SUMMARY"
+
+  # Keep the pre-existing plural alias as a nonrequired compatibility context.
+  # It delegates to the real hh-specialist check; no duplicate expensive work.
   hh-specialists-verified:
     name: hh-specialists-verified
-    needs: [release-ready]
+    needs: [hh-specialist]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -377,7 +400,7 @@ jobs:
     steps:
       - name: Require full specialist aggregate on the same Core workflow
         env:
-          SPECIALIST_RESULT: ${{ needs.release-ready.result }}
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
         shell: bash
         run: |
           set -euo pipefail
