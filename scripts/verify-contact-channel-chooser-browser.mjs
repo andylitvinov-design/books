@@ -105,6 +105,27 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
   const consent = form.locator('input[type="checkbox"]');
+  // Scroll and require a stable, React-hydrated native control before the
+  // SINGLE real user click. Native details expansion and Yggdrasil mode swaps
+  // must not replace this input between pointerdown and click on iPhone WebKit.
+  // Never force the click, set checked in JS, or weaken the CRM consent gate.
+  await consent.scrollIntoViewIfNeeded();
+  await consent.evaluate(async input => {
+    const key=Object.keys(input).find(name=>name.startsWith("__reactProps$"));
+    if(typeof input[key]?.onChange!=="function")
+      throw new Error("CONTACT_CONSENT_NOT_HYDRATED");
+    let stable=0,prior=null;
+    for(let frame=0;frame<30;frame++){
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      if(!input.isConnected || input.disabled)throw new Error("CONTACT_CONSENT_UNMOUNTED");
+      const box=input.getBoundingClientRect();
+      const current=[box.x,box.y,box.width,box.height];
+      stable=prior&&current.every((v,i)=>Math.abs(v-prior[i])<1)?stable+1:0;
+      if(stable>=3)return;
+      prior=current;
+    }
+    throw new Error("CONTACT_CONSENT_NOT_STABLE");
+  });
   await consent.evaluate(input => {
     window.__hhConsentEvents = [];
     for (const type of ['pointerdown','click','input','change']) {
