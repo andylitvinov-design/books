@@ -610,20 +610,54 @@ test('wave 4: Core owns duplicate global TypeScript on production PRs; specialis
   assert.match(crm,/github.event_name == 'workflow_dispatch'/);
 });
 
-test('ready mobile-install PR preserves real browser and consent contracts', () => {
+test('mobile-install PR retains private-message contracts; post-merge/manual runs full browser', () => {
   const yaml=read('holistic-house-mobile-install.yml');
   assert.match(yaml, /ready_for_review/);
+  assert.match(yaml, /workflow_dispatch:/);
   for (const name of [
     'Build public phone installation pages without credentials',
     'Install Chromium and WebKit for real public iPhone installation QA',
     'Check EN/RU install pages and real PNG icons',
   ]) {
-    assert.ok(yaml.includes('- name: '+name+"\n        run:"),
-      'applicable ready PR must retain the browser matrix: '+name);
+    assert.ok(yaml.includes('- name: '+name+"\n        if: github.event_name != 'pull_request'"),
+      'ordinary PR must skip duplicate mobile browser matrix: '+name);
   }
-  assert.ok(yaml.includes("if: always()"));
+  assert.ok(yaml.includes("if: always() && github.event_name != 'pull_request'"));
   assert.match(yaml, /^  push:/m);
   assert.match(yaml, /tests\/holistic-house-install-push-regression\.test\.mjs/);
   assert.match(yaml, /node --test tests\/holistic-house-pwa\.test\.mjs/);
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
+});
+
+test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplicate builds are manual/post-merge',()=>{
+  const configs=[
+    ['hh-tantra-photo-levels.yml',['Compile Next.js production pages without unrelated repository-wide prebuild fixture checks',
+      'Install pinned browser engine test runner','Verify public EN/RU/ES mobile cards in Chromium and WebKit',
+      'TypeScript static validation']],
+    ['youtube-phone-uploader.yml',['Next.js production build','Install isolated Chromium and WebKit for phone UX acceptance',
+      'Reproduce iPhone-sized scrolling in real Chromium/WebKit']],
+    ['hh-public-journey-wave1.yml',['Build exact candidate once for both real-browser suites',
+      'Install Chromium and WebKit once for both journeys','Read-only EN/RU/ES Chromium and WebKit journeys on a shared local server']],
+    ['home-locale-switch.yml',['Build three home locales with reviewed dependencies',
+      'Build the real application','Install isolated browsers without changing app dependencies',
+      'Delayed navigation cannot discard the first play click']],
+  ];
+  for (const [filename,names] of configs) {
+    const source=read(filename);
+    for (const name of names) {
+      assert.ok(source.includes('      - name: '+name+"\n        if: github.event_name != 'pull_request'"),
+        filename+' must defer duplicate PR build/browser for '+name);
+    }
+    assert.match(source,/workflow_dispatch:/,filename+' manual QA lost');
+    assert.doesNotMatch(source,/continue-on-error:\s*true/,filename+' cannot hide source failures');
+  }
+  const photo=read('hh-tantra-photo-levels.yml');
+  assert.match(photo,/tests\/tantra-reiki-photographic-landing\.test\.mjs/);
+  const youtube=read('youtube-phone-uploader.yml');
+  assert.match(youtube,/tests\/youtube-upload-readback\.test\.mjs/);
+  const journey=read('hh-public-journey-wave1.yml');
+  assert.match(journey,/^  push:/m);
+  const home=read('home-locale-switch.yml');
+  assert.match(home,/^  push:/m);
+  assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
 });
