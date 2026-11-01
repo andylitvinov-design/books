@@ -209,14 +209,13 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
   }
   if(comments.some(c=>(c.body||'').includes(marker))) {
-    // A previous comment can survive a denied label write. Retry ONLY the
-    // missing durable label on this exact HEAD; never duplicate the receipt.
+    // If a receipt exists but its queue label failed, retry only the label.
     if((pr.labels || []).some(label=>label.name===REPAIR_LABEL))return false;
-    const repaired=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
+    const recovered=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
       'Current PR HEAD needs source-code repair after CI failure',
       'd93f0b',dryRun,limited,log);
-    if(repaired)log('#'+pr.number+' recovered missing repair queue label for '+pr.head.sha.slice(0,12));
-    return repaired;
+    if(recovered)log('#'+pr.number+' recovered repair queue label at '+pr.head.sha.slice(0,12));
+    return recovered;
   }
   const failed = (jobs || []).filter(j=>j.conclusion === 'failure').map(j=>j.name).slice(0,7);
   const body = `${marker}
@@ -238,7 +237,7 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
       'Current PR HEAD needs source-code repair after CI failure',
       'd93f0b',false,limited,log);
     if(!labeled){
-      log('#'+pr.number+' repair receipt written but queue label NOT confirmed; retry next cycle');
+      log('#'+pr.number+' repair receipt saved but queue label NOT confirmed; retry next cycle');
       return false;
     }
   }
@@ -674,7 +673,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Repair is a real separate default-branch workflow, not merely a label.
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
-  if (summary.sourceRepairQueued && hasMergeToken && !budget.exhausted && !dryRun) {
+  if ((summary.sourceRepairQueued || summary.conflictLabelsQueued) &&
+      hasMergeToken && ciRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -690,7 +690,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             inputs:{pr_number:'0',dry_run:'false'}
           }));
         summary.repairWorkerDispatched++;
-        log('DISPATCHED owner-guarded source Repair Worker');
+        log('DISPATCHED owner-guarded Repair Worker for source/conflict queue');
       } else log('Repair Worker already active/recent or API reserve low; schedule fallback');
     } catch(error) { log('Repair Worker dispatch unavailable; schedule fallback: '+error.message); }
   }
