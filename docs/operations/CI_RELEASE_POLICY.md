@@ -102,3 +102,7 @@ Retiring a whole YAML workflow still requires a separately approved,
 BASE-pinned replacement; this routing change deletes none of the protected
 workflow definitions. Review workflow runtime and Actions run counts after
 merge before authorizing any second-phase deletion.
+
+## Source Preflight (1 November 2026)
+
+Before a batched code push, install dependencies and run `node scripts/ci-source-preflight.mjs --base origin/codex/public-book-library --full-types` locally. It checks changed `.mjs`/`.cjs` syntax and runs `next typegen` followed by `tsc --noEmit --incremental false --pretty false`, failing closed on actual source errors. Source checks do not replace production build, specialist E2E, security or consent checks. In Core CI the same check runs before the expensive Next production build; a CI-policy-only diff runs syntax checks but not unrelated product typechecking. The report (`hh.source-preflight.v1`) uses stable root fingerprints across changed line numbers; duplicate workflow failures must be counted once by root and separately from release-ready base churn, browser timeouts and CI infrastructure problems. Only failed preflight reports are uploaded as a short-lived artifact; no external service or token is required.
