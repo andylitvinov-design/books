@@ -59,6 +59,12 @@ function classifyDirection(pr,files=null){
 
   const title=String(pr?.title||'').toLowerCase();
   const scope=titleScope(title);
+  // CI test-only maintenance is a separate LOW-priority development area.
+  if(scope==='ci' &&
+     (/^(test|docs|chore)\(/i.test(title) ||
+      /\b(regression coverage|stale test|test oracle|test fixture|test coverage|test only|legacy test)\b/i.test(title)) &&
+     !/\b(watchdog|automerge|auto-merge|repair worker|blocking workers|ci deadlock|stuck queue|core ci)\b/i.test(title))
+    return {id:'ci-maintenance',level:5,source:'CI test maintenance direction',conflicted:false};
   if(scope){
     const direct=POLICY.directions.find(d=>d.id!=='other'&&
       d.scopes.some(word=>word.toLowerCase()===scope));
