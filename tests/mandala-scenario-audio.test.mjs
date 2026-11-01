@@ -98,7 +98,7 @@ test("generated MP3s are available to actual player and not empty placeholders",
 test("studio exposes four scenario melodies in its existing real audio/video mixer",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const player=read("lib/mandala/local-video-music.ts");
-  const pipeline=read("scripts/generate-soft-ocean-melody.mjs");
+  const pipeline=JSON.parse(read("package.json"));
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
   assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
   assert.match(studio,/availableAudioTracks\.find/);
@@ -106,5 +106,6 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   assert.match(studio,/playQuickTrack\(id\)/);
   assert.match(player,/\/audio\/mandala\/scenarios\//);
   assert.match(player,/startPresetMixAudio/);
-  assert.match(pipeline,/buildScenarioMusic\(\)/);
+  assert.match(pipeline.scripts.prebuild,/scripts\/generate-scenario-melodies\.mjs/);
+  assert.match(pipeline.scripts.predev,/scripts\/generate-scenario-melodies\.mjs/);
 });
