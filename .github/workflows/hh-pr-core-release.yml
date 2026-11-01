@@ -80,6 +80,7 @@ jobs:
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
+                  lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
                   lib/ci/fast-static-ui-text.mjs|\
                   lib/ci/fast-ui-parser/package.json|\
