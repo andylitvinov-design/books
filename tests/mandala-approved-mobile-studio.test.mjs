@@ -165,7 +165,7 @@ test("forty-eight unique first-party four-shot compilations use verified license
   const arrayStart=src.indexOf("= [",start)+2;
   const arrayEnd=src.indexOf("] as const;",arrayStart)+1;
   const inline=src.slice(arrayStart,arrayEnd);
-  const originalCatalogue=JSON.parse(inline.replace(/,\s*\.\.\.\(extraFreeFilmPresets\.presets as FreeFilmPreset\[\]\)\s*$/,""));
+  const originalCatalogue=JSON.parse(inline.replace(/,\s*\.\.\.\(extraFreeFilmPresets\.presets as FreeFilmPreset\[\]\)(?=\s*\]$)/,""));
   const newCatalogue=JSON.parse(read("data/video-catalog/free-film-presets-v2.json")).presets;
   const extraMedia=JSON.parse(read("data/video-catalog/free-stock-scenes.json"));
   assert.equal(originalCatalogue.length,24);
