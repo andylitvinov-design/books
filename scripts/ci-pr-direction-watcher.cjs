@@ -8,6 +8,8 @@
 const {POLICY,desiredLabels,priorityFor,rankedCandidates,SHA}=
   require('./ci-pr-priority.cjs');
 const PROD='codex/public-book-library';
+const DEFAULT='codex/bootstrap-books';
+const TARGETS=new Set([PROD,DEFAULT]);
 const MAX_REQUESTS=115;
 const MIN_RATE_RESERVE=100;
 const MAX_WRITES=18;
@@ -80,7 +82,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   const {owner,repo}=context.repo;
   const log=message=>core.info('HH_DIRECTION_WATCHER: '+message);
   const summary={checkedAt:new Date(now).toISOString(),dryRun,
-    inventoried:0,production:0,synced:0,pending:0,updated:0,
+    inventoried:0,production:0,defaultBranchPRs:0,inScope:0,synced:0,pending:0,updated:0,
     pathProbes:0,createdLabels:0,blockedOverrides:0,
     byLevel:{P1:0,P2:0,P3:0,P4:0,P5:0},byDirection:{},
     selected:[],errors:0,apiRequests:0,apiRemaining:null,paused:false,reason:null};
@@ -130,12 +132,14 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
     return finish();
   }
   summary.inventoried=all.length;
-  const production=all.filter(pr=>pr.base?.ref===PROD &&
+  const inScope=all.filter(pr=>TARGETS.has(pr.base?.ref) &&
     pr.head?.repo?.full_name===owner+'/'+repo &&
     Number.isSafeInteger(pr.number)&&SHA.test(pr.head?.sha||''));
-  summary.production=production.length;
+  summary.inScope=inScope.length;
+  summary.production=inScope.filter(pr=>pr.base?.ref===PROD).length;
+  summary.defaultBranchPRs=inScope.filter(pr=>pr.base?.ref===DEFAULT).length;
   const missing=[];
-  for(const pr of production){
+  for(const pr of inScope){
     const result=desiredLabels(pr);
     if(result.conflicted){summary.blockedOverrides++;continue;}
     summary.byLevel['P'+result.level]++;
@@ -162,7 +166,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
       }));
       const live=response.data;
       if(live?.number!==initial.number||live.state!=='open'||
-         live.base?.ref!==PROD||live.head?.repo?.full_name!==owner+'/'+repo||
+         !TARGETS.has(live.base?.ref)||live.base?.ref!==initial.base.ref||
+         live.head?.repo?.full_name!==owner+'/'+repo||
          live.head?.sha!==initial.head.sha)continue;
 
       let classification=desiredLabels(live);
@@ -215,4 +220,4 @@ async function run({github,core,context,now=Date.now(),dryRun=false,
   summary.pending=Math.max(0,summary.pending-summary.updated);
   return finish();
 }
-module.exports={run,readOpenPRs,ensureKnownLabels,selectReclassification,LABELS,PROD};
+module.exports={run,readOpenPRs,ensureKnownLabels,selectReclassification,LABELS,PROD,DEFAULT,TARGETS};

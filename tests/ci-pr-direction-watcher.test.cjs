@@ -75,7 +75,7 @@ test('dry run reports reclassification without writing labels',async()=>{
 });
 test('refuses to label PRs targeting untrusted branch and stale HEADs',async()=>{
   const good=pr(1);
-  const wrong=pr(2,'feat: other',{base:{ref:'codex/bootstrap-books'}});
+  const wrong=pr(2,'feat: other',{base:{ref:'unrelated-untrusted-branch'}});
   const f=fixture([good,wrong]);
   f.github.rest.pulls.get=async()=>({data:{...good,head:{...good.head,sha:'b'.repeat(40)}}});
   const result=await run({github:f.github,core:core(),context,now:NOW});
@@ -101,4 +101,17 @@ test('selection reserves slots for lower priority while preferring high levels',
   for(let i=0;i<8;i++)
     selectReclassification(items,NOW+i*600000,9).forEach(x=>seen.add(x.number));
   assert.ok(seen.size>12);
+});
+
+test('classifier also marks trusted default-branch infrastructure PRs',async()=>{
+  const item=pr(9,'fix(ci): make Watchdog dispatch by direction',{
+    base:{ref:'codex/bootstrap-books'}
+  });
+  const f=fixture([item]);
+  const result=await run({github:f.github,core:core(),context,now:NOW});
+  assert.equal(result.production,0);
+  assert.equal(result.defaultBranchPRs,1);
+  assert.equal(result.inScope,1);
+  assert.equal(result.updated,1);
+  assert.deepEqual(f.counts.adds[0].labels,['hh:direction:platform','hh:priority:1']);
 });

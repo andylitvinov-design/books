@@ -18,9 +18,9 @@ To change one direction for every PR, modify its level in the central JSON and m
 
 **HH PR direction watcher:** .github/workflows/hh-pr-direction-watcher.yml
 - Runs every 10 minutes at :01/:11/... UTC. Supports workflow_dispatch real and dry-run audits.
-- Inventories all open PRs; classifies those targeting codex/public-book-library using trusted scope/title, with a bounded changed-path fallback for vague titles.
+- Inventories all open PRs; classifies production PRs and trusted default-branch infrastructure PRs using trusted scope/title, with a bounded changed-path fallback for vague titles.
 - Adds hh:direction:<slug> and hh:priority:<1..5>, removes superseded managed labels without replacing unrelated Repair, conflict, CI or security labels.
-- Creates ten direction labels, ten optional override labels and five numeric priority labels idempotently.
+- Creates eleven direction labels, eleven optional override labels and five numeric priority labels idempotently.
 - Uses existing GITHUB_TOKEN only; no paid external AI agent, API or server.
 - Reconciles at most 18 PR labels per cycle. Full-inventory counts and pending work are reported in Actions. Initial catch-up takes multiple cycles.
 
