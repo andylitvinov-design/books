@@ -1090,6 +1090,7 @@ const runEngine = async ([engine, browserType]) => {
         // Owner screenshot acceptance: in-place request edits affect real
         // selected words, text geometry changes use the shared recorder,
         // and the live scene rail changes the original (not a mock) scene.
+        const approvedPreviewBeforeRequest=await compactHypno.locator("[data-hypno-preview] strong").innerText();
         await compactHypno.locator("[data-hypno-request-edit]").click();
         await compactHypno.locator('[data-hypno-problem="1"]').click();
         // The earlier real-film test selected MONEY. Match its actual goal catalogue.
@@ -1097,12 +1098,19 @@ const runEngine = async ([engine, browserType]) => {
         await compactHypno.locator('[data-hypno-goal="value"]').click();
         await compactHypno.locator("[data-hypno-apply-request]").click();
         assert.equal(await compactHypno.locator("[data-hypno-phrases-edit]").getAttribute("aria-expanded"),"false");
-        assert.match(await compactHypno.locator("[data-hypno-preview]").innerText(),/I can seek clarity|Я могу искать ясность|Puedo buscar claridad/i);
+        assert.equal(await compactHypno.locator("[data-hypno-preview] strong").innerText(),approvedPreviewBeforeRequest,
+          "a proposed Wave phrase must not replace the active preview before approval");
+        const proposedPhrase=(await compactHypno.locator('[data-hypno-phrase="0"]').innerText()).trim();
+        assert.ok(proposedPhrase.length>0,"Wave must offer a concrete phrase");
+        await compactHypno.locator("[data-hypno-approve]").click();
+        assert.ok((await compactHypno.locator("[data-hypno-preview]").innerText()).includes(proposedPhrase),
+          "approval must put the proposed phrase into the active preview");
         await compactHypno.locator("[data-hypno-display-edit]").click();
         await compactHypno.locator('[data-hypno-frequency="3"]').click();
         await compactHypno.locator('[data-hypno-size="large"]').click();
         await compactHypno.locator('[data-hypno-position="bottom"]').click();
         assert.match(await compactHypno.locator("[data-hypno-display]").innerText(),/3 (?:sec|сек|s)/);
+        await compactHypno.locator("[data-hypno-design-edit]").click();
         const firstScene=compactHypno.locator("[data-hypno-scene]").first();
         const secondScene=compactHypno.locator("[data-hypno-scene]").nth(1);
         assert.ok(await firstScene.count() && await secondScene.count());
