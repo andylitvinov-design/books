@@ -151,16 +151,26 @@ export function MandalaFirstVideoStart({
   const aiRevisionRef = useRef(0);
   const aiAbortRef = useRef<AbortController | null>(null);
   const [aiStatus, setAiStatus] = useState("");
-  const draft = useMemo(() => buildFirstVideoDraft({
-    locale, wish, ...prefs, variant, promptOverride: mode === "local" ? "" : promptOverride,
-  }) as Draft, [locale, wish, prefs, variant, promptOverride, mode]);
-  const shownPrompt = mode === "local" ? draft.prompt : promptOverride;
+  const draft = useMemo(() => {
+    try {
+      return buildFirstVideoDraft({locale, wish, ...prefs, variant,
+        promptOverride: mode === "local" ? "" : promptOverride}) as Draft;
+    } catch (error) {
+      if(error instanceof Error && ["no_compatible_licensed_scenes","no_compatible_cinematic_scenes","unsupported_scene_exclusion"].includes(error.message))return null;
+      throw error;
+    }
+  }, [locale, wish, prefs, variant, promptOverride, mode]);
+  const shownPrompt = mode === "local" ? (draft?.prompt || "") : promptOverride;
 
   function apply(nextWish: string, nextPrefs: Preferences, nextOverride: string, nextVariant = variant) {
-    const nextDraft = buildFirstVideoDraft({
-      locale, wish: nextWish, ...nextPrefs, variant: nextVariant, promptOverride: nextOverride,
-    }) as Draft;
-    onApply(nextDraft, nextPrefs);
+    try {
+      const nextDraft = buildFirstVideoDraft({
+        locale, wish: nextWish, ...nextPrefs, variant: nextVariant, promptOverride: nextOverride,
+      }) as Draft;
+      onApply(nextDraft, nextPrefs);
+    } catch (error) {
+      if(!(error instanceof Error) || !["no_compatible_licensed_scenes","no_compatible_cinematic_scenes","unsupported_scene_exclusion"].includes(error.message))throw error;
+    }
   }
   function changeWish(value: string) {
     const next = value.slice(0, 800);
@@ -380,7 +390,7 @@ export function MandalaFirstVideoStart({
         <RotateCcw size={16} aria-hidden="true"/>{t.refresh}
       </button>
       <button type="button" className={css.enhance} onClick={() => void enhancePrompt()}
-        disabled={disabled || !hydrated || aiLoading || !aiConsent || wish.trim().length<3}
+        disabled={disabled || !hydrated || !draft || aiLoading || !aiConsent || wish.trim().length<3}
         data-first-video-enhance>
         <WandSparkles size={16} aria-hidden="true"/>{aiLoading ? t.aiLoading : t.ai}
       </button>
@@ -389,13 +399,18 @@ export function MandalaFirstVideoStart({
       onChange={event => {aiRevisionRef.current++;aiAbortRef.current?.abort();setAiLoading(false);setAiConsent(event.currentTarget.checked);}} disabled={disabled || !hydrated}/>
       <span>{t.aiConsent}</span></label>
     {(aiStatus||aiLoading) && <p className={css.aiStatus} role="status">{aiLoading?t.aiProgress:aiStatus}</p>}
-    {draft.descriptionLimited && <p className={css.warning} role="note">
+    {!draft && <p className={css.warning} role="alert" data-first-video-no-compatible-scenes>
+      {locale==="ru"?"Не удалось подобрать четыре лицензированные сцены с этими исключениями. Уточните или измените исключения.":
+        locale==="es"?"No se pudieron elegir cuatro escenas con licencia con estas exclusiones. Aclara o modifica las exclusiones.":
+        "Four licensed scenes could not be selected with these exclusions. Clarify or change the exclusions."}
+    </p>}
+    {draft?.descriptionLimited && <p className={css.warning} role="note">
       <strong>{t.limit}:</strong> {draft.limitationNote}
     </p>}
-    <p className={css.source}><Sparkles size={17} aria-hidden="true"/>
-      {draft.plan.shotCount} {t.source.replace("4 ", "").replace("4 ", "")}</p>
+    {draft && <p className={css.source}><Sparkles size={17} aria-hidden="true"/>
+      {draft.plan.shotCount} {t.source.replace("4 ", "").replace("4 ", "")}</p>}
     <button type="button" className={css.generate} data-first-video-generate
-      disabled={disabled || !hydrated || !ready || !wish.trim()} onClick={onCreate}>
+      disabled={disabled || !hydrated || !ready || !draft || !wish.trim()} onClick={onCreate}>
       <Sparkles size={20} aria-hidden="true"/>{t.create}
     </button>
     {(recording || preparing) && <div className={css.progress} role="status">
