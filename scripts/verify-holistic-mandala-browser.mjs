@@ -283,6 +283,15 @@ const runEngine = async ([engine, browserType]) => {
               "an unreadable media blob must not be offered as a downloadable video");
             assert.equal(await page.locator("[data-video-post-generation-offers]").count(),0,
               "do not claim a meditation is finished on broken-video playback");
+            const original=page.locator("[data-video-original-fallback-download]");
+            await expect(original).toBeVisible();
+            const originalPath=await original.getAttribute("href");
+            assert.match(originalPath||"",/^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/,
+              "recovery link must be a published first-party MP4, never private or external");
+            assert.equal(await original.getAttribute("download"),"holistic-house-original-scene.mp4");
+            assert.match(await page.locator("[data-video-original-fallback]").innerText(),/не ваш готовый фильм/i,
+              "fallback must explicitly reject the false custom-film claim");
+
           }
           // Restore original untouched Studio state for the existing full
           // photo/audio/Hypno regression cases below, on this same page.
