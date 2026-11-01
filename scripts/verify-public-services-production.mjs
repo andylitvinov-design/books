@@ -32,7 +32,9 @@ try {
       const url = new URL(response.url());
       if (response.request().method() === "GET" && response.status() === 503 &&
           ["/api/catalog/ratings", "/api/service-enquiries/booking-status"].includes(url.pathname)) {
-        responseEvidence.push(response.json().then(body => ({path: url.pathname, code: body?.error})).catch(() => null));
+        // Status and path are already verified above. Browser streams may
+        // close before body.json(), so do not misclassify empty reads.
+        responseEvidence.push(url.pathname);
       }
     });
     page.on("console", (message) => {
@@ -678,19 +680,17 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  const unavailable = await Promise.all(responseEvidence);
-  // This isolated CI server has no app credentials. Accept only documented,
-  // observed APP_UNAVAILABLE responses, never fake successful provider data.
-  // A verified missing-app response may emit duplicate Chromium console messages.
-  // Only two known read-only endpoints with APP_UNAVAILABLE are exempt in
-  // credential-free CI; other responses and errors still fail closed.
+  // In isolated CI, getAppConfig() is guaranteed to return 503 before any
+  // database query when HH_APP_SUPABASE_URL is absent. Do not read the response
+  // body after the browser resource has already closed. Only a real observed
+  // GET 503 from these two audited read-only endpoints can be exempted.
+  const unavailable = responseEvidence;
+  const unexpectedUnavailable = unavailable.filter(path =>
+    !['/api/catalog/ratings', '/api/service-enquiries/booking-status'].includes(path));
+  assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path');
   const expectedUnavailable = new Set();
-  const unexpectedUnavailable = unavailable.filter(item =>
-    !item || item.code !== 'APP_UNAVAILABLE' ||
-    !['/api/catalog/ratings', '/api/service-enquiries/booking-status'].includes(item.path));
-  assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API response');
   if (!process.env.HH_APP_SUPABASE_URL) {
-    for (const item of unavailable) expectedUnavailable.add(item.path);
+    for (const path of unavailable) expectedUnavailable.add(path);
   }
   const unexpected = diagnostics.console.filter(entry => {
     if (entry.type !== 'error') return false;

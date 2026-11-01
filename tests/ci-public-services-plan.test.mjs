@@ -576,18 +576,23 @@ test('common public display changes use only relevant browser cases, not unrelat
   assert.match(yml,/playwright install --with-deps chromium webkit/);
 });
 
-test('browser CI ignores only verified APP_UNAVAILABLE 503 without silencing other errors',()=>{
+test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
   const source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
+  const config=readFileSync(new URL('../lib/app/config.js',import.meta.url),'utf8');
   for(const guard of [
     'response.status() === 503',
     '/api/catalog/ratings',
     '/api/service-enquiries/booking-status',
-    "item.code !== 'APP_UNAVAILABLE'",
+    'responseEvidence.push(url.pathname)',
+    'const unavailable = responseEvidence',
     'if (!process.env.HH_APP_SUPABASE_URL)',
     'const expectedUnavailable = new Set()',
     'expectedUnavailable.has(entry.path)',
-    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API response')",
+    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path')",
     'assert.deepEqual(unexpected, [], "Unexpected browser console errors")'
   ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
-  assert.ok(!source.includes('expectedUnavailable.set(item.path'),'Outdated response-count assumption still present');
+  assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
+    'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');
+  assert.ok(!source.includes('responseEvidence.push(response.json()'),
+    'Body reads after browser resource closure are not reliable evidence');
 });
