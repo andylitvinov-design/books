@@ -79,7 +79,8 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
   assert.ok(studio.includes("<MandalaHypnoCompact locale={locale} theme={theme}"),"Hypno must remain mounted across theme changes");
-  assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.doesNotMatch(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.match(read("components/mandala-hypno-compact.tsx"),/data-hypno-approve/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
@@ -250,7 +251,7 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingChanges\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 

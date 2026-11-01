@@ -2539,3 +2539,11 @@
 
 /* One owner-approved phrase editor: remove the redundant external frame. */
 .studio[data-active-workspace="phrases"] .quickPhraseSection{display:block;padding:0;border:0;background:transparent;box-shadow:none}
+
+.phraseVoiceSection :global([data-video-affirmation-voice]){margin:0;padding:0;border:0;background:transparent;box-shadow:none;max-width:none}
+.phraseVoiceSection :global([data-video-affirmation-voice] > div:first-child){display:none}
+.phraseVoiceSection :global([data-video-affirmation-voice] select){font-size:clamp(15px,4vw,17px);min-height:50px;padding:9px 10px}
+.phraseVoiceSection :global([data-video-affirmation-spoken-text]){font-size:clamp(15px,4vw,17px);line-height:1.5}
+.phraseVoiceSection :global([data-video-generate-affirmation-audio]){min-height:54px;font-size:clamp(15px,4vw,18px)}
+.phraseVoiceSection :global([data-video-affirmation-voice] label:has(input[type=checkbox])){font-size:clamp(12.5px,3.3vw,14px)}
+.phraseVoiceSection [data-video-narration-stale]{margin:2px 0;color:#985f27;font-size:14px;line-height:1.4}

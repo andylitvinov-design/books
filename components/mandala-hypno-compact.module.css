@@ -350,3 +350,7 @@
   .filterRow button,.overview .filtersMini .filterRow button{font-size:11px;padding:5px 2px}
   .overview .phraseMiniList button{font-size:16px}
 }
+
+.pendingNotice{margin:9px 0 2px;padding:10px 12px;border:1px solid #eddbad;border-radius:12px;
+ background:#fff9e9;color:#8b6124;font-size:clamp(13px,3.6vw,15px);line-height:1.35;font-weight:650}
+.customPhrase[data-hypno-custom-staged="true"]{border-style:dashed;background:#fff9ed;color:#68522c}

@@ -3424,9 +3424,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
             <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
         </div>
-        <p className={videoStyles.phraseVoiceNotice}>{attachedAudio?.kind==="file"
-          ?locale==="ru"?"Ваша запись прикреплена. В итоговое видео входит одна выбранная звуковая дорожка.":locale==="es"?"Tu grabación está adjunta; se exporta una pista de audio.":"Your recording is attached; the video exports one audio track."
-          :locale==="ru"?"Готовые AI-голоса пока не подключены к экспорту. Можно записать свой голос или загрузить разрешённую аудиозапись.":locale==="es"?"Las voces de IA aún no se exportan. Puedes grabar o subir tu propia voz.":"AI voice presets are not yet export-ready. You can record or upload your own voice."}</p>
+        <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
+          enabled={affirmations.enabled} durationSeconds={duration}
+          disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
+          onInvalidate={()=>setAttachedAudio(current=>
+            current?.kind==="file"&&current.narration?null:current)}
+          onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
+        {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
+          {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
+            locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
+            "Phrases or duration changed — regenerate the voice before exporting."}
+        </p>:null}
         <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
           onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
             document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
@@ -3449,7 +3457,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const listening=samplePreviewId===id&&soundPreview;
             return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
               <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
-                aria-pressed={checked} disabled={recording||preparing||micRecording}
+                aria-pressed={checked} disabled={recording||preparing||micRecording||(attachedAudio?.kind==="file"&&attachedAudio.narration===true)}
                 onClick={()=>toggleQuickMusic(id)}>
                 <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
                 <span>{track.name[locale]}</span>
@@ -3464,7 +3472,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           })}
         </div>
         <p className={videoStyles.phraseMusicStatus} aria-live="polite">
-          {attachedPresetIds.length?locale==="ru"?"Музыка добавлена к видео":locale==="es"?"Música añadida al vídeo":"Music attached to video"
+          {attachedAudio?.kind==="file"&&attachedAudio.narration
+            ?locale==="ru"?"Голос прикреплён. Для музыки выберите «Фон» в блоке голоса: звук смешается без замены озвучки.":locale==="es"?"Voz adjunta. Elige «Fondo» arriba para mezclar música sin sustituir la narración.":"Narration attached. Choose Background in the voice panel above to mix music without replacing the voice."
+            :attachedPresetIds.length?locale==="ru"?"Музыка добавлена к видео":locale==="es"?"Música añadida al vídeo":"Music attached to video"
             :locale==="ru"?"Музыка не выбрана":locale==="es"?"No has elegido música":"No music selected"}
         </p>
       </section>
@@ -4066,17 +4076,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
       <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
-        <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
-          enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
-          onInvalidate={()=>setAttachedAudio(current=>
-            current?.kind==="file"&&current.narration?null:current)}
-          onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
-        {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
-          {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
-            locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
-            "Phrases or duration changed — regenerate the voice before exporting."}
-        </p>:null}
         {deepHypnoPane}
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
