@@ -213,8 +213,13 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
-    "all supported lengths use the verified four-shot timeline allocator");
+  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
+    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
+    "explicit stage edits must be passed through to the same timing engine");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /export function allocateFreeFilmTimeline\(/,
+    "the legacy equal-time allocator remains intact for other consumers");
   assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/,
     "exported scene timing comes from the same timeline, not stale 10-second padding");
   assert.match(src,/providerPrompt:""/);
