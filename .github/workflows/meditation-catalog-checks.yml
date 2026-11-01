@@ -98,3 +98,47 @@ jobs:
         run: node scripts/verify-meditation-live-journey.mjs
         env:
           BROWSER: ${{ matrix.browser }}
+
+  # Targeted full PR-candidate E2E for the exact approved new full-screen app.
+  # Unlike the existing production-site smoke test, this checks PR HEAD locally.
+  # Other unrelated PRs do not pay for the extra Next build/browser install.
+  fullscreen-candidate-browser:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 2308 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/meditations-fullscreen-app-20261027' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install reviewed exact-PR dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          npx --no-install playwright install --with-deps chromium webkit
+      - name: Build exact candidate, no user/provider secrets
+        run: npm run build
+      - name: Chromium and WebKit full-screen 320/390/430 EN/RU/ES real interactions
+        env:
+          HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+        run: |
+          set -euo pipefail
+          node --check scripts/verify-meditation-immersive-browser.mjs
+          npm run start -- --hostname 127.0.0.1 --port 3100 >/tmp/hh-meditation-app.log 2>&1 &
+          NEXT_PID=$!
+          trap 'kill "$NEXT_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 70); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:3100/ru/meditations >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != 1 ]]; then
+            echo 'Full-screen meditation candidate not ready' >&2
+            exit 1
+          fi
+          node scripts/verify-meditation-immersive-browser.mjs
+

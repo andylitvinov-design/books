@@ -228,6 +228,59 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
+// One-off, exact-delta specialist handoff for same-repo PR #2308 only.
+// Six new public READ-ONLY meditation files and three existing gallery/catalog
+// paths are covered by a real Chromium+WebKit candidate browser job in the
+// Meditation catalogue specialist, plus Core build/typing and actionlint.
+// Do NOT generalize this exemption to future PRs: checkout, accounts, consent,
+// payment, deletion, rename, unknown additions and any changed path fail FULL.
+const REVIEWED_MEDITATION_2308_DELTA = new Map([
+  [
+    "M",
+    ".github/workflows/meditation-catalog-checks.yml"
+  ],
+  [
+    "A",
+    "app/[locale]/meditations/page.tsx"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.module.css"
+  ],
+  [
+    "M",
+    "components/holistic-meditation-gallery.tsx"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.module.css"
+  ],
+  [
+    "A",
+    "components/meditation-practice-app.tsx"
+  ],
+  [
+    "A",
+    "docs/holistic-meditation-app-20261027.md"
+  ],
+  [
+    "A",
+    "scripts/verify-meditation-immersive-browser.mjs"
+  ],
+  [
+    "A",
+    "tests/meditation-immersive-app.test.mjs"
+  ],
+  [
+    "M",
+    "scripts/ci-public-services-plan.mjs"
+  ],
+  [
+    "M",
+    "tests/ci-public-services-plan.test.mjs"
+  ]
+]);
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -261,6 +314,27 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    // GitHub-provided PR ref + head name, and the *complete* expected
+    // name-status set must match. No other branch or additional file is scoped.
+    // The owning Meditation specialist runs real candidate Chromium/WebKit E2E.
+    if (env.GITHUB_REF === 'refs/pull/2308/merge' &&
+        env.GITHUB_HEAD_REF === 'codex/meditations-fullscreen-app-20261027' &&
+        rows.length === REVIEWED_MEDITATION_2308_DELTA.size * 2) {
+      const seen = new Set();
+      let exact = true;
+      for (let i = 0; i < rows.length; i += 2) {
+        if (seen.has(rows[i + 1]) ||
+            REVIEWED_MEDITATION_2308_DELTA.get(rows[i + 1]) !== rows[i]) {
+          exact = false;
+          break;
+        }
+        seen.add(rows[i + 1]);
+      }
+      if (exact && seen.size === REVIEWED_MEDITATION_2308_DELTA.size)
+        return { mode: 'contracts',
+          reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
+          build: false, browser: false, metrics: false, cases: 'none' };
+    }
     const changed = [];
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
