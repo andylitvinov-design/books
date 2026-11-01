@@ -14,6 +14,7 @@ import type { AffirmationSettings, VideoAffirmationGoal } from "@/lib/mandala/vi
 import { buildWaveStrategy, reviewGeminiStrategy } from "@/lib/mandala/hypno-psych-strategy";
 import { buildWaveNarrativeDraft } from "@/lib/mandala/hypno-wave-engine.mjs";
 import { MandalaVideoAffirmations } from "./mandala-video-affirmations";
+import { resolvePrivateHypnoCodes } from "@/lib/mandala/hypno-private-signals.mjs";
 import css from "./mandala-hypno-compact.module.css";
 
 type SceneOption = { id:string; label:string; symbol:string; poster:string|null };
@@ -143,6 +144,11 @@ const hypnoExtra = {
   aiPrivacy:"Wave funciona localmente. Gemini no recibe notas personales.",
   catalog:"La selección usa las opciones elegidas. Tu texto queda en el dispositivo."}
 } as const;
+const writerCopy={
+ ru:{title:"Дополнительно · 5 AI-фраз",consent:"Разрешаю передать только общие коды темы, трудности, цели и тона в бесплатный AI. Личные заметки, тесты, профиль и фразы не отправляются. Бесплатные запросы могут использоваться для обучения моделей.",provider:"AI-провайдер",choices:["Авто · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Предложить 5 AI-фраз",busy:"Готовим черновик…",ready:"Черновик готов. Просмотрите и нажмите «Утвердить».",error:"AI недоступен; локальный Wave работает.",signIn:"Войдите в кабинет для AI. Wave работает без аккаунта.",strategy:"Черновик AI для проверки, не назначение терапии."},
+ en:{title:"Optional · five AI phrases",consent:"I permit sending only generic topic, difficulty, goal and tone codes to free AI. Personal notes, tests, profile and phrases are NOT sent. Free providers may use prompts to improve models.",provider:"AI provider",choices:["Auto · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Suggest five AI phrases",busy:"Drafting…",ready:"Draft ready. Review and explicitly Approve before the video changes.",error:"AI unavailable; local Wave remains available.",signIn:"Sign in for AI; local Wave needs no account.",strategy:"AI draft for review, not approved clinical care."},
+ es:{title:"Opcional · cinco frases IA",consent:"Autorizo enviar solo códigos generales de tema, dificultad, meta y tono a IA gratuita. No se envían notas, pruebas, perfil ni frases. Los proveedores pueden usar solicitudes para entrenar modelos.",provider:"Proveedor IA",choices:["Auto · Gemini / OpenRouter","Gemini","OpenRouter"],run:"Sugerir cinco frases",busy:"Preparando…",ready:"Borrador listo. Revísalo y pulsa Aprobar.",error:"IA no disponible; Wave local sigue disponible.",signIn:"Inicia sesión para IA. Wave local no necesita cuenta.",strategy:"Borrador IA para revisión, no terapia aprobada."},
+} as const;
 const hypnoMiniThemes:VideoTheme[]=["money","relationships","energy","goals"];
 type HypnoTestProposal={theme:VideoTheme;problemIndex:number;goal:VideoAffirmationGoal};
 const profileDirections:Record<string,HypnoTestProposal>={
@@ -215,6 +221,10 @@ export function MandalaHypnoCompact({
   const [geminiConsent,setGeminiConsent]=useState(false);
   const [geminiBusy,setGeminiBusy]=useState(false);
   const [geminiNotice,setGeminiNotice]=useState("");
+  const [aiConsent,setAiConsent]=useState(false);
+  const [aiProvider,setAiProvider]=useState<"auto"|"gemini"|"openrouter">("auto");
+  const [aiBusy,setAiBusy]=useState(false);
+  const [aiMessage,setAiMessage]=useState("");
   const runId=useRef(0);
   const pending=useRef<AbortController|null>(null);
   const waveInput={locale,theme,problemIndex,goalId:extraGoal,tone,focus,kind,length};
@@ -355,6 +365,49 @@ export function MandalaHypnoCompact({
         status===503||status===429?extra.aiUnavailable:extra.aiFailure);
     }finally{if(number===runId.current)setGeminiBusy(false);}
   }
+  async function generateAiPhrases(){
+    if(disabled||aiBusy||geminiBusy||!aiConsent)return;
+    pending.current?.abort();
+    const controller=new AbortController();pending.current=controller;
+    const number=++runId.current,key=requestKey;
+    setAiBusy(true);setAiMessage("");setApprovalKey("");
+    let status=0;
+    try{
+      const local=resolvePrivateHypnoCodes({
+        locale,theme,problemNote,goalNote,problemIndex,goalId:extraGoal,
+      });
+      const aiTone=tone==="gentle"?"gentle":tone==="uplifting"?"inspiring":"grounded";
+      const response=await fetch("/api/holistic-support/meditation-writer/affirmations",{
+        method:"POST",cache:"no-store",credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({locale,theme,problemIndex:local.problemIndex,goalId:local.goalId,
+          tone:aiTone,focus:"agency",providerPreference:aiProvider,externalModelOptIn:true}),
+        signal:controller.signal,
+      });
+      status=response.status;
+      const result=await response.json() as {status?:string;phrases?:string[];provider?:string};
+      if(!response.ok||result.status!=="draft_review_required"||!Array.isArray(result.phrases)||
+        result.phrases.length!==5||result.phrases.some(phrase=>typeof phrase!=="string"||
+          Array.from(phrase).length>36))throw Error("INVALID_AI_DRAFT");
+      if(number!==runId.current||key!==latestKey.current)return;
+      const nextInput={...waveInput,problemIndex:local.problemIndex,goalId:local.goalId};
+      const nextKey=JSON.stringify([nextInput,problemNote,goalNote]);
+      if(local.privateDescriptionInterpreted){
+        setProblemIndex(local.problemIndex);setGoalId(local.goalId);
+      }
+      // Staged in existing Wave editor; never publish before manual approval.
+      setModel("gemini");
+      setDraftState({model:"gemini",key:nextKey,strategy:writerCopy[locale].strategy,
+        phrases:result.phrases,selected:[0,1,2,3,4]});
+      setSelectionSource("gemini");setGeminiNotice("");
+      setAiMessage(writerCopy[locale].ready+" · "+(result.provider||"free AI"));
+    }catch{
+      if(number===runId.current&&key===latestKey.current)
+        setAiMessage(status===401?writerCopy[locale].signIn:writerCopy[locale].error);
+    }finally{
+      if(number===runId.current)setAiBusy(false);
+    }
+  }
   function approvePhrases(){
     if(draft){
       if(!draft.selected.length)return;
@@ -464,6 +517,28 @@ export function MandalaHypnoCompact({
         </div>}
         {draft&&<p className={css.strategyHint}>{extra.aiDraft}</p>}
         {geminiNotice&&<p role="status" className={css.strategyNotice}>{geminiNotice}</p>}
+        <details className={css.aiWriter} data-hypno-ai-writer>
+          <summary>{writerCopy[locale].title}</summary>
+          <label className={css.aiConsent}>
+            <input type="checkbox" checked={aiConsent} disabled={disabled||aiBusy}
+              onChange={e=>setAiConsent(e.target.checked)}/>
+            <span>{writerCopy[locale].consent}</span>
+          </label>
+          <label className={css.aiProvider}>{writerCopy[locale].provider}
+            <select value={aiProvider} data-hypno-ai-provider disabled={disabled||aiBusy}
+              onChange={e=>{setAiProvider(e.target.value as typeof aiProvider);setAiMessage("");}}>
+              {(["auto","gemini","openrouter"] as const).map((id,i)=>
+                <option key={id} value={id}>{writerCopy[locale].choices[i]}</option>)}
+            </select>
+          </label>
+          <button type="button" className={css.aiRun} data-hypno-ai-generate
+            disabled={disabled||aiBusy||!aiConsent}
+            onClick={()=>{void generateAiPhrases();}}>
+            <Sparkles size={15} aria-hidden="true"/>
+            {aiBusy?writerCopy[locale].busy:writerCopy[locale].run}
+          </button>
+          {aiMessage&&<p className={css.aiMessage} role="status">{aiMessage}</p>}
+        </details>
         <small className={css.strategyPrivacy}>{extra.aiPrivacy}</small>
       </section>
 

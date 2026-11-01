@@ -2,7 +2,7 @@ name: Holistic House axis-to-offer matching
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/holistic-intelligence-core-20261029']
     paths:
       - 'lib/holistic-support/axis-offer-matcher.mjs'
       - 'lib/holistic-support/axis-offer-matcher.d.mts'
@@ -46,6 +46,33 @@ on:
       - 'lib/holistic-support/psychologist-mind.d.mts'
       - 'tests/psychologist-mind.test.mjs'
       - 'tests/psychologist-practice-engine.test.mjs'
+      - 'lib/holistic-support/meditation-writer/practice-director.mjs'
+      - 'lib/holistic-support/meditation-writer/brief.mjs'
+      - 'lib/holistic-support/meditation-writer/owned-writer.mjs'
+      - 'lib/holistic-support/meditation-writer/small-model-skill.mjs'
+      - 'lib/holistic-support/meditation-writer/writer.mjs'
+      - 'lib/holistic-support/meditation-writer/free-gemini.mjs'
+      - 'lib/holistic-support/meditation-writer/eight-day-course.mjs'
+      - 'lib/holistic-support/meditation-writer/intent-codes.mjs'
+      - 'tests/meditation-writer-intent-codes.test.mjs'
+      - 'lib/holistic-support/meditation-writer/free-quality.mjs'
+      - 'tests/meditation-writer-course-outline.test.mjs'
+      - 'tests/meditation-writer-practical-director.test.mjs'
+      - 'tests/meditation-writer-literary.test.mjs'
+      - 'tests/meditation-writer-small-model-skill.test.mjs'
+      - 'tests/meditation-writer-free-providers.test.mjs'
+      - 'tests/hypno-private-signals.test.mjs'
+      - 'lib/mandala/hypno-private-signals.mjs'
+      - 'lib/mandala/hypno-private-signals.d.mts'
+      - 'lib/holistic-support/meditation-writer/affirmation-writer.mjs'
+      - 'lib/holistic-support/meditation-writer/free-json.mjs'
+      - 'lib/holistic-support/meditation-writer/free-openrouter.mjs'
+      - 'app/api/holistic-support/meditation-writer/affirmations/route.js'
+      - 'components/mandala-hypno-compact.tsx'
+      - 'components/mandala-hypno-compact.module.css'
+      - 'app/api/holistic-support/meditation-writer/brief/route.js'
+      - 'components/meditation-writer-preview.tsx'
+      - 'components/meditation-writer-preview.module.css'
       - 'lib/holistic-support/kip-symbol-registry.mjs'
       - 'lib/holistic-support/psychologist-video-curricula.mjs'
       - 'lib/holistic-support/psychologist-meditation-composer.mjs'
@@ -89,6 +116,25 @@ concurrency:
   group: profile-axis-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
+  writer-practical-focused:
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'codex/holistic-intelligence-core-20261029' || github.event.pull_request.base.ref == 'codex/public-book-library') && github.head_ref == 'feat/meditation-writer-device-voice-v1-20261030' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Practical director and prior writer regressions
+        run: node --test tests/meditation-writer-brief.test.mjs tests/meditation-writer-literary.test.mjs tests/meditation-writer-free-gemini.test.mjs tests/meditation-writer-preview-source.test.mjs tests/meditation-writer-device-voice-source.test.mjs tests/meditation-writer-practical-director.test.mjs tests/meditation-writer-small-model-skill.test.mjs tests/meditation-writer-free-providers.test.mjs tests/hypno-private-signals.test.mjs tests/meditation-writer-course-outline.test.mjs tests/meditation-writer-intent-codes.test.mjs
+      - name: Install locked dependencies for writer-only lint and types
+        run: npm ci --no-audit --no-fund
+      - name: Lint writer API, UI and contracts
+        run: npx --no-install eslint --max-warnings 0 'app/[locale]/holistic-support/mandala/page.tsx' app/api/holistic-support/meditation-writer/brief/route.js app/api/holistic-support/meditation-writer/affirmations/route.js components/mandala-hypno-compact.tsx components/meditation-writer-preview.tsx components/meditation-writer-device-voice.tsx lib/holistic-support/meditation-writer/*.mjs lib/mandala/hypno-private-signals.mjs tests/meditation-writer-*.test.mjs tests/hypno-private-signals.test.mjs
+      - name: TypeScript contract check
+        run: npx --no-install tsc --noEmit --pretty false
   axis-unit-types-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
