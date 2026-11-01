@@ -201,13 +201,13 @@ jobs:
       # selects focused/full acceptance. Contracts-only PRs use Core's build;
       # sensitive payments/auth/checkout changes retain required real E2E.
       - name: Cache exact Playwright Chromium and WebKit browsers
-        if: ${{ steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         run: |
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
@@ -217,9 +217,9 @@ jobs:
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} cases=${{ steps.scope.outputs.cases }}. Sensitive/runtime changes must pass selected real-browser acceptance; contracts-only changes rely on focused source checks and required Core.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR gate: exact-head mode=${{ steps.scope.outputs.mode }} browser=${{ steps.scope.outputs.browser }} pr_heavy=${{ steps.scope.outputs.pr_heavy }} cases=${{ steps.scope.outputs.cases }}. Sensitive/runtime changes retain real browser; reviewed focused visual-only cases defer E2E to manual, keeping source checks and Core.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        if: ${{ steps.scope.outputs.build == 'true' }}
+        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
@@ -339,7 +339,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always() && steps.scope.outputs.build == 'true'
+        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
           path: |

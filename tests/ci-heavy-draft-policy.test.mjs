@@ -26,8 +26,8 @@ for (const name of workflows) {
     assert.equal(jobNames.length, expanded ? 2 : 1, 'unexpected job count; update all jobs when expanding workflow');
     if (expanded) {
       assert.deepEqual(jobNames, ['browser','admin-verified-owner-browser']);
-      assert.match(jobBlock, /^  admin-verified-owner-browser:\n    name: [^\n]+\n    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false/m,
-        'The isolated owner DB/browser job must never run on production PUSH or Draft PRs');
+      assert.ok(jobBlock.includes("    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}"),
+        'The protected owner job must run on Ready PRs or explicit manual QA, not Draft or production push');
       assert.match(jobBlock, /postgres:17-alpine/);
       assert.match(jobBlock, /redis:7-alpine/);
       assert.match(jobBlock, /\/api\/app\/practitioner\/open|verify-site-video-admin-browser\.mjs/,
