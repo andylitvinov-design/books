@@ -25,11 +25,6 @@ on:
       - 'tests/ci-pr-repair-worker.test.cjs'
       - 'scripts/ci-pr-ci-worker.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
-      - 'scripts/ci-pr-task-state.cjs'
-      - 'scripts/ci-pr-capacity.cjs'
-      - 'scripts/ci-pr-queue-dispatcher.cjs'
-      - 'tests/ci-pr-control-tower.test.cjs'
-      - '.github/workflows/hh-pr-queue-dispatcher.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -62,9 +57,5 @@ jobs:
           node --check scripts/ci-pr-repair-worker.cjs
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
-          node --check scripts/ci-pr-task-state.cjs
-          node --check scripts/ci-pr-capacity.cjs
-          node --check scripts/ci-pr-queue-dispatcher.cjs
-          node --check tests/ci-pr-control-tower.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs

@@ -38,6 +38,9 @@ permissions:
   actions: write
   issues: write
   pull-requests: write
+concurrency:
+  group: hh-control-tower-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer' }}
+  cancel-in-progress: false
 jobs:
   contract:
     if: github.event_name == 'pull_request'
@@ -59,12 +62,8 @@ jobs:
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --test tests/ci-pr-control-tower.test.cjs
   dispatch:
-    concurrency:
-      group: hh-control-tower-single-writer
-      cancel-in-progress: false
-    # No runner should be reserved for callbacks that only report that a
-    # Watchdog/Worker run was skipped or cancelled. Reconciliation is still
-    # event-driven for completed real outcomes, plus explicit/scheduled sweeps.
+    # Ignore non-actionable upstream completions without reserving a runner.
+    # An independent per-PR contract concurrency lane is retained above.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
