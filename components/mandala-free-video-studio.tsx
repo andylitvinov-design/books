@@ -2502,7 +2502,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }
     document.getElementById("video-hero")?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      // Keep the pause control stationary for the next tap, including on iOS.
+      behavior: "auto",
       block: "center",
     });
   };

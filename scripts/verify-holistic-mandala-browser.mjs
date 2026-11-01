@@ -1923,10 +1923,14 @@ const runEngine = async ([engine, browserType]) => {
           assert.ok(geometry.font>=16 && geometry.right<=geometry.viewport+2 &&
             geometry.scroll<=geometry.viewport+2,
             "iPhone goal field must not trigger focus zoom or horizontal overflow: "+JSON.stringify(geometry));
-          const musicPosition=await page.locator("[data-video-quick-audio-choices]").evaluate(el=>el.getBoundingClientRect().top+scrollY);
-          const directorPosition=await auto.evaluate(el=>el.getBoundingClientRect().top+scrollY);
-          assert.ok(directorPosition>musicPosition,
-            "Auto Video Director must appear below the existing Music & Voice block");
+          // Audio is in a separate, hidden workspace here. Its zero-sized
+          // bounding box cannot establish relative order; use document order.
+          const musicPrecedesDirector=await page.locator("[data-video-quick-audio-choices]").evaluate((music)=>{
+            const director=document.querySelector("[data-auto-video-director]");
+            return Boolean(director && (music.compareDocumentPosition(director)&Node.DOCUMENT_POSITION_FOLLOWING));
+          });
+          assert.ok(musicPrecedesDirector,
+            "Auto Video Director must follow the existing Music & Voice block");
 
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
           await auto.locator('[data-auto-video-goal="calm"]').click();
