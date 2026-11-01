@@ -87,7 +87,10 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
 test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
