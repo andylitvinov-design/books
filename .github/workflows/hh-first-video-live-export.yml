@@ -19,7 +19,7 @@ jobs:
   anonymous-encoded-video:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 11
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,8 +29,8 @@ jobs:
           node-version: '22'
       - name: Validate safe standalone browser test syntax
         run: node --check scripts/benchmarking/first-video-live-export.mjs
-      - name: Install pinned isolated headless browser only
-        timeout-minutes: 5
+      - name: Reuse preinstalled Google Chrome; install pinned Playwright client only
+        timeout-minutes: 2
         env:
           npm_config_ignore_scripts: 'true'
         run: |
@@ -38,15 +38,22 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/hh-live-video-browser" \
             --no-audit --no-fund --no-package-lock --ignore-scripts \
             playwright@1.63.0
-          "$RUNNER_TEMP/hh-live-video-browser/node_modules/.bin/playwright" install --with-deps --only-shell chromium
+          # Ubuntu 24.04 GitHub runners already include Chrome. Do not waste
+          # minutes downloading a second Chromium copy.
+          if command -v google-chrome >/dev/null; then google-chrome --version;
+          elif command -v google-chrome-stable >/dev/null; then google-chrome-stable --version;
+          else echo 'RUNNER_SYSTEM_CHROME_MISSING' >&2; exit 1; fi
       - name: Verify media inspection utilities
+        timeout-minutes: 4
         run: |
           set -euo pipefail
           if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends ffmpeg
+            sudo apt-get install -y --no-install-recommends ffmpeg || {
+              sudo apt-get update -qq
+              sudo apt-get install -y --no-install-recommends ffmpeg
+            }
           fi
-          ffprobe -version | head -n 1
+          ffprobe -version | sed -n '1p'
       - name: Actual guest LIVE wish → 20s video → download → ffprobe/audio/motion
         timeout-minutes: 3
         env:
