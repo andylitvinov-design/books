@@ -958,12 +958,12 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
   ];
   const applicable = expectedWorkflows({base: all, current: all, changed});
   const present = name => applicable.includes(root + name + '.yml');
-  for (const module of [
+  for (const specialistName of [
     'hh-course-presets','practice-visual-browser','practice-visual-services',
     'hh-public-services-production','site-video-browser','hh-personal-coaching-session',
     'hh-interpretation-database','hh-my-progress-release','hh-public-test-collections',
     'hh-portrait-mobile-browser','hh-profile-axis-matching','hh-cabinet-journey',
-  ]) assert.equal(present(module), false, 'Messenger must not dispatch ' + module);
+  ]) assert.equal(present(specialistName), false, 'Messenger must not dispatch ' + specialistName);
   for (const owner of [
     'hh-app-r1','hh-app-browser','ia-v2','hh-crm-source-check',
     'hh-messenger-mobile-release','hh-messages-wellness-v2','hh-messages-wellness-browser',
