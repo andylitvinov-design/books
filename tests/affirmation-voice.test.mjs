@@ -77,12 +77,16 @@ test("six-voice affirmation editor is visible in the Phrases workspace rather th
   const voice=page.indexOf('<MandalaAffirmationVoice locale={locale}');
   const next=page.indexOf('data-workspace-section="effects"',section);
   const hidden=page.indexOf('data-video-quick-legacy');
-  assert.ok(section>0 && voice>section && next>voice && hidden>next,
-    "voice must be usable from the single visible Phrases tab");
+  const deepPane=page.indexOf('const deepHypnoPane =');
+  const voiceCard=page.indexOf('data-hypno-voice');
+  assert.ok(deepPane>0 && voiceCard>deepPane && voice>voiceCard && section>voice && next>section && hidden>next,
+    "single consented voice lives inside the rendered Phrases editor after the phrase list");
+  assert.match(page.slice(section,next),/\{deepHypnoPane\}/,
+    "the visible Phrases tab mounts the only shared editor");
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
     "do not duplicate the voice editor or API requests");
-  assert.match(page.slice(section,next),/data-video-narration-stale/,
-    "the warning for stale narration stays beside the visible controls");
+  assert.match(page.slice(voiceCard,section),/data-video-narration-stale/,
+    "the warning for stale narration stays inside the visible numbered voice card");
   const browser=read("scripts/verify-affirmation-voice-browser.mjs");
   assert.match(browser,/data-video-quick-control="phrases"/);
   const compact=read("components/mandala-hypno-compact.tsx");
