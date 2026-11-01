@@ -252,3 +252,17 @@ test("direct audio URL reveals its existing workspace instead of hidden advanced
   assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
   assert.match(browser,/deep-link\.png/);
 });
+
+
+test("original audio cover and separate 44px Play keep the real photograph visible",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const styles=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/audioTileGlyph\} aria-hidden="true"\s*\/>\s*<span className=\{videoStyles\.audioPlaySlot\}/);
+  assert.match(s,/data-video-audio-play=\{track\.id\}/);
+  assert.match(styles,/\.audioPlaySlot\{display:block;min-width:44px/);
+  assert.match(styles,/\.audioSection \.audioTrackSelect\{grid-template-columns:54px 44px minmax\(0,1fr\) auto/);
+  assert.match(styles,/\.audioSection \.audioTrackPlay\{left:68px;top:50%;width:44px;height:44px/);
+  assert.match(styles,/@media\(max-width:375px\)\{[\s\S]*?\.audioSection \.audioTrackPlay\{left:59px\}/);
+  assert.match(browser,/play\.x>=cover\.x\+cover\.width\+4/);
+});
