@@ -389,7 +389,9 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   assert.match(switches,/data-video-affirmations-feature/);
   assert.match(switches,/checked=\{affirmations\.enabled\}/);
   assert.match(switches,/setAffirmations\(previous=>/);
-  assert.doesNotMatch(hero,/<select|<p[ >]/,"film is visual-only with no selectors or copy");
+  assert.doesNotMatch(hero,/<select/,"the real Canvas retains no visual filter dropdown");
+  assert.match(hero,/className=\{videoStyles\.heroEditorial\}/,
+    "approved hero copy overlays the original player");
   assert.match(hero,/data-mandala-cinematic-canvas/);
   assert.match(hero,/data-video-preview-toggle/);
   assert.match(hero,/className=\{videoStyles\.heroPlay\}/);
