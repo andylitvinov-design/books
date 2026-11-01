@@ -47,8 +47,8 @@ jobs:
             const {run} = require(`${process.env.GITHUB_WORKSPACE}/scripts/ci-pr-ten-minute-watchdog.cjs`);
             await run({
               github, core, context,
-              # Owner-token branch updates are held until separately isolated:
-              # never burn the dedicated merge credential on every 10-minute read.
+              // Owner-token branch updates are held until separately isolated:
+              // Never burn the dedicated merge credential on every 10-minute read.
               repairGithub: null,
               hasMergeToken: process.env.HH_HAS_AUTOMERGE_TOKEN === 'true',
               dryRun: context.eventName === 'push' || String(context.payload.inputs?.dry_run ?? 'false') === 'true'
