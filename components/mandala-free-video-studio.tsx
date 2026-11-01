@@ -27,6 +27,7 @@ import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
@@ -874,13 +875,13 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
 }
 function compileFreeFilmPreset(
   preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect,
-  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[]},
+  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]},
 ):CinematicStoryboard {
-  // Reorder only these four approved real MP4 scenes, no invented source.
+  // All four shots must pass the live source-rights whitelist, even after replacement.
+  // Explicit avoid-water/forest/night exclusions survive montage editing.
   const clipIds=edit?.clipIds??preset.clips;
-  if(clipIds.length!==4||new Set(clipIds).size!==4||
-    clipIds.some(id=>!preset.clips.includes(id)))
-    throw Error("invalid_free_film_reorder");
+  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])]))
+    throw Error("invalid_free_film_replacement");
   if(edit && (!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==4||
     edit.captionTexts.some(value=>typeof value!=="string")))
     throw Error("invalid_stage_caption_track");
@@ -2658,7 +2659,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     stopMovieSound();setPreviewPlaying(false);
   };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
-    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[]},
+    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]},
     outputAspect:Aspect=aspect)=>{
     if(recording||preparing)return false;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
