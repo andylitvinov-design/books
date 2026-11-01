@@ -449,7 +449,7 @@ const runEngine = async ([engine, browserType]) => {
         await quick.locator('[data-video-quick-theme="money"]').click();
         assert.equal(await quick.locator('[data-video-quick-theme="money"]').getAttribute("aria-pressed"),"true");
         await quick.locator('[data-video-quick-theme="energy"]').click();
-        await quick.locator("[data-video-quick-wish]").fill("I want to feel calmer");
+        await quick.locator("[data-first-video-wish]").fill("I want to feel calmer");
         assert.equal(await page.locator("[data-video-wish]").inputValue(),"I want to feel calmer");
         assert.equal(await quick.locator("[data-video-quick-style]").count(),6);
         await quick.locator('[data-video-quick-style="1"]').click();
@@ -592,7 +592,7 @@ const runEngine = async ([engine, browserType]) => {
           {ru:"Без звука",en:"Silent",es:"Silencio"}[locale]}).last().click();
         assert.equal(await page.locator("[data-video-audio-attach]").isDisabled(),true,
           "explicit silent selection detaches the soundtrack");
-        await quick.locator("[data-video-quick-wish]").fill("");
+        await quick.locator("[data-first-video-wish]").fill("");
         // Keep detail view open for pre-existing complete 8-session,
         // recording/codec, privacy and audio/voice browser acceptance.
         const picks=page.locator("[data-video-daily-picks]");
@@ -637,12 +637,21 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await hero.locator("p").count(),0,"video displays art, not overlaid marketing copy");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="es"?0:1,
-          "owner-approved RU film introduction is selectable on RU/EN without another editor");
+        assert.equal(await hero.locator('[data-video-therapy-intro="ready"]').count(),locale==="ru"?1:0,
+          "the approved RU presentation belongs only to the RU screen");
+        assert.equal(await hero.locator('[data-video-therapy-intro="english-channel"]').count(),locale==="en"?1:0,
+          "English route links only to the verified owner English channel, not a Russian soundtrack");
+        const youtubeLink=hero.locator('[data-video-therapy-youtube]');
+        assert.equal(await youtubeLink.count(),locale==="es"?0:1,
+          "one explicitly identified YouTube destination per active language");
+        if(locale==="ru")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/watch?v=P9Wvo3gEY6U");
+        if(locale==="en")assert.equal(await youtubeLink.getAttribute("href"),
+          "https://www.youtube.com/@aatapro/videos");
         assert.equal(await hero.locator("iframe").count(),0,
-          "no external video iframe or requests before an explicit user click");
-        assert.equal(await hero.locator("button").count(),locale==="es"?1:2,
-          "the second RU/EN button is the opt-in intro, not another editor");
+          "no external YouTube iframe or requests before an explicit user click");
+        assert.equal(await hero.locator("button").count(),locale==="ru"?2:1,
+          "central Canvas Play stays independent; RU adds its approved video introduction");
         assert.equal(await hero.getAttribute("data-hero-promo"),"false",
           "the owner chose a style: the central video is playing rather than showing its idle promo");
         assert.equal(await page.locator("[data-video-hero-create]").count(),1);
@@ -1717,6 +1726,31 @@ const runEngine = async ([engine, browserType]) => {
           };
         });
         assert.ok(overflow.page <= overflow.view + 2, engine + " " + width + "px horizontal overflow: " + JSON.stringify(overflow));
+        // Goal-first Free Director: selected goal proposes exactly one real
+        // licensed four-MP4 storyboard, and ONLY explicit Confirm applies it.
+        // Keep the full original Chromium/WebKit recorder & audio E2E intact.
+        if (locale === "ru" && width === 390) {
+          const auto=page.locator("[data-auto-video-director]");
+          await auto.waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-goal]").count(),6,
+            "six accessible one-tap goals, no mandatory 49-question intake");
+          const planBefore=await page.locator("[data-free-film-original-masters]").count();
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
+            "goal gives four actual source scenes");
+          await page.locator("[data-first-video-wish]").fill("Хочу больше уверенности");
+          await expect(auto.locator("[data-auto-video-proposal]")).toHaveCount(0);
+          await auto.locator('[data-auto-video-goal="calm"]').click();
+          await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
+          assert.equal(await page.locator("[data-free-film-original-masters]").count(),planBefore,
+            "proposal must not start rendering before user confirms");
+          await auto.locator("[data-auto-video-confirm]").click();
+          await page.waitForFunction(()=>document.querySelectorAll("[data-free-film-source]").length===4,
+            undefined,{timeout:15000});
+          assert.equal(await page.locator("[data-video-live-stage] canvas").count(),1,
+            "Auto Director reuses the only live editable video stage");
+        }
         assert.deepEqual(errors, [], engine + " " + locale + " console page errors");
         passes++;
         console.log("PASS", engine, locale, width + "px", "HTTP 200 / synthetic photo / PNG / video iframe / focus",

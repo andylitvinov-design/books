@@ -852,7 +852,7 @@ const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
       "radiant-portal"
     ]
   },
-  ...(extraFreeFilmPresets.presets as FreeFilmPreset[])
+  ...(extraFreeFilmPresets.presets as FreeFilmPreset[]),
 ] as const;
 const FREE_FILM_CATALOG = freeSceneTaxonomy.scenes;
 const FREE_FILM_CATALOG_BY_ID = new Map(FREE_FILM_CATALOG.map(scene=>[scene.id,scene]));
@@ -1550,10 +1550,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [otherScene, setOtherScene] = useState<LocalSceneId>("mountain-air");
   const [showAllMoney, setShowAllMoney] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
-  // This is an approved Russian-language introduction, NOT a generated client video.
-  // EN visibly labels its RU audio until an approved English master is available.
+  // Verified Russian presentation belongs only on RU; never embed it as English audio.
   const [introPlaying,setIntroPlaying] = useState(false);
-  const introVideoId = locale==="es" ? null : "P9Wvo3gEY6U";
+  const introVideoId = locale==="ru" ? "P9Wvo3gEY6U" : null;
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
   const [duration, setDuration] = useState<(typeof durations)[number]>(30);
@@ -1638,8 +1637,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
   const freeFilmClipLabel=(id:string)=>{
     const origin=FREE_FILM_CLIP_THEMES[id];
-    return origin==="money" ? moneyTemplateLabels[id as MoneySceneId]?.[locale]||
-      moneyScenes.find(scene=>scene.id===id)?.label[locale]||id
+    return origin==="money"
+      ?moneyTemplateLabels[id as MoneySceneId]?.[locale]||
+        moneyScenes.find(scene=>scene.id===id)?.label[locale]||id
       :origin?otherVideoScenes[origin].find(scene=>scene.id===id)?.label[locale]||id:id;
   };
   // These are the SAME original, source-backed scenes as the full gallery.
@@ -1874,7 +1874,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, [signature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
-  useEffect(()=>setIntroPlaying(false),[theme,studioMode]);
+  useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
 
   // Switch actual HTMLVideoElement decoders on the identical storyboard clock
@@ -3068,6 +3068,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <p className={videoStyles.quickDisclosure} role="note">{approved.disclosure}</p>
 
+
+
+
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3135,36 +3138,53 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <iframe
                 className={videoStyles.therapyIntroFrame}
                 src={`https://www.youtube-nocookie.com/embed/${introVideoId}?autoplay=1&playsinline=1&rel=0`}
-                title={locale==="ru"?"Holistic House — о видеотерапии (русский)":
-                  "Holistic House — video therapy presentation (Russian audio)"}
+                title="Holistic House — о видеотерапии (русский)"
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
               />
               <button type="button" className={videoStyles.therapyIntroClose}
-                data-video-therapy-intro-close
-                onClick={()=>setIntroPlaying(false)}>
-                {locale==="ru"?"Вернуться к своему видео":"Back to my video"}
+                data-video-therapy-intro-close onClick={()=>setIntroPlaying(false)}>
+                Вернуться к своему видео
               </button>
               <a className={videoStyles.therapyIntroExternal}
                 href={`https://www.youtube.com/watch?v=${introVideoId}`}
+                data-video-therapy-youtube="ru"
                 target="_blank" rel="noopener noreferrer">
                 YouTube ↗
               </a>
             </div>
           ) : (
-            <button className={videoStyles.therapyIntroLaunch} type="button"
-              data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
-              disabled={recording||preparing}
-              onClick={()=>{
-                premiumVideoRef.current?.pause();
-                setPreviewPlaying(false);
-                setIntroPlaying(true);
-              }}>
-              <Play size={16} fill="currentColor" aria-hidden="true"/>
-              <span>{locale==="ru"?"О видеотерапии · 52 сек":
-                "About video therapy · Russian audio"}</span>
-            </button>
+            <>
+              <button className={videoStyles.therapyIntroLaunch} type="button"
+                data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
+                disabled={recording||preparing}
+                onClick={()=>{
+                  premiumVideoRef.current?.pause();
+                  setPreviewPlaying(false);
+                  setIntroPlaying(true);
+                }}>
+                <Play size={16} fill="currentColor" aria-hidden="true"/>
+                <span>О видеотерапии · 52 сек</span>
+              </button>
+              <a className={videoStyles.therapyIntroDirect}
+                href={`https://www.youtube.com/watch?v=${introVideoId}`}
+                data-video-therapy-youtube="ru" target="_blank"
+                rel="noopener noreferrer" aria-label="Смотреть видео о видеотерапии на русском YouTube">
+                YouTube ↗
+              </a>
+            </>
           )
+        ) : locale==="en" ? (
+          <a className={videoStyles.therapyIntroLaunch}
+            href="https://www.youtube.com/@aatapro/videos"
+            data-video-therapy-intro="english-channel"
+            data-video-therapy-youtube="en"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open English YouTube channel — video therapy presentation is not yet linked">
+            <Play size={16} fill="currentColor" aria-hidden="true"/>
+            <span><strong>English YouTube channel</strong>
+              <small>Video therapy film not yet linked</small></span>
+          </a>
         ) : null}
         {!introPlaying && <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
           data-video-preview-toggle aria-pressed={previewPlaying}
@@ -3473,9 +3493,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div>
             <h3 id="free-film-catalog-title"><Film size={19} aria-hidden="true"/>
               {locale==="ru"?`${FREE_FILM_PRESETS.length} готовых видеосюжетов`:locale==="es"?`${FREE_FILM_PRESETS.length} historias de vídeo`:`${FREE_FILM_PRESETS.length} ready-to-edit films`}</h3>
-            <p>{locale==="ru"?"Каждый монтаж — 4 разных MP4 из 44 лицензированных источников, подобранных по цели.":
-              locale==="es"?"Cuatro MP4 distintos de 44 fuentes autorizadas, seleccionados según tu objetivo.":
-              "Four distinct MP4 clips from 44 licensed sources, selected for your goal."}</p>
+            <p>{locale==="ru"?"Каждый фильм — монтаж 4 разных MP4 из 44 лицензированных исходников. Система подбирает сцены по цели, тегам и ограничениям.":
+              locale==="es"?"Cada montaje combina 4 MP4 diferentes de 44 originales con licencia; elegidos por objetivo y etiquetas.":
+              "Each montage uses 4 distinct MP4 scenes from 44 licensed originals, matched to your goal and preferences."}</p>
           </div>
           <button type="button" data-free-film-more disabled={recording||preparing}
             aria-expanded={showAllFreeFilms} onClick={()=>setShowAllFreeFilms(value=>!value)}>
@@ -3490,7 +3510,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {freeFilmOptions.map(preset=>{
             const clipTheme=FREE_FILM_CLIP_THEMES[preset.clips[0]];
             const poster=firstPartyFilmFor(clipTheme,preset.clips[0])?.poster;
-            const clipSummary=preset.clips.map(id=>FREE_FILM_CATALOG_BY_ID.get(id)?.description[locale]||freeFilmClipLabel(id)).join("; ");
+            // Every currently approved MP4 has a localized editorial description.
+            const clipSummary=preset.clips.map(id=>
+              FREE_FILM_CATALOG_BY_ID.get(id)?.description[locale]||freeFilmClipLabel(id)).join("; ");
             return <button key={preset.id} type="button" data-free-film-preset={preset.id}
               title={clipSummary} aria-label={`${preset.label[locale]}: ${clipSummary}`}
               aria-pressed={usingFreeFilmCompilation&&activeFreeFilmPreset===preset.id}
@@ -3600,13 +3622,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{approved.personal}</h3>
           </div>
-          <label className={videoStyles.quickWish}>
-            <span className={videoStyles.srOnly}>{quick.wish}</span>
-            <Target size={18} aria-hidden="true"/>
-            <input data-video-quick-wish type="text" maxLength={160} value={wish}
-              disabled={recording||preparing} placeholder={quick.wish}
-              onChange={event=>{setWish(graphemeTrim(event.currentTarget.value));setSuggestion("");setCinematicPlan(null);}}/>
-          </label>
+          <p className={videoStyles.quickHint} data-video-goal-summary>
+            {wish.trim()?wish:(locale==="ru"?"Укажите цель в Auto Video Director выше.":
+              locale==="es"?"Indica tu objetivo en Auto Video Director.":
+              "Choose your goal in the Auto Video Director above.")}
+          </p>
           <div className={videoStyles.quickPersonalActions}>
             <button type="button" data-video-personal-affirmations disabled={recording||preparing}
               aria-pressed={affirmations.enabled}
