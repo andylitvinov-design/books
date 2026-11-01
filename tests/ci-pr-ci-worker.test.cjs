@@ -134,3 +134,21 @@ test('owner token exception does not create a duplicate commit',async()=>{
   assert.equal(r.failed,1);
   assert.equal(f.logs.labels,1);
 });
+
+test('pre-claimed queue items do not starve fresh PRs',async()=>{
+  const f=fixture({items:[
+    {number:99,pull_request:{},labels:[{name:ATTEMPTED},{name:QUEUED}]},
+    {number:10,pull_request:{},labels:[{name:QUEUED}]}
+  ]});
+  const r=await run({github:f.github,core:core(),context,sourceGit:f.sourceGit,now});
+  assert.equal(r.started,1);
+  assert.equal(r.examined,1);
+  assert.equal(f.logs.source,1);
+});
+test('issue-to-PR mismatch is ignored before any source mutation',async()=>{
+  const f=fixture({items:[{number:99,pull_request:{},labels:[{name:QUEUED}]}]});
+  const r=await run({github:f.github,core:core(),context,sourceGit:f.sourceGit,now});
+  assert.equal(r.started,0);
+  assert.equal(f.logs.labels,0);
+  assert.equal(f.logs.source,0);
+});

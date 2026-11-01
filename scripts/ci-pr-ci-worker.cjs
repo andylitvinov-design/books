@@ -106,10 +106,15 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
   let candidates;
   try{
     const response=await limited('queued-issues',()=>github.rest.issues.listForRepo({
-      owner,repo,state:'open',labels:QUEUED,per_page:30,sort:'created',direction:'asc'
+      owner,repo,state:'open',labels:QUEUED,per_page:100,sort:'created',direction:'asc'
     }));
     if(!Array.isArray(response?.data))throw Error('Incomplete PR queue');
-    candidates=response.data.filter(item=>item.pull_request).slice(0,MAX_CANDIDATES);
+    // Skip already-claimed PRs at the issue level so they cannot monopolize
+    // the bounded queue. Rotate across unclaimed entries for starvation safety.
+    const eligible=response.data.filter(item=>item.pull_request &&
+      !(item.labels||[]).some(label=>label.name===ATTEMPTED));
+    const offset=eligible.length ? (Math.floor(now/(10*60_000))*MAX_CANDIDATES)%eligible.length : 0;
+    candidates=[...eligible.slice(offset),...eligible.slice(0,offset)].slice(0,MAX_CANDIDATES);
     summary.candidateIssues=candidates.length;
   }catch(error){
     summary.reason ||= 'QUEUE_UNAVAILABLE';
@@ -123,7 +128,7 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
       let pr=(await limited('live-pr',()=>github.rest.pulls.get({
         owner,repo,pull_number:issue.number
       }))).data;
-      if(!validPR(pr,fullRepo))continue;
+      if(pr.number!==issue.number || !validPR(pr,fullRepo))continue;
       // Only complete absence of historical Core PR runs qualifies. Rerunning
       // stale/failed source code or creating a second bootstrap is forbidden.
       const history=(await limited('core-history',()=>github.request(
