@@ -2,7 +2,7 @@
 
 import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
@@ -27,10 +27,10 @@ type Props={
 const copy={
  ru:{
    title:"Auto Video Director",
-   intro:"Выберите цель — мы сразу предложим готовый сюжет. Никаких обязательных фильтров.",
+   intro:"Один общий запрос → четыре варианта сценария",
    goalsTitle:"Что хотелось бы изменить?",
    placeholder:"Например: хочу меньше тревожиться и ощущать спокойствие",
-   suggest:"Предложить сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
+   suggest:"Подобрать сценарий",reason:"Мой сценарий",uncertain:"Проверьте тему: это предварительная рекомендация.",
    duration:"Длительность",variants:"Выберите один из сценариев",storyboard:"Четыре сцены выбранного сценария",topic:"Направление",edit:"Изменить детали (необязательно)",
    stages:["Начало","Погружение","Развитие","Завершение"],
    source:"4 настоящих MP4 · бесплатный монтаж",
@@ -43,7 +43,7 @@ const copy={
  },
  en:{
    title:"Auto Video Director",
-   intro:"Choose one goal for an instant ready-made film. No required filters.",
+   intro:"One goal → four story options",
    goalsTitle:"What would you like to change?",
    placeholder:"For example: I want less anxiety and more calm",
    suggest:"Suggest my film",reason:"Suggested film",uncertain:"Please check this provisional topic.",
@@ -59,7 +59,7 @@ const copy={
  },
  es:{
    title:"Auto Video Director",
-   intro:"Elige un objetivo y verás un vídeo sugerido, sin filtros obligatorios.",
+   intro:"Un objetivo → cuatro opciones de vídeo",
    goalsTitle:"¿Qué te gustaría cambiar?",
    placeholder:"Por ejemplo: quiero menos ansiedad y más calma",
    suggest:"Proponer vídeo",reason:"Vídeo sugerido",uncertain:"Confirma que la temática propuesta es correcta.",
@@ -125,12 +125,15 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,goalId,locale,fallbackTheme:theme,presets,scenes}));
  };
  const primaryGoalIds=new Set(["confidence","connection","fresh-start","stability"]);
- const renderGoal=(item:(typeof AUTO_VIDEO_GOALS)[number])=>
-   <button key={item.id} type="button" data-auto-video-goal={item.id}
-     aria-pressed={showProposal&&selectedGoalId===item.id}
-     disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
-     {item.labels[locale]}
-   </button>;
+ const renderGoal=(item:(typeof AUTO_VIDEO_GOALS)[number])=>{
+   const Icon=item.id==="confidence"?Sun:item.id==="connection"?Heart:
+     item.id==="fresh-start"?Sprout:item.id==="stability"?BriefcaseBusiness:Sparkles;
+   return <button key={item.id} type="button" data-auto-video-goal={item.id}
+       aria-pressed={showProposal&&selectedGoalId===item.id}
+       disabled={disabled} onClick={()=>chooseReadyGoal(item.id)}>
+       <Icon size={17} aria-hidden="true"/>{item.labels[locale]}
+     </button>;
+ };
  const goalPanel=<div className={css.goalPanel} data-auto-video-goal-panel>
    <p className={css.goalsTitle}>{t.goalsTitle}</p>
    <div className={css.goalChoices} role="group" aria-label={t.goalsTitle}>
