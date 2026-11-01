@@ -8,6 +8,7 @@ import {allocateAdaptiveFilmTimeline,shiftAdaptiveFilmBoundary} from "@/lib/mand
 import {STAGE_CAPTION_LIMIT} from "@/lib/mandala/stage-caption-track.mjs";
 import {montageReplacementOptions} from "@/lib/mandala/video-montage-sources.mjs";
 import {recommendScenarioMelodies} from "@/lib/mandala/scenario-soundtracks.mjs";
+import {scenarioAudioTracks} from "@/lib/mandala/scenario-audio-catalog.mjs";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
@@ -122,7 +123,8 @@ export function MandalaAutoVideoDirector({
  },[]);
  const selectedGoal=AUTO_VIDEO_GOALS.find(item=>item.id===selectedGoalId);
  const chosen=presets.find(p=>p.id===(overrideId||proposal?.presetId));
- const melodyOptions=chosen?recommendScenarioMelodies(chosen):[];
+ const dedicatedMelodies=chosen?scenarioAudioTracks(chosen.id):[];
+ const melodyOptions=dedicatedMelodies.length===4?dedicatedMelodies:chosen?recommendScenarioMelodies(chosen):[];
  const sceneById=new Map(scenes.map(item=>[item.id,item]));
  const sceneLabel=(id:string)=>sceneById.get(id)?.label[locale]||clipLabel(id);
  const scenePoster=(id:string)=>sceneById.get(id)?.poster||null;

@@ -111,8 +111,10 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   ])assert.ok(studio.includes(selector),selector);
   assert.match(studio,/const \[audioKind,setAudioKind\] = useState\("melody"\)/);
   assert.match(studio,/const \[audioAuto,setAudioAuto\] = useState\(true\)/);
-  assert.match(studio,/const featuredMelodies = recommendMandalaAudio/);
-  assert.match(studio,/const audioMatches = recommendMandalaAudio/);
+  assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
+  assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
+  assert.match(studio,/const baseAudioMatches=recommendMandalaAudio/);
+  assert.match(studio,/const audioMatches=\[\.\.\.matchingScenarioTracks,\.\.\.baseAudioMatches,\.\.\.classicMatches\]/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
@@ -129,9 +131,9 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(audioSource,/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/,"melody master is fetched from the same-origin preset path");
 });
 
-test("published audio helper copy accurately describes the 41 first-party WAV catalog in EN/RU/ES",()=>{
-  assert.match(studio,/originalAudio:"24 instrumentals:/);
-  assert.match(studio,/originalAudio:"24 мелодии:/);
-  assert.match(studio,/originalAudio:"24 melodías instrumentales:/);
+test("published audio helper copy accurately describes new scenario MP3s plus WAV melodies in EN/RU/ES",()=>{
+  assert.match(studio,/originalAudio:"Four distinct instrumental scores/);
+  assert.match(studio,/originalAudio:"Четыре отдельные инструментальные мелодии/);
+  assert.match(studio,/originalAudio:"Cuatro piezas instrumentales distintas/);
   assert.doesNotMatch(studio,/originalAudio:"13 /,"obsolete soundtrack count must not be displayed");
 });

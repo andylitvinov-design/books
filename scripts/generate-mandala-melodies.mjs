@@ -35,9 +35,9 @@ export const SONGS=[
   {id:"marimba",key:52,mode:"major",chords:[0,3,5,4],motif:[0,2,4,2,5,7,4,2],lead:"marimba",back:"harp",color:3},
   {id:"lullaby",key:48,mode:"major",chords:[0,5,3,4],motif:[2,null,4,2,0,null,1,2],lead:"piano",back:"celesta",color:0},
   {id:"handpan",key:50,mode:"dorian",chords:[0,3,4,0],motif:[0,4,2,1,0,2,4,2],lead:"handpan",back:"flute",color:1},
-  // Newly synthesized performances of old public-domain themes; no borrowed recordings.
+  // Own arrangements of public-domain melodies, without third-party recordings.
   {id:"ode-to-joy",key:48,mode:"major",chords:[0,0,3,4],motif:[2,2,3,4,4,3,2,1],lead:"piano",back:"strings",color:1},
-  {id:"greensleeves",key:57,mode:"minor",chords:[0,4,5,3],motif:[0,2,3,4,5,4,3,1],lead:"flute",back:"harp",color:0},
+  {id:"greensleeves",key:57,mode:"minor",chords:[0,4,5,3],motif:[0,2,3,4,5,4,3,1],lead:"flute",back:"harp",color:0}
 ];
 export const MASTER_IDS=Object.freeze(SONGS.map(x=>x.id));
 export const SAMPLE_RATE=22050;
@@ -84,6 +84,22 @@ const soundEnvelope=(t,d,kind)=>{
 
 export function renderMelody(song){
   if(!SONGS.includes(song))throw Error("unapproved_original_score");
+  return renderAuthorizedScore(song);
+}
+/** Strict first-party note-score renderer for the separate scenario music
+ * pipeline; never accepts visitor prompts, media URLs, or uploaded files.
+ * Existing 22 songs still require their exact authored SONGS identities.
+ */
+export function renderAuthorizedScore(song) {
+  if(!song||!SCALES[song.mode]||
+    !Array.isArray(song.chords)||song.chords.length!==4||
+    song.chords.some(n=>!Number.isInteger(n)||n<0||n>6)||
+    !Array.isArray(song.motif)||song.motif.length!==8||
+    song.motif.some(n=>n!==null&&(!Number.isInteger(n)||n<0||n>9))||
+    !Number.isInteger(song.key)||song.key<45||song.key>60||
+    !TONES[song.lead]||!TONES[song.back]||
+    !Number.isInteger(song.color)||song.color<0||song.color>3)
+    throw Error("unapproved_scenario_score");
   const rate=SAMPLE_RATE,n=rate*DURATION_SECONDS;
   const signal=new Float32Array(n);
   function note(midi,start,duration,amp,kind){
