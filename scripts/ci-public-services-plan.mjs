@@ -94,11 +94,20 @@ const IDEAS_SCOPED_ADDITIONS = new Set([
   'tests/ci-ideas-coaching-optimization.test.mjs',
 ]);
 const METRIC_SCRIPT = 'scripts/measure-hh-public-ttfb.mjs';
-// One proven isolated presentation leaf: two existing suites exercise the exact
-// Alchemy screen/viewport/consent in RU/EN/ES. All JSX, forms and payments stay full.
+// Narrow, source-test-covered styling files avoid a second Next build and
+// browser install in Public Services. Core owns the same production candidate
+// build; real browser journeys remain available by manual workflow_dispatch.
+// Forms, consent, auth, payment, HTML/JSX and unknown CSS are never exempt.
+const SOURCE_COVERED_VISUAL_ONLY = new Set([
+  'components/alchemy-soul-landing.module.css',
+]);
 const PRESENTATION_CASES = new Map([
-  ['components/alchemy-soul-landing.module.css',
-    ['verify-alchemy-one-screen.mjs', 'verify-public-services-production.mjs']],
+  // Actual public UX still gets the related real Chromium browser journeys,
+  // not the unrelated 13-case checkout/Reiki/Alchemy matrix.
+  ['components/direction-offers.tsx',
+    ['verify-direction-focus-mobile.mjs', 'verify-public-services-production.mjs']],
+  ['components/academy-course-video-playlist.tsx',
+    ['verify-public-services-production.mjs']],
 ]);
 // This is a test helper, not a contact implementation. Public Services has
 // one importer; App R1 and release re-audit run in their own workflows.
@@ -121,6 +130,7 @@ export function planPublicServicesChangedPaths(files) {
   for (const file of files) {
     if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
     if (sourceTests.has(file)) continue;
+    if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
       continue;
@@ -227,6 +237,21 @@ export function requiresPublicServicesHeavyPr(plan) {
   return false;
 }
 
+// Install WebKit only for cases that actually execute WebKit. The full
+// payment/consent matrix and unknowns always retain both engines.
+const CHROMIUM_ONLY_CASES = new Set([
+  'verify-alchemy-one-screen.mjs',
+  'verify-public-services-production.mjs',
+  'verify-service-cart-browser.mjs',
+  'verify-direction-focus-mobile.mjs',
+]);
+export function publicPlaywrightEngines(plan) {
+  if (!plan || !plan.browser) return 'none';
+  const cases = typeof plan.cases === 'string' ? plan.cases.split(',') : [];
+  return cases.length > 0 && cases.every(name => CHROMIUM_ONLY_CASES.has(name))
+    ? 'chromium' : 'chromium webkit';
+}
+
 function main() {
   const plan = planPublicServicesEvent();
   const summary = 'Public Services impact: ' + plan.mode +
@@ -239,6 +264,7 @@ function main() {
       ['mode=' + plan.mode, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
+        'engines=' + publicPlaywrightEngines(plan),
         'cases=' + plan.cases].join('\n') + '\n');
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
