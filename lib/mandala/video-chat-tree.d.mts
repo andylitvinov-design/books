@@ -24,3 +24,8 @@ export function chooseCustomVideoChatPhrase(draft:VideoChatTreeDraft,value:strin
   VideoChatTreeDraft|null;
 export function autocompleteVideoChatTree(draft:VideoChatTreeDraft,
   legacyTheme?:string,locale?:VideoPhraseLocale):VideoChatTreeDraft|null;
+
+export function recognizeVideoChatTreeOption(draft:VideoChatTreeDraft,step:string,
+  value:string,locale?:VideoPhraseLocale):VideoChatTreeDraft|null;
+export function recognizeVideoChatPhraseStyle(value:string,step?:string):
+  Partial<Pick<VideoChatTreeDraft,"tone"|"speaker"|"length">>|null;
