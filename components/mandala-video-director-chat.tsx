@@ -244,11 +244,13 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const value=raw.trim().replace(/\s+/gu," ").slice(0,800);
    if(!value)return;
    setInput("");addLine("user",value);
-   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+   // A command acts on the already approved exact cut. Only a *change* to
+   // the visitor's narrative or filters invalidates pending/approved AI work.
    const action=parseVideoChatAction(value,step);
    if(action==="confirm"){confirm();return;}
    if(action==="create"){start();return;}
    if(action==="open"){onOpenResult();return;}
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    if(step==="goal"){
      if(isGenericVideoRequest(value)){
        addLine("assistant",t.goal);return;
