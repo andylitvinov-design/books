@@ -658,3 +658,106 @@ test('only the complete reviewed PR #2308 delta delegates to real meditation bro
     'npm run build',
   ]) assert.ok(specialist.includes(proof),'dedicated exact-head real-browser gate missing: '+proof);
 });
+
+test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video specialists, unknowns remain FULL',()=>{
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2758/merge',
+    GITHUB_HEAD_REF:'feat/home-presentation-20261031-ru-en-slot',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const expected=[["M","app/holistic-house-home.css"],["M","components/holistic-house-home.tsx"],["A","components/home-presentation-video-section.tsx"],["M","scripts/verify-home-locale-switch.mjs"],["M","scripts/verify-page-video-release.mjs"],["M","scripts/verify-site-video-browser.mjs"],["M","tests/holistic-house-home-streaming.test.mjs"],["M","tests/home-conversation-browser.mjs"],["M","tests/home-conversation-guide.test.mjs"],["M","tests/home-featured-workspace.test.mjs"],["M","tests/page-video-release.test.mjs"],["M","tests/public-tantra-entry-links.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"]];
+  const run=(rows,update={})=>planPublicServicesEvent({...env,...update},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('unexpected git call');
+  });
+  const okay=run(expected);
+  assert.deepEqual([okay.mode,okay.reason,okay.browser,okay.build],
+    ['contracts','EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(okay),false);
+  for(const bad of [
+    [...expected,['M','middleware.ts']],
+    [...expected,['M','app/api/service-enquiries/route.js']],
+    [...expected,['A','app/[locale]/meditations/new/page.tsx']],
+    expected.filter(([,p])=>p!=='components/holistic-house-home.tsx'),
+    expected.map(([st,path],i)=>i===2?['M',path]:[st,path]),
+    [...expected,expected[0]],
+  ]) assert.equal(run(bad).mode,'full','extra/missing/duplicate or changed status must remain FULL');
+  for(const update of [
+    {GITHUB_REF:'refs/pull/2757/merge'},
+    {GITHUB_HEAD_REF:'unrelated/branch'},
+    {GITHUB_EVENT_NAME:'workflow_dispatch'},
+  ]) assert.equal(run(expected,update).mode,'full','other PR/ref/event has no exemption');
+  assert.equal(planPublicServicesChangedPaths(expected.map(([,p])=>p)).mode,'full',
+    'generic new Homepage runtime file still requires full E2E');
+  const home=workflow('home-locale-switch.yml');
+  const video=workflow('site-video-browser.yml');
+  assert.ok(home.includes('node scripts/verify-home-locale-switch.mjs'));
+  assert.ok(video.includes('node scripts/verify-site-video-browser.mjs'));
+  assert.match(home,/pull_request:/);
+  assert.match(video,/pull_request:/);
+  const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
+  assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
+});
+
+test('exact HEIC PR #2566 delegates to real Mandala browsers but unknown changes fail closed', () => {
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2566/merge',
+    GITHUB_HEAD_REF:'fix/mandala-single-accordion-editor-20261029',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const delta=[
+    ['M','components/mandala-free-video-studio.tsx'],
+    ['M','components/mandala-meditation-client.tsx'],
+    ['A','lib/mandala/prepare-browser-photo.ts'],
+    ['M','tests/holistic-mandala-meditation.test.mjs'],
+    ['M','tests/mandala-workspace-tabs.test.mjs'],
+    ['M','.github/workflows/holistic-support-mandala.yml'],
+    ['M','tests/ci-heavy-draft-policy.test.mjs'],
+    ['M','tests/pr-fast-lane.test.mjs'],
+    ['M','tests/ci-heavy-impact.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs'],
+  ];
+  const run=(rows,overrides={})=>planPublicServicesEvent({...env,...overrides},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(z)+z);
+    throw Error('unexpected Git operation in exact-SHA gate: '+args[0]);
+  });
+  const valid=run(delta);
+  assert.deepEqual([valid.mode,valid.reason,valid.browser,valid.build],
+    ['contracts','EXACT_PR_2566_OWNED_REAL_HEIC_BROWSER',false,false]);
+  assert.equal(requiresPublicServicesHeavyPr(valid),false);
+  const fullCases=[
+    [...delta,['M','app/api/payments/talismans/checkout/route.js']],
+    [...delta,['A','app/api/holistic-support/voice/route.js']],
+    [...delta,['M','middleware.ts']],
+    delta.filter(([,path])=>path!=='lib/mandala/prepare-browser-photo.ts'),
+    [...delta,delta[0]],
+    delta.map(([status,path],i)=>i===2?['M',path]:[status,path]),
+    delta.map(([status,path],i)=>i===0?['D',path]:[status,path]),
+  ];
+  for(const mismatch of fullCases)
+    assert.equal(run(mismatch).mode,'full','extra/missing/duplicate/type change requires all browsers');
+  for(const unsafe of [
+    {GITHUB_REF:'refs/pull/2567/merge'},
+    {GITHUB_HEAD_REF:'untrusted/fork'},
+    {GITHUB_EVENT_NAME:'workflow_dispatch'},
+  ]) assert.equal(run(delta,unsafe).mode,'full','other PRs and events cannot claim HEIC routing');
+  assert.equal(planPublicServicesChangedPaths(delta.map(([,path])=>path)).mode,'full',
+    'generic new video helper never receives an exemption');
+  const specialist=workflow('holistic-support-mandala.yml');
+  const requiredGate="if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'fix/mandala-single-accordion-editor-20261029'))";
+  for(const step of ['Build','Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px']) {
+    assert.ok(specialist.includes('      - name: '+step+'\n        '+requiredGate),
+      'protected HEIC specialist must retain real media QA: '+step);
+  }
+  for(const proof of ['tests/holistic-mandala-meditation.test.mjs',
+    'node scripts/verify-holistic-mandala-browser.mjs',
+    'playwright install --with-deps chromium webkit',
+    'ffprobe -version','ffmpeg -version']) {
+    assert.ok(specialist.includes(proof),'actual specialist missing '+proof);
+  }
+});

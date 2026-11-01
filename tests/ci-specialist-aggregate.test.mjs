@@ -1,3 +1,4 @@
+import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -117,6 +118,20 @@ test('workflow status needs live matching PR HEAD, path, associated PR and lates
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[run({status:'in_progress',conclusion:null})]}).pending,[path+':in_progress']);
   assert.deepEqual(inspectWorkflowRuns({...input,runs:[run({id:150}),run({id:151,status:'completed',conclusion:'failure'})]}).failed,[path+':failure']);
   assert.equal(inspectWorkflowRuns({...input,runs:[run({id:150,conclusion:'failure'}),run()]}).passed.length,1);
+});
+
+test('immutable run SHA survives GitHub rewriting associated PR head on subsequent pushes',()=>{
+  const associated = run({pull_requests:[{number:27,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  const input = {expected:[path],pr:pr()};
+  assert.equal(inspectWorkflowRuns({...input,runs:[associated]}).passed.length,1);
+  const wrongBranch=run({head_branch:'unrelated',pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongBranch]}).missing,[path]);
+  const wrongRepo=run({head_repository:{full_name:'other/repo'},pull_requests:associated.pull_requests});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongRepo]}).missing,[path]);
+  const wrongNumber=run({pull_requests:[{number:999,base:{ref:TARGET},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongNumber]}).missing,[path]);
+  const wrongTarget=run({pull_requests:[{number:27,base:{ref:'other'},head:{sha:'c'.repeat(40)}}]});
+  assert.deepEqual(inspectWorkflowRuns({...input,runs:[wrongTarget]}).missing,[path]);
 });
 
 test('failed jobless push on current HEAD blocks even when specialist PR check passed',()=>{
@@ -1026,4 +1041,34 @@ test('Messenger-only PRs skip unrelated specialist workflow dispatch without ski
     ['hh-cabinet-journey','components/app/cabinet-today.jsx'],
   ]) assert.ok(matchesTrigger(parsePrTrigger(all.get(root + owner + '.yml')), [file]),
     'Own-module change must retain specialist ' + owner);
+});
+
+
+test('production-base drift is allowed only for complete, verified independent documentation changes', () => {
+  const base = 'a'.repeat(40), live = 'b'.repeat(40), other = 'c'.repeat(40);
+  const compare = files => ({
+    status:'ahead', ahead_by:2, behind_by:0, total_commits:2,
+    base_commit:{sha:base}, merge_base_commit:{sha:base},
+    commits:[{sha:other},{sha:live}], files:files.map(filename=>({filename,status:'modified'})),
+  });
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['app/api/voice/route.ts']),true);
+  const forbidden = [
+    'docs/operations/CI_RELEASE_POLICY.md','docs/security/overview.md','docs/billing/overview.md',
+    'docs/guides/secret-rotation.md','.github/workflows/core.yml','components/mandala.tsx',
+    'package-lock.json','docs/../api.md',
+  ];
+  for (const filename of forbidden) {
+    assert.equal(safeDocumentationAdvance(compare([filename]),base,live,['app/api/voice/route.ts']),false,filename);
+  }
+  assert.equal(safeDocumentationAdvance(compare(['docs/guides/intro.md']),base,live,['docs/guides/intro.md']),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),status:'diverged'},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),merge_base_commit:{sha:other}},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:other},{sha:other}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),commits:[{sha:live}]},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),total_commits:3},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),behind_by:1},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),ahead_by:100,total_commits:100,commits:Array(100).fill({sha:live})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
+  assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
+  assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
 });

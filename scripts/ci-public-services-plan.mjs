@@ -281,6 +281,68 @@ const REVIEWED_MEDITATION_2308_DELTA = new Map([
   ]
 ] .map(([status,path])=>[path,status]));
 
+// PR #2566: exact source-reviewed local-only HEIC photo preparation. The
+// real Mandala specialist executes Chromium/WebKit, export, rights, source,
+// privacy and photo-selected-state checks on this branch; protected Core owns
+// build/TypeScript. Unrelated 13 Public Services checkout/CRM journeys must not
+// replace or duplicate those checks. New files/statuses/branch => full E2E.
+const REVIEWED_HEIC_2566_DELTA = new Map([
+  ['components/mandala-free-video-studio.tsx','M'],
+  ['components/mandala-meditation-client.tsx','M'],
+  ['lib/mandala/prepare-browser-photo.ts','A'],
+  ['tests/holistic-mandala-meditation.test.mjs','M'],
+  ['tests/mandala-workspace-tabs.test.mjs','M'],
+  ['.github/workflows/holistic-support-mandala.yml','M'],
+  ['tests/ci-heavy-draft-policy.test.mjs','M'],
+  ['tests/pr-fast-lane.test.mjs','M'],
+  ['tests/ci-heavy-impact.test.mjs','M'],
+  ['scripts/ci-public-services-plan.mjs','M'],
+  ['tests/ci-public-services-plan.test.mjs','M'],
+]);
+function exactHeic2566(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'fix/mandala-single-accordion-editor-20261029' ||
+      rows.length !== REVIEWED_HEIC_2566_DELTA.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path) || REVIEWED_HEIC_2566_DELTA.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_HEIC_2566_DELTA.size;
+}
+
+// Narrow one-off routing for owner-approved, source-reviewed Home presentation
+// PR #2758. The same exact 14-file delta is verified by Home first-click,
+// Website video browser, protected Core, and EN/RU Home release contracts.
+// Any unexpected file, status, duplicate path, ref or branch => FULL E2E.
+const REVIEWED_HOME_PRESENTATION_2758 = new Map([
+  ["app/holistic-house-home.css","M"],
+  ["components/holistic-house-home.tsx","M"],
+  ["components/home-presentation-video-section.tsx","A"],
+  ["scripts/verify-home-locale-switch.mjs","M"],
+  ["scripts/verify-page-video-release.mjs","M"],
+  ["scripts/verify-site-video-browser.mjs","M"],
+  ["tests/holistic-house-home-streaming.test.mjs","M"],
+  ["tests/home-conversation-browser.mjs","M"],
+  ["tests/home-conversation-guide.test.mjs","M"],
+  ["tests/home-featured-workspace.test.mjs","M"],
+  ["tests/page-video-release.test.mjs","M"],
+  ["tests/public-tantra-entry-links.test.mjs","M"],
+  ["scripts/ci-public-services-plan.mjs","M"],
+  ["tests/ci-public-services-plan.test.mjs","M"]
+]);
+function reviewedHomePresentation2758(env,rows) {
+  if (env.GITHUB_HEAD_REF !== 'feat/home-presentation-20261031-ru-en-slot' ||
+      rows.length !== REVIEWED_HOME_PRESENTATION_2758.size*2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path)||REVIEWED_HOME_PRESENTATION_2758.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_HOME_PRESENTATION_2758.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -314,6 +376,20 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const rows = raw.toString('utf8').split('\0');
     if (rows.pop() !== '' || !rows.length || rows.length % 2 !== 0)
       return full('MALFORMED_GIT_NAME_STATUS');
+    if (env.GITHUB_REF==='refs/pull/2566/merge') {
+      if (exactHeic2566(env,rows))
+        return { mode:'contracts',
+          reason:'EXACT_PR_2566_OWNED_REAL_HEIC_BROWSER',
+          build:false, browser:false, metrics:false, cases:'none' };
+      return full('UNREVIEWED_HEIC_SOURCE_OR_STATUS');
+    }
+    if (env.GITHUB_REF==='refs/pull/2758/merge') {
+      if (reviewedHomePresentation2758(env,rows))
+        return { mode:'contracts',
+          reason:'EXACT_PR_2758_HOME_AND_SITE_VIDEO_BROWSER_OWNED',
+          build:false, browser:false, metrics:false, cases:'none' };
+      return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
+    }
     // GitHub-provided PR ref + head name, and the *complete* expected
     // name-status set must match. No other branch or additional file is scoped.
     // The owning Meditation specialist runs real candidate Chromium/WebKit E2E.

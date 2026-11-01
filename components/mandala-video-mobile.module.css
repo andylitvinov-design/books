@@ -2409,3 +2409,20 @@
  .quickThemeAdvanced .quickThemeRail{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
    grid-auto-flow:row;grid-auto-columns:auto;overflow-x:visible}
 }
+
+/* 1 Nov 2026 mock-fidelity correction: preserve the first-party photograph
+   beside (not underneath) the accessible Play/Pause. The dedicated 44px
+   control overlays an empty slot in the *same* selecting row. */
+.audioPlaySlot{display:block;min-width:44px;height:44px;pointer-events:none}
+.audioSection .audioTrackSelect{grid-template-columns:54px 44px minmax(0,1fr) auto;gap:7px}
+.audioSection .audioTrackPlay{left:68px;top:50%;width:44px;height:44px;
+  transform:translateY(-50%);border:1px solid #d5ebda;
+  background:linear-gradient(120deg,#def1e0,#d6ecd7);color:#286c4f}
+.audioSection .audioTrackPlay[aria-pressed="true"]{background:#247d5d;color:#fff}
+@media(max-width:375px){
+  .audioSection .audioTrackSelect{grid-template-columns:46px 44px minmax(0,1fr);
+    gap:6px;padding:6px 2px 6px 6px}
+  .audioSection .audioTrackSelect[aria-pressed="true"]{padding:6px 2px 6px 6px}
+  .audioSection .audioTrackPlay{left:59px}
+  .audioSection .audioTrackPick{display:none}
+}

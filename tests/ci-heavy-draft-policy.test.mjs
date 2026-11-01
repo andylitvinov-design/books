@@ -375,7 +375,7 @@ test('Holistic Support mock screenshots run only after merge; PR retains current
   assert.match(core, /^  release-ready:/m);
 });
 
-test('Mandala Ready executes source contracts; full encoded video/browser available manually', () => {
+test('Mandala Ready executes real encoded browser for exact HEIC PR or manual dispatch', () => {
   const source = read('holistic-support-mandala.yml');
   const core = read('hh-pr-core-release.yml');
   const types = '    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]';
@@ -386,7 +386,11 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  assert.ok(source.includes("if: github.event_name == 'workflow_dispatch' && steps.impact.outputs.browser == 'true'"));
+  const reviewedHeicMediaGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'fix/mandala-single-accordion-editor-20261029'))";
+  for (const step of ["Build","Install isolated Chromium and WebKit (no external account)","Ensure ffprobe and ffmpeg for real encoded video/audio verification","Public mandala photo, PNG and video browser flow · 320/390/430px"]) {
+    assert.ok(source.includes('      - name: '+step+'\n        '+reviewedHeicMediaGate),
+      'scoped HEIC PR and manual QA must keep real media/browser check: '+step);
+  }
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
