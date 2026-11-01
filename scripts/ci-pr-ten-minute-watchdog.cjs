@@ -214,7 +214,15 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     if(data.length<100) break;
     if(page===3){log('SKIP repair handoff: >300 comments, incomplete history');return false;}
   }
-  if(comments.some(c=>(c.body||'').includes(marker)))return false;
+  if(comments.some(c=>(c.body||'').includes(marker))) {
+    // If a receipt exists but its queue label failed, retry only the label.
+    if((pr.labels || []).some(label=>label.name===REPAIR_LABEL))return false;
+    const recovered=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
+      'Current PR HEAD needs source-code repair after CI failure',
+      'd93f0b',dryRun,limited,log);
+    if(recovered)log('#'+pr.number+' recovered repair queue label at '+pr.head.sha.slice(0,12));
+    return recovered;
+  }
   const failed = (jobs || []).filter(j=>j.conclusion === 'failure').map(j=>j.name).slice(0,7);
   const body = `${marker}
 **PR Control Tower: требуется исправление исходного кода**
@@ -231,9 +239,13 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
 `;
   if (!dryRun) {
     await limited('repair-handoff',()=>github.rest.issues.createComment({owner,repo,issue_number:pr.number,body}));
-    await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
+    const labeled=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,
       'Current PR HEAD needs source-code repair after CI failure',
       'd93f0b',false,limited,log);
+    if(!labeled){
+      log('#'+pr.number+' repair receipt saved but queue label NOT confirmed; retry next cycle');
+      return false;
+    }
   }
   log(`${dryRun ? 'WOULD_QUEUE' : 'QUEUED'} repair handoff (not an AI coding run) for #${pr.number} HEAD ${pr.head.sha.slice(0,12)}`);
   return true;
@@ -718,4 +730,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff};
