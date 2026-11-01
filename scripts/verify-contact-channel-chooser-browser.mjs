@@ -57,9 +57,14 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
     // Next page may remount it after a Yggdrasil intent switch.
     const nameDisclosure=form.locator('details:has(input[autocomplete="name"])');
     const nameInput=nameDisclosure.locator('input[autocomplete="name"]');
-    if (await nameDisclosure.getAttribute('open') === null) {
+    const disclosureNode = await nameDisclosure.elementHandle();
+    const initiallyOpen = await nameDisclosure.getAttribute('open') !== null;
+    let clicked = false;
+    if (!initiallyOpen) {
       await nameDisclosure.locator('summary').click();
+      clicked = true;
     }
+    const afterClick = await disclosureNode?.evaluate(node => ({open:node.open, connected:node.isConnected})).catch(() => null);
     try {
       await nameInput.waitFor({state:"visible",timeout:12000});
     } catch (error) {
@@ -73,7 +78,8 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
         }
         return chain;
       }).catch(() => []);
-      console.error('Optional name visibility diagnostic:', JSON.stringify({locale, chain:state}));
+      const original = await disclosureNode?.evaluate(node => ({open:node.open, connected:node.isConnected})).catch(() => null);
+      console.error('Optional name visibility diagnostic:', JSON.stringify({locale, initiallyOpen, clicked, afterClick, original, chain:state}));
       throw error;
     }
     await nameInput.fill("QA Visitor");
