@@ -76,6 +76,14 @@ async function verifyDesktopAudioControls() {
         // Director goals are portaled only after React hydration.
         await expect(page.locator('[data-video-director-goal-controls] [data-auto-video-goal]').first())
           .toBeVisible({timeout:30000});
+        const desktopReview=page.locator(
+          "[data-video-diagnostic-banner] a[href$='/services/free-situation-review']");
+        await expect(desktopReview).toHaveCount(1);
+        if(width>640) {
+          await expect(desktopReview,"desktop retains original free-review CTA").toBeVisible();
+        } else {
+          await expect(desktopReview,"mobile retains one focused Studio without duplicate promo").toBeHidden();
+        }
         const choice=page.locator('[data-video-quick-music-check="warm-morning"]');
         const card=page.locator('[data-video-quick-audio-track="warm-morning"]');
         await expect(choice).toBeVisible({timeout:30000});
@@ -670,16 +678,18 @@ const runEngine = async ([engine, browserType]) => {
         // and an IN-FLOW price summary (no sticky/fixed layer covering cards).
         await themeDisclosure.locator("summary").click();
         await expect(themeDisclosure).not.toHaveAttribute("open","");
-        // The diagnostic banner lives in the server-rendered page AFTER the
-        // large client Video Studio. Next streaming may finish the client panel
-        // before its following sibling. Wait for the actual reachable link,
-        // never accept its absence or substitute an unrelated CTA.
+        // The free-review entry remains in server HTML after the Studio.
+        // Approved mobile Video Studio CSS intentionally hides this extra
+        // marketing banner (no second promo); desktop retains the real CTA.
+        // Test source, real link and mobile hidden state instead of falsely
+        // requiring a second visible iPhone promo.
         assert.equal(new URL(page.url()).pathname,`/${locale}/holistic-support/mandala`,
-          "editor interactions must not navigate away from the canonical Studio");
+          "editor interactions must not navigate from the canonical Studio");
         const diagnosticEntry=page.locator("[data-video-diagnostic-banner] a[href$='/services/free-situation-review']");
-        await expect(diagnosticEntry,
-          "original free diagnostic CTA below the editor must exist and be visible")
-          .toBeVisible({timeout:15000});
+        await expect(diagnosticEntry,"original same-site free-review destination must remain mounted")
+          .toHaveCount(1);
+        await expect(diagnosticEntry,"approved iPhone Studio does not display a duplicate marketing banner")
+          .toBeHidden();
         const layout=await page.evaluate(()=>{
           const root=document.querySelector("[data-video-quick-builder]");
           const header=root?.querySelector("[data-video-mandala-hero]");
@@ -698,7 +708,8 @@ const runEngine = async ([engine, browserType]) => {
             orderPosition:order?getComputedStyle(order).position:null,
             extras:!!extras,diagnosticVisible:diagnostic?
               getComputedStyle(diagnostic).display!=="none":false,
-            diagnosticTop:box(diagnostic)?.top,studioBottom:box(root)?.bottom};
+            diagnosticAfterStudio:Boolean(root && diagnostic &&
+              (root.compareDocumentPosition(diagnostic)&Node.DOCUMENT_POSITION_FOLLOWING))};
         });
         assert.ok(layout.hero<=205 && layout.hero>=90,
           engine+" "+locale+" "+width+"px approved widescreen mock hero height "+JSON.stringify(layout));
@@ -709,10 +720,10 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(layout.secondaryHeaderVisible,false,"no second banner hero on mobile");
         assert.equal(layout.orderPosition,"static", "mobile Create must not cover cards");
         assert.ok(layout.extras,"additional settings remain discoverable");
-        assert.equal(layout.diagnosticVisible,true,
-          "the free diagnostic CTA remains visible below the Video Studio");
-        assert.ok(layout.diagnosticTop>=layout.studioBottom-1,
-          "the diagnostic CTA must follow—not precede—the editor: "+JSON.stringify(layout));
+        assert.equal(layout.diagnosticVisible,false,
+          "mobile Video Studio must hide the duplicate free-review marketing banner");
+        assert.equal(layout.diagnosticAfterStudio,true,
+          "the genuine free-review link must remain in source after the editor");
         const heroPlay=quick.locator("[data-video-quick-hero-play]");
         assert.equal(await heroPlay.count(),1);
         assert.equal(await heroPlay.isVisible(),false);

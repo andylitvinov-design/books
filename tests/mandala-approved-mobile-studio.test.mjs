@@ -254,6 +254,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.match(css,/\.quickBuilder \.quickThemeRail button\{min-height:112px/);
   assert.match(css,/:global\(\[data-mandala-meditation-page\]\):has\(\.studio\) :global\(\[data-video-diagnostic-banner\]\)\{display:none\}/);
   assert.doesNotMatch(pageCss,/@media\(max-width:640px\)\{\.slimDiagnostic\{display:none\}\}/);
+  const browserQa=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(browserQa,/\.toBeHidden\(\)/,
+    "real mobile browser acceptance retains the owner-approved hidden promo gate");
+  assert.match(browserQa,/diagnosticAfterStudio:Boolean\(/,
+    "the actual source ordering is checked, not ignored");
+
   const heroSegment=source.slice(source.indexOf("data-video-quick-hero-play"),
     source.indexOf('data-video-quick-section="1"'));
   assert.ok(heroSegment.length>0);
