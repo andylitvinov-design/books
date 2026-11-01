@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {mkdirSync, writeFileSync, mkdtempSync, rmSync} from 'node:fs';
+import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
 
@@ -16,6 +16,8 @@ const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
 const ARTIFACT = 'artifacts/benchmarking/first-video-live-export.json';
 const driver = process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
 const requireLicensed = process.env.HH_LIVE_VIDEO_REQUIRE_STOCK === 'true';
+if (!['true','false'].includes(process.env.HH_LIVE_VIDEO_REQUIRE_STOCK))
+  throw new Error('LIVE_VIDEO_REQUIRE_STOCK_MISSING');
 const source = process.env.HH_LIVE_VIDEO_SOURCE || LIVE_ORIGIN;
 if (!driver || !driver.startsWith('/') ||
     (source !== LIVE_ORIGIN && !(requireLicensed && source === LOCAL_ORIGIN))) {
@@ -26,7 +28,8 @@ const {chromium} = await import(driver);
 const row = {target: ORIGIN, engine: 'chromium', viewport: '390x844',
   origin: source===LIVE_ORIGIN?'anonymous-public':'anonymous-local', method: 'local-canvas-export',
   paidVideoProviderUsed: false, aiPromptRequested: false,
-  physicalIPhoneVerified: false, status: 'FAIL', blockedRequests: 0};
+  physicalIPhoneVerified: false, licensedShotVerificationRequested: requireLicensed,
+  status: 'FAIL', blockedRequests: 0};
 
 function mediaTool(exe, args, maxBuffer = 1024 * 1024) {
   // FFprobe and one-frame FFmpeg decoders may close pipe:0 before Node has
@@ -127,6 +130,9 @@ try {
     'SYNTHETIC_LIVE_SMOKE_SHOULD_NOT_SEND_AI');
   let licensedSources=[];
   if(requireLicensed){
+    const catalogue=JSON.parse(readFileSync('data/video-catalog/scene-taxonomy.json','utf8'));
+    const verifiedSources=new Map(catalogue.scenes.filter(s=>s.status==='approved'&&
+      s.media==='licensed_mp4'&&s.rightsReference).map(s=>[s.id,s.video]));
     await page.waitForFunction(()=>{
       const videos=[...document.querySelectorAll('[data-free-film-source]')];
       return videos.length===4&&videos.every(v=>v.readyState>=2&&v.videoWidth>0);
@@ -134,8 +140,10 @@ try {
     licensedSources=await page.locator('[data-free-film-source]').evaluateAll(videos=>
       videos.map(video=>({id:video.dataset.freeFilmSource,src:video.getAttribute('src')})));
     assert.equal(new Set(licensedSources.map(item=>item.id)).size,4,'FOUR_DISTINCT_SOURCES_REQUIRED');
-    for(const item of licensedSources)
+    for(const item of licensedSources){
       assert.match(item.src||'',/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,'SOURCE_NOT_FIRST_PARTY');
+      assert.equal(item.src,verifiedSources.get(item.id), 'SOURCE_NOT_APPROVED_IN_CATALOGUE_'+item.id);
+    }
   }
   const create = first.locator('[data-first-video-generate]');
   await page.waitForFunction(() => {
@@ -227,6 +235,8 @@ try {
     row.motionPerLicensedShot=motion.map(value=>Number(value.toFixed(3)));
     row.blackGaps=false;
   }
+  assert.equal(requireLicensed ? licensedSources.length : 4, 4,
+    'FOUR_LICENSED_SHOTS_VERIFICATION_NOT_COMPLETED');
   assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
   row.status = 'PASS';
   console.log(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_PASS':'LOCAL_FIRST_VIDEO_REAL_EXPORT_PASS', JSON.stringify(row));

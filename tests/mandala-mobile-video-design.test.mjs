@@ -317,8 +317,8 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "data-video-quick-builder",'data-video-quick-section="1"',
     "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
-    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
     "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
@@ -335,8 +335,9 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "single original audio editor mounted in either workspace");
   assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
     "single original Hypno editor mounted in either workspace");
-  assert.match(studio,/activeWorkspace==="audio" \? deepAudioPane/);
-  assert.match(studio,/activeWorkspace==="psychocorrection" \? deepHypnoPane/);
+  assert.match(studio,/activeWorkspace==="video" \? deepAudioPane/);
+  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
+    "the sole phrase editor remains mounted to preserve its project state");
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
@@ -389,7 +390,9 @@ test("clean smaller video player binds two independent opt-ins and opens the exi
   assert.match(switches,/data-video-affirmations-feature/);
   assert.match(switches,/checked=\{affirmations\.enabled\}/);
   assert.match(switches,/setAffirmations\(previous=>/);
-  assert.doesNotMatch(hero,/<select|<p[ >]/,"film is visual-only with no selectors or copy");
+  assert.doesNotMatch(hero,/<select/,"the real Canvas retains no visual filter dropdown");
+  assert.match(hero,/className=\{videoStyles\.heroEditorial\}/,
+    "approved hero copy overlays the original player");
   assert.match(hero,/data-mandala-cinematic-canvas/);
   assert.match(hero,/data-video-preview-toggle/);
   assert.match(hero,/className=\{videoStyles\.heroPlay\}/);
@@ -485,14 +488,19 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
   const workspaceNav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
-  for(const id of ["video","audio","characters","hypnotherapy","psychocorrection","courses"])
+  for(const id of ["video","phrases","effects","practices","pro","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/custom:phrase,visibility:\["large"\]/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"preset",id\}\)/);
-  assert.match(studio,/data-video-quick-audio-track=\{track.id\}/);
+  assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
+  assert.match(studio,/setAttachedAudio\(attached\)/);
+  assert.match(studio,/data-video-quick-audio-track=\{id\}/);
+  assert.match(studio,/data-video-quick-music-check=\{id\}/);
+  assert.match(studio,/data-video-quick-music-play=\{id\}/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
@@ -508,6 +516,6 @@ test("video therapy exit does not unmount the clicked button during pointerup", 
   const opening=studio.slice(studio.lastIndexOf("<button",marker),studio.indexOf("</button>",marker));
   assert.match(opening,/disabled=\{recording\|\|preparing\}/,"retain active render lock");
   assert.doesNotMatch(opening,/onPointer(?:Down|Up)=/,"a pointer handler must not unmount the button before its native click");
-  assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setCinematicPlan\(null\);/,"one click dismisses therapy and invalidates stale storyboard");
+  assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setActiveWorkspace\("video"\);/,"one click exits practices without discarding a confirmed video");
   assert.match(opening,/setTherapyJumpRequested\(false\);setNotice\(""\);/,"exit clears pending scroll and notice");
 });

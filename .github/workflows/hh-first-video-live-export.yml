@@ -11,7 +11,7 @@ on:
       require_licensed:
         description: 'Verify four licensed MP4 sources in the downloaded video'
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -22,6 +22,7 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
+    # Test the deployed real MP4 and all four licensed source shots on every change to this gate.
     # Research acceptance runs even on Draft; merging stays disabled until it passes.
     runs-on: ubuntu-24.04
     timeout-minutes: 9
@@ -59,11 +60,12 @@ jobs:
             }
           fi
           ffprobe -version | sed -n '1p'
-      - name: Actual guest LIVE wish → 20s video → download → ffprobe/audio/motion
-        timeout-minutes: 3
+      - name: Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity
+        timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
-          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ inputs.require_licensed && 'true' || 'false' }}
+          # Strict four-source identity is required for every PR; manual diagnostic may opt out.
+          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ github.event_name == 'pull_request' && 'true' || (inputs.require_licensed && 'true' || 'false') }}
         run: node scripts/benchmarking/first-video-live-export.mjs
       - name: Preserve only anonymous capability and failure summary
         if: always()

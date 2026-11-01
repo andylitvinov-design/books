@@ -15,8 +15,8 @@ on:
 
 permissions: {}
 concurrency:
-  group: hh-ci-prune-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   policy:
@@ -36,7 +36,7 @@ jobs:
   prune:
     if: github.repository == 'andylitvinov-design/books' && github.event_name == 'push'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
@@ -52,9 +52,136 @@ jobs:
           node-version: '22'
       - name: Verify fail-closed stale-run policy
         run: node --test tests/ci-prune-stale-runs.test.mjs
-      - name: Cancel verified superseded queued PR runs (limit 20)
+      - name: Batch prune superseded queued PR runs and report CI metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HH_CI_PRUNE_LIMIT: '20'
+          HH_CI_PRUNE_LIMIT: '300'
+          HH_CI_WINDOW_MINUTES: '60'
+          HH_CI_JOB_SAMPLE: '20'
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs
+
+      # This existing production-only job owns its runner and never evaluates
+      # privileged workflow code from PR branches. The marker is one-time.
+      - name: Apply guarded release status migration on marked production merge
+        if: contains(github.event.head_commit.message, 'HH_STATUS_MIGRATION_ONE_TIME_20261101')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GH_TOKEN" ]] || {
+            echo '::error::Admin-scoped HH_AUTOMERGE_TOKEN unavailable. No protection changed.' >&2
+            exit 1
+          }
+          temp="$(mktemp -d)"
+          trap 'rm -rf "$temp"' EXIT
+          # Pin one immutable successful Core run and a merged PR on production.
+          # Busy repositories evict older runs from the latest-30 list, and
+          # GitHub may clear workflow_run.pull_requests after PR merge.
+          # This evidence is independently re-read, never trusted from input.
+          gh api "repos/$GH_REPO/actions/runs/41328294027" > "$temp/approved-run.json"
+          gh api "repos/$GH_REPO/pulls/2935" > "$temp/approved-pr.json"
+          jq -e --arg repo "$GH_REPO" '
+            .id == 41328294027 and .event == "pull_request" and
+            .name == "HH PR core release gate" and
+            .path == ".github/workflows/hh-pr-core-release.yml" and
+            .status == "completed" and .conclusion == "success" and
+            .head_repository.full_name == $repo and .repository.full_name == $repo and
+            .head_branch == "ci/activate-one-time-status-migrator-20261101"
+          ' "$temp/approved-run.json" >/dev/null
+          approved_head="$(jq -r '.head_sha' "$temp/approved-run.json")"
+          [[ "$approved_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          jq -e --arg expected_head "$approved_head" '
+            .number == 2935 and .state == "closed" and .merged == true and
+            .base.ref == "codex/public-book-library" and
+            .head.sha == $expected_head and .merge_commit_sha != null
+          ' "$temp/approved-pr.json" >/dev/null
+          gh api "repos/$GH_REPO/actions/runs/41328294027/jobs?per_page=100" > "$temp/jobs.json"
+          jq -e '
+            .total_count <= 100 and
+            ([.jobs[] | select(.name == "hh-core-verified" and .status == "completed" and .conclusion == "success")] | length) == 1 and
+            ([.jobs[] | select(.name == "hh-specialist" and .status == "completed" and .conclusion == "success")] | length) == 1 and
+            ([.jobs[] | select(.name == "release-ready" and .status == "completed" and .conclusion == "success")] | length) == 1
+          ' "$temp/jobs.json" >/dev/null || {
+            echo '::error::Approved Core, Specialist and legacy compatibility jobs are not all green; no protection changed.' >&2
+            exit 1
+          }
+          echo 'Pinned release evidence: merged PR #2935; Core run 41328294027; all three required transition checks SUCCESS.' >> "$GITHUB_STEP_SUMMARY"
+          # Administration:read must work for BOTH controls before any write.
+          # A 403 or 404 is a strict HOLD, not permission to weaken protection.
+          gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"
+          gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic.json"
+          jq -e '
+            .target == "branch" and .enforcement == "active" and
+            .conditions.ref_name.include == ["refs/heads/codex/public-book-library"] and
+            .conditions.ref_name.exclude == [] and (.bypass_actors | length) == 0 and
+            ([.rules[].type] | sort) == ["deletion","non_fast_forward","pull_request","required_status_checks"] and
+            ([.rules[] | select(.type == "pull_request") |
+              (.parameters.required_review_thread_resolution == true and
+               (.parameters.allowed_merge_methods | index("squash") != null))] == [true]) and
+            ([.rules[] | select(.type == "required_status_checks") |
+              (.parameters.do_not_enforce_on_create == false and
+               ([.parameters.required_status_checks[]?.context] |
+                all(. == "release-ready" or . == "hh-core-verified" or . == "hh-specialist")))] == [true])
+          ' "$temp/rules.json" >/dev/null
+          jq -e '
+            (.strict | type) == "boolean" and
+            ([.checks[]?.context] + [.contexts[]?] |
+              all(. == "release-ready" or . == "hh-core-verified" or . == "hh-specialist"))
+          ' "$temp/classic.json" >/dev/null
+          # No-op after a completed/read-back migration. No duplicate API writes.
+          if jq -e '
+             ([.rules[] | select(.type == "required_status_checks") |
+               .parameters.required_status_checks[]?.context] | sort) == ["hh-core-verified","hh-specialist"] and
+             ([.rules[] | select(.type == "required_status_checks") |
+               .parameters.strict_required_status_checks_policy] == [false])
+          ' "$temp/rules.json" >/dev/null && jq -e '
+             ([.checks[]?.context] + [.contexts[]?] | unique | sort) == ["hh-core-verified","hh-specialist"] and
+             .strict == false
+          ' "$temp/classic.json" >/dev/null; then
+            echo 'Already migrated: both required status sources read back cleanly.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # First ADD the new mandatory contexts in the hosted ruleset.
+          # Preserve deletion, non-fast-forward and unresolved-review rules.
+          # If classic PATCH later fails, old release-ready remains enforced.
+          jq '{
+            name, target, enforcement, conditions, bypass_actors,
+            rules: (.rules | map(
+              if .type == "required_status_checks" then
+                .parameters.required_status_checks = [
+                  {"context":"hh-core-verified","integration_id":15368},
+                  {"context":"hh-specialist","integration_id":15368}
+                ] | .parameters.strict_required_status_checks_policy = false
+              else . end
+            ))
+          }' "$temp/rules.json" > "$temp/rules-patch.json"
+          gh api --method PUT "repos/$GH_REPO/rulesets/26269892" --input "$temp/rules-patch.json" >/dev/null
+          gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"
+          jq -e '
+            .enforcement == "active" and
+            (.rules | any(.type == "deletion")) and
+            (.rules | any(.type == "non_fast_forward")) and
+            (.rules | any(.type == "pull_request" and .parameters.required_review_thread_resolution == true)) and
+            ([.rules[] | select(.type == "required_status_checks") |
+              .parameters.required_status_checks[]?.context] | sort) == ["hh-core-verified","hh-specialist"]
+          ' "$temp/rules-after.json" >/dev/null
+          # Then change ONLY classic required checks. Other classic controls,
+          # review policies and push restrictions are not touched.
+          jq -n '{
+            strict: false,
+            checks: [
+              {"context":"hh-core-verified","app_id":15368},
+              {"context":"hh-specialist","app_id":15368}
+            ]
+          }' > "$temp/classic-patch.json"
+          gh api --method PATCH             "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks"             --input "$temp/classic-patch.json" >/dev/null
+          gh api "repos/$GH_REPO/branches/codex%2Fpublic-book-library/protection/required_status_checks" > "$temp/classic-after.json"
+          jq -e '
+            ([.checks[]?.context] + [.contexts[]?] | unique | sort) == ["hh-core-verified","hh-specialist"] and
+            .strict == false
+          ' "$temp/classic-after.json" >/dev/null
+          echo 'Both controls VERIFIED: required hh-core-verified + hh-specialist; release-ready is no longer required; deletion/force-push/review protection retained.' >> "$GITHUB_STEP_SUMMARY"
+

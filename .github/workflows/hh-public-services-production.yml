@@ -1,7 +1,7 @@
 name: Holistic House public services production acceptance
-# PR acceptance is deliberately fast: source, consent and booking contracts
-# remain blocking. The full real-browser and production-build acceptance is
-# available via workflow_dispatch on a selected candidate ref, not every PR.
+# Fast source/consent/booking PR contracts; sensitive-risk PRs retain required
+# exact-head real Chromium/WebKit acceptance. Full optional browser matrix is
+# also available via workflow_dispatch on an explicitly selected candidate.
 on:
   workflow_dispatch:
   pull_request:
@@ -66,7 +66,17 @@ on:
       - 'app/**/business/**'
       - 'app/api/public/**'
       - 'app/api/payments/**'
-      - 'app/api/app/**'
+      - 'app/api/app/practitioner/**'
+      - 'app/api/app/\[...path\]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
+      - 'app/api/app/services/**'
+      - 'app/api/app/bookings/**'
       - 'components/holistic-*'
       - 'components/mandala-*'
       - 'components/remote-energy-*'
@@ -153,7 +163,7 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: public-services-production-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  group: public-services-production-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   public-services:
@@ -202,17 +212,17 @@ jobs:
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       # Exact-version binaries; no untrusted cross-PR/browser-version restore.
-      # Browser engines are installed only for explicit full workflow_dispatch
-      # acceptance. PRs retain fail-closed source, consent and booking checks;
-      # a passing PR does not attest real browser/payment interactions.
+      # Browser engines install on explicit full workflow_dispatch OR when
+      # PR impact is independently classified as sensitive/high-risk. No
+      # checkout, consent or unknown risk can bypass required real browser QA.
       - name: Cache exact Playwright Chromium and WebKit browsers
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-qa-playwright-${{ runner.os }}-${{ runner.arch }}-1.63.0-pr-${{ github.event.pull_request.number || github.run_id }}
       - name: Install Chromium and WebKit for isolated public acceptance
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.browser == 'true' }}
+        if: ${{ steps.scope.outputs.browser == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
           HH_PUBLIC_BROWSER_ENGINES: ${{ steps.scope.outputs.engines }}
         run: |
@@ -235,9 +245,9 @@ jobs:
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Real production build and browser acceptance NOT executed in this PR check. For full existing browser QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Sensitive PRs run risk-scoped protected real browser QA; low-risk PRs use fast contracts. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.scope.outputs.build == 'true' }}
+        if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
@@ -357,7 +367,7 @@ jobs:
           } > artifacts/public-services-production/server-diagnostics.txt
           exit "$status"
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'workflow_dispatch' && steps.scope.outputs.build == 'true'
+        if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
           path: |

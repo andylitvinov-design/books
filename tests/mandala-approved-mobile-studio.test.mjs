@@ -20,8 +20,8 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
-    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
@@ -33,7 +33,7 @@ test("the existing public editor retains one real video renderer and the new com
       "video studio hierarchy changed at "+order[i]);
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
-  assert.match(source,/\{activeWorkspace==="characters" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{activeWorkspace==="pro" \? deepCharacterPhotoPane : null\}/);
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
@@ -109,7 +109,7 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
   assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
     "selected sound must reveal real attachment controls after mobile collapse");
-  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)setPreviewPlaying\(false\);\s*else openAffirmationPreview\(\)/,
+  assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
     "photo-rights consent must open the relocated disclosure");
@@ -155,8 +155,11 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   }
   assert.match(source,/30 минут · €50 или 60 минут · €100/);
   assert.match(source,/Заявка — не бронь и не оплата/);
-  assert.doesNotMatch(result,/\b(?:wish|photoUrl|meditationFocus|scores|affirmations)\b/,
+  const handoff=result.slice(offer);
+  assert.doesNotMatch(handoff,/\b(?:wish|photoUrl|meditationFocus|scores|affirmations)\b/,
     "private video inputs must never be sent in a service link");
+  assert.match(result,/wish\.trim\(\)\.slice\(0,60\)/,
+    "the goal label stays local beside the recording, never in any outbound link");
   assert.match(css,/\.postVideoSupportGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.postVideoSupportGrid\{grid-template-columns:minmax\(0,1fr\)/);
 });
@@ -210,8 +213,13 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
   assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
-    "all supported lengths use the verified four-shot timeline allocator");
+  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
+    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
+    "explicit stage edits must be passed through to the same timing engine");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /export function allocateFreeFilmTimeline\(/,
+    "the legacy equal-time allocator remains intact for other consumers");
   assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/,
     "exported scene timing comes from the same timeline, not stale 10-second padding");
   assert.match(src,/providerPrompt:""/);
