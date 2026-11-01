@@ -82,6 +82,8 @@ test('CI-only App R1 policy and new routing tests skip obsolete unrelated app an
   for (const source of [
     one('.github/workflows/hh-app-r1.yml'),
     one('.github/workflows/hh-app-browser.yml'),
+    one('.github/workflows/hh-alchemy-mobile-acceptance.yml'),
+    one('tests/ci-alchemy-impact.test.mjs'),
     one('scripts/ci-heavy-impact.mjs'),
     one('tests/ci-heavy-impact.test.mjs', 'added'),
     one('tests/ci-specialist-aggregate.test.mjs'),
@@ -263,3 +265,18 @@ test('App R1 short delegated jobs must complete successfully for verified non-ap
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
+
+test('temporary backlog fast lane keeps App R1 PR source contracts and manual browser integrity', () => {
+  const yaml = read('hh-app-browser.yml');
+  assert.ok(yaml.includes('Fast App R1 browser-source contracts on PR'));
+  for (const name of ['Isolated test tools','Initialize empty synthetic database',
+    'Browser journey with protocol double, never Google or production']) {
+    const actual=yaml.split('      - name: '+name+'\n')[1]?.split('\n')[0]?.trim();
+    assert.equal(actual,"if: github.event_name != 'pull_request'",name+' is manual-only');
+  }
+  assert.ok(yaml.includes('node --test tests/ci-heavy-impact.test.mjs'));
+  assert.match(yaml, /workflow_dispatch:/);
+  assert.ok(yaml.includes('"browser":"webkit","suite":"extended"'));
+  assert.match(yaml, /browser-journey-complete/);
+  assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
+});

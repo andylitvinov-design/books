@@ -142,3 +142,12 @@
 .reference li span{display:block;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
  color:#536c5c}
 .reference li span+span{color:#788c7c;margin-top:3px}
+
+
+/* Capability honesty: a crown marks creative-brief choices that cannot
+ * change the currently available free local MP4 output. */
+.premiumOption{display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:11px;font-weight:750;color:#976b28}
+.premiumOption svg,.contextQuestion [data-video-option-tier="premium"] svg{flex:none;color:#a87e35;vertical-align:middle}
+.contextQuestion [data-video-option-tier="premium"]{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-color:#e3d1ac;background:#fff9ec}
+.contextQuestion [data-video-option-tier="premium"][aria-pressed="true"]{border-color:#b58f48;background:#fff0ca}
+.contextQuestion [data-video-option-tier="free"]{border-color:#cee0cc}

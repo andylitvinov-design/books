@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { buildFirstVideoDraft } from "@/lib/mandala/first-video-director.mjs";
+import { makeFirstVideoPromptRequest } from "@/lib/mandala/first-video-prompt-contract.mjs";
 import { VIDEO_QUICK_TEMPLATES, getVideoQuickTemplateDraft } from "@/lib/mandala/video-quick-templates.mjs";
 import css from "./mandala-first-video-start.module.css";
 
@@ -28,6 +29,7 @@ type Props = {
   locale: PublicLocale; wish: string; disabled: boolean;
   preparing: boolean; recording: boolean; progress: number;
   resultReady: boolean; ready: boolean;
+  renderOptions: {quality:"hd"|"fullhd";brightness:"soft"|"bright";audioVolumePercent:number};
   onWishChange: (value: string) => void;
   onApply: (draft: Draft, prefs: Pick<Preferences, "motion" | "music" | "caption">) => void;
   onCreate: () => void; onCancel: () => void;
@@ -56,7 +58,7 @@ const l10n = {
     refresh: "Другой вариант промпта", ai: "Улучшить с AI · бесплатно",
     aiErrors:{quota:"Достигнут лимит бесплатного AI. Локальный вариант доступен.",config:"AI не настроен на сервере. Используйте локальный вариант.",response:"AI вернул непригодный ответ. Локальный вариант сохранён.",provider:"AI-провайдер недоступен. Попробуйте позже.",timeout:"AI не ответил за 13 секунд."},
     localFallback:"Создан другой локальный вариант, без внешнего AI.",
-    aiConsent: "Разрешаю передать только мой текст пожелания внешней языковой модели. Фото, тесты и личный профиль не передаются.",
+    aiConsent: "Разрешаю отправить AI моё пожелание, выбранные фильтры и отредактированный мной промпт, если есть. Фото, аудиофайлы, тесты и профиль не передаются.",
     aiLoading: "AI готовит промпт…", aiProgress:"Локальный промпт уже готов — пока AI подбирает улучшение.", aiReady: "Промпт улучшен языковой моделью",
     local: "Локальный режиссёр · без API", aiUnavailable: "AI сейчас недоступен — локальный промпт сохранён.",
     edit: "Можно изменить", limit: "Ограничение бесплатного видео",
@@ -85,7 +87,7 @@ const l10n = {
     refresh: "Another prompt option", ai: "Enhance with AI · free",
     aiErrors:{quota:"Free AI quota reached. Local draft is available.",config:"AI is not configured. Use the local draft.",response:"AI sent an invalid reply. Local draft saved.",provider:"AI provider unavailable. Try again later.",timeout:"AI did not respond within 13 seconds."},
     localFallback:"Made another local option, without external AI.",
-    aiConsent: "I agree to send only my written wish to an external language model. My photo, tests and private profile are not shared.",
+    aiConsent: "I agree to send my wish, selected video filters and any prompt I edited to an external AI. Photos, audio files, tests and my profile are not shared.",
     aiLoading: "AI is enhancing your prompt…", aiProgress:"Your local draft is already ready while AI works.", aiReady: "AI-enhanced prompt is ready",
     local: "Local director · no API", aiUnavailable: "AI is unavailable now — your local prompt is preserved.",
     edit: "You can edit", limit: "Free video limitation",
@@ -114,7 +116,7 @@ const l10n = {
     refresh: "Otra opción de prompt", ai: "Mejorar con IA · gratis",
     aiErrors:{quota:"Límite de IA gratuita alcanzado. Usa el borrador local.",config:"IA no configurada. Usa el borrador local.",response:"Respuesta IA incorrecta. Guardamos el borrador.",provider:"Proveedor IA no disponible. Inténtalo más tarde.",timeout:"La IA no respondió en 13 segundos."},
     localFallback:"Se creó otra opción local, sin IA externa.",
-    aiConsent: "Acepto enviar solo el texto de mi deseo a un modelo externo. Mi foto, pruebas y perfil no se comparten.",
+    aiConsent: "Acepto enviar mi idea, los filtros de vídeo y el prompt que haya editado a una IA externa. No se envían fotos, audios, tests ni mi perfil.",
     aiLoading: "La IA mejora el prompt…", aiProgress:"El borrador local ya está listo mientras trabaja la IA.", aiReady: "Prompt mejorado por IA",
     local: "Director local · sin API", aiUnavailable: "IA no disponible — mantenemos el prompt local.",
     edit: "Se puede editar", limit: "Límite del vídeo gratis",
@@ -131,7 +133,7 @@ const l10n = {
 
 export function MandalaFirstVideoStart({
   locale, wish, disabled, preparing, recording, progress, resultReady, ready,
-  onWishChange, onApply, onCreate, onCancel,
+  renderOptions, onWishChange, onApply, onCreate, onCancel,
 }: Props) {
   const t = l10n[locale];
   // Server-rendered inputs are not interactive until React hydration has
@@ -139,6 +141,7 @@ export function MandalaFirstVideoStart({
   const [hydrated,setHydrated] = useState(false);
   useEffect(()=>{setHydrated(true);},[]);
   const [prefs, setPrefs] = useState<Preferences>(initial);
+  const [selectedFilterKeys,setSelectedFilterKeys]=useState<(keyof Preferences)[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [variant, setVariant] = useState(0);
   const [promptOverride, setPromptOverride] = useState("");
@@ -169,6 +172,7 @@ export function MandalaFirstVideoStart({
     const next = { ...prefs, ...patch };
     aiRevisionRef.current++; aiAbortRef.current?.abort(); setAiLoading(false);
     setPrefs(next); setMode("local"); setPromptOverride(""); setAiStatus(""); setVariant(0); setSelectedTemplateId(null);
+    setSelectedFilterKeys(previous=>[...new Set([...previous,...(Object.keys(patch) as (keyof Preferences)[])])]);
     if (wish.trim()) apply(wish, next, "", 0);
   }
   function changePrompt(value: string) {
@@ -192,6 +196,7 @@ export function MandalaFirstVideoStart({
     setAiLoading(false); setAiStatus("");
     setSelectedTemplateId(choice.id);
     setPrefs(nextPrefs); setVariant(0); setMode("local"); setPromptOverride("");
+    setSelectedFilterKeys(Object.keys(choice.preferences) as (keyof Preferences)[]);
     onWishChange(choice.wish);
     apply(choice.wish, nextPrefs, "", 0);
   }
@@ -207,10 +212,12 @@ export function MandalaFirstVideoStart({
         method: "POST", credentials: "same-origin", cache: "no-store", signal:controller.signal,
         redirect: "error", referrerPolicy: "no-referrer",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({
-          locale, wish: wish.slice(0, 800), theme: prefs.theme, style: prefs.style,
-          aspect: prefs.aspect, durationSeconds: prefs.durationSeconds, consent: true,
-        }),
+        body: JSON.stringify(makeFirstVideoPromptRequest({
+          locale, wish: wish.slice(0,800), preferences:prefs,
+          selectedFields:selectedFilterKeys,templateId:selectedTemplateId,variant,
+          manualPrompt:mode==="manual"?promptOverride:null,
+          renderOptions,
+        })),
       });
       if (!response.ok) {
         const failure: unknown = await response.json().catch(()=>null);
@@ -332,7 +339,7 @@ export function MandalaFirstVideoStart({
           </select>
         </label>
         <label>{t.movement}
-          <select value={prefs.motion}
+          <select data-first-video-motion value={prefs.motion}
             onChange={event => changePreferences({motion: event.currentTarget.value as Motion})}>
             {(Object.keys(t.motionOptions) as Motion[]).map(v =>
               <option key={v} value={v}>{t.motionOptions[v]}</option>)}
@@ -351,7 +358,7 @@ export function MandalaFirstVideoStart({
             onChange={event => changePreferences({avoid: event.currentTarget.value})}/>
         </label>
         <label className={css.checkline}>
-          <input type="checkbox" checked={prefs.caption}
+          <input data-first-video-caption type="checkbox" checked={prefs.caption}
             onChange={event => changePreferences({caption: event.currentTarget.checked})}/>
           {t.caption}
         </label>
