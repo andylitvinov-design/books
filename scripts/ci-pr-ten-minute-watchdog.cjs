@@ -661,7 +661,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // Repair is a real separate default-branch workflow, not merely a label.
   // Keep its own concurrency/owner/SHA lease; one fast dispatch per new handoff,
   // while the 10-minute Repair Worker schedule handles missed or busy dispatches.
-  if (summary.sourceRepairQueued && hasMergeToken && !budget.exhausted && !dryRun) {
+  if ((summary.sourceRepairQueued || summary.conflictLabelsQueued) &&
+      hasMergeToken && ciRoom && !budget.exhausted && !dryRun) {
     try {
       const info=(await limited('repair-worker-recent',()=>github.request(
         'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -677,7 +678,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             inputs:{pr_number:'0',dry_run:'false'}
           }));
         summary.repairWorkerDispatched++;
-        log('DISPATCHED owner-guarded source Repair Worker');
+        log('DISPATCHED owner-guarded Repair Worker for source/conflict queue');
       } else log('Repair Worker already active/recent or API reserve low; schedule fallback');
     } catch(error) { log('Repair Worker dispatch unavailable; schedule fallback: '+error.message); }
   }
