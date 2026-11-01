@@ -84,11 +84,11 @@ test("generated MP3s are available to actual player and not empty placeholders",
     hashes.add(sha);
   }
   assert.equal(hashes.size,196);
-  assert.ok(ffmpegPath);
+  const executable=ffmpegPath&&existsSync(ffmpegPath)?ffmpegPath:"ffmpeg";
   // Probe representative compressed recordings, not only their ID3 headers.
   for(const id of [names[0],names[95],names[191],"classic-ode-to-joy"]){
     const file=new URL("../public/audio/mandala/scenarios/"+id+".mp3",import.meta.url);
-    const probe=spawnSync(ffmpegPath,["-hide_banner","-i",file.pathname,"-f","null","-"],
+    const probe=spawnSync(executable,["-hide_banner","-i",file.pathname,"-f","null","-"],
       {encoding:"utf8",timeout:12000,maxBuffer:1024*1024});
     assert.equal(probe.status,0,id+" must fully decode as audio: "+probe.stderr?.slice(-350));
     assert.match(probe.stderr,/Audio: mp3/,id);
