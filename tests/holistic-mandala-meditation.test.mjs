@@ -43,6 +43,8 @@ test("private photo never leaves the browser and can be cropped or removed", () 
   assert.match(client, /photoPending=\{photoPending\}/);
   const studio = read("components/mandala-free-video-studio.tsx");
   assert.match(studio, /!photoPending/);
+  assert.match(studio, /!recording && !photoPending/, "the quick video cannot begin during HEIC preparation");
+  assert.match(studio, /if\(photoPending\)\{/, "recording callback checks stale photo before export");
   assert.match(studio, /data-video-photo-pending/);
   assert.match(studio, /if\(recording\|\|preparing\|\|photoPending\)return/);
   const normalized = read("lib/mandala/prepare-browser-photo.ts");
