@@ -19,7 +19,7 @@ import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations,
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
-import { allocateFreeFilmTimeline } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, retimeFreeFilmPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import { paintCinematicMoneyFrame, paintRealMoneyVideoFrame } from "@/lib/mandala/cinematic-money-video";
 import { getRealMoneyFilm } from "@/lib/mandala/real-money-film-library";
 import { getThemedRealFilm } from "@/lib/mandala/film-collection-v2";
@@ -2341,6 +2341,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const activeTemplates=theme==="money"?moneyTemplates:otherVideoScenes[theme];
   const visibleTemplates=activeTemplates.slice(0,showAllMoney?activeTemplates.length:4);
   // Goal-first Auto Director uses the existing consented Free MP4 renderer, not paid video AI.
+  const changeVideoDuration=(seconds:(typeof durations)[number])=>{
+    setDuration(seconds);
+    setCinematicPlan(plan=>plan?.version===FREE_FILM_PLAN_VERSION
+      ? retimeFreeFilmPlan(plan,seconds) as CinematicStoryboard : null);
+  };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,outputAspect:Aspect="landscape")=>{
     if(recording||preparing)return;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
@@ -2625,7 +2630,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <strong><Clock3 size={16} aria-hidden="true"/>{audioUi.videoLength}</strong>
               <div className={videoStyles.audioChipRail} role="group" aria-label={audioUi.videoLength}>
                 {durations.map(n=><button type="button" key={n} data-video-audio-length={n}
-                  aria-pressed={duration===n} onClick={()=>{setDuration(n);setCinematicPlan(null);}}>
+                  aria-pressed={duration===n} onClick={()=>{changeVideoDuration(n);}}>
                   {n} {ui.seconds}</button>)}
               </div>
             </div>
@@ -2861,7 +2866,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <legend>{ui.duration}</legend>
             <div className={videoStyles.pills}>
               {durations.map(n=><button key={n} type="button" aria-pressed={duration===n}
-                data-video-duration={n} onClick={()=>{setDuration(n);setCinematicPlan(null);}}>{n} {ui.seconds}</button>)}
+                data-video-duration={n} onClick={()=>{changeVideoDuration(n);}}>{n} {ui.seconds}</button>)}
             </div>
           </fieldset>
           <fieldset className={videoStyles.settingCard} disabled={recording||preparing}>
@@ -3790,7 +3795,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <fieldset><legend>{quick.length}</legend><div>
               {durations.map(value=><button type="button" key={value}
                 data-video-quick-duration={value} disabled={recording||preparing}
-                aria-pressed={duration===value} onClick={()=>{setDuration(value);setCinematicPlan(null);}}>
+                aria-pressed={duration===value} onClick={()=>{changeVideoDuration(value);}}>
                 {value}{quick.seconds}</button>)}
             </div></fieldset>
             <fieldset className={videoStyles.quickMontageText}><legend>{quick.text}</legend><div>
@@ -4059,7 +4064,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </label>
           <label><span>{supportUi.filterDuration}</span>
             <select data-video-length value={duration} disabled={recording||preparing}
-              onChange={event=>{setDuration(Number(event.currentTarget.value) as (typeof durations)[number]);setCinematicPlan(null);}}>
+              onChange={event=>{changeVideoDuration(Number(event.currentTarget.value) as (typeof durations)[number]);}}>
               {durations.map(item=><option key={item} value={item}>{item} {ui.seconds}</option>)}
             </select>
           </label>
