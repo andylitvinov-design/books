@@ -21,7 +21,7 @@ type EditPanel = "request"|"phrases"|"display"|"design"|null;
 type Position = "top"|"center"|"bottom";
 type TextScale = "small"|"medium"|"large";
 type HypnoModel="wave"|"gemini";
-type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[];custom:string;status:string;display?:Pick<AffirmationSettings,"density"|"frequency"|"visibility"|"position"|"textScale">};
+type HypnoDraft={model:HypnoModel;key:string;strategy:string;phrases:string[];selected:number[]};
 
 const topicGoals: Record<VideoTheme, VideoAffirmationGoal[]> = {
   energy:["rhythm","recovery","strength"], money:["value","planning","stability"],
@@ -98,16 +98,11 @@ const hypnoExtra = {
   aiPrompt:"Gemini подготовит краткую стратегию и фразы после согласия.",
   aiConsent:"Разрешаю передать тему, цель и настройки Gemini. В бесплатном тарифе запросы могут использоваться для обучения моделей.",
   aiRun:"Создать стратегию и фразы",aiBusy:"Создаём…",
-  strategyBuild:"Построить психологическую стратегию и подобрать фразы поддержки",
-  strategyBuilding:"Формируем стратегию и фразы…",
-  strategyConsentFirst:"Для генерации Gemini сначала разрешите передачу выбранных параметров.",
-  strategyWaveError:"Не удалось получить результат Wave с сервера. Попробуйте ещё раз.",
-  strategyReady:"Стратегия и новые варианты получены. Выберите фразы и утвердите их ниже.",
   aiSignIn:"Для Gemini войдите в кабинет. Wave работает без входа.",
   aiUnavailable:"Gemini недоступен или бесплатный доступ не подтверждён. Выберите Wave.",
   aiFailure:"Ответ Gemini не прошёл проверку. Попробуйте Wave или повторите запрос.",
   aiDraft:"Новые предложения: фразы в видео не изменятся до утверждения.",
-  aiPrivacy:"Wave: подбор через наш сервер, личное описание остаётся в браузере. Gemini: только категории с согласия.",
+  aiPrivacy:"Wave работает локально. Gemini получает категории, но не личные записи.",
   catalog:"Подбор по выбранным вариантам. Ваш текст остаётся на устройстве."},
  en:{topics:["Work","Communication","Energy","Goals"],tests:"Suggest from tests",test:"Take a test",
   note:"Describe your request briefly (optional)",update:"Update",proposal:"Suggested goal",
@@ -122,16 +117,11 @@ const hypnoExtra = {
   aiPrompt:"Gemini can draft a strategy and phrases after your consent.",
   aiConsent:"I permit sharing topic, goal and settings with Gemini. Free-tier prompts may be used to improve models.",
   aiRun:"Draft strategy and phrases",aiBusy:"Writing…",
-  strategyBuild:"Build psychological strategy and support phrases",
-  strategyBuilding:"Building strategy and phrases…",
-  strategyConsentFirst:"To use Gemini, first consent to sending the selected categories.",
-  strategyWaveError:"Could not retrieve the Wave strategy from the server. Try again.",
-  strategyReady:"Your strategy and phrase suggestions are ready. Choose and approve them below.",
   aiSignIn:"Sign in for Gemini. Wave needs no account.",
   aiUnavailable:"Gemini is unavailable or free-tier access is unconfirmed. Choose Wave.",
   aiFailure:"Gemini's reply did not pass review. Try Wave or retry.",
   aiDraft:"New suggestions: active video phrases remain until approval.",
-  aiPrivacy:"Wave uses our server; personal notes stay in this browser. Gemini gets only consented categories.",
+  aiPrivacy:"Wave runs locally. Gemini receives categories, not personal notes.",
   catalog:"Selection uses chosen categories. Your text stays on device."},
  es:{topics:["Trabajo","Comunicación","Energía","Metas"],tests:"Sugerir con mis tests",test:"Hacer test",
   note:"Describe tu objetivo (opcional)",update:"Actualizar",proposal:"Objetivo sugerido",
@@ -146,16 +136,11 @@ const hypnoExtra = {
   aiPrompt:"Gemini puede redactar una estrategia y frases con tu permiso.",
   aiConsent:"Acepto compartir tema, meta y ajustes con Gemini. Los datos gratuitos pueden usarse para mejorar los modelos.",
   aiRun:"Crear estrategia y frases",aiBusy:"Creando…",
-  strategyBuild:"Crear estrategia psicológica y frases de apoyo",
-  strategyBuilding:"Preparando estrategia y frases…",
-  strategyConsentFirst:"Para usar Gemini, primero autoriza enviar las categorías elegidas.",
-  strategyWaveError:"No se pudo obtener la estrategia Wave del servidor. Inténtalo de nuevo.",
-  strategyReady:"Ya tienes una estrategia y frases propuestas. Elige y confirma las frases abajo.",
   aiSignIn:"Inicia sesión para Gemini. Wave no requiere cuenta.",
   aiUnavailable:"Gemini no está disponible o no se confirmó el nivel gratuito. Elige Wave.",
   aiFailure:"La respuesta no pasó la revisión. Prueba Wave.",
   aiDraft:"Propuesta nueva: el vídeo no cambia hasta que la apruebes.",
-  aiPrivacy:"Wave usa nuestro servidor; tus notas quedan aquí. Gemini recibe solo categorías autorizadas.",
+  aiPrivacy:"Wave funciona localmente. Gemini no recibe notas personales.",
   catalog:"La selección usa las opciones elegidas. Tu texto queda en el dispositivo."}
 } as const;
 const hypnoMiniThemes:VideoTheme[]=["money","relationships","energy","goals"];
@@ -211,7 +196,6 @@ export function MandalaHypnoCompact({
   const lines=linesForVideoAffirmations(locale,theme,settings);
   const position=settings.position||"center";
   const scale=settings.textScale||"medium";
-  const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   const [showHint,setShowHint]=useState(false);
   const [tone,setTone]=useState<"gentle"|"balanced"|"uplifting">("gentle");
   const [kind,setKind]=useState<"support"|"possibility"|"action">("support");
@@ -228,56 +212,47 @@ export function MandalaHypnoCompact({
   const [approvalKey,setApprovalKey]=useState("");
   const [model,setModel]=useState<HypnoModel>("wave");
   const [draftState,setDraftState]=useState<HypnoDraft|null>(null);
-  const [approvedStrategy,setApprovedStrategy]=useState<{model:HypnoModel;key:string;strategy:string}|null>(null);
   const [geminiConsent,setGeminiConsent]=useState(false);
-  const [strategyBusy,setStrategyBusy]=useState(false);
-  const [strategyNotice,setStrategyNotice]=useState("");
+  const [geminiBusy,setGeminiBusy]=useState(false);
+  const [geminiNotice,setGeminiNotice]=useState("");
   const runId=useRef(0);
   const pending=useRef<AbortController|null>(null);
   const waveInput={locale,theme,problemIndex,goalId:extraGoal,tone,focus,kind,length};
+  // Raw notes remain browser-local and NEVER enter Gemini's enum-only payload.
   const requestKey=JSON.stringify([waveInput,problemNote,goalNote]);
   const latestKey=useRef(requestKey);
   latestKey.current=requestKey;
   const draft=draftState?.model===model&&draftState.key===requestKey?draftState:null;
-  const savedStrategy=approvedStrategy?.model===model&&approvedStrategy.key===requestKey
-    ?approvedStrategy.strategy:null;
   const candidates=draft?.phrases??(settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
   const chosen=draft?.selected??settings.selected;
-  const currentCustom=draft?.custom??settings.custom;
-  const countCustom=(value:string)=>value.split(/\r?\n/u).filter(v=>v.trim()).length;
-  const selectedCount=chosen.length+countCustom(currentCustom);
+  const selectedCount=chosen.length;
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);
   const approved=!draft&&Boolean(approvalKey&&signature===approvalKey);
-  // Any newly generated/edited options stay separate from the active video snapshot.
-  const waveNow=buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,round:generation,
-    fallbackStrategy:buildWaveStrategy(waveInput),
-    fallbackPhrases:buildHypnoFilteredPhrases(locale,theme,problemIndex,extraGoal,tone,kind,focus,length,generation)});
-  const safetyBlocked=waveNow.status==="safety_handoff";
-  const summary=safetyBlocked?waveNow.strategy:
-    model==="wave"?(draft?.strategy??savedStrategy??waveNow.strategy)
-      :(draft?.strategy??savedStrategy??extra.aiPrompt);
-
-  function snapshotAsDraft():HypnoDraft {
-    const phrases=settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme];
-    return {model,key:requestKey,strategy:summary,phrases:[...phrases],
-      selected:[...settings.selected],custom:settings.custom,status:"category_only"};
-  }
-  function waveDraftFor(input:typeof waveInput, nextRound:number, key:string):HypnoDraft {
-    const outcome=buildWaveNarrativeDraft({...input,currentText:problemNote,goalText:goalNote,round:nextRound,
-      fallbackStrategy:buildWaveStrategy(input),
-      fallbackPhrases:buildHypnoFilteredPhrases(locale,input.theme,input.problemIndex,input.goalId,
-        input.tone,input.kind,input.focus,input.length,nextRound)});
-    return {model:"wave",key,strategy:outcome.strategy,phrases:outcome.phrases,
-      selected:outcome.status==="safety_handoff"?[]:[0,1,2],
-      custom:draftState?.custom??settings.custom,status:outcome.status,display:draftState?.display};
+  const summary=model==="wave"?(draft?.strategy??buildWaveStrategy(waveInput)):(draft?.strategy??extra.aiPrompt);
+  // Wave v2 reads the visitor's NOW → GOAL only on-device; no text is sent
+  // to third-party models or written to account state. Existing approved
+  // video phrases remain unchanged until the visitor explicitly approves.
+  function createWaveDraft(round:number):HypnoDraft {
+    const fallbackStrategy=buildWaveStrategy(waveInput);
+    const fallbackPhrases=buildHypnoFilteredPhrases(
+      locale,theme,problemIndex,extraGoal,tone,kind,focus,length,round);
+    const result=buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote,
+      round,fallbackStrategy,fallbackPhrases});
+    if(result.status==="safety_handoff"){
+      return {model:"wave",key:requestKey,strategy:result.strategy,phrases:[],selected:[]};
+    }
+    const maxLength=length==="short"?26:36;
+    const phrases=[...new Set([...result.phrases,...fallbackPhrases])]
+      .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
+    return {model:"wave",key:requestKey,strategy:result.strategy,
+      phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
   }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal){
     pending.current?.abort();runId.current++;
+    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
     const next=generation+1;
-    const input={...waveInput,theme:nextTheme,problemIndex:nextProblem,goalId:nextGoal};
-    const key=JSON.stringify([input,problemNote,goalNote]);
-    setModel("wave");setStrategyBusy(false);setStrategyNotice("");
-    setDraftState(waveDraftFor(input,next,key));
+    const suggestions=buildHypnoFilteredPhrases(locale,nextTheme,nextProblem,nextGoal,tone,kind,focus,length,next);
+    onChange({...settings,enabled:true,presetOverride:suggestions,selected:[0,1,2]});
     setGeneration(next);setSelectionSource("smart");setApprovalKey("");
   }
   async function suggestFromTests(){
@@ -303,149 +278,88 @@ export function MandalaHypnoCompact({
     setTestProposal(null);setSelectionSource("tests");setOpen(null);
   }
   function addCustom(){
-    if(!ownText.trim()||safetyBlocked)return;
-    const base=draft??snapshotAsDraft();
-    const combined=compactCustomAffirmationInput([base.custom,ownText.trim()].filter(Boolean).join("\n"));
-    if(base.selected.length+countCustom(combined)>5){
-      setNote(locale==="ru"?"Можно утвердить не более пяти фраз. Уберите одну выбранную.":
-        locale==="es"?"Confirma hasta cinco frases; desmarca una primero.":
-        "Approve up to five phrases; deselect one first.");
-      return;
-    }
-    setDraftState({...base,custom:combined});setOwnText("");setApprovalKey("");
+    if(!ownText.trim())return;
+    const custom=compactCustomAffirmationInput([settings.custom,ownText.trim()].filter(Boolean).join("\n"));
+    onChange({...settings,enabled:true,custom});setOwnText("");setApprovalKey("");
   }
   function toggleSelected(i:number){
-    if(safetyBlocked)return;
-    const base=draft??snapshotAsDraft();
-    const selected=base.selected.includes(i)?base.selected.filter(v=>v!==i):[...base.selected,i];
-    if(selected.length+countCustom(base.custom)>5){setNote(locale==="ru"?"Не больше пяти фраз":
-      locale==="es"?"Máximo cinco frases":"Maximum five phrases");return;}
-    setDraftState({...base,selected});setApprovalKey("");
+    if(draft)setDraftState({...draft,selected:draft.selected.includes(i)?
+      draft.selected.filter(v=>v!==i):[...draft.selected,i].slice(0,5)});
+    else{
+      const selected=settings.selected.includes(i)?settings.selected.filter(v=>v!==i):[...settings.selected,i].slice(0,5);
+      onChange({...settings,enabled:true,selected});
+    }
+    setApprovalKey("");
   }
 
   const toggle=(panel:Exclude<EditPanel,null>)=>setOpen(current=>current===panel?null:panel);
   const propose=()=>{
-    filtered();setOpen(null);
+    pending.current?.abort();runId.current++;
+    const next=generation+1;
+    setModel("wave");setDraftState(createWaveDraft(next));
+    setGeneration(next);setSelectionSource("smart");setApprovalKey("");setOpen(null);
   };
   const ready=()=>{
     pending.current?.abort();runId.current++;
-    setModel("wave");setStrategyBusy(false);setStrategyNotice("");
-    setDraftState({model:"wave",key:requestKey,strategy:buildWaveStrategy(waveInput),
-      phrases:[...suggestedVideoAffirmations[locale][theme]],selected:[0,1,2],
-      custom:draftState?.custom??settings.custom,status:"category_only",display:draftState?.display});
+    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    onChange({...settings,enabled:true,presetOverride:undefined,selected:[0,1,2]});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
   const changeTheme=(next:VideoTheme)=>{
     if(next===theme)return;
     pending.current?.abort();runId.current++;
-    const input={...waveInput,theme:next,problemIndex:0,goalId:topicGoals[next][0]};
-    const key=JSON.stringify([input,problemNote,goalNote]);
-    setModel("wave");setStrategyBusy(false);setStrategyNotice("");
-    setDraftState(waveDraftFor(input,generation+1,key));
+    setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
     onSelectTheme(next);
-    setGeneration(n=>n+1);
-    setSelectionSource("smart");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
+    onChange({...settings,enabled:settings.enabled,presetOverride:undefined,selected:[0,1,2]});
+    setSelectionSource("ready");setApprovalKey("");setGoalId(topicGoals[next][0]);setProblemIndex(0);
     setOpen("request");
   };
 
   function switchModel(next:HypnoModel){
     if(disabled||next===model)return;
     pending.current?.abort();runId.current++;
-    setStrategyBusy(false);setStrategyNotice("");setApprovalKey("");
+    setGeminiBusy(false);setGeminiNotice("");setApprovalKey("");
     setModel(next);setDraftState(null);
-    if(next==="wave")setDraftState(waveDraftFor(waveInput,generation+1,requestKey));
-    // Changing the model alone must NEVER send private data or trigger billing.
+    if(next==="wave")setDraftState(createWaveDraft(generation+1));
+    else if(geminiConsent)void generateGemini();
   }
-
-  /**
-   * One explicit action drives BOTH modes through our first-party API.
-   * Wave returns a real deterministic server result; optional local note
-   * interpretation improves that result without sending raw notes anywhere.
-   * Gemini is forwarded to Google's API server-side, with separate consent.
-   * Neither mode alters the live video until the visitor approves phrases.
-   */
-  async function buildStrategy(){
-    if(disabled||strategyBusy||safetyBlocked)return;
-    if(model==="gemini"&&!geminiConsent){
-      setStrategyNotice(extra.strategyConsentFirst);
-      return;
-    }
+  async function generateGemini(){
+    if(disabled||!geminiConsent)return;
     pending.current?.abort();
     const controller=new AbortController();pending.current=controller;
-    const number=++runId.current,key=requestKey,nextRound=generation+1,chosenModel=model;
-    setStrategyBusy(true);setStrategyNotice("");setApprovalKey("");
+    const number=++runId.current,key=requestKey;
+    setGeminiBusy(true);setGeminiNotice("");setApprovalKey("");
     let status=0;
     try{
       const response=await fetch("/api/holistic-support/hypno-strategy",{
         method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...waveInput,model:chosenModel,round:nextRound,
-          ...(chosenModel==="gemini"?{externalModelOptIn:true}:{})}),signal:controller.signal,
-      });
+        body:JSON.stringify({...waveInput,externalModelOptIn:true}),signal:controller.signal});
       status=response.status;
-      if(!response.ok)throw Error("STRATEGY_API_UNAVAILABLE");
+      if(!response.ok)throw Error("GEMINI_UNAVAILABLE");
       const raw:unknown=await response.json();
-      if(!raw||typeof raw!=="object"||Array.isArray(raw))throw Error("BAD_STRATEGY_RESPONSE");
-      const result=raw as {status?:string;model?:string;strategy?:unknown;phrases?:unknown};
-      if(result.status!=="draft_review_required"||
-         (chosenModel==="wave" && result.model!=="wave")||
-         (chosenModel==="gemini" && result.model!=="gemini-3.5-flash-lite"))
-        throw Error("WRONG_STRATEGY_PROVIDER");
-      const reviewed=reviewGeminiStrategy(result,locale,length);
-      if(!reviewed)throw Error("STRATEGY_REVIEW_REJECTED");
+      const checked=reviewGeminiStrategy(raw,locale,length);
+      if(!checked)throw Error("GEMINI_REVIEW");
       if(number!==runId.current||key!==latestKey.current)return;
-      const local=chosenModel==="wave"?buildWaveNarrativeDraft({...waveInput,
-        currentText:problemNote,goalText:goalNote,round:nextRound,
-        fallbackStrategy:reviewed.strategy,fallbackPhrases:reviewed.phrases}):null;
-      if(local?.status==="safety_handoff"){
-        setStrategyNotice(local.strategy);return;
-      }
-      const strategy=local?.status==="personalized"?local.strategy:reviewed.strategy;
-      const phrases=local?.status==="personalized"?local.phrases:reviewed.phrases;
-      if(!Array.isArray(phrases)||phrases.length!==5)throw Error("WRONG_PHRASE_COUNT");
-      setDraftState({
-        model:chosenModel,key,strategy,phrases:[...phrases],selected:[0,1,2],
-        custom:draftState?.custom??settings.custom,
-        status:local?.status??"category_only",display:draftState?.display,
-      });
-      setGeneration(nextRound);
-      setSelectionSource(chosenModel==="gemini"?"gemini":"smart");
-      setStrategyNotice(extra.strategyReady);
+      setDraftState({model:"gemini",key,...checked,selected:[0,1,2]});
+      setSelectionSource("gemini");
     }catch{
       if(number!==runId.current||key!==latestKey.current)return;
-      setStrategyNotice(chosenModel==="wave"?extra.strategyWaveError:
-        status===401?extra.aiSignIn:
+      setGeminiNotice(status===401?extra.aiSignIn:
         status===503||status===429?extra.aiUnavailable:extra.aiFailure);
-    }finally{if(number===runId.current)setStrategyBusy(false);}
+    }finally{if(number===runId.current)setGeminiBusy(false);}
   }
-  const advancedSettings:AffirmationSettings={...settings,...draft?.display,
-    presetOverride:draft?.phrases??settings.presetOverride,selected:draft?.selected??settings.selected,
-    custom:draft?.custom??settings.custom};
-  function updateAdvancedDraft(next:AffirmationSettings){
-    if(safetyBlocked)return;
-    const base=draft??snapshotAsDraft();
-    const phrases=Array.isArray(next.presetOverride)&&next.presetOverride.length===5
-      ?[...next.presetOverride]:base.phrases;
-    setDraftState({...base,phrases,selected:[...next.selected],custom:next.custom,
-      display:{density:next.density,frequency:next.frequency,visibility:[...next.visibility],
-        position:next.position,textScale:next.textScale}});
-    setApprovalKey("");
-  }
-
   function approvePhrases(){
-    if(!draft||draft.status==="safety_handoff"||safetyBlocked)return;
-    const selected=[...new Set(draft.selected)].filter(i=>Number.isInteger(i)&&i>=0&&i<draft.phrases.length).slice(0,5);
-    const custom=compactCustomAffirmationInput(draft.custom);
-    if(!selected.length&&!countCustom(custom))return;
-    if(selected.length+countCustom(custom)>5)return;
-    if(draft.phrases.length!==5)return; // legacy adapter remains five slots
-    const next={...settings,...draft.display,enabled:true,presetOverride:[...draft.phrases],selected,custom};
-    onChange(next); // the ONLY phrase-draft -> live-video transition
-    setApprovedStrategy({model,key:requestKey,strategy:draft.strategy});
-    setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-    setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
+    if(draft){
+      if(!draft.selected.length)return;
+      const next={...settings,enabled:true,presetOverride:draft.phrases,selected:draft.selected};
+      onChange(next);
+      setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
+      setSelectionSource(model==="gemini"?"gemini":"smart");setDraftState(null);
+    }else setApprovalKey(signature);
   }
 
+  const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
       <section className={css.card} data-hypno-request>
@@ -523,15 +437,7 @@ export function MandalaHypnoCompact({
         </div>}
       </section>
 
-      <button type="button" className={css.strategyBuild} data-hypno-build-strategy
-        disabled={disabled||safetyBlocked||strategyBusy} aria-busy={strategyBusy}
-        onClick={()=>{void buildStrategy();}}>
-        <BrainCircuit size={18} aria-hidden="true"/>
-        <span>{strategyBusy?extra.strategyBuilding:extra.strategyBuild}</span>
-      </button>
-      {strategyNotice&&<p className={css.strategyNotice} data-hypno-build-feedback role="status">{strategyNotice}</p>}
-
-      <section className={css.strategyCard} data-strategy-built={Boolean(draft||savedStrategy)} data-hypno-strategy>
+        <section className={css.strategyCard} data-hypno-strategy>
         <div className={css.strategyHead}><BrainCircuit size={18} aria-hidden="true"/><h4>{extra.strategy}</h4></div>
         <div className={css.modelChoice} role="group" aria-label={extra.strategy}>
           <button type="button" data-hypno-model="wave" aria-pressed={model==="wave"}
@@ -540,19 +446,18 @@ export function MandalaHypnoCompact({
             disabled={disabled} onClick={()=>switchModel("gemini")}>{extra.gemini}</button>
         </div>
         <p className={css.strategySummary} aria-live="polite" data-hypno-strategy-summary>{summary}</p>
-        {model==="wave"&&<small data-hypno-wave-source>{waveNow.status==="personalized"?
-          (locale==="ru"?"По смыслу вашего описания · локально":locale==="es"?"Según tu descripción · local":"Based on your notes · on device"):
-          (locale==="ru"?"По выбранным категориям":locale==="es"?"Según temas elegidos":"By selected categories")}</small>}
         {model==="gemini"&&<div className={css.geminiControls}>
           <label className={css.geminiConsent}>
-            <input type="checkbox" data-hypno-gemini-consent checked={geminiConsent} disabled={disabled||strategyBusy}
+            <input type="checkbox" data-hypno-gemini-consent checked={geminiConsent} disabled={disabled||geminiBusy}
               onChange={e=>setGeminiConsent(e.target.checked)}/>
             <span>{extra.aiConsent}</span>
           </label>
-          <small className={css.contextNote}>{extra.aiPrompt}</small>
+          <button type="button" data-hypno-gemini-generate disabled={disabled||geminiBusy||!geminiConsent}
+            onClick={()=>{void generateGemini();}}><WandSparkles size={15} aria-hidden="true"/>
+            {geminiBusy?extra.aiBusy:extra.aiRun}</button>
         </div>}
         {draft&&<p className={css.strategyHint}>{extra.aiDraft}</p>}
-
+        {geminiNotice&&<p role="status" className={css.strategyNotice}>{geminiNotice}</p>}
         <small className={css.strategyPrivacy}>{extra.aiPrivacy}</small>
       </section>
 
@@ -583,7 +488,7 @@ export function MandalaHypnoCompact({
             {(["support","possibility","action"] as const).map((id,i)=><option key={id} value={id}>{extra.roles[i]}</option>)}
           </select></label>
           <label>{extra.goal}<select value={extraGoal} data-hypno-filter-goal disabled={disabled}
-            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setApprovalKey("");}}>
+            onChange={e=>{setGoalId(e.target.value as VideoAffirmationGoal);setGoalNote("");setApprovalKey("");}}>
             {topicGoals[theme].map(id=><option key={id} value={id}>{affirmationGoalCatalog[locale].find(x=>x.id===id)?.label}</option>)}
           </select></label>
           <label>{extra.tone}<select value={tone} data-hypno-filter-tone disabled={disabled} onChange={e=>setTone(e.target.value as typeof tone)}>
@@ -595,7 +500,7 @@ export function MandalaHypnoCompact({
           <label>{extra.length}<select value={length} data-hypno-filter-length disabled={disabled} onChange={e=>setLength(e.target.value as typeof length)}>
             {(["short","medium"] as const).map((id,i)=><option key={id} value={id}>{extra.lengths[i]}</option>)}
           </select></label>
-          <button type="button" data-hypno-generate-new disabled={disabled||strategyBusy||safetyBlocked} onClick={()=>{void buildStrategy();}}>
+          <button type="button" data-hypno-generate-new disabled={disabled||geminiBusy} onClick={()=>{if(model==="gemini")void generateGemini();else propose();}}>
             <WandSparkles size={14} aria-hidden="true"/>{extra.generate}</button>
         </div>
         <div className={css.phraseCounter}>
@@ -625,10 +530,10 @@ export function MandalaHypnoCompact({
               <Link href={"/"+locale+"/personality-profiles"} prefetch={false}>{locale==="ru"?"Заполнить профиль":locale==="es"?"Completar perfil":"Build my profile"}</Link>
             </div>
           </div>}
-          <MandalaVideoAffirmations locale={locale} theme={theme} settings={advancedSettings} onChange={updateAdvancedDraft} disabled={disabled}
+          <MandalaVideoAffirmations locale={locale} theme={theme} settings={settings} onChange={onChange} disabled={disabled}
             onTestPersonalization={()=>setSelectionSource("tests")}/>
         </div>}
-        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||safetyBlocked||(!draft&&!settings.enabled)||!selectedCount}
+        <button type="button" className={css.approveMini} data-hypno-approve disabled={disabled||(draft?!draft.selected.length:(!settings.enabled||(!selectedCount&&!settings.custom.trim())))}
           onClick={approvePhrases}><Check size={16} aria-hidden="true"/>{approved?extra.approved:extra.approve}</button>
       </section>
 
@@ -711,7 +616,7 @@ export function MandalaHypnoCompact({
       </section>
 
       <label className={css.enable}>
-        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled||safetyBlocked}
+        <input type="checkbox" data-hypno-overview-enable checked={settings.enabled} disabled={disabled}
           onChange={event=>onChange({...settings,enabled:event.target.checked})}/>
         <span>{ui.use}</span>
         {!settings.enabled&&<small>{ui.enabledNote}</small>}
@@ -722,10 +627,10 @@ export function MandalaHypnoCompact({
           <strong>{lines[0]||suggestedVideoAffirmations[locale][theme][0]}</strong>
           <span>{selectedCount}/5 {ui.selected} · {settings.frequency===1?8:settings.frequency===3?3:5} {locale==="ru"?"сек":"s"}</span>
         </div>
-        <button type="button" data-video-affirmation-preview aria-label={ui.previewButton} disabled={disabled||safetyBlocked}
+        <button type="button" data-video-affirmation-preview disabled={disabled} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||safetyBlocked||!settings.enabled}
+      <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled}
         onClick={onCreate}><Sparkles size={18} aria-hidden="true"/>{ui.create}<ChevronRight size={16}/></button>
       <p className={css.privacy}>{ui.privacy} <span>{ui.previewHint}</span></p>
     </section>

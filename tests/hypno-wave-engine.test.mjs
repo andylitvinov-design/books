@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildWaveNarrativeDraft, interpretWaveNotes, WAVE_ENGINE_VERSION } from '../lib/mandala/hypno-wave-engine.mjs';
@@ -148,4 +149,24 @@ test('Wave distinguishes fearful «мне страшно» from literal «не �
   assert.ok(nervous.currentKeys.includes('fear'));
   const tired=interpretWaveNotes({locale:'ru',currentText:'После встреч я устаю',goalText:'Хочу беречь силы'});
   assert.ok(tired.currentKeys.includes('exhaustion'));
+});
+test('canonical Wave v2 reads notes locally but Gemini remains enum-only and approval-gated',()=>{
+  const ui=readFileSync(new URL('../components/mandala-hypno-compact.tsx',import.meta.url),'utf8');
+  const strategy=readFileSync(new URL('../app/api/holistic-support/hypno-strategy/route.js',import.meta.url),'utf8');
+  for(const marker of [
+    'buildWaveNarrativeDraft({...waveInput,currentText:problemNote,goalText:goalNote',
+    'requestKey=JSON.stringify([waveInput,problemNote,goalNote])',
+    'if(result.status==="safety_handoff")',
+    'phrases:[],selected:[]',
+    'setDraftState(createWaveDraft(next))',
+    'setDraftState(createWaveDraft(generation+1))',
+    'data-hypno-approve disabled=',
+    'if(!draft.selected.length)return',
+    'body:JSON.stringify({...waveInput,externalModelOptIn:true})',
+  ])assert.ok(ui.includes(marker),'Missing local Wave/privacy/approval guard: '+marker);
+  for(const field of ['problemNote','goalNote','privateText','testScores']){
+    assert.ok(!strategy.includes('body.'+field),'Private content must not cross hosted strategy route: '+field);
+    assert.ok(!ui.includes('body:JSON.stringify({...waveInput,'+field),
+      'Gemini payload must remain only the canonical enum filters');
+  }
 });

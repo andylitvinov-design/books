@@ -2,9 +2,10 @@
 
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
-import {ArrowRight, Check, ChevronRight, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
+import {ArrowRight, Check, ChevronRight, Copy, Crown, Download, Film, ShieldCheck, Sparkles, X} from "lucide-react";
 import {buildCinematicStoryboard,customizeCinematicShot,CINEMATIC_STYLES,CINEMATIC_THEMES} from "@/lib/mandala/cinematic-director.mjs";
 import {compileCinematicReferencePack} from "@/lib/mandala/cinematic-creative-brief.mjs";
+import {buildKlingPromptFromHandoff,cinematicKlingHandoffFromReference,klingHandoffAdminPath} from "@/lib/mandala/cinematic-kling-handoff.mjs";
 import {QUESTION_REGISTRY,projectFieldsFromAnswers,questionsForDraft,questionsForGroup,subjectIsExplicitlyExcluded,durationFromBrief} from "@/lib/mandala/video-studio-question-registry.mjs";
 import {buildCinematicAssemblyManifest,listCinematicRoutes} from "@/lib/mandala/cinematic-production.mjs";
 import {graphemeTrim} from "@/lib/mandala/personal-video-intent.mjs";
@@ -26,6 +27,7 @@ type StyleId=keyof typeof CINEMATIC_STYLES;
 const QUESTION_GROUPS=["personalization","principal","advanced","pro","extra"] as const;
 type QuestionGroup=typeof QUESTION_GROUPS[number];
 type StudioQuestion={id:string;scope:string;labels:Record<PublicLocale,string>;
+  tier:"free"|"mixed"|"premium";freeOptionIds:readonly string[];
   options:readonly {id:string;labels:Record<PublicLocale,string>}[]};
 type BriefMusicPreference="none"|"calm"|"energetic";
 type BriefCaptionPreference="none"|"phrases"|"subtitles";
@@ -39,7 +41,7 @@ const copy={
     visualIdeaHelp:"Optional. This stays on your device. Only known fictional visual elements appear in the safe reference pack.",
     subjectQuestion:"What should appear on screen?",subjectChoices:["An eagle","A wolf","Nature only"],
     actionQuestion:"What should happen?",actionChoices:["Fly","Transform","Travel"],
-    referenceTitle:"Style and reference plan (not generated AI footage)",
+    referenceTitle:"Style and reference plan (not generated AI footage)",conceptScene:"Story concept",localScene:"Available montage scene",
     referenceHint:"These are text descriptions of suggested keyframes, not generated pictures.",
     newAiRequired:"This creative scene needs a real video AI model. It is not available here yet; the free montage uses existing animated scenes.",
     supportedLocal:"Your free montage uses our existing moving scenes; no new AI footage or charges.",
@@ -59,6 +61,10 @@ const copy={
     format:"Format",length:"Length",seconds:"sec",plan:"Create storyboard",refresh:"Update storyboard",
     shots:"Connected scenes",camera:"Camera",sceneChoice:"Change this shot",privacy:"Only pre-approved visual words may be used in an external AI prompt. Your problem, goals, photo and test results stay in this browser.",
     safe:"Provider-safe visual prompt",local:"Use as free moving montage",localHint:"Applies animated scenes to the existing local recorder. Press Create video below; no provider render or charge is started.",
+    aiPromptTitle:"AI model prompt · your real scene",aiPromptHelp:"This exact prompt uses approved fictional visual details only. No generation has started. Kling 3.0 creates a new 3-second clip only when the verified owner authorizes a paid job in the secure studio.",
+    aiShot:"Choose the shot to generate",aiCopy:"Copy AI prompt",aiCopied:"Copied",aiAdmin:"Open owner's Kling generator",
+    aiPrice:"No verified quote or client checkout is available here. The owner's separate paid authorization is required.",
+    aiConflict:"The selected image restrictions conflict with this original AI scene. Change the scene or exclusions first.",
     download:"Save safe storyboard",quote:"AI Premium · estimate required",quoteHelp:"Kling/Runway/Higgsfield remain quote-only: payment, owner approval and verified provider delivery are not enabled here.",
     myVideos:"My videos",myVideosHint:"Private account saving is available only after separate consent and cloud activation.",
     applied:"Montage selected. Use the existing Create video button to record it.",noData:"No information is sent to a provider.",
@@ -71,7 +77,7 @@ const copy={
     visualIdeaHelp:"Необязательное поле. Текст остаётся на устройстве; в безопасный план попадают только распознанные вымышленные образы.",
     subjectQuestion:"Кто или что в кадре?",subjectChoices:["Орёл","Волк","Только природа"],
     actionQuestion:"Что происходит?",actionChoices:["Летит","Превращается","Путешествует"],
-    referenceTitle:"План стиля и референсов (не готовое AI-видео)",
+    referenceTitle:"План стиля и референсов (не готовое AI-видео)",conceptScene:"Замысел сцены",localScene:"Доступная сцена для монтажа",
     referenceHint:"Это текстовые описания начальных и конечных кадров, а не созданные AI-картинки.",
     newAiRequired:"Для этой оригинальной сцены нужна настоящая видеомодель. Она пока недоступна: бесплатный монтаж использует существующие анимированные сцены.",
     supportedLocal:"Бесплатный монтаж использует готовые движущиеся сцены; новых AI-кадров и расходов нет.",
@@ -91,6 +97,10 @@ const copy={
     format:"Формат",length:"Длительность",seconds:"сек",plan:"Сформировать раскадровку",refresh:"Обновить раскадровку",
     shots:"Связанные сцены",camera:"Камера",sceneChoice:"Заменить кадр",privacy:"Внешнему AI допускаются только проверенные описания образов. Проблема, цели, фото и результаты тестов остаются в браузере.",
     safe:"Безопасный визуальный промпт",local:"Применить бесплатный видеомонтаж",localHint:"Анимированные сцены подготовятся в существующем редакторе. Нажмите ниже «Создать видео». Платного рендера нет.",
+    aiPromptTitle:"Промпт для AI · оригинальный кадр",aiPromptHelp:"Это точный промпт из разрешённых художественных элементов, без личных данных. Генерация ещё НЕ запущена. Новый 3-секундный клип Kling 3.0 создаётся только после подтверждения платного задания владельцем в защищённой админке.",
+    aiShot:"Какую сцену создать заново",aiCopy:"Скопировать AI-промпт",aiCopied:"Скопировано",aiAdmin:"Открыть Kling-генератор владельца",
+    aiPrice:"Здесь ещё нет подтверждённой цены и оплаты клиента. Для запуска требуется отдельное разрешение владельца.",
+    aiConflict:"Нежелательные образы противоречат выбранной AI-сцене. Сначала измените сцену или ограничения.",
     download:"Сохранить раскадровку",quote:"AI Premium · нужна смета",quoteHelp:"Kling/Runway/Higgsfield пока только для оценки возможностей: оплата, утверждение расходов и доставка AI-фильма здесь не включены.",
     myVideos:"Мои видео",myVideosHint:"Приватное облачное хранение включается отдельно, с согласием владельца.",
     applied:"Монтаж подготовлен. Нажмите существующую кнопку «Создать видео».",noData:"Ничего не отправлено внешнему сервису.",
@@ -103,7 +113,7 @@ const copy={
     visualIdeaHelp:"Opcional. El texto permanece en tu dispositivo; el plan seguro solo incluye elementos ficticios reconocidos.",
     subjectQuestion:"¿Quién o qué aparece?",subjectChoices:["Un águila","Un lobo","Solo naturaleza"],
     actionQuestion:"¿Qué sucede?",actionChoices:["Vuela","Se transforma","Viaja"],
-    referenceTitle:"Plan de estilo y referencias (no vídeo IA generado)",
+    referenceTitle:"Plan de estilo y referencias (no vídeo IA generado)",conceptScene:"Idea de la escena",localScene:"Escena disponible para el montaje",
     referenceHint:"Son descripciones de fotogramas iniciales y finales, no imágenes creadas por IA.",
     newAiRequired:"Esta escena original necesita un modelo de vídeo IA. Aún no está disponible: el montaje gratuito usa escenas animadas existentes.",
     supportedLocal:"El montaje gratuito usa escenas existentes; no hay imágenes nuevas de IA ni cargos.",
@@ -123,6 +133,10 @@ const copy={
     format:"Formato",length:"Duración",seconds:"s",plan:"Crear guion visual",refresh:"Actualizar guion visual",
     shots:"Escenas conectadas",camera:"Cámara",sceneChoice:"Cambiar escena",privacy:"Solo se pueden compartir descripciones visuales aprobadas con IA. Tus dificultades, metas, fotos y tests permanecen en el navegador.",
     safe:"Prompt visual seguro",local:"Usar montaje animado gratis",localHint:"Aplica escenas animadas al grabador local existente. Pulsa Crear vídeo; sin costes externos.",
+    aiPromptTitle:"Prompt de IA · escena original",aiPromptHelp:"Este prompt exacto solo contiene arte ficticio permitido, sin datos privados. La generación NO ha comenzado. Kling 3.0 crea un clip nuevo de 3 segundos únicamente después de la aprobación de gasto por el administrador.",
+    aiShot:"Escena que se va a generar",aiCopy:"Copiar prompt IA",aiCopied:"Copiado",aiAdmin:"Abrir generador Kling del propietario",
+    aiPrice:"Sin presupuesto ni pago de cliente verificados. Requiere aprobación separada del propietario.",
+    aiConflict:"Los límites visuales contradicen esta escena IA. Ajusta la escena o las exclusiones.",
     download:"Guardar guion visual",quote:"AI Premium · presupuesto requerido",quoteHelp:"Kling/Runway/Higgsfield solo para cotización: el pago, la aprobación y la entrega externa aún no están habilitados.",
     myVideos:"Mis vídeos",myVideosHint:"El almacenamiento privado requiere consentimiento y activación.",
     applied:"Montaje preparado. Pulsa el botón existente Crear vídeo.",noData:"No se enviaron datos a proveedores.",
@@ -159,6 +173,8 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
   const [seconds,setSeconds]=useState<15|20|30|60>(20);
   const [generated,setGenerated]=useState(false);
   const [generatedMode,setGeneratedMode]=useState(therapyMode);
+  const [aiShot,setAiShot]=useState(3);
+  const [aiCopied,setAiCopied]=useState(false);
   const [applied,setApplied]=useState(false);
   const [customPlan,setCustomPlan]=useState<CinematicStoryboard|null>(null);
   const [profileConsent,setProfileConsent]=useState(false);
@@ -186,6 +202,10 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
     visualIdea,plan,answers:{subjectChoice:projectFields.subjectChoice||subjectChoice,actionChoice:projectFields.actionChoice||actionChoice},
     shotDirections,
   }),[visualIdea,plan,subjectChoice,actionChoice,projectFields,shotDirections]);
+  const aiDraft=useMemo(()=>{
+    try{return buildKlingPromptFromHandoff(cinematicKlingHandoffFromReference(referencePack,plan,aiShot,avoid));}
+    catch{return null;}
+  },[referencePack,plan,aiShot,avoid]);
   const manifest=useMemo(()=>buildCinematicAssemblyManifest(plan),[plan]);
   const candidates=useMemo(()=>listCinematicRoutes({visibility:"client_private"}),[]);
   // A local storyboard survives Apply when its chosen topic becomes the parent topic.
@@ -247,7 +267,7 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
     style:CINEMATIC_STYLES[(projectFields.styleId||style) as StyleId].name[locale],avoid:avoid||"—",
   };
   const invalidate=()=>{
-    setGenerated(false);setApplied(false);setCustomPlan(null);setSelectedShotNumber(null);
+    setGenerated(false);setApplied(false);setCustomPlan(null);setSelectedShotNumber(null);setAiCopied(false);
     onInvalidateStoryboard();
   };
   const updateVisualIdea=(value:string)=>{
@@ -307,6 +327,11 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
     onApplyStoryboard(plan as CinematicStoryboard);
     setApplied(true);
   };
+  async function copyAiPrompt(){
+    if(!aiDraft)return;
+    try{await navigator.clipboard.writeText(aiDraft.prompt);setAiCopied(true);}
+    catch{setAiCopied(false);}
+  }
   const save=()=>{
     const safeManifest={...manifest,creativeReferencePack:referencePack,
       shots:plan.shots.map(s=>({title:s.title,camera:s.camera,
@@ -362,11 +387,17 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           </div>;
         })}
         <div className={css.questionList}>
-          {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}>
-            <legend>{question.labels[locale]}</legend>
+          {initialQuestions.map(question=><fieldset key={question.id} className={css.contextQuestion}
+            data-video-parameter-tier={question.tier}>
+            <legend>{question.labels[locale]}
+              {question.tier==="premium"?<span className={css.premiumOption}><Crown size={13} aria-hidden="true"/> {locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}</span>:null}
+            </legend>
             <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+              data-video-option-tier={question.freeOptionIds.includes(option.id)?"free":"premium"}
+              title={!question.freeOptionIds.includes(option.id)?(locale==="ru"?"Только план: недоступно в бесплатном видео":locale==="es"?"Solo plan: no disponible en el vídeo gratis":"Creative brief only: unavailable in free video"):undefined}
               aria-pressed={questionAnswers[question.id]?.selectedOptionId===option.id}
-              onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}</button>)}</div>
+              onClick={()=>answerStudioQuestion(question.id,option.id)}>{option.labels[locale]}
+              {!question.freeOptionIds.includes(option.id)?<Crown size={13} aria-label={locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}/>:null}</button>)}</div>
             <input value={questionAnswers[question.id]?.customText||""} placeholder={t.ownAnswer}
               onChange={event=>answerStudioQuestion(question.id,null,event.target.value,false,false)}
               onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value);}} disabled={disabled}/>
@@ -374,11 +405,17 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
           {generated?visibleCategoryQuestions.length?visibleCategoryQuestions.map(question=>{
             const answer=answerForQuestion(question);
             const sceneScoped=question.scope==="scene";
-            return <fieldset key={question.id} className={css.contextQuestion}>
-              <legend>{question.labels[locale]}</legend>
+            return <fieldset key={question.id} className={css.contextQuestion}
+              data-video-parameter-tier={question.tier}>
+              <legend>{question.labels[locale]}
+                {question.tier==="premium"?<span className={css.premiumOption}><Crown size={13} aria-hidden="true"/> {locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}</span>:null}
+              </legend>
               <div className={css.chips}>{question.options.map(option=><button type="button" key={option.id} disabled={disabled}
+                data-video-option-tier={question.freeOptionIds.includes(option.id)?"free":"premium"}
+                title={!question.freeOptionIds.includes(option.id)?(locale==="ru"?"Только план: недоступно в бесплатном видео":locale==="es"?"Solo plan: no disponible en el vídeo gratis":"Creative brief only: unavailable in free video"):undefined}
                 aria-pressed={answer?.selectedOptionId===option.id}
-                onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}</button>)}</div>
+                onClick={()=>answerStudioQuestion(question.id,option.id,null,sceneScoped)}>{option.labels[locale]}
+                {!question.freeOptionIds.includes(option.id)?<Crown size={13} aria-label={locale==="ru"?"AI Premium":locale==="es"?"IA Premium":"AI Premium"}/>:null}</button>)}</div>
               <input value={answer?.customText||""} placeholder={t.ownAnswer}
                 onChange={event=>answerStudioQuestion(question.id,null,event.target.value,sceneScoped,false)}
                 onBlur={event=>{if(event.target.value.trim())answerStudioQuestion(question.id,null,event.target.value,sceneScoped);}} disabled={disabled}/>
@@ -435,7 +472,9 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
         <div className={css.shots}>{plan.shots.map(shot=><article key={shot.id}
           className={css.shot} data-director-shot={shot.number} data-director-shot-selected={selectedShotNumber===shot.number?"true":"false"}>
           <span className={css.number}>{String(shot.number).padStart(2,"0")}</span>
-          <div><strong>{shot.title}</strong><p>{t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
+          <div><strong>{shot.title}</strong>
+            {referencePack.shots[shot.number-1]?.conceptDescription?<p data-director-shot-concept><b>{t.conceptScene}:</b> {referencePack.shots[shot.number-1].conceptDescription}</p>:null}
+            <p data-director-shot-local-scene>{t.localScene}: {t.themes[shot.theme]} · {sceneDisplayName(shot.theme,shot.sceneId,locale)}</p>
             <small>{shot.startSeconds}–{shot.startSeconds+shot.durationSeconds} {t.seconds} · {shot.sceneId}</small>
             <label className={css.sceneChoice}>
               <span>{t.sceneChoice}</span>
@@ -467,6 +506,25 @@ export function MandalaCinematicDirector({locale,theme,therapyMode,disabled,inte
             </li>)}</ol>
           </details>
         </div>
+        {referencePack.requestedNovelVideo&&!aiDraft?<p role="status" className={css.privacy}>{t.aiConflict}</p>:null}
+        {aiDraft?<div className={css.aiPrompt} data-director-kling-prompt>
+          <strong>{t.aiPromptTitle}</strong><p>{t.aiPromptHelp}</p>
+          <fieldset disabled={disabled}><legend>{t.aiShot}</legend>
+            <div className={css.chips}>
+              {([1,2,3,4] as const).map(n=><button type="button" key={n}
+                aria-pressed={aiShot===n} onClick={()=>{setAiShot(n);setAiCopied(false);}}
+                data-director-ai-shot={n}>{n}</button>)}
+            </div>
+          </fieldset>
+          <p className={css.aiPromptText} data-director-kling-prompt-text>{aiDraft.prompt}</p>
+          <div className={css.secondary}>
+            <button type="button" data-director-kling-copy onClick={()=>void copyAiPrompt()}>
+              <Copy size={16} aria-hidden="true"/>{aiCopied?t.aiCopied:t.aiCopy}</button>
+            <Link href={klingHandoffAdminPath(aiDraft.packet)} prefetch={false}
+              data-director-kling-owner-link>{t.aiAdmin}<ArrowRight size={14} aria-hidden="true"/></Link>
+          </div>
+          <p className={css.helper}>{t.aiPrice}</p>
+        </div>:null}
         <button type="button" className={css.primary} data-director-apply-montage
           disabled={disabled} onClick={apply}><Check size={18} aria-hidden="true"/>{t.local}</button>
         <p className={css.helper}>{applied?t.applied:t.localHint}</p>

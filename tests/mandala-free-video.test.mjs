@@ -14,7 +14,7 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /data-mandala-free-video/);
   assert.match(video, /canvas\.captureStream\(framesPerSecond\)/);
   assert.match(video, /new MediaRecorder\(stream/);
-  assert.match(video, /recorder\.start\(500\)/);
+  assert.match(video, /recorder\.start\(\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
   assert.match(video, /loadSceneImage\(snapshot\)/);
@@ -28,12 +28,16 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{createVideo\}/);
+  assert.match(source, /onClick=\{\(\)=>void createVideo\(\)\}/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
   assert.match(source, /job\.stream\.getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
-  assert.match(source, /extension: type\.includes\("mp4"\) \? "mp4" : "webm"/);
+  // Real file container bytes, not Safari's unreliable declared MIME,
+  // determine the saved format on the new iPhone recorder path.
+  assert.match(source, /const extension=isWebm\?"webm":"mp4"/);
+  assert.ok(source.includes('const type=isWebm?"video/webm":"video/mp4"'));
+  assert.match(source, /isMp4=header\.length>=8/);
 });
 
 test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compact controls", () => {
@@ -156,4 +160,29 @@ test("background-only reusable clip is the default, with an explicit photo check
   assert.match(browser,/holistic-house-money-background/);
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
+});
+
+test("Safari failed render offers only a source-backed unedited MP4 without pretending it is customized", () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /const originalFallbackCandidate=cinematicPlan\?\.shots\[0\]/);
+  assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
+  assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
+  assert.match(studio, /data-video-original-fallback-download/);
+  assert.match(studio, /exportUnavailable && !result && originalFallbackMp4/);
+  assert.match(studio, /setExportUnavailable\(true\)/);
+  assert.match(studio, /setExportUnavailable\(false\)/);
+  assert.match(studio, /holistic-house-original-scene\.mp4/);
+  assert.match(studio, /Это НЕ ваш готовый фильм/);
+  assert.match(studio, /duration, format, photo, captions and music were not applied/);
+  assert.match(studio, /playbackStatus==="ready" \? <>/);
+  // No user-generated blob is advertised as ready when native decoding fails.
+  assert.match(studio, /playbackStatus==="failed"\?<div role="alert" data-video-playback-error>/);
+  const allowPublicMp4 = /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/;
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/money-films-v1/golden-rain.mp4"), true);
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/film-collection-v2/mountain-air.mp4"), true);
+  for (const malicious of ["https://other.example/a.mp4", "/api/private.mp4",
+    "/videos/holistic-house/../secret.mp4", "/videos/holistic-house/clip.mp4?token=abc",
+    "//other.example/videos/holistic-house/a.mp4"]) {
+    assert.equal(allowPublicMp4.test(malicious), false, "no unapproved fallback: " + malicious);
+  }
 });
