@@ -2191,8 +2191,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const ua=typeof navigator==="undefined"?"":navigator.userAgent;
     const useWebCodecsMp4=/AppleWebKit/i.test(ua)&&
       !/Chrome|Chromium|Edg|OPR/i.test(ua)&&
-      typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"&&
-      typeof OfflineAudioContext!=="undefined";
+      typeof VideoEncoder!=="undefined"&&
+      typeof VideoEncoder.isConfigSupported==="function"&&
+      typeof VideoFrame!=="undefined"&&
+      // Silent WebKit must still be able to export H.264 if AAC is absent.
+      (!attachedAudio || (typeof AudioEncoder!=="undefined"&&
+        typeof AudioEncoder.isConfigSupported==="function"&&
+        typeof OfflineAudioContext!=="undefined"));
     preparingRef.current=true;
     setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
     setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
