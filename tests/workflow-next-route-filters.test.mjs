@@ -15,7 +15,7 @@ for(const name of ['hh-course-presets','hh-energywork-ai','practitioner-presenta
  if(['hh-course-presets','hh-cabinet-journey'].includes(name)) {
   assert.ok(patterns.includes('app/api/app/*/route.js'), 'BASE reader needs a narrow one-segment route')
   for(const excluded of ['direct-messages','practitioner-client-messages','notification-channels'])
-   assert.ok(patterns.includes('!app/api/app/'+excluded+'/**'), 'exclude unrelated Messenger API: '+excluded)
+   assert.ok(source.includes("      - '!app/api/app/"+excluded+"/**'"), 'exclude unrelated Messenger API: '+excluded)
  }
  const api=patterns.find(p=>p.includes('...path'))
  assert.equal(api.replaceAll('\\[','[').replaceAll('\\]',']'), name === 'holistic-house-mobile-install'
