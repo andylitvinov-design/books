@@ -126,6 +126,7 @@ jobs:
           node --input-type=module <<'JS'
           import {execFileSync} from 'node:child_process'
           import {appendFileSync} from 'node:fs'
+          import {isPrivateMeditationRelease} from './scripts/ci-practitioner-meditation-scope.mjs'
           const allowed=[
             /^app\/\[locale\]\/app\/messages\//,
             /^components\/app\/(?:messages-|crm-messenger|crm-salesbot-assist)/,
@@ -138,21 +139,24 @@ jobs:
             /^\.github\/workflows\/ia-v2\.yml$/,
           ]
           let messengerOnly=false
+          let practitionerMeditationOnly=false
           if(process.env.HH_PR_EVENT==='pull_request'){
             try{
               const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim()
               const base=git('rev-parse','HEAD^1')
               const head=git('rev-parse','HEAD^2')
               const files=git('diff','--name-only','HEAD^1','HEAD').split('\n').filter(Boolean)
-              messengerOnly=base===process.env.HH_EXPECTED_BASE &&
-                head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
-                files.every(file=>allowed.some(pattern=>pattern.test(file)))
-              console.log(JSON.stringify({base,head,files,messengerOnly}))
+              const trusted=base===process.env.HH_EXPECTED_BASE &&
+                head===process.env.HH_EXPECTED_HEAD && files.length>0
+              messengerOnly=trusted && files.every(file=>allowed.some(pattern=>pattern.test(file)))
+              practitionerMeditationOnly=trusted && isPrivateMeditationRelease(files)
+              console.log(JSON.stringify({base,head,files,messengerOnly,practitionerMeditationOnly}))
             }catch(err){
               console.error('Messenger scoped classification unavailable; keeping full IA',err.message)
             }
           }
           appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\n')
+          appendFileSync(process.env.GITHUB_OUTPUT,'practitioner_meditation_only='+practitionerMeditationOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
@@ -161,6 +165,11 @@ jobs:
           # Server-only imports have React Server conditional exports in Next.js.
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
+      # This scoped extra suite NEVER replaces production IA auth, RLS or guest checks.
+      - name: Private meditation owner, authentication, media and safe course contracts
+        if: ${{ steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
+        run: |
+          node --test tests/practitioner-meditation-studio.test.mjs tests/practitioner-preview-auth.test.mjs tests/practitioner-bridge.test.mjs tests/admin-login-security.test.mjs tests/course-slide-recorder.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/ci-practitioner-meditation-scope.test.mjs
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - name: Full lint outside production PR (core release-ready owns production lint)
