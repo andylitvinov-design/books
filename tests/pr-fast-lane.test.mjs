@@ -93,6 +93,24 @@ test('OPORA course test ownership excludes unrelated course and CI contracts', (
   assert.ok(opora.includes('node scripts/verify-opora-as56-browser.mjs'));
 });
 
+test('OPORA test-only edits do not start the unrelated App R1 suite', () => {
+  const paths = name => {
+    const pr = workflow(name).match(/^  pull_request:\s*\n([\s\S]*?)(?=^  workflow_dispatch:|^permissions:)/m)?.[1];
+    assert.ok(pr, name + ' PR trigger required');
+    return [...pr.matchAll(/^      - ['"]([^'"]+)['"]$/gm)].map(m => m[1]);
+  };
+  const app = paths('hh-app-r1.yml'), opora = paths('opora-module-ci.yml');
+  const covers = (patterns, file) => patterns.some(pattern => requireGlob(file, pattern));
+  for (const file of ['tests/opora-support-second-screen.test.mjs', 'tests/opora-as56-experience-first.test.mjs']) {
+    assert.equal(covers(opora, file), true, file + ' must run OPORA acceptance');
+    assert.equal(covers(app, file), false, file + ' must not run unrelated App R1');
+  }
+  for (const file of ['components/app/example.tsx', 'components/my-course-player.tsx', 'tests/course-immersive-start-ui.test.mjs', 'package-lock.json']) {
+    assert.equal(covers(app, file), true, file + ' must retain App R1');
+  }
+  assert.ok(workflow('hh-app-r1.yml').includes('node --test tests/course-immersive-start-ui.test.mjs'));
+});
+
 test('separate fail-closed specialist gate and legacy release-ready alias protect the migration', () => {
   const source = workflow('hh-pr-core-release.yml');
   assert.match(source, /^  pull_request:/m);
