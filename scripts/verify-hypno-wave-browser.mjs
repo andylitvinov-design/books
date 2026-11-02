@@ -106,6 +106,9 @@ for(const [engine,driver,options] of [['chromium',chromium,{}],['webkit',webkit,
   await wish.fill('I want to kill myself');
   await pane.locator('[data-hypno-smart]').click();
   assert.equal(await pane.locator('[data-hypno-approve]').isDisabled(),true,'urgent input must not be approved as phrases');
+  assert.equal(await approvedCreate.isDisabled(),true,'crisis request must block video creation');
+  assert.equal(await pane.locator('[data-video-affirmation-preview]').isDisabled(),true,'crisis request must block preview');
+  assert.equal(await pane.locator('[data-hypno-model="gemini"]').isDisabled(),true,'crisis input must not be sent to Gemini');
   assert.deepEqual(writes,[],'personal notes must not be sent');
   console.log(`${engine}/${locale}/${width}: PASS scene click, local proposal, approval, safety and no writes`);
   await page.close();
