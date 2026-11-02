@@ -193,16 +193,19 @@ function classifyCoreFailureJobs(jobs) {
   const core=byName.get('hh-core-verified');
   const scope=byName.get('classify-change');
   const build=byName.get('core-lint-types-build');
-  // The compatibility release-ready job delegates to hh-specialist. Preserve
-  // its actual cause rather than routing an old alias to release-gate review.
-  if (failed.some(job=>job.name==='hh-specialist') &&
-      core?.conclusion==='success' && scope?.conclusion==='success' &&
-      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+  // Current unified Core has classify-change + core-lint-types-build and
+  // hh-merge-check; old Core also emitted a separate hh-core-verified.
+  // Its ABSENCE is not a source failure, but a present failed Core is.
+  const sourceGreen=scope?.conclusion==='success' &&
+    (build?.conclusion==='success' || build?.conclusion==='skipped') &&
+    (core===undefined || core.conclusion==='success');
+  // Do not consume a deterministic ESLint source-writing slot for a verified
+  // specialist/policy failure. Independent Specialist checks still determine
+  // whether Product Repair is allowed; no result is treated as merge approval.
+  if(sourceGreen&&failed.some(job=>job.name==='hh-specialist') &&
+     failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
     return 'SPECIALIST_FAILED';
-  if (failed.every(job=>gateOnly.has(job.name)) &&
-      core?.conclusion==='success' &&
-      scope?.conclusion==='success' &&
-      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+  if(sourceGreen&&failed.every(job=>gateOnly.has(job.name)))
     return 'RELEASE_GATE_ONLY';
   // Aggregate gates report downstream consequences, not the causal step.
   // Treat setup/checkout failures as environment triage at any age; the
