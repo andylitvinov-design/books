@@ -572,7 +572,7 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
+  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.guarded\.outputs\.critical == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
