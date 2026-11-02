@@ -106,6 +106,11 @@ for (const engine of [chromium, webkit]) {
           const id = await selectedThumb.getAttribute("data-support-video");
           assert.match(id, /^[A-Za-z0-9_-]{11}$/, label + " verified selected video ID");
           await selectedThumb.click();
+          // Verify the real React state; WebKit can commit after click() resolves.
+          await page.waitForFunction(videoId=>{
+            const el=document.querySelector('[data-support-video="'+videoId+'"]');
+            return el?.getAttribute("aria-pressed")==="true";
+          },id,{timeout:12000});
           assert.equal(await selectedThumb.getAttribute("aria-pressed"), "true",
             label + " thumbnail changes the scenic player selection");
           assert.equal(await hero.locator("iframe").count(), 0, label + " no autoplay on thumbnail");

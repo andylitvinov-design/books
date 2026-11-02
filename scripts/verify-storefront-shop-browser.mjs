@@ -158,8 +158,9 @@ try {
         const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2)
         return hit===input
       },null,{timeout:10000})
-      // Actual touch input, not a DOM value assignment or forced click.
-      await consentInput.tap()
+      // Real iPhone touch and real desktop mouse: never synthetic consent.
+      if (width < 600) await consentInput.tap()
+      else await consentInput.click()
       await page.waitForFunction(() => {
         const input = document.querySelector(
           '[data-cart-contact-form] input[type="checkbox"][required]')

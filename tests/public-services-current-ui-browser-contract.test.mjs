@@ -45,6 +45,7 @@ test('checkout and Reiki acceptance preserve consent, data isolation and genuine
  assert.match(storefront,/__reactProps\$/)
  assert.match(storefront,/input\[type="checkbox"\]\[required\]/)
  assert.match(storefront,/consentInput\.tap\(\)/)
+  assert.match(storefront,/consentInput\.click\(\)/)
  assert.match(storefront,/consentInput\.isChecked\(\)/)
   assert.match(storefront,/phoneInput\.press\('Tab'\)/)
  assert.match(storefront,/submit\?\.disabled === false/)

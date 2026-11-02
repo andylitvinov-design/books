@@ -124,12 +124,23 @@ for (const engine of [chromium, webkit]) {
               results: (await finder.locator('#holistic-inline-results').innerText()).slice(0, 500), errors }));
             throw error;
           }
+          await page.waitForFunction(()=>{
+            const offers=[...document.querySelectorAll('#holistic-inline-results article')];
+            return offers.length===1&&offers[0].textContent.includes('Synthetic €20 consultation');
+          },null,{timeout:15000});
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
           await finder.locator("[data-support-search]").click();
           await finder.locator('#holistic-inline-results article')
             .filter({hasText:'Synthetic €100 consultation'}).waitFor({state:'visible'});
+          await page.waitForFunction(()=>{
+            const offers=[...document.querySelectorAll('#holistic-inline-results article')];
+            return offers.length===2 &&
+              offers.some(card=>card.textContent.includes('Synthetic €20 consultation')) &&
+              offers.some(card=>card.textContent.includes('Synthetic €100 consultation')) &&
+              offers.every(card=>!card.textContent.includes('Synthetic CAD consultation'));
+          },null,{timeout:15000});
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
@@ -139,6 +150,10 @@ for (const engine of [chromium, webkit]) {
           // retained until React starts its filtered directory fetch.
           await finder.locator('#holistic-inline-results article')
             .filter({hasText:'Synthetic free introduction'}).waitFor({state:'visible'});
+          await page.waitForFunction(()=>{
+            const offers=[...document.querySelectorAll('#holistic-inline-results article')];
+            return offers.length===1&&offers[0].textContent.includes('Synthetic free introduction');
+          },null,{timeout:15000});
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 
