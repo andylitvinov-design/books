@@ -3998,9 +3998,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
         <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording}>
-          <h2>{locale==="ru"?"Откройте новую себя":locale==="es"?"Descubre una nueva versión de ti":"Discover a new you"}</h2>
-          <p>{locale==="ru"?"Видео для вдохновения и внутренней опоры":
-            locale==="es"?"Vídeos para inspirarte y sentir apoyo":"Video for inspiration and inner support"}</p>
+          <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
+            {locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
+          </span>
+          <h2>{locale==="ru"?"Создавайте видео для поддержки, баланса и развития":
+            locale==="es"?"Crea vídeos para tu bienestar y crecimiento":
+            "Create videos for balance, support and growth"}</h2>
+          <p>{locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
+            locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
+            "Personal videos, meditations and practices for your goals."}</p>
         </div>
         <span className={videoStyles.heroDuration} aria-label={locale==="ru"?"Планируемая длительность":locale==="es"?"Duración prevista":"Planned duration"}>
           00:{String(duration).padStart(2,"0")}
@@ -4377,6 +4383,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onApply={applyAutoFilm} onCreate={createQuickVideo}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
+      <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts
+        data-workspace-section="video" aria-label={
+          locale==="ru"?"Другие способы создать практику":locale==="es"?"Otras formas de crear":"Other ways to create"}>
+        {(["meditation","ritual","course"] as const).map(kind=>{
+          const Icon=kind==="meditation"?Headphones:kind==="ritual"?Sparkles:Leaf;
+          const label=kind==="meditation"
+            ?(locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create a meditation")
+            :kind==="ritual"
+            ?(locale==="ru"?"Сформировать ритуал":locale==="es"?"Crear ritual":"Create a ritual")
+            :(locale==="ru"?"Курс из 8 практик":locale==="es"?"Curso de 8 prácticas":"8-practice course");
+          return <button type="button" key={kind} data-video-practice-shortcut={kind}
+            disabled={recording||preparing} onClick={()=>{
+              // Each destination uses the EXISTING guided course and its focus gate.
+              setActiveWorkspace("practices");setStudioMode("therapy");
+              setTherapyJumpRequested(false);setIntroPlaying(false);
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+                const target=kind==="meditation"?"[data-guided-meditation-step]":
+                  kind==="ritual"?"[data-guided-practice-step]":"[data-guided-programme-step]";
+                (document.querySelector(target)||document.querySelector("[data-video-therapy-focus]"))
+                  ?.scrollIntoView({behavior:"smooth",block:"start"});
+              }));
+            }}>
+            <Icon size={23} aria-hidden="true"/><span>{label}</span><ArrowRight size={19} aria-hidden="true"/>
+          </button>;
+        })}
+      </nav>
       {exportUnavailable && webkitRecoveryReason && !recording && !preparing ? (
         <button type="button" data-video-webkit-safe-retry
           className={videoStyles.audioDirectLink}
