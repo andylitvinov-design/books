@@ -27,6 +27,7 @@ export type LibraryFeedItem = {
   curation?: "verified" | "published";
   sourceGroup?: string;
   sourceLabel?: string;
+  durationVerifiedSeconds?: number;
   sourceApproved?: boolean;
   source_kind?: string;
   editorial_status?: string;
@@ -82,6 +83,7 @@ function dateLabel(date: string | undefined, locale: PublicLocale) {
 
 export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = false, timeline = false,
   preserveOrder = false, savedVideoIds = [], onToggleSaved, onDismissVideo,
+  videoLayout = "default",
   saveText = "Save", unsaveText = "Unsave", dismissText = "Not for me",
 }: {
   locale: PublicLocale;
@@ -90,6 +92,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
   guidesOnly?: boolean;
   timeline?: boolean;
   preserveOrder?: boolean;
+  videoLayout?: "default" | "mytube";
   savedVideoIds?: string[];
   onToggleSaved?: (id: string) => void;
   onDismissVideo?: (id: string) => void;
@@ -143,8 +146,9 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
     { id: "guide", label: copy.filterGuides },
   ] as const;
 
-  return <section className={[styles.feed, timeline && styles.timeline].filter(Boolean).join(" ")} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
-    <div className={styles.toolbar}>
+  return <section className={[styles.feed, timeline && styles.timeline, videoLayout === "mytube" && styles.mytubeFeed].filter(Boolean).join(" ")}
+    data-video-layout={videoLayout} aria-label={videosOnly ? copy.videos : guidesOnly ? copy.guides : copy.latest}>
+    {videoLayout !== "mytube" && <div className={styles.toolbar}>
       {!videosOnly && !guidesOnly && <div className={styles.filters} role="group" aria-label={copy.latest}>
         {filters.map(filter => <button type="button" key={filter.id}
           aria-pressed={kind === filter.id}
@@ -158,9 +162,9 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
         <input type="search" value={query} maxLength={100} placeholder={copy.searchPlaceholder}
           onChange={event => { setQuery(event.target.value); setLimit(8); setPlayingId(null); }} />
       </label>
-    </div>
+    </div>}
 
-    {videosOnly && seriesChoices.length > 0 ? (
+    {videoLayout !== "mytube" && videosOnly && seriesChoices.length > 0 ? (
       <div className={styles.seriesFilters} role="group" aria-label={copy.seriesTitle}>
         <strong>{copy.seriesTitle}</strong>
         <button type="button" aria-pressed={selectedSeries === "all"} onClick={() => {
@@ -201,14 +205,14 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
               <button type="button" className={styles.playButton} onClick={() => setPlayingId(item.id)}
                 aria-label={copy.watch + ": " + item.title}>
                 {poster ? <Image src={poster} alt="" fill unoptimized loading="lazy"
-                  sizes="(max-width: 640px) 120px, (max-width: 920px) 155px, 148px"
+                  sizes={videoLayout === "mytube" ? "(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw" : "(max-width: 640px) 120px, (max-width: 920px) 155px, 148px"}
                   className={styles.image} /> : <Film aria-hidden="true" />}
                 <span className={styles.playIcon}><Play size={17} fill="currentColor" aria-hidden="true" /></span>
               </button>
             ) : item.href ? (
               <Link className={styles.pictureLink} href={item.href} aria-label={item.title}>
                 {poster ? <Image src={poster} alt="" fill unoptimized loading="lazy"
-                  sizes="(max-width: 640px) 120px, (max-width: 920px) 155px, 148px"
+                  sizes={videoLayout === "mytube" ? "(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw" : "(max-width: 640px) 120px, (max-width: 920px) 155px, 148px"}
                   className={styles.image} /> : <BookOpen size={29} aria-hidden="true" />}
               </Link>
             ) : (
@@ -228,6 +232,16 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
                 {item.title}
               </button>
             ) : item.href ? <Link href={item.href}>{item.title}</Link> : item.title}</h2>
+            {videoLayout === "mytube" && (
+              <p className={styles.channelIdentity}>
+                <span className={styles.channelAvatar} aria-hidden="true">
+                  {(item.author || item.sourceLabel || "H").trim().charAt(0).toUpperCase()}
+                </span>
+                <span>{item.author || item.sourceLabel ||
+                  (locale === "ru" ? "Из видеотеки" : locale === "es" ? "De la biblioteca" : "From the library")}</span>
+                {item.audioLanguage && <small>{item.audioLanguage.toUpperCase()}</small>}
+              </p>
+            )}
             {item.description && <p className={styles.description}>{item.description}</p>}
             <div className={styles.actions}>
               {canPlay ? (

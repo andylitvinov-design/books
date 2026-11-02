@@ -2,7 +2,7 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-orders-clients.module.css'
 
@@ -218,7 +218,13 @@ export default function MessagesOrdersClients({locale='en',children}){
       <img src="/images/holistic-house/messenger-zen-stones.svg" alt="" aria-hidden="true"
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>}
-    <div className={styles.sections} role="tablist" aria-label={t.title}>
+    <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
+      <Link role="tab" aria-selected={false} className={styles.aiTab}
+        href={"/"+locale+"/holistic-support/mandala#video-director-chat"} prefetch={false}>
+        <Sparkles size={21} aria-hidden="true"/><span><strong>{
+          locale==="ru"?"ИИ":locale==="es"?"IA":"AI"
+        }</strong></span>
+      </Link>
       <button type="button" role="tab" aria-controls="hh-orders-panel" aria-selected={section==='orders'}
         onClick={()=>chooseSection('orders')}><ShoppingBag size={23} aria-hidden="true"/>
         <span><strong>{t.orders}</strong></span>

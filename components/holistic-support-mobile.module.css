@@ -1214,3 +1214,13 @@
   }
   .videoSection .videoCard > :is(img,span){pointer-events:none}
 }
+
+
+/* Practice replaces duplicate category menus with one real three-way entry.
+   Content selection keeps the existing practices / service pages and data. */
+.practiceTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 13px;min-width:0}
+.practiceTabs> :is(button,a){display:flex;align-items:center;justify-content:center;min-height:48px;min-width:0;padding:9px 7px;
+ border:1px solid #d9e8dc;border-radius:12px;background:#fffdf9;color:#315a47;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.practiceTabs>button[aria-pressed="true"]{background:#e4f5ea;color:#087b5b;border-color:#9acbb2}
+.practiceTabs> :is(button,a):focus-visible{outline:3px solid #168a65;outline-offset:2px}
+@media(max-width:350px){.practiceTabs{gap:5px}.practiceTabs> :is(button,a){min-height:44px;font-size:12px;padding-inline:3px}}

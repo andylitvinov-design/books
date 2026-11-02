@@ -764,6 +764,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
           </button>
         </header>
+        <nav className={styles.practiceTabs} data-support-practice-tabs
+          aria-label={locale==="ru"?"Практика: разделы":locale==="es"?"Secciones de práctica":"Practice sections"}>
+          <button type="button" aria-pressed={choice==="pump"||choice==="meditation"}
+            onClick={()=>{changeChoice("pump");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}
+          </button>
+          <button type="button" aria-pressed={choice==="consultation"}
+            onClick={()=>{changeChoice("consultation");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Услуги":locale==="es"?"Servicios":"Services"}
+          </button>
+          <Link href={"/"+locale+"/temple-insights"} prefetch={false}>
+            {locale==="ru"?"Идеи":locale==="es"?"Ideas":"Ideas"}
+          </Link>
+        </nav>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
