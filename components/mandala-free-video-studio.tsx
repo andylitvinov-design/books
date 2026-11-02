@@ -46,6 +46,8 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
+import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
@@ -1745,6 +1747,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [cinematicPlan,setCinematicPlan] = useState<CinematicStoryboard|null>(null);
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
+  const [goalTreeAudioScenarioId,setGoalTreeAudioScenarioId] = useState<string|null>(null);
   const [showAllFreeFilms,setShowAllFreeFilms] = useState(false);
   const [readyFreeFilmKey,setReadyFreeFilmKey] = useState("");
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
@@ -1880,7 +1883,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioTheme=audioThemeOverride||theme;
   // The existing 48 scenario packs each provide four original, distinct tracks.
   // Preserve the canonical scenario/classical collection in this compact UI.
-  const scenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
+  const goalTreeTracks=goalTreeAudioScenarioId?getGoalTreeAudioChoices(goalTreeAudioScenarioId):[];
+  const filmScenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
+  // The phrase catalog's explicit storyboard selection outranks the generic
+  // film preset recommendation. Every choice is a real, prebuilt first-party MP3.
+  const scenarioTracks=goalTreeTracks.length?goalTreeTracks:filmScenarioTracks;
   const matchingScenarioTracks=scenarioTracks.filter(track=>
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
@@ -1894,13 +1901,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
     (audioPace==="all"||track.pace===audioPace));
-  const audioMatches=[...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
-  const availableAudioTracks=[...scenarioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  const curatedMatches=recommendCuratedAudio({
+    theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
+    voiceFriendly:audioVoiceFriendly,
+  });
+  const audioMatches=[...matchingScenarioTracks,...curatedMatches,...baseAudioMatches,...classicMatches];
+  const availableAudioTracks=[...scenarioTracks,
+    ...filmScenarioTracks.filter(track=>!scenarioTracks.some(selected=>selected.id===track.id)),
+    ...curatedAudioTracks,...classicalAudioTracks,...mandalaAudioTracks];
   const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
     theme:audioTheme,kind:"melody",wish,
   })).slice(0,4);
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
+  const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
     ?attachedAudio.file.name:attachedAudio.kind==="presets"
       ?attachedAudio.ids.map(id=>availableAudioTracks.find(item=>item.id===id)?.name[locale]||id).join(" + ")
@@ -2966,6 +2980,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   /** Attach one of the scenario's real music files only with visitor auto-music enabled.
    * Manual silence/recordings take precedence and music preview never autoplays. */
   const selectScenarioMusic=(presetId:string)=>{
+    // A newly chosen executable film replaces an older editorial phrase path.
+    setGoalTreeAudioScenarioId(null);
     if(!audioAuto||uploadedAudio||micRecording)return;
     const track=scenarioAudioTracks(presetId)[0];
     if(!track)return;
@@ -3440,6 +3456,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.audioNowPlaying} data-video-audio-now>
             <span>{audioUi.now}</span>
             <strong>{uploadedAudio?uploadedAudio.file.name:selectedAudio?.name[locale]||ui.noMusic}</strong>
+            {reviewedRecording&&!uploadedAudio ? <small data-reviewed-music-license>
+              {locale==="ru"?"Запись по лицензии":locale==="es"?"Grabación licenciada":"Licensed recording"}: {reviewedRecording.rights.license} · {reviewedRecording.rights.creator} / {reviewedRecording.rights.performer}
+              {" · "}<a href={reviewedRecording.rights.sourcePage} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Источник":locale==="es"?"Fuente":"Source"}
+              </a>{" · "}<a href={reviewedRecording.rights.licenseUrl} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Лицензия":locale==="es"?"Licencia":"License"}
+              </a>
+            </small> : null}
             <button type="button" data-video-music="none" onClick={()=>{setAudioAuto(false);chooseMusic("none");}}
               aria-pressed={!uploadedAudio&&music==="none"}>{ui.noMusic}</button>
           </div>
@@ -3543,7 +3567,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // or invalidate its generated voice before explicit approval.
             setCatalogPhraseDraft(phrase);
           }}
-          onOpenAudio={()=>{
+          onOpenAudio={scenarioId=>{
+            setGoalTreeAudioScenarioId(scenarioId);
+            // Auto-assigned film music must not remain attached after choosing
+            // another story; keep manually selected recordings and silence.
+            if(audioAuto&&!uploadedAudio&&!micRecording){
+              setAttachedAudio(null);
+              setSamplePreviewId(null);
+            }
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
