@@ -342,13 +342,16 @@ jobs:
               vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
             const outcomes=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-release-outcomes.cjs');
-            await outcomes.run({github,core,context,liveEvidence,
+            const outcomesReport=await outcomes.run({github,core,context,liveEvidence,
               reportPath:process.env.HH_PR_METRICS_PATH||''});
-            // No second Vercel check, no additional workflow or runner.
-            // This only records proof already certified by the read-only verifier.
+            // The outcome observer already verified an older served revision
+            // when production HEAD raced ahead of the canonical Vercel alias.
+            // Reuse that proof for the historical PR receipt; no second Vercel
+            // check, no additional workflow and no browser runner.
             const receipts=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-release-kpi.cjs');
-            await receipts.run({github,core,context,liveReport:liveEvidence});
+            await receipts.run({github,core,context,
+              liveReport:outcomesReport.receipt_candidate||liveEvidence});
 
       # Persist read-only outcome snapshots to compare throughput week over week.
       # A missing metrics file is explicit PARTIAL coverage, never a false LIVE.
