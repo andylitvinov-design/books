@@ -4456,6 +4456,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }
           });
         }}
+        onOmitMeditation={()=>{
+          if(courseMeditationDraft){
+            setCourseMeditationDraft("");
+            setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
+          }
+          const details=document.querySelector("[data-video-therapy-meditation-audio]");
+          if(details instanceof HTMLDetailsElement)details.open=false;
+        }}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
           // This is preparation, NOT a render or a claimed downloadable video.

@@ -19,6 +19,7 @@ export type GuidedMeditationFocus = {
 type Props = {
   onContextChange?: (focus:GuidedMeditationFocus)=>void;
   onAddMeditation?: (script:string)=>void;
+  onOmitMeditation?: ()=>void;
   locale:PublicLocale; theme:VideoTheme; selfRatings:Partial<Record<VideoTheme,number>>;
   disabled:boolean; onApplyFreeVideo:(session:Session)=>void;
 };
@@ -39,7 +40,7 @@ const copy = {
     listen:"Listen to script on this device",stop:"Stop reading",script:"Text + voice script",download:"Save free script",
     spoken:"Device read-aloud is a preview, not a downloadable narrated audio file.",
     package:"Full 8-session package",packInfo:"8 reviewed storyboards, scripts, narrated audio meditations and 8 videos — available only after practitioner approval, confirmed payment and actual delivery. The remaining seven are previews, not unlocked purchases.",
-    request:"Discuss the full package",locked:"Review and verified access needed",
+    request:"Request the course",locked:"Review and verified access needed",
     safeguard:"Pause or skip any image that feels uncomfortable. Do not use this for trauma exposure, crisis care or diagnosis. A qualified practitioner must review any clinical treatment plan.",
     privacy:"Private: no upload, third-party AI, CRM, marketing tags or persistent browser storage. Closing the page clears the profile preview.",
     focusLabel:"YOUR PERSONAL FOCUS",focusHeading:"What matters most to you now?",
@@ -67,7 +68,7 @@ const copy = {
     listen:"Прослушать текст на устройстве",stop:"Остановить озвучку",script:"Текст и сценарий медитации",download:"Скачать текст №1",
     spoken:"Озвучивание устройством — превью, это ещё не скачиваемый аудиофайл с голосом.",
     package:"Полный пакет из 8 сессий",packInfo:"8 проверенных сюжетов, тексты, озвученные аудиомедитации и 8 видео — после проверки специалистом, подтверждённой оплаты и фактической доставки. Остальные 7 пока только анонс.",
-    request:"Обсудить полный пакет",locked:"После проверки и подтверждения доступа",
+    request:"Заказать курс",locked:"После проверки и подтверждения доступа",
     safeguard:"Если образ неприятен — остановитесь или пропустите. Программа не предназначена для работы с травмой, кризисом или диагностики. Клиническую программу проверяет специалист.",
     privacy:"Приватно: нет загрузки в сторонний ИИ, CRM, рекламные системы или постоянное хранилище браузера. При закрытии страницы данные исчезают.",
     focusLabel:"ЛИЧНЫЙ ФОКУС",focusHeading:"Что для вас важно сейчас?",
@@ -95,7 +96,7 @@ const copy = {
     listen:"Escuchar guion en este dispositivo",stop:"Detener audio",script:"Texto y guion",download:"Descargar guion gratis",
     spoken:"La voz del dispositivo es una vista previa, no un archivo de narración descargable.",
     package:"Paquete completo de 8 sesiones",packInfo:"8 guiones revisados, textos, meditaciones narradas y 8 vídeos, solo tras revisión profesional, pago confirmado y entrega real. Los 7 restantes son avances.",
-    request:"Consultar el paquete",locked:"Requiere revisión y acceso confirmado",
+    request:"Solicitar el curso",locked:"Requiere revisión y acceso confirmado",
     safeguard:"Detente o salta cualquier imagen incómoda. No es para exposición a traumas, crisis ni diagnósticos. Un profesional debe revisar los planes clínicos.",
     privacy:"Privado: sin envío a IA externa, CRM, anuncios ni almacenamiento permanente. Los datos desaparecen al cerrar.",
     focusLabel:"TU ENFOQUE PERSONAL",focusHeading:"¿Qué es importante para ti ahora?",
@@ -173,7 +174,7 @@ const stateOptions = [
 ] as const;
 type PracticeKind = "ritual" | "exercise" | "daily";
 
-export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange,onAddMeditation}:Props) {
+export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange,onAddMeditation,onOmitMeditation}:Props) {
   const t = copy[locale];
   const f = flowCopy[locale];
   const [focusMode,setFocusMode] = useState<"state"|"vector">("state");
@@ -207,9 +208,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }),[locale,theme,goals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailGoals]);
   const sessions = plan.sessions as Session[];
   const firstScript = sessions[0]?.script || "";
+  const resetGeneratedMeditation=()=>{
+    if(meditationChoice==="include")onOmitMeditation?.();
+    setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
+  };
   const selectState=(id:string,goalTheme:VideoTheme)=>{
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
-    setKeyDifficulty("");setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
+    setKeyDifficulty("");resetGeneratedMeditation();
   };
   useEffect(()=>()=>{profileRequestRef.current++;if(typeof window!=="undefined")window.speechSynthesis?.cancel();},[]);
   const toggleGoal=(goal:VideoTheme)=>{
@@ -298,9 +303,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       <div className={css.flowTitle}><span>01</span><Target size={23} aria-hidden="true"/><h4>{f.focus}</h4></div>
       <div className={css.focusSwitch} role="group" aria-label={f.focus}>
         <button type="button" aria-pressed={focusMode==="state"} disabled={disabled}
-          onClick={()=>setFocusMode("state")}><Heart size={20} aria-hidden="true"/>{f.state}</button>
+          onClick={()=>{setFocusMode("state");resetGeneratedMeditation();}}><Heart size={20} aria-hidden="true"/>{f.state}</button>
         <button type="button" aria-pressed={focusMode==="vector"} disabled={disabled}
-          onClick={()=>setFocusMode("vector")}><Target size={20} aria-hidden="true"/>{f.vector}</button>
+          onClick={()=>{setFocusMode("vector");resetGeneratedMeditation();}}><Target size={20} aria-hidden="true"/>{f.vector}</button>
       </div>
       {focusMode==="state"?<div className={css.stateGrid} role="group" aria-label={f.state}>
         {stateOptions.map(({id,theme:goalTheme,Icon})=><button key={id} type="button" disabled={disabled}
@@ -314,13 +319,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
           <span>{t.difficultyLabel}</span>
           <textarea id="therapy-key-difficulty" rows={2} maxLength={140}
             data-video-key-difficulty value={keyDifficulty} placeholder={t.difficultyPlaceholder}
-            disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);setSelectedState(null);}}/>
+            disabled={disabled} onChange={event=>{setKeyDifficulty(event.currentTarget.value);setSelectedState(null);resetGeneratedMeditation();}}/>
         </label>
         <label htmlFor="therapy-key-goal">
           <span>{t.goalLabel}</span>
           <textarea id="therapy-key-goal" rows={2} maxLength={140}
             data-video-key-goal value={keyGoal} placeholder={t.goalPlaceholder}
-            disabled={disabled} onChange={event=>{setKeyGoal(event.currentTarget.value);setSelectedState(null);}}/>
+            disabled={disabled} onChange={event=>{setKeyGoal(event.currentTarget.value);setSelectedState(null);resetGeneratedMeditation();}}/>
         </label>
       </div>}
       <p className={css.focusHint}>{focusMode==="state"?f.stateHint:f.vectorHint}</p>
@@ -406,7 +411,7 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
               setMeditationChoice("include");onAddMeditation?.(firstScript);
             }}><Play size={18} aria-hidden="true"/>{f.include}</button>
           <button type="button" disabled={disabled} data-guided-skip-meditation
-            aria-pressed={meditationChoice==="omit"} onClick={()=>setMeditationChoice("omit")}>{f.omit}</button>
+            aria-pressed={meditationChoice==="omit"} onClick={()=>{setMeditationChoice("omit");onOmitMeditation?.();}}>{f.omit}</button>
         </div>
         <small role="status">{meditationChoice==="include"?f.included:meditationChoice==="omit"?f.omitted:f.local}</small>
       </div>:null}
@@ -483,6 +488,9 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
       <div className={css.package}>
         <h4>{t.package}</h4><p>{t.packInfo}</p>
         <Link href={"/"+locale+"/services/imagery-therapy"} prefetch={false}>{t.request}</Link>
+        <small className={css.enquiryNote}>{locale==="ru"?"Откроется заявка на обсуждение курса. Оплата и создание видео не запускаются.":
+          locale==="es"?"Se abre una consulta sobre el curso, sin pago ni creación automática de vídeos.":
+          "Opens a course enquiry, not a payment or automatic video production."}</small>
       </div>
       <p className={css.safeguard} role="note">{t.safeguard}</p>
     </div>:null}

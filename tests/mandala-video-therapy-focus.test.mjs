@@ -75,3 +75,29 @@ test("focus is bounded and source verified test claims remain absent by default"
   assert.match(source,/if\(consent && !\["ready","empty"\]\.includes\(profileStatus\)\)void loadPrivateProfile\(\)/);
   assert.match(source,/if\(!consent \|\| disabled/);
 });
+
+test("approved courses & practices mobile flow preserves consent and reverses meditation inclusion",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const guided=read("components/mandala-guided-course.tsx");
+  const meditation=read("components/mandala-personal-meditation.tsx");
+  const styles=read("components/mandala-guided-course.module.css");
+  for(const locale of ["ru","en","es"]){
+    assert.match(guided,new RegExp(`\\b${locale}:\\s*\\{`));
+  }
+  for(const marker of ["data-guided-focus-state","data-guided-generate-meditation",
+    "data-guided-add-meditation","data-guided-skip-meditation",
+    "data-guided-practice-step","data-guided-programme-step",
+    "data-guided-create-plan","data-guided-free-video"]){
+    assert.ok(guided.includes(marker),`real interaction exists: ${marker}`);
+  }
+  assert.match(guided,/onOmitMeditation\\?\\.\\(\\)/,"skip must call the parent");
+  assert.match(guided,/resetGeneratedMeditation/,"changing focus invalidates stale script");
+  assert.match(studio,/onOmitMeditation=\\{\\(\\)=>\\{/);
+  assert.match(studio,/setCourseMeditationDraft\\(""\\)/);
+  assert.match(studio,/current\\?\\.kind==="file"&&current\\.nonLoop\\?null:current/);
+  assert.match(studio,/data-video-therapy-meditation-audio/);
+  assert.match(meditation,/seedScript/);
+  assert.match(meditation,/current===previousSeed\\?"":current/);
+  assert.match(styles,/\\.sessionList\\{display:grid;grid-template-columns:1fr;grid-auto-flow:row/);
+  assert.match(studio,/services\\/imagery-therapy|MandalaGuidedCourse/);
+});

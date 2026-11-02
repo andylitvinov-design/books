@@ -190,7 +190,16 @@ export function MandalaPersonalMeditation({
     focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra,technique,attention,depth,ending,moment]);
   const stale=Boolean(script&&generatedFor!==signature);
   useEffect(()=>{
-    if(!seedScript || seededScriptRef.current===seedScript)return;
+    if(!seedScript){
+      const previousSeed=seededScriptRef.current;
+      if(previousSeed){
+        seededScriptRef.current="";
+        setScript(current=>current===previousSeed?"":current);
+        setGeneratedFor("");
+      }
+      return;
+    }
+    if(seededScriptRef.current===seedScript)return;
     seededScriptRef.current=seedScript;
     setScript(seedScript);setGeneratedFor(signature);setNotice("");
     setCourseDays([]);setCourseFocus(null);
