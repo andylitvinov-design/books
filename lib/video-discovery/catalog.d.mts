@@ -1,0 +1,20 @@
+export type PublicDiscoveryVideo={
+ id:string;
+ kind:"video";
+ youtubeId:string;
+ title:string;
+ description?:string;
+ href?:string;
+ audioLanguage?:"en"|"ru"|"es";
+ lifeAreas?:string[];
+ topicTags?:string[];
+ contentType?:string|null;
+ directions?:string[];
+ traditions?:string[];
+ sourceLabel?:string;
+ sourceGroup?:string;
+ curation?:"verified"|"published";
+ provenance?:string[];
+};
+export declare function buildPublishedVideoIndex<T extends PublicDiscoveryVideo>(items:readonly T[]):T[];
+export declare function relatedPublishedVideos<T extends PublicDiscoveryVideo>(active:T,items:readonly T[],limit?:number):T[];
