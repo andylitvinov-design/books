@@ -1,12 +1,12 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
-const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
-const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
+const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=85, MIN_RATE=100;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
@@ -60,6 +60,15 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
+ // During conflict-only backlogs, rotate a bounded window rather than reread
+ // the same 16 already handed-off exact HEADs on each ten-minute cycle.
+ if(!source.length&&!ci){
+  const conflicts=ranked.filter(pr=>laneOf(pr)==='conflict');
+  const room=Math.min(MAX_CONFLICT_ONLY_INSPECT,conflicts.length);
+  const offset=conflicts.length?(Math.floor(now/600000)*room)%conflicts.length:0;
+  return Array.from({length:room},(_,i)=>conflicts[(offset+i)%conflicts.length])
+   .map(pr=>taskFor(pr,priorityFor(pr,now)));
+ }
  const picked=[],chosen=new Set();
  const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
  if(fairnessTurn)add(conflict);
@@ -83,7 +92,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
-  specialistReclassified:0,wouldSpecialistReclassify:0,capacityReason:null,blocked:{},
+  specialistReclassified:0,wouldSpecialistReclassify:0,
+  definitiveDispatchRejections:0,repairDispatchAccepted:0,
+  actionableByLane:{repair:0,ci:0,conflict:0},
+  capacityReason:null,blocked:{},
   workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  const blocked=reason=>{summary.blocked[reason]=(summary.blocked[reason]||0)+1;};
@@ -116,6 +128,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  summary.production=production.length;
  const candidates=planCandidates(production,now);
  summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
+ for(const pr of production){
+  const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
+ }
  summary.candidates=candidates.length;
  if(!candidates.length){summary.reason='NO_ACTIONABLE_PR';return finish();}
  // Metadata-only handoffs survive runner saturation or unknown inventory.
@@ -131,8 +146,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
  const usedWorkers=new Set();
- const ordered=[...candidates.filter(t=>t?.lane==='conflict'),
-  ...candidates.filter(t=>t?.lane!=='conflict')];
+ // Preserve the source/CI-first plan. Conflict receipts are not code writes.
+ const ordered=candidates;
  for(const task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
   if(!task){blocked('UNCLASSIFIED');continue;}
@@ -320,17 +335,40 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
    summary.dispatchAccepted++;
+   if(task.lane==='repair')summary.repairDispatchAccepted++;
    summary.workerRuns.push({task_key:task.task_key,pr_number:task.pr_number,
-    head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED'});
+    head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
+    sourceCommitConfirmed:false});
    usedWorkers.add(worker);
    log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
-  }catch(err){blocked('DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);}
+  }catch(err){
+   blocked('DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
+   // Never release an ambiguous reservation. A definite non-accepted HTTP
+   // response can be requeued after an authenticated ten-minute backoff.
+   const code=Number(err?.status||err?.response?.status||0);
+   if(DEFINITIVE_DISPATCH_DENIAL.has(code)){
+    const rejected={...claim,state:'DISPATCH_REJECTED',
+     created_at:new Date(now+1000).toISOString(),
+     outcome:'DEFINITIVELY_NOT_ACCEPTED',http_status:code,
+     retry_after:new Date(now+10*60_000).toISOString()};
+    try{
+     await limited('record-definitive-dispatch-denial',()=>github.rest.issues.createComment({
+      owner,repo,issue_number:task.pr_number,body:commentBody(rejected)
+     }));
+     summary.definitiveDispatchRejections++;
+    }catch(error){
+     blocked('DISPATCH_REJECTION_RECEIPT_FAILED');
+     log('Denial receipt missing #'+task.pr_number+' '+error.message);
+    }
+   }
+  }
  }
  summary.reason||=summary.dispatchAccepted?'DISPATCH_ACCEPTED':
    summary.manualConflictHandoffs?'CONFLICT_HANDOFF_ACCEPTED':
    summary.wouldDispatch?'DRY_RUN_CANDIDATES':
    summary.wouldManualConflictHandoffs?'DRY_RUN_CONFLICT_HANDOFF':
-   capacityReason||'NO_SAFE_DISPATCH';
+   capacityReason||(summary.actionableByLane.repair===0&&summary.actionableByLane.ci===0
+    ?'AWAITING_SEMANTIC_CONFLICT_REPAIR':'NO_SAFE_DISPATCH');
  return finish();
 }
 /**
