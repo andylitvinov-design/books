@@ -171,33 +171,35 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   assert.ok(calls[6][0].includes('/contents/.github/workflows/hh-pr-core-release.yml?ref=' + OLD)); assert.equal(calls[6][1], 'GET');
 });
 
-test('privileged PR janitor checks out protected production, never PR HEAD',()=>{
-  const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
-  assert.ok(yaml.includes('pull_request_target:'));
-  assert.ok(yaml.includes('types: [synchronize]'));
-  assert.ok(yaml.includes('permissions: {}'));
-  assert.ok(yaml.includes('actions: write'));
-  assert.ok(yaml.includes('pull-requests: read'));
-  assert.ok(yaml.includes('ref: ${{ github.sha }}'));
-  assert.ok(yaml.includes('ref: codex/public-book-library'));
-  assert.ok(!yaml.includes('ref: ${{ github.event.pull_request.head.sha'));
-  assert.ok(yaml.includes('  pull_request:'));
-  assert.ok(yaml.includes("if: github.event_name == 'pull_request'"));
-  assert.ok(yaml.includes("github.event_name == 'push'"));
+test('trusted PR-target janitor is separate from strict two-job read-only PR specialist',()=>{
+  const original=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  const target=readFileSync('.github/workflows/hh-ci-prune-stale-head.yml','utf8');
+  assert.ok(original.includes('  pull_request:'));
+  assert.ok(original.includes("if: github.event_name == 'pull_request'"));
+  assert.ok(original.includes("github.event_name == 'push'"));
+  assert.ok(!original.includes('  pull_request_target:'));
+  assert.ok(!original.includes('  prune-head:'));
+  assert.ok(target.includes('  pull_request_target:'));
+  assert.ok(target.includes('types: [synchronize]'));
+  assert.ok(target.includes('permissions: {}'));
+  assert.ok(target.includes('actions: write'));
+  assert.ok(target.includes('pull-requests: read'));
+  assert.ok(target.includes('ref: codex/public-book-library'));
+  assert.ok(target.includes('persist-credentials: false'));
+  assert.ok(!target.includes("ref: ${{ github.event.pull_request.head.sha"));
+  assert.ok(!target.includes('  pull_request:'));
 });
-
-test('cleanup concurrency isolates PRs and never cancels production push runs', () => {
-  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
-  assert.ok(yaml.includes("group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}"));
-  // Event groups cannot collide: read-only PR policy and privileged
-  // trusted PR-target janitor must never cancel each other's runs.
-  assert.ok(yaml.includes("cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}"));
-  assert.ok(yaml.includes("github.event_name == 'push' && 'production'"));
-  assert.ok(yaml.includes("format('{0}-pr-{1}', github.event_name, github.event.pull_request.number)"));
-  assert.match(yaml, /HH_CI_PRUNE_LIMIT: '300'/);
+test('PR-target cancellation is isolated from two-job PR specialist and production push',()=>{
+  const source=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  const target=readFileSync('.github/workflows/hh-ci-prune-stale-head.yml','utf8');
+  assert.ok(source.includes("group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}"));
+  assert.ok(source.includes("cancel-in-progress: false"));
+  assert.ok(source.includes("github.event_name == 'push' && 'production'"));
+  assert.match(source,/HH_CI_PRUNE_LIMIT: '300'/);
+  assert.ok(target.includes("group: hh-ci-prune-head-${{ github.event.pull_request.number || github.run_id }}"));
+  assert.ok(target.includes("cancel-in-progress: true"));
+  assert.ok(target.includes("HH_CI_PRUNE_LIMIT: '60'"));
 });
-
-
 test('different run SHA is only an ancestry candidate; missing linked SHA fails closed', () => {
   assert.equal(eligible(run({ head_sha: NEW }), pr(), ctx), false);
   const linked = sha => ({ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha } });
@@ -257,7 +259,8 @@ test('optional conflict grouping cannot falsely fail a successful protected CI p
  assert.match(diag,/timeout-minutes: 2/);
  assert.match(diag,/steps\.conflict_diagnostic\.outcome == 'failure'/);
  assert.match(diag,/Conflict grouping: PARTIAL/);
- assert.ok(yaml.includes('pull_request_target:'));
+ assert.ok(!yaml.includes('  pull_request_target:'));
+ assert.ok(readFileSync('.github/workflows/hh-ci-prune-stale-head.yml','utf8').includes('  pull_request_target:'));
 });
 
 test('a trusted PR synchronize must match exact previous and new same-repo HEADs', () => {
@@ -322,15 +325,17 @@ test('a moved head or non-ancestor history blocks cancellation even during synch
   assert.equal(cancelled, 0);
 });
 
-test('trusted cleanup workflow never checks out PR source with elevated token', () => {
-  const source = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs Core contracts',()=>{
+  const source=readFileSync('.github/workflows/hh-ci-prune-stale-head.yml','utf8');
+  const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
   assert.ok(source.includes('types: [synchronize]'));
   assert.ok(source.includes('ref: codex/public-book-library'));
-  assert.ok(source.includes("cancel-in-progress: " + "${{ github.event_name == 'pull_request_target' }}"));
-  assert.ok(!source.includes("ref: " + "${{ github.event.pull_request.head.sha"));
+  assert.ok(source.includes("cancel-in-progress: true"));
+  assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
+  assert.ok(core.includes('scripts/ci-prune-stale-runs.mjs|'));
+  assert.ok(core.includes('tests/ci-prune-stale-runs.test.mjs|'));
 });
-
 test('Core concurrency is stable for a PR, isolated for manual and merge_group', () => {
   const source = readFileSync('.github/workflows/hh-pr-core-release.yml', 'utf8');
   assert.ok(source.includes('group: hh-pr-core-' +

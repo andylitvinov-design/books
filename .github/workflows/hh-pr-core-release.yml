@@ -131,6 +131,8 @@ jobs:
                   docs/operations/CI_RELEASE_POLICY.md|\
                   lib/ci/pr-sweep-guard.mjs|\
                   scripts/ci-quick-route.mjs|\
+                  scripts/ci-prune-stale-runs.mjs|\
+                  tests/ci-prune-stale-runs.test.mjs|\
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
                   scripts/ci-pr-readiness.mjs|\
