@@ -65,6 +65,10 @@
 .extraGoals{border:0;margin:0;font-size:11px;color:#3b7861}
 .extraGoals summary{min-height:24px;cursor:pointer;display:inline-flex;align-items:center}
 .extraGoals[open] .goalChoices{margin-top:5px}
+/* The six goals remain selectable, but only the primary four belong to the
+   compact first screen. Author CSS grid must not override the browser's
+   closed-<details> hiding rule in Chromium or WebKit. */
+.extraGoals:not([open]) > .goalChoices{display:none}
 .goalPanel .entry{display:block;margin-top:0;min-width:0}
 .goalPanel .goal{display:block;min-width:0;margin:0}
 .goalPanel .notice{margin:0 0 4px;font-size:11px}

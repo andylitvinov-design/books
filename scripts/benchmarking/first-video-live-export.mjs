@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * On-demand, unauthenticated first-party LIVE video export acceptance.
- * Real browser → real Canvas/MediaRecorder → real downloaded bytes → ffprobe,
+ * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → download → ffprobe,
  * decoded audio and moving pixels. Never uses personal media, an AI API or POST.
- * This is desktop Chromium at a mobile viewport, NOT physical iPhone Safari.
+ * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
@@ -24,8 +24,14 @@ if (!driver || !driver.startsWith('/') ||
   throw new Error('LIVE_VIDEO_SMOKE_CONFIG_UNSAFE');
 }
 const ORIGIN=source;
-const {chromium} = await import(driver);
-const row = {target: ORIGIN, engine: 'chromium', viewport: '390x844',
+const engine=process.env.HH_LIVE_VIDEO_ENGINE||'chromium';
+if(!['chromium','webkit'].includes(engine))throw new Error('LIVE_VIDEO_ENGINE_INVALID');
+const headed=process.env.HH_LIVE_VIDEO_HEADED==='1';
+if(engine==='webkit' && (source!==LOCAL_ORIGIN || !requireLicensed || process.platform!=='darwin' || !headed))
+  throw new Error('LIVE_VIDEO_WEBKIT_REQUIRES_LOCAL_HEADED_MACOS');
+if(engine!=='webkit' && headed)throw new Error('LIVE_VIDEO_HEADED_REQUIRES_WEBKIT');
+const {chromium,webkit} = await import(driver);
+const row = {target: ORIGIN, engine, viewport: '390x844',
   origin: source===LIVE_ORIGIN?'anonymous-public':'anonymous-local', method: 'local-canvas-export',
   paidVideoProviderUsed: false, aiPromptRequested: false,
   physicalIPhoneVerified: false, licensedShotVerificationRequested: requireLicensed,
@@ -86,7 +92,9 @@ async function downloadBytes(download) {
 let browser;
 let mediaDir;
 try {
-  browser = await chromium.launch({headless: true, channel: 'chrome'});
+  browser=engine==='webkit'
+    ?await webkit.launch({headless:!headed})
+    :await chromium.launch({headless:true,channel:'chrome'});
   const context = await browser.newContext({
     viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true,
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
