@@ -622,3 +622,13 @@ test('push-triggered conflict scans rotate within the same hour',()=>{
  const rows=Array.from({length:210},(_,number)=>({number:number+1}));
  assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
 });
+
+
+test('live GraphQL conflict inventory is manual-only; protected PR guard remains source-deterministic',()=>{
+  const yaml=readFileSync('.github/workflows/hh-pr-sweep-guard.yml','utf8');
+  assert.match(yaml,/^  pull_request:/m);
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.match(yaml,/- name: Probe real conflict inventory with a read-only token\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(yaml,/node scripts\/pr-sweep-guard\.mjs route-conflicts "\$GITHUB_REPOSITORY"/);
+  assert.match(yaml,/node --test tests\/pr-sweep-guard\.test\.mjs/);
+});
