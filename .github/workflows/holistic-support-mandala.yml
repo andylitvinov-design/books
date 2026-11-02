@@ -28,6 +28,7 @@ on:
       - 'lib/mandala/video-chat-tree.mjs'
       - 'lib/mandala/video-chat-tree.d.mts'
       - 'tests/video-chat-tree.test.mjs'
+      - 'docs/videos/VIDEO_CHAT_TREE_ENGINE_20261101.md'
       - 'tests/first-video-director.test.mjs'
       - 'tests/first-video-licensed-render.test.mjs'
       - 'scripts/video-catalog-probe.mjs'

@@ -744,6 +744,29 @@ test('impact planner preserves sensitive required browser acceptance while low-r
   assert.doesNotMatch(yml,/continue-on-error:\s*true/);
 });
 
+test('new Video Director goal-tree metadata is owned by required Mandala, not checkout E2E',()=>{
+  const mandala=workflow('holistic-support-mandala.yml');
+  const planner=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
+  const group=planner.slice(planner.indexOf('const MANDALA_REVIEWED_ADDITIONS'),
+    planner.indexOf('const REVIEWED_GUEST_REPLY_PATHS'));
+  const safe=[
+    'lib/mandala/video-chat-tree.mjs',
+    'lib/mandala/video-chat-tree.d.mts',
+    'tests/video-chat-tree.test.mjs',
+    'docs/videos/VIDEO_CHAT_TREE_ENGINE_20261101.md',
+  ];
+  for(const path of safe){
+    assert.ok(group.includes("'"+path+"'"),'reviewed addition not scoped: '+path);
+    assert.ok(mandala.includes("'"+path+"'"),'required Mandala owner missing: '+path);
+  }
+  assert.equal(planPublicServicesChangedPaths(safe).mode,'contracts');
+  for(const unsafe of [
+    'app/api/payments/checkout/route.js',
+    'app/api/holistic-support/unsafe-video-render/route.js',
+    'components/mandala-client-profile.tsx',
+  ])assert.equal(planPublicServicesChangedPaths([...safe,unsafe]).mode,'full');
+});
+
 test('independent Site Video CI orchestration never triggers unrelated thirteen-case public checkout E2E',()=>{
   const files=[
     '.github/workflows/site-video-browser.yml',

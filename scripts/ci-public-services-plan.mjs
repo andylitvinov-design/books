@@ -220,6 +220,13 @@ const MANDALA_REVIEWED_ADDITIONS = new Set([
   // Fail closed for all other new routes, source and tests.
   'lib/mandala/video-chat-understanding.mjs',
   'tests/video-chat-understanding.test.mjs',
+  // Exactly these four safe, read-only goal-tree additions, independently
+  // verified by mandatory Mandala locale/data/phrase contracts and Core build.
+  // Not a blanket exemption for new APIs, storage, accounts, billing or code.
+  'lib/mandala/video-chat-tree.mjs',
+  'lib/mandala/video-chat-tree.d.mts',
+  'tests/video-chat-tree.test.mjs',
+  'docs/videos/VIDEO_CHAT_TREE_ENGINE_20261101.md',
   // The exact reviewed 2970 addition set. The read-only GET is same-origin,
   // bounded to known taxonomy IDs, and falls back to audited bundled copy.
   // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
