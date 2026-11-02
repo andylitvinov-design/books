@@ -636,3 +636,22 @@ test('push-triggered conflict scans rotate within the same hour',()=>{
  const rows=Array.from({length:210},(_,number)=>({number:number+1}));
  assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
 });
+
+
+test('unified required gate works without stale legacy and refuses unknown policy',()=>{
+  const required=[{type:'required_status_checks',parameters:{required_status_checks:[{context:'hh-merge-check',integration_id:15368}]}}];
+  assert.equal(requiredGateApp(required),15368);
+  const unified=[{id:20,name:'hh-merge-check',status:'completed',conclusion:'success',head_sha:sha('a'),app:{id:15368},started_at:'2026-11-01T14:00:00Z'}];
+  assert.equal(assessRequiredGate({head:sha('a'),appId:15368,checks:unified,total:1,context:'hh-merge-check'}).state,'SUCCESS');
+  assert.equal(assessRequiredGate({head:sha('a'),appId:15368,checks:unified,total:1}).state,'UNKNOWN');
+  assert.equal(assessRequiredGate({head:sha('a'),appId:15368,checks:[{...unified[0],conclusion:'failure'}],total:1,context:'hh-merge-check'}).state,'FAILED');
+  assert.deepEqual(requiredCoreChecks({baseHasCore:true,paths:['docs/a.md'],requiredContexts:['hh-merge-check']}),['hh-merge-check']);
+  assert.deepEqual(requiredCoreChecks({baseHasCore:false,paths:['docs/a.md'],requiredContexts:['hh-merge-check']}),[]);
+  assert.throws(()=>requiredCoreChecks({baseHasCore:true,requiredContexts:[]}),/CORE_GATE_PROTECTION_UNKNOWN/);
+  assert.throws(()=>requiredCoreChecks({baseHasCore:true,requiredContexts:['hh-core-verified']}),/CORE_GATE_PROTECTION_UNKNOWN/);
+  const verified=analyzeCI({pr:pr(),paths:['docs/a.md'],required:['hh-merge-check'],checks:[check('hh-merge-check')]});
+  assert.equal(verified.ci_ready,true);
+  const missing=analyzeCI({pr:pr(),paths:['docs/a.md'],required:['hh-merge-check'],checks:[check('release-ready')]});
+  assert.equal(missing.ci_ready,false);
+  assert.ok(missing.blockers.includes('MISSING:hh-merge-check'));
+});
