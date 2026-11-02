@@ -54,7 +54,12 @@ test('production post-merge push and explicit manual verification are not disabl
 test('short CI contract tests run even when expensive browser gates are draft-skipped', () => {
   const guard = read('hh-pr-sweep-guard.yml');
   assert.match(guard, /tests\/ci-heavy-draft-policy\.test\.mjs/);
-  assert.match(guard, /node --test tests\/pr-sweep-guard\.test\.mjs tests\/ci-heavy-draft-policy\.test\.mjs/);
+  const command = guard.match(/^\s*-\s*run: node --test ([^\n]+)/m)?.[1];
+  assert.ok(command, 'fast Guard must execute its own unit command');
+  for (const name of ['tests/pr-sweep-guard.test.mjs', 'tests/required-gate-policy.test.mjs',
+    'tests/ci-heavy-draft-policy.test.mjs']) {
+    assert.ok(command.split(/\s+/).includes(name), name+' must execute in Guard CI');
+  }
   assert.match(guard, /^  pull_request:/m);
 });
 
@@ -390,7 +395,7 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-'))))";
+  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-'))))";
   assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
