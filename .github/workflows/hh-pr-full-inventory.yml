@@ -345,7 +345,9 @@ jobs:
     permissions:
       contents: read
       statuses: read
-      pull-requests: read
+      # PR conversation comments accept PR-write or Issues-write; grant both
+      # to this trusted default-branch-only receipt job (never PR source).
+      pull-requests: write
       actions: read
       issues: write
     steps:

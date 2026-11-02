@@ -53,6 +53,14 @@ function receiptBody(report) {
     'https://' + report.alias + '/en. Method: ' + (report.proof_method || 'VERIFIED') + '.\n\n' +
     evidence.map(url => '- ' + url).join('\n') + '\n';
 }
+// Name the exact API operation when GitHub rejects a read/write, without exposing tokens.
+async function atReceiptStage(stage, op) {
+  try { return await op(); }
+  catch (error) {
+    if(error && typeof error==='object') error.liveReceiptStage=stage;
+    throw error;
+  }
+}
 async function recordLive({github, context, report, logger}) {
   if (!trusted(context)) return {state: 'UNTRUSTED_CONTEXT', recorded: []};
   if (!certified(report)) return {state: 'LIVE_UNVERIFIED', recorded: []};
@@ -61,31 +69,31 @@ async function recordLive({github, context, report, logger}) {
   // A receipt for an older deployed SHA is safe only when the verified served
   // SHA is STILL an ancestor of protected production. No relation = no label.
   const reachable=async()=>{
-    const branch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+    const branch=(await atReceiptStage('PRODUCTION_BRANCH_READ',()=>github.rest.repos.getBranch({owner,repo,branch:PROD}))).data;
     const current=branch?.commit?.sha;
     if(!branch?.protected||!SHA.test(current||''))return false;
     if(current===sha)return true;
     if(!SERVED_METHODS.includes(report.proof_method))return false;
-    const {data}=await github.rest.repos.compareCommits({owner,repo,
-      base:sha,head:current});
+    const {data}=await atReceiptStage('PRODUCTION_ANCESTRY_READ',()=>github.rest.repos.compareCommits({owner,repo,
+      base:sha,head:current}));
     return data?.status==='ahead'&&data?.merge_base_commit?.sha===sha;
   };
   if(!await reachable())
     return {state:'PRODUCTION_HEAD_MOVED_OR_UNPROTECTED',recorded:[]};
-  const response = (await github.rest.repos.listPullRequestsAssociatedWithCommit({owner, repo, commit_sha: sha, per_page: MAX_ASSOCIATED})).data;
+  const response = (await atReceiptStage('MERGE_ASSOCIATIONS_READ',()=>github.rest.repos.listPullRequestsAssociatedWithCommit({owner, repo, commit_sha: sha, per_page: MAX_ASSOCIATED}))).data;
   if (!Array.isArray(response) || response.length >= MAX_ASSOCIATED)
     return {state: 'INCOMPLETE_COMMIT_PR_ASSOCIATION', recorded: []};
   const recorded = [];
   for (const match of response) {
     if (!Number.isSafeInteger(match?.number)) continue;
     const number = match.number;
-    const pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
+    const pr = (await atReceiptStage('PR_BASE_AND_MERGE_READ',()=>github.rest.pulls.get({owner, repo, pull_number: number}))).data;
     if (!exactMergedPR(pr, sha)) continue;
     // The alias was checked by a separate read-only verifier. HEAD must stay
     // unchanged before each write, or a newer deploy cannot be miscredited.
     if(!await reachable())
       return {state:'PRODUCTION_HEAD_MOVED_DURING_RECEIPT',recorded};
-    const comments = await github.rest.issues.listComments({owner, repo, issue_number: number, per_page: 100});
+    const comments = await atReceiptStage('PR_COMMENTS_READ',()=>github.rest.issues.listComments({owner, repo, issue_number: number, per_page: 100}));
     const marker = '<!-- ' + MARKER + ' sha=' + sha + ' deployment=' + report.deployment_id + ' -->';
     if (!Array.isArray(comments.data) || comments.data.length >= 100)
       return {state: 'COMMENT_RECEIPT_HISTORY_INCOMPLETE', recorded};
@@ -93,21 +101,21 @@ async function recordLive({github, context, report, logger}) {
     // Comment evidence FIRST: a searchable label must never be treated as
     // trustworthy if the receipt itself could not be written.
     if (!present) {
-      await github.rest.issues.createComment({owner, repo, issue_number: number, body: receiptBody(report)});
+      await atReceiptStage('PR_COMMENT_CREATE',()=>github.rest.issues.createComment({owner, repo, issue_number: number, body: receiptBody(report)}));
     }
-    const labels = (await github.rest.issues.listLabelsOnIssue({owner, repo, issue_number: number, per_page: 100})).data;
+    const labels = (await atReceiptStage('PR_LABELS_READ',()=>github.rest.issues.listLabelsOnIssue({owner, repo, issue_number: number, per_page: 100}))).data;
     if (!Array.isArray(labels) || labels.length >= 100)
       return {state: 'LABEL_HISTORY_INCOMPLETE', recorded};
     if (!labels.some(l => l.name === LABEL)) {
-      try {await github.rest.issues.getLabel({owner, repo, name: LABEL});}
+      try {await atReceiptStage('LIVE_LABEL_LOOKUP',()=>github.rest.issues.getLabel({owner, repo, name: LABEL}));}
       catch (e) {
         if (e?.status !== 404) throw e;
-        try {await github.rest.issues.createLabel({owner, repo, name: LABEL, color: '167c54', description: 'Vercel production alias and exact merged SHA independently verified'});}
+        try {await atReceiptStage('LIVE_LABEL_CREATE',()=>github.rest.issues.createLabel({owner, repo, name: LABEL, color: '167c54', description: 'Vercel production alias and exact merged SHA independently verified'}));}
         catch (labelError) {if (labelError?.status !== 422) throw labelError;}
       }
-      await github.rest.issues.addLabels({owner, repo, issue_number: number, labels: [LABEL]});
+      await atReceiptStage('PR_LABEL_APPLY',()=>github.rest.issues.addLabels({owner, repo, issue_number: number, labels: [LABEL]}));
     }
-    const checked = (await github.rest.issues.listLabelsOnIssue({owner, repo, issue_number: number, per_page: 100})).data;
+    const checked = (await atReceiptStage('PR_LABEL_VERIFY',()=>github.rest.issues.listLabelsOnIssue({owner, repo, issue_number: number, per_page: 100}))).data;
     if (!checked.some(l => l.name === LABEL)) throw Error('LIVE_RECEIPT_LABEL_NOT_CONFIRMED');
     recorded.push(number);
     logger?.('LIVE_RECEIPT_CONFIRMED #' + number + ' ' + sha);
@@ -123,10 +131,17 @@ async function run({github, core, context, liveReport, now = Date.now()}) {
     receipt: null};
   if (!trusted(context)) report.receipt = {state: 'UNTRUSTED_CONTEXT'};
   else try {report.receipt = await recordLive({github, context, report: liveReport, logger: msg => core.info(msg)});}
-  catch (e) {report.receipt = {state: 'RECEIPT_FAILED', error: String(e?.message || e).slice(0, 140)};}
+  catch (e) {report.receipt = {state: 'RECEIPT_FAILED',
+    stage: e?.liveReceiptStage || 'UNKNOWN',
+    http_status: Number.isInteger(e?.status) ? e.status : null,
+    error: String(e?.message || e).slice(0, 140)};}
   core.info('HH_LIVE_RECEIPTS ' + JSON.stringify(report));
   await core.summary.addHeading('HH verified LIVE — durable PR receipts')
     .addCodeBlock(JSON.stringify(report, null, 2)).write();
+  // A denied write must not produce an all-green LIVE receipt job.
+  if(report.receipt?.state === 'RECEIPT_FAILED')
+    core.setFailed?.('HH_LIVE_RECEIPT_WRITE_FAILED stage='+report.receipt.stage+
+      ' status='+String(report.receipt.http_status ?? 'UNKNOWN'));
   return report;
 }
 module.exports = {REPO,PROD,DEFAULT,LABEL,MARKER,trusted,certified,exactMergedPR,receiptBody,recordLive,run};
