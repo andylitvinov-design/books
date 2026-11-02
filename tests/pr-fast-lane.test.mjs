@@ -722,13 +722,54 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.match(yaml, /focused-unit-types-build:/);
   assert.doesNotMatch(yaml, /mandala-next-v1-/, 'obsolete Next compiler cache removed');
   assert.match(yaml, /^  workflow_dispatch:/m);
-  const guardedMediaCondition = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))";
+  // Validate mandatory behavior and consistent browser scopes instead of a literal OR chain.
+  const mediaIfFor = name => {
+    const token = '- name: '+name+'\n        if: ';
+    const parts = yaml.split(token);
+    assert.equal(parts.length, 2, 'missing or ambiguous media action '+name);
+    return parts[1].split('\n')[0];
+  };
+  const mediaCondition = mediaIfFor('Build');
+  assert.match(mediaCondition, /^steps\.impact\.outputs\.browser == 'true' && /);
+  assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
+  assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
+  const requiredPrefixes = [
+    'codex/voice-studio-', 'codex/voice-mix-', 'fix/video-', 'fix/webkit-',
+    'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
+    'feat/video-chat-context-understanding-'
+  ];
+  for (const prefix of requiredPrefixes)
+    assert.ok(mediaCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'browser gate skips required PR prefix '+prefix);
   for (const name of [
-    'Build', 'Install isolated Chromium and WebKit (no external account)',
+    'Install isolated Chromium and WebKit (no external account)',
     'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
     'Public mandala photo, PNG and video browser flow · 320/390/430px'
-  ]) assert.ok(yaml.includes('- name: '+name+'\n        '+guardedMediaCondition),
-    'full media browser must remain available manually and mandatory on Voice PRs: '+name);
+  ]) assert.equal(mediaIfFor(name), mediaCondition,
+    'real media step must share the protected build guard: '+name);
+  assert.equal(mediaIfFor('Upload synthetic audio-only iPhone screenshots'),
+    'always() && '+mediaCondition, 'artifact step needs the same guard plus always()');
+  const macos=yaml.split(/^  voice-webkit-macos:\s*$/m)[1];
+  assert.ok(macos, 'mandatory macOS WebKit acceptance missing');
+  const macosCondition=macos.match(/^    if: (.+)$/m)?.[1];
+  assert.ok(macosCondition?.includes("github.event_name == 'pull_request' && github.event.pull_request.draft == false"),
+    'macOS WebKit requires a non-Draft PR');
+  for (const prefix of requiredPrefixes)
+    assert.ok(macosCondition.includes("startsWith(github.head_ref, '"+prefix+"')"),
+      'macOS WebKit may not skip '+prefix);
+  for (const contract of [
+    'runs-on: macos-15', 'HH_VOICE_E2E_ENGINE: webkit',
+    "HH_VOICE_E2E_HEADED: '1'", 'node scripts/verify-affirmation-voice-browser.mjs',
+    'HH_LIVE_VIDEO_ENGINE=webkit HH_LIVE_VIDEO_HEADED=1',
+    'node scripts/benchmarking/first-video-live-export.mjs',
+    'ffprobe', 'ffmpeg'
+  ]) assert.ok(macos.includes(contract),'real WebKit media evidence lost: '+contract);
+  const aggregator=readFileSync(join(root,'scripts','ci-specialist-aggregate.mjs'),'utf8');
+  assert.match(aggregator,/baseJob !== trustedMandalaMacosJob\(candidate\)/,
+    'changed WebKit guard cannot silently waive a skipped macOS job');
+  assert.match(aggregator,/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
   assert.ok(yaml.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"),
     'mandatory Core owns production PR typecheck; standalone TypeScript remains');
   assert.match(yaml, /run: npm run build/);
