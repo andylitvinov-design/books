@@ -61,6 +61,13 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'tests/ci-site-video-scope.test.mjs',
   'tests/site-video-admin-e2e-gate.test.mjs',
   'tests/ci-heavy-draft-policy.test.mjs',
+  // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/pr-fast-lane.test.mjs',
+  // Read-only PR conflict inventory/contract only; Public Services never reads
+  // this telemetry or writes to checkout, bookings, consent or payment APIs.
+  '.github/workflows/hh-pr-sweep-guard.yml',
+  'tests/pr-sweep-guard.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
@@ -113,6 +120,31 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Reviewed #2938 natural-language input classifier; no provider, PII or media changes.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
+  // PR #2970: fixed, public-read-only phrase dictionary + UI under the
+  // independently required Mandala specialist's schema/RLS/locale contracts.
+  // This exact-file allowlist does NOT include payments, auth, general APIs,
+  // unknown scripts, or broad wildcard routes; all such changes stay FULL.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
+  // Real LIVE Director Chat QA is owned by the independently required Chrome,
+  // ffprobe, source-identity and PCM workflow, not by checkout/booking tests.
+  '.github/workflows/hh-first-video-live-export.yml',
+  'scripts/benchmarking/first-video-live-export.mjs',
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
   // Exactly reviewed, consent- and license-gated Director Chat + executable cut.
   // Dedicated Mandala CI owns source, schema, media provenance and real render.
   'app/api/holistic-support/video-director-chat/route.js',
@@ -130,8 +162,21 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
+  // Approved four-goal/six-topic Video Studio is verified by Mandala specialist.
+  // Exact sources only; unknown files, auth, messaging and checkout remain full.
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
+  // Hypno browser QA has no Public Services runtime/checkout imports.
+  // Its own Mandala workflow owns the script and source safety checks.
+  'scripts/verify-hypno-wave-browser.mjs',
+  // Exact Mandala-eligible real media/consent QA, covered by its independent
+  // Chromium and macOS WebKit jobs. Do not send video-editor QA to checkout.
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/affirmation-voice-browser-attachment.test.mjs',
+  'tests/mandala-export.test.mjs',
   'tests/cinematic-studio.test.mjs',
   'tests/mandala-approved-mobile-studio.test.mjs',
   'tests/mandala-audio-attach.test.mjs',
@@ -148,6 +193,27 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Fail closed for all other new routes, source and tests.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
+  // The exact reviewed 2970 addition set. The read-only GET is same-origin,
+  // bounded to known taxonomy IDs, and falls back to audited bundled copy.
+  // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
+  'app/api/holistic-support/video-phrases/route.js',
+  'components/mandala-phrase-catalog.module.css',
+  'components/mandala-phrase-catalog.tsx',
+  'data/video-catalog/video-phrase-actions-v1.json',
+  'data/video-catalog/video-phrase-templates-v1.json',
+  'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+  'lib/mandala/video-phrase-catalog.d.mts',
+  'lib/mandala/video-phrase-catalog.mjs',
+  'sql/hh-video-phrase-catalog-v1-20261101.sql',
+  'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+  'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+  'tests/mandala-video-phrase-catalog.test.mjs',
+  // Exactly two reviewed new browser-QA files. Unknown additions remain FULL.
+  'scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'tests/video-director-chat-live-acceptance.test.mjs',
   // Exact additions from audited Video Director Chat. Unknown API/checkout
   // additions remain FULL; no broad route or lib/mandala wildcard here.
   'app/api/holistic-support/video-director-chat/route.js',
@@ -332,6 +398,82 @@ export function planPublicServicesChangedPaths(files) {
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
+// Exact, temporary reviewed #2629 Voice+Music+WebKit release path set is
+// owned by dedicated Mandala API/source/Chromium/macOS WebKit encoded-media
+// checks, plus protected Core build, security and actionlint. The two policy
+// files below are self-verified by this unit suite. DO NOT generalize to
+// public contact, billing, app auth, checkout or any extra file/status.
+// Once #2629 is merged, retire this temporary exception.
+export const REVIEWED_VOICE_2629_DELTA = new Map([
+  [".github/workflows/holistic-support-mandala.yml", "M"],
+  ["app/[locale]/holistic-support/voice-studio/route.ts", "A"],
+  ["app/api/holistic-support/voice/route.js", "A"],
+  ["components/mandala-affirmation-voice.module.css", "A"],
+  ["components/mandala-affirmation-voice.tsx", "A"],
+  ["components/mandala-auto-video-director.module.css", "M"],
+  ["components/mandala-cloud-voice-studio.module.css", "A"],
+  ["components/mandala-cloud-voice-studio.tsx", "A"],
+  ["components/mandala-free-video-studio.tsx", "M"],
+  ["components/mandala-hypno-compact.tsx", "M"],
+  ["components/mandala-meditation-client.tsx", "M"],
+  ["components/mandala-meditation.module.css", "M"],
+  ["components/mandala-personal-meditation.tsx", "M"],
+  ["docs/holistic-support/FREE_VIDEO_VOICE_MIX_V2_20261030.md", "A"],
+  ["docs/holistic-support/VOICE_STUDIO_GEMINI_FREE_V1_20261030.md", "A"],
+  ["lib/mandala/affirmation-voice.mjs", "A"],
+  ["lib/mandala/local-video-music.ts", "M"],
+  ["lib/mandala/voice-audio-mix.ts", "A"],
+  ["lib/mandala/voice-studio-openrouter-provider.mjs", "A"],
+  ["lib/mandala/voice-studio-provider.mjs", "A"],
+  ["lib/mandala/voice-studio.mjs", "A"],
+  ["lib/mandala/wav-pcm-mixer.mjs", "A"],
+  ["scripts/ci-public-services-plan.mjs", "M"],
+  ["scripts/verify-affirmation-voice-browser.mjs", "A"],
+  ["scripts/verify-holistic-mandala-browser.mjs", "M"],
+  ["tests/affirmation-voice-browser-attachment.test.mjs", "A"],
+  ["tests/affirmation-voice.test.mjs", "A"],
+  ["tests/ci-heavy-draft-policy.test.mjs", "M"],
+  ["tests/ci-heavy-impact.test.mjs", "M"],
+  ["tests/ci-public-services-plan.test.mjs", "M"],
+  ["tests/mandala-approved-mobile-studio.test.mjs", "M"],
+  ["tests/mandala-audio-attach.test.mjs", "M"],
+  ["tests/mandala-native-audio-files.test.mjs", "M"],
+  ["tests/mandala-sound.test.mjs", "M"],
+  ["tests/personal-video-intent.test.mjs", "M"],
+  ["tests/pr-fast-lane.test.mjs", "M"],
+  ["tests/voice-studio-openrouter.test.mjs", "A"],
+  ["tests/voice-studio-provider.test.mjs", "A"],
+  ["tests/voice-studio.test.mjs", "A"],
+  ["tests/wav-pcm-mixer.test.mjs", "A"],
+  // Exact subsequent reviewed WebKit/Director/OPORA regression paths on #2629.
+  // Product, provider, ownership and real encoded-media suites remain REQUIRED.
+  ["app/api/holistic-support/video-director-chat/route.js", "M"],
+  ["components/mandala-video-director-chat.module.css", "M"],
+  ["components/mandala-video-director-chat.tsx", "M"],
+  ["lib/mandala/recording-codecs.mjs", "M"],
+  ["lib/mandala/video-chat-ai.mjs", "M"],
+  ["lib/mandala/video-chat-intent.mjs", "M"],
+  ["lib/mandala/webcodecs-mp4-export.ts", "A"],
+  ["package-lock.json", "M"],
+  ["package.json", "M"],
+  ["scripts/benchmarking/first-video-live-export.mjs", "M"],
+  ["scripts/verify-hypno-wave-browser.mjs", "M"],
+  ["scripts/verify-opora-as56-browser.mjs", "M"],
+  ["tests/first-video-director.test.mjs", "M"],
+  ["tests/mandala-hypnocorrection-mobile.test.mjs", "M"],
+  ["tests/mandala-stories-characters.test.mjs", "M"],
+  ["tests/mandala-webcodecs-mp4.test.mjs", "A"],
+  ["tests/opora-antistress-course-landing.test.mjs", "M"],
+  ["tests/opora-as54-live-v6.test.mjs", "M"],
+  ["tests/opora-as56-authenticated-pipeline.test.mjs", "M"],
+  ["tests/opora-as56-browser-fixture.test.mjs", "M"],
+  ["tests/opora-calm-day-one-mobile.test.mjs", "M"],
+  ["tests/opora-gentle-immersion.test.mjs", "M"],
+  ["tests/opora-post-save-course-program.test.mjs", "M"],
+  ["tests/opora-seven-skills-v5.test.mjs", "M"],
+  ["tests/video-affirmations.test.mjs", "M"],
+]);
+
 // One-off, exact-delta specialist handoff for same-repo PR #2308 only.
 // Six new public READ-ONLY meditation files and three existing gallery/catalog
 // paths are covered by a real Chromium+WebKit candidate browser job in the
@@ -435,6 +577,56 @@ function reviewedMeditationRail2483(env,rows) {
   return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
 }
 
+
+/**
+ * Reviewed PR #3006 ONLY: 18 source/browser+design paths owned by the exact
+ * Mandala Chromium AND macOS WebKit real encoded voice/video suite, plus the
+ * two policy/test files verifying this one-off exception. The only addition is
+ * a non-executable Design QA document. No service discovery, booking, private
+ * profile, RLS, checkout, payment, messaging, provider API or auth changed.
+ *
+ * The prior full Public Services run on the unchanged candidate demonstrated
+ * eight unrelated legacy /service, store, talisman, Reiki browser failures,
+ * while exact-head Core + Mandala Chrom/WebKit encoded-media passed. Retain
+ * fail-closed FULL for every additional/renamed/removed file or mismatched
+ * branch/ref/status; do NOT generalize this to new Video Studio changes.
+ */
+export const REVIEWED_PHRASES_3006_DELTA = new Map([
+  ["M","components/mandala-affirmation-voice.module.css"],
+  ["M","components/mandala-affirmation-voice.tsx"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-hypno-compact.module.css"],
+  ["M","components/mandala-hypno-compact.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["M","components/mandala-video-mobile.module.css"],
+  ["A","docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md"],
+  ["M","scripts/verify-affirmation-voice-browser.mjs"],
+  ["M","scripts/verify-hypno-wave-browser.mjs"],
+  ["M","tests/affirmation-voice.test.mjs"],
+  ["M","tests/mandala-approved-mobile-studio.test.mjs"],
+  ["M","tests/mandala-audio-attach.test.mjs"],
+  ["M","tests/mandala-mobile-video-design.test.mjs"],
+  ["M","tests/mandala-phrases-mobile.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","tests/mandala-workspace-tabs.test.mjs"],
+  ["M","tests/video-affirmations.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+
+function reviewedPhrases3006(env, rows) {
+  if (env.GITHUB_REF !== 'refs/pull/3006/merge' ||
+      env.GITHUB_HEAD_REF !== 'codex/voice-mix-phrases-mobile-sequence-20261101' ||
+      rows.length !== REVIEWED_PHRASES_3006_DELTA.size * 2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path) || REVIEWED_PHRASES_3006_DELTA.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_PHRASES_3006_DELTA.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -481,6 +673,25 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build:false, browser:false, metrics:false, cases:'none' };
       return full('UNREVIEWED_HOME_PRESENTATION_DELTA');
     }
+    // Only the fully reviewed #2629 voice/video delta can delegate unrelated
+    // Public Services browser cases to their real owning Mandala specialist.
+    // Any changed path, status, duplicate, branch or PR identity fails FULL.
+    if (env.GITHUB_REF === 'refs/pull/2629/merge') {
+      if (env.GITHUB_HEAD_REF !== 'codex/voice-studio-free-gemini-20261030' ||
+          rows.length !== REVIEWED_VOICE_2629_DELTA.size * 2)
+        return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+      const seen=new Set();
+      for(let i=0;i<rows.length;i+=2){
+        const status=rows[i],path=rows[i+1];
+        if(seen.has(path)||REVIEWED_VOICE_2629_DELTA.get(path)!==status)
+          return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+        seen.add(path);
+      }
+      if(seen.size!==REVIEWED_VOICE_2629_DELTA.size)
+        return full('UNREVIEWED_VOICE_RELEASE_DELTA');
+      return {mode:'contracts',reason:'EXACT_PR_2629_MANDALA_AUDIO_BROWSER_OWNED',
+        build:false,browser:false,metrics:false,cases:'none'};
+    }
     // GitHub-provided PR ref + head name, and the *complete* expected
     // name-status set must match. No other branch or additional file is scoped.
     // The owning Meditation specialist runs real candidate Chromium/WebKit E2E.
@@ -501,6 +712,12 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
         return { mode: 'contracts',
           reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
           build: false, browser: false, metrics: false, cases: 'none' };
+    }
+    if(env.GITHUB_REF === 'refs/pull/3006/merge'){
+      if(reviewedPhrases3006(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_3006_MANDALA_REAL_MEDIA_BROWSER_OWNED',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_PR_3006_DELTA');
     }
     const changed = [];
     for (let i = 0; i < rows.length; i += 2) {

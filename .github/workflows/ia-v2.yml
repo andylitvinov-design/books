@@ -5,7 +5,9 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - '.github/workflows/ia-v2.yml'
-      - 'tests/pr-fast-lane.test.mjs'
+      # Core always validates tests/pr-fast-lane.test.mjs on CI-policy PRs.
+      # Do not start the full IA/PostgreSQL/Redis/Chromium/WebKit suite for that test alone.
+      # Changes to IA workflow, auth, clients, migrations and app remain fully gated.
       - 'scripts/verify-ia-v2.mjs'
       - 'scripts/ia-v2-loopback-proxy.mjs'
       - 'scripts/ia-public-navigation-diagnostics.mjs'

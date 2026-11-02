@@ -1,4 +1,6 @@
 import test from "node:test";
+// Run the dedicated Phrases mobile approval/voice contracts in the existing specialist suite.
+import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
@@ -79,14 +81,16 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
   assert.ok(studio.includes("<MandalaHypnoCompact locale={locale} theme={theme}"),"Hypno must remain mounted across theme changes");
-  assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.doesNotMatch(read("components/mandala-hypno-compact.tsx"),/<MandalaVideoAffirmations /,
+    "a second immediate-commit editor must not bypass Approve");
+  assert.match(read("components/mandala-hypno-compact.tsx"),/onPendingChange\?\.\(hasPendingEdits\)/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
   assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
   assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory\]\)/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
-  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
+  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
   assert.match(studio,/setAffirmations\(defaultAffirmations\)/);
@@ -243,14 +247,14 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
       }
     }
   }
-  for(const marker of ["data-hypno-request","data-hypno-request-edit","data-hypno-apply-request",
+  for(const marker of ["data-hypno-idea","data-hypno-idea-choice","data-hypno-idea-own","data-hypno-apply-request",
     "data-hypno-phrases","data-hypno-smart","data-hypno-ready","data-hypno-tests",
     "data-hypno-display","data-hypno-frequency","data-hypno-size","data-hypno-position",
     "data-hypno-design","data-hypno-scene","data-hypno-preview"]){
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 
@@ -260,7 +264,9 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
   assert.match(compactCss,/@media\(max-width:360px\)/);
   assert.match(compactCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(compact,/sendBeacon|localStorage|sessionStorage|XMLHttpRequest|autoPlay/);
-  assert.match(compact,/maxLength=\{400\}/);
+  assert.match(compact,/requestText\.slice\(0,160\)/);
+  assert.match(compact,/maxLength=\{36\}/);
+  assert.ok(compact.indexOf("data-hypno-idea")<compact.indexOf("data-hypno-phrases"));
 });
 
 test("new text size and position change the actual shared canvas renderer",()=>{
@@ -291,12 +297,12 @@ test("new text size and position change the actual shared canvas renderer",()=>{
   assert.ok(px[0]<px[1]&&px[1]<px[2]);
 });
 
-test("compact Hypno v5.3 shows two consented paths, editable request, five effective phrase filters",()=>{
+test("mobile Hypno v6 has one editable idea, consented profile and four active phrase filters",()=>{
  const c=read("components/mandala-hypno-compact.tsx");
  const css=read("components/mandala-hypno-compact.module.css");
- for(const marker of ["data-hypno-accent","data-hypno-suggest-tests","data-hypno-short-request",
-  "data-hypno-update-request","data-hypno-profile-proposal","data-hypno-accept-proposal",
-  "data-hypno-filter-type","data-hypno-filter-goal","data-hypno-filter-tone",
+ for(const marker of ["data-hypno-idea-choice","data-hypno-idea-own","data-hypno-suggest-tests",
+  "data-hypno-profile-proposal","data-hypno-accept-proposal",
+  "data-hypno-filter-type","data-hypno-filter-tone",
   "data-hypno-filter-focus","data-hypno-filter-length","data-hypno-generate-new",
   "data-hypno-approve","data-hypno-phrase"]){
    assert.ok(c.includes(marker),marker);
@@ -304,7 +310,10 @@ test("compact Hypno v5.3 shows two consented paths, editable request, five effec
  assert.match(c,/await appFetch\("video-affirmation-focus"\)/);
  assert.match(c,/function acceptTestProposal\(\)/);
  assert.match(c,/setTestProposal\(proposed\)/);
- assert.match(css,/\.topicMiniRail\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.ideaRail\{display:flex/);
+ assert.match(css,/\.filterRow\{display:grid;grid-template-columns:/);
+ assert.match(css,/\.overview \.phraseMiniList\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(c,/data-hypno-accent=\{id\}/);
  assert.match(css,/\.filtersMini\{display:grid/);
  const compiled=ts.transpileModule(c,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
  assert.deepEqual(compiled.diagnostics||[],[]);
