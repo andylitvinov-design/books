@@ -365,7 +365,7 @@ test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HE
 test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(yml.includes('  finalize:'));
- assert.ok(yml.includes('needs: [claim,fix,publish]'));
+ assert.ok(yml.includes('needs: [claim,fix,code_fix,code_verify,publish]'));
  assert.ok(yml.includes('always()'));
  assert.ok(yml.includes('worker.finalize({github,core,context,'));
 });
