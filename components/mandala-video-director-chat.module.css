@@ -103,3 +103,18 @@
  text-align:left;cursor:pointer;color:#205b49}
 .filterSummary button span{font-size:10px;font-weight:600;color:#5b806d}
 .filterSummary button strong{font-size:12px;line-height:1.1}
+/* Only the #video-director-chat deep link opens a full-height messenger.
+   The exact dock height is measured; its fixed bottom:0 never changes. */
+.backToStudio{display:none;flex:none;width:42px;height:42px;place-items:center;border:1px solid #cbe2d5;
+ border-radius:50%;background:#f7fcf8;color:#236d5a;text-decoration:none}
+@media(max-width:700px){
+ .window:target{
+   position:fixed;z-index:57;inset:0 0 var(--chat-dock-height,calc(63px + env(safe-area-inset-bottom))) 0;
+   width:100%;height:auto;min-height:0;max-height:none;margin:0;border:0;border-radius:0;box-shadow:none;
+ }
+ .window:target .backToStudio{display:grid}
+ .window:target .heading{padding-top:max(9px,env(safe-area-inset-top))}
+ .window:target[data-compose-active="true"]{
+   z-index:500;top:var(--chat-visual-top,0px);bottom:auto;height:var(--chat-visual-height,100dvh);
+ }
+}

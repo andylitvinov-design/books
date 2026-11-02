@@ -1203,3 +1203,13 @@
   .videoFeedFooter > small { font-size: 10px; }
   .videoFeedChoose { font-size: 11px; }
 }
+
+/* Video Studio and MyTube: seven genuinely usable fixed navigation actions.
+   Other public/private docks keep their existing five/six slots. */
+.bottomNav.mandalaBottomNav{grid-template-columns:repeat(7,minmax(0,1fr));padding-inline:max(3px,env(safe-area-inset-left))}
+.bottomNav.mandalaBottomNav>:is(a,button){min-width:0;min-height:50px;gap:3px;padding:4px 1px;font-size:clamp(8px,2.5vw,11px);line-height:1.12}
+.bottomNav.mandalaBottomNav>:is(a,button) svg{width:clamp(17px,5vw,22px);height:clamp(17px,5vw,22px)}
+.bottomNav.mandalaBottomNav [data-support-video-ai],.bottomNav.mandalaBottomNav [data-video-my-tube]{font-weight:800;color:#147f62}
+.bottomNav.mandalaBottomNav [aria-current="page"]{border-radius:12px;background:#e7f6ed;color:#086f53}
+.bottomNav.mandalaBottomNav>:is(a,button):focus-visible{outline:3px solid #269974;outline-offset:-3px;border-radius:11px}
+@media(max-width:355px){.bottomNav.mandalaBottomNav{gap:0}.bottomNav.mandalaBottomNav>:is(a,button){font-size:8px;padding:4px 0;line-height:1.05}.bottomNav.mandalaBottomNav>:is(a,button) svg{width:17px;height:17px}}

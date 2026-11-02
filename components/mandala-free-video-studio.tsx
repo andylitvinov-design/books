@@ -3070,6 +3070,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>{
     const reveal=()=>{
       const hash=window.location.hash.slice(1);
+      if(hash==="video-director-chat"){
+        setActiveWorkspace("video");setDirectorChatOpen(true);
+        document.querySelector<HTMLDetailsElement>("[data-video-director-chat-details]")?.setAttribute("open","");
+        return;
+      }
       const destination:Record<string,StudioWorkspace>={
         "video-audio":"video","voice-studio":"video","video-templates":"video",
         "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",

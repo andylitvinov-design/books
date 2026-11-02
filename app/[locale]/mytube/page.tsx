@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LibraryHub } from "@/components/library-hub";
+import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { loadPublicLibraryFeed } from "@/lib/public-library-feed";
 import { loadApprovedVideoDiscoveries } from "@/lib/video-discovery/approved-meditations";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -42,6 +43,8 @@ export default async function MyTubePage({ params }: Props) {
     loadPublicLibraryFeed(locale),
     loadApprovedVideoDiscoveries(),
   ]);
-  return <LibraryHub locale={locale} view="videos" myTube
-    publishedVideos={videos} approvedMeditations={approvedMeditations} />;
+  return <><LibraryHub locale={locale} view="videos" myTube
+    publishedVideos={videos} approvedMeditations={approvedMeditations} />
+    <HolisticSupportMandalaDock locale={locale} mode="mytube" showHeader={false} />
+  </>;
 }

@@ -1,25 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, BarChart3, Clapperboard, Compass, Home, MessageCircle, Settings2, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
+import { useVisualBottomDock } from "./app/use-visual-bottom-dock";
 
 const copy = {
-  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", language: "Language", close: "Close" },
-  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", language: "Язык", close: "Закрыть" },
-  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", language: "Idioma", close: "Cerrar" },
+  en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", videoAi: "AI", mytube: "MyTube", language: "Language", close: "Close" },
+  ru: { home: "Главная", practice: "Практика", messages: "Сообщения", progress: "Прогресс", settings: "Настройки", videoAi: "ИИ", mytube: "MyTube", language: "Язык", close: "Закрыть" },
+  es: { home: "Inicio", practice: "Práctica", messages: "Mensajes", progress: "Progreso", settings: "Ajustes", videoAi: "IA", mytube: "MyTube", language: "Idioma", close: "Cerrar" },
 } as const;
 
 /** The free video editor is a part of the approved Support experience, not
  * a return to the legacy seven-link site navigation. */
-export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale }) {
+export function HolisticSupportMandalaDock({ locale, mode = "editor", showHeader = true }: { locale: PublicLocale; mode?: "editor" | "mytube"; showHeader?: boolean }) {
   const t = copy[locale];
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const mobileDockRef = useRef<HTMLElement | null>(null);
+  useVisualBottomDock(mobileDockRef);
+  useEffect(() => {
+    const syncChat = () => {
+      const open = mode === "editor" && window.location.hash === "#video-director-chat";
+      setChatOpen(open);
+      if(open)document.querySelector<HTMLDetailsElement>("[data-video-director-chat-details]")?.setAttribute("open", "");
+    };
+    syncChat();
+    window.addEventListener("hashchange", syncChat);
+    return () => window.removeEventListener("hashchange", syncChat);
+  }, [mode]);
   return (
     <>
-      <header className={styles.mandalaAppHeader} data-support-app-header>
+      {showHeader && <header className={styles.mandalaAppHeader} data-support-app-header>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}
           aria-label={locale === "ru" ? "Назад к поддержке" : locale === "es" ? "Volver al apoyo" : "Back to Support"}>
           <ArrowLeft size={20} aria-hidden="true" />
@@ -27,14 +41,14 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
         <span>Holistic House</span>
         <button type="button" aria-label={t.settings} aria-expanded={settingsOpen} aria-controls="mandala-support-settings"
           onClick={() => setSettingsOpen(open => !open)}><Settings2 size={20} aria-hidden="true" /></button>
-      </header>
+      </header>}
       {settingsOpen ? (
         <section className={styles.settingsPanel} id="mandala-support-settings" aria-label={t.settings} data-mandala-settings-panel>
           <h2><Settings2 size={21} aria-hidden="true" />{t.settings}</h2>
           <p>{t.language}</p>
           <div className={styles.localeLinks}>
             {(["en", "ru", "es"] as const).map(language => (
-              <Link key={language} href={"/" + language + "/holistic-support/mandala"}
+              <Link key={language} href={"/" + language + (mode === "mytube" ? "/mytube" : "/holistic-support/mandala")}
                 hrefLang={language} aria-current={locale === language ? "page" : undefined}>
                 {language.toUpperCase()}
               </Link>
@@ -43,7 +57,9 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
         </section>
       ) : null}
-      <nav className={styles.bottomNav} aria-label={t.home} data-mandala-support-bottom-nav>
+      <nav ref={mobileDockRef} className={[styles.bottomNav,styles.mandalaBottomNav].join(" ")}
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones de vídeo":"Video studio navigation"}
+        data-mandala-support-bottom-nav data-mytube-video-dock>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}>
           <Home size={24} aria-hidden="true" /><span>{t.home}</span>
         </Link>
@@ -60,6 +76,16 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           onClick={() => setSettingsOpen(open => !open)}>
           <Settings2 size={24} aria-hidden="true" /><span>{t.settings}</span>
         </button>
+        <Link href={mode === "mytube" ? "/" + locale + "/holistic-support/mandala#video-director-chat" : chatOpen ? "#video-quick-heading" : "#video-director-chat"} prefetch={false}
+          onClick={() => setSettingsOpen(false)} data-support-video-ai
+          aria-current={mode === "editor" && chatOpen ? "page" : undefined}
+          aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>
+          <Sparkles size={24} aria-hidden="true" /><span>{t.videoAi}</span>
+        </Link>
+        <Link href={"/" + locale + "/mytube"} prefetch={false} data-video-my-tube
+          aria-current={mode === "mytube" ? "page" : undefined} aria-label="MyTube">
+          <Clapperboard size={24} aria-hidden="true" /><span>{t.mytube}</span>
+        </Link>
       </nav>
     </>
   );

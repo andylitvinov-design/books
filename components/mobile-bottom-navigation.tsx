@@ -9,9 +9,9 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 // Compact two-line visual labels. Full translated names remain on aria-label.
 const mobileBarLabels = {
-  en: { home: 'Home', analysis: 'Free Analysis', courses: 'Courses', profile: 'My Profile', alchemy: 'Psychic Alchemy', pro: 'Pro', mytube: 'MyTube' },
-  ru: { home: 'Домой', analysis: 'Разбор', courses: 'Курсы', profile: 'Профиль', alchemy: 'Алхимия души', pro: 'Pro', mytube: 'MyTube' },
-  es: { home: 'Inicio', analysis: 'Análisis', courses: 'Cursos', profile: 'Mi perfil', alchemy: 'Alquimia del Alma', pro: 'Pro', mytube: 'MyTube' },
+  en: { home: 'Home', analysis: 'Free Analysis', courses: 'Courses', profile: 'My Profile', alchemy: 'Psychic Alchemy', pro: 'Pro', temple: 'Holistic Support' },
+  ru: { home: 'Домой', analysis: 'Разбор', courses: 'Курсы', profile: 'Профиль', alchemy: 'Алхимия души', pro: 'Pro', temple: 'Поддержка' },
+  es: { home: 'Inicio', analysis: 'Análisis', courses: 'Cursos', profile: 'Mi perfil', alchemy: 'Alquimia del Alma', pro: 'Pro', temple: 'Apoyo holístico' },
 } as const;
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
@@ -22,7 +22,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   // paths, private account routes and documents must keep the bar hidden.
   const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
   // The public practitioner showcase owns a compact five-item bottom bar.
-  const hidden = /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
+  const hidden = /^\/(?:ru|en|es)\/mytube(?:\/|$)/.test(pathname)
+    || /^\/(?:ru|en|es)\/practice\/?$/.test(pathname)
     || /^\/(?:ru|en|es)\/holistic-support\/(?:mobile|mandala)(?:\/|$)/.test(pathname)
     || /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
     || /^\/(?:ru|en|es)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
@@ -94,7 +95,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Seven public journeys; Holistic Support and Temple Insights remain in the expanded menu. */}
+    {/* Seven public journeys; Temple Insights and legacy topics stay in the expanded menu. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
       const shortLabel = mobileBarLabels[locale][item.id as keyof typeof mobileBarLabels.en];

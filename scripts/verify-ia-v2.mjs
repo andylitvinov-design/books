@@ -104,9 +104,9 @@ async function go(page, path) {
 function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
 function visibleMobileLabel(locale, id) {
   const names = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',mytube:'MyTube'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',mytube:'MyTube'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',mytube:'MyTube'},
+    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
+    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
+    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
   }
   return names[locale][id]
 }
@@ -121,10 +121,10 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
     await expect(links.nth(index)).toHaveText(visibleMobileLabel(locale, expected[index].id))
     if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].ariaLabel)
   }
-  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',alchemy:'alchemy',mytube:'mytube',
-    'services/free-situation-review':'analysis',
+  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',alchemy:'alchemy',temple:'temple',
+    'temple-support':'temple','services/free-situation-review':'analysis',
     'services/alchemy-of-soul':'alchemy','services/psychohomeopathy':'alchemy',
-    'client':'profile','client/tests':'profile','personality-profiles':'profile'})[surface]
+    'client':'profile','client/tests':'profile','personality-profiles':'profile','temple-insights':'temple','holistic-support':'temple'})[surface]
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
   if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
   return expected
@@ -213,7 +213,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         const header = page.locator('header.house-header--services')
         await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events','temple'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
