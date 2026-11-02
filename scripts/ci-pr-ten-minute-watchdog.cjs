@@ -439,35 +439,16 @@ function assessCronHealth(history,now,graceMinutes) {
 async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
-  const budget={requests:0,remaining:null,exhausted:false,reason:null};
-  const limited=async(name,operation)=>{
-    if(budget.exhausted||budget.requests>=MAX_API_CALLS){
-      budget.exhausted=true;
-      budget.reason ||= 'LOCAL_REQUEST_BUDGET';
-      throw Error('HH_API_BUDGET_EXHAUSTED: '+name);
-    }
-    budget.requests++;
-    try{
-      const result=await operation();
-      const remaining=result?.headers?.['x-ratelimit-remaining'];
-      if(remaining!==undefined&&Number.isFinite(Number(remaining))){
-        budget.remaining=Number(remaining);
-        if(budget.remaining<MIN_RATE_REMAINING){
-          budget.exhausted=true;
-          budget.reason='GITHUB_RATE_RESERVE';
-          log('PAUSE GitHub API: remaining='+budget.remaining);
-        }
-      }
-      return result;
-    }catch(error){
-      if(([403,429].includes(error?.status) || error?.status == null || error?.status === 200) &&
-         /rate.limit|rate limit|abuse|secondary/i.test(String(error?.message))){
-        budget.exhausted=true;
-        budget.reason='GITHUB_RATE_LIMIT';
-      }
-      throw error;
-    }
-  };
+  const {createQuotaGuard}=require('./ci-pr-api-quota.cjs');
+  const quota=createQuotaGuard({maxCalls:MAX_API_CALLS,minRemaining:MIN_RATE_REMAINING,
+    onPause:state=>log('PAUSE GitHub API '+state.reason+' retryAt='+(state.retryAt||'next cycle'))});
+  const budget={get requests(){return quota.state.requests;},
+    get remaining(){return quota.state.remaining;},
+    get exhausted(){return quota.state.paused;},
+    set exhausted(value){quota.state.paused=Boolean(value);},
+    get reason(){return quota.state.reason;},
+    set reason(value){quota.state.reason=value;}};
+  const limited=quota.limited;
   let all;
   try {
     all=await listOpen(github,owner,repo,limited);
