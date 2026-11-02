@@ -1127,3 +1127,29 @@ test('real workers run addressed dispatches rather than competing cron and push 
  }
 });
 
+
+
+test('completed Action wrapper does not occupy a live repair worker lease',()=>{
+ const capx=computeCapacity(
+  [{id:1,name:'HH PR source Repair Worker',status:'completed'}],
+  [{id:2,name:'HH PR source Repair Worker',status:'completed'}],[]);
+ assert.equal(capx.activeWorker['HH PR source Repair Worker'],0);
+ assert.equal(admission('repair',capx),'ADMIT');
+ const queued=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'}],[]);
+ assert.equal(queued.activeWorker['HH PR source Repair Worker'],1);
+ assert.equal(admission('repair',queued),'WORKER_BUSY');
+});
+test('complete previous_head + new_head owner release cannot block unrelated future source HEAD',()=>{
+ const old='b'.repeat(40),newHead='c'.repeat(40);
+ const release={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-owner-audio',
+  state:'released_after_atomic_commit',previous_head:old,new_head:newHead,
+  released_at:new Date(NOW-1000).toISOString()};
+ const event={id:1,user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(release)};
+ assert.equal(externalOwnerLeaseStatus([event],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([event],old,NOW),'FREE');
+ const active={...release,head_sha:SHA,state:'active',lease_id:'newer-writer'};
+ const actual={...event,id:2,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(active)};
+ assert.equal(externalOwnerLeaseStatus([event,actual],SHA,NOW),'OWNER_LEASE_ACTIVE',
+  'old release cannot steal a current writer lock');
+});
