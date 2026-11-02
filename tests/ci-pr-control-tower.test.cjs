@@ -61,6 +61,8 @@ test('receipt uses exact task id and never reassigns an old claimed SHA',()=>{
 });
 test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(16,43)),'ADMIT');
+ assert.equal(admission('ci',cap(15,0)),'ADMIT','spare optional CI slots can be used');
+ assert.equal(admission('ci',cap(16,0)),'CI_QUEUE_BUSY','reserve capacity for required Core');
  assert.equal(admission('ci',cap(16,43)),'CI_QUEUE_BUSY');
  assert.equal(admission('repair',cap(18,43)),'ADMIT');
  assert.equal(admission('repair',cap(23,43)),'ADMIT');
@@ -127,6 +129,23 @@ test('CI candidate is inspected even when P1 conflict list fills the rotation',(
  assert.equal(chosen.length,16);
  assert.ok(chosen.some(x=>x.pr_number===4000&&x.lane==='ci'));
 });
+test('P1 source-system conflicts hold fast slots without starving the rotating manual queue',()=>{
+ const urgent=pr(9001,'conflict',{
+  title:'fix(ci): critical Repair Worker conflict',mergeable:false,mergeable_state:'dirty'
+ });
+ const lower=Array.from({length:25},(_,i)=>pr(5000+i,'conflict',{
+  title:'style: minor visual edit '+i,mergeable:false,mergeable_state:'dirty'
+ }));
+ const seen=new Set();
+ for(let tick=0;tick<10;tick++){
+  const chosen=planCandidates([...lower,urgent],NOW+tick*600000);
+  assert.equal(chosen.length,6);
+  assert.equal(chosen[0].pr_number,9001,'highest-ranked conflict must be inspected');
+  for(const item of chosen.slice(2))seen.add(item.pr_number);
+ }
+ assert.ok(seen.size>=20,'rotating slots must continue inspecting non-P1 conflicts');
+});
+
 test('more than 100 comments still preserve exact-head source proof',async()=>{
  const f=fixture([pr(1)]);
  let pages=[];
@@ -762,8 +781,10 @@ test('conflict-only queue rotates six exact-head inspections instead of repeatin
  assert.equal(first.length,6);
  assert.equal(next.length,6);
  assert.ok(first.every(t=>t.lane==='conflict'));
- assert.notEqual(first[0].pr_number,next[0].pr_number);
- assert.equal(new Set([...first,...next].map(t=>t.pr_number)).size,12);
+ assert.equal(first[0].pr_number,next[0].pr_number,'P1 fast slot remains visible');
+ assert.equal(first[1].pr_number,next[1].pr_number,'second high-priority fast slot remains visible');
+ assert.equal(new Set([...first,...next].map(t=>t.pr_number)).size,10,
+  'four rotating slots must cover eight different PRs over two cycles');
 });
 test('a denied dispatch only unlocks after an authenticated exact-task backoff receipt',()=>{
  const task=taskFor(pr(1),{tier:'P1'}),hold=reservation(task,NOW,123);

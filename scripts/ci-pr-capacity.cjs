@@ -3,7 +3,7 @@ const CORE_WORKFLOW='HH PR core release gate';
 const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
 const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxObservedJobs:38,maxWorkerRuns:1,
- maxJobReads:24,minRateReserve:100};
+ maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
   return {known:false,reason:'INCOMPLETE_CAPACITY'};
@@ -38,7 +38,7 @@ function admission(lane,capacity){
     (capacity.activeRuns>=8||capacity.queuedRuns>=2||pressure>=12))
    return 'CORE_PRIORITY_PENDING';
  // CI bootstrap competes with Core and gets a stricter queue budget.
- if(lane==='ci'&&(capacity.activeRuns>=12||capacity.queuedRuns>=6))return 'CI_QUEUE_BUSY';
+ if(lane==='ci'&&(capacity.activeRuns>=LIMIT.maxOptionalCiActiveRuns||capacity.queuedRuns>=6))return 'CI_QUEUE_BUSY';
  // A single bounded Repair claim must not starve behind unrelated CI runs.
  // Hard runner/queue/job-pressure limits above and the one-active-worker cap
  // still hold. The dispatcher independently checks the exact worker history,

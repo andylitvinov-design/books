@@ -65,8 +65,13 @@ function planCandidates(prs,now){
  if(!source.length&&!ci){
   const conflicts=ranked.filter(pr=>laneOf(pr)==='conflict');
   const room=Math.min(MAX_CONFLICT_ONLY_INSPECT,conflicts.length);
-  const offset=conflicts.length?(Math.floor(now/600000)*room)%conflicts.length:0;
-  return Array.from({length:room},(_,i)=>conflicts[(offset+i)%conflicts.length])
+  // Always inspect the most important P1/R01 first; rotate the rest so
+  // lower-priority conflicts are never permanently excluded. A handoff is
+  // only a receipt: the code-writing Chat/Codex lane owns the actual repair.
+  const fast=conflicts.slice(0,Math.min(2,room));
+  const tail=conflicts.slice(fast.length),rotating=room-fast.length;
+  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
+  return [...fast,...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
    .map(pr=>taskFor(pr,priorityFor(pr,now)));
  }
  const picked=[],chosen=new Set();

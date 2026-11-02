@@ -51,7 +51,9 @@ test('malformed branch names and over-capacity are rejected',()=>{
   assert.equal(validBranch('codex/fix-123'),true);
   for(const x of ['../test','bad//branch','bad@{ref}','/leading','a'.repeat(161),''])assert.equal(validBranch(x),false);
   assert.equal(capacityAllows(11,5),true);
-  assert.equal(capacityAllows(12,0),false);
+  assert.equal(capacityAllows(12,0),true);
+  assert.equal(capacityAllows(15,0),true);
+  assert.equal(capacityAllows(16,0),false);
   assert.equal(capacityAllows(0,6),false);
   assert.equal(capacityAllows(NaN,0),false);
 });
@@ -96,7 +98,7 @@ test('stacked PR parent is never modified by bootstrap worker',async()=>{
   assert.equal(f.logs.source,0);
 });
 test('busy CI queue prevents all PR updates and queries',async()=>{
-  const f=fixture({active:14,queued:2});
+  const f=fixture({active:16,queued:2});
   const r=await run({github:f.github,core:core(),context,sourceGit:f.sourceGit,now});
   assert.equal(r.reason,'CI_QUEUE_BUSY');
   assert.equal(f.logs.gets,0);
