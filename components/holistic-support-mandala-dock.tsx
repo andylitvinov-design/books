@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
+import { useVisualBottomDock } from "./app/use-visual-bottom-dock";
 
 const copy = {
   en: { home: "Home", practice: "Practice", messages: "Messages", progress: "Progress", settings: "Settings", videoAi: "AI", language: "Language", close: "Close" },
@@ -18,6 +19,8 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
   const t = copy[locale];
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const mobileDockRef = useRef<HTMLElement | null>(null);
+  useVisualBottomDock(mobileDockRef);
   useEffect(() => {
     const syncChat = () => setChatOpen(window.location.hash === "#video-director-chat");
     syncChat();
@@ -50,7 +53,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <button type="button" onClick={() => setSettingsOpen(false)}>{t.close}</button>
         </section>
       ) : null}
-      <nav className={styles.bottomNav} aria-label={t.home} data-mandala-support-bottom-nav>
+      <nav ref={mobileDockRef} className={styles.bottomNav} aria-label={t.home} data-mandala-support-bottom-nav>
         <Link href={"/" + locale + "/holistic-support/mobile"} prefetch={false}>
           <Home size={24} aria-hidden="true" /><span>{t.home}</span>
         </Link>

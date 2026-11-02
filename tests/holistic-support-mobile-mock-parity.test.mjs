@@ -127,3 +127,16 @@ test("six-button mobile dock opens the existing Video Director chat and never fl
   assert.match(css, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(css, /\.page:has\(\[data-support-reiki-central\][^)]*\) \.bottomNav\s*\{\s*position: static/);
 });
+
+test("the existing visual viewport hook anchors six Support and Mandala tabs on iPhone",()=>{
+ const hook = read("components/app/use-visual-bottom-dock.ts");
+ const studio = read("components/holistic-support-mandala-dock.tsx");
+ assert.match(client,/useVisualBottomDock\(mobileDockRef\)/);
+ assert.match(client,/<nav ref=\{mobileDockRef\} className=\{styles.bottomNav\}/);
+ assert.match(studio,/useVisualBottomDock\(mobileDockRef\)/);
+ assert.match(studio,/data-mandala-support-bottom-nav/);
+ assert.match(hook,/const visualBottom = viewport/);
+ assert.match(hook,/element.style.transform = `translate3d/);
+ assert.match(hook,/ResizeObserver/);
+ assert.match(hook,/document.addEventListener\("focusout", update\)/);
+});

@@ -784,10 +784,17 @@ for (const browserType of [chromium, webkit]) {
           await tab("filter").click();
           const reikiFilter=healing.locator('[data-support-reiki-filter]');
           await reikiFilter.waitFor({state:"visible"});
-          const navPosition=await root.locator('[data-support-mobile-bottom-nav]')
-            .evaluate(element => getComputedStyle(element).position);
-          assert.equal(navPosition, "static",
-            label+" the bottom nav must not obscure an expanded Reiki filter");
+          const dockPosition=await root.locator('[data-support-mobile-bottom-nav]')
+            .evaluate(element => {
+              const rect=element.getBoundingClientRect();
+              const viewport=window.visualViewport;
+              return {position:getComputedStyle(element).position,
+                bottom:rect.bottom,visibleBottom:viewport
+                  ? viewport.offsetTop+viewport.height : window.innerHeight};
+            });
+          assert.equal(dockPosition.position,"fixed",label+" Reiki filter retains fixed navigation");
+          assert.ok(Math.abs(dockPosition.bottom-dockPosition.visibleBottom)<=3,
+            label+" bottom dock remains attached to the visible viewport: "+JSON.stringify(dockPosition));
           if (width === 390) await page.screenshot({
             path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
           });
@@ -830,6 +837,15 @@ for (const browserType of [chromium, webkit]) {
             label+" brief text voice report");
           assert.equal(await reikiFilter.locator('[data-support-reiki-provider]').count(),1,
             label+" provider preference only for sessions");
+          const applyButton=reikiFilter.locator('[data-support-reiki-apply]');
+          await applyButton.scrollIntoViewIfNeeded();
+          const applyGeometry=await applyButton.evaluate(element => {
+            const action=element.getBoundingClientRect();
+            const dock=document.querySelector('[data-support-mobile-bottom-nav]')?.getBoundingClientRect();
+            return {actionBottom:action.bottom,dockTop:dock?.top};
+          });
+          assert.ok(Number.isFinite(applyGeometry.dockTop)&&applyGeometry.actionBottom<=applyGeometry.dockTop-2,
+            label+" Reiki Apply must remain accessible above fixed dock: "+JSON.stringify(applyGeometry));
           assert.equal(await reikiFilter.locator('[data-support-reiki-certificate]').count(),0,
             label+" session has no certificate toggle");
           await reikiFilter.locator('[data-support-reiki-format] button').nth(2).click();

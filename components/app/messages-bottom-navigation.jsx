@@ -1,3 +1,6 @@
+"use client"
+import {useRef} from 'react'
+import {useVisualBottomDock} from './use-visual-bottom-dock'
 import Link from 'next/link'
 import {BookOpen,MessageCircle,House,Leaf,UserRound,Sparkles} from 'lucide-react'
 
@@ -11,12 +14,14 @@ const ITEMS=[
   {path:'profile',Icon:UserRound,en:'Profile',ru:'Профиль',es:'Perfil'},
   {path:'video-ai',Icon:Sparkles,en:'AI',ru:'ИИ',es:'IA'},
 ]
-export default function MessagesBottomNavigation({locale='en'}){
+export default function MessagesBottomNavigation({locale='en',activeSection='messages'}){
   const accountLocale=locale==='es'?'en':locale
-  return <nav className="hh-mobile-app-nav"
+  const mobileDockRef=useRef(null)
+  useVisualBottomDock(mobileDockRef)
+  return <nav ref={mobileDockRef} className="hh-mobile-app-nav" data-hh-six-tab-dock
     aria-label={locale==='ru'?'Быстрая навигация':locale==='es'?'Navegación rápida':'Quick navigation'}>
     {ITEMS.map(({path,Icon,en,ru,es})=>{
-      const active=path==='messages'
+      const active=path===activeSection
       const label=locale==='ru'?ru:locale==='es'?es:en
       // Practice is the approved five-tab public dashboard before and after Google sign-in.
       // Private editing still uses /app/practice?panel=...; the dock never opens the old landing.

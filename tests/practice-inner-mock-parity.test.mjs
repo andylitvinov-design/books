@@ -80,7 +80,7 @@ test('message redesign preserves actual private audio/media send and viewport ke
  assert.doesNotMatch(messages,/sendOneMessengerMessage\(|fakeMessage|sampleConversation/)
 })
 
-test('five safe-area practitioner destinations are localized and never create a second CRM',()=>{
+test('six safe-area practitioner destinations are localized and never create a second CRM',()=>{
  // The current component intentionally uses one guarded registry, rather than
  // repeating inline panel comparisons in each view.
  const supported=nav.match(/const PANELS=new Set\(\[([^\]]+)\]\)/)?.[1]
@@ -96,10 +96,9 @@ test('five safe-area practitioner destinations are localized and never create a 
  }
  for(const label of ['Главная','Практика','Заявки','Материалы','Профиль','Inicio','Solicitudes','Client records'])
   assert.ok(nav.includes(label),label)
- for(const s of ['data-practice-inner-dock','aria-current={selected?', 'onOpenMaterials(\'courses\')']) {
-  // The action is owned by existing protected callbacks, not a duplicate service.
-  assert.ok(nav.includes(s)||nav.includes(s.replace('onOpenMaterials(\'courses\')',"onOpenMaterials('courses')")),s)
- }
+ assert.match(nav,/<MessagesBottomNavigation locale=\{locale\} activeSection=\{activeSection\}\/>/)
+ assert.doesNotMatch(nav,/data-practice-inner-dock|onOpenMaterials\('courses'\)/)
+ assert.match(nav,/panel==='materials'\?'materials':panel==='profile'\?'profile':'practice'/)
  assert.match(mobileNav,/path:'materials'/)
  assert.match(mobileNav,/path:'profile'/)
  assert.match(mobileNav,/app\/practice\?panel=materials/)

@@ -727,6 +727,10 @@
 @media (max-width: 640px) {
   .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
     padding-bottom: calc(135px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+  .page:has([data-support-reiki-central][data-active-tab="filter"]) [data-support-reiki-apply] {
+    scroll-margin-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 }
 

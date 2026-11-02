@@ -131,3 +131,20 @@ test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>
   assert.deepEqual(errors.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],path)
  }
 })
+
+test('six-tab navigation keeps canonical Messages, Materials and Profile across Google sign-in',()=>{
+ const showcase=read('components/practice-showcase.jsx')
+ const inner=read('components/app/practice-inner-navigation.jsx')
+ const messages=read('components/app/messages-bottom-navigation.jsx')
+ const hook=read('components/app/use-visual-bottom-dock.ts')
+ assert.match(showcase,/data-hh-six-tab-dock/)
+ assert.match(showcase,/key:'messages', label:'inbox'/)
+ assert.doesNotMatch(showcase,/key:'requests', label:'forms'/)
+ assert.match(showcase,/useVisualBottomDock\(mobileDockRef\)/)
+ assert.match(inner,/<MessagesBottomNavigation locale=\{locale\} activeSection=\{activeSection\}\/>/)
+ assert.match(messages,/path:'video-ai'/)
+ assert.match(messages,/mandala#video-director-chat/)
+ assert.match(hook,/viewport.offsetTop \+ viewport.height/)
+ assert.match(hook,/getBoundingClientRect\(\)/)
+ assert.match(hook,/window.addEventListener\("pageshow", update\)/)
+});
