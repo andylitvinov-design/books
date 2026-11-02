@@ -2828,3 +2828,12 @@
  .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:20px;height:20px}
  .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeName{font-size:10.5px}
 }
+/* Single real workspace nav portals here in mobile Effects only. On desktop the
+   nav stays in its original source position below the existing Canvas hero. */
+.hypnoNavSlot{display:none}
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>.hypnoNavSlot{
+   display:block;order:0;width:100%;min-width:0;margin:0;padding:0}
+ .studio[data-active-workspace="effects"] .hypnoNavSlot>.quickVideoNav{
+   display:grid;width:100%;min-width:0;margin:0}
+}

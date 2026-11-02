@@ -3816,8 +3816,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // All other workspaces keep the source-order hero -> tabs hierarchy.
   const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
   useLayoutEffect(()=>{
-    setEffectsNavTarget(activeWorkspace==="effects"
+    const mobile=window.matchMedia("(max-width: 759px)");
+    const sync=()=>setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
       ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
+    sync();
+    mobile.addEventListener("change",sync);
+    return()=>mobile.removeEventListener("change",sync);
   },[activeWorkspace]);
 
   return (

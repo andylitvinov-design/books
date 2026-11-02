@@ -133,3 +133,16 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.match(ui,/onClick=\{onCreate\}/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);
 });
+
+test("effects moves the single original tab rail above Wave on mobile only",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  assert.equal((studio.match(/<nav className=\{videoStyles\.quickVideoNav\}/g)||[]).length,1);
+  assert.ok(studio.indexOf('id="video-hero"')<studio.indexOf("data-video-quick-controls"),
+    "original video hero precedes the tabs in source order and all other workspaces");
+  assert.match(studio,/activeWorkspace==="effects"&&mobile\.matches/);
+  assert.match(studio,/data-video-hypno-nav-slot/);
+  assert.match(studio,/createPortal\(nav,effectsNavTarget\)/);
+  assert.match(css,/\.studio\[data-active-workspace="effects"\] \.quickBuilder>\.hypnoNavSlot/);
+  assert.match(css,/\.hypnoNavSlot\{display:none\}/);
+});
