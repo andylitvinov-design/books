@@ -254,7 +254,27 @@ jobs:
             exit 0
           fi
           if [[ "$current_method" == "$HH_EXPECTED_MERGE_METHOD" ]]; then
-            echo 'CI_AUTO_MERGE: SKIP already armed with correct method'
+            # A previously armed PR can remain open even after current-head Core
+            # and specialists pass. Try a normal GitHub-protected merge once:
+            # the server still enforces rules, reviews, and the exact HEAD lease.
+            # No admin override, force update, duplicate CI, or extra source commit.
+            if [[ "$HH_HAS_AUTOMERGE_TOKEN" == true ]]; then
+              if gh pr merge "$PR_NUMBER" --repo "$GH_REPO" "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/armed-protected-merge-error"; then
+                if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state --jq '.state' 2>/dev/null)" == MERGED ]]; then
+                  echo "CI_AUTO_MERGE: MERGED previously armed PR #$PR_NUMBER after verified CI" >> "$GITHUB_STEP_SUMMARY"
+                  exit 0
+                fi
+                echo '::warning::Protected merge accepted but GitHub readback did not confirm MERGED' >&2
+                exit 1
+              fi
+              if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state --jq '.state' 2>/dev/null)" == MERGED ]]; then
+                echo 'CI_AUTO_MERGE: PR merged concurrently by GitHub'
+                exit 0
+              fi
+              echo 'CI_AUTO_MERGE: GitHub denied immediate protected merge; native AutoMerge remains armed'
+              exit 0
+            fi
+            echo 'CI_AUTO_MERGE: already armed; dedicated push-capable token absent, no direct merge'
             exit 0
           fi
           if [[ "$current_method" != NONE ]]; then
