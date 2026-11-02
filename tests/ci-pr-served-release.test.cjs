@@ -18,7 +18,8 @@ function fixtures({replace={},ancestry='ahead',statusState='success',siteStatus=
  const read=[];
  const api={rest:{repos:{
   getBranch:async()=>({data:{protected:true,commit:{sha:head}}}),
-  getCombinedStatusForRef:async()=>({data:{total_count:1,statuses:[{...status,state:statusState}]}}),
+  getCombinedStatusForRef:async({ref})=>({data:{total_count:ref===sha?1:0,
+   statuses:ref===sha?[{...status,state:statusState}]:[]}}),
   compareCommits:async({base})=>({data:{status:ancestry,merge_base_commit:{sha:base}}})
  },pulls:{list:async()=>({data:[]})},
  actions:{listWorkflowRuns:async()=>({data:{total_count:0,workflow_runs:[]}})}}};
