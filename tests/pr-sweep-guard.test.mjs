@@ -10,6 +10,20 @@ const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
 const check = (name, status='completed', conclusion='success', id=10) => ({name,status,conclusion,head_sha:sha('a'),id,completed_at:`2026-10-29T12:00:${String(id).padStart(2,'0')}Z`});
 
+test('PR Sweep Guard does not make a live conflict-inventory probe block ordinary PR CI',()=>{
+  const source=readFileSync('.github/workflows/hh-pr-sweep-guard.yml','utf8');
+  const marker='      - name: Probe real conflict inventory with a read-only token';
+  assert.ok(source.includes(marker));
+  const probe=source.slice(source.indexOf(marker));
+  assert.match(probe,/^        if: github\.event_name == 'workflow_dispatch'$/m,
+    'live GitHub inventory should only run on explicit operational dispatch');
+  assert.doesNotMatch(probe,/github\.event_name == 'pull_request'/,
+    'network or production-base instability must not block source CI');
+  assert.match(probe,/run: node scripts\/pr-sweep-guard\.mjs route-conflicts/);
+  assert.match(source,/run: node --test tests\/pr-sweep-guard\.test\.mjs/,
+    'deterministic policy/source tests must remain mandatory on pull requests');
+});
+
 test('deep stale triage accepts only latest exact-head required-app gate failure',()=>{
   const gate=(id,conclusion,overrides={})=>({id,name:'release-ready',status:'completed',conclusion,head_sha:sha('a'),app:{id:15368},started_at:`2026-10-31T12:00:0${id}Z`,...overrides});
   const assess=(checks,total=checks.length)=>assessRequiredGate({head:sha('a'),appId:15368,checks,total});
@@ -621,36 +635,4 @@ test('hourly conflict scans rotate through a backlog divisible by the ten-minute
 test('push-triggered conflict scans rotate within the same hour',()=>{
  const rows=Array.from({length:210},(_,number)=>({number:number+1}));
  assert.notDeepEqual(rotateConflictSample(rows,35,0),rotateConflictSample(rows,35,600000));
-});
-
-
-test('optional conflict snapshot keeps transient GitHub 5xx from blocking guarded PR CI',()=>{
- const wf=readFileSync(new URL('../.github/workflows/hh-pr-sweep-guard.yml',import.meta.url),'utf8');
- const marker='      - name: Probe real conflict inventory with a read-only token';
- const part=wf.split(marker)[1]?.split('        run: |\n')[1];
- assert.ok(part,'read-only observational probe must exist');
- const script=part.split('\n').map(line=>line.startsWith('          ')?line.slice(10):line).join('\n');
- assert.match(script,/SWEEP_GRAPHQL_HTTP_\(502\|503\|504\)/);
- assert.match(script,/exit "\$status"/);
- const check=(code)=>{
-  const dir=mkdtempSync(join(tmpdir(),'hh-conflict-telemetry-'));
-  const summary=join(dir,'summary.md');
-  const command='node(){ printf "SWEEP_GRAPHQL_HTTP_'+code+'\\n"; return 2; }\n'+script;
-  try {
-   const result=spawnSync('bash',['-c',command],{
-    env:{...process.env,GITHUB_STEP_SUMMARY:summary},
-    encoding:'utf8',timeout:8000,
-   });
-   return {status:result.status,stdout:result.stdout||'',stderr:result.stderr||'',
-    summary:result.status===0?readFileSync(summary,'utf8'):''};
-  } finally {rmSync(dir,{recursive:true,force:true});}
- };
- for(const code of [502,503,504]){
-  const result=check(code);
-  assert.equal(result.status,0,'transient HTTP '+code+' is degraded telemetry only: '+result.stderr);
-  assert.match(result.summary,/DEGRADED/);
- }
- const forbidden=check(403);
- assert.equal(forbidden.status,2,'authorization errors must still fail closed');
- assert.match(forbidden.stderr,/SWEEP_GRAPHQL_HTTP_403/);
 });
