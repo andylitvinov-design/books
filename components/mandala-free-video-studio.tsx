@@ -1754,6 +1754,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [exportUnavailable, setExportUnavailable] = useState(false);
+  // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
+  const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
   // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
   const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -2079,6 +2081,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setResult(null);
     setNotice("");
     setExportUnavailable(false);
+    setWebkitRecoveryReason(null);
   }, [signature]);
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
@@ -2202,7 +2205,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, recording, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan, usingFreeFilmCompilation, freeFilmReady, appliedStory]);
 
-  async function createVideo(preferWebm = false, forceMp4ForRetry = false) {
+  async function createVideo(preferWebm = false, forceMp4ForRetry = false, safeWebkitRetry = false) {
     if (!canGenerate || !source || jobRef.current || webCodecJobRef.current || preparingRef.current) return;
     stopSoundPreview();
     stopMovieSound();
@@ -2221,7 +2224,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         typeof AudioEncoder.isConfigSupported==="function"&&
         typeof OfflineAudioContext!=="undefined"));
     preparingRef.current=true;
-    setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
+    setPreparing(true);setProgress(0);
+    setNotice(safeWebkitRetry
+      ? locale==="ru"?"Экспорт 540p / 8 кадр/с: все сцены и выбранное аудио сохраняются."
+        :locale==="es"?"Exportando a 540p / 8 fps con las cuatro escenas y el audio seleccionado."
+        :"Exporting at 540p / 8 fps with all four scenes and your selected audio."
+      :t.preparing);
+    setMusicWarning("");setWebkitRecoveryReason(null);
     setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
@@ -2305,8 +2314,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         return;
       }
       const [outputWidth, outputHeight] = formatDimensions(aspect, quality);
-      canvas.width = outputWidth;
-      canvas.height = outputHeight;
+      // Only the explicit user retry reduces the local H.264 resolution.
+      // Preserve the chosen aspect and even encoder dimensions; never drop audio.
+      const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry
+        ? 540/(quality==="fullhd"?1080:720):1;
+      canvas.width=Math.round(outputWidth*safariRetryScale/2)*2;
+      canvas.height=Math.round(outputHeight*safariRetryScale/2)*2;
       const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) throw new Error("Canvas unsupported");
       const firstStockFrame=freeFilmVideoAt(0);
@@ -2350,7 +2363,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // Safari WebKit 26 often falls behind H.264/AAC muxing at 20 fps on
             // portrait Canvas. Keep real-time storyboard PTS and audible AAC,
             // but bound encoder input to a smooth, device-safe 12 fps.
-            canvas,seconds:duration,frameRate:Math.min(12,framesPerSecond),
+            canvas,seconds:duration,frameRate:Math.min(safeWebkitRetry?8:10,framesPerSecond),
             audio:files.length?{files,volume:soundVolume}:undefined,
             shouldContinue:()=>!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey,
             onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
@@ -2387,10 +2400,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "licensed_scene_frame_unavailable","narration_longer_than_video",
               "audio_master_incomplete","audio_decode_invalid",
               "video_output_size_invalid","video_output_not_mp4",
+              "unsupported_audio_count","invalid_audio_volume",
+              "invalid_first_party_preset","first_party_audio_unavailable",
+              "audio_size_invalid",
             ];
             const code=safeReasons.includes(reason)?reason:"unexpected_encoder_failure";
+            // Fixed diagnostic code only: no media, storyboard, voice or text.
             console.warn("HH_WEBKIT_MP4_EXPORT_FAILURE:"+code);
-            setNotice(t.failed);setExportUnavailable(true);
+            const canRetry=!safeWebkitRetry&&[
+              "video_encoder_timeline_drift","video_encoder_too_slow",
+              "webcodecs_h264_unsupported","unexpected_encoder_failure",
+            ].includes(code);
+            if(canRetry)setWebkitRecoveryReason(code);
+            const hint=code==="video_encoder_timeline_drift"||code==="video_encoder_too_slow"
+              ? locale==="ru"?"Кодировщик Safari не успевает обрабатывать кадры."
+                :locale==="es"?"El codificador de Safari no alcanza a procesar los fotogramas."
+                :"Safari's encoder cannot keep up with the frames."
+              :code==="webcodecs_aac_unsupported"
+                ? locale==="ru"?"Safari не поддерживает сохранение выбранной аудиодорожки в AAC. Звук не удалён."
+                  :locale==="es"?"Safari no puede codificar el audio seleccionado en AAC. No se eliminó el sonido."
+                  :"Safari cannot encode your selected audio in AAC. Audio was not discarded."
+              :code==="licensed_scene_frame_unavailable"
+                ? locale==="ru"?"Одна из четырёх сцен не декодировалась. Повторите создание видео."
+                  :locale==="es"?"Uno de los cuatro clips no se pudo decodificar. Prueba de nuevo."
+                  :"One of four source clips failed to decode. Please retry."
+              :locale==="ru"?"Не удалось завершить MP4 на этом устройстве."
+                :locale==="es"?"No se pudo completar el MP4 en este dispositivo."
+                :"The MP4 could not be completed on this device.";
+            setNotice(hint+" ("+code+").");
+            setExportUnavailable(true);
           }
         }finally{
           if(webCodecJobRef.current===controller)webCodecJobRef.current=null;
@@ -4257,6 +4295,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onApply={applyAutoFilm} onCreate={createQuickVideo}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
+      {exportUnavailable && webkitRecoveryReason && !recording && !preparing ? (
+        <button type="button" data-video-webkit-safe-retry
+          className={videoStyles.audioDirectLink}
+          onClick={()=>void createVideo(false,false,true)}>
+          {locale==="ru"?"Повторить в лёгком режиме · 540p / 8 кадр/с (4 сцены и звук сохраняются)"
+            :locale==="es"?"Reintentar en modo ligero · 540p / 8 fps (sin perder escenas ni audio)"
+            :"Retry in lighter mode · 540p / 8 fps (all scenes and audio retained)"}
+        </button>
+      ):null}
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
