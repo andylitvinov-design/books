@@ -30,7 +30,10 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-real-repair-worker
+  # Different PRs may repair in parallel. Exact-HEAD issue reservations and
+  # publisher revalidation still prevent two writers from changing one PR.
+  # An unaddressed manual queue scan retains a shared conservative lease.
+  group: hh-real-repair-worker-pr-${{ github.event.inputs.pr_number != '0' && github.event.inputs.pr_number || 'queue' }}
   cancel-in-progress: false
 jobs:
   claim:

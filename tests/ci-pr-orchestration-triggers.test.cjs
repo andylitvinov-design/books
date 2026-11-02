@@ -26,6 +26,12 @@ test('source Repair Worker is addressed only; no empty cron consumes its publish
  assert.ok(s.includes('reservation_run_id:'));
  assert.ok(s.includes('expected_sha:'));
  assert.ok(s.includes('task_key:'));
+ assert.match(s,/group: hh-real-repair-worker-pr-\$\{\{/,
+   'different PRs must not serialize under a single repair workflow lease');
+ assert.match(s,/code_fix:/);
+ assert.match(s,/openai\/codex-action@v1/);
+ assert.match(s,/code_verify:/);
+ assert.match(s,/Finalize on publisher runner/);
 });
 test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
  const s=read('hh-pr-ci-worker');

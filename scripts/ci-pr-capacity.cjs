@@ -3,7 +3,7 @@ const CORE_WORKFLOW='HH PR core release gate';
 const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
 const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:1,
- maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
+ maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16,maxParallelRepairRuns:2};
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
   return {known:false,reason:'INCOMPLETE_CAPACITY'};
@@ -34,7 +34,10 @@ function admission(lane,capacity){
  // independently checked again immediately before dispatch.
  if(lane==='ci'&&capacity.inventoryConfidence==='BOUNDED_PARTIAL')
    return 'PARTIAL_CAPACITY_CI_BLOCKED';
- if(capacity.activeWorker[worker]>=LIMIT.maxWorkerRuns)return 'WORKER_BUSY';
+ // Bounded source parallelism is per PR; CI and manual conflict keep one slot.
+ // Keep the global queue/job/Core pressure limits below unchanged.
+ const workerLimit=lane==='repair'?LIMIT.maxParallelRepairRuns:LIMIT.maxWorkerRuns;
+ if(capacity.activeWorker[worker]>=workerLimit)return 'WORKER_BUSY';
  // Optional CI retains the strict 60-run global stop (and its own 6-run
  // limit). Admit at most ONE exact-head source Repair Worker into a modest
  // overflow window when most queued runs are unrelated/no-op wrappers.

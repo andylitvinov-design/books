@@ -75,7 +75,10 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
   'single short source worker may use bounded overflow without multiplying optional CI');
  assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'ADMIT',
+  'one active source worker must not block another PR');
+ assert.equal(admission('repair',computeCapacity([
+  {name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
@@ -109,7 +112,7 @@ test('repair still fails closed when runner jobs or its own worker are saturated
  const jobs=Array.from({length:38},()=>({status:'in_progress'}));
  assert.equal(admission('repair',computeCapacity(unrelated,[],jobs)),'JOBS_SATURATED');
  assert.equal(admission('repair',computeCapacity(
-  [{name:'HH PR source Repair Worker'},...unrelated],[],[]
+  [{name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'},...unrelated],[],[]
  )),'WORKER_BUSY');
  assert.equal(admission('conflict',cap(18,43)),'ADMIT');
 });
@@ -342,7 +345,7 @@ test('completed push audit cannot starve a ready source-repair dispatch',async()
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
 });
-test('running audit or recent real completion still blocks source dispatch',async()=>{
+test('another PR worker, completed or running, does not impose a global repair cooldown',async()=>{
  for(const recent of [
   [{event:'push',status:'in_progress',created_at:new Date(NOW-5000).toISOString()}],
   [{event:'workflow_dispatch',status:'completed',conclusion:'success',
@@ -351,9 +354,26 @@ test('running audit or recent real completion still blocks source dispatch',asyn
   const f=fixture([pr(1)],{comments:{1:[proof()]},recent});
   const r=await run({github:f.github,core:core(),context,now:NOW,
    capacityFn:f.capacityFn});
-  assert.equal(r.dispatchAccepted,0);
-  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN,1);
+  assert.equal(r.dispatchAccepted,1);
+  assert.equal(f.calls.dispatched.length,1);
+  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  }
+});
+test('only two independent source PRs start per dispatch cycle, and occupied slots are counted',async()=>{
+ const sources=[pr(11),pr(12),pr(13)];
+ const comments=Object.fromEntries(sources.map(x=>[x.number,[proof()]]));
+ const f=fixture(sources,{comments});
+ const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,2);
+ assert.equal(new Set(f.calls.dispatched.map(x=>x.inputs.pr_number)).size,2);
+ assert.equal(f.calls.reserved.length,2);
+ const g=fixture(sources,{comments});
+ const capacityFn=async()=>computeCapacity([
+  {name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
+ const partial=await run({github:g.github,core:core(),context,now:NOW,capacityFn});
+ assert.equal(partial.dispatchAccepted,1);
+ assert.equal(g.calls.reserved.length,1);
 });
 test('real conflict requires a fresh dirty merge state',async()=>{
  const plain=pr(9,'conflict');const f=fixture([plain],{});
