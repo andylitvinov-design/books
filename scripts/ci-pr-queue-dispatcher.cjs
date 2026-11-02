@@ -151,7 +151,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(res.data.length<100)break;
    if(page===6)throw Error('PR_PAGINATION_LIMIT');
   }
- }catch(err){summary.reason='INVENTORY_UNVERIFIED: '+err.message;return finish();}
+ }catch(err){summary.reason||='INVENTORY_UNVERIFIED: '+err.message;return finish();}
  summary.discovered=prs.length;
  if(exhausted)return finish(); // Keep headroom; never reserve while rate is low.
  const production=prs.filter(pr=>pr.base?.ref===PROD);
