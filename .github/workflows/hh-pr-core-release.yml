@@ -136,6 +136,7 @@ jobs:
                   scripts/ci-pr-readiness.mjs|\
                   scripts/ci-source-preflight.mjs|\
                   tests/ci-source-preflight.test.mjs|\
+                  tests/ci-quick-route.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
@@ -331,8 +332,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" != true ]] || {
-            echo 'Only ready PRs run a release specialist.' >&2
+          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
+            echo 'Draft: specialists remain deferred.' >&2
+            exit 1
+          fi
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request events run a release specialist.' >&2
             exit 1
           }
           [[ "$HH_EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$HH_PR_NUMBER" =~ ^[0-9]+$ ]] || exit 1
