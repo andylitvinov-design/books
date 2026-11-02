@@ -42,6 +42,8 @@ on:
       - 'tests/ci-pr-repair-worker.test.cjs'
       - 'tests/ci-pr-repair-test-scope.test.cjs'
       - 'scripts/ci-pr-ci-worker.cjs'
+      - 'scripts/ci-pr-core-metadata-wake.cjs'
+      - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
   workflow_dispatch:
 permissions:
@@ -73,6 +75,8 @@ jobs:
           node --check tests/ci-pr-slot-wakeup.test.cjs
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
+          node --check scripts/ci-pr-core-metadata-wake.cjs
+          node --check tests/ci-pr-core-metadata-wake.test.cjs
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-live-verifier.cjs
@@ -86,7 +90,7 @@ jobs:
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:
