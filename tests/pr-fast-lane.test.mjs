@@ -388,7 +388,7 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
         GITHUB_OUTPUT:join(dir,'unverified'),GITHUB_STEP_SUMMARY:summary});
     assert.notEqual(unverified.status,0,'missing trusted ancestry proof must fail closed');
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
-    const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
+    const lint=source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
       'changed-file lint must also exclude unrelated target-branch updates');
   } finally {
@@ -520,7 +520,7 @@ test('CI-only fast lane retains exact policy checks and refuses broad source ski
   const actionlint=workflow('hh-actionlint.yml');
   assert.ok(core.includes("ci_only: $"+"{{ steps.diff.outputs.ci_only }}"));
   for(const path of [".github/workflows/*.yml",".github/workflows/*.yaml","docs/operations/PR_FAST_LANE_20261029.md","lib/ci/specialist-aggregate.mjs","lib/ci/pr-sweep-guard.mjs","scripts/ci-specialist-aggregate.mjs","scripts/pr-sweep-guard.mjs","tests/pr-fast-lane.test.mjs","tests/ci-specialist-aggregate.test.mjs","tests/ci-workflow-globs.test.mjs","tests/pr-sweep-guard.test.mjs","tests/ci-heavy-draft-policy.test.mjs"]) assert.ok(core.includes(path),'Missing exact allowlist path '+path);
-  assert.ok(core.includes("if: needs.scope.outputs.ci_only != 'true'"));
+  assert.ok(core.includes("steps.diff.outputs.ci_only != 'true'"));
   assert.match(core,/node --test tests\/pr-fast-lane\.test\.mjs/);
   assert.match(core,/run: npm run build/);
   assert.match(core,/node scripts\/ci-specialist-aggregate\.mjs/);
@@ -802,7 +802,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
-  const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
+  const code = source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0];
   const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
@@ -829,8 +829,8 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
 
 test('Core old PR base beyond shallow depth is checked by API, never mistaken for code failure', () => {
   const source = workflow('hh-pr-core-release.yml');
-  const scope = source.split('  scope:\n')[1]?.split('  code:\n')[0];
-  const code = source.split('  code:\n')[1]?.split('  hh-specialist:\n')[0];
+  const scope = source.split('  scope:\n')[1]?.split('  hh-specialist:\n')[0];
+  const code = source.split('  scope:\n')[1]?.split('  hh-specialist:\n')[0];
   for (const job of [scope, code]) {
     assert.ok(job.includes('GH_TOKEN: ${{ github.token }}'), 'read-only GitHub token required');
     assert.ok(job.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
@@ -1152,7 +1152,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
   assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:/m);
@@ -1164,7 +1164,7 @@ test('production-base impact analyzer runs CI-only contracts without unrelated N
   assert.ok(allow?.includes('lib/ci/production-base-impact.mjs'),'pure CI module must use CI-only route');
   assert.ok(allow?.includes('tests/ci-growth-course-core-reuse.test.mjs'),'pure Core-reuse CI contracts must avoid an unrelated Next production build');
   assert.match(source,/node --test tests\/ci-workflow-globs\.test\.mjs tests\/workflow-next-route-filters\.test\.mjs tests\/ci-specialist-aggregate\.test\.mjs/);
-  assert.ok(source.includes("if: needs.scope.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
+  assert.ok(source.includes("steps.diff.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
 });
 
 test('event-driven CI recognizes synthetic merge SHA only through exact PR source and base', async () => {
@@ -1414,7 +1414,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
-  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate,/Unified Core gate passed/);
   assert.doesNotMatch(gate,/npm ci|npm run build|npx|playwright|continue-on-error/);
   assert.doesNotMatch(source,/^  release-ready:|^  hh-core-verified:/m);
 });
@@ -1441,12 +1441,12 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
 
 test('short Core orchestration uses slim runners and never skips real Core or specialist checks', () => {
   const source = workflow('hh-pr-core-release.yml');
-  const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  code:\s*$/m)[0] ?? '';
-  const core = source.split(/^  code:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const core = source.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
   const gate = source.split(/^  hh-merge-check:\s*$/m)[1] ?? '';
-  assert.match(scope, /^    runs-on: ubuntu-slim$/m);
-  assert.match(scope, /^    timeout-minutes: 12$/m);
+  assert.match(scope, /^    runs-on: ubuntu-24\.04$/m);
+  assert.match(scope, /^    timeout-minutes: 45$/m);
   assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
   assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
   assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
@@ -1456,7 +1456,7 @@ test('short Core orchestration uses slim runners and never skips real Core or sp
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
-  assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate, /Unified Core gate passed/);
 });
 
 test('required hh-merge-check uses lightweight runner and keeps fail-closed Core/Specialist gate', () => {
@@ -1500,7 +1500,7 @@ test('universal actionlint and Guard use lightweight runner without weakening ex
 test('Core restores immutable production-seeded media and compiler caches without writing from PR', () => {
   const core = workflow('hh-pr-core-release.yml');
   const producer = workflow('hh-static-image-cost-guard.yml');
-  const coreJob = core.split(/^  code:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const coreJob = core.split(/^  scope:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
   const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
   for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-']) {
     assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
