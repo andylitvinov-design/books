@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability, rotateConflictSample } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -70,7 +70,7 @@ test('route-deep rechecks live heads and never attributes an old failure to a ch
           if(options.method!=='POST')throw Error('wrong method');
           snapshots++;
           const nodes=[1,2].map(n=>({number:n,createdAt:'2020-01-01T00:00:00Z',isDraft:false,mergeable:'UNKNOWN',mergeStateStatus:'UNKNOWN',baseRefName:'codex/public-book-library',headRefOid:n===1?sha('a'):sha(snapshots===1?'b':'c')}));
-          return ok({data:{repository:{pullRequests:{totalCount:2,pageInfo:{hasNextPage:false},nodes}}}});
+          return ok({data:{repository:{ref:{target:{oid:sha('d')}},pullRequests:{totalCount:2,pageInfo:{hasNextPage:false},nodes}}}});
         }
         if(options.method && options.method!=='GET')throw Error('unexpected write');
         if(url.includes('/rules/branches/'))return ok([{type:'required_status_checks',parameters:{required_status_checks:[{context:'release-ready',integration_id:15368}]}}]);
@@ -549,4 +549,65 @@ test('canonical resolution is reusable only for identical 3-way blobs and non-se
   assert.equal(planSameConflictResolutionReuse({...source,conflicts:[conflict(privatePath)],
     resolved_blobs:[{path:privatePath,blob_sha:sha('4')}]},
     {...target,conflicts:[conflict(privatePath)]}).reason,'SENSITIVE_FIX_REQUIRES_INDEPENDENT_REVIEW');
+});
+
+
+test('unknown mergeability is resolved from matching live PRs or remains explicitly partial',async()=>{
+ const rows=[1,2,3].map(number=>({number,state:'open',mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const read=async n=>n===1?{number:n,state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}}:
+  n===2?{number:n,state:'open',mergeable:true,mergeable_state:'clean',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}}:
+  {number:n,state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('c')},base:{ref:'codex/public-book-library'}};
+ const result=await resolveUnknownMergeability(rows,read,{limit:3,offset:0});
+ assert.equal(result.rows[0].mergeable,false);assert.equal(result.rows[1].mergeable,true);
+ assert.equal(result.rows[2].mergeable,null);assert.equal(result.unresolved,1);
+});
+test('bounded unknown probes never present an incomplete inventory as complete',async()=>{
+ const rows=[1,2,3].map(number=>({number,state:'open',mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const result=await resolveUnknownMergeability(rows,async()=>{throw Error('rate limit')},{limit:1,offset:0});
+ assert.equal(result.attempted,1);assert.equal(result.unresolved,3);assert.equal(result.complete,false);
+});
+
+test('production conflict route probes unknown PRs and rechecks before grouping',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function reportConflictRoutes(repo,token) {');
+ const end=source.indexOf('// Daily CLI',start);assert.ok(start>=0&&end>start);
+ const rows=[2719,2283].map(number=>({number,state:'open',draft:false,mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const out=[];const response=data=>({ok:true,headers:{get:()=> '2000'},json:async()=>data});
+ const fetch=async url=>{
+  const m=String(url).match(/\/pulls\/(\d+)(\/files\?.*)?$/);assert.ok(m,url);
+  return response(m[2]?[{filename:'components/shared.jsx'}]:{number:Number(m[1]),state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}});
+ };
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,rotateConflictSample,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
+ await fn('andylitvinov-design/books','test-token');
+ assert.equal(out[0].dirty_total,2);assert.equal(out[0].dirty_total_complete,true);
+ assert.equal(out[0].groups.length,1);assert.equal(out[0].groups[0].blocked_pr_count,2);
+ assert.equal(out[0].groups[0].verification,'SHARED_FILE_CANDIDATE_ONLY_NOT_CONFIRMED_HUNK');
+});
+
+
+test('bounded conflict sampling rotates over all dirty PRs',()=>{
+ const rows=Array.from({length:136},(_,number)=>({number:number+1}));const seen=new Set();
+ for(let turn=0;turn<4;turn++)for(const row of rotateConflictSample(rows,35,turn*600000))seen.add(row.number);
+ assert.equal(seen.size,136);assert.equal(rotateConflictSample(rows,35,0).length,35);
+});
+
+test('conflict snapshot uses current production ref, not a PR base snapshot',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function collectRouteSnapshot(repo, token) {');
+ const end=source.indexOf('async function reportRoutes(',start);assert.ok(start>=0&&end>start);
+ const fetch=async()=>({ok:true,json:async()=>({data:{repository:{ref:{target:{oid:sha('c')}},pullRequests:{totalCount:1,pageInfo:{hasNextPage:false},nodes:[{number:1,createdAt:'2026-01-01T00:00:00Z',isDraft:false,mergeable:'CONFLICTING',mergeStateStatus:'DIRTY',baseRefName:'codex/public-book-library',baseRefOid:sha('b'),headRefOid:sha('a')}]}}}})});
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{fetch,AbortSignal,Date});
+ const result=await fn('andylitvinov-design/books','test-token');
+ assert.equal(result.rows[0].base.sha,sha('c'));assert.equal(result.rows[0].reported_base_sha,sha('b'));
+});
+
+test('conflict snapshot retries a transient GitHub 502 but not a client error',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function collectRouteSnapshot(repo, token) {'),end=source.indexOf('async function reportRoutes(',start);
+ let calls=0,status=502;
+ const success={data:{repository:{ref:{target:{oid:sha('c')}},pullRequests:{totalCount:0,pageInfo:{hasNextPage:false},nodes:[]}}}};
+ const fetch=async()=>++calls===1?{ok:false,status}:{ok:true,json:async()=>success};
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{fetch,AbortSignal,Date,setTimeout:fn=>fn()});
+ assert.equal((await fn('andylitvinov-design/books','test-token')).total,0);assert.equal(calls,2);
+ calls=0;status=403;await assert.rejects(fn('andylitvinov-design/books','test-token'),/SWEEP_GRAPHQL_HTTP_403/);assert.equal(calls,1);
 });
