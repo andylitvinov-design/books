@@ -86,3 +86,25 @@ test("MyTube serves all three public locales rather than the RU/EN-only remedy g
  assert.doesNotMatch(page,/isSupportedLocale|getHomeopathyLocaleParams/);
  assert.match(read("lib/public-locales.ts"),/publicLocales: readonly PublicLocale\[\] = \['ru', 'en', 'es'\]/);
 });
+test("seventh in-editor MyTube quick control preserves all six workspaces and skips recording",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const css=read("components/mandala-video-mobile.module.css");
+ assert.match(studio,/data-video-quick-control="mytube"/);
+ assert.match(studio,/aria-disabled=\{recording\|\|preparing\}/);
+ assert.match(studio,/tabIndex=\{recording\|\|preparing\?-1:0\}/);
+ assert.match(studio,/href=\{"\/"\+locale\+"\/mytube"\}/);
+ assert.match(css,/quickVideoNav\{grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
+ assert.equal((studio.match(/data-video-quick-control="mytube"/g)||[]).length,1);
+});
+test("advanced MyTube filters never invent an absent published date or runtime",()=>{
+ const discovery=read("components/video-discovery.tsx");
+ const model=read("components/library-feed.tsx");
+ const workflow=read(".github/workflows/holistic-support-mandala.yml");
+ assert.match(model,/durationVerifiedSeconds\?: number/);
+ assert.match(discovery,/data-mytube-period/);
+ assert.match(discovery,/data-mytube-duration/);
+ assert.match(discovery,/data-mytube-reset-filters/);
+ assert.match(discovery,/Number\.isFinite\(timestamp\)/);
+ assert.match(discovery,/Number\.isFinite\(seconds\)/);
+ assert.match(workflow,/startsWith\(github\.head_ref, 'feat\/mytube-'\)/);
+});

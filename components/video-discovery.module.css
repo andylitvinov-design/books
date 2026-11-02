@@ -73,3 +73,9 @@
   .myTube .goals button{font-size:15px}
   .myTube .advanced summary{font-size:14px}
 }
+
+/* MyTube reset filters: keeps saved/hidden choices in guest browser storage. */
+.myTubeFilterReset{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:45px;padding:9px 14px;margin:9px 0 4px;border:1px solid #afd9c3;
+  border-radius:13px;background:#f5fcf8;color:#176749;font:750 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
+.myTubeFilterReset:focus-visible{outline:3px solid #d4a24e;outline-offset:2px}

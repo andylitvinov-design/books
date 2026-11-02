@@ -15,6 +15,8 @@ const labels={
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     myTubeTitle:"MyTube",myTubeLead:"Ваш видеоканал: медитации, практики и уроки. Выберите тему или настройте точный подбор.",
     search:"Поиск видео",searchPlaceholder:"Найти видео, практику или урок…",seriesTitle:"Серия или курс",allSeries:"Все серии",sourceTitle:"Источник",allSources:"Все источники",
+    periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
+    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
     areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",
@@ -33,6 +35,8 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     myTubeTitle:"MyTube",myTubeLead:"Your video channel for meditations, practices and lessons. Explore a topic or fine-tune your discovery.",
     search:"Search videos",searchPlaceholder:"Find a video, practice or lesson…",seriesTitle:"Series or course",allSeries:"All series",sourceTitle:"Source",allSources:"All sources",
+    periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
+    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
     areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",
@@ -51,6 +55,8 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     myTubeTitle:"MyTube",myTubeLead:"Tu canal de meditaciones, prácticas y clases. Explora un tema o afina la búsqueda.",
     search:"Buscar vídeos",searchPlaceholder:"Buscar un vídeo, práctica o clase…",seriesTitle:"Serie o curso",allSeries:"Todas las series",sourceTitle:"Fuente",allSources:"Todas las fuentes",
+    periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
+    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
     areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",
@@ -75,6 +81,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const [query,setQuery]=useState("");
   const [series,setSeries]=useState("all");
   const [source,setSource]=useState("all");
+  const [period,setPeriod]=useState("all");
+  const [durationRange,setDurationRange]=useState("all");
   const [contentType,setContentType]=useState("all");
   const [direction,setDirection]=useState("all");
   const [tradition,setTradition]=useState("all");
@@ -108,6 +116,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     area==="all"||lifeAreasForIntent(id).includes(area));
   const sourceChoices=useMemo(()=>[...new Set(videos.map(video=>video.sourceLabel||"Holistic House"))]
     .sort((a,b)=>a.localeCompare(b,locale)),[videos,locale]);
+  const periodsAvailable=videos.some(video=>Boolean(video.publishedAt && Number.isFinite(Date.parse(video.publishedAt))));
+  const durationsAvailable=videos.some(video=>Number.isFinite(video.durationVerifiedSeconds) && (video.durationVerifiedSeconds??0)>0);
   const seriesChoices=useMemo(()=>{
     const unique=new Map<string,string>();
     for(const video of videos)if(video.seriesId&&!unique.has(video.seriesId))
@@ -124,10 +134,29 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     return ranked.filter(video=>{
       if(series!=="all"&&video.seriesId!==series)return false;
       if(source!=="all"&&(video.sourceLabel||"Holistic House")!==source)return false;
+      // Never infer dates or durations. Unknown metadata is excluded only
+      // when the visitor explicitly chooses its corresponding filter.
+      if(period!=="all"){
+        const timestamp=video.publishedAt?Date.parse(video.publishedAt):NaN;
+        if(!Number.isFinite(timestamp))return false;
+        const year=new Date(timestamp).getUTCFullYear();
+        if(period==="past-year"&&timestamp<Date.now()-365*24*60*60*1000)return false;
+        if(period==="2020s"&&(year<2020||year>=2030))return false;
+        if(period==="2010s"&&(year<2010||year>=2020))return false;
+        if(period==="2000s"&&(year<2000||year>=2010))return false;
+      }
+      if(durationRange!=="all"){
+        const seconds=video.durationVerifiedSeconds;
+        if(!Number.isFinite(seconds)||!seconds||seconds<=0)return false;
+        if(durationRange==="under4"&&seconds>=240)return false;
+        if(durationRange==="4to20"&&(seconds<240||seconds>1200))return false;
+        if(durationRange==="20to60"&&(seconds<=1200||seconds>3600))return false;
+        if(durationRange==="over60"&&seconds<=3600)return false;
+      }
       return !needle||[video.title,video.description,video.seriesTitle||"",video.sourceLabel||""]
         .join(" ").toLocaleLowerCase(locale).includes(needle);
     });
-  },[videos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,myTube,query,series,source,locale]);
+  },[videos,goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,myTube,query,series,source,period,durationRange,locale]);
   const index=VIDEO_GOALS.indexOf(goal);
   return <div className={[styles.wrapper,myTube&&styles.myTube].filter(Boolean).join(" ")} data-hh-video-discovery={myTube?"mytube-v1":"v1"}>
     <section className={styles.panel} aria-label={t.title}>
@@ -217,6 +246,18 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               {sourceChoices.map(item=><option key={item} value={item}>{item}</option>)}
             </select>
           </label>}
+          {myTube&&periodsAvailable&&<label>{t.periodTitle}
+            <select data-mytube-period value={period} onChange={event=>setPeriod(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {["past-year","2020s","2010s","2000s"].map((value,i)=><option key={value} value={value}>{t.periodOptions[i]}</option>)}
+            </select>
+          </label>}
+          {myTube&&durationsAvailable&&<label>{t.durationTitle}
+            <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {["under4","4to20","20to60","over60"].map((value,i)=><option key={value} value={value}>{t.durationOptions[i]}</option>)}
+            </select>
+          </label>}
         </div>
       </details>
       {(hiddenIds.length>0||savedIds.length>0)&&<div className={styles.reset}>
@@ -225,6 +266,12 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         </button>}
         {savedIds.length>0&&<button type="button" onClick={reset}>{t.reset}</button>}
       </div>}
+      {myTube&&<button type="button" className={styles.myTubeFilterReset}
+        data-mytube-reset-filters onClick={()=>{setArea("all");setGoal("all");setQuery("");setSeries("all");
+          setSource("all");setPeriod("all");setDurationRange("all");setContentType("all");
+          setDirection("all");setTradition("all");setLanguage("all");setSort("for-you");setSavedOnly(false);}}>
+        <RotateCcw size={16} aria-hidden="true"/>{t.resetFilters}
+      </button>}
       <p className={styles.note}>{t.note}</p>
     </section>
     <div className={styles.results} aria-live="polite">

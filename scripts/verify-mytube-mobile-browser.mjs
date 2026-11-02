@@ -58,6 +58,11 @@ async function scenario(browser,locale,width){
    await shelf.waitFor({state:"visible",timeout:10000});
    assert.ok(await shelf.locator('button[class*="playButton"]').count()>0,label+": real public video posters");
    assert.equal(await shelf.locator('iframe').count(),0,label+": do not load YouTube without a click");
+   const poster=await shelf.locator('button[class*="playButton"]').first().boundingBox();
+   assert.ok(poster&&poster.width>0&&poster.height>0,label+": real poster play target");
+   await shelf.locator('button[class*="playButton"]').first().click();
+   await shelf.locator('iframe[src*="youtube-nocookie.com/embed/"]').first().waitFor({state:"attached",timeout:15000});
+   assert.equal(await shelf.locator('iframe[src*="youtube-nocookie.com/embed/"]').count(),1,label+": player opens on explicit click");
    const horizontal=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
    assert.ok(horizontal<=3,label+": no horizontal mobile overflow: "+horizontal);
    await page.screenshot({path:dir+"/"+browser.browserType().name()+"-"+locale+"-"+width+".png"});
@@ -65,11 +70,24 @@ async function scenario(browser,locale,width){
    console.log("PASS MyTube",label);
  }finally{await context.close();}
 }
-const browsers=[[chromium,[["en",320],["en",390],["ru",390],["ru",430],["es",390]]],
-                [webkit,[["ru",390],["en",320]]]];
+const browsers=[[chromium,[["en",320],["en",354],["en",390],["en",430],["ru",390],["ru",430],["es",390]]],
+                [webkit,[["ru",320],["ru",354],["ru",390],["ru",430],["en",320],["en",390],["es",390]]]];
 for(const [engine,cases] of browsers){
  const browser=await engine.launch({headless:true});
  try{
    for(const [locale,width] of cases)await scenario(browser,locale,width);
  }finally{await browser.close();}
 }
+
+const studio=await chromium.launch({headless:true});
+try{
+ const page=await studio.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
+ const response=await page.goto(origin+"/ru/holistic-support/mandala",{waitUntil:"domcontentloaded",timeout:90000});
+ assert.equal(response?.status(),200,"Video Studio must be available");
+ await page.locator('[data-video-quick-control="mytube"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-video-quick-controls] > *').count(),7,"six editor tabs + MyTube link");
+ await page.locator('[data-video-quick-control="mytube"]').click();
+ await page.waitForURL(/\/ru\/mytube\/?$/,{timeout:25000});
+ await page.locator('[data-hh-video-discovery="mytube-v1"]').waitFor({state:"visible",timeout:30000});
+ console.log("PASS Video Studio -> MyTube canonical route");
+}finally{await studio.close();}

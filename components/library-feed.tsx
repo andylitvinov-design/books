@@ -27,6 +27,8 @@ export type LibraryFeedItem = {
   curation?: "verified" | "published";
   sourceGroup?: string;
   sourceLabel?: string;
+  /** Display/filter duration only if supplied as vetted source metadata. */
+  durationVerifiedSeconds?: number;
   sourceApproved?: boolean;
   source_kind?: string;
   editorial_status?: string;
