@@ -4,9 +4,9 @@ This is the authoritative current policy for CI and production delivery. GitHub 
 
 ## Production and merge gates
 
-**Readback on 2 November 2026:** classic protection requires `release-ready` with strict base checking; ruleset #26269892 is active but its status list is empty. `hh-merge-check` is staged and intentionally rejects `merge_group` until specialist evidence is supported for that event. Treat this as a dated observation and re-read both controls before any migration.
+**Verified readback, 2 November 2026:** Classic Branch Protection and active ruleset #26269892 both require **only `hh-merge-check`** from GitHub Actions App 15368. The legacy `release-ready` and `hh-core-verified` wrappers are retired **after** that independently verified migration. This is the single required status, but it still fails closed unless real Core and BASE-trusted Specialist succeed for the exact PR HEAD. Deletion, non-fast-forward and review-thread protections remain enforced. Never remove `hh-specialist` or skip auth, payment, privacy, consent, RLS or applicable browser tests.
 
-- Production branch: `codex/public-book-library`. Status migration is staged: `release-ready` remains mandatory wherever the live GitHub protections still require it. The replacement checks are `hh-core-verified` (Core) and `hh-specialist` (BASE-trusted applicable specialists), both on the exact proposed PR HEAD. Both must be SUCCESS on the exact PR HEAD before merge. They become the ONLY required statuses after the protected ruleset and classic branch protection have both been updated and independently read back. Never remove the legacy requirement before this readback. Applicable specialist CI workflows must execute and succeed on that HEAD for FULL/STRICT risk; missing, pending, cancelled, skipped, failed, zero-job or stale results are not success. FAST presentation-only changes include only explicitly allowed CSS and public raster images, excluding sensitive paths, and take the short path only when no specialist is applicable. Mixed, unknown, security, payment and policy changes are STRICT. Read back strictness from both hosted protection sources: when strict required checks are enabled, a production advance requires updating the PR branch and rerunning applicable checks. Never bypass protection.
+- Production branch: `codex/public-book-library`. `hh-merge-check` is the single required status, backed by independently completed `scope`, real `code` (unless BASE-certified ASSETS/TEXT/docs-only), and `hh-specialist`. Required Core and security/consent/payment/browser checks remain enforced by exact-head specialist routing. Missing/pending/red or stale results are not success. Both protection sources have loose base-status synchronization, but sensitive and CI-policy changes still need BASE freshness from the trusted classifier. Re-read hosted and classic controls before any future change; never bypass them.
 - The PR must be Ready, mergeable, and all review discussions resolved. Human approvals: 0 required. CODEOWNERS approval and independent mandatory AI Review are not required. Use native GitHub Auto-merge with the allowed squash method after the required checks succeed. Force-push and deletion of the protected branch are prohibited.
 - Preserve applicable browser, authentication, privacy, RLS, consent and payment checks and actual provider/E2E requirements. Draft-skipped tests are not passing evidence; Ready transitions must run applicable tests. Workflow migrations must preserve coverage and follow BASE-trusted successor and exact-HEAD evidence; never delete or weaken security or browser tests to pass CI.
 
@@ -17,7 +17,7 @@ This is the authoritative current policy for CI and production delivery. GitHub 
 
 ## LIVE acceptance
 
-After merge, record GitHub merge SHA and verify the correct Vercel project has a READY production deployment built from that exact SHA and serving the public domain. Open the public domain and perform the relevant LIVE smoke; report CI, merge, deployment and real user/provider E2E evidence separately. A merge, READY status or HTTP response alone does not establish the intended outcome.
+After merge, record GitHub merge SHA and verify the correct Vercel project has a READY production deployment serving the canonical public alias. The independently validated serving deployment SHA must equal or descend from the merged PR commit; newer GitHub HEADs can legitimately be ahead of the served release. Open the public domain and perform the relevant LIVE smoke; report CI, merge, deployment and real user/provider E2E evidence separately. A merge, READY status or HTTP response alone does not establish the intended outcome.
 
 ## Four-level Core route (base-trusted rollout)
 
@@ -29,9 +29,9 @@ candidate's copy. A missing or incompatible trusted router defaults to CORE.
 - **ASSETS:** only added/modified, non-sensitive `public/**` PNG/JPEG/WebP/GIF/AVIF/ICO files accepted by the BASE risk classifier. The trusted router verifies every Git blob SHA, file mode, binary container, image dimensions, and relevant structural checks. Core npm install, lint and Next build are skipped. Invalid or corrupt assets FAIL rather than being counted as clean.
 - **TEXT:** only modified, allowlisted public `app/[locale]/**` JSX/TSX pages, with no other changes, **after** PR #2777's AST-based `classifyStaticUiText` and the pinned parser are deployed on BASE. The proof compares complete BASE/HEAD sources and may only accept static public wording; unavailable parser, unexpected source or missing proven classifier falls back to CORE. CSS, new pages, mixed files and executable changes do not use this Core bypass.
 - **CORE:** normal application code, changed CSS, unknown files, and unproven presentations. One Core install/lint/build job; applicable specialists remain required by immutable-base and candidate workflow triggers. Specialist-level duplicate builds are separately retired by their named owner PRs.
-- **FULL:** any security-critical path (auth, payment, billing, privacy, consent, client/private data, database/migrations, provider APIs, CI policy, dependencies). Always runs the complete Core build, applicable specialist/security/browser suites, and release-ready.
+- **FULL:** any security-critical path (auth, payment, billing, privacy, consent, client/private data, database/migrations, provider APIs, CI policy, dependencies). Always runs the complete Core build, applicable specialist/security/browser suites, and hh-merge-check.
 
-The lightweight route never waives `release-ready`, exact HEAD/base rechecks,
+The lightweight route never waives `hh-merge-check`, exact HEAD/base rechecks,
 GitHub protection, unresolved discussions or security checks. Specialist
 aggregation still runs on all routes using BASE-trusted logic. No reduced
 workflow is allowed to treat a missing/pending/failed mandatory security check
@@ -46,7 +46,7 @@ specific unchanged browser diagnostics as advisory. The parser's own failure,
 untrusted source or unknown/mixed/sensitive paths revert to STRICT. Payment,
 authentication, privacy, consent and other security coverage remains mandatory.
 
-## Temporary queue-unblocking mode — 31 October 2026
+## Historical temporary queue-unblocking mode — 31 October 2026 (superseded)
 
 While the production PR queue has more than 10 open PRs, `release-ready` requires successful scope classification and Core lint/Next.js build (except existing proven ASSETS/TEXT shortcuts). It no longer waits for unrelated specialist workflows on ordinary public CORE changes. Those specialist workflows still run independently and show failures as advisory; do not report them as passing. The fast routing classifier is loaded from immutable production BASE, never from the candidate PR.
 
@@ -110,7 +110,9 @@ merge before authorizing any second-phase deletion.
 Before a batched code push, install dependencies and run `node scripts/ci-source-preflight.mjs --base origin/codex/public-book-library --full-types` locally. It checks changed `.mjs`/`.cjs` with native Node syntax verification and changed `.js`/`.jsx` with a syntax-only TypeScript compiler pass (including React JSX in `.js` and invalid TS-only grammar in JS). It then runs `next typegen` followed by `tsc --noEmit --incremental false --pretty false`, failing closed on actual source errors. JavaScript parsing does not run a second full typecheck or require additional packages. Source checks do not replace production build, specialist E2E, security or consent checks. In Core CI the same check runs before the expensive Next production build; a CI-policy-only diff runs syntax checks but not unrelated product typechecking. The report (`hh.source-preflight.v1`) uses stable root fingerprints across changed line numbers; duplicate workflow failures must be counted once by root and separately from release-ready base churn, browser timeouts and CI infrastructure problems. Only failed preflight reports are uploaded as a short-lived artifact; no external service or token is required.
 
 
-## Guarded status migration — 1 November 2026
+## Historical status migration — completed 2 November 2026 (archived procedure)
+
+**Status: completed.** Both GitHub classic and hosted protection now require only `hh-merge-check`. The one-time mutating migrator and old jobs are retired; the following bullet points describe the former process, not instructions to revert to legacy required statuses.
 
 - The real Core job is `hh-core-verified`; the independent real specialist validator is `hh-specialist`. The original `release-ready` job remains a fail-closed compatibility alias until GitHub administration confirms the switch; the prior `hh-specialists-verified` alias remains nonrequired.
 - The production-only, one-time workflow `.github/workflows/hh-loose-release-ready-once.yml` requires one real SUCCESS production PR Core run with BOTH new jobs, then reads the hosted ruleset AND classic required checks with an admin-scoped existing `HH_AUTOMERGE_TOKEN`. It aborts before changes on missing evidence, missing permissions, unknown rules or protections.
