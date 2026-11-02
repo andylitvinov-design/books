@@ -7,7 +7,7 @@ import { PSYCHOLOGY_VIDEO_SKILLS } from
   "../lib/holistic-support/psychologist-video-curricula.mjs";
 import {
   selectMeditationPractice, enhanceMeditationTemplateWithPractice,
-  MEDITATION_PRACTICE_DIRECTOR_VERSION,
+  buildPracticeFormats, MEDITATION_PRACTICE_DIRECTOR_VERSION,
 } from "../lib/holistic-support/meditation-writer/practice-director.mjs";
 import { prepareMeditationCreativeBrief } from
   "../lib/holistic-support/meditation-writer/brief.mjs";
@@ -15,6 +15,8 @@ import { anonymizeMeditationBrief } from
   "../lib/holistic-support/meditation-writer/free-gemini.mjs";
 import { writeMeditationDraft } from
   "../lib/holistic-support/meditation-writer/writer.mjs";
+import { buildEightDayCourseOutline } from
+  "../lib/holistic-support/meditation-writer/eight-day-course.mjs";
 
 const rawProgram=(focus,locale="ru")=>buildPsychologyProgram({
   locale,safety:{status:"clear"},intent:{focus},consent:{resourceImagery:true},
@@ -192,4 +194,45 @@ test("UI and preview API wire user intent into approved optional skill",()=>{
   // The check-in is local UI state and not posted to the authenticated API.
   assert.ok(!route.includes("beforeCheckinValue"));
   assert.ok(!route.includes("afterCheckinValue"));
+});
+
+test("goal-matched ritual, exercise, practice and eight-session plans share approved catalogue",()=>{
+  for(const locale of ["ru","en","es"])for(const [focus,goal,expected] of [
+    ["stress","settle","present_orientation"],
+    ["relationships","boundaries","boundary_rehearsal"],
+    ["self_worth","confidence","self_compassion"],
+    ["meaning","meaning","values_clarification"],
+  ]){
+    const program=rawProgram(focus,locale);
+    const forms=buildPracticeFormats({program,locale,goal});
+    assert.equal(forms.status,"ready");
+    assert.equal(forms.selectedMethodId,expected);
+    assert.equal(forms.externalModelUsed,false);
+    for(const kind of ["practice","exercise","ritual"]){
+      const card=forms.formats[kind];
+      assert.equal(card.methodId,expected);
+      assert.equal(card.clinicalProtocol,false);
+      assert.equal(card.efficacyClaim,false);
+      assert.equal(card.steps.length,3);
+      PSYCHOLOGY_VIDEO_SKILLS[expected].steps[locale].forEach((step,i)=>
+        assert.ok(card.steps[i].includes(step)));
+    }
+    const prepared=plan(focus,goal,locale);
+    assert.equal(prepared.status,"brief_ready");
+    const outline=buildEightDayCourseOutline({program,prepared});
+    assert.equal(outline.status,"ready");
+    assert.equal(outline.programmeGenerated,true);
+    const days=[outline.dayOne,...outline.nextTopics];
+    assert.equal(days.length,8);
+    assert.equal(outline.plannedPracticeCount,days.filter(d=>d.plannedPractice).length);
+    for(const [i,day] of days.entries()){
+      if(!day.plannedPractice)continue;
+      const skill=day.plannedPractice;
+      assert.ok(program.sessions[i].methodIds.includes(skill.methodId));
+      assert.equal(PSYCHOLOGIST_METHODS[skill.methodId].selfGuided,true);
+      assert.equal(skill.clinicalProtocol,false);
+    }
+    assert.equal(outline.additionalScriptsGenerated,false);
+    assert.equal(outline.audioGenerated,false);
+  }
 });
