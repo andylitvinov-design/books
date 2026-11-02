@@ -1228,7 +1228,7 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
-  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
+  assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft, edited\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
