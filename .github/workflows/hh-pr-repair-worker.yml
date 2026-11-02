@@ -1,6 +1,7 @@
 name: HH PR source Repair Worker
 on:
-  # Only authenticated task dispatch. No empty cron/push job may hold Repair's lease.
+  # Exact-head task dispatch only; no empty cron/push claims may hold the
+  # source writing lease. Independent CI schedule wakes Control Tower instead.
   workflow_dispatch:
     inputs:
       pr_number:
@@ -45,6 +46,7 @@ jobs:
       claim_status: ${{ steps.select.outputs.claim_status }}
       claim_reason: ${{ steps.select.outputs.claim_reason }}
       code_available: ${{ steps.select.outputs.code_available }}
+      no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -80,6 +82,38 @@ jobs:
             core.setOutput('code_available',process.env.HH_HAS_CODEX_TOKEN==='true'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
+      # Fast terminal path: no untrusted source runs on this trusted runner.
+      - name: Finalize no-fix task on claim runner
+        id: finalize_no_fix
+        if: >-
+          always() && github.event_name != 'push' &&
+          (steps.select.outcome != 'success' || steps.select.outputs.strategy != 'lint')
+        uses: actions/github-script@v7
+        env:
+          HH_CLAIM_NUMBER: ${{ steps.select.outputs.pr_number }}
+          HH_CLAIM_SHA: ${{ steps.select.outputs.sha }}
+          HH_CLAIM_KEY: ${{ steps.select.outputs.task_key }}
+          HH_CLAIM_STATUS: ${{ steps.select.outputs.claim_status }}
+          HH_CLAIM_REASON: ${{ steps.select.outputs.claim_reason }}
+          HH_CLAIM_RESULT: ${{ steps.select.outcome }}
+          HH_CODE_AVAILABLE: ${{ steps.select.outputs.code_available }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const inputs=context.payload.inputs||{};
+            const result=await worker.finalize({github,core,context,
+              number:Number(inputs.pr_number||process.env.HH_CLAIM_NUMBER||0),
+              expectedSha:String(inputs.expected_sha||process.env.HH_CLAIM_SHA||''),
+              taskKey:String(inputs.task_key||process.env.HH_CLAIM_KEY||''),
+              claimStatus:process.env.HH_CLAIM_STATUS,
+              claimReason:process.env.HH_CLAIM_REASON,
+              claimResult:process.env.HH_CLAIM_RESULT,
+              fixResult:'skipped',
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:'skipped',codeVerifyResult:'skipped',publishResult:'skipped',
+              dryRun:String(inputs.dry_run||'false')==='true'});
+            core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   fix:
     needs: claim
     if: needs.claim.outputs.strategy == 'lint'
@@ -297,17 +331,26 @@ jobs:
 
   publish:
     needs: [claim,fix,code_fix,code_verify]
+    # Do not schedule a separate terminal job for a claimed lint task.
+    # The owner token is injected only into the guarded publish_source step.
     if: >-
       always() &&
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event_name != 'push' &&
       needs.claim.result == 'success' &&
-      needs.claim.outputs.strategy == 'lint' &&
-      ((needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
-       (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'))
+      needs.claim.outputs.strategy == 'lint'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: write
     outputs:
       publish_status: ${{ steps.publish_source.outputs.publish_status }}
       publish_sha: ${{ steps.publish_source.outputs.publish_sha }}
+      finalization_status: ${{ steps.finalize_outcome.outcome }}
     steps:
       - name: Checkout trusted publisher only (never run PR code with token)
         uses: actions/checkout@v4
@@ -315,11 +358,18 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
       - uses: actions/download-artifact@v4
+        id: download_candidate
+        if: >-
+          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
+          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
         with:
           name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-verified' }}
           path: hh-candidate
       - name: Revalidate owner + SHA; publish one source commit with existing owner token
         id: publish_source
+        if: >-
+          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
+          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
@@ -395,15 +445,79 @@ jobs:
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning}));
 
+      # Logical finalization on the same trusted runner, not the isolated fix.
+      # HH_AUTOMERGE_TOKEN is step-scoped above and absent from this step.
+      - name: Finalize on publisher runner
+        id: finalize_outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          HH_CLAIM_NUMBER: ${{ needs.claim.outputs.pr_number }}
+          HH_CLAIM_SHA: ${{ needs.claim.outputs.sha }}
+          HH_CLAIM_KEY: ${{ needs.claim.outputs.task_key }}
+          HH_CLAIM_STATUS: ${{ needs.claim.outputs.claim_status }}
+          HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
+          HH_CLAIM_RESULT: ${{ needs.claim.result }}
+          HH_FIX_RESULT: ${{ needs.fix.result }}
+          HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CODE_RESULT: ${{ needs.code_fix.result }}
+          HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
+          HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
+          HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
+          HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
+          HH_DOWNLOAD_RESULT: ${{ steps.download_candidate.outcome }}
+          HH_PUBLISH_RESULT: ${{ steps.publish_source.outcome }}
+          HH_PUBLISH_STATUS: ${{ steps.publish_source.outputs.publish_status }}
+          HH_PUBLISH_SHA: ${{ steps.publish_source.outputs.publish_sha }}
+          HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
+          HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const inputs=context.payload.inputs||{};
+            const publishResult=process.env.HH_DOWNLOAD_RESULT==='failure'
+              ? 'failure' : process.env.HH_PUBLISH_RESULT;
+            const result=await worker.finalize({github,core,context,
+              number:Number(inputs.pr_number||process.env.HH_CLAIM_NUMBER||0),
+              expectedSha:String(inputs.expected_sha||process.env.HH_CLAIM_SHA||''),
+              taskKey:String(inputs.task_key||process.env.HH_CLAIM_KEY||''),
+              claimStatus:process.env.HH_CLAIM_STATUS,
+              claimReason:process.env.HH_CLAIM_REASON,
+              claimResult:process.env.HH_CLAIM_RESULT,
+              fixResult:process.env.HH_FIX_RESULT,
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:process.env.HH_CODE_RESULT,
+              codeStatus:process.env.HH_CODE_STATUS,
+              codeDetail:process.env.HH_CODE_DETAIL,
+              codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
+              codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
+              codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
+              publishResult,
+              publishStatus:process.env.HH_PUBLISH_STATUS,
+              publishSha:process.env.HH_PUBLISH_SHA,
+              candidateStatus:process.env.HH_CANDIDATE_STATUS,
+              candidateDetail:process.env.HH_CANDIDATE_DETAIL,
+              dryRun:String(inputs.dry_run||'false')==='true'});
+            core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
     needs: [claim,fix,code_fix,code_verify,publish]
+    # Normally skipped; if trusted inline recording fails, retry once in
+    # a separate read-only-source recovery runner (idempotent task receipt).
     if: >-
       always() &&
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      github.event_name != 'push'
+      github.event_name != 'push' &&
+      (
+        ((needs.claim.result == 'failure' || needs.claim.result == 'cancelled') &&
+         needs.claim.outputs.no_fix_finalized != 'success') ||
+        (needs.claim.outputs.strategy == 'lint' &&
+         needs.publish.outputs.finalization_status != 'success')
+      )
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     permissions:

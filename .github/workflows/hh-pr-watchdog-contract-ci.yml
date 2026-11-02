@@ -45,6 +45,7 @@ on:
       - 'tests/ci-pr-repair-test-scope.test.cjs'
       - 'scripts/ci-pr-ci-worker.cjs'
       - 'scripts/ci-pr-core-metadata-wake.cjs'
+      - 'scripts/ci-pr-schedule-fallback.cjs'
       - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
   workflow_dispatch:
@@ -80,6 +81,7 @@ jobs:
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-core-metadata-wake.cjs
+          node --check scripts/ci-pr-schedule-fallback.cjs
           node --check tests/ci-pr-core-metadata-wake.test.cjs
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-test-scope.cjs

@@ -32,6 +32,7 @@ test('CI scheduled recovery retains cron but cannot reserve addressed worker lea
  assert.ok(s.includes('cancel-in-progress: false'));
  assert.ok(s.includes("github.event_name == 'workflow_dispatch' && 'addressed' || 'background'"));
  assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
 });
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));

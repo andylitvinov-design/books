@@ -686,3 +686,26 @@ test('Codex failures report NO source commit while unverified proposals cannot p
   assert.equal(f.log.commit,0);
  }
 });
+
+test('trusted Repair finalization fast paths preserve independent Codex verification',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const claim=wf.split('  claim:\n')[1].split('  fix:\n')[0];
+ const fix=wf.split('  fix:\n')[1].split('  code_fix:\n')[0];
+ const codeFix=wf.split('  code_fix:\n')[1].split('  code_verify:\n')[0];
+ const codeVerify=wf.split('  code_verify:\n')[1].split('  publish:\n')[0];
+ const pub=wf.split('  publish:\n')[1].split('  finalize:\n')[0];
+ const recover=wf.split('  finalize:\n')[1];
+ assert.match(claim,/id: finalize_no_fix/);
+ assert.match(pub,/id: finalize_outcome/);
+ assert.match(pub,/HH_CODE_VERIFY_STATUS: \$\{\{ needs\.code_verify\.outputs\.candidate_status \}\}/);
+ assert.match(pub,/HH_FIX_RESULT: \$\{\{ needs\.fix\.result \}\}/);
+ assert.match(pub,/HH_DOWNLOAD_RESULT: \$\{\{ steps\.download_candidate\.outcome \}\}/);
+ assert.match(recover,/needs\.claim\.outputs\.no_fix_finalized != 'success'/);
+ assert.match(recover,/needs\.publish\.outputs\.finalization_status != 'success'/);
+ assert.match(fix,/permissions:\n      contents: read/);
+ assert.match(codeFix,/permissions:\n      contents: read/);
+ assert.match(codeVerify,/permissions:\n      contents: read/);
+ for(const untrusted of [fix,codeFix,codeVerify]) assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN/);
+ assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.doesNotMatch(pub,/contents: write/);
+});
