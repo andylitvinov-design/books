@@ -84,12 +84,25 @@ function externalOwnerLeaseStatus(comments,headSha,now){
     source=body.slice(start,end+1);
    }
    doc=JSON.parse(source);
-  }catch{return 'OWNER_LEASE_UNVERIFIED';}
+  }catch{
+   // Older sweep receipts used key=value instead of JSON. Only ignore a
+   // clearly released record when both its endpoints are valid, unambiguous
+   // SHA values and neither can refer to the current HEAD. Never treat this
+   // legacy format as proof that a current owner's lease has been released.
+   const field=name=>[...body.matchAll(new RegExp('^'+name+'=([^\\r\\n]+)$','gm'))].map(m=>m[1].trim());
+   const old=field('old_head'),next=field('new_head'),status=field('status');
+   if(old.length===1&&next.length===1&&status.length===1&&status[0]==='RELEASED'&&
+      SHA.test(old[0])&&SHA.test(next[0])&&old[0]!==headSha&&next[0]!==headSha)continue;
+   return 'OWNER_LEASE_UNVERIFIED';
+  }
   if(!doc||typeof doc!=='object'||Array.isArray(doc))
    return 'OWNER_LEASE_UNVERIFIED';
-  const related=doc.head_sha===headSha||doc.previous_head_sha===headSha;
+  const oldPair=SHA.test(doc.old_head||'')&&SHA.test(doc.new_head||'')&&
+   /^released(?:_|$)/.test(String(doc.state||''));
+  const related=doc.head_sha===headSha||doc.previous_head_sha===headSha||
+   (oldPair&&(doc.old_head===headSha||doc.new_head===headSha));
   if(!related){
-   if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||''))
+   if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||'')&&!oldPair)
     return 'OWNER_LEASE_UNVERIFIED';
    continue;
   }

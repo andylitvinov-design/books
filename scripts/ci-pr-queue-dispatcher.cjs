@@ -151,6 +151,13 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  let capacity=null,capacityReason=null;
  try{capacity=await capacityFn(github,owner,repo);}
  catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
+ // A transitional partial inventory must never admit CI. Re-read once so a
+ // settled GitHub snapshot can unblock this sweep without waiting for cron.
+ // If the recheck fails, retain the conservative partial snapshot.
+ if(capacity?.inventoryConfidence==='BOUNDED_PARTIAL'&&candidates.some(t=>t?.lane==='ci')){
+  try{capacity=await capacityFn(github,owner,repo);}
+  catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
+ }
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
  if(capacity?.known)summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,

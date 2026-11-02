@@ -422,6 +422,42 @@ test('persistent small GitHub count discrepancy admits bounded Repair but not CI
  assert.equal(admission('ci',state),'PARTIAL_CAPACITY_CI_BLOCKED');
 });
 
+test('unrelated legacy key-value lease does not obscure current HEAD ownership',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const legacy={user:{login:'owner'},body:`HH_PR_SWEEP_LEASE_V1\nlease_id=old\nstatus=RELEASED\nowner=owner\nold_head=${old}\nnew_head=${next}`};
+ assert.equal(externalOwnerLeaseStatus([legacy],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([legacy],old,NOW),'OWNER_LEASE_UNVERIFIED');
+ assert.equal(externalOwnerLeaseStatus([{...legacy,body:legacy.body.replace(next,'invalid')}],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
+test('JSON legacy old_head/new_head receipts only affect their own heads',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const doc={schema:'HH_PR_SWEEP_LEASE_V1',lease_id:'a',owner:'owner',state:'released_after_atomic_commit',old_head:old,new_head:next};
+ const receipt={user:{login:'owner'},body:'HH_PR_SWEEP_LEASE_V1\n```json\n'+JSON.stringify(doc)+'\n```'};
+ assert.equal(externalOwnerLeaseStatus([receipt],SHA,NOW),'FREE');
+ const active={...receipt,body:'HH_PR_SWEEP_LEASE_V1\n```json\n'+JSON.stringify({...doc,state:'active',head_sha:old})+'\n```'};
+ assert.equal(externalOwnerLeaseStatus([active,receipt],old,NOW),'FREE');
+});
+
+test('CI capacity is rechecked once when the first inventory is partial',async()=>{
+ const f=fixture([pr(8,'ci')]);let reads=0;
+ const partial={...cap(),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:1};
+ const result=await run({github:f.github,core:core(),context,now:NOW,dryRun:true,
+  capacityFn:async()=>{reads++;return reads===1?partial:cap();}});
+ assert.equal(reads,2);
+ assert.equal(result.wouldDispatch,1);
+});
+test('CI remains blocked when the capacity recheck is unavailable or partial',async()=>{
+ for(const unavailable of [false,true]){
+  const f=fixture([pr(8,'ci')]);let reads=0;
+  const partial={...cap(),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:1};
+  const result=await run({github:f.github,core:core(),context,now:NOW,dryRun:true,
+   capacityFn:async()=>{reads++;if(reads===2&&unavailable)throw Error('unavailable');return partial;}});
+  assert.equal(reads,2);assert.equal(result.wouldDispatch,0);
+  assert.equal(f.calls.dispatched.length,0);
+ }
+});
+
 test('unknown runner reserve blocks Repair under conservative job pressure',()=>{
  const state={...cap(10,0),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:2,
    runningJobs:23,queuedJobs:1};
