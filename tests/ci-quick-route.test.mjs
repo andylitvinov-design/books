@@ -115,11 +115,11 @@ test('images do not allow active SVG, executable extension or truncated media',(
 test('Core workflow never accepts a skipped job on FULL or CORE',()=>{
   const w=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.match(w,/route: \${{ steps\.fast\.outputs\.route }}/);
-  assert.match(w,/needs\.scope\.outputs\.route != 'ASSETS'/);
-  assert.match(w,/needs\.scope\.outputs\.route != 'TEXT'/);
-  assert.match(w,/\$ROUTE" == ASSETS/);
-  assert.match(w,/\$ROUTE" == TEXT/);
-  assert.match(w,/\$CODE_RESULT" == success/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
+  assert.match(w,/npm run build/);
   assert.match(w,/git show "\$tested_base:scripts\/ci-quick-route\.mjs"/);
   assert.match(w,/HH_HEAD_SHA: \${{ github\.event\.pull_request\.head\.sha }}/);
   assert.doesNotMatch(w,/continue-on-error:\s*true/);
@@ -196,7 +196,7 @@ test('temporary backlog route leaves private, policy and unknown changes on full
   const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.match(gate,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
-  assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/^  hh-merge-check:/m);
   assert.doesNotMatch(gate,/^  release-ready:/m);
 });
