@@ -20,6 +20,7 @@ const RELEASE_GATE_LABEL = 'hh:release-gate-review';
 // A failing real specialist/browser suite must not be misdiagnosed as an obsolete alias.
 const SPECIALIST_LABEL = 'hh:specialist-repair-needed';
 const MAX_RELEASE_GATE_LABELS = 2;
+const MAX_STALE_GATE_TRIAGE = 2; // Bounded backfill for older BEHIND PR labels.
 const CONFLICT_LABEL = 'hh:conflict-repair-needed';
 const CI_BOOTSTRAP_LABEL = 'hh:ci-needed';
 const MAX_CONFLICT_HANDOFFS = 2;
@@ -209,6 +210,18 @@ function latestCompletedFailedGate(checks, name) {
   const gate=latestByName(checks.check_runs).get(name);
   return gate?.status==='completed' &&
     ['failure','timed_out','startup_failure','cancelled','action_required'].includes(gate.conclusion);
+}
+
+function verifiedRedSpecialist(checks) {
+  // Never interpret arbitrary app check names as trusted release evidence.
+  if (!Array.isArray(checks?.check_runs) || checks.total_count > 100) return false;
+  const gate=latestByName(checks.check_runs).get('hh-specialist');
+  return gate?.app?.id === 15368 && gate?.status === 'completed' &&
+    ['failure','timed_out','startup_failure','cancelled','action_required'].includes(gate.conclusion);
+}
+function needsFailedCoreCronBackstop(state) {
+  // Do not multiply 16-PR scans across every failing Core CI when cron works.
+  return state === 'STALE' || state === 'UNOBSERVED';
 }
 
 async function listOpen(github, owner, repo, limited) {
@@ -499,15 +512,31 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       (!linked.length || linked.some(item=>item.number===p.number)));
     if(matches.length===1)priorityNumber=matches[0].number;
   }
-  // A failed-Core event is a *targeted wakeup*. Scanning sixteen unrelated PRs
-  // on each event multiplies API traffic and starves the real ten-minute sweep.
-  // Only scheduled/manual runs perform the rotating full-inventory sample.
-  // Missing/ambiguous event association fails closed, never guesses a PR.
-  // A failed Core callback is also a bounded fallback sweep when GitHub cron
-  // delivery stalls. Pin its exact PR first, then rotate across other open PRs.
-  // Missing/ambiguous association still fails closed instead of guessing.
+  // Every failed Core still receives its exact-PR inspection. A wider
+  // 16-PR backstop is permitted only when actual scheduled Watchdog runs
+  // are stale or absent; healthy cron must not amplify a Core failure storm.
+  let failedCoreCronState='NOT_APPLICABLE',cronBackstop=false;
+  if(wake && priorityNumber!==null && !budget.exhausted) {
+    try {
+      const {data}=await limited('failed-core-schedule-health',()=>
+        github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+          owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
+          event:'schedule',per_page:1
+        }));
+      failedCoreCronState=assessCronHealth(data,now,35).state;
+      cronBackstop=needsFailedCoreCronBackstop(failedCoreCronState);
+      log('FAILED_CORE_CRON_DECISION '+failedCoreCronState+
+        ' scan='+(cronBackstop?'ROTATING_BACKSTOP':'EXACT_PR_ONLY'));
+    } catch(error) {
+      // Unknown schedule evidence is NOT proof that cron stopped.
+      failedCoreCronState='UNKNOWN';
+      log('FAILED_CORE_CRON_LOOKUP_UNAVAILABLE '+String(error.message||error).slice(0,120));
+    }
+  }
   const selected = wake
-    ? (priorityNumber===null ? [] : selectCandidates(review,now,12,4,priorityNumber))
+    ? (priorityNumber===null ? [] : cronBackstop
+      ? selectCandidates(review,now,12,4,priorityNumber)
+      : review.filter(p=>p.number===priorityNumber))
     : selectCandidates(review,now);
   const priorityTop=selected.slice(0,4).map(pr=>{
     const priority=priorityFor(pr,now);
@@ -521,14 +550,15 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
-    releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,coreFailureUnverified:0,
+    releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
+    staleGateReclassified:0,wouldReclassifyStaleGate:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
     transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,controlTowerWake:'NOT_PROBED',
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
-    checkedAt:new Date(now).toISOString(),
+    checkedAt:new Date(now).toISOString(),failedCoreCronState,cronBackstop,
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
 
   // GitHub can silently omit cron events even when a workflow is ACTIVE and
@@ -585,7 +615,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   summary.blockedByCapacity=!ciRoom;
   summary.repairBlockedByCapacity=!repairRoom;
   log(`FULL_INVENTORY open=${all.length}, production=${prod.length}; deep sample=${selected.length}; active=${active} queued=${queued}`);
-  let liveBatch=null;
+  let liveBatch=null,staleGateTriageInspected=0;
   if (!budget.exhausted && typeof github.graphql === 'function' && selected.length) {
     try {
       const response=await limited('live-mergeability-batch',()=>
@@ -653,6 +683,48 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // Do not create repetitive CI jobs merely to rediscover outdated HEADs.
     if (mergeState === 'BEHIND') {
       summary.behindProduction++;
+      // Historical release-ready-only labels may conceal a *real* failed
+      // specialist gate. Classify a bounded number of exact-HEAD old labels
+      // before exiting the BEHIND branch; do not sync merely to recreate CI.
+      if (hasLabel(live,RELEASE_GATE_LABEL) &&
+          staleGateTriageInspected < MAX_STALE_GATE_TRIAGE && !budget.exhausted) {
+        staleGateTriageInspected++;
+        try {
+          const coreChecks=(await limited('stale-gate-core',()=>
+            github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+              check_name:'hh-core-verified',per_page:100,filter:'latest'}))).data;
+          const specialistChecks=(await limited('stale-gate-specialist',()=>
+            github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+              check_name:'hh-specialist',per_page:100,filter:'latest'}))).data;
+          if (gateIsGreen(coreChecks) && verifiedRedSpecialist(specialistChecks)) {
+            summary.specialistFailures++;
+            const newlyLabeled=await ensureQueueLabel(github,owner,repo,live,
+              SPECIALIST_LABEL,
+              'Exact-HEAD real specialist failure: fix source/browser tests; no blind rerun',
+              'd93f0b',dryRun,limited,log);
+            if(newlyLabeled)summary.specialistQueued++;
+            if(dryRun) {
+              summary.wouldReclassifyStaleGate++;
+            } else if (newlyLabeled || hasLabel(live,SPECIALIST_LABEL)) {
+              // Verify the current HEAD and committed new label before
+              // deleting an older administrative diagnosis.
+              const current=(await limited('stale-gate-recheck',()=>
+                github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
+              if(current.state==='open' && !current.draft &&
+                 current.head?.sha===pr.head.sha && current.base?.ref===PROD &&
+                 hasLabel(current,SPECIALIST_LABEL) && hasLabel(current,RELEASE_GATE_LABEL)) {
+                await limited('retire-incorrect-legacy-label',()=>
+                  github.rest.issues.removeLabel({owner,repo,issue_number:pr.number,
+                    name:RELEASE_GATE_LABEL}));
+                summary.staleGateReclassified++;
+                log('REAL_SPECIALIST_RECLASSIFIED #'+pr.number+' '+pr.head.sha.slice(0,12));
+              }
+            }
+          }
+        } catch(error) {
+          log('#'+pr.number+' stale gate classification deferred: '+String(error.message||error).slice(0,160));
+        }
+      }
       if (hasMergeToken && repairGithub && ciRoom && queued < 8 && !budget.exhausted &&
           summary.legacyCoreBootstraps < MAX_LEGACY_BOOTSTRAPS &&
           summary.legacyCoreProbes < MAX_LEGACY_PROBES) {
@@ -894,4 +966,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {run,selectCandidates,latestByName,gateIsGreen,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
+module.exports = {run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};

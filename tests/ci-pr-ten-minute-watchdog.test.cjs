@@ -989,7 +989,7 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
 
 test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback',async()=>{
   const first=pr(401),second=pr(402);
-  let graphQLSource='';
+  let graphQLSource='',cronHealthy=true;
   const github={
     graphql:async query=>{
       graphQLSource=query;
@@ -1012,18 +1012,31 @@ test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback
       actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
       checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
     },
-    request:async(route,args)=>args.workflow_id==='hh-pr-core-release.yml'
-      ? {data:{total_count:0,workflow_runs:[]}}
-      : {data:{workflow_runs:[]}}
+    request:async(route,args)=>{
+      if(args.workflow_id==='hh-pr-ten-minute-watchdog.yml')
+        return {data:cronHealthy
+          ? {total_count:1,workflow_runs:[{created_at:new Date(NOW-2*60000).toISOString()}]}
+          : {total_count:0,workflow_runs:[]}};
+      return args.workflow_id==='hh-pr-core-release.yml'
+        ? {data:{total_count:0,workflow_runs:[]}}
+        : {data:{workflow_runs:[]}};
+    }
   };
   const wake={...context,eventName:'workflow_run',payload:{workflow_run:{
     event:'pull_request',status:'completed',head_branch:first.head.ref,
     pull_requests:[{number:first.number}]
   }}};
-  const outcome=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
-  assert.equal(outcome.inspected,2);
-  assert.equal(outcome.missingCore,2);
+  const healthy=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(healthy.inspected,1,'healthy cron restricts failed CI to exact PR');
+  assert.equal(healthy.cronBackstop,false);
+  assert.equal(healthy.missingCore,1);
   assert.match(graphQLSource,/p401:pullRequest/);
+  assert.ok(!graphQLSource.includes('p402:pullRequest'));
+  cronHealthy=false;
+  const stale=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(stale.inspected,2,'absent cron gets bounded fallback');
+  assert.equal(stale.cronBackstop,true);
+  assert.equal(stale.missingCore,2);
   assert.match(graphQLSource,/p402:pullRequest/);
 });
 test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
@@ -1076,4 +1089,46 @@ test('live watchdog no longer gates periodic PR discovery on stale unit tests',(
   const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
   assert.ok(contract.includes('Watchdog decision contracts'));
   assert.ok(contract.includes('tests/ci-pr-ten-minute-watchdog.test.cjs'));
+});
+
+
+test('behind PR with verified real specialist failure is reclassified without new CI',async()=>{
+  const src=pr(771);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const mutations={add:[],remove:[],retries:0};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:{total_count:1,check_runs:[{
+      id:check_name==='hh-specialist'?2:1,name:check_name,
+      status:'completed',conclusion:check_name==='hh-specialist'?'failure':'success',
+      app:{id:15368}}]}})},
+    issues:{
+      addLabels:async({labels})=>{mutations.add.push(...labels);live.labels.push({name:labels[0]});return {data:[]};},
+      removeLabel:async({name})=>{mutations.remove.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]};}
+    }
+  },request:async()=>{mutations.retries++;throw Error('No CI bootstrap or manual rerun');}};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.behindProduction,1);
+  assert.equal(result.specialistFailures,1);
+  assert.equal(result.specialistQueued,1);
+  assert.equal(result.staleGateReclassified,1);
+  assert.deepEqual(mutations.add,['hh:specialist-repair-needed']);
+  assert.deepEqual(mutations.remove,['hh:release-gate-review']);
+  assert.equal(mutations.retries,0);
+});
+
+test('only trusted completed hh-specialist failures qualify for backfill',()=>{
+  const {verifiedRedSpecialist,needsFailedCoreCronBackstop}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const evidence=(app,conclusion,status='completed')=>({total_count:1,
+    check_runs:[{id:1,name:'hh-specialist',app:{id:app},status,conclusion}]});
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure')),true);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'success')),false);
+  assert.equal(verifiedRedSpecialist(evidence(444,'failure')),false);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure','in_progress')),false);
+  assert.equal(needsFailedCoreCronBackstop('HEALTHY'),false);
+  assert.equal(needsFailedCoreCronBackstop('UNKNOWN'),false);
+  assert.equal(needsFailedCoreCronBackstop('STALE'),true);
+  assert.equal(needsFailedCoreCronBackstop('UNOBSERVED'),true);
 });
