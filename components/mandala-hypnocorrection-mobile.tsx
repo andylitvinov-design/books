@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
   ArrowRight, AudioLines, ChevronDown, Eye, Headphones, Image as Picture,
-  MapPin, Mic, Play, Quote, Repeat2, Sparkles, Sun, Waves,
+  MapPin, Mic, Play, Quote, Sparkles, Sun, Waves,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
