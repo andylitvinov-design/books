@@ -65,7 +65,8 @@ function externalOwnerLeaseStatus(comments,headSha,now){
  const sorted=comments.map((entry,index)=>({entry,index})).sort((a,b)=>
   Number.isSafeInteger(a.entry?.id)&&Number.isSafeInteger(b.entry?.id)?
    a.entry.id-b.entry.id:a.index-b.index);
- const activeStates=new Set(['active','claim','heartbeat']);
+ const activeStates=new Set(['active','claim','claimed','heartbeat','in_progress']);
+ const expiringLegacyActions=new Set(['claim','claimed','heartbeat']);
  for(const {entry,index} of sorted){
   const body=String(entry?.body||'');
   // Match only a real receipt header, not an incidental mention of the
@@ -87,6 +88,11 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    }
    doc=JSON.parse(source);
   }catch{
+   // Incomplete historical JSON naming ONLY other HEADs cannot reserve
+   // this exact source. Missing/current HEAD remains strictly unverified.
+   const namedHeads=[...body.matchAll(/"(?:head_sha|previous_head_sha|old_head|new_head|old_head_sha|new_head_sha)"\s*:\s*"([a-f0-9]{40})"/gi)]
+    .map(m=>m[1].toLowerCase());
+   if(namedHeads.length&&!body.toLowerCase().includes(headSha.toLowerCase()))continue;
    // Historical Work/Codex comments also used key:value lines (and older
    // key=value receipts), not JSON. They are NOT an active owner of a new
    // HEAD when both full SHA endpoints prove an unrelated completed release.
@@ -129,9 +135,11 @@ function externalOwnerLeaseStatus(comments,headSha,now){
   if(!doc.schema){
    // Historic Codex sweeps had only run_id + lease_expires. Unlike
    // modern exact-head source edits, these expire with a proven clock.
-   const expiry=Date.parse(doc.lease_expires||'');
+   const expiry=Date.parse(doc.lease_expires||doc.expires_at||'');
    if(typeof doc.owner!=='string'||!doc.owner.trim()||
-      typeof doc.run_id!=='string'||!doc.run_id.trim()||
+      (!(typeof doc.run_id==='string'&&doc.run_id.trim())&&
+       !['claim','claimed','heartbeat'].includes(
+        String(doc.last_action||doc.state||'').trim().toLowerCase()))||
       !SHA.test(doc.head_sha||'')||!Number.isFinite(expiry))
     return 'OWNER_LEASE_UNVERIFIED';
    if(doc.head_sha===headSha&&expiry>now)
@@ -148,7 +156,18 @@ function externalOwnerLeaseStatus(comments,headSha,now){
     (typeof doc.run_id==='string'&&doc.run_id.trim()?
       'run:'+doc.run_id.trim():'head:'+headSha);
   const key=actor+':'+owner+':'+leaseId;
-  const state=String(doc.state||doc.last_action||'');
+  const state=String(doc.state||doc.last_action||'').trim().toLowerCase();
+  // Pre-lease-id Chat sweeps used bounded last_action/expiry receipts.
+  // Expire ONLY those compatibility records; modern active/ID leases
+  // always require an authenticated exact-owner release.
+  const legacyAction=!doc.lease_id&&!doc.run_id&&
+    expiringLegacyActions.has(state)&&(doc.state==null||state==='claimed');
+  if(legacyAction&&doc.head_sha===headSha){
+   const expiry=Date.parse(doc.expires_at||doc.lease_expires||'');
+   if(!actor||!owner||!Number.isFinite(expiry))return 'OWNER_LEASE_UNVERIFIED';
+   if(expiry>now)holders.set(key,{legacy:true,expires:expiry});
+   continue;
+  }
   if(activeStates.has(state)){
    if(doc.head_sha!==headSha)continue;
    // An unidentifiable active writer must NOT be unlocked by a stranger.
