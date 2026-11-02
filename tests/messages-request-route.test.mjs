@@ -57,3 +57,13 @@ test('switching Messages folders preserves selected conversation and restores UR
  assert.match(inbox,/if\(previous!==routeRequestId\|\|selectedKey!==row\.key\)/)
  assert.match(inbox,/setOpenDetail\(true\)/)
 })
+
+test('mobile Full Request action keeps the approved accessible button styling',()=>{
+ const source=read('components/app/messages-simple-inbox.jsx')
+ const css=read('components/app/messages-simple-inbox.module.css')
+ assert.match(source,/<button type="button" onClick=\{\(\)=>setShowCard\(true\)\}>/)
+ assert.match(css,/\.requestActions :is\(a,button\)\{/)
+ assert.match(css,/\.requestActions :is\(a,button\):hover\{/)
+ assert.match(css,/\.shell \.requestActions :is\(a,button\)\{/)
+ assert.match(css,/min-height:44px/)
+})
