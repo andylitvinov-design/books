@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -652,18 +652,6 @@ test('client progress owner is complete before the trusted second-phase deletion
   }),/UNTRUSTED_SPECIALIST_REPLACEMENT/);
 });
 
-test('conditional Mandala macOS WebKit skip is allowed only outside voice-release branches', () => {
-  const mandala = '.github/workflows/holistic-support-mandala.yml';
-  const baseJob = { name:'focused-unit-types-build', status:'completed', conclusion:'success' };
-  const mac = { name:'voice-webkit-macos', status:'completed', conclusion:'skipped' };
-  assert.equal(inspectJobs([baseJob,mac], mandala, 'codex/hypno-third-workspace-owner-v2-20261101'),2);
-  assert.equal(inspectJobs([baseJob,mac], mandala, 'codex/perf-video-studio-lazy-panels-20261101'),2);
-  for (const branch of ['fix/video-restore', 'codex/voice-studio-upgrade', 'codex/voice-mix-v2','feat/video-phrase-catalog-update'])
-    assert.throws(()=>inspectJobs([baseJob,mac],mandala,branch),/UNSUCCESSFUL_SPECIALIST_JOB/);
-  assert.throws(()=>inspectJobs([baseJob,{...mac,conclusion:'failure'}],mandala,'codex/hypno-third-workspace-owner-v2-20261101'));
-  assert.throws(()=>inspectJobs([baseJob,mac],'.github/workflows/other.yml','codex/hypno-third-workspace-owner-v2-20261101'));
-});
-
 test('PR cleanup specialist accepts only its successful policy and intentionally skipped push-only job', () => {
   const name = '.github/workflows/hh-ci-stale-run-prune.yml';
   const policy = { name: 'policy', status: 'completed', conclusion: 'success' };
@@ -1083,4 +1071,22 @@ test('production-base drift is allowed only for complete, verified independent d
   assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
   assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
   assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
+});
+
+test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures stay blocking', () => {
+  const path = '.github/workflows/holistic-support-mandala.yml';
+  const workflow = "on:\n  pull_request:\n    paths: ['components/mandala-*']\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-latest\n  voice-webkit-macos:\n    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'fix/video-')) }}\n    runs-on: macos-15\n";
+  const files = {base:new Map([[path,workflow]]),current:new Map([[path,workflow]])};
+  const ui = ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'];
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[path,workflow+'# modified']])},'codex/perf-video-studio-lazy-panels-20261101',ui),false);
+  const jobs = [{name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'}];
+  assert.throws(()=>inspectJobs(jobs,path),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
