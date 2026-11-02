@@ -882,6 +882,22 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
 });
 
 
+
+test('classify-change ancestry failure with skipped source build never dispatches source Repair',()=>{
+  const {classifyCoreFailureJobs}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const failure=name=>({name,conclusion:'failure',steps:[{name:'Verify bounded shallow scope ancestry before PR routing',conclusion:'failure'}]});
+  // Actual PR #2269 run 41476077857: the source job did NOT execute.
+  assert.equal(classifyCoreFailureJobs([
+    failure('classify-change'),failure('hh-core-verified'),failure('hh-specialist'),
+    {name:'core-lint-types-build',conclusion:'skipped'},failure('release-ready')
+  ]),'CI_PREFLIGHT_OR_ROUTING');
+  assert.equal(classifyCoreFailureJobs([
+    {name:'classify-change',conclusion:'success'},
+    {name:'core-lint-types-build',conclusion:'failure',steps:[{name:'TypeScript check',conclusion:'failure'}]},
+    failure('release-ready')
+  ]),'SOURCE_OR_PREFLIGHT');
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});

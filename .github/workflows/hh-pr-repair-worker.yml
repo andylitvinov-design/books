@@ -30,7 +30,9 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-real-repair-worker
+  # Only a single writer per PR; unrelated PRs may use independent runners.
+  # Exact HEAD and trusted reservation are separately checked in claim/publish.
+  group: hh-real-repair-worker-${{ inputs.pr_number != '0' && inputs.pr_number || 'queue' }}
   cancel-in-progress: false
 jobs:
   claim:
