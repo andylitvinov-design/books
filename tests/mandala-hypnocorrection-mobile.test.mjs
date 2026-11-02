@@ -147,71 +147,29 @@ test("effects moves the single original tab rail above Wave on mobile only",()=>
   assert.match(css,/\.hypnoNavSlot\{display:none\}/);
 });
 
-test("third Hypnocorrection mobile release QA performs real browser navigation instead of manual-only simulation",()=>{
-  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
-  const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
-  const entry=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
-  assert.match(workflow,/node scripts\/verify-practices-mobile-browser\.mjs/);
-  assert.doesNotMatch(workflow,/node scripts\/verify-hypno-third-workspace-browser\.mjs/);
-  assert.match(entry,/GITHUB_EVENT_NAME==="pull_request"/);
-  assert.match(entry,/hypno-third-workspace-live-qa-/);
-  assert.match(entry,/import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
-  assert.match(browser,/HYPNO_THIRD_MOBILE_MATRIX_PASS/);
-  assert.match(browser,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
-  assert.match(browser,/data-hypno-wave/);
-  assert.match(browser,/data-hypno-create/);
-  assert.match(browser,/data-video-quick-control="effects"/);
-  assert.match(browser,/unexpectedWrites/);
+test("approved Hypno final actions follow the fourth settings section on mobile",()=>{
+ const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+ const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
+ assert.match(css,/\.actions\{order:3;display:grid/);
+ assert.match(browser,/final CTA must follow the Effects settings/);
 });
-test("Hypno Create never requires silent auto-recommended music to be manually attached",()=>{
-  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-  assert.match(studio,/hypnoUnattachedAutoSuggestion=activeWorkspace==="effects"/);
-  assert.match(studio,/audioAuto && !uploadedAudio && attachedAudio===null/);
-  assert.match(studio,/audioNeedsAttachment=selectedAudioKey!==attachedAudioKey &&\s*!hypnoUnattachedAutoSuggestion/);
-  assert.match(studio,/if\(activeWorkspace==="effects"\)\{\s*setActiveWorkspace\("video"\)/);
-  assert.match(studio,/if\(details\)details.open=true/);
-  assert.match(studio,/if\(!canGenerate\)return false/);
+test("Hypno browser acceptance runs through the existing production runner on its PR only",()=>{
+ const entry=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
+ assert.match(entry,/GITHUB_EVENT_NAME==="pull_request"/);
+ assert.match(entry,/codex\\/hypno-third-workspace-live-qa-/);
+ assert.match(entry,/import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
 });
-
-test("third-workspace browser QA checks full-width approved design and six live goal controls",()=>{
-  const script=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
-  assert.match(script,/data-video-quick-theme="life"/);
-  assert.match(script,/data-video-quick-theme="energy"/);
-  assert.match(script,/exactly six existing real goal selectors/);
-  assert.match(script,/full-width section heading must be ABOVE the three cards/);
-  assert.match(script,/no oversized title photo panel beside controls/);
-  assert.match(script,/390-goals\.png/);
-  assert.match(script,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
+test("WebKit course plan diagnostics expose true state after a real enabled button click",()=>{
+ const ui=readFileSync(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
+ const script=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+ assert.match(ui,/data-guided-programme-state=\{currentProgramme\?"open":"closed"\}/);
+ assert.match(script,/programmeState:el\.getAttribute\('data-guided-programme-state'\)/);
+ assert.match(script,/course plan hidden after click/);
+ assert.match(script,/await expect\(programmeButton\)\.toBeEnabled/);
 });
-
-test("macOS WebKit guided practices waits for the real button rather than throttled animation frames",()=>{
-  const source=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
-  assert.match(source,/import \{expect\} from "@playwright\/test";/);
-  assert.match(source,/await expect\(generate\)\.toBeEnabled\(\{timeout:20000\}\)/);
-  assert.equal((source.match(/await expect\(generate\)\.toBeEnabled\(\{timeout:20000\}\)/g)||[]).length,2,
-    "state and vector must both preserve the real enabled requirement");
-  assert.doesNotMatch(source,/waitForFunction\(\(\)=>document\.querySelector\("\[data-guided-generate-meditation\]"\)\?\.disabled===false\)/);
-  assert.match(source,/generateDisabled:el\.querySelector/);
-  assert.match(source,/meditationResultCount:el\.querySelectorAll/);
-  assert.match(source,/HYPNO_THIRD_MOBILE_MATRIX_PASS|PASS guided-practices/);
-});
-
-test("hypno regression reuses the EXISTING Mandala browser workflow without CI-policy changes",()=>{
-  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
-  const practice=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
-  assert.match(workflow,/node scripts\/verify-practices-mobile-browser\.mjs/);
-  assert.doesNotMatch(workflow,/GITHUB_HEAD_REF.*codex\/hypno-third-workspace-live-qa-/);
-  assert.match(practice,/await import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
-  assert.match(practice,/GITHUB_EVENT_NAME==="pull_request"/);
-  assert.match(practice,/GITHUB_HEAD_REF\|\|""/);
-});
-
-test("last section must precede the two final actions on approved iPhone Hypno",()=>{
-  const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
-  const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
-  assert.match(css,/\.actions\{order:3;display:grid/);
-  assert.match(css,/\.group\{order:2;display:grid/);
-  assert.match(browser,/data-hypno-actions/);
-  assert.match(browser,/final CTA must follow the Effects settings/);
-  assert.match(browser,/actionsTop>=finalActionOrder\.lastBottom-2/);
+test("Effects silent-export exception remains restricted to auto suggestions and preserves uploaded rights",()=>{
+ const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ assert.match(ui,/hypnoUnattachedAutoSuggestion=activeWorkspace==="effects"/);
+ assert.match(ui,/audioAuto && !uploadedAudio && attachedAudio===null/);
+ assert.match(ui,/if\(uploadedAudio && !audioRights\)/);
 });

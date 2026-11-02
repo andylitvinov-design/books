@@ -1858,8 +1858,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:attachedAudio.kind==="presets"
       ?"presets:"+attachedAudio.ids.join(","):"file:"+attachedAudio.id;
-  // An automatic soundtrack suggestion does not constitute visitor consent:
-  // Effects may export silent video until audio is explicitly attached.
+  // Auto-recommended music is not an explicit visitor attachment. Effects
+  // can export a silent local movie; manual/uploaded audio remains consented.
   const hypnoUnattachedAutoSuggestion=activeWorkspace==="effects" &&
     audioAuto && !uploadedAudio && attachedAudio===null;
   const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey &&

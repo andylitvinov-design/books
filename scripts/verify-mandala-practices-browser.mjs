@@ -42,19 +42,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const state=course.locator('[data-guided-focus-state="calm"]');
       await state.click();
       assert.equal(await state.getAttribute("aria-pressed"),"true");
-      // Headed WebKit can throttle requestAnimationFrame. Check the *real*
-      // clickable control via Playwright's protocol-backed enabled assertion.
+      // Protocol-backed real-button assertion; headed WebKit can throttle rAF.
       try {
         await expect(generate).toBeEnabled({timeout:20000});
       } catch(error) {
-        const details=await course.evaluate(el=>({
+        const state=await course.evaluate(el=>({
           selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute('data-guided-focus-state'),
-          mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
           generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
-          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
         }));
-        throw new Error(engine+" "+locale+" "+width+" state Generate unavailable "+JSON.stringify(details),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+" Generate unavailable "+JSON.stringify(state),{cause:error});
       }
       await generate.click();
       const result=course.locator("[data-guided-meditation-result]");
@@ -106,9 +104,31 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await voice.locator("[data-meditation-script]").count(),0,
         "skipped narration stays absent after the Personal Meditation CTA reopens editor");
 
-      await course.locator("[data-guided-create-plan]").click();
+      const programmeButton=course.locator("[data-guided-create-plan]");
+      await expect(programmeButton).toBeEnabled({timeout:15000});
+      await programmeButton.click();
       const programme=course.locator("[data-guided-eight-sessions]");
-      await programme.waitFor({state:"visible"});
+      try {
+        await expect(programme).toBeVisible({timeout:20000});
+      } catch(error) {
+        const state=await course.evaluate(el=>{
+          const button=el.querySelector('[data-guided-create-plan]');
+          const rect=button?.getBoundingClientRect();
+          const editor=document.querySelector('[data-video-therapy-meditation-audio]');
+          return {
+            programmeState:el.getAttribute('data-guided-programme-state'),
+            createDisabled:button instanceof HTMLButtonElement?button.disabled:null,
+            selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute('data-guided-focus-state'),
+            focusMode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
+            note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
+            progress:el.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'),
+            editorOpen:editor?.open,
+            editorScriptCount:editor?.querySelectorAll('[data-meditation-script]').length,
+            rect:rect?{x:rect.x,y:rect.y,w:rect.width,h:rect.height}:null,
+          };
+        });
+        throw new Error(engine+" "+locale+" "+width+" course plan hidden after click "+JSON.stringify(state),{cause:error});
+      }
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
       const enquiry=programme.locator("[data-meditation-course-order]");
@@ -157,9 +177,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
           mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
           difficulty:el.querySelector('[data-video-key-difficulty]')?.value,
           goal:el.querySelector('[data-video-key-goal]')?.value,
-          generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+          disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
-          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
         }));
         throw new Error(engine+" "+locale+" "+width+" vector generated result missing: "+JSON.stringify(state),{cause:error});
       }
