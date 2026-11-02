@@ -24,7 +24,7 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
   return (
     <header className="prescription-admin-header prescription-admin-header--refined">
       <div className="prescription-admin-topbar">
-        <Link className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
+        <Link prefetch={false} className="prescription-admin-wordmark" href={"/"+locale+"/app/practice"}>
           <strong>Holistic House</strong>
           <span>{compactMarketing ? labels.marketing : labels.practice}</span>
         </Link>
@@ -43,13 +43,13 @@ export function PrescriptionAdminHeader({ title, description, initialLocale = 'e
       </div>
 
       {compactMarketing ? <nav aria-label={labels.marketing} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-        <Link href={`/${locale}/app/practice?panel=marketing`}>{labels.practice}</Link>
+        <Link prefetch={false} href={`/${locale}/app/practice?panel=marketing`}>{labels.practice}</Link>
         <Link href="/admin/growth-studio">{labels.growth}</Link>
         <Link href="/admin/seo">{labels.seo}</Link>
         <Link href="/admin/acquisition">{labels.acquisition}</Link>
       </nav> : <div className="prescription-admin-v4-shell-nav" data-admin-unified-nav>
         <nav aria-label={labels.cabinet} className="prescription-admin-navigation prescription-admin-navigation--tabs">
-          <Link href={'/'+locale+'/app/practice'}>{labels.practice}</Link>
+          <Link prefetch={false} href={'/'+locale+'/app/practice'}>{labels.practice}</Link>
           <Link href="/admin/clients">{labels.clients}</Link>
           <Link href="/admin/materials">{labels.materials}</Link>
           <Link href="/admin/materials/courses">{labels.reikiAudio}</Link>

@@ -22,3 +22,15 @@
 - User action chain: state/vector selection → generated local text → add/omit decision → ritual selection → 8-session plan → first session editor / provider-independent inquiry.
 - No DB, RLS, account profiles, CRM, provider AI, automatic rendering or payment changes.
 - Screenshot comparison pending browser QA at matching guest state; authored art is design reference, not proof of rendered fidelity.
+
+## Browser coverage handoff · 2026-11-02
+
+- Existing production: user-approved light Courses & Practices is implemented in the original Studio workspace (do not fork the route).
+- The earlier legacy visual regression script used vector-only input fields without first selecting `Вектор развития`; updated to navigate the actual two-mode interface.
+- A real Playwright path now runs from the existing mandala voice/browser acceptance: Chromium and macOS WebKit, guest RU/320, EN/390, ES/430; mode switch, focus validation, generated text, all three curated practices, refresh, real narration-editor seed and revoke, eight-session preview, and mutation without any third-party/private request.
+- Synthetic course screenshots are saved with the existing browser artifacts if `HH_HYPNO_SCREENSHOT_DIR` is configured. A screenshot does not prove a paid course, Google OAuth or voice provider delivery.
+- This does not auto-render videos, enable paid AI, or change database/CRM/security state.
+
+## WebKit focus-change race correction · 2 Nov 2026
+- The deferred `useEffect` that observes `journeySignature` previously cleared `approvedSignature` and `programmeSignature` after fresh user clicks on WebKit. That was observed in macOS WebKit at ES/430 after successful RU/320 and EN/390. Retain precise signature gating during React render, and clear approval *only* in explicit focus editing handlers or profile consent changes; the observer still revokes an included old narration but no longer dismisses a new script.
+- Do not replace the real browser assertion with sleeps, retries, or a loose presence check. The same Chromium and WebKit lifecycle suite must pass on the final PR HEAD.
