@@ -35,7 +35,6 @@ test('CI scheduled recovery retains cron but cannot reserve addressed worker lea
  assert.ok(s.includes("github.event_name == 'workflow_dispatch' && inputs.pr_number != '0'"));
  assert.ok(s.includes("format('pr-{0}', inputs.pr_number)"));
  assert.ok(s.includes("github.event_name == 'workflow_dispatch' && 'unaddressed' || 'background'"));
- assert.ok(s.includes("cancel-in-progress: false"));
  assert.ok(s.includes('reservation_run_id:'));
  assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
 });

@@ -69,7 +69,8 @@ function makePrompt(scope){
  const paths=scope.files.map(x=>'- '+x).join('\n');
  return [
   'TASK: Repair the actual source-code error in PR HEAD '+scope.sha+'.',
-  'The targeted ESLint autofix already failed or did not change the source.',
+  'A verified Core/TypeScript source failure can reach you directly without ESLint autofix.',
+  'If ESLint autofix was attempted, it did not produce a verified source patch.',
   'You are an unprivileged coding worker in an isolated read-only GitHub token job.',
   'Inspect relevant source and locally run the smallest useful check to find the root cause.',
   'Edit only EXISTING source files in this exact allowlist (maximum 8):',paths,

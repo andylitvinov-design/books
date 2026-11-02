@@ -48,8 +48,8 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  # Addressed CI metadata wakes for different PRs never share a lock.
-  # Unaddressed manual dispatch stays serial; schedule/push is read-only.
+  # Signed metadata tasks use a per-PR lease; scheduled probes stay read-only.
+  # Unaddressed manual fallback stays separately serialized.
   group: hh-pr-ci-worker-${{ github.event_name == 'workflow_dispatch' && inputs.pr_number != '0' && format('pr-{0}', inputs.pr_number) || github.event_name == 'workflow_dispatch' && 'unaddressed' || 'background' }}
   cancel-in-progress: false
 jobs:

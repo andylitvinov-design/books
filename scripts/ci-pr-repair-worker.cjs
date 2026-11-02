@@ -57,6 +57,23 @@ function hasVerifiedSourceHandoff(comments, sha) {
     c.performed_via_github_app.slug==='github-actions' &&
     typeof c.body==='string' && c.body.includes(receipt));
 }
+// An exact-HEAD, Actions-bot-authenticated Watchdog Core source failure
+// bypasses ESLint autofix. Never trust PR text or aggregate gate failures.
+function verifiedCoreCodeFailure(comments,sha){
+ const marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+ return Array.isArray(comments)&&comments.some(comment=>{
+  if(comment?.user?.id!==41898282||
+     comment.user.login!=='github-actions[bot]'||
+     comment.user.type!=='Bot'||
+     comment.performed_via_github_app?.id!==15368||
+     comment.performed_via_github_app?.slug!=='github-actions'||
+     typeof comment.body!=='string'||
+     !comment.body.startsWith(marker+'\n'))return false;
+  const match=/^Failed jobs: ([^\n]+)$/m.exec(comment.body);
+  return !!match&&match[1].split(',').some(name=>
+   ['core-lint-types-build','hh-core-verified'].includes(name.trim().replace(/\.$/,'')));
+ });
+}
 function safeFiles(items) {
   return Array.isArray(items) && items.length < 100 &&
     items.filter(f => ['added','modified'].includes(f.status) &&
@@ -201,6 +218,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       log('WOULD_CLAIM #' + pr.number + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
       return {status:'dry_run',number:pr.number,sha:pr.head.sha,files};
     }
+    const strategy=!conflict&&verifiedCoreCodeFailure(comments,pr.head.sha)?'code':'lint';
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
     const receipt=task;
@@ -211,7 +229,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     await github.rest.issues.createComment({owner,repo,issue_number:pr.number,body:
       marker + '\n**HH Repair Worker claimed this HEAD.**\n' +
-      'Owner: @' + pr.user.login + '; strategy: ' + (conflict?'conflict/manual':'targeted ESLint autofix') +
+      'Owner: @' + pr.user.login + '; strategy: ' + (conflict?'conflict/manual':strategy==='code'?'verified Core/TypeScript code repair':'targeted ESLint autofix') +
       '. The worker does not bypass checks or overwrite another source branch.' +
       (claimedReceipt?'\n'+claimedReceipt:'')});
     try { await github.rest.issues.addAssignees({owner,repo,issue_number:pr.number,assignees:[pr.user.login]}); }
@@ -236,10 +254,10 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       log('MANUAL_CONFLICT #' + pr.number+' queued as owner action, auto-queue released');
       return {status:'manual_conflict',number:pr.number,sha:pr.head.sha};
     }
-    writeOutputs(core,{strategy:'lint',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
+    writeOutputs(core,{strategy,pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
       files_json:JSON.stringify(files),task_key:receipt?.task_key||''});
     log('CLAIMED #' + pr.number + ' priority=' + priorityFor(pr,now).tier + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
-    return {status:'claimed',number:pr.number,sha:pr.head.sha,files};
+    return {status:'claimed',number:pr.number,sha:pr.head.sha,files,strategy};
   }
   return skip('NO_UNCLAIMED_OWNER_PR');
   } catch(error) {
@@ -403,7 +421,7 @@ const SAFE_NO_CLAIM_REASONS=new Set([
  'NO_UNCLAIMED_OWNER_PR','INCOMPLETE_QUEUE','GITHUB_API_BUDGET_PAUSE','GITHUB_API_RESERVE'
 ]);
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
-  claimStatus='',claimReason='',claimResult='',fixResult='',
+  claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',dryRun=false}) {
@@ -440,17 +458,21 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
   }else if(claimStatus!=='claimed'){
     state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
-  }else if(fixResult!=='success'){
+  }else if(strategy==='lint'&&fixResult!=='success'){
     reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
-  }else if(candidateStatus==='manual_required'&&codeVerifyStatus==='ready'){
+  }else if(strategy==='code'&&!codeAvailable){
+    state='MANUAL';reason='CODEX_API_KEY_NOT_CONFIGURED';
+  }else if(strategy==='code'&&codeResult==='skipped'){
+    reason='CODEX_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
+  }else if((strategy==='code'||candidateStatus==='manual_required')&&codeVerifyStatus==='ready'){
     // A tested Codex candidate existed, but no source commit was proven.
     reason='CODEX_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
-  }else if(candidateStatus==='manual_required'&&codeAvailable&&codeResult==='failure'){
+  }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeResult==='failure'){
     reason='CODEX_JOB_FAILED_NO_SOURCE_COMMIT';
-  }else if(candidateStatus==='manual_required'&&codeAvailable&&codeStatus==='proposed'&&
+  }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeStatus==='proposed'&&
       codeVerifyResult!=='success'){
     reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
-  }else if(publishStatus==='manual_required' || candidateStatus==='manual_required'){
+  }else if(publishStatus==='manual_required' || candidateStatus==='manual_required' || strategy==='code'){
     state='MANUAL';
     reason=!codeAvailable?'CODEX_API_KEY_NOT_CONFIGURED':
       codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
@@ -514,7 +536,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   const detailCode=state==='MANUAL'||state==='FAILED'?
     agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
-    head_sha:expectedSha,lane:'repair',state,reason_code:reason,
+    head_sha:expectedSha,lane:'repair',state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
     detail_code:detailCode,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'codex':
@@ -534,7 +556,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.
   if((state==='FAILED'||(state==='MANUAL'&&
-      candidateStatus==='manual_required'&&publishResult==='skipped'))&&
+      (candidateStatus==='manual_required'||strategy==='code')&&publishResult==='skipped'))&&
       claimStatus==='claimed'&&sameHead){
     // Only the authenticated exact-run CLAIMED receipt may elevate the
     // same source HEAD to manual coding. A copied/foreign receipt cannot.
@@ -563,4 +585,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,PROD,SOURCE,CONFLICT,MARKER};

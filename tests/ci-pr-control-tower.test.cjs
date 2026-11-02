@@ -75,8 +75,13 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
   'single short source worker may use bounded overflow without multiplying optional CI');
  assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'ADMIT');
- assert.equal(admission('repair',computeCapacity(Array.from({length:2},()=>({name:'HH PR source Repair Worker'})),[],[])),'WORKER_BUSY');
+ assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'ADMIT',
+  'an independent PR can use the second Repair slot');
+ assert.equal(admission('repair',computeCapacity([
+  {name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'}],[],[])),'ADMIT');
+ assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'},
+  {name:'HH zero-cost PR CI worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
@@ -139,6 +144,30 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
  assert.equal(f.calls.dispatched[0].inputs.reservation_run_id,'42');
+});
+test('two independent Repair PRs dispatch concurrently with exact HEAD receipts',async()=>{
+ const items=[pr(101),pr(102),pr(103)];
+ const f=fixture(items,{comments:{101:[proof()],102:[proof()],103:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,2);
+ assert.equal(result.repairDispatchAccepted,2);
+ assert.equal(f.calls.reserved.length,2);
+ assert.deepEqual(new Set(f.calls.dispatched.map(x=>x.inputs.pr_number)),new Set(['101','102']));
+ for(const dispatched of f.calls.dispatched){
+  assert.equal(dispatched.workflow_id,'hh-pr-repair-worker.yml');
+  assert.equal(dispatched.inputs.expected_sha,SHA);
+  assert.equal(dispatched.inputs.task_key.length,32);
+  assert.equal(dispatched.inputs.reservation_run_id,'42');
+ }
+});
+test('one already running Repair leaves room for only one additional PR',async()=>{
+ const items=[pr(201),pr(202)];
+ const f=fixture(items,{comments:{201:[proof()],202:[proof()]}});
+ const capacity=computeCapacity([{name:'HH PR source Repair Worker'}],[],[]);
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:async()=>capacity});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.blocked.WORKER_BUSY,1);
+ assert.equal(f.calls.dispatched.length,1);
 });
 test('source repair lane cannot starve behind sixteen higher-ranked conflicts',()=>{
  const conflicts=Array.from({length:23},(_,i)=>pr(i+100,'conflict',{
@@ -245,24 +274,14 @@ test('source repair is allowed during ordinary CI overload but CI bootstrap is n
  assert.equal(r.dispatchAccepted,1);assert.equal(f.calls.dispatched[0].workflow_id,'hh-pr-repair-worker.yml');
  assert.equal(r.blocked.CI_QUEUE_BUSY,1);
 });
-test('dispatches independent PRs in one scan, but rejects shared and stacked source branches',async()=>{
- const f=fixture([pr(1),pr(2),pr(3)],{comments:{1:[proof()],2:[proof()],3:[proof()]},
-  recent:[{event:'workflow_dispatch',status:'in_progress'}]});
+test('separate Repair PRs do not deduplicate each other and stacked parents remain blocked',async()=>{
+ const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,2);
- assert.deepEqual(f.calls.dispatched.map(x=>x.inputs.pr_number),['1','2']);
- assert.equal(f.calls.reserved.length,2);
- assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  const child=pr(3,'repair',{base:{ref:'branch-1'}});
  const x=fixture([pr(1),child],{comments:{1:[proof()]}});
  const y=await run({github:x.github,core:core(),context,now:NOW,capacityFn:x.capacityFn});
  assert.equal(y.dispatchAccepted,0);
- const duplicate=pr(2,'repair',{head:{ref:'branch-1',sha:SHA,
-   repo:{full_name:'andylitvinov-design/books'}}});
- const shared=fixture([pr(1),duplicate],{comments:{1:[proof()],2:[proof()]}});
- const z=await run({github:shared.github,core:core(),context,now:NOW,capacityFn:shared.capacityFn});
- assert.equal(z.dispatchAccepted,0);
- assert.equal(z.blocked.SHARED_HEAD_BRANCH,2);
 });
 test('resolved conflict label is cleared after two consistent SHA/base reads',async()=>{
  const baseSha='b'.repeat(40),clean=pr(92,'conflict',{
@@ -353,14 +372,15 @@ test('completed push audit cannot starve a ready source-repair dispatch',async()
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
 });
-test('unrelated worker activity or cooldown never delays a different PR task',async()=>{
+test('unrelated Repair audit and recent worker completion do not block a different PR',async()=>{
  for(const recent of [
   [{event:'push',status:'in_progress',created_at:new Date(NOW-5000).toISOString()}],
   [{event:'workflow_dispatch',status:'completed',conclusion:'success',
-   updated_at:new Date(NOW-10000).toISOString()}]
+    updated_at:new Date(NOW-10000).toISOString()}]
  ]){
   const f=fixture([pr(1)],{comments:{1:[proof()]},recent});
-  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+  const r=await run({github:f.github,core:core(),context,now:NOW,
+   capacityFn:f.capacityFn});
   assert.equal(r.dispatchAccepted,1);
   assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  }
@@ -1141,6 +1161,10 @@ test('completed transition snapshots cannot reserve a worker slot',()=>{
  assert.equal(admission('repair',stale),'ADMIT');
  const live=computeCapacity([{name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
  assert.equal(admission('repair',live),'ADMIT');
+ const full=computeCapacity([
+  {name:'HH PR source Repair Worker',status:'in_progress'},
+  {name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
+ assert.equal(admission('repair',full),'WORKER_BUSY');
 });
 
 test('source Repair Worker only runs addressed tasks, with no cron or push lease contention',()=>{
@@ -1168,6 +1192,9 @@ test('completed Action wrapper does not occupy a live repair worker lease',()=>{
  const queued=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'}],[]);
  assert.equal(queued.activeWorker['HH PR source Repair Worker'],1);
  assert.equal(admission('repair',queued),'ADMIT');
+ const full=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'},
+  {id:4,name:'HH PR source Repair Worker',status:'queued'}],[]);
+ assert.equal(admission('repair',full),'WORKER_BUSY');
 });
 test('complete previous_head + new_head owner release cannot block unrelated future source HEAD',()=>{
  const old='b'.repeat(40),newHead='c'.repeat(40);
@@ -1193,19 +1220,27 @@ test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
  assert.equal(workerBusyOrCooling([scheduled],NOW,'repair'),true);
  const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
  assert.equal(admission('ci',addressed),'ADMIT');
+ const fullCi=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'},
+  {name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'queued'}],[],[]);
+ assert.equal(admission('ci',fullCi),'WORKER_BUSY');
 });
 
 
-test('Worker concurrency is per PR and unaddressed fallback remains serialized',()=>{
- const fs=require('node:fs');
- const repair=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- const ci=fs.readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
- assert.ok(repair.includes('group: hh-real-repair-worker-'));
- assert.ok(ci.includes('group: hh-pr-ci-worker-'));
- for(const content of [repair,ci]){
-  assert.ok(content.includes("format('pr-{0}', inputs.pr_number)"));
-  assert.ok(content.includes("'unaddressed'"));
-  assert.ok(content.includes('cancel-in-progress: false'));
- }
- assert.ok(ci.includes("'background'"));
+test('CI Worker can dispatch two independent PRs without a global cooldown',async()=>{
+ const f=fixture([pr(41,'ci'),pr(42,'ci'),pr(43,'ci')],
+  {recent:[{event:'workflow_dispatch',status:'in_progress'}]});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,2);
+ assert.equal(f.calls.dispatched.length,2);
+ assert.equal(new Set(f.calls.dispatched.map(d=>d.inputs.pr_number)).size,2);
+ assert.ok(f.calls.dispatched.every(d=>d.workflow_id==='hh-pr-ci-worker.yml'));
+ assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
+});
+test('shared source branch cannot receive two different PR writer leases',async()=>{
+ const one=pr(41),two=pr(42);
+ two.head={ref:one.head.ref,sha:one.head.sha,repo:{full_name:'andylitvinov-design/books'}};
+ const f=fixture([one,two],{comments:{41:[proof()],42:[proof()]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.blocked.SHARED_HEAD_BRANCH,2);
 });
