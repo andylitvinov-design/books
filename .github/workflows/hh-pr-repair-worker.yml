@@ -244,3 +244,42 @@ jobs:
               .addCodeBlock(JSON.stringify(result,null,2)).write();
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning}));
+
+  finalize-failed-fix:
+    # If the untrusted isolated fix job fails, a prior CLAIMED receipt must not
+    # silently masquerade as a source repair. The exact unchanged HEAD is
+    # escalated to the existing owner/Codex lane, with zero PR source writes.
+    needs: [claim, fix]
+    if: ${{ always() && needs.claim.result == 'success' && needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'failure' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Checkout trusted finalizer only
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          persist-credentials: false
+      - name: Record failed exact-HEAD fix job as manual coding work
+        uses: actions/github-script@v7
+        env:
+          HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+          HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const result=await worker.finalizeFailedFix({github,core,context,
+              prNumber:Number(process.env.HH_REPAIR_PR),
+              expectedSha:String(process.env.HH_REPAIR_SHA||'')});
+            core.info('HH_REPAIR_FAILED_FIX_FINALIZED '+JSON.stringify(result));
+            await core.summary.addHeading('HH source fix failure outcome')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({
+              github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning
+            }));
