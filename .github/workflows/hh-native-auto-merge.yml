@@ -224,6 +224,8 @@ jobs:
             core.setOutput("head", pr.head.sha);
             core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
+            core.setOutput("requires_current_base", String(freshness.reason === "SENSITIVE_BASE_VERIFIED"));
+            core.setOutput("verified_base", freshness.base);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
               " after " + observed.length + " latest exact-head PR workflows");
       - name: Enable native auto-merge for this exact head
@@ -238,6 +240,8 @@ jobs:
           PR_HEAD: ${{ steps.ready.outputs.head }}
           PR_BASE_SHA: ${{ steps.ready.outputs.base }}
           PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}
+          PR_REQUIRES_CURRENT_BASE: ${{ steps.ready.outputs.requires_current_base }}
+          PR_VERIFIED_BASE: ${{ steps.ready.outputs.verified_base }}
         run: |
           set -euo pipefail
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
@@ -271,6 +275,18 @@ jobs:
             exit 1
           fi
           for ((attempt=1; attempt<=3; attempt++)); do
+            fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')"
+            if [[ "$fresh" != true ]]; then
+              echo 'CI_AUTO_MERGE: SKIP PR target, HEAD or state changed before native AutoMerge'
+              exit 0
+            fi
+            if [[ "$PR_REQUIRES_CURRENT_BASE" == true ]]; then
+              current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
+              if [[ "$current_base" != "$PR_VERIFIED_BASE" ]]; then
+                echo 'CI_AUTO_MERGE: SKIP production advanced before native AutoMerge'
+                exit 0
+              fi
+            fi
             if gh pr merge "$PR_NUMBER" --auto "$merge_option" --match-head-commit "$PR_HEAD" 2> "$RUNNER_TEMP/auto-merge-error"; then
               echo "CI_AUTO_MERGE: GitHub accepted ARM for PR #$PR_NUMBER at $PR_HEAD" >> "$GITHUB_STEP_SUMMARY"
               exit 0

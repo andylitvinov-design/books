@@ -59,3 +59,10 @@ test('native writer never falls back to a separate direct merge command',()=>{
  const invocations=s.split('\n').filter(line=>/\bgh pr merge\s+"\$PR_NUMBER"/.test(line));
  assert.ok(invocations.length>0);assert.ok(invocations.every(line=>line.includes('--auto')&&line.includes('--match-head-commit')));
 });
+test('native writer rechecks target, HEAD and sensitive production base immediately before ARM',()=>{
+ const s=workflow('hh-native-auto-merge');
+ assert.match(s,/PR_REQUIRES_CURRENT_BASE:/);assert.match(s,/PR_VERIFIED_BASE:/);
+ assert.match(s,/baseRefName == "codex\/public-book-library"/);
+ assert.match(s,/git\/ref\/heads\/codex\/public-book-library/);
+ assert.match(s,/production advanced before native AutoMerge/);
+});
