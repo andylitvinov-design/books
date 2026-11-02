@@ -80,5 +80,7 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(middleware,/reikiIntroAudioManager\|\|coachingOwnerAudioManager\|\|practitionerCourseEditor\|\|publicMandalaLocalImages\|\|ownerMessengerImages\|\|liveAudioPage\) \? ' blob:' : ''/)
  assert.match(middleware,/practitionerCourseMediaOrigin/)
  assert.match(middleware,/"frame-ancestors 'none'"/)
+ assert.match(middleware,/ownerRecorderPage\|\|deliveryOrigin\|\|reportNarrationReader/)
+ assert.match(middleware,/media-src 'self'/)
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
 })
