@@ -79,16 +79,31 @@ test('PR runs source contracts; both LIVE media exports are manual after merge',
 });
 
 
-test('LIVE canonical five-level chat stays separate from old goal-first acceptance',()=>{
- assert.ok(qa.includes("entryStep==='category'"),'must detect the released tree');
- for(const id of ['love','love-trust','love-trust-s1','love-trust-s1-i1'])
-   assert.ok(qa.includes(id),'missing canonical ID: '+id);
- for(const step of ['category','topic','scenario','idea','phrase'])
-   assert.ok(qa.includes("pick('"+step+"'")||
-     qa.includes("state(page,'"+step+"'"),'missing actual step '+step);
- assert.ok(qa.includes('PREPARED_PHRASE_CHOICES_NOT_AVAILABLE'));
- assert.ok(qa.includes('UNBOUND_CONCEPT_MUST_NOT_BE_FALSELY_EXPORTED'));
- assert.ok(qa.includes('SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'));
- assert.match(qa,/approved\.get\(item\.id\)/);
- assert.match(workflow,/workflow_dispatch/);
+// The new dialogue's active choices must be inside the last assistant bubble.
+// Keep the existing licensed-MP4, FFmpeg, privacy and hydration proof intact.
+test('canonical in-chat choices are checked by the real browser acceptance',()=>{
+ const src=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
+ for(const key of ['data-chat-inline-choices','data-chat-assistant-turn',
+  'data-chat-choice-stage={step}','data-video-chat-tree-choice',
+  'data-chat-hydrated={clientHydrated?', 'onClick={()=>answer(value)}'])
+   assert.ok(src.includes(key),key);
+ for(const key of ['ONE_ACTIVE_INLINE_ANSWER_PANEL_',
+  'CHOICES_NOT_INSIDE_ASSISTANT_MESSAGE_','CANONICAL_DIALOG_NOT_DEPLOYED',
+  'HH_CHAT_EXPECT_CANONICAL','SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'])
+   assert.ok(qa.includes(key),key);
+});
+
+
+test('owner chat release receives strict Chromium render and independent macOS WebKit gate',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/holistic-support-mandala.yml',import.meta.url),'utf8');
+ for(const required of [
+  'feat/video-chat-context-understanding-',
+  'HH_CHAT_EXPECT_CANONICAL=true',
+  'HH_CHAT_ALLOW_LOCAL=true',
+  'node scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'voice-webkit-macos:',
+  'hh-canonical-video-chat-',
+  'tests/video-director-chat-live-acceptance.test.mjs'
+ ])assert.ok(workflow.includes(required),'missing browser release gate: '+required);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });

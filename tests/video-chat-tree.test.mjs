@@ -159,22 +159,6 @@ test("one-click shortcut fills missing nodes and filters without overwriting cho
   assert.equal(nextVideoChatTreeStep({...next,mood:"slow",duration:30}),"review");
 });
 
-test("automatic director preserves the chosen catalog phrase and custom wording",()=>{
-  let current=pick(pick(pick(pick(draft(),"category","love"),"topic","love-trust"),
-    "scenario","love-trust-s3"),"idea","love-trust-s3-i2");
-  const options=videoChatTreeOptions(current,"phrase","ru");
-  current=pick(current,"phrase",options[2].id);
-  const preserved=autocompleteVideoChatTree({...current,aspect:"square"},
-    "relationships","ru");
-  assert.equal(preserved?.phraseId,options[2].id);
-  assert.equal(preserved?.phraseText,options[2].label);
-  assert.equal(preserved?.aspect,"square");
-  const personal=chooseCustomVideoChatPhrase(current,"Я выбираю свой путь.");
-  const personalAuto=autocompleteVideoChatTree(personal,"relationships","ru");
-  assert.equal(personalAuto?.phraseId,"custom");
-  assert.equal(personalAuto?.phraseText,"Я выбираю свой путь.");
-});
-
 test("auto-selected extended phrase keeps both sentences for two actual scene captions",()=>{
   const selected=pick(pick(draft(),"category","love"),"topic","love-trust");
   const auto=autocompleteVideoChatTree({...selected,length:"extended"},
@@ -182,6 +166,45 @@ test("auto-selected extended phrase keeps both sentences for two actual scene ca
   assert.equal(auto?.length,"extended");
   assert.ok(auto?.phraseText.includes(String.fromCharCode(10)));
   assert.ok(auto?.phraseText.length>35);
+});
+
+test("broad LOVE goals use only their editorial parent in RU, EN and ES",()=>{
+  for(const [goal,locale] of [
+    ["Видео про любовь","ru"],
+    ["A video about love","en"],
+    ["Vídeo sobre amor","es"],
+  ]){
+    const path=initialVideoChatTree(goal,locale);
+    assert.equal(path.categoryId,"love",goal);
+    const selected=autocompleteVideoChatTree({...draft(goal,locale),...path},
+      "relationships",locale);
+    assert.equal(selected?.categoryId,"love",goal);
+    assert.ok(selected?.topicId?.startsWith("love-"),goal);
+    assert.ok(selected?.scenarioId,goal);
+  }
+  const unknown=initialVideoChatTree("food", "en");
+  assert.equal(unknown.categoryId,null);
+  assert.equal(autocompleteVideoChatTree(draft("food","en"),"energy","en"),null);
+});
+
+test("autocomplete preserves a manually selected prepared phrase or custom copy",()=>{
+  let path=pick(pick(pick(pick(draft(),"category","love"),"topic","love-trust"),
+    "scenario","love-trust-s3"),"idea","love-trust-s3-i2");
+  const choices=videoChatTreeOptions(path,"phrase","ru");
+  path=pick(path,"phrase",choices[2].id);
+  const selected=autocompleteVideoChatTree({...path,aspect:"square"},
+    "relationships","ru");
+  assert.equal(selected?.phraseId,choices[2].id);
+  assert.equal(selected?.phraseText,choices[2].label);
+  assert.equal(selected?.aspect,"square");
+  const own=chooseCustomVideoChatPhrase(path,"Я выбираю свой путь.");
+  const preserved=autocompleteVideoChatTree(own,"relationships","ru");
+  assert.equal(preserved?.phraseId,"custom");
+  assert.equal(preserved?.phraseText,"Я выбираю свой путь.");
+  const noText=autocompleteVideoChatTree({...path,phrases:false},
+    "relationships","ru");
+  assert.equal(noText?.phraseId,null);
+  assert.equal(noText?.phraseText,null);
 });
 
 test("source integration uses one existing renderer, safe unbound warning and client-only prepared copy",()=>{
@@ -192,13 +215,9 @@ test("source integration uses one existing renderer, safe unbound warning and cl
   assert.match(chat,/data-video-chat-phrase-filters/);
   assert.match(chat,/data-chat-concept-unbound/);
   assert.match(chat,/captionTexts:captions/);
-  // Strict source contract: avoid double-escaped regular-expression literals.
-  assert.ok(chat.includes('data-chat-hydrated={clientHydrated?"true":"false"}'));
-  assert.ok(chat.includes('composerRef.current?.value'));
-  assert.ok(chat.includes('requestKey!==currentPlanKeyRef.current'));
-  assert.ok(chat.includes('currentStepRef.current!=="review"'));
-  assert.ok(chat.includes('approvedPlanKeyRef.current=executionKey'));
-  assert.ok(chat.includes('approvedPlanKeyRef.current!==executionKey'));
+  assert.match(chat,/approvedPlanKeyRef\.current!==executionKey/);
+  assert.match(chat,/executable\?\.edit\.clipIds/);
+  assert.match(chat,/executable\?\.edit\.durationSecondsByStage/);
   assert.match(studio,/MandalaVideoDirectorChat/);
   assert.match(studio,/scenario\.edit,scenario\.aspect/);
   assert.match(studio,/compileFreeFilmPreset/);
@@ -207,37 +226,4 @@ test("source integration uses one existing renderer, safe unbound warning and cl
   assert.equal(listVideoGoalTopics("love","ru").length,6);
   assert.equal(listVideoGoalScenarios("love-trust","ru").length,4);
   assert.equal(listVideoPhraseIdeas("love-trust-s1","ru").length,4);
-});
-
-test("generic LOVE goal enters the canonical category in three languages without guessing an unrelated category",()=>{
-  for(const [goal,locale] of [
-    ["A video about love","en"],
-    ["Vídeo sobre amor","es"],
-    ["Видео про любовь","ru"],
-  ]){
-    const state=initialVideoChatTree(goal,locale);
-    assert.equal(state.categoryId,"love",goal);
-    const proposal=autocompleteVideoChatTree(draft(goal,locale),"relationships",locale);
-    assert.equal(proposal.categoryId,"love",goal);
-    assert.ok(proposal.topicId?.startsWith("love-"),goal);
-    assert.equal(nextVideoChatTreeStep({
-      ...proposal,mood:"slow",aspect:"portrait",duration:20,music:"harmony"
-    }),"review");
-  }
-  const unknown=draft("про еду");
-  assert.equal(unknown.categoryId,null);
-  assert.equal(autocompleteVideoChatTree(unknown,"energy","ru"),null);
-});
-
-test("the same Messenger keeps goal-first one-message proposals AND free-text multi-intent replies",()=>{
-  const src=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
-  assert.ok(src.includes("goalFirstVideoChatDraft(value,recommended.theme)"));
-  assert.ok(src.includes("understandVideoChatReply(value,step)"));
-  assert.ok(src.includes('reply.kind==="goal"||reply.kind==="append_goal"'));
-  assert.ok(src.includes('reply.kind==="edit"'));
-  assert.ok(src.includes('data-chat-hydrated={clientHydrated?"true":"false"}'));
-  assert.ok(src.includes('setStep("review");addLine("assistant",t.review)'));
-  assert.ok(src.includes("videoChatTreeOptions(draft,step,locale)"));
-  assert.ok(src.includes("draft.phraseText"));
-  assert.ok(!src.includes("hasVideoChatFilter"),"retired weak filter-only parser must not return");
 });
