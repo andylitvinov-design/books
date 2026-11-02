@@ -76,9 +76,21 @@ test('separate fail-closed specialist gate and legacy release-ready alias protec
   assert.match(source, /^  release-ready:/m);
   assert.match(source, /^  hh-specialist:/m);
   assert.match(source, /name: hh-specialist/);
+  const specialist = source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
   const alias = source.split(/^  release-ready:/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
-  assert.match(alias, /needs: \[hh-specialist\]/);
-  assert.match(alias, /SPECIALIST_RESULT/);
+  const plural = source.split(/^  hh-specialists-verified:/m)[1];
+  // The slow specialist aggregation starts after Scope, in parallel with Core.
+  assert.match(specialist, /^    needs: \[scope\]$/m);
+  assert.doesNotMatch(specialist, /needs\.code|CODE_RESULT/);
+  // Neither the classic required context nor its plural compatibility alias
+  // may turn green without BOTH the current Core and Specialist results.
+  for (const gate of [alias, plural]) {
+    assert.match(gate, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
+    assert.match(gate, /CORE_RESULT/);
+    assert.match(gate, /SPECIALIST_RESULT/);
+    assert.match(gate, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+    assert.match(gate, /^    if: always\(\)$/m);
+  }
   assert.match(source, /^    needs: \[scope, code\]/m);
   assert.match(source, /^    if: always\(\)/m);
   assert.match(source, /git diff --no-renames --name-only -z/);
