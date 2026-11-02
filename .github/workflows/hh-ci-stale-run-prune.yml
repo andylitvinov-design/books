@@ -60,10 +60,21 @@ jobs:
           HH_CI_JOB_SAMPLE: '20'
           HH_CI_RELEASE_BRANCH: codex/public-book-library
         run: node scripts/ci-prune-stale-runs.mjs
+      # Read-only conflict grouping is advisory. A transient GitHub API JSON
+      # response must not turn a successful, exact-head-safe CI prune into RED.
+      # Keep the diagnostic outcome visible while the mutating prune stays fatal.
       - name: Group unresolved PR merge-conflict candidates (read-only)
+        id: conflict_diagnostic
+        continue-on-error: true
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
+      - name: Record partial conflict diagnostics without denying CI prune
+        if: steps.conflict_diagnostic.outcome == 'failure'
+        run: |
+          echo '::warning::Read-only PR conflict grouping is unavailable; successful queued-run prune remains valid.'
+          echo '- Conflict grouping: PARTIAL (read-only diagnostic failed); inspect this job log. CI prune outcome remains independently enforced.' >> "$GITHUB_STEP_SUMMARY"
 
       # This existing production-only job owns its runner and never evaluates
       # privileged workflow code from PR branches. The marker is one-time.
