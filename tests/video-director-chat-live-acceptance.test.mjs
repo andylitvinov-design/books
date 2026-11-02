@@ -107,3 +107,24 @@ test('owner chat release receives strict Chromium render and independent macOS W
  ])assert.ok(workflow.includes(required),'missing browser release gate: '+required);
  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
+
+test('the one-shot LIVE free-AI diagnostic uses only synthetic consented text',()=>{
+ const start=workflow.indexOf('One-shot free AI synthetic opt-in diagnostic');
+ const end=workflow.indexOf('PR scope summary — candidate media',start);
+ assert.ok(start>0&&end>start,'optional diagnostic has its own bounded step');
+ const diagnostic=workflow.slice(start,end);
+ assert.match(workflow,/probe_free_ai:/);
+ assert.match(diagnostic,/github\.event\.action == 'opened'/);
+ assert.match(diagnostic,/node --input-type=module/);
+ assert.match(diagnostic,/VIDEO_CHAT_FREE_AI_LIVE_/);
+ assert.match(diagnostic,/denied\.response\.status===400/);
+ assert.match(diagnostic,/request\(false,5500\)/);
+ assert.match(diagnostic,/request\(true,13000\)/);
+ assert.match(diagnostic,/personalDataSent:false,photoOrVoiceSent:false/);
+ assert.match(diagnostic,/json\.changesApplied===false&&json\.externalVideoGenerated===false/);
+ assert.match(diagnostic,/report\.result=report\.providerResponseVerified\?'PASS':'UNVERIFIED'/);
+ assert.match(diagnostic,/Free AI provider response unverified/);
+ assert.doesNotMatch(diagnostic,/continue-on-error:|process\.exitCode|photoUrl|recordingUrl|Authorization:/);
+ assert.ok(!diagnostic.includes('api.groq.com')&&!diagnostic.includes('generativelanguage.googleapis.com'),
+   'synthetic probe contacts only the first-party consent route');
+});
