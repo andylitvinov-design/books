@@ -179,3 +179,15 @@ test("third-workspace browser QA checks full-width approved design and six live 
   assert.match(script,/390-goals\.png/);
   assert.match(script,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
 });
+
+test("macOS WebKit guided practices waits for the real button rather than throttled animation frames",()=>{
+  const source=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+  assert.match(source,/import \{expect\} from "@playwright\/test";/);
+  assert.match(source,/await expect\(generate\)\.toBeEnabled\(\{timeout:20000\}\)/);
+  assert.equal((source.match(/await expect\(generate\)\.toBeEnabled\(\{timeout:20000\}\)/g)||[]).length,2,
+    "state and vector must both preserve the real enabled requirement");
+  assert.doesNotMatch(source,/waitForFunction\(\(\)=>document\.querySelector\("\[data-guided-generate-meditation\]"\)\?\.disabled===false\)/);
+  assert.match(source,/generateDisabled:el\.querySelector/);
+  assert.match(source,/meditationResultCount:el\.querySelectorAll/);
+  assert.match(source,/HYPNO_THIRD_MOBILE_MATRIX_PASS|PASS guided-practices/);
+});

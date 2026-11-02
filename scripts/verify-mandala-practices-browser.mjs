@@ -5,6 +5,7 @@
  * This is complementary to the separate real encoded-media browser suite.
  */
 import assert from "node:assert/strict";
+import {expect} from "@playwright/test";
 import {mkdirSync} from "node:fs";
 import {join} from "node:path";
 
@@ -41,7 +42,22 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const state=course.locator('[data-guided-focus-state="calm"]');
       await state.click();
       assert.equal(await state.getAttribute("aria-pressed"),"true");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // Playwright's default page.waitForFunction polls on requestAnimationFrame.
+      // Headed macOS WebKit may throttle rAF despite a hydrated and interactive
+      // document; poll the SAME live button's enabled state over the protocol.
+      // Never bypass a disabled real action or turn this into a time-based sleep.
+      try{
+        await expect(generate).toBeEnabled({timeout:20000});
+      }catch(error){
+        const state=await course.evaluate(el=>({
+          focusMode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
+          selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state"),
+          generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+          visibleNote:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
+          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+        }));
+        throw new Error(engine+" "+locale+" "+width+" state meditation could not enable: "+JSON.stringify(state),{cause:error});
+      }
       await generate.click();
       const result=course.locator("[data-guided-meditation-result]");
       await result.waitFor({state:"visible"});
@@ -104,7 +120,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
       assert.equal(await generate.isDisabled(),true,"vector requires both fields");
       await course.locator("[data-video-key-goal]").fill("I would like to feel steady");
-      await page.waitForFunction(()=>document.querySelector("[data-guided-generate-meditation]")?.disabled===false);
+      // Keep the second, vector-mode enabled gate equally real and WebKit-safe.
+      await expect(generate).toBeEnabled({timeout:20000});
       assert.equal(await course.locator("[data-guided-eight-sessions]").count(),0,
         "switching from state invalidates previous eight-session outline");
       await generate.click();
