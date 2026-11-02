@@ -439,6 +439,39 @@ test('JSON legacy old_head/new_head receipts only affect their own heads',()=>{
  assert.equal(externalOwnerLeaseStatus([active,receipt],old,NOW),'FREE');
 });
 
+test('narrative mention of a sweep lease is not a lease receipt',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const note={body:'Conflict investigator reports no active \`HH_PR_SWEEP_LEASE_V1\` claim; this is only a handoff.'};
+ assert.equal(externalOwnerLeaseStatus([note],SHA,NOW),'FREE');
+ assert.equal(reservationStatus(task,[note],NOW),'FREE');
+ const malformed={body:'<!-- HH_PR_SWEEP_LEASE_V1 --> not JSON'};
+ assert.equal(externalOwnerLeaseStatus([malformed],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
+test('completed historical lease formats do not strand an unrelated exact HEAD',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const historicYaml={user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nstate: released_after_atomic_commit\nowner: old-codex\nlease_id: old-1\nprevious_head_sha: '+old+'\nhead_sha: '+next+'\n'};
+ const historicJson={user:{login:'andylitvinov-design'},body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-codex',lease_id:'old-2',
+   state:'released_after_atomic_commit',old_head_sha:old,new_head_sha:next})};
+ const shortRelease={user:{login:'andylitvinov-design'},body:
+  '<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+   schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-codex',
+   state:'released_after_atomic_commit',previous_head_sha:old,
+   head_sha:'ccccccccc'})};
+ const history=[historicYaml,historicJson,shortRelease];
+ assert.equal(externalOwnerLeaseStatus(history,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(taskFor(pr(1),{tier:'P1'}),history,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([historicYaml],old,NOW),'OWNER_LEASE_UNVERIFIED');
+ assert.equal(externalOwnerLeaseStatus([shortRelease],next,NOW),'OWNER_LEASE_UNVERIFIED',
+  'matching abbreviated HEAD must not unlock a possible active writer');
+ assert.equal(externalOwnerLeaseStatus([{
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nstate: released\nprevious_head_sha: '+old+'\nhead_sha: invalid'
+ }],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+
 test('CI capacity is rechecked once when the first inventory is partial',async()=>{
  const f=fixture([pr(8,'ci')]);let reads=0;
  const partial={...cap(),inventoryConfidence:'BOUNDED_PARTIAL',unknownActiveRuns:1};
