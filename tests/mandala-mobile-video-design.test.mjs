@@ -361,7 +361,9 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
   const compact=read("components/mandala-hypno-compact.tsx");
   assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
-  const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
+  // Scope the contract to this handler, not every later video/renderer action.
+  const previewHandler=studio.match(/const openAffirmationPreview = \(\) => \{[\s\S]*?\n  \};/)?.[0] || "";
+  assert.ok(previewHandler,"preview handler must remain in the canonical Studio");
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
   assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);
@@ -492,8 +494,12 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
-  assert.match(studio,/data-video-quick-affirmation=\{index\}/);
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
+  assert.match(studio,/\{deepHypnoPane\}/);
+  assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
+  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}custom:phrase,visibility:\["large"\]/,
+    "a chosen catalog phrase must enter the existing visible film caption track");
+  assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
   assert.match(studio,/data-video-quick-audio-track=\{id\}/);
@@ -504,7 +510,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
-  assert.match(css,/\.quickPhraseRail,/);
+  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);
   assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
 });

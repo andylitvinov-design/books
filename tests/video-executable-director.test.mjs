@@ -5,7 +5,7 @@ import catalogue from "../data/video-catalog/scene-taxonomy.json" with {type:"js
 import {
   EXECUTABLE_VIDEO_SCENARIO_VERSION,
   compileExecutableVideoScenario,parseAiVideoCutSuggestion,
-  executableSceneCandidates,visualSignalsFromGoal,
+  executableSceneCandidates,visualSignalsFromGoal,sceneMatchesVisualSignal,
 } from "../lib/mandala/video-executable-director.mjs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
 import {
@@ -150,7 +150,10 @@ test("verified script is submitted through the only existing renderer and soundt
   assert.match(chat,/parseAiVideoCutSuggestion/);
   assert.match(chat,/onConfirm\(\{scenario:executable\}\)/);
   assert.match(chat,/data-video-chat-ai-cut/);
-  assert.match(chat,/approvedPlanKeyRef.current!==planKey/);
+  assert.match(chat,/approvedPlanKeyRef.current!==executionKey/);
+  assert.match(chat,/currentStepRef.current!=="review"/);
+  assert.match(chat,/disabled={disabled\|\|aiCutState==="loading"}/);
+  assert.match(chat,/executionKey=JSON.stringify/);
   assert.match(editor,/scenario\.edit,scenario\.aspect/);
   assert.match(editor,/setAttachedAudio\(soundtrack==="none"\?null/);
   assert.match(editor,/setSoundVolume\(scenario\.audio\.volumePercent\)/);
@@ -174,4 +177,75 @@ test("800-character creative brief retains late visual motifs, temporal ordering
   assert.throws(()=>compileExecutableVideoScenario({...base,goal:"д".repeat(801)}));
   assert.deepEqual(visualSignalsFromGoal("Без моря хочу горы, затем солнце"),["mountains","sun"]);
   assert.deepEqual(visualSignalsFromGoal("Primero el bosque, después las montañas"),["forest","mountains"]);
+});
+
+
+test("two concrete visual beats use actual forest then mountain footage across curated themes",()=>{
+  const film=compileExecutableVideoScenario({...base,goal:"Сначала лес, затем горы, без моря",
+    selectedPresetId:"nature",alternativePresetIds:[],
+    draft:{...draft,goal:"Сначала лес, затем горы, без моря",music:"none",phrases:false}});
+  assert.equal(film.shots.length,4);
+  const source=id=>scenes.find(scene=>scene.id===id);
+  assert.equal(sceneMatchesVisualSignal(source(film.shots[0].sceneId),"forest"),true);
+  assert.equal(sceneMatchesVisualSignal(source(film.shots[1].sceneId),"mountains"),true);
+  assert.ok(film.candidateSceneIds.includes("mountain-air"),
+    "source-backed target scene from different original preset theme must be available");
+  assert.deepEqual(film.visualCoverage.requested,["forest","mountains"]);
+  assert.deepEqual(film.visualCoverage.matched,["forest","mountains"]);
+  assert.deepEqual(film.visualCoverage.unavailable,[]);
+  assert.equal(film.requiresNovelFootage,false);
+  assert.equal(film.shots.reduce((sum,shot)=>sum+shot.durationSeconds,0),30);
+  assert.ok(validateMontageClips(film.edit.clipIds,scenes,["water"]));
+});
+
+test("AI cannot omit or reverse requested visuals when corresponding real shots exist",()=>{
+  const goal="Forest then mountains, no sea";
+  const ids=executableSceneCandidates({
+    goal,presetId:"nature",alternativePresetIds:[],presets,scenes,excludedMotifs:["water"]});
+  assert.ok(ids.includes("mountain-air"));
+  const parameters={goal,candidateSceneIds:ids,durationSeconds:30,scenes,excludedMotifs:["water"]};
+  const seconds=[4,6,12,8];
+  assert.equal(parseAiVideoCutSuggestion({clipIds:[
+    "meadow-morning","petal-hope","wildflower-dance","fern-awakening"],stageSeconds:seconds},parameters),null,
+    "AI must not omit mountains merely because a whole same-theme montage is licensed");
+  assert.equal(parseAiVideoCutSuggestion({clipIds:[
+    "mountain-air","fern-awakening","wildflower-dance","meadow-morning"],stageSeconds:seconds},parameters),null,
+    "AI must preserve first forest then mountains in the visitor's requested order");
+  const good={clipIds:["fern-awakening","mountain-air","meadow-morning","petal-hope"],
+    stageSeconds:seconds};
+  assert.deepEqual(parseAiVideoCutSuggestion(good,parameters)?.clipIds,good.clipIds);
+  assert.ok(validateAiVideoPlanResponse(JSON.stringify(good),{
+    ...parameters,locale:"en",mood:"slow",aspect:"portrait",music:"none",phrases:false}));
+  const bad={...good,clipIds:["mountain-air","fern-awakening","meadow-morning","petal-hope"]};
+  assert.equal(validateAiVideoPlanResponse(JSON.stringify(bad),{
+    ...parameters,locale:"en",mood:"slow",aspect:"portrait",music:"none",phrases:false}),null);
+});
+
+test("unavailable literal subject stays an explicit unmet visual, not fabricated footage",()=>{
+  const film=compileExecutableVideoScenario({...base,goal:"Хочу ролик про еду",
+    draft:{...draft,goal:"Хочу ролик про еду"}});
+  assert.deepEqual(film.visualCoverage.requested,["food"]);
+  assert.deepEqual(film.visualCoverage.matched,[]);
+  assert.deepEqual(film.visualCoverage.unavailable,["food"]);
+  assert.equal(film.requiresNovelFootage,true);
+  assert.ok(film.shots.every(shot=>!sceneMatchesVisualSignal(
+    scenes.find(scene=>scene.id===shot.sceneId),"food")));
+  const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+  assert.match(chat,/executable\?\.requiresNovelFootage/);
+});
+
+
+test("chat commands confirm and create the currently approved AI cut without silently reverting",()=>{
+  const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+  const start=chat.indexOf("const answer=(raw:string)=>");
+  const end=chat.indexOf('if(step==="goal")',start);
+  assert.ok(start>=0&&end>start,"actual messenger command handler must exist");
+  const handler=chat.slice(start,end);
+  const action=handler.indexOf("const action=parseVideoChatAction(value,step)");
+  const confirm=handler.indexOf('if(action==="confirm"){confirm();return;}');
+  const create=handler.indexOf('if(action==="create"){start();return;}');
+  const invalidate=handler.indexOf('cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle")');
+  assert.ok(action>=0&&confirm>action&&create>confirm&&invalidate>create,
+    "confirm/create command must run before the editor drops the approved AI cut");
+  assert.match(chat,/approvedPlanKeyRef.current!==executionKey/);
 });

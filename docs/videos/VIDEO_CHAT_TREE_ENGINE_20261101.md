@@ -42,3 +42,18 @@ Selected phrases use the same `scenario.edit.captionTexts` stage-track already c
 - Merge only with current ruleset/core + specialist green into **`codex/public-book-library`** (not default branch); verify deployed Vercel commit SHA, READY, and public RU/EN/ES route. Physical iPhone Safari remains a separate owner-side acceptance step.
 
 No claims of production deployment, passing CI, or exact rendering of unbound concepts without independent evidence.
+
+## Integration reconciliation after the taxonomy and phrase PRs merged
+
+The exact integration branch for #2973 is reconciled against production `codex/public-book-library`; #2949 and #2970 have already merged there. The PR should target the real production branch and preserve the following later, already-shipped #2964 behavioral safeguards, rather than overwriting the current component with an older stacked copy:
+
+- `data-chat-hydrated` and the textarea's pre-hydration value preserve early mobile typing.
+- Direct Confirm/Create/Open commands do not revoke approved AI montage before acting.
+- Confirmation is held while an AI montage suggestion is loading.
+- The executable approval key includes the real selected clip IDs and stage durations, not only filter text.
+- Responses to stale AI cuts (changed plan or left Review) cannot overwrite the current plan.
+- A changed goal invalidates the existing approval, and a changed story requires new explicit confirmation.
+
+The source-backed LIVE browser script now supports both the older released `goal → filters` path while a PR is checked against the currently deployed site, and the new `category → topic → scenario → idea → phrase → filters` path immediately after its production deployment. The latter verifies all five hierarchy steps, a selected phrase in the real stage-caption track, the honest unbound-story disclaimer, four licensed decoded MP4 clips and actual audible encoded output. Do not mark a fully authored story as media-ready merely because a different generic montage can be rendered.
+
+**Exact-head acceptance is still required:** successful Node contract tests, TypeScript, lint, Next build, current protected GitHub checks, live-browser downloaded file evidence and Vercel READY on deployed SHA. No forced merge, bypass, paid AI/video request or direct production edit is authorized.

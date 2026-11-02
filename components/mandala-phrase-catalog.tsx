@@ -69,10 +69,17 @@ export function MandalaPhraseCatalog({
   const recommended=useMemo(()=>suggestVideoPhrasePath({
     request:wish,legacyTheme:theme,locale,
   }),[wish,theme,locale]);
-  const [path,setPath]=useState<Path>(()=>recommended||{
-    categoryId:"body",topicId:"body-release",
-    scenarioId:"body-release-s1",ideaId:"body-release-s1-i1",
-  });
+  // Key the user's deliberate path to the original video intent, not the
+  // UI locale. Changing filters or switching RU/EN/ES must preserve it.
+  const intentKey=JSON.stringify([wish,theme]);
+  const [selection,setSelection]=useState<{intentKey:string;path:Path}|null>(null);
+  const path:Path=selection?.intentKey===intentKey?selection.path:
+    recommended||{categoryId:"body",topicId:"body-release",
+      scenarioId:"body-release-s1",ideaId:"body-release-s1-i1"};
+  const setPath=(value:Path|((previous:Path)=>Path))=>{
+    const next=typeof value==="function"?value(path):value;
+    setSelection({intentKey,path:next});
+  };
   const [tone,setTone]=useState<VideoPhraseTone>("gentle");
   const [speaker,setSpeaker]=useState<VideoPhraseSpeaker>("self");
   const [length,setLength]=useState<VideoPhraseLength>("short");
@@ -80,7 +87,6 @@ export function MandalaPhraseCatalog({
   const scenarioKey=path.scenarioId+":"+locale;
   useEffect(()=>{
     const controller=new AbortController();
-    setRemote(null);
     const params=new URLSearchParams({scenarioId:path.scenarioId,locale});
     fetch("/api/holistic-support/video-phrases?"+params.toString(),{
       method:"GET",signal:controller.signal,
@@ -92,9 +98,8 @@ export function MandalaPhraseCatalog({
       }).catch(()=>{});
     return ()=>controller.abort();
   },[path.scenarioId,locale,scenarioKey]);
-  // If the client changes the primary goal, suggest the correct topic again;
-  // changes to tone/voice/length never reset their selected story or idea.
-  useEffect(()=>{if(recommended)setPath(recommended);},[recommended]);
+  // A changed video goal automatically updates the derived recommended path;
+  // no state-reset effect can overwrite a visitor's intentional selection.
   const categories=useMemo(()=>listVideoGoalCategories(locale),[locale]);
   const topics=useMemo(()=>listVideoGoalTopics(path.categoryId,locale),[path.categoryId,locale]);
   const scenarios=useMemo(()=>listVideoGoalScenarios(path.topicId,locale),[path.topicId,locale]);

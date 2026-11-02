@@ -98,6 +98,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [step,setStep]=useState<Step>(()=>nextVideoChatTreeStep(initial(goal,locale)) as Step);
  const [lines,setLines]=useState<ChatLine[]>([{id:0,role:"assistant",text:t.intro}]);
  const [input,setInput]=useState("");
+ // Server-side markup can appear before React's mobile input has hydrated.
+ const [clientHydrated,setClientHydrated]=useState(false);
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
  const [aiStatus,setAiStatus]=useState<"idle"|"loading"|"ready"|"fallback">("idle");
@@ -116,6 +118,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const counter=useRef(0);
  const threadRef=useRef<HTMLDivElement|null>(null);
  const windowRef=useRef<HTMLElement|null>(null);
+ const composerRef=useRef<HTMLTextAreaElement|null>(null);
+ useEffect(()=>{
+   const preHydrationText=composerRef.current?.value||"";
+   if(preHydrationText)setInput(value=>value||preHydrationText.slice(0,800));
+   setClientHydrated(true);
+ },[]);
  const addLine=(role:ChatLine["role"],text:string)=>{
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
@@ -123,12 +131,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
    if(goal.trim()===draft.goal.trim()||!goal.trim())return;
-   setDraft(initial(goal,locale));
-   setStep(nextVideoChatTreeStep(initial(goal,locale)) as Step);
+   const fresh=initial(goal,locale);
+   setDraft(fresh);
+   setStep(nextVideoChatTreeStep(fresh) as Step);
    setSymbolicAllowed(false);setAlternative(0);
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+   approvedPlanKeyRef.current="";
    // A new goal entered outside the chat cannot inherit external-AI consent.
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
-   setStep(previous=>previous==="ready"||previous==="done"?"review":previous);
  // Avoid reacting to every local answer: identical text does not trigger changes.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[goal]);
@@ -252,6 +262,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const planKey=JSON.stringify([goalForPlan,draft.categoryId,draft.topicId,draft.scenarioId,
    draft.ideaId,draft.phraseId,draft.phraseText,chosenId,draft.duration,draft.aspect,draft.music,
    draft.mood,draft.phrases,renderOptions.quality,renderOptions.brightness,renderOptions.volumePercent]);
+ const currentPlanKeyRef=useRef(planKey);
+ currentPlanKeyRef.current=planKey;
  const currentAiCut=aiCut?.key===planKey?aiCut.value:null;
  const executable=useMemo(()=>{
    if(!canPlan||!selected)return null;
@@ -273,7 +285,10 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        edit:{...plan.edit,captionTexts:captions}};
    }catch{return null;}
  },[canPlan,selected,draft,locale,filmTheme,goalForPlan,presets,scenes,proposal,options,renderOptions,currentAiCut]);
- const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(goalForPlan).specificVisual);
+ const executionKey=JSON.stringify([planKey,executable?.edit.clipIds,
+   executable?.edit.durationSecondsByStage]);
+ const needSymbolic=Boolean(proposal?.requiresNewAiFootage||
+   executable?.requiresNovelFootage||parseVideoChatIntent(goalForPlan).specificVisual);
  const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
  const choices:readonly (readonly [string,string])[]=VIDEO_CHAT_TREE_STEPS.includes(step)?
@@ -288,11 +303,12 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    const selectedLabel=VIDEO_CHAT_TREE_STEPS.includes(step)?
      videoChatTreeOptions(draft,step,locale).find(option=>option.id===value)?.label:null;
    setInput("");addLine("user",selectedLabel||value);
-   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+   // Confirm/Create/Open must not invalidate the prepared montage.
    const action=parseVideoChatAction(value,step);
    if(action==="confirm"){confirm();return;}
    if(action==="create"){start();return;}
    if(action==="open"){onOpenResult();return;}
+   cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    if(VIDEO_CHAT_TREE_STEPS.includes(step)){
      if(step==="category"&&isGenericVideoRequest(value)){
        addLine("assistant",t.category);return;
@@ -387,10 +403,11 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setLines([{id:++counter.current,role:"assistant",text:t.intro}]);setInput("");
  };
  const confirm=()=>{
-   if(disabled||!executable||offerSymbolic)return;
+   if(disabled||!executable||offerSymbolic||aiCutState==="loading")return;
+   cutAbortRef.current?.abort();
    const ok=onConfirm({scenario:executable});
    if(!ok){addLine("assistant",t.blocked);return;}
-   approvedPlanKeyRef.current=planKey;
+   approvedPlanKeyRef.current=executionKey;
    setStep("ready");addLine("assistant",t.ready);setCaptureStarted(false);setCaptureObserved(false);
  };
  const enhanceExecutable=async()=>{
@@ -415,12 +432,14 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      });
      if(!response.ok)throw Error("VIDEO_PLAN_UNAVAILABLE");
      const payload:unknown=await response.json();
-     if(controller.signal.aborted||!payload||typeof payload!=="object"||
+     if(controller.signal.aborted||requestKey!==currentPlanKeyRef.current||
+       currentStepRef.current!=="review"||!payload||typeof payload!=="object"||
        !("suggestion" in payload))return;
      const accepted=parseAiVideoCutSuggestion(payload.suggestion,{
        candidateSceneIds:executable.candidateSceneIds,
        durationSeconds:executable.durationSeconds,scenes,
        excludedMotifs:executable.edit.excludedMotifs,
+       goal:goalForPlan,
      });
      if(!accepted)throw Error("VIDEO_PLAN_UNTRUSTED");
      setAiCut({key:requestKey,value:{clipIds:[...accepted.clipIds],
@@ -433,13 +452,15 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    }
  };
  const start=()=>{
-   if(disabled||!canCreate||captureStarted)return;
-   if(approvedPlanKeyRef.current!==planKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
+   if(disabled||!canCreate||captureStarted||step!=="ready")return;
+   if(approvedPlanKeyRef.current!==executionKey){
+     setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;
+   }
    const accepted=onCreate();
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} aria-labelledby="video-director-chat-heading">
+  return <section ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
@@ -497,7 +518,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          <button type="button" disabled={disabled} onClick={reset}>{t.retryGoal}</button>
        </div>:null}
        {step==="review"&&!offerSymbolic?<div className={css.storyActions}>
-         <button type="button" className={css.primary} disabled={disabled} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
+         <button type="button" className={css.primary} disabled={disabled||aiCutState==="loading"} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
          {options.length>1?<button type="button" className={css.secondary} disabled={disabled} onClick={()=>{
            cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");onInvalidate();
            setAlternative(n=>(n+1)%options.length);
@@ -512,7 +533,10 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          </button>
          {!canCreate&&!disabled?(assetWaitLong?<div className={css.warning} role="alert">
            <p>{t.assetTimeout}</p>
-           {options.length>1?<button type="button" onClick={()=>{setAlternative(n=>(n+1)%options.length);setStep("review");}}>{t.alternate}</button>:null}
+           {options.length>1?<button type="button" onClick={()=>{
+           cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+           onInvalidate();setAlternative(n=>(n+1)%options.length);setStep("review");
+         }}>{t.alternate}</button>:null}
            <button type="button" onClick={onOpenEditor}>{t.editor}</button>
          </div>:<small className={css.loading}>{t.loading}</small>):null}
        </div>:null}
@@ -563,7 +587,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    </div>:null}
    <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <textarea rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
+     <textarea ref={composerRef} rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
        onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
        maxLength={800} disabled={disabled}
        autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>

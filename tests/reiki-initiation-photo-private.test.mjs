@@ -20,7 +20,7 @@ test('The penultimate photo step appears exactly once after meditation, before c
   assert.deepEqual(sequence.slice(-3), ['intention-04','init-photo-01','end-02'])
   assert.equal(sequence.filter(id => id === 'init-photo-01').length, 1)
   assert.ok(ENERGYWORK_FINISH.includes('init-photo-01'))
-  assert.deepEqual(energyworkLessonRanges().map(range => range.count), [7,15,17,15,7])
+  assert.deepEqual(energyworkLessonRanges().map(range => range.count), [8,16,18,16,7])
   assert.match(editorial, /id: "init-photo-01", phase: "complete", kind: "lesson"/)
   assert.match(editorial, /Send your photo for Reiki initiation/)
   assert.match(editorial, /Отправьте своё фото мастеру/)
