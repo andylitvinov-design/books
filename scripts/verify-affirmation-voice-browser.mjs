@@ -267,10 +267,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         "unapproved phrase cannot invalidate existing sound");
       await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
-      await page.locator('[data-video-quick-control="video"]').click();
+      // The approved Video Studio puts narration in fifth Montage → Voice.
+      // Do not click the removed global voice disclosure in the first workspace.
+      await page.locator('[data-video-quick-control="editor"]').click();
+      await page.locator('[data-video-basic-tab="voice"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       const voicePanel=page.locator("[data-video-voice-studio]");
-      await voicePanel.locator(":scope > summary").click();
+      await voicePanel.waitFor({state:"visible",timeout:25000});
+      if(await voicePanel.getAttribute("open")===null)
+        await voicePanel.locator(":scope > summary").click();
       const studio=voicePanel.locator("[data-voice-studio]");
       await studio.waitFor({state:"visible"});
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
