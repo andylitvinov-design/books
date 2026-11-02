@@ -1259,19 +1259,21 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   })), live, event, 102), false, 'truncated current-head checks fail closed');
 });
 
-test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate synchronize triggers', () => {
+test('native AutoMerge skips synchronize; isolated janitor runs without duplicating early merge checks', () => {
   const native = workflow('hh-native-auto-merge.yml');
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review\]/);
-  assert.doesNotMatch(nativeEvents, /synchronize/,
-    'new source commits must not start an extra privileged native AutoMerge workflow');
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.ok(native.includes('  prune-head:'), 'synchronize must wake only a scoped janitor');
+  assert.ok(native.includes("github.event.action == 'synchronize'"));
   assert.match(native, /^  workflow_run:\s*$/m);
   assert.ok(native.includes("      - 'HH PR core release gate'"),
     'successful exact-HEAD Core CI must still wake the trusted native listener');
   const enable = native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(enable.includes("github.event.action != 'synchronize'"),
+    'new PR HEAD must not trigger auto-merge before green required Core');
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
