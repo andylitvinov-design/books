@@ -5,8 +5,9 @@ const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
+const {isRateLimitError,retryAt}=require('./ci-pr-api-budget.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
-const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=85, MIN_RATE=100;
+const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
@@ -119,13 +120,27 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
  const {owner,repo}=context.repo;let exhausted=false;
  const limited=async(name,fn)=>{
-  if(exhausted||summary.apiRequests>=MAX_API){exhausted=true;throw Error('HH_CONTROL_API_BUDGET:'+name);}
-  summary.apiRequests++;
-  const result=await fn();const rate=result?.headers?.['x-ratelimit-remaining'];
-  if(rate!==undefined&&rate!==null&&Number.isFinite(Number(rate))){
-   summary.apiRemaining=Number(rate);if(summary.apiRemaining<MIN_RATE)exhausted=true;
+  if(exhausted||summary.apiRequests>=MAX_API){
+   exhausted=true;summary.reason||='LOCAL_API_BUDGET_PAUSE';
+   throw Error('HH_CONTROL_API_BUDGET:'+name);
   }
-  return result;
+  summary.apiRequests++;
+  try{
+   const result=await fn();const rate=result?.headers?.['x-ratelimit-remaining'];
+   if(rate!==undefined&&rate!==null&&Number.isFinite(Number(rate))){
+    summary.apiRemaining=Number(rate);
+    if(summary.apiRemaining<MIN_RATE){
+     exhausted=true;summary.reason='GITHUB_RATE_RESERVE_PAUSE';
+    }
+   }
+   return result;
+  }catch(error){
+   if(isRateLimitError(error)){
+    exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';
+    summary.retryAt=retryAt(error,now);
+   }
+   throw error;
+  }
  };
  let prs=[];
  try{
@@ -138,6 +153,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }
  }catch(err){summary.reason='INVENTORY_UNVERIFIED: '+err.message;return finish();}
  summary.discovered=prs.length;
+ if(exhausted)return finish(); // Keep headroom; never reserve while rate is low.
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
  const candidates=planCandidates(production,now);
@@ -150,13 +166,25 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Metadata-only handoffs survive runner saturation or unknown inventory.
  let capacity=null,capacityReason=null;
  try{capacity=await capacityFn(github,owner,repo);}
- catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
+ catch(e){
+  if(isRateLimitError(e)){
+   exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';summary.retryAt=retryAt(e,now);
+   return finish();
+  }
+  capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);
+ }
  // A transitional partial inventory must never admit CI. Re-read once so a
  // settled GitHub snapshot can unblock this sweep without waiting for cron.
  // If the recheck fails, retain the conservative partial snapshot.
  if(capacity?.inventoryConfidence==='BOUNDED_PARTIAL'&&candidates.some(t=>t?.lane==='ci')){
   try{capacity=await capacityFn(github,owner,repo);}
-  catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
+  catch(e){
+   if(isRateLimitError(e)){
+    exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';summary.retryAt=retryAt(e,now);
+    return finish();
+   }
+   log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));
+  }
  }
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
