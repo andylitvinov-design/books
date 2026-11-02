@@ -156,6 +156,39 @@ test('general conditional jobs may skip only when BASE explicitly makes them opt
     trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
   assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
 });
+test('only definitively PR-inapplicable BASE jobs can be skipped',()=>{
+  const build=guard=>[
+    'jobs:','  required:','    runs-on: ubuntu-latest',
+    '  optional:','    if: '+guard,'    runs-on: ubuntu-latest',''
+  ].join('\n');
+  for(const guard of [
+    "github.event_name == 'workflow_dispatch'",
+    "${{ github.event_name != 'pull_request' }}",
+    "${{ github.event_name == 'schedule' && github.ref == 'refs/heads/main' }}",
+  ]) assert.deepEqual(trustedConditionalJobs(build(guard)),['optional'],
+    'provably non-PR job must not block '+guard);
+  for(const guard of [
+    "${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}",
+    "${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' }}",
+    "${{ github.event_name != 'pull_request' || always() }}",
+    "${{ success() && github.ref == 'refs/heads/main' }}",
+    "${{ !cancelled() }}",
+    "${{ startsWith(github.head_ref, 'feat/') }}",
+    "${{ always() }}",
+    'true','false',
+  ]) assert.deepEqual(trustedConditionalJobs(build(guard)),[],
+    'conditional job may actually be required on a PR: '+guard);
+  const readyJob=[
+    {name:'required',status:'completed',conclusion:'success'},
+    {name:'optional',status:'completed',conclusion:'skipped'},
+  ];
+  assert.throws(()=>inspectJobs(readyJob,'.github/workflows/owner.yml',
+    trustedConditionalJobs(build("${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}"))),
+    /UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.equal(inspectJobs(readyJob,'.github/workflows/owner.yml',
+    trustedConditionalJobs(build("${{ github.event_name == 'workflow_dispatch' }}"))),1);
+});
+
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
   assert.throws(()=>inspectJobs([],path),/ZERO_JOB/);
   for(const conclusion of ['skipped','cancelled','failure',null]) {
