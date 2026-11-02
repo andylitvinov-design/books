@@ -92,3 +92,18 @@ test('canonical in-chat choices are checked by the real browser acceptance',()=>
   'HH_CHAT_EXPECT_CANONICAL','SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'])
    assert.ok(qa.includes(key),key);
 });
+
+
+test('owner chat release receives strict Chromium render and independent macOS WebKit gate',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/holistic-support-mandala.yml',import.meta.url),'utf8');
+ for(const required of [
+  'feat/video-chat-context-understanding-',
+  'HH_CHAT_EXPECT_CANONICAL=true',
+  'HH_CHAT_ALLOW_LOCAL=true',
+  'node scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'voice-webkit-macos:',
+  'hh-canonical-video-chat-',
+  'tests/video-director-chat-live-acceptance.test.mjs'
+ ])assert.ok(workflow.includes(required),'missing browser release gate: '+required);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
