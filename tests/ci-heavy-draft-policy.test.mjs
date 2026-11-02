@@ -63,6 +63,19 @@ test('short CI contract tests run even when expensive browser gates are draft-sk
   assert.match(guard, /^  pull_request:/m);
 });
 
+test('live conflict inventory is manual-only and never blocks PR source contracts', () => {
+  const guard = read('hh-pr-sweep-guard.yml');
+  assert.match(guard, /name: Probe real conflict inventory with a read-only token/);
+  assert.ok(guard.includes("if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/public-book-library'"),
+    'the live GraphQL probe must remain available on manual production runs');
+  assert.doesNotMatch(guard, /if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository/,
+    'transient GitHub network failures must not reject unrelated source PRs');
+  assert.ok(guard.includes('run: node scripts/pr-sweep-guard.mjs route-conflicts'),
+    'keep real conflict diagnosis rather than replacing it with a success stub');
+  assert.match(guard, /node --test tests\/pr-sweep-guard\.test\.mjs/,
+    'pure source/conflict/required-gate policy tests remain mandatory on PRs');
+});
+
 test('core Draft cannot pass hh-specialist or legacy release-ready, and Ready restores full checks', () => {
   const core = read('hh-pr-core-release.yml');
   assert.ok(core.includes("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]\n    branches: ['codex/public-book-library']"));
