@@ -188,8 +188,7 @@ jobs:
         with:
           persist-credentials: false
           ref: codex/bootstrap-books
-      - name: Verify slot wakeup decisions
-        run: node --test tests/ci-pr-slot-wakeup.test.cjs
+      # The same slot-wakeup decisions are tested by HH PR watchdog contract on code changes.
       - name: Dispatch one live Watchdog only when actual CI capacity is free
         uses: actions/github-script@v7
         with:

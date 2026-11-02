@@ -57,10 +57,12 @@ jobs:
         with:
           persist-credentials: false
           ref: codex/bootstrap-books
-      - name: Check trusted repair worker
+      # Full repair contracts run on code changes; keep fast live syntax checks.
+      - name: Check trusted repair worker syntax
         run: |
           node --check scripts/ci-pr-repair-worker.cjs
-          node --test tests/ci-pr-priority.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs
+          node --check scripts/ci-pr-repair-test-scope.cjs
+          node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
         uses: actions/github-script@v7
