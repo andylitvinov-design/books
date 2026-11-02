@@ -109,3 +109,14 @@ test("Safari WebCodecs loads the SAME scenario and classical MP3 URL as native a
   assert.match(helper,/first_party_audio_unavailable/);
   assert.match(studio,/code==="first_party_audio_unavailable"/);
 });
+
+test("Safari repair branches must reach real macOS WebKit video/audio acceptance",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const enabled=(workflow.match(/startsWith\(github\.head_ref, 'fix\/webkit-'\)/g)||[]).length;
+  assert.ok(enabled>=2,"Safari repair must run scoped build + macOS WebKit media tests");
+  const job=workflow.split("  voice-webkit-macos:")[1];
+  assert.ok(job,"WebKit must remain an independent real-media job");
+  assert.match(job.split("    runs-on:")[0],/startsWith\(github\.head_ref, 'fix\/webkit-'\)/);
+  assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
+});
