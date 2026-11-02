@@ -16,6 +16,7 @@ on:
       - 'lib/clients/**'
       - 'lib/prescriptions/**'
       - 'lib/site-navigation-model.js'
+      - 'lib/mobile-visual-bottom.mjs'
       - 'app/api/app/**'
       - 'app/api/auth/**'
       - 'app/**/app/**'
