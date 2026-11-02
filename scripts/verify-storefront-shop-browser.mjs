@@ -169,8 +169,42 @@ try {
         return input?.checked === true && submit?.disabled === false
       }, null, { timeout: 10000 })
       assert.equal(await consentInput.isChecked(), true, 'Real opt-in remains checked after React update')
-      await contactForm.locator('button[type="submit"]').click()
-      await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
+      const submitButton = contactForm.locator('button[type="submit"]')
+      assert.equal(await submitButton.isEnabled(), true,
+        'Contact and explicit consent enable the real Submit button')
+      // iPhone WebKit can retarget a mouse-style click after scrolling with the
+      // bottom navigation visible. Use a real touch for mobile, mouse for desktop.
+      await submitButton.evaluate(element=>element.scrollIntoView({
+        behavior:'auto',block:'center'
+      }))
+      await page.waitForFunction(() => {
+        const submit=document.querySelector('[data-cart-contact-form] button[type="submit"]')
+        if(!submit||submit.disabled)return false
+        const rect=submit.getBoundingClientRect()
+        const nav=document.querySelector('.mobile-bottom-navigation')
+        if(rect.top<0||rect.bottom>innerHeight+1)return false
+        if(nav&&getComputedStyle(nav).display!=='none' &&
+          rect.bottom>=nav.getBoundingClientRect().top-5)return false
+        const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2)
+        return hit===submit||submit.contains(hit)
+      },null,{timeout:10000})
+      if(width<600)await submitButton.tap()
+      else await submitButton.click()
+      try {
+        await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]')
+          .waitFor({state:'visible',timeout:18000})
+      } catch(error) {
+        const detail=await contactForm.evaluate(form=>({
+          errors:[...form.querySelectorAll('[role="alert"]')].map(e=>e.textContent),
+          submitEnabled:form.querySelector('button[type="submit"]')?.disabled===false,
+          consent:form.querySelector('input[type="checkbox"][required]')?.checked,
+          phone:form.querySelector('input[type="tel"]')?.value,
+          ready:document.querySelector('[data-cart-order-registration]')?.getAttribute('data-cart-order-ready'),
+        }))
+        console.error(JSON.stringify({phase:'consented-real-submit',locale,width,
+          syntheticRequests:syntheticEnquiries.length,detail}))
+        throw error
+      }
       await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
       assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
       assert.equal(syntheticEnquiries[0].contactConsent, true)
