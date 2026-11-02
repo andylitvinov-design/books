@@ -130,3 +130,10 @@
 .sessionPractice li{padding:3px 0}
 .sessionPractice p{font-size:.88rem;margin:8px 0}
 @media(max-width:380px){.activityTabs button{font-size:.88rem;padding:7px 3px}}
+
+.generatorActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.generatorActions button{min-height:48px;border:1px solid #8ebaa0;background:#fff;border-radius:12px;padding:9px 13px;color:#14513a;font:inherit;font-weight:700;cursor:pointer}
+.generatorActions button[aria-pressed="true"]{border-color:#087e5e;box-shadow:inset 0 0 0 1px #087e5e}
+.generatorActions button:disabled{opacity:.55;cursor:not-allowed}
+.generatorActions button:focus-visible{outline:3px solid #b87519;outline-offset:3px}
+@media(max-width:550px){.generatorActions{grid-template-columns:1fr}}

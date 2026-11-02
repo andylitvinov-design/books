@@ -199,10 +199,14 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [error,setError]=useState("");
   const [preview,setPreview]=useState<Preview|null>(null);
   const [activityKind,setActivityKind]=useState<ActivityKind>("practice");
+  const [activeAction,setActiveAction]=useState<"meditation"|"practice"|"program">("meditation");
   const [before,setBefore]=useState("");
   const [after,setAfter]=useState("");
-  async function submit(){
-    if(!consented||loading||(mode==="llm"&&!externalOptIn))return;
+  async function submit(action:"meditation"|"practice"|"program"="meditation"){
+    if(preview&&action!=="meditation"){setActiveAction(action);return;}
+    const requestedMode=action==="meditation"?mode:"template";
+    if(!consented||loading||(requestedMode==="llm"&&!externalOptIn))return;
+    setActiveAction(action);
     setLoading(true);setError("");setPreview(null);
     setBefore("");setAfter("");
     setActivityKind("practice");
@@ -212,8 +216,8 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({locale:l,focus,intentionCode:goal,styleId:style,motifId:motif,
           durationMinutes:duration,clientPhrase,problemFrame,desiredExperience,resourceImageryOptIn:true,
-          generationMode:mode,providerPreference,
-          externalModelOptIn:mode==="llm"&&externalOptIn}),
+          generationMode:requestedMode,providerPreference,
+          externalModelOptIn:requestedMode==="llm"&&externalOptIn}),
       });
       const data=await response.json() as Preview & {error?:string};
       if(!response.ok){
@@ -311,7 +315,11 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         if(!e.target.checked)setPreview(null);
       }}/><span>{t.consent}</span></label>
     <button className={styles.submit} type="button" disabled={!consented||loading||(mode==="llm"&&!externalOptIn)}
-      onClick={submit}>{loading?t.loading:t.create}</button>
+      onClick={()=>submit("meditation")}>{loading?t.loading:t.create}</button>
+    <div className={styles.generatorActions} data-meditation-generated-actions>
+      <button type="button" disabled={!consented||loading} aria-pressed={activeAction==="practice"} onClick={()=>submit("practice")}>{a.practiceAction}</button>
+      <button type="button" disabled={!consented||loading} aria-pressed={activeAction==="program"} onClick={()=>submit("program")}>{a.programmeAction}</button>
+    </div>
     <p className={styles.caption}>{a.heading} · {t.courseTitle}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {preview&&<article className={styles.preview} aria-live="polite">
@@ -324,7 +332,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft+" · "+(preview.provider==="openrouter_free"?"OpenRouter Free":"Gemini Free"):t.template}</p>
       {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}
       {preview.activityFormats?.status==="ready"&&
-      <section className={styles.practice} data-meditation-activity-formats
+      <section id="meditation-practice" className={styles.practice} data-meditation-activity-formats
         aria-label={a.heading}>
         <h4>{a.heading}</h4>
         <p className={styles.caption}>{a.selected}: {preview.activityFormats.formats[activityKind].title}</p>
@@ -378,7 +386,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       {preview.estimatedDurationSeconds!==undefined&&
         <p className={styles.caption}>{t.estimated}: {Math.max(1,Math.round(preview.estimatedDurationSeconds/60))} min</p>}
       <MeditationWriterDeviceVoice locale={l} segments={preview.segments} />
-      {preview.coursePlan&&<section className={styles.course} data-meditation-course-topics>
+      {preview.coursePlan&&<section id="meditation-program" className={styles.course} data-meditation-course-topics>
         <h4>{t.courseTitle}</h4>
         <p className={styles.caption}>{t.courseExplanation}</p>
         <div className={styles.firstDay}>

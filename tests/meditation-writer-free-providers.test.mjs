@@ -216,5 +216,5 @@ test("provider switch is server-enforced for meditation and affirmations",()=>{
   assert.ok(hypno.includes("data-hypno-ai-provider"));
   assert.ok(hypno.includes("providerPreference:aiProvider"));
   assert.ok(meditation.includes("data-meditation-ai-provider"));
-  assert.ok(meditation.includes("generationMode:mode,providerPreference"));
+  assert.ok(meditation.includes("generationMode:requestedMode,providerPreference"));
 });
