@@ -102,8 +102,8 @@ test("Video Blogs have two standalone, filterable original channels, episodes be
   assert.match(library, /greekVideoSeries\(locale\)/);
   assert.match(library, /seriesId: series\.id/);
   assert.match(library, /seriesOrder: lesson\.order/);
-  assert.match(library, /const seenDiscoveryIds = new Set<string>/);
-  assert.match(library, /if \(seenDiscoveryIds\.has\(key\)\) return false/);
+  assert.match(library, /buildPublishedVideoIndex\(/);
+  assert.match(read("lib/video-discovery/catalog.mjs"), /map\.set\(id/);
   assert.match(read("components/video-discovery.tsx"), /<LibraryFeed locale=\{locale\} items=\{ordered\} videosOnly preserveOrder/);
   assert.match(feed, /data-library-series-filter=\{series\.id\}/);
   assert.match(feed, /data-library-video-series=\{item\.seriesId\}/);

@@ -25,3 +25,22 @@
  .saved{flex:1 1 100%}
 }
 @media(max-width:350px){.intro h2{font-size:22px}.controls label{flex-basis:110px}.goals button{padding:9px 13px}}
+
+/* Canonical #2480 four life areas, separate from optional quick-focus chips. */
+.areaSection{display:grid;gap:9px}
+.groupHeading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#32624d;font-size:14px}
+.groupHeading strong{font-weight:800}
+.lifeAreas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lifeAreas button{min-height:58px;width:100%;padding:10px 8px;border:1px solid #c4decf;border-radius:13px;background:#fff;color:#275d46;font:inherit;font-size:clamp(12px,2vw,15px);font-weight:760;line-height:1.3;cursor:pointer;text-wrap:balance}
+.lifeAreas button[aria-pressed=true]{color:#fff;border-color:#146449;background:#146449}
+.areaReset{min-height:44px;padding:8px 12px;border:0;background:none;color:#146449;font-size:13px;font-weight:750;text-decoration:underline;cursor:pointer}
+.advanced{border-top:1px solid #d2e4d9;padding-top:12px}
+.advanced summary{display:list-item;min-height:40px;padding:10px 0 6px;color:#27694f;font-size:14px;font-weight:750;cursor:pointer}
+.advancedControls{display:flex;flex-wrap:wrap;align-items:end;gap:10px;padding:8px 0 0}
+.advancedControls label{display:grid;flex:1 1 150px;min-width:0;gap:6px;color:#516e61;font-size:13px;font-weight:700}
+.advancedControls select{width:100%;max-width:100%;min-height:44px;padding:9px 11px;border:1px solid #bed5c7;border-radius:12px;background:#fff;color:#24543f;font:inherit;font-size:15px}
+.advanced summary:focus-visible{outline:3px solid #239775;outline-offset:2px}
+@media(max-width:640px){
+ .lifeAreas{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .lifeAreas button{min-height:62px;padding:11px 8px;font-size:15px}
+}
