@@ -103,6 +103,7 @@ test('the actual report renders the optional banner without skill mappings or co
     exports: reportModule.exports,
     require: name => name === 'react' ? isolatedReactState
       : name === './free-course-banner' ? { FreeCourseBanner }
+      : name === './motivator-mind' ? { MotivatorMind: () => null }
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
