@@ -9,7 +9,8 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
  const valid=(x)=>x?.complete===true;
  // Task completeness also needs independently verified historical worker
  // coverage. A successful receipt inventory alone cannot prove absent claims.
- const covers=(x,start)=>valid(x)&&Number.isFinite(x.since)&&x.since<=start;
+ const covers=(x,start)=>(valid(x)&&Number.isFinite(x.since)&&x.since<=start)||
+  (Array.isArray(x?.segments)&&x.segments.some(y=>valid(y)&&Number.isFinite(y.since)&&y.since<=start));
  const coverageAt=start=>({tasks:covers(receipts,start)&&taskHistoryVerified===true,
   merges:covers(merges,start),ci:covers(actions,start)&&valid(ci),jobs:covers(actions,start),live:false});
  const blockers=(start,end)=>{
@@ -36,7 +37,8 @@ function buildReport({now,backlog,receipts,merges,actions,dispatch,ci,taskHistor
     current:blockers(now-width,now),previous:blockers(now-2*width,now-width)}};
  }
  const source=x=>({complete:valid(x),reason:typeof x.reason==='string'?x.reason:'UNVERIFIED',
-  reads:Number.isSafeInteger(x.reads)?x.reads:null});
+  reads:Number.isSafeInteger(x.reads)?x.reads:null,
+  segments:Array.isArray(x.segments)?x.segments.map(y=>({complete:valid(y),since:Number.isFinite(y.since)?new Date(y.since).toISOString():null,reason:y.reason||'UNVERIFIED'})):[]});
  return {schema:'HH_CONTROL_KPI_V1',checked_at:new Date(now).toISOString(),
   backlog:{complete:valid(backlog),counts:valid(backlog)?backlog.counts:null,reason:backlog.reason||'UNVERIFIED'},
   sources:{receipts:source(receipts),merges:source(merges),actions:source(actions),dispatch:source(dispatch),ci:source(ci)},
