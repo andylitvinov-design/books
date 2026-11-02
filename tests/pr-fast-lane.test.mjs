@@ -734,7 +734,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
   assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
   const requiredPrefixes = [
-    'codex/voice-studio-', 'codex/voice-mix-', 'fix/video-', 'fix/webkit-',
+    'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
     'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
     'feat/video-chat-context-understanding-'
   ];

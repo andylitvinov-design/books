@@ -221,8 +221,14 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }),[locale,activeTheme,actualGoals,selfRatings,profileEvidence,keyDifficulty,keyGoal,detailLabels]);
   const sessions = plan.sessions as Session[];
   const firstScript = sessions[0]?.script || "";
+  // Track the exact user-approved narration independently of React render timing.
+  // A delayed effect from an edited focus must never erase a fresh Generate click.
+  const includedSignatureRef=useRef<string|null>(null);
   const resetGeneratedMeditation=()=>{
-    if(meditationChoice==="include")onOmitMeditation?.();
+    if(includedSignatureRef.current){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
     setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
     setApprovedSignature("");setProgrammeSignature("");
   };
@@ -230,10 +236,16 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   useEffect(()=>{
     if(previousSignatureRef.current===journeySignature)return;
     previousSignatureRef.current=journeySignature;
-    if(meditationChoice==="include")onOmitMeditation?.();
-    setMeditationOpen(false);setMeditationChoice(null);setPlanOpen(false);
-    setApprovedSignature("");setProgrammeSignature("");
-  },[journeySignature,meditationChoice,onOmitMeditation]);
+    if(includedSignatureRef.current && includedSignatureRef.current!==journeySignature){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
+    // Never clear generated results in a passive effect: WebKit may flush this
+    // old focus-change effect *after* the user's next Generate click.
+    // currentMeditation/currentProgramme already compare exact signatures and
+    // hide stale results synchronously, while all explicit input handlers
+    // revoke stale narration and clear both approvals immediately.
+  },[journeySignature,onOmitMeditation]);
   const selectState=(id:string,goalTheme:VideoTheme)=>{
     setSelectedState(id);setGoals([goalTheme]);setKeyGoal(f.stateOptions[id as keyof typeof f.stateOptions]);
     setKeyDifficulty("");resetGeneratedMeditation();
@@ -288,6 +300,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   function generateMeditation(){
     if(disabled||!focusReady||!firstScript)return;
+    if(includedSignatureRef.current){
+      includedSignatureRef.current=null;
+      onOmitMeditation?.();
+    }
     setApprovedSignature(journeySignature);
     setMeditationOpen(true);setMeditationChoice(null);
   }
@@ -437,10 +453,13 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
         <div className={css.meditationChoices}>
           <button type="button" disabled={disabled} data-guided-add-meditation
             aria-pressed={meditationChoice==="include"} onClick={()=>{
+              includedSignatureRef.current=journeySignature;
               setMeditationChoice("include");onAddMeditation?.(firstScript);
             }}><Play size={18} aria-hidden="true"/>{f.include}</button>
           <button type="button" disabled={disabled} data-guided-skip-meditation
-            aria-pressed={meditationChoice==="omit"} onClick={()=>{setMeditationChoice("omit");onOmitMeditation?.();}}>{f.omit}</button>
+            aria-pressed={meditationChoice==="omit"} onClick={()=>{
+              includedSignatureRef.current=null;setMeditationChoice("omit");onOmitMeditation?.();
+            }}>{f.omit}</button>
         </div>
         <small role="status">{meditationChoice==="include"?f.included:meditationChoice==="omit"?f.omitted:f.local}</small>
       </div>:null}
