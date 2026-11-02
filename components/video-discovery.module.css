@@ -1,0 +1,46 @@
+.wrapper{width:100%;min-width:0}
+.panel{display:grid;gap:15px;margin:12px 0 20px;padding:clamp(16px,3vw,24px);border:1px solid #cee2d7;border-radius:20px;background:linear-gradient(135deg,#e8f7ef,#fffdf7 82%);box-shadow:0 6px 25px rgba(11,83,53,.055)}
+.intro h2{display:flex;align-items:center;gap:10px;margin:0;color:#17664c;font:650 clamp(23px,4vw,31px)/1.16 var(--font-serif,Georgia,serif)}
+.intro h2 svg{flex:0 0 23px}
+.intro p{margin:9px 0 0;color:#536e61;font-size:clamp(14px,3.5vw,16px);line-height:1.5}
+.goals{display:flex;flex-wrap:wrap;gap:8px}
+.goals button,.saved{min-height:44px;border:1px solid #bfd9c9;border-radius:999px;padding:9px 15px;background:#fff;color:#256b50;font:inherit;font-size:14px;font-weight:750;cursor:pointer}
+.goals button[aria-pressed=true],.saved[aria-pressed=true]{background:#146449;border-color:#146449;color:white}
+.controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.controls label{display:grid;flex:1 1 140px;gap:6px;min-width:0;color:#526c61;font-size:13px;font-weight:700}
+.controls select{width:100%;min-height:44px;max-width:100%;border:1px solid #bed5c7;border-radius:12px;background:#fff;color:#24543f;padding:8px 12px;font:inherit;font-size:15px}
+.saved{display:inline-flex;gap:7px;align-items:center;justify-content:center;flex:0 1 auto;border-radius:12px}
+.reset{display:flex;flex-wrap:wrap;gap:8px}
+.reset button{display:inline-flex;align-items:center;gap:5px;min-height:42px;border:0;background:none;padding:8px 11px;color:#4e705f;font-size:13px;font-weight:750;text-decoration:underline;cursor:pointer}
+.note{margin:0;color:#61796a;font-size:12px;line-height:1.45}
+.results{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;color:#37604c;font-size:14px;font-weight:750}
+.empty{border-radius:15px;padding:20px;background:#f7f5ed;color:#687361}
+.panel button:focus-visible,.panel select:focus-visible{outline:3px solid #239775;outline-offset:2px}
+@media(max-width:640px){
+ .panel{padding:15px 13px;gap:13px;border-radius:17px;margin:10px 0 16px}
+ .goals{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:3px}
+ .goals::-webkit-scrollbar{display:none}
+ .goals button{flex:0 0 auto;white-space:nowrap}
+ .controls label{flex-basis:130px}
+ .saved{flex:1 1 100%}
+}
+@media(max-width:350px){.intro h2{font-size:22px}.controls label{flex-basis:110px}.goals button{padding:9px 13px}}
+
+/* Canonical #2480 four life areas, separate from optional quick-focus chips. */
+.areaSection{display:grid;gap:9px}
+.groupHeading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#32624d;font-size:14px}
+.groupHeading strong{font-weight:800}
+.lifeAreas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lifeAreas button{min-height:58px;width:100%;padding:10px 8px;border:1px solid #c4decf;border-radius:13px;background:#fff;color:#275d46;font:inherit;font-size:clamp(12px,2vw,15px);font-weight:760;line-height:1.3;cursor:pointer;text-wrap:balance}
+.lifeAreas button[aria-pressed=true]{color:#fff;border-color:#146449;background:#146449}
+.areaReset{min-height:44px;padding:8px 12px;border:0;background:none;color:#146449;font-size:13px;font-weight:750;text-decoration:underline;cursor:pointer}
+.advanced{border-top:1px solid #d2e4d9;padding-top:12px}
+.advanced summary{display:list-item;min-height:40px;padding:10px 0 6px;color:#27694f;font-size:14px;font-weight:750;cursor:pointer}
+.advancedControls{display:flex;flex-wrap:wrap;align-items:end;gap:10px;padding:8px 0 0}
+.advancedControls label{display:grid;flex:1 1 150px;min-width:0;gap:6px;color:#516e61;font-size:13px;font-weight:700}
+.advancedControls select{width:100%;max-width:100%;min-height:44px;padding:9px 11px;border:1px solid #bed5c7;border-radius:12px;background:#fff;color:#24543f;font:inherit;font-size:15px}
+.advanced summary:focus-visible{outline:3px solid #239775;outline-offset:2px}
+@media(max-width:640px){
+ .lifeAreas{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .lifeAreas button{min-height:62px;padding:11px 8px;font-size:15px}
+}

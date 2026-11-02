@@ -52,3 +52,58 @@ test('chat hydration readiness is explicit and preserves early mobile input',()=
  assert.match(qa,/VIDEO_CHAT_SEND_NOT_READY/);
  assert.match(qa,/hydration==='true'/);
 });
+
+test('approved mobile entry opens one shared AI chat from free help; mandatory real media tests are retained',()=>{
+ assert.match(qa,/OWNER_FOUR_IMAGE_GOALS_REQUIRED/);
+ assert.match(qa,/OWNER_SIX_TEXT_TOPICS_REQUIRED/);
+ assert.match(qa,/\[data-auto-video-clarify\]/);
+ assert.match(qa,/OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY/);
+ assert.match(qa,/DUPLICATE_VIDEO_DIRECTOR_CHAT/);
+ assert.match(qa,/card\.locator\('\[data-video-chat-confirm\]'\)\.click/);
+ assert.match(qa,/await create\.click\(/);
+ assert.match(qa,/LICENSED_VIDEO_SOURCE_ABSENT_/);
+ assert.match(qa,/EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN/);
+});
+
+test('PR runs source contracts; both LIVE media exports are manual after merge',()=>{
+  assert.match(workflow,/- name: Real LIVE four-shot montage[^\n]*\n        id: legacy_export\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && github\.event_name == 'workflow_dispatch' \}\}/);
+  assert.match(workflow, /name: PR scope summary .* candidate media verified in Mandala CI/);
+  assert.match(workflow, /Reuse preinstalled Google Chrome; install pinned Playwright client only\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /Verify media inspection utilities\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /node --check scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
+  assert.match(workflow,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
+
+// The new dialogue's active choices must be inside the last assistant bubble.
+// Keep the existing licensed-MP4, FFmpeg, privacy and hydration proof intact.
+test('canonical in-chat choices are checked by the real browser acceptance',()=>{
+ const src=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
+ for(const key of ['data-chat-inline-choices','data-chat-assistant-turn',
+  'data-chat-choice-stage={step}','data-video-chat-tree-choice',
+  'data-chat-hydrated={clientHydrated?', 'onClick={()=>answer(value)}'])
+   assert.ok(src.includes(key),key);
+ for(const key of ['ONE_ACTIVE_INLINE_ANSWER_PANEL_',
+  'CHOICES_NOT_INSIDE_ASSISTANT_MESSAGE_','CANONICAL_DIALOG_NOT_DEPLOYED',
+  'HH_CHAT_EXPECT_CANONICAL','SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'])
+   assert.ok(qa.includes(key),key);
+});
+
+
+test('owner chat release receives strict Chromium render and independent macOS WebKit gate',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/holistic-support-mandala.yml',import.meta.url),'utf8');
+ for(const required of [
+  'feat/video-chat-context-understanding-',
+  'HH_CHAT_EXPECT_CANONICAL=true',
+  'HH_CHAT_ALLOW_LOCAL=true',
+  'node scripts/benchmarking/video-director-chat-live-acceptance.mjs',
+  'voice-webkit-macos:',
+  'hh-canonical-video-chat-',
+  'tests/video-director-chat-live-acceptance.test.mjs'
+ ])assert.ok(workflow.includes(required),'missing browser release gate: '+required);
+ assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});

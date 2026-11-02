@@ -722,7 +722,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           <span>{templeIntro[locale].diagnostic}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link> : null}
-        {isHolistic ? <Link
+        {(isHolistic || daoFocused) ? <Link
           href={"/" + locale + "/services/remote-energy-support"}
           className={styles.diagnosticAction}
           data-ideas-energy-support
