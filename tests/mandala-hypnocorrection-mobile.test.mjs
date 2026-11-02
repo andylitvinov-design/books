@@ -81,7 +81,10 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
   assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
   assert.match(ui,/data-hypno-card/);
-  assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
+  assert.match(ui,/note==="voice"/,
+    "opening the speech control reveals the inline voice editor");
+  assert.match(ui,/note==="audio"/,
+    "audio guidance remains available only when required");
     "optional audio safety details must not stretch the approved default row");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
