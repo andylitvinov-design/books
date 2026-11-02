@@ -143,6 +143,9 @@ export function MandalaAffirmationVoice({
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
     const textChanged=originRef.current.speechText!==speechText;
     originRef.current={speechText,voiceId,language};
+    // Consent applies to the exact approved transcript, not to future edits.
+    // Public fixed voice samples remain available before new approval.
+    if(textChanged)setConsent(false);
     // Existing video marks a changed spoken script as STALE and shows
     // a regenerate warning. Do not suppress that explicit safety feedback.
     // A voice/language change with identical text instead detaches the file.
