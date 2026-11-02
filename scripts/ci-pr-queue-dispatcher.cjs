@@ -101,9 +101,18 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},
-  workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
+  workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
- const blocked=reason=>{summary.blocked[reason]=(summary.blocked[reason]||0)+1;};
+ let currentTask=null;
+ const blocked=reason=>{
+   summary.blocked[reason]=(summary.blocked[reason]||0)+1;
+   if(currentTask){
+     const examples=summary.blockerExamples[reason]||[];
+     if(examples.length<3&&!examples.some(x=>x.pr_number===currentTask.pr_number))
+       examples.push({pr_number:currentTask.pr_number,head_sha:currentTask.head_sha.slice(0,12)});
+     summary.blockerExamples[reason]=examples;
+   }
+ };
  const finish=async()=>{log(JSON.stringify(summary));await core.summary
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
@@ -155,6 +164,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  const ordered=candidates;
  for(const task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
+  currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
   const worker=WORKFLOWS[task.lane];
@@ -440,7 +450,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     owner,repo,issue_number:task.pr_number,body:commentBody(claim)}));
   }catch(err){blocked('RESERVATION_FAILED');log('Reserve #'+task.pr_number+' '+err.message);continue;}
   const inputs={pr_number:String(task.pr_number),expected_sha:task.head_sha,
-    task_key:task.task_key,dry_run:'false'};
+    task_key:task.task_key,reservation_run_id:String(context.runId||''),
+    dry_run:'false'};
   try{
    await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
