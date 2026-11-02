@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs'
 import {fileURLToPath} from 'node:url'
 
 const SHA256=/^[a-f0-9]{64}$/
-const VERSION=/^[0-9]+(?:\.[0-9]+){1,2}(?:[-+][A-Za-z0-9.-]+)?$/
+const VERSION=/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/
 const invalid=key=>{throw new Error('HH_DIRECT_APK_'+key)}
 
 export function verifyDirectApkCandidate(registry,{versionCode,versionName,certificateSha256}){

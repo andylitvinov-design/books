@@ -45,9 +45,10 @@ export function stagePlayRelease(env = process.env) {
   if (!/^[1-9][0-9]*$/.test(codeText) || Number(codeText) < 2 ||
       Number(codeText) >= 2100000000 || !Number.isSafeInteger(Number(codeText)))
     fail('versionCode must be an integer >= 2 and < 2100000000; check against prior Play release')
-  if (!/^[0-9]+(?:\.[0-9]+){1,2}(?:[-+][A-Za-z0-9.-]+)?$/.test(version) ||
-      version.length > 40)
-    fail('versionName must be a short semantic version without shell/Gradle metacharacters')
+  // Match the published website release registry exactly: an unusable
+  // versionName must fail BEFORE reading the release signing key.
+  if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(version))
+    fail('versionName must be X.Y.Z, matching the public website APK download URL')
 
   const required = ['HH_ANDROID_KEYSTORE_PATH', 'HH_ANDROID_KEYSTORE_PASSWORD',
     'HH_ANDROID_KEY_ALIAS', 'HH_ANDROID_KEY_PASSWORD']

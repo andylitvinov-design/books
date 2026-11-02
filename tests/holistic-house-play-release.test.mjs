@@ -74,7 +74,12 @@ test('missing keys, incorrect identity, and unsafe version inputs fail before an
     { HH_PLAY_VERSION_CODE: '1' },
     { HH_PLAY_VERSION_CODE: '-200' },
     { HH_PLAY_VERSION_NAME: '1.0.0"; println password' },
-    { HH_PLAY_VERSION_NAME: '1\\.0' }
+    { HH_PLAY_VERSION_NAME: '1\\.0' },
+    { HH_PLAY_VERSION_NAME: '1.0' },
+    { HH_PLAY_VERSION_NAME: '1.0.0-rc1' },
+    { HH_PLAY_VERSION_NAME: '1.0.0+build1' },
+    { HH_PLAY_VERSION_NAME: '01.0.0' },
+    { HH_PLAY_VERSION_NAME: '1.02.0' }
   ]) {
     fixture(({ root, run, read }) => {
       const before = read('android/app/build.gradle')
@@ -157,6 +162,11 @@ test('Android website APK rejects version rollback and certificate rotation',asy
     ['no cert',empty,{...first,certificateSha256:''}],
     ['zero version',empty,{...first,versionCode:'0'}],
     ['malformed version',empty,{...first,versionName:'1.0.0"; bad'}],
+    ['incomplete version',empty,{...first,versionName:'1.0'}],
+    ['unpublishable prerelease',empty,{...first,versionName:'1.0.0-rc1'}],
+    ['unpublishable build suffix',empty,{...first,versionName:'1.0.0+build1'}],
+    ['leading zero',empty,{...first,versionName:'01.0.0'}],
+    ['minor leading zero',empty,{...first,versionName:'1.02.0'}],
     ['wrong identity',{...empty,appId:'app.psialchemy.mobile'},first],
     ['unknown status',{...empty,android:{status:'unknown'}},first]
   ])assert.throws(()=>verifyDirectApkCandidate(registry,input),/HH_DIRECT_APK_/,label)
