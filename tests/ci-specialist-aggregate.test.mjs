@@ -1169,6 +1169,31 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 
+test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
+  const path = '.github/workflows/holistic-support-mandala.yml';
+  const actual = readFileSync(path, 'utf8');
+  const guard = actual.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
+  assert.ok(guard, 'Real macOS WebKit job guard must remain intact');
+  assert.ok(guard.includes("startsWith(github.head_ref, 'feat/video-')"),
+    'Video feature branches must route into genuine macOS encoded movie acceptance');
+  assert.ok(guard.includes("github.event.pull_request.draft == false"));
+  assert.match(actual,/voice-webkit-macos:[\s\S]*?runs-on: macos-15/);
+  assert.match(actual,/HH_LIVE_VIDEO_ENGINE=webkit/);
+  assert.match(actual,/scripts\/benchmarking\/first-video-live-export\.mjs/);
+  const changed = [
+    'lib/mandala/render-plan-v2.mjs',
+    'lib/mandala/video-project-v2.mjs',
+    'lib/mandala/video-executable-director.mjs',
+    'tests/render-plan-v2.test.mjs',
+    'tests/video-project-v2.test.mjs',
+    path,
+  ];
+  const files = {base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(
+    files,'feat/video-studio-project-renderplan-v2-20261102',changed),false,
+    'A video render plan must not be incorrectly excused from real WebKit acceptance');
+});
+
 test('signed APK code routes through Native without dragging unrelated public services browsers',()=>{
   const services='.github/workflows/hh-public-services-production.yml';
   const native='.github/workflows/holistic-house-native.yml';
