@@ -69,8 +69,14 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const seeded=await voice.locator("[data-meditation-script]").inputValue();
       assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
       await result.locator("[data-guided-skip-meditation]").click();
+      // WebKit may resolve the DOM click before React commits the reversible
+      // omission. Wait for both verified effects, never a timed sleep.
+      await page.waitForFunction(()=>{
+        const skip=document.querySelector("[data-guided-skip-meditation]");
+        const audio=document.querySelector("[data-video-therapy-meditation-audio]");
+        return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
+      },null,{timeout:15000});
       assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===false);
       await voice.locator(":scope > summary").click();
       await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
       await page.waitForFunction(()=>!document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"));

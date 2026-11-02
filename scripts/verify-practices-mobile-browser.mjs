@@ -92,6 +92,11 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         const seeded=await audio.locator("[data-meditation-script]").inputValue();
         assert.ok(seeded.length>100,"actual generated text transferred to existing editor");
         await course.locator("[data-guided-skip-meditation]").click();
+        await page.waitForFunction(()=>{
+          const skip=document.querySelector("[data-guided-skip-meditation]");
+          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
+          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
+        },null,{timeout:15000});
         assert.equal(await audio.getAttribute("open"),null,"skip closes the existing audio editor");
         assert.equal(await course.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
         await programmeButton.click();
