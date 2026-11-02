@@ -51,6 +51,8 @@ jobs:
       pr_number: ${{ steps.select.outputs.pr_number }}
       sha: ${{ steps.select.outputs.sha }}
       files_json: ${{ steps.select.outputs.files_json }}
+      decision: ${{ steps.select.outputs.decision }}
+      reason: ${{ steps.select.outputs.reason }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -249,8 +251,12 @@ jobs:
     # If the untrusted isolated fix job fails, a prior CLAIMED receipt must not
     # silently masquerade as a source repair. The exact unchanged HEAD is
     # escalated to the existing owner/Codex lane, with zero PR source writes.
-    needs: [claim, fix]
-    if: ${{ always() && needs.claim.result == 'success' && needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'failure' }}
+    needs: [claim, fix, publish]
+    if: >-
+      always() &&
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.strategy == 'lint' &&
+      (needs.fix.result != 'success' || needs.publish.result != 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -269,13 +275,15 @@ jobs:
         env:
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+          HH_REPAIR_FAILURE_STAGE: ${{ needs.fix.result == 'success' && 'publish' || 'fix' }}
         with:
           github-token: ${{ github.token }}
           script: |
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
             const result=await worker.finalizeFailedFix({github,core,context,
               prNumber:Number(process.env.HH_REPAIR_PR),
-              expectedSha:String(process.env.HH_REPAIR_SHA||'')});
+              expectedSha:String(process.env.HH_REPAIR_SHA||''),
+              failureStage:String(process.env.HH_REPAIR_FAILURE_STAGE||'')});
             core.info('HH_REPAIR_FAILED_FIX_FINALIZED '+JSON.stringify(result));
             await core.summary.addHeading('HH source fix failure outcome')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
