@@ -130,7 +130,7 @@ test('single post-migration status requires actual Core and Specialist without l
   assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
   assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
-  assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(unified,/^    needs: \[scope, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source,/ci-specialist-aggregate\.mjs/);
@@ -1150,7 +1150,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   const gate=source.match(/^  hh-merge-check:\n[\s\S]*$/m)?.[0];
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate,/Unified Core gate passed/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -1320,7 +1320,7 @@ test('post-migration live gate preserves parallel source checks and removes redu
   assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
   assert.doesNotMatch(source,/^  hh-core-verified:|^  release-ready:|^  hh-specialists-verified:/m);
 });
 
@@ -1408,7 +1408,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   const gate=source.split(/^  hh-merge-check:\s*$/m)[1];
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
-  assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate,/^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   for(const required of ['SCOPE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
@@ -1427,7 +1427,7 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.match(match[1],/branches: \['codex\/public-book-library'\]/);
   assert.doesNotMatch(match[1],/paths:|paths-ignore:/,
     'required CI must not be skipped by a path filter');
-  const scope=source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0]??'';
+  const scope=source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0]??'';
   const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  hh-merge-check:/m)[0]??'';
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
@@ -1454,7 +1454,7 @@ test('short Core orchestration uses slim runners and never skips real Core or sp
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
-  assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(gate, /Unified Core gate passed/);
 });
@@ -1464,14 +1464,14 @@ test('required hh-merge-check uses lightweight runner and keeps fail-closed Core
   const gate = source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate, 'protected check name must be retained');
   assert.match(gate, /^    name: hh-merge-check$/m);
-  assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate, /^    needs: \[scope, hh-specialist\]$/m);
   assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate, /^    runs-on: ubuntu-slim$/m);
   assert.match(gate, /^    timeout-minutes: 2$/m);
   assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
   assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
   assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\] \|\|/);
-  assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\] \|\|/);
+  
   assert.doesNotMatch(gate, /continue-on-error:\s*true/);
 });
 
