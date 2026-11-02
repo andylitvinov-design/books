@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -964,4 +964,36 @@ test('PR #2970 69,120 read-only Mandala phrases use independently checked specia
     'tests/mandala-video-phrase-catalog.test.mjs',
   ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
     'deletions remain FULL: '+deleted);
+});
+
+test('private practitioner meditation is publicly smoke-tested without unrelated checkout matrices',()=>{
+  const owned=PRIVATE_PRACTITIONER_MEDIA_OWNERS;
+  assert.equal(owned.length,30);
+  assert.equal(new Set(owned).size,owned.length);
+  const additions=new Set(PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS);
+  const rows=owned.flatMap(file=>[additions.has(file)?'A':'M',file]);
+  rows.push('M','scripts/ci-public-services-plan.mjs','M','tests/ci-public-services-plan.test.mjs');
+  const plan=planPrivatePractitionerMediaRows(rows);
+  assert.deepEqual([plan?.mode,plan?.build,plan?.browser,plan?.cases,requiresPublicServicesHeavyPr(plan),publicPlaywrightEngines(plan)],
+    ['focused',true,true,'verify-public-services-production.mjs',true,'chromium']);
+  const base='a'.repeat(40),head='b'.repeat(40),z='\0';
+  const run=changed=>planPublicServicesEvent({GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(changed.join(z)+z);
+    throw Error('unexpected git');
+  });
+  assert.deepEqual([run(rows).mode,run(rows).cases],['focused','verify-public-services-production.mjs']);
+  for(const unsafe of [
+    rows.concat('M','app/api/payments/checkout/route.js'),
+    rows.concat('A','app/api/admin/practitioners/meditations/new/route.js'),
+    rows.concat('M','middleware.ts'),
+    rows.concat('M','lib/practitioners/meditation-studio-service.js'),
+    rows.filter((x,i)=>i%2!==1||x!=='.github/workflows/ia-v2.yml'),
+    ['A','app/api/admin/practitioners/meditations/route.js'],
+    ['D','components/practice-showcase.jsx'],
+  ])assert.equal(run(unsafe).mode,'full','unknown, duplicated, unowned or incomplete security media changes cannot bypass full');
+  // Future routine edits of an existing owned media file are still scoped.
+  assert.equal(run(['M','components/practice-showcase.jsx']).cases,'verify-public-services-production.mjs');
+  assert.equal(run(['M','components/consultation-choice-capture.tsx']).mode,'full');
 });
