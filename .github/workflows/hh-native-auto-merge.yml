@@ -1,10 +1,9 @@
 name: HH native auto-merge
 on:
   pull_request_target:
-    # Only onboarding and review-state changes need an early preflight.
-    # Synchronize commits are reevaluated on successful Core CI completion,
-    # not before their new-HEAD tests have run; removes duplicate Action runs.
-    types: [opened, reopened, ready_for_review]
+    # Synchronize only wakes the separate stale-HEAD janitor job. Native
+    # auto-merge itself still waits for a successful Core CI completion.
+    types: [opened, reopened, ready_for_review, synchronize]
     branches: ['codex/public-book-library']
   # A completed *interrupted* core run can be retried once. Workflow-run hooks
   # require this trusted workflow to also be present on the GitHub default branch.
@@ -24,6 +23,7 @@ jobs:
     name: event-driven exact-head auto-merge reevaluation
     if: >-
       (github.event_name == 'pull_request_target' &&
+       github.event.action != 'synchronize' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'workflow_run' &&
@@ -93,13 +93,17 @@ jobs:
             } else return;
             if (!Number.isInteger(number)) return;
             let pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            if (pr.mergeable === null) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
+            // Mergeability may be temporarily unknown immediately after Core CI.
+            // Recover inside the successful event, not in the next hourly Sweep.
+            for (const delayMs of [1500, 3000, 5000, 8000]) {
+              if (pr.mergeable !== null) break;
+              log("WAIT GitHub mergeability computation for PR #" + number);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
               pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
             }
             if (pr.state !== "open" || pr.draft || pr.base.ref !== "codex/public-book-library" ||
                 pr.head.repo?.full_name !== fullRepo || !/^[0-9a-f]{40}$/.test(pr.head.sha) ||
-                pr.mergeable !== true || pr.mergeable_state === "dirty" ||
+                pr.mergeable === false || pr.mergeable_state === "dirty" ||
                 (expectedHead && expectedHead !== pr.head.sha)) {
               log("SKIP Draft, conflict, changed HEAD, changed base or non-mergeable PR #" + number);
               return;
@@ -109,22 +113,26 @@ jobs:
             // A pull_request workflow can report a synthetic test-merge head_sha.
             // Its immutable PR association, not run.head_sha, identifies the actual
             // source HEAD and the production base against which CI ran.
+            // Core's hh-specialist job validates relevant specialist CI. The
+            // base SHA is checked independently by the trusted freshness
+            // classifier below, allowing proven non-sensitive base advancement.
             const matchesCurrentSource = run => run.event === "pull_request" &&
               run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
                 item.number === number &&
                 item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
-                item.base?.ref === "codex/public-book-library" &&
-                item.base?.sha === pr.base.sha);
-            // Some active PRs have >100 CI runs on a single source HEAD.
-            // Read only as many pages as necessary (max 3) and never infer
-            // green from a truncated current-head page. Use the short path
-            // for normal PRs to preserve the shared GitHub API rate budget.
+                item.base?.ref === "codex/public-book-library");
+            // Search ONLY trusted Core runs, never every optional PR workflow.
+            // The current HEAD's Core gate covers all mandatory Specialist jobs;
+            // GitHub still enforces the production branch's required contexts.
+            // Keep bounded pagination, and fail closed if the newest Core
+            // evidence for this exact source cannot be established.
             const pageSize = 100, maxPages = 3;
             const currentRuns = [];
             let complete = false;
             for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
-              const response = await github.rest.actions.listWorkflowRunsForRepo({
-                owner, repo, event: "pull_request", branch: pr.head.ref,
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: "hh-pr-core-release.yml",
+                event: "pull_request", branch: pr.head.ref,
                 per_page: pageSize, page: pageNumber
               });
               const batch = response.data.workflow_runs;
@@ -212,13 +220,8 @@ jobs:
                 number + ": " + notPassed.join(","));
               return;
             }
-            const blocked = observed.find(run => run.status !== "completed" ||
-              !["success","skipped","neutral"].includes(run.conclusion));
-            if (blocked) {
-              log("SKIP exact-head CI " + blocked.name + "=" + blocked.status + "/" +
-                blocked.conclusion + " for PR #" + number);
-              return;
-            }
+            // Optional unrelated workflows may still be running. Do not
+            // confuse them with the mandatory Core + Specialist release gate.
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");
@@ -228,7 +231,7 @@ jobs:
             core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
-              " after " + observed.length + " latest exact-head PR workflows");
+              " after latest exact-head Core and required same-run jobs");
       - name: Verify same-run unified gate and current sensitive production base
         id: freshness
         if: steps.ready.outputs.eligible == 'true'
@@ -245,7 +248,7 @@ jobs:
             const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
             if(pr.state!=="open"||pr.draft||pr.base?.ref!=="codex/public-book-library"||
                pr.base.sha!==expectedBase||pr.head?.sha!==expectedHead||
-               pr.head.repo?.full_name!==fullRepo||pr.mergeable!==true||
+               pr.head.repo?.full_name!==fullRepo||pr.mergeable===false||
                pr.mergeable_state==="dirty"){
               core.info("CI_AUTO_MERGE: PR changed before base verification");return;
             }
@@ -263,11 +266,41 @@ jobs:
               core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
             }
             const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
-            const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
-            const freshness=await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
-              verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+            const {execFileSync}=require('node:child_process');
+            const checkout=require('node:path').join(process.env.GITHUB_WORKSPACE,'.hh-merge-policy-production');
+            let freshness={ok:false,reason:'PRODUCTION_BASE_RETRIES_EXHAUSTED'};
+            // Protected production may advance after the Core event. Refresh
+            // only the trusted production checkout, never any candidate PR code.
+            for(let attempt=1;attempt<=4;attempt++){
+              const production=(await github.rest.repos.getBranch({
+                owner,repo,branch:'codex/public-book-library'
+              })).data;
+              const base=production?.commit?.sha;
+              if(production?.protected!==true||!/^[0-9a-f]{40}$/.test(base||'')){
+                core.warning('CI_AUTO_MERGE: cannot verify protected production SHA');return;
+              }
+              const checked=execFileSync('git',['-C',checkout,'rev-parse','HEAD'],
+                {encoding:'utf8',timeout:10000}).trim();
+              if(checked!==base){
+                core.info('CI_AUTO_MERGE: refresh trusted classifier to '+base.slice(0,12));
+                // Exact protected SHA and execFileSync argument vectors: no shell.
+                execFileSync('git',['-C',checkout,'fetch','--no-tags','--depth=1','origin',base],
+                  {timeout:35000});
+                execFileSync('git',['-C',checkout,'checkout','--detach',base],
+                  {timeout:15000});
+              }
+              const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+              freshness=classifier.classifierBase!==base
+                ? {ok:false,reason:'CLASSIFIER_BASE_STALE'}
+                : await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                    verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+              if(freshness.ok)break;
+              if(!['CLASSIFIER_BASE_STALE','BASE_MOVED_DURING_CHECK'].includes(freshness.reason))
+                break; // Do not retry non-transient or sensitive CI failure.
+              core.info('CI_AUTO_MERGE: production moved during check; retry '+attempt+'/4');
+            }
             if(!freshness.ok){
-              core.info("CI_AUTO_MERGE: "+freshness.reason+" for PR #"+number);return;
+              core.info('CI_AUTO_MERGE: '+freshness.reason+' for PR #'+number);return;
             }
             core.setOutput("eligible","true");
             core.setOutput("verified_base",freshness.base);
@@ -318,7 +351,7 @@ jobs:
             echo '::error::Wrong existing auto-merge method; refusing silent override' >&2
             exit 1
           fi
-          for ((attempt=1; attempt<=3; attempt++)); do
+          for ((attempt=1; attempt<=5; attempt++)); do
             fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')"
             if [[ "$fresh" != true ]]; then
               echo 'CI_AUTO_MERGE: SKIP target, state or HEAD changed before ARM'
@@ -340,10 +373,10 @@ jobs:
               exit 0
             fi
             # Denied native ARM is a blocker, never a separate direct merge.
-            if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
+            if ! grep -Eiq 'Unable to determine if workflow can be created or updated due to timeout|mergeability.*(unknown|calculat|temporar)|mergeable.*(unknown|calculat)|still calculating|please try again' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
             fi
-            if ((attempt < 3)); then sleep "$attempt"; fi
+            if ((attempt < 5)); then sleep "$((attempt * 2))"; fi
           done
           exit 1
   recover-interrupted-core:
@@ -449,3 +482,36 @@ jobs:
                 throw error;
               }
             }
+  prune-head:
+    # Reuse trusted production workflow; no extra GitHub Actions workflow.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'synchronize' &&
+      github.event.pull_request.base.ref == 'codex/public-book-library' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: hh-ci-prune-head-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Checkout trusted production only
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test exact-HEAD cancellation policy before mutation
+        run: node --test tests/ci-prune-stale-runs.test.mjs
+      - name: Cancel ancestor-proven superseded queued or running PR HEADs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_CI_PRUNE_LIMIT: '60'
+        run: node scripts/ci-prune-stale-runs.mjs

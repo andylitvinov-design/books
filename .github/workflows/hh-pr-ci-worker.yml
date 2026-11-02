@@ -36,6 +36,7 @@ on:
       - 'scripts/ci-pr-core-metadata-wake.cjs'
       - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'scripts/ci-pr-owner-token-probe.cjs'
+      - 'scripts/ci-pr-schedule-fallback.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
       - 'tests/ci-pr-direction-watcher.test.cjs'
@@ -47,7 +48,8 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-pr-ci-worker
+  # Real signed CI tasks and read-only scheduled backstops use separate lanes.
+  group: hh-pr-ci-worker-${{ github.event_name == 'workflow_dispatch' && 'addressed' || 'background' }}
   cancel-in-progress: false
 jobs:
   bootstrap:
@@ -66,6 +68,7 @@ jobs:
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-core-metadata-wake.cjs
           node --check scripts/ci-pr-priority.cjs
+          node --check scripts/ci-pr-schedule-fallback.cjs
       - name: Request one exact-HEAD PR Core CI after authenticated claim
         uses: actions/github-script@v7
         env:
@@ -76,6 +79,20 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-core-metadata-wake.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
+            // Cron is a backstop only. Actual CI actions require the Control Tower's
+            // signed exact-HEAD reservation; no unaddressed metadata edits.
+            if(context.eventName==='schedule'){
+              const {run:scheduledBackstop}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-schedule-fallback.cjs');
+              const result=await scheduledBackstop({
+                github,context,hasToken:Boolean(token),
+                log:message=>core.warning(message)
+              });
+              core.info('HH_CI_SCHEDULE_FALLBACK '+JSON.stringify(result));
+              await core.summary.addHeading('HH CI schedule: guarded Control Tower backstop')
+                .addCodeBlock(JSON.stringify(result,null,2)).write();
+              return;
+            }
             // Prior PR #3108 proved object write. Subsequent push/manual probes
             // remain READ-ONLY and never mutate source or required checks.
             const tokenProbeRequested=context.eventName==='push' ||

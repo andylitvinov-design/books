@@ -56,6 +56,7 @@ jobs:
             const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            const {selectDeepScan,isRateLimitError}=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-api-budget.cjs");
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
             const skip=k=>skipped.set(k,(skipped.get(k)||0)+1);
             const found=new Map(); let pages=0;
@@ -77,6 +78,9 @@ jobs:
             const armed=nonDraft.filter(p=>p.auto_merge);
             const pending=nonDraft.filter(p=>!p.auto_merge&&p.head?.repo?.full_name===fullRepo);
             pending.sort((a,b)=>String(a.updated_at).localeCompare(String(b.updated_at)));
+            // Successful exact-head Core CI already wakes native AutoMerge.
+            // This hourly fallback only deep-reads a fair bounded sample.
+            const deepCandidates=selectDeepScan(pending,Date.now());
             const ruleset=(await github.request("GET /repos/{owner}/{repo}/rulesets/{ruleset_id}",{
               owner,repo,ruleset_id:26269892
             })).data;
@@ -98,7 +102,7 @@ jobs:
             const legacyReleaseMandatory=legacy.includes("release-ready");
             const unifiedRequired=legacy.includes("hh-merge-check");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
-            const eligible=[]; let detailErrors=0,checksRead=0;
+            const eligible=[]; let detailErrors=0,checksRead=0,apiPaused=false;
             async function latestChecks(sha){
               const runs=(await github.rest.checks.listForRef({owner,repo,ref:sha,per_page:100})).data;
               if(!Array.isArray(runs.check_runs)||!Number.isSafeInteger(runs.total_count)||
@@ -157,7 +161,7 @@ jobs:
                 return {ok:false,reason:"INDEPENDENT_QA_NOT_VERIFIED"};
               return {ok:true,via:"INDEPENDENT_QA"};
             }
-            for(const pr of pending){
+            for(const pr of deepCandidates){
               try{
                 const preflight=(await github.rest.pulls.get({owner,repo,pull_number:pr.number})).data;
                 if(preflight.state!=="open"||preflight.draft||preflight.head.sha!==pr.head.sha||
@@ -204,11 +208,18 @@ jobs:
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
                 eligible.push({number:pr.number,head:pr.head.sha,base:live.base.sha,method,via:qa.via});
-              }catch(e){detailErrors++;skip("DETAIL_ERROR");core.warning("HH_FULL_OPEN_PR: #"+pr.number+" "+e.message);}
+              }catch(e){
+                if(isRateLimitError(e)){
+                  apiPaused=true;skip("API_RATE_LIMIT_PAUSE");
+                  core.warning("HH_FULL_OPEN_PR: API quota exhausted; deep scan stopped safely");
+                  break;
+                }
+                detailErrors++;skip("DETAIL_ERROR");core.warning("HH_FULL_OPEN_PR: #"+pr.number+" "+e.message);
+              }
             }
             let attempts=0,merged=0,autoArmed=0;
             const errors=[],token=process.env.HH_HAS_AUTOMERGE_TOKEN==="true";
-            if(token){
+            if(token&&!apiPaused){
              for(const c of eligible){
               if(attempts>=12||merged+autoArmed>=6)break;
               try{
@@ -305,9 +316,15 @@ jobs:
                  String(after.auto_merge?.merge_method||"").toLowerCase()===c.method){
                  autoArmed++;log("ARMED #"+c.number+" "+c.method);
                }else errors.push("#"+c.number+" command accepted but state not confirmed");
-              }catch(e){errors.push("#"+c.number+": "+e.message.slice(0,180));}
+              }catch(e){
+                if(isRateLimitError(e)){
+                  apiPaused=true;errors.push("API_RATE_LIMIT_PAUSE");break;
+                }
+                errors.push("#"+c.number+": "+e.message.slice(0,180));
+              }
              }
-            }else log("AUDIT_ONLY: dedicated HH_AUTOMERGE_TOKEN missing; no action with push-suppressing fallback token");
+            }else if(apiPaused)log("API_RATE_LIMIT_PAUSE: no merge actions until quota recovers");
+            else log("AUDIT_ONLY: dedicated HH_AUTOMERGE_TOKEN missing; no action with push-suppressing fallback token");
             const report=[
              "Open: "+all.length+"; pages: "+pages+"; production-base: "+production.length+
              "; non-Draft: "+nonDraft.length+"; control-base: "+control.length+
@@ -317,9 +334,11 @@ jobs:
              "Already armed: "+armed.length+"; non-Draft candidates: "+pending.length+
              "; QA inspected: "+checksRead+"; independently verified eligible: "+eligible.length+
              " (independent QA fallback: "+eligible.filter(x=>x.via==="INDEPENDENT_QA").length+")",
+             "Deep inspection: "+deepCandidates.length+"/"+pending.length+" candidates; rate paused: "+apiPaused,
              "New confirmed ARMED: "+autoArmed+"; MERGED_PRODUCTION: "+merged+
              "; unattempted eligible: "+Math.max(0,eligible.length-attempts),
-             "Inventory: COMPLETE; details: "+(detailErrors?"PARTIAL ("+detailErrors+" errors)":"COMPLETE"),
+             "Inventory: COMPLETE; details: "+(apiPaused?"RATE_PAUSED":detailErrors?"PARTIAL ("+detailErrors+" errors)":
+               deepCandidates.length<pending.length?"BOUNDED_SAMPLE":"COMPLETE"),
              "Writer: "+(token?"dedicated token":"audit only"),
              "Skip reasons: "+JSON.stringify(Object.fromEntries(skipped)),
              "Native errors: "+(errors.join("; ")||"none")

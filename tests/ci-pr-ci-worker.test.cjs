@@ -213,3 +213,80 @@ test('CI Worker workflow accepts the exact Control Tower reservation identity',(
  const dispatcher=fs.readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });
+
+
+// A real schedule event should not waste its CI Worker runner as dry-run:
+// route only authenticated, eligible queue labels through the existing writer.
+const {run:runCiScheduleBackstop}=require('../scripts/ci-pr-schedule-fallback.cjs');
+const scheduledContext={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+function scheduledFixture(items={},history=[]){
+ const calls=[];
+ const github={rest:{issues:{listForRepo:async args=>{
+   calls.push({type:'labels',label:args.labels});
+   return {data:items[args.labels]||[]};
+ }}},request:async(route,args)=>{
+   calls.push({type:'request',route,args});
+   if(route.startsWith('GET '))return {data:{workflow_runs:history}};
+   if(route.startsWith('POST '))return {status:204};
+   throw Error('Unexpected request');
+ }};
+ return {github,calls};
+}
+const queuedCi=[{state:'open',pull_request:{url:'https://api.github.com/repos/andylitvinov-design/books/pulls/17'},
+ labels:[{name:'hh:ci-needed'}]}];
+test('scheduled CI Worker wakes Control Tower once for verified queued PR labels',async()=>{
+ const f=scheduledFixture({'hh:ci-needed':queuedCi},[
+  {id:9,status:'completed',created_at:'2026-11-02T17:00:00Z'}
+ ]);
+ const result=await runCiScheduleBackstop({github:f.github,context:scheduledContext,
+  hasToken:true,now:Date.parse('2026-11-02T18:00:00Z')});
+ assert.equal(result.status,'DISPATCH_ACCEPTED');
+ assert.equal(result.queueObserved,true);
+ assert.equal(result.sourceChanged,false);
+ assert.equal(f.calls.filter(c=>c.type==='request'&&c.route.startsWith('POST ')).length,1);
+ assert.equal(f.calls.find(c=>c.type==='request'&&c.route.startsWith('POST ')).args.workflow_id,
+  'hh-pr-queue-dispatcher.yml');
+});
+test('scheduled fallback skips held/no-op/untrusted and never writes source',async()=>{
+ const f=scheduledFixture({'hh:ci-needed':[
+  {state:'open',pull_request:{},labels:[{name:'hh:ci-needed'},{name:'hh:hold'}]},
+  {state:'open',labels:[{name:'hh:ci-needed'}]}
+ ],'hh:repair-needed':[]});
+ const none=await runCiScheduleBackstop({github:f.github,context:scheduledContext,hasToken:true});
+ assert.equal(none.status,'NO_ACTIONABLE_LABELS');
+ assert.equal(none.labelsChecked,2);
+ for(const other of [
+  {...scheduledContext,eventName:'push'},
+  {...scheduledContext,ref:'refs/heads/codex/public-book-library'},
+  {...scheduledContext,repo:{owner:'untrusted',repo:'books'}}
+ ]){
+  const out=await runCiScheduleBackstop({github:f.github,context:other,hasToken:true});
+  assert.equal(out.status,'UNTRUSTED_EVENT');
+ }
+ const noToken=await runCiScheduleBackstop({github:f.github,context:scheduledContext,
+  hasToken:false});
+ assert.equal(noToken.status,'OWNER_TOKEN_MISSING');
+ assert.equal(f.calls.filter(c=>c.type==='request').length,0);
+});
+test('scheduled fallback respects busy dispatcher and fails closed on missing queue data',async()=>{
+ const f=scheduledFixture({'hh:ci-needed':queuedCi},[
+  {id:8,status:'in_progress',created_at:'2026-11-02T18:00:00Z'}
+ ]);
+ const busy=await runCiScheduleBackstop({github:f.github,context:scheduledContext,
+  hasToken:true,now:Date.parse('2026-11-02T18:01:00Z')});
+ assert.equal(busy.status,'BUSY_OR_COOLDOWN');
+ assert.equal(f.calls.filter(c=>c.type==='request'&&c.route.startsWith('POST ')).length,0);
+ const unknown={rest:{issues:{listForRepo:async()=>({data:null})}}};
+ const failed=await runCiScheduleBackstop({github:unknown,context:scheduledContext,
+  hasToken:true});
+ assert.equal(failed.status,'QUEUE_UNVERIFIED');
+});
+test('CI Worker schedule calls trusted backstop before addressed metadata wake',()=>{
+ const yaml=require('node:fs').readFileSync('.github/workflows/hh-pr-ci-worker.yml','utf8');
+ const fallback=yaml.indexOf("context.eventName==='schedule'");
+ const address=yaml.indexOf('const tokenProbeRequested=');
+ assert.ok(fallback>0&&address>fallback);
+ assert.ok(yaml.includes('HH_CI_SCHEDULE_FALLBACK'));
+ assert.ok(yaml.includes('node --check scripts/ci-pr-schedule-fallback.cjs'));
+});

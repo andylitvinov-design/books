@@ -6,7 +6,9 @@ const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
 test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
-  assert.ok(s.includes("workflows: ['HH PR core release gate']"));
+  assert.ok(s.includes("      - 'HH PR core release gate'"));
+  assert.ok(s.includes("      - 'HH PR source Repair Worker'"));
+  assert.ok(s.includes("      - 'HH zero-cost PR CI worker'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'failure'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'timed_out'"));
   assert.ok(s.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
@@ -14,19 +16,26 @@ test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
 });
-for(const [file,cron] of [
-  ['hh-pr-ci-worker','4,14,24,34,44,54'],
-  ['hh-pr-repair-worker','5,15,25,35,45,55']
-]){
-  test(file+' uses cron and explicit queue dispatch, never workflow_run fanout',()=>{
-    const s=read(file);
-    assert.ok(s.includes("cron: '"+cron+" * * * *'"));
-    assert.ok(s.includes('workflow_dispatch:'));
-    assert.ok(!s.includes('  workflow_run:'));
-    assert.ok(s.includes('cancel-in-progress: false'));
-    assert.ok(s.includes('default: false'));
-  });
-}
+test('source Repair Worker is addressed only; no empty cron consumes its publish lease',()=>{
+ const s=read('hh-pr-repair-worker');
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(!s.includes('  schedule:'));
+ assert.ok(!s.includes('  push:'));
+ assert.ok(!s.includes('  workflow_run:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('expected_sha:'));
+ assert.ok(s.includes('task_key:'));
+});
+test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
+ const s=read('hh-pr-ci-worker');
+ assert.ok(s.includes("cron: '4,14,24,34,44,54 * * * *'"));
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes("github.event_name == 'workflow_dispatch' && 'addressed' || 'background'"));
+ assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
+});
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
 });
@@ -65,7 +74,7 @@ test('skipped successful Core events never replace a pending failed-Core watchdo
   assert.ok(s.includes('  reconcile:\n    # Skipped successful Core callbacks'));
   assert.ok(s.includes('    concurrency:\n      group: hh-pr-ten-minute-watchdog'));
   assert.ok(!s.includes('concurrency:\n  group: hh-pr-ten-minute-watchdog'));
-  const reconcile=s.split('\n  core-slot-wakeup:\n')[0];
+  const reconcile=s.split('\n  completion-wait:\n')[0];
   assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
@@ -179,17 +188,19 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.doesNotMatch(s, /'vercel-event' \|\| 'periodic'/);
 });
 
-test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
- const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker'),dispatcher=read('hh-pr-queue-dispatcher');
- assert.ok(repair.includes("kind:'repair',status:result.status"));
- assert.match(ci, /kind:'ci',\s*status:result\.metadataEditAccepted\?'requested':'skipped'/);
- assert.ok(dispatcher.includes('completion_wake:'));
- assert.ok(dispatcher.includes('relayCompletionWake'));
- assert.ok(dispatcher.includes('worker_run_id:'));
- assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
- assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+test('Worker completion refills Watchdog directly; Control Tower remains read-only',()=>{
+  const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker');
+  const observer=read('hh-pr-queue-dispatcher'),watchdog=read('hh-pr-ten-minute-watchdog');
+  assert.ok(repair.includes("kind:'repair',status:result.status"));
+  assert.match(ci, /kind:'ci',\s*status:result\.metadataEditAccepted\?'requested':'skipped'/);
+  assert.ok(watchdog.includes('completion_wake:'));
+  assert.ok(watchdog.includes('relayCompletionWake'));
+  assert.ok(watchdog.includes('worker_run_id:'));
+  assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
+  assert.ok(watchdog.includes('const report=await run({github,core,context,dryRun})'));
+  assert.ok(observer.includes('dryRun:true'));
+  assert.ok(!observer.includes('createWorkflowDispatch('));
 });
-
 test('hourly native merge requires explicit verified release for modern active ownership',()=>{
  const yml=read('hh-pr-full-inventory');
  assert.ok(yml.includes('leases.delete(key)'));
@@ -257,4 +268,26 @@ test('inventory reports both valid merge destinations without false main-branch 
  assert.ok(source.includes('MERGED_PRODUCTION'));
  assert.ok(source.includes('LIVE requires served deployment proof'));
  assert.ok(!source.includes('other-base: "+(all.length-production.length)'));
+});
+
+test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arms early AutoMerge',()=>{
+  const native=read('hh-native-auto-merge');
+  const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  const prune=native.split(/^  prune-head:\s*$/m)[1];
+  assert.ok(enable && prune, 'both isolated jobs must remain');
+  assert.ok(native.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(enable.includes("github.event.action != 'synchronize'"), 'new HEAD must not arm before Core success');
+  assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'post-Core ARM retained');
+  assert.ok(prune.includes("github.event.action == 'synchronize'"));
+  assert.ok(prune.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  assert.ok(prune.includes('github.event.pull_request.head.repo.full_name == github.repository'));
+  assert.ok(prune.includes('ref: codex/public-book-library'));
+  assert.ok(prune.includes('persist-credentials: false'));
+  assert.ok(prune.includes('actions: write'));
+  assert.ok(prune.includes('HH_CI_PRUNE_LIMIT: ' + "'60'"));
+  assert.ok(prune.includes('node --test tests/ci-prune-stale-runs.test.mjs'));
+  assert.ok(prune.includes('node scripts/ci-prune-stale-runs.mjs'));
+  assert.ok(prune.includes('cancel-in-progress: true'));
+  assert.ok(!prune.includes('ref: ' + '$' + '{{ github.event.pull_request.head.sha'));
+  assert.ok(!prune.includes('--force') && !prune.includes('gh pr merge'));
 });

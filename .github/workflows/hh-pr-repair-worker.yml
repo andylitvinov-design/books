@@ -1,20 +1,7 @@
 name: HH PR source Repair Worker
 on:
-  schedule:
-    - cron: '5,15,25,35,45,55 * * * *'
-  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
-  push:
-    branches: ['codex/bootstrap-books']
-    paths:
-      - '.github/workflows/hh-pr-repair-worker.yml'
-      - 'scripts/ci-pr-repair-worker.cjs'
-      - 'scripts/ci-pr-repair-test-scope.cjs'
-      - 'scripts/ci-pr-priority.cjs'
-      - '.github/hh-pr-directions.json'
-      - 'tests/ci-pr-direction-watcher.test.cjs'
-      - 'tests/ci-pr-priority.test.cjs'
-      - 'tests/ci-pr-repair-worker.test.cjs'
-      - 'tests/ci-pr-repair-test-scope.test.cjs'
+  # Exact-head task dispatch only; no empty cron/push claims may hold the
+  # source writing lease. Independent CI schedule wakes Control Tower instead.
   workflow_dispatch:
     inputs:
       pr_number:
@@ -58,6 +45,8 @@ jobs:
       task_key: ${{ steps.select.outputs.task_key }}
       claim_status: ${{ steps.select.outputs.claim_status }}
       claim_reason: ${{ steps.select.outputs.claim_reason }}
+      code_available: ${{ steps.select.outputs.code_available }}
+      no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -75,6 +64,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_HAS_OWNER_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN != '' }}
+          HH_HAS_CODEX_TOKEN: ${{ secrets.OPENAI_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -89,11 +79,47 @@ jobs:
               hasToken:process.env.HH_HAS_OWNER_TOKEN==='true'});
             core.setOutput('claim_status',result.status);
             core.setOutput('claim_reason',result.reason||'');
+            core.setOutput('code_available',process.env.HH_HAS_CODEX_TOKEN==='true'?'true':'false');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
+      # Fast terminal path: no untrusted source runs on this trusted runner.
+      - name: Finalize no-fix task on claim runner
+        id: finalize_no_fix
+        if: >-
+          always() && github.event_name != 'push' &&
+          (steps.select.outcome != 'success' || steps.select.outputs.strategy != 'lint')
+        uses: actions/github-script@v7
+        env:
+          HH_CLAIM_NUMBER: ${{ steps.select.outputs.pr_number }}
+          HH_CLAIM_SHA: ${{ steps.select.outputs.sha }}
+          HH_CLAIM_KEY: ${{ steps.select.outputs.task_key }}
+          HH_CLAIM_STATUS: ${{ steps.select.outputs.claim_status }}
+          HH_CLAIM_REASON: ${{ steps.select.outputs.claim_reason }}
+          HH_CLAIM_RESULT: ${{ steps.select.outcome }}
+          HH_CODE_AVAILABLE: ${{ steps.select.outputs.code_available }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const inputs=context.payload.inputs||{};
+            const result=await worker.finalize({github,core,context,
+              number:Number(inputs.pr_number||process.env.HH_CLAIM_NUMBER||0),
+              expectedSha:String(inputs.expected_sha||process.env.HH_CLAIM_SHA||''),
+              taskKey:String(inputs.task_key||process.env.HH_CLAIM_KEY||''),
+              claimStatus:process.env.HH_CLAIM_STATUS,
+              claimReason:process.env.HH_CLAIM_REASON,
+              claimResult:process.env.HH_CLAIM_RESULT,
+              fixResult:'skipped',
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:'skipped',codeVerifyResult:'skipped',publishResult:'skipped',
+              dryRun:String(inputs.dry_run||'false')==='true'});
+            core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   fix:
     needs: claim
     if: needs.claim.outputs.strategy == 'lint'
+    outputs:
+      candidate_status: ${{ steps.build_candidate.outputs.candidate_status }}
+      candidate_detail: ${{ steps.build_candidate.outputs.candidate_detail }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
@@ -119,7 +145,8 @@ jobs:
           cache: npm
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Try targeted ESLint autofix and write bounded patch candidate
+      - id: build_candidate
+        name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
         run: |
           node <<'NODE'
@@ -131,35 +158,62 @@ jobs:
               !/^[a-f0-9]{40}$/i.test(sha) ||
               !paths.every(x=>typeof x==='string' && /^[\w./-]+\.(js|jsx|ts|tsx|mjs|cjs)$/.test(x)))
             throw Error('Invalid isolated repair scope');
-          const result={head_sha:sha,files:[]};
-          const fix=spawnSync('./node_modules/.bin/eslint',['--fix',...paths],{stdio:'inherit'});
-          const verify=spawnSync('./node_modules/.bin/eslint',paths,{stdio:'inherit'});
-          const changed=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
-            .split('\0').filter(Boolean);
-          if(fix.status!==0 || verify.status!==0 ||
-              changed.some(p=>!paths.includes(p)) || changed.length>8){
-            console.log('No verified scoped fix. Manual repair required.');
-          }else if(changed.length){
-            // Capture the candidate before tests and reject any test that changes
-            // its scope or source bytes. The selector is from trusted default.
-            const crypto=require('node:crypto');
-            const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
-            const before=new Map(changed.map(p=>[p,digest(p)]));
-            const gate=spawnSync(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],{stdio:'inherit',timeout:195000});
-            const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8').split('\0').filter(Boolean);
-            const verified=gate.status===0 && after.length===changed.length &&
-              after.every(p=>before.has(p)&&before.get(p)===digest(p));
-            if(!verified)console.log('No verified relevant tests or candidate changed during testing; manual repair required.');
-            for(const path of verified?changed:[]){
-              const content=fs.readFileSync(path);
-              if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
-              result.files.push({path,
-                original_sha:execFileSync('git',['rev-parse','HEAD:'+path]).toString().trim(),
-                base64:content.toString('base64')});
+          const result={head_sha:sha,files:[],detail_code:'NO_AUTOFIXABLE_ESLINT_CHANGE'};
+          // ESLint may return 0 while silently ignoring files not in its flat
+          // config. Do not treat an ignored file as a completed repair.
+          const executable=paths.filter(path=>{
+            const config=spawnSync('./node_modules/.bin/eslint',['--print-config',path],
+              {encoding:'utf8',timeout:30000});
+            if(config.status!==0)return false;
+            try {
+              const parsed=JSON.parse(config.stdout);
+              return !!(parsed&&typeof parsed==='object'&&parsed.rules&&
+                typeof parsed.rules==='object');
+            } catch { return false; }
+          });
+          result.scope={requested:paths.length,configured:executable.length,
+            ignored:paths.length-executable.length};
+          if(!executable.length){
+            result.detail_code='ESLINT_SCOPE_NOT_CONFIGURED';
+          }else{
+            const fix=spawnSync('./node_modules/.bin/eslint',['--fix',...executable],{stdio:'inherit'});
+            const verify=spawnSync('./node_modules/.bin/eslint',executable,{stdio:'inherit'});
+            const changed=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
+              .split('\0').filter(Boolean);
+            if(fix.status!==0 || verify.status!==0){
+              result.detail_code='ESLINT_REMAINING_ERRORS';
+            }else if(changed.some(p=>!executable.includes(p))||changed.length>8){
+              result.detail_code='UNSAFE_SCOPED_DIFF';
+            }else if(changed.length){
+              const crypto=require('node:crypto');
+              const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+              const before=new Map(changed.map(p=>[p,digest(p)]));
+              const gate=spawnSync(process.execPath,
+                ['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],
+                {stdio:'inherit',timeout:195000});
+              const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
+                .split('\0').filter(Boolean);
+              const verified=gate.status===0 && after.length===changed.length &&
+                after.every(p=>before.has(p)&&before.get(p)===digest(p));
+              if(!verified) result.detail_code='SCOPED_TESTS_NOT_GREEN';
+              for(const path of verified?changed:[]){
+                const content=fs.readFileSync(path);
+                if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
+                result.files.push({path,
+                  original_sha:execFileSync('git',['rev-parse','HEAD:'+path]).toString().trim(),
+                  base64:content.toString('base64')});
+              }
+              if(result.files.length)result.detail_code='VERIFIED_SOURCE_PATCH';
             }
           }
           fs.writeFileSync('candidate.json',JSON.stringify(result));
-          console.log('Verified ESLint repair files:',result.files.map(f=>f.path));
+          const candidateStatus=result.files.length?'ready':'manual_required';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            'candidate_status='+candidateStatus+'\n'+
+            'candidate_detail='+result.detail_code+'\n');
+          console.log('HH_REPAIR_CANDIDATE '+JSON.stringify({
+            status:candidateStatus,detail_code:result.detail_code,scope:result.scope,
+            source_files:result.files.map(file=>file.path)}));
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -167,14 +221,136 @@ jobs:
           path: candidate.json
           retention-days: 1
           if-no-files-found: error
-  publish:
+  code_fix:
+    # Codex never receives a GitHub write token, owner token or deployment secret.
+    # Its output is untrusted until independently checked by code_verify.
     needs: [claim,fix]
-    if: needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'success'
+    if: >-
+      needs.claim.outputs.strategy == 'lint' &&
+      needs.fix.result == 'success' &&
+      needs.fix.outputs.candidate_status == 'manual_required' &&
+      needs.claim.outputs.code_available == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    outputs:
+      candidate_status: ${{ steps.capture.outputs.candidate_status }}
+      candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - name: Checkout isolated PR source without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout trusted instructions without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies without untrusted lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prepare strict allowlist and root-cause coding instructions
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs prepare
+      - name: Codex isolated source repair (never publishes)
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .hh-code-repair-task.txt
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          allow-bots: true
+      - id: capture
+        name: Capture untrusted Codex source proposal
+        if: always()
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-code-repair-proposal
+          path: candidate-raw.json
+          retention-days: 1
+          if-no-files-found: warn
+
+  code_verify:
+    # Fresh source checkout and fresh trusted verifier: Codex cannot modify
+    # this verifier or attest its own tests, and no write credentials exist.
+    needs: [claim,fix,code_fix]
+    if: >-
+      needs.code_fix.result == 'success' &&
+      needs.code_fix.outputs.candidate_status == 'proposed'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    outputs:
+      candidate_status: ${{ steps.verify_code.outputs.candidate_status }}
+      candidate_detail: ${{ steps.verify_code.outputs.candidate_detail }}
+    env:
+      REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+    steps:
+      - name: Checkout original exact PR HEAD without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.claim.outputs.sha }}
+          persist-credentials: false
+      - name: Checkout independent trusted verifier without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: codex/bootstrap-books
+          path: .hh-trusted
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-code-repair-proposal
+          path: hh-code-candidate
+      - id: verify_code
+        name: Validate allowlist, exact blobs, lint, TypeScript and related tests
+        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hh-code-repair-verified
+          path: candidate.json
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: [claim,fix,code_fix,code_verify]
+    # Do not schedule a separate terminal job for a claimed lint task.
+    # The owner token is injected only into the guarded publish_source step.
+    if: >-
+      always() &&
+      github.repository == 'andylitvinov-design/books' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
+      github.event_name != 'push' &&
+      needs.claim.result == 'success' &&
+      needs.claim.outputs.strategy == 'lint'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+      pull-requests: write
     outputs:
       publish_status: ${{ steps.publish_source.outputs.publish_status }}
       publish_sha: ${{ steps.publish_source.outputs.publish_sha }}
+      finalization_status: ${{ steps.finalize_outcome.outcome }}
     steps:
       - name: Checkout trusted publisher only (never run PR code with token)
         uses: actions/checkout@v4
@@ -182,11 +358,18 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
       - uses: actions/download-artifact@v4
+        id: download_candidate
+        if: >-
+          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
+          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
         with:
-          name: hh-repair-candidate
+          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-verified' }}
           path: hh-candidate
       - name: Revalidate owner + SHA; publish one source commit with existing owner token
         id: publish_source
+        if: >-
+          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
+          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
@@ -230,7 +413,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): automated scoped ESLint repair for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='codex'?'verified Codex source repair':'automated scoped ESLint repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);
@@ -262,15 +445,79 @@ jobs:
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning}));
 
+      # Logical finalization on the same trusted runner, not the isolated fix.
+      # HH_AUTOMERGE_TOKEN is step-scoped above and absent from this step.
+      - name: Finalize on publisher runner
+        id: finalize_outcome
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          HH_CLAIM_NUMBER: ${{ needs.claim.outputs.pr_number }}
+          HH_CLAIM_SHA: ${{ needs.claim.outputs.sha }}
+          HH_CLAIM_KEY: ${{ needs.claim.outputs.task_key }}
+          HH_CLAIM_STATUS: ${{ needs.claim.outputs.claim_status }}
+          HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
+          HH_CLAIM_RESULT: ${{ needs.claim.result }}
+          HH_FIX_RESULT: ${{ needs.fix.result }}
+          HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CODE_RESULT: ${{ needs.code_fix.result }}
+          HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
+          HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
+          HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
+          HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
+          HH_DOWNLOAD_RESULT: ${{ steps.download_candidate.outcome }}
+          HH_PUBLISH_RESULT: ${{ steps.publish_source.outcome }}
+          HH_PUBLISH_STATUS: ${{ steps.publish_source.outputs.publish_status }}
+          HH_PUBLISH_SHA: ${{ steps.publish_source.outputs.publish_sha }}
+          HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
+          HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
+            const inputs=context.payload.inputs||{};
+            const publishResult=process.env.HH_DOWNLOAD_RESULT==='failure'
+              ? 'failure' : process.env.HH_PUBLISH_RESULT;
+            const result=await worker.finalize({github,core,context,
+              number:Number(inputs.pr_number||process.env.HH_CLAIM_NUMBER||0),
+              expectedSha:String(inputs.expected_sha||process.env.HH_CLAIM_SHA||''),
+              taskKey:String(inputs.task_key||process.env.HH_CLAIM_KEY||''),
+              claimStatus:process.env.HH_CLAIM_STATUS,
+              claimReason:process.env.HH_CLAIM_REASON,
+              claimResult:process.env.HH_CLAIM_RESULT,
+              fixResult:process.env.HH_FIX_RESULT,
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:process.env.HH_CODE_RESULT,
+              codeStatus:process.env.HH_CODE_STATUS,
+              codeDetail:process.env.HH_CODE_DETAIL,
+              codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
+              codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
+              codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
+              publishResult,
+              publishStatus:process.env.HH_PUBLISH_STATUS,
+              publishSha:process.env.HH_PUBLISH_SHA,
+              candidateStatus:process.env.HH_CANDIDATE_STATUS,
+              candidateDetail:process.env.HH_CANDIDATE_DETAIL,
+              dryRun:String(inputs.dry_run||'false')==='true'});
+            core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
-    needs: [claim,fix,publish]
+    needs: [claim,fix,code_fix,code_verify,publish]
+    # Normally skipped; if trusted inline recording fails, retry once in
+    # a separate read-only-source recovery runner (idempotent task receipt).
     if: >-
       always() &&
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      github.event_name != 'push'
+      github.event_name != 'push' &&
+      (
+        ((needs.claim.result == 'failure' || needs.claim.result == 'cancelled') &&
+         needs.claim.outputs.no_fix_finalized != 'success') ||
+        (needs.claim.outputs.strategy == 'lint' &&
+         needs.publish.outputs.finalization_status != 'success')
+      )
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     permissions:
@@ -294,9 +541,18 @@ jobs:
           HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
           HH_CLAIM_RESULT: ${{ needs.claim.result }}
           HH_FIX_RESULT: ${{ needs.fix.result }}
+          HH_CODE_AVAILABLE: ${{ needs.claim.outputs.code_available }}
+          HH_CODE_RESULT: ${{ needs.code_fix.result }}
+          HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
+          HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
+          HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
+          HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
           HH_PUBLISH_RESULT: ${{ needs.publish.result }}
           HH_PUBLISH_STATUS: ${{ needs.publish.outputs.publish_status }}
           HH_PUBLISH_SHA: ${{ needs.publish.outputs.publish_sha }}
+          HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
+          HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -310,8 +566,17 @@ jobs:
               claimReason:process.env.HH_CLAIM_REASON,
               claimResult:process.env.HH_CLAIM_RESULT,
               fixResult:process.env.HH_FIX_RESULT,
+              codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
+              codeResult:process.env.HH_CODE_RESULT,
+              codeStatus:process.env.HH_CODE_STATUS,
+              codeDetail:process.env.HH_CODE_DETAIL,
+              codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
+              codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
+              codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
               publishResult:process.env.HH_PUBLISH_RESULT,
               publishStatus:process.env.HH_PUBLISH_STATUS,
               publishSha:process.env.HH_PUBLISH_SHA,
+              candidateStatus:process.env.HH_CANDIDATE_STATUS,
+              candidateDetail:process.env.HH_CANDIDATE_DETAIL,
               dryRun:String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));

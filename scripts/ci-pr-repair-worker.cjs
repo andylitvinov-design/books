@@ -249,7 +249,9 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
   }
 }
 function validCandidate(candidate, sha) {
-  return !!(candidate && candidate.head_sha === sha && Array.isArray(candidate.files) &&
+  return !!(candidate && candidate.head_sha === sha &&
+    (!candidate.repair_kind || ['lint','codex'].includes(candidate.repair_kind)) &&
+    Array.isArray(candidate.files) &&
     candidate.files.length <= MAX_FILES && candidate.files.every(f=>
       f && typeof f.path === 'string' && PATH.test(f.path) &&
       SHA.test(f.original_sha || '') &&
@@ -300,7 +302,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
     }
     await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-      'HH Repair Worker: ran targeted ESLint autofix, but no safe validated source change was produced '+
+      'HH Repair Worker: no safe validated source change was produced '+
       'for HEAD ' + expectedSha + '. Owner action required: diagnose the failed Core/TypeScript build and '+
       'apply a tested source fix. No checks were bypassed.'+
       (receipt?'\n'+commentBody({...receipt,state:'MANUAL',
@@ -319,12 +321,13 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
+  const repairKind=candidate.repair_kind==='codex'?'codex':'lint';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed targeted ESLint autofix ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='codex'?'Codex source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
-      outcome:'VERIFIED_SOURCE_COMMIT',new_sha:created.sha,
+      outcome:'VERIFIED_SOURCE_COMMIT',repair_kind:repairKind,new_sha:created.sha,
       commit_url:'https://github.com/'+fullRepo+'/commit/'+created.sha,
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl}):'')});
   try { await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE}); }
@@ -400,8 +403,10 @@ const SAFE_NO_CLAIM_REASONS=new Set([
  'NO_UNCLAIMED_OWNER_PR','INCOMPLETE_QUEUE','GITHUB_API_BUDGET_PAUSE','GITHUB_API_RESERVE'
 ]);
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
-  claimStatus='',claimReason='',claimResult='',fixResult='',publishResult='',
-  publishStatus='',publishSha='',dryRun=false}) {
+  claimStatus='',claimReason='',claimResult='',fixResult='',
+  codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
+  codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
+  publishStatus='',publishSha='',candidateStatus='',candidateDetail='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -435,10 +440,21 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
   }else if(claimStatus!=='claimed'){
     state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
-  }else if(publishStatus==='manual_required'){
-    state='MANUAL';reason='NO_VERIFIED_SOURCE_CHANGE';
   }else if(fixResult!=='success'){
     reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
+  }else if(candidateStatus==='manual_required'&&codeVerifyStatus==='ready'){
+    // A tested Codex candidate existed, but no source commit was proven.
+    reason='CODEX_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
+  }else if(candidateStatus==='manual_required'&&codeAvailable&&codeResult==='failure'){
+    reason='CODEX_JOB_FAILED_NO_SOURCE_COMMIT';
+  }else if(candidateStatus==='manual_required'&&codeAvailable&&codeStatus==='proposed'&&
+      codeVerifyResult!=='success'){
+    reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
+  }else if(publishStatus==='manual_required' || candidateStatus==='manual_required'){
+    state='MANUAL';
+    reason=!codeAvailable?'CODEX_API_KEY_NOT_CONFIGURED':
+      codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
+      'CODEX_NO_VERIFIED_SOURCE_CHANGE';
   }else if(publishResult!=='success'){
     reason='PUBLISH_JOB_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else{
@@ -488,9 +504,25 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
         failed?.name||null;
     }catch(error){core.info('HH_REPAIR_OUTCOME_JOB_DIAGNOSTICS_UNAVAILABLE '+error.message);}
   }
+  // This diagnostic never implies a source write; the existing reason_code
+  // stays backward-compatible with Monitor and Repair Observer consumers.
+  const validCandidateDetails=new Set(['NO_AUTOFIXABLE_ESLINT_CHANGE',
+    'ESLINT_SCOPE_NOT_CONFIGURED','ESLINT_REMAINING_ERRORS',
+    'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
+  const agentDetail=[codeVerifyDetail,codeDetail].find(x=>typeof x==='string' &&
+    x.startsWith('CODEX_') && /^[A-Z0-9_:.-]{5,120}$/.test(x));
+  const detailCode=state==='MANUAL'||state==='FAILED'?
+    agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,lane:'repair',state,reason_code:reason,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
+    detail_code:detailCode,
+    repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'codex':
+      publishStatus==='committed'?'lint':null,
+    code_agent_configured:codeAvailable,code_job_result:codeResult||'skipped',
+    code_candidate_status:codeStatus||'skipped',
+    code_verify_result:codeVerifyResult||'skipped',
+    code_verify_status:codeVerifyStatus||'skipped',
     claim_status:claimStatus||'unknown',claim_result:claimResult||'unknown',
     reservation_run_id:reservationRunId,retry_after:retryAfter,
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
@@ -501,7 +533,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   // No destructive operation, source overwrite, force push or CI bypass.
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.
-  if(state==='FAILED'&&claimStatus==='claimed'&&sameHead){
+  if((state==='FAILED'||(state==='MANUAL'&&
+      candidateStatus==='manual_required'&&publishResult==='skipped'))&&
+      claimStatus==='claimed'&&sameHead){
     // Only the authenticated exact-run CLAIMED receipt may elevate the
     // same source HEAD to manual coding. A copied/foreign receipt cannot.
     const claimedBySameRun=comments.some(comment=>

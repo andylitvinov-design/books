@@ -638,7 +638,6 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     const workflows=[
       ['watchdog','hh-pr-ten-minute-watchdog.yml',35],
       ['ci','hh-pr-ci-worker.yml',35],
-      ['repair','hh-pr-repair-worker.yml',35],
       ['hourly','hh-pr-full-inventory.yml',100]
     ];
     const states=[],lastSeen=[];
@@ -658,6 +657,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         if(budget.exhausted)break;
       }
     }
+    // Source Repair Worker is an addressed dispatch-only executor, not a
+    // scheduled monitor. Reporting its old schedule as STALE is misleading.
+    // Keep the original position in telemetry for existing dashboards.
+    states.splice(2,0,'repair:DISPATCH_ONLY');
+    lastSeen.splice(2,0,'repair:NOT_SCHEDULED');
     summary.cronHealth=states.join(' | ');
     summary.cronLastSeen=lastSeen.join(' | ');
     if(states.some(state=>state.includes('UNOBSERVED')||state.includes('STALE')))
