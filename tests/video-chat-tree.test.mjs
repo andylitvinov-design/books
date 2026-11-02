@@ -209,6 +209,26 @@ test("source integration uses one existing renderer, safe unbound warning and cl
   assert.equal(listVideoPhraseIdeas("love-trust-s1","ru").length,4);
 });
 
+test("generic LOVE goal enters the canonical category in three languages without guessing an unrelated category",()=>{
+  for(const [goal,locale] of [
+    ["A video about love","en"],
+    ["Vídeo sobre amor","es"],
+    ["Видео про любовь","ru"],
+  ]){
+    const state=initialVideoChatTree(goal,locale);
+    assert.equal(state.categoryId,"love",goal);
+    const proposal=autocompleteVideoChatTree(draft(goal,locale),"relationships",locale);
+    assert.equal(proposal.categoryId,"love",goal);
+    assert.ok(proposal.topicId?.startsWith("love-"),goal);
+    assert.equal(nextVideoChatTreeStep({
+      ...proposal,mood:"slow",aspect:"portrait",duration:20,music:"harmony"
+    }),"review");
+  }
+  const unknown=draft("про еду");
+  assert.equal(unknown.categoryId,null);
+  assert.equal(autocompleteVideoChatTree(unknown,"energy","ru"),null);
+});
+
 test("the same Messenger keeps goal-first one-message proposals AND free-text multi-intent replies",()=>{
   const src=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
   assert.ok(src.includes("goalFirstVideoChatDraft(value,recommended.theme)"));

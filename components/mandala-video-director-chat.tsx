@@ -125,7 +125,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(!draft)return null;
    const tree=initialVideoChatTree(value,locale);
    const provisional={...tree,...draft} as Draft;
-   if(!tree.categoryId||!tree.topicId)return provisional;
+   if(!tree.categoryId)return provisional;
    return (autocompleteVideoChatTree(provisional,recommended.theme,locale)||provisional) as Draft;
  };
  const initialEntry=()=>proposeFromGoal(goal)||initial(isGenericVideoRequest(goal)?"":goal,locale);
