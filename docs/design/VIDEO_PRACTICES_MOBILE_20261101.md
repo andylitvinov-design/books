@@ -23,8 +23,18 @@
 - No DB, RLS, account profiles, CRM, provider AI, automatic rendering or payment changes.
 - Screenshot comparison pending browser QA at matching guest state; authored art is design reference, not proof of rendered fidelity.
 
+## Browser coverage handoff · 2026-11-02
+
+- Existing production: user-approved light Courses & Practices is implemented in the original Studio workspace (do not fork the route).
+- The earlier legacy visual regression script used vector-only input fields without first selecting `Вектор развития`; updated to navigate the actual two-mode interface.
+- A real Playwright path now runs from the existing mandala voice/browser acceptance: Chromium and macOS WebKit, guest RU/320, EN/390, ES/430; mode switch, focus validation, generated text, all three curated practices, refresh, real narration-editor seed and revoke, eight-session preview, and mutation without any third-party/private request.
+- Synthetic course screenshots are saved with the existing browser artifacts if `HH_HYPNO_SCREENSHOT_DIR` is configured. A screenshot does not prove a paid course, Google OAuth or voice provider delivery.
+- This does not auto-render videos, enable paid AI, or change database/CRM/security state.
+
+## WebKit focus-change race correction · 2 Nov 2026
+- The deferred `useEffect` that observes `journeySignature` previously cleared `approvedSignature` and `programmeSignature` after fresh user clicks on WebKit. That was observed in macOS WebKit at ES/430 after successful RU/320 and EN/390. Retain precise signature gating during React render, and clear approval *only* in explicit focus editing handlers or profile consent changes; the observer still revokes an included old narration but no longer dismisses a new script.
+- Do not replace the real browser assertion with sleeps, retries, or a loose presence check. The same Chromium and WebKit lifecycle suite must pass on the final PR HEAD.
+
 ## Post-merge mobile E2E hardening (2026-11-02)
-- New single-purpose `scripts/verify-practices-mobile-browser.mjs` verifies the **actual public** editor in Chromium and WebKit at RU 320/390/430, EN 390 and ES 390. It tests deep-link activation, state/vector focus gating, locally produced meditation, real add/omit audio draft transfer, three distinct practice kinds, refreshed content, eight session cards, stale invalidation, 44px taps, no horizontal overflow, and absence of outbound writes.
-- It runs inside the existing Mandala browser acceptance step on a `fix/video-*` PR; no duplicate workflow, new provider or private test records. Synthetic screenshots are stored in the existing browser artifacts bundle.
-- Legacy comprehensive manual script now switches into the actual vector tab before using vector textareas; this is an assertion update for the approved owner page, **not** a UI regression waiver.
-- Passing this synthetic guest test is **not** proof of real YouTube/HeyGen delivery, live provider billing, signed-in Google OAuth, physical iPhone Safari or purchase fulfilment.
+- Existing Chromium/WebKit acceptance `scripts/verify-practices-mobile-browser.mjs` exercises RU 320/390/430, EN/ES 390, state/vector, text, distinct practices, eight-session previews and the consented CRM enquiry without submitting.
+- Guest browser checks cannot verify a real CRM submission, provider audio/video delivery, payments, signed-in account or physical iPhone.
