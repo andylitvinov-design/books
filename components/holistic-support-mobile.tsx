@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
-  Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap,
+  Settings2, ShieldCheck, Sparkles, TestTubeDiagonal, MessageCircle, UserRound, X, Zap, Clapperboard,
 } from "lucide-react";
 
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
@@ -1213,6 +1213,10 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
         <Link href={"/" + locale + "/holistic-support/mandala#video-director-chat"} prefetch={false}
           data-support-video-ai aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>
           <Sparkles size={24} aria-hidden="true" /><span>{locale === "ru" ? "ИИ" : locale === "es" ? "IA" : "AI"}</span>
+        </Link>
+        <Link href={"/"+locale+"/holistic-support/mytube"} prefetch={false} data-support-mytube
+          aria-label={"MyTube — "+(locale==="ru"?"развивающие видео":locale==="es"?"vídeos para crecer":"videos for growth")}>
+          <Clapperboard size={24} aria-hidden="true"/><span>MyTube</span>
         </Link>
       </nav>
     </main>

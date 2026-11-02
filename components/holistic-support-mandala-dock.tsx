@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import {usePathname} from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2, Sparkles } from "lucide-react";
+import { ArrowLeft, BarChart3, Compass, Home, MessageCircle, Settings2, Sparkles, Clapperboard } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 import { useVisualBottomDock } from "./app/use-visual-bottom-dock";
@@ -17,6 +18,8 @@ const copy = {
  * a return to the legacy seven-link site navigation. */
 export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const pathname=usePathname();
+  const inMyTube=pathname.replace(/\/+$/,'').endsWith('/holistic-support/mytube');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const mobileDockRef = useRef<HTMLElement | null>(null);
@@ -44,7 +47,7 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           <p>{t.language}</p>
           <div className={styles.localeLinks}>
             {(["en", "ru", "es"] as const).map(language => (
-              <Link key={language} href={"/" + language + "/holistic-support/mandala"}
+              <Link key={language} href={"/" + language + (inMyTube ? "/holistic-support/mytube" : "/holistic-support/mandala")}
                 hrefLang={language} aria-current={locale === language ? "page" : undefined}>
                 {language.toUpperCase()}
               </Link>
@@ -75,6 +78,11 @@ export function HolisticSupportMandalaDock({ locale }: { locale: PublicLocale })
           aria-current={chatOpen ? "page" : undefined}
           aria-label={locale === "ru" ? "ИИ — чат для создания видео" : locale === "es" ? "IA — chat de vídeo" : "AI video creation chat"}>
           <Sparkles size={24} aria-hidden="true" /><span>{t.videoAi}</span>
+        </Link>
+        <Link href={"/"+locale+"/holistic-support/mytube"} prefetch={false} data-support-mytube
+          aria-current={inMyTube?"page":undefined}
+          aria-label={"MyTube — "+(locale==="ru"?"развивающие видео":locale==="es"?"vídeos para crecer":"videos for growth")}>
+          <Clapperboard size={24} aria-hidden="true"/><span>MyTube</span>
         </Link>
       </nav>
     </>

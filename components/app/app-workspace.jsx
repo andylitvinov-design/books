@@ -8,7 +8,7 @@ import './saved-document-reader.css'
 import Image from 'next/image'
 import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle, Clapperboard } from 'lucide-react'
 import Link from 'next/link'
 import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -595,6 +595,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'materials', label: locale === 'ru' ? 'Материалы' : locale === 'es' ? 'Materiales' : 'Materials', href: data.practitioner || data.practice ? root + '/practice?panel=materials' : root + '/history', icon: BookOpen },
     { id: 'profile', label: locale === 'ru' ? 'Профиль' : locale === 'es' ? 'Perfil' : 'Profile', href: data.practitioner || data.practice ? root + '/practice?panel=profile' : root + '/portrait', icon: UserRound },
     { id: 'video-ai', label: locale === 'ru' ? 'ИИ' : locale === 'es' ? 'IA' : 'AI', href: '/' + locale + '/holistic-support/mandala#video-director-chat', icon: Sparkles },
+    { id: 'mytube', label: 'MyTube', href: '/' + locale + '/holistic-support/mytube', icon: Clapperboard },
   ]
   // Progress and Settings remain reachable via the protected Account menu.
   const mobileNavIsActive = id => id === 'profile'

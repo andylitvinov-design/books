@@ -321,6 +321,21 @@ export function buildLibraryFeedItems(
   return { feedItems, guideFeed };
 }
 
+/** Shared public-only, rights-vetted, deduplicated video catalog for Library and MyTube. */
+export function buildPublicLibraryVideos(locale:PublicLocale,feedItems:LibraryFeedItem[],approvedMeditations:LibraryFeedItem[]=[]):LibraryFeedItem[]{
+ const seriesItems:LibraryFeedItem[]=greekVideoSeries(locale).flatMap(series=>series.lessons.map(lesson=>({
+  id:"source-series-"+series.id+"-"+lesson.id,kind:"video" as const,title:lesson.title,
+  description:series.title+" · выпуск "+lesson.order+" из "+series.lessons.length,
+  youtubeId:lesson.id,href:"https://www.youtube.com/watch?v="+lesson.id,
+  seriesId:series.id,seriesTitle:series.title,seriesOrder:lesson.order,seriesHref:series.href,
+  audioLanguage:"ru" as const,curation:"verified" as const,
+  sourceLabel:"Академия · архив",sourceGroup:series.logicalId,
+  topicTags:discoveryTags[series.logicalId]||["practices"]
+ })));
+ return buildPublishedVideoIndex([...seriesItems,...approvedAcademyDiscoveryVideos(locale),
+  ...approvedMeditations,...feedItems.filter(item=>item.kind==="video")]) as LibraryFeedItem[];
+}
+
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
   locale: PublicLocale;
   view?: LibraryView;
@@ -330,30 +345,7 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
 }) {
   const text = libraryCopy[locale];
   const { feedItems, guideFeed } = buildLibraryFeedItems(locale, publishedVideos, articles);
-  // The RU Video Blogs view reuses the same verified Academy media, but groups
-  // the original Greek channel recordings by series rather than publication date.
-  const seriesItems: LibraryFeedItem[] = view === "videos"
-    ? greekVideoSeries(locale).flatMap(series => series.lessons.map(lesson => ({
-        id: "source-series-" + series.id + "-" + lesson.id,
-        kind: "video" as const,
-        title: lesson.title,
-        description: series.title + " · выпуск " + lesson.order + " из " + series.lessons.length,
-        youtubeId: lesson.id,
-        href: "https://www.youtube.com/watch?v=" + lesson.id,
-        seriesId: series.id,
-        seriesTitle: series.title,
-        seriesOrder: lesson.order,
-        seriesHref: series.href,
-        audioLanguage: "ru" as const, curation: "verified" as const,
-        sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
-        topicTags: discoveryTags[series.logicalId] || ["practices"],
-      })))
-    : [];
-  const videoItems = buildPublishedVideoIndex([...seriesItems,
-    ...approvedAcademyDiscoveryVideos(locale),
-    ...approvedMeditations,
-    ...feedItems.filter(item => item.kind === "video"),
-  ]);
+  const videoItems = view === "videos" ? buildPublicLibraryVideos(locale,feedItems,approvedMeditations) : [];
 
   return (
     <main className="library-shell" lang={locale}>

@@ -87,7 +87,7 @@
 .gate .alert { color: #a43e45; font-weight: 730; }
 .signIn { border: 0; border-radius: 12px; min-height: 39px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 7px; color: white; background: #087c66; font-size: 12px !important; font-weight: 750 !important; }
 .moderation { display: flex; align-items: center; gap: 6px; color: #668076; margin: 13px 3px; font-size: 11px; }
-.bottomNav { position: fixed; z-index: 40; left: max(6px, calc((100vw - 800px) / 2)); right: max(6px, calc((100vw - 800px) / 2)); bottom: 0; display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 1px; padding: 7px 6px max(8px,env(safe-area-inset-bottom,8px)); border-radius: 24px 24px 0 0; background: #fffefa; border: 1px solid #e8e9df; box-shadow: 0 -8px 25px #172d2710; }
+.bottomNav { position: fixed; z-index: 40; left: max(6px, calc((100vw - 800px) / 2)); right: max(6px, calc((100vw - 800px) / 2)); bottom: 0; display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 1px; padding: 7px 6px max(8px,env(safe-area-inset-bottom,8px)); border-radius: 24px 24px 0 0; background: #fffefa; border: 1px solid #e8e9df; box-shadow: 0 -8px 25px #172d2710; }
 .navItem { border: 0; border-radius: 15px; color: #6f756f; background: transparent; min-height: 50px; padding: 5px 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; font-size: 10px !important; font-weight: 640 !important; }
 .navActive { background: #e4f6ed; color: #04775e; font-weight: 850 !important; }
 .navItem span { overflow: hidden; max-width: 100%; white-space: normal; overflow-wrap: anywhere; max-height: 2.3em; line-height: 1.12; }
@@ -169,7 +169,7 @@
 .screen .sectionTitle h2 { font-size:clamp(16px,4.35vw,21px); line-height:1.15; }
 .screen .sectionTitle button { gap:4px; font-size:clamp(10px,2.6vw,12px); }
 .screen .offers { margin-bottom:14px; }
-.screen .offerRail { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px; overflow:visible; padding:2px 1px 4px; scroll-snap-type:none; }
+.screen .offerRail { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; overflow:visible; padding:2px 1px 4px; scroll-snap-type:none; }
 .screen .offerCard { flex:none; width:100%; min-width:0; height:97px; padding:7px; border-radius:13px; }
 .screen .offerIcon { width:29px; height:29px; flex:none; }
 .screen .offerCard strong { font-size:clamp(9px,2.55vw,13px); line-height:1.08; letter-spacing:-.025em; overflow-wrap:anywhere; }
@@ -257,3 +257,5 @@
  .resumeDismiss{justify-self:center}
 }
 @media(prefers-reduced-motion:reduce){.resumePanel *{transition:none!important}}
+
+@media(max-width:390px){.screen .bottomNav{gap:1px;padding-inline:3px}.screen .navItem{font-size:clamp(8px,2.2vw,10px)!important;min-width:0}.screen .navItem svg{width:20px;height:20px}}

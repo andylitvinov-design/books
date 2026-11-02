@@ -2,7 +2,7 @@
 import {useRef} from 'react'
 import {useVisualBottomDock} from './use-visual-bottom-dock'
 import Link from 'next/link'
-import {BookOpen,MessageCircle,House,Leaf,UserRound,Sparkles} from 'lucide-react'
+import {BookOpen,MessageCircle,House,Leaf,UserRound,Sparkles,Clapperboard} from 'lucide-react'
 
 // Preserve the existing five destinations and append the shared AI video chat.
 // Tests, courses and full reports remain accessible from the Account menu.
@@ -13,6 +13,7 @@ const ITEMS=[
   {path:'materials',Icon:BookOpen,en:'Materials',ru:'Материалы',es:'Materiales'},
   {path:'profile',Icon:UserRound,en:'Profile',ru:'Профиль',es:'Perfil'},
   {path:'video-ai',Icon:Sparkles,en:'AI',ru:'ИИ',es:'IA'},
+  {path:'mytube',Icon:Clapperboard,en:'MyTube',ru:'MyTube',es:'MyTube'},
 ]
 export default function MessagesBottomNavigation({locale='en',activeSection='messages'}){
   const accountLocale=locale==='es'?'en':locale
@@ -30,6 +31,7 @@ export default function MessagesBottomNavigation({locale='en',activeSection='mes
         path==='materials'?'/'+accountLocale+'/app/practice?panel=materials':
         path==='profile'?'/'+accountLocale+'/app/practice?panel=profile':
         path==='video-ai'?'/'+locale+'/holistic-support/mandala#video-director-chat':
+        path==='mytube'?'/'+locale+'/holistic-support/mytube':
         locale==='en'?'/':'/'+locale
       return <Link key={path} href={href} prefetch={false}
         className={path===''?'hh-mobile-app-nav-home':undefined}
