@@ -1198,16 +1198,19 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('legacy release-ready delegates to real hh-specialist; redundant plural status is retired',()=>{
+test('release-ready delegates to verified hh-specialist without redundant plural status',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  assert.doesNotMatch(source,/^  hh-specialists-verified:/m,'obsolete plural alias must not create a second failure status');
-  const legacy=source.split(/^  release-ready:\s*$/m)[1];
-  assert.ok(legacy,'classic branch protection still requires release-ready');
-  assert.match(legacy,/^    name: release-ready$/m);
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m);
+  const legacy=source.split(/^  release-ready:/m)[1];
+  assert.ok(legacy,'classic protection remains present');
   assert.match(legacy,/^    needs: \[hh-specialist\]$/m);
-  assert.match(legacy,/^    if: always\(\)$/m);
-  assert.ok(legacy.includes('SPECIALIST_RESULT: ' + '
-
+  assert.match(legacy,/SPECIALIST_RESULT/);
+  const full=source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
+  assert.ok(full,'independent specialist verifier remains present');
+  assert.match(full,/ci-specialist-aggregate\.mjs/);
+  assert.match(full,/timeout-minutes: 45/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});
 
 // The event-driven coordinator must paginate a current source HEAD without
 // declaring a truncated 100-run page green or exhausting the GitHub API.
