@@ -20,7 +20,10 @@ jobs:
     name: classify-change
     # Draft PRs avoid full checkout; original full code is required after ready_for_review.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # Lightweight Git/Node classification: keep build-class runners available for Core.
+    # ubuntu-slim has a 15-minute hard limit; this job does no full build.
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
@@ -313,7 +316,8 @@ jobs:
     # Queue specialist alongside scope, not after a delayed scope runner.
     # Independently verify exact HEAD and use ONLY immutable tested-BASE routing.
     # hh-merge-check still requires successful real scope, Core and Specialist.
-    if: always()
+    # A cancelled stale HEAD must not acquire another specialist runner.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -437,8 +441,10 @@ jobs:
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, code, hh-specialist]
-    if: always()
-    runs-on: ubuntu-24.04
+    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
+    if: ${{ !cancelled() }}
+    # Read-only required aggregator: no Next build, npm or privileged tools.
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       contents: read
