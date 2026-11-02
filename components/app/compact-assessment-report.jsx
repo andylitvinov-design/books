@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FreeCourseBanner } from './free-course-banner'
+import { MotivatorMind } from './motivator-mind'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import { assessmentEvidenceStatus } from '@/lib/assessments/assessment-evidence-status'
@@ -451,6 +452,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <small>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>
       </details>
     </div>
+    <MotivatorMind report={report} result={result} locale={locale} focusScaleKey={focusScaleKey} />
     <span id="hh-assessment-next-step" aria-hidden="true"/>
     <FreeCourseBanner locale={locale} compact/>
   </section>
