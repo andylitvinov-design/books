@@ -281,3 +281,22 @@ test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
  assert.match(yml,/source_published:false/);
  assert.match(yml,/if \(error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'\) throw error/);
 });
+
+test('source Repair uses same explicit-release interpretation as the single Dispatcher',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z'),user={login:owner};
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'repair-lock',
+  head_sha:sha,state:'heartbeat',expires_at:'2026-11-01T21:00:00Z'};
+ const wrap=x=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ const events=[wrap(item),wrap({...item,state:'released'})];
+ assert.equal(activeSweepLease(events,sha,now),false);
+ assert.equal(activeSweepLease(events.slice(0,1),sha,now),true);
+});
+test('source Repair ignores a release from another GitHub commenter',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z');
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'lock',
+  head_sha:sha,state:'active',expires_at:'2026-11-01T21:00:00Z'};
+ const events=[{user:{login:owner},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(item)},
+  {user:{login:'unrelated'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+    JSON.stringify({...item,state:'released'})}];
+ assert.equal(activeSweepLease(events,sha,now),true);
+});

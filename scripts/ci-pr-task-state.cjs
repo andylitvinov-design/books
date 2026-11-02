@@ -51,6 +51,92 @@ function parseRecords(comments){
  }
  return out;
 }
+
+/**
+ * Check the LATEST authenticated ownership transition, never just an old
+ * active marker or its nominal expiry. Only an explicit same-actor,
+ * same-owner, same-lease release can free modern ownership of this HEAD.
+ * Unknown/malformed history fails closed. Legacy records retain TTL.
+ */
+function externalOwnerLeaseStatus(comments,headSha,now){
+ if(!Array.isArray(comments)||!SHA.test(headSha||'')||!Number.isFinite(now))
+   return 'OWNER_LEASE_UNVERIFIED';
+ const holders=new Map();
+ const sorted=comments.map((entry,index)=>({entry,index})).sort((a,b)=>
+  Number.isSafeInteger(a.entry?.id)&&Number.isSafeInteger(b.entry?.id)?
+   a.entry.id-b.entry.id:a.index-b.index);
+ const activeStates=new Set(['active','claim','heartbeat']);
+ for(const {entry,index} of sorted){
+  const body=String(entry?.body||'');
+  if(!body.includes('HH_PR_SWEEP_LEASE_V1'))continue;
+  let doc;
+  try{
+   const fence=String.fromCharCode(96).repeat(3);
+   const open=body.indexOf(fence+'json');
+   let source;
+   if(open>=0){
+    const start=open+fence.length+4,end=body.indexOf(fence,start);
+    if(end<0)throw Error('Unclosed lease JSON');
+    source=body.slice(start,end);
+   }else{
+    const start=body.indexOf('{'),end=body.lastIndexOf('}');
+    if(start<0||end<=start)throw Error('Missing lease JSON');
+    source=body.slice(start,end+1);
+   }
+   doc=JSON.parse(source);
+  }catch{return 'OWNER_LEASE_UNVERIFIED';}
+  if(!doc||typeof doc!=='object'||Array.isArray(doc))
+   return 'OWNER_LEASE_UNVERIFIED';
+  const related=doc.head_sha===headSha||doc.previous_head_sha===headSha;
+  if(!related){
+   if(!SHA.test(doc.head_sha||'')&&!SHA.test(doc.previous_head_sha||''))
+    return 'OWNER_LEASE_UNVERIFIED';
+   continue;
+  }
+  if(!doc.schema){
+   // Historic Codex sweeps had only run_id + lease_expires. Unlike
+   // modern exact-head source edits, these expire with a proven clock.
+   const expiry=Date.parse(doc.lease_expires||'');
+   if(typeof doc.owner!=='string'||!doc.owner.trim()||
+      typeof doc.run_id!=='string'||!doc.run_id.trim()||
+      !SHA.test(doc.head_sha||'')||!Number.isFinite(expiry))
+    return 'OWNER_LEASE_UNVERIFIED';
+   if(doc.head_sha===headSha&&expiry>now)
+    holders.set('historical:'+doc.owner+':'+doc.run_id,{
+     legacy:true,expires:expiry});
+   continue;
+  }
+  if(doc.schema!=='HH_PR_SWEEP_LEASE_V1')
+   return 'OWNER_LEASE_UNVERIFIED';
+  const actor=typeof entry.user?.login==='string'?entry.user.login:'';
+  const owner=typeof doc.owner==='string'?doc.owner.trim():'';
+  const leaseId=typeof doc.lease_id==='string'&&doc.lease_id.trim()?
+    'id:'+doc.lease_id.trim():
+    (typeof doc.run_id==='string'&&doc.run_id.trim()?
+      'run:'+doc.run_id.trim():'head:'+headSha);
+  const key=actor+':'+owner+':'+leaseId;
+  const state=String(doc.state||doc.last_action||'');
+  if(activeStates.has(state)){
+   if(doc.head_sha!==headSha)continue;
+   // An unidentifiable active writer must NOT be unlocked by a stranger.
+   if(!actor||!owner){
+    holders.set('unknown-active:'+index,{legacy:false});
+   }else{
+    holders.set(key,{legacy:false});
+   }
+  }else if(/^released(?:_|$)/.test(state)||
+      /^release(?:_|$)/.test(String(doc.last_action||''))){
+   // An unverified release (missing author/owner/id or from another
+   // account) cannot cancel another active writer's protection.
+   if(!actor||!owner)continue;
+   holders.delete(key);
+  }else{
+   return 'OWNER_LEASE_UNVERIFIED';
+  }
+ }
+ return holders.size?'OWNER_LEASE_ACTIVE':'FREE';
+}
+
 function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
@@ -59,18 +145,8 @@ function reservationStatus(task,comments,now){
  if(matches.length)return 'UNRECOGNIZED_STATE';
  // Never claim a source HEAD that a legacy Repair Worker already claimed.
  if((comments||[]).some(c=>String(c.body||'').includes('HH_PR_REPAIR_WORKER_V1 '+task.head_sha)))return 'ALREADY_HANDLED';
- // An active/ambiguous external owner lease must not be stolen by this dispatcher.
- if((comments||[]).some(c=>{
-  const body=String(c.body||'');if(!body.includes('HH_PR_SWEEP_LEASE_V1'))return false;
-  const m=body.match(/\{[\s\S]*?\}/);if(!m)return true;
-  try{const l=JSON.parse(m[0]);if(l.head_sha!==task.head_sha)return false;
-   // An expired *active* external lease is NOT proof that its owner stopped.
-   // Require an explicit release / new source HEAD, never steal by clock alone.
-   if(['active','claim','heartbeat'].includes(l.state||l.last_action))return true;
-   const expiry=Date.parse(l.expires_at||l.lease_expires||'');
-   return !Number.isFinite(expiry)||expiry>now;
-  }catch{return true;}
- }))return 'OWNER_LEASE_ACTIVE';
+ const leaseStatus=externalOwnerLeaseStatus(comments,task.head_sha,now);
+ if(leaseStatus!=='FREE')return leaseStatus;
  return 'FREE';
 }
 // A single 100-comment page is not proof of complete ownership history.
@@ -90,4 +166,4 @@ async function readCompleteIssueComments(github,owner,repo,issueNumber,limited){
  return null;
 }
 module.exports={REPO,PROD,DEFAULT,SHA,MARKER,labels,validPR,laneOf,taskFor,
- reservation,commentBody,parseRecords,reservationStatus,readCompleteIssueComments};
+ reservation,commentBody,parseRecords,reservationStatus,externalOwnerLeaseStatus,readCompleteIssueComments};

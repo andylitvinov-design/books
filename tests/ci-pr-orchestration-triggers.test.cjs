@@ -169,3 +169,14 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
  assert.ok(s.includes("vercel-event' || 'periodic'"));
 });
+
+test('hourly native merge requires explicit verified release for modern active ownership',()=>{
+ const yml=read('hh-pr-full-inventory');
+ assert.ok(yml.includes('leases.delete(key)'));
+ assert.ok(yml.includes('lease.previous_head_sha!==c.head'));
+ assert.ok(yml.includes('const key=actor+":"+owner+":"+leaseId'));
+ assert.ok(yml.includes('Untrusted release author'));
+ assert.ok(yml.includes('lease.historical_expiry_allowed=true'));
+ assert.ok(yml.includes('l.historical_expiry_allowed!==true'));
+ assert.ok(!yml.includes('force:true'));
+});
