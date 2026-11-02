@@ -882,6 +882,26 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
 });
 
 
+test('verified exact-head Core run retires only the matching stale CI queue hint',()=>{
+  const {canRetireCiHint}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const original={number:2269,state:'open',draft:false,
+    head:{sha:SHA,ref:'ci/legacy-2269'}};
+  const fresh={...original,base:{ref:'codex/public-book-library'},
+    head:{...original.head,repo:{full_name:'andylitvinov-design/books'}},
+    labels:[{name:'hh:ci-needed'}]};
+  assert.equal(canRetireCiHint(original,fresh),true);
+  assert.equal(canRetireCiHint(original,{...fresh,draft:true}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,number:2277}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    head:{...fresh.head,sha:'c'.repeat(40)}}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    base:{ref:'codex/bootstrap-books'}}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    labels:[{name:'hh:repair-needed'}]}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    head:{...fresh.head,repo:{full_name:'stranger/fork'}}}),false);
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
@@ -1416,4 +1436,28 @@ test('production coordinator keeps exact new unified status after protection mig
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
   assert.ok(watchdog.includes('required-unified-head-check'));
   assert.ok(watchdog.includes("'hh-merge-check'"));
+});
+
+test('watchdog removes CI hint only for a real Core run on the same PR and HEAD',async()=>{
+  async function check(runRecord, freshOverride={}) {
+    const candidate={...pr(402),state:'open',mergeable:true,mergeable_state:'clean',labels:[{name:'hh:ci-needed'}]};
+    let removed=0;
+    const github={rest:{
+      pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,...freshOverride}})},
+      actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+      checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
+      issues:{removeLabel:async()=>{removed++;}}
+    },request:async(route,args)=>args?.workflow_id==='hh-pr-core-release.yml'
+      ? {data:{total_count:1,workflow_runs:[runRecord]}} : {data:{workflow_runs:[]}}};
+    await run({github,core:core(),context,now:NOW});
+    return removed;
+  }
+  const matching={id:42,name:'HH PR core release gate',event:'pull_request',head_branch:'test-402',head_sha:SHA,
+    pull_requests:[{number:402,head:{sha:SHA,ref:'test-402'}}],status:'in_progress',created_at:new Date(NOW).toISOString()};
+  assert.equal(await check(matching),1);
+  assert.equal(await check({...matching,status:'queued'}),0);
+  assert.equal(await check({...matching,status:'completed',conclusion:'startup_failure'}),0);
+  assert.equal(await check({...matching,head_sha:'c'.repeat(40)}),0);
+  assert.equal(await check({...matching,pull_requests:[{number:403,head:{sha:SHA,ref:'test-402'}}]}),0);
+  assert.equal(await check(matching,{head:{...pr(402).head,sha:'c'.repeat(40)}}),0);
 });
