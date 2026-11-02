@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
@@ -3812,23 +3812,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
-  // Only the third workspace lifts the EXISTING six-tab rail above Wave and
-  // the original player. Other workspaces keep the approved hero -> tabs order.
-  // Both positions are exclusive: never mount duplicate interactive navigation.
-  const workspaceNavigation=(
-      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
-        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
-        {workspaceTabs.map(item=><button type="button" key={item.id}
-          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
-          aria-controls="video-workspace-panel" disabled={recording||preparing}
-          onClick={()=>{
-            setActiveWorkspace(item.id);
-            if(item.id!=="practices")setIntroPlaying(false);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
-      </nav>
-  );
+  // Only the third workspace may portal the original tab rail ahead of Wave.
+  // All other workspaces keep the source-order hero -> tabs hierarchy.
+  const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
+  useLayoutEffect(()=>{
+    setEffectsNavTarget(activeWorkspace==="effects"
+      ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
+  },[activeWorkspace]);
 
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
@@ -3997,7 +3987,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
-        {activeWorkspace==="effects" ? workspaceNavigation : null}
+        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoNavSlot}
+          data-video-hypno-nav-slot/> : null}
         {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
           data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
 
@@ -4049,7 +4040,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
-      {activeWorkspace==="effects" ? null : workspaceNavigation}
+      {(()=>{
+        // Original single rail stays in source order after the only player,
+        // then portals above Wave *only* when the Effects slot exists.
+        const nav=(
+      <nav className={videoStyles.quickVideoNav} data-video-quick-controls
+        aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
+        {workspaceTabs.map(item=><button type="button" key={item.id}
+          data-video-quick-control={item.id} aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-controls="video-workspace-panel" disabled={recording||preparing}
+          onClick={()=>{
+            setActiveWorkspace(item.id);
+            if(item.id!=="practices")setIntroPlaying(false);
+            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setTherapyJumpRequested(false);
+          }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
+      </nav>
+        );
+        return activeWorkspace==="effects"&&effectsNavTarget
+          ?createPortal(nav,effectsNavTarget):nav;
+      })()}
       {/* Show the introductory film separately; the Canvas stays usable. */}
       {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
         data-workspace-section="practices" data-video-therapy-info>
