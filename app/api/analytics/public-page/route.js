@@ -15,6 +15,9 @@ export async function POST(request) {
   try {
     const config=getAppConfig()
     requireSameOrigin(request,config)
+    // Preview/test deployments must not pollute production aggregate statistics.
+    if (new URL(request.url).hostname !== 'holistichouse.vercel.app')
+      return new NextResponse(null,{status:204,headers:{'Cache-Control':'no-store'}})
     // No analytics identity or tracking cookie is required for aggregates.
     // Honor previous and future explicit refusals; GA4/Meta remain off.
     if (request.cookies.get('hh_public_stats_consent')?.value === 'denied')
