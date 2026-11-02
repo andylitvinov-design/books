@@ -102,3 +102,16 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
+
+test("third Hypnocorrection mobile release QA performs real browser navigation instead of manual-only simulation",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
+  assert.match(workflow,/node scripts\/verify-hypno-third-workspace-browser\.mjs/);
+  assert.match(workflow,/GITHUB_HEAD_REF.*codex\/hypno-third-workspace-live-qa-/);
+  assert.match(browser,/HYPNO_THIRD_MOBILE_MATRIX_PASS/);
+  assert.match(browser,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
+  assert.match(browser,/data-hypno-wave/);
+  assert.match(browser,/data-hypno-create/);
+  assert.match(browser,/data-video-quick-control="effects"/);
+  assert.match(browser,/unexpectedWrites/);
+});
