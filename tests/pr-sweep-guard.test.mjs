@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -549,4 +549,37 @@ test('canonical resolution is reusable only for identical 3-way blobs and non-se
   assert.equal(planSameConflictResolutionReuse({...source,conflicts:[conflict(privatePath)],
     resolved_blobs:[{path:privatePath,blob_sha:sha('4')}]},
     {...target,conflicts:[conflict(privatePath)]}).reason,'SENSITIVE_FIX_REQUIRES_INDEPENDENT_REVIEW');
+});
+
+
+test('unknown mergeability is resolved from matching live PRs or remains explicitly partial',async()=>{
+ const rows=[1,2,3].map(number=>({number,state:'open',mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const read=async n=>n===1?{number:n,state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}}:
+  n===2?{number:n,state:'open',mergeable:true,mergeable_state:'clean',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}}:
+  {number:n,state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('c')},base:{ref:'codex/public-book-library'}};
+ const result=await resolveUnknownMergeability(rows,read,{limit:3,offset:0});
+ assert.equal(result.rows[0].mergeable,false);assert.equal(result.rows[1].mergeable,true);
+ assert.equal(result.rows[2].mergeable,null);assert.equal(result.unresolved,1);
+});
+test('bounded unknown probes never present an incomplete inventory as complete',async()=>{
+ const rows=[1,2,3].map(number=>({number,state:'open',mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const result=await resolveUnknownMergeability(rows,async()=>{throw Error('rate limit')},{limit:1,offset:0});
+ assert.equal(result.attempted,1);assert.equal(result.unresolved,3);assert.equal(result.complete,false);
+});
+
+test('production conflict route probes unknown PRs and rechecks before grouping',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function reportConflictRoutes(repo,token) {');
+ const end=source.indexOf('// Daily CLI',start);assert.ok(start>=0&&end>start);
+ const rows=[2719,2283].map(number=>({number,state:'open',draft:false,mergeable:null,head:{sha:sha('a')},base:{ref:'codex/public-book-library',sha:sha('b')}}));
+ const out=[];const response=data=>({ok:true,headers:{get:()=> '2000'},json:async()=>data});
+ const fetch=async url=>{
+  const m=String(url).match(/\/pulls\/(\d+)(\/files\?.*)?$/);assert.ok(m,url);
+  return response(m[2]?[{filename:'components/shared.jsx'}]:{number:Number(m[1]),state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}});
+ };
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
+ await fn('andylitvinov-design/books','test-token');
+ assert.equal(out[0].dirty_total,2);assert.equal(out[0].dirty_total_complete,true);
+ assert.equal(out[0].groups.length,1);assert.equal(out[0].groups[0].blocked_pr_count,2);
+ assert.equal(out[0].groups[0].verification,'SHARED_FILE_CANDIDATE_ONLY_NOT_CONFIRMED_HUNK');
 });

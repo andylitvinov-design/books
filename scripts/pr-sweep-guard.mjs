@@ -4,7 +4,7 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles, resolveUnknownMergeability } from '../lib/ci/pr-sweep-guard.mjs';
 import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
@@ -113,11 +113,25 @@ async function reportDeepRoutes(repo,token) {
 // the production ruleset has zero required check contexts.
 async function reportConflictRoutes(repo,token) {
   const first=await collectRouteSnapshot(repo,token);
-  const dirty=first.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
-  const sample=dirty.slice(0,35), collected=new Map(), errors=[];
+  const collected=new Map(), errors=[];
   const root='https://api.github.com/repos/'+repo;
   const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+token,
     'X-GitHub-Api-Version':'2022-11-28'};
+  let remaining=Infinity;
+  async function get(path){
+    if(remaining<500)throw Error('CONFLICT_RATE_RESERVE');
+    const res=await fetch(root+path,{headers,signal:AbortSignal.timeout(20000)});
+    const value=res.headers.get('x-ratelimit-remaining');
+    if(value===null||!Number.isFinite(Number(value)))throw Error('CONFLICT_RATE_UNKNOWN');
+    remaining=Math.min(remaining,Number(value));
+    if(!res.ok)throw Error('CONFLICT_GITHUB_HTTP_'+res.status);
+    return res.json();
+  }
+  const unresolved=first.rows.filter(p=>p.mergeable!==true&&p.mergeable!==false).length;
+  const inventory=await resolveUnknownMergeability(first.rows,n=>get('/pulls/'+n),
+    {limit:35,offset:unresolved?(Math.floor(Date.now()/600000)*35)%unresolved:0});
+  const dirty=inventory.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
+  const sample=dirty.slice(0,35);
   let cursor=0;
   async function worker(){
     for (;;) {
@@ -125,10 +139,7 @@ async function reportConflictRoutes(repo,token) {
       try {
         const files=[];
         for(let page=1;page<=6;page++) {
-          const res=await fetch(root+'/pulls/'+row.number+'/files?per_page=100&page='+page,
-            {headers,signal:AbortSignal.timeout(20000)});
-          if(!res.ok)throw Error('CONFLICT_FILES_HTTP_'+res.status);
-          const chunk=await res.json();
+          const chunk=await get('/pulls/'+row.number+'/files?per_page=100&page='+page);
           if(!Array.isArray(chunk)||chunk.some(f=>typeof f?.filename!=='string'))
             throw Error('CONFLICT_FILE_PAGE_INVALID');
           files.push(...chunk.map(f=>f.filename));
@@ -145,16 +156,24 @@ async function reportConflictRoutes(repo,token) {
   const valid=[],moved=[];
   for(const pr of sample) {
     const now=current.get(pr.number);
-    if(!now || now.head?.sha!==pr.head.sha || now.base?.sha!==pr.base.sha ||
-        now.mergeable!==false || now.base?.ref!==pr.base.ref) {
-      moved.push(pr.number);
-      continue;
+    if(!now || now.head?.sha!==pr.head.sha || now.base?.sha!==pr.base.sha || now.base?.ref!==pr.base.ref) {
+      moved.push(pr.number);continue;
     }
+    let state=now.mergeable;
+    if(state!==true&&state!==false){
+      try{const live=await get('/pulls/'+pr.number);
+        if(live?.number===pr.number&&live.state==='open'&&live.head?.sha===pr.head.sha&&
+           live.base?.ref===pr.base.ref&&live.mergeable===false&&live.mergeable_state==='dirty')state=false;
+      }catch(e){errors.push({number:pr.number,error:String(e.message||e)});}
+    }
+    if(state!==false){moved.push(pr.number);continue;}
     valid.push({...pr,files:collected.get(pr.number)});
   }
   const groups=groupDirtyPrFiles(valid);
   console.log(JSON.stringify({repo,observed_at:new Date().toISOString(),
-    total_open:first.total,dirty_total:dirty.length,sampled:sample.length,
+    total_open:first.total,dirty_total:dirty.length,dirty_total_complete:inventory.complete,
+    unknown_mergeability:inventory.unresolved,unknown_probes:inventory.attempted,
+    unknown_probe_errors:inventory.errors,sampled:sample.length,
     omitted_due_to_cap:Math.max(0,dirty.length-sample.length),moved_during_scan:moved,
     read_errors:errors,root_evidence:'CANDIDATE_CHANGED_PATHS_REQUIRES_GIT_MERGE_TREE_STAGE_PROOF',
     ...groups},null,2));
