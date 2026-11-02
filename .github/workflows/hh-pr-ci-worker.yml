@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Inspect only; do not create a one-shot CI bootstrap commit'
+        description: 'Inspect only; no PR metadata, commit, or ref changes'
         type: boolean
         default: false
         required: false
@@ -20,12 +20,12 @@ on:
         type: string
         default: ''
       token_probe:
-        description: 'Read-only diagnostic of HH_AUTOMERGE_TOKEN; does not change any branch or label'
+        description: 'Read-only diagnostic of HH_AUTOMERGE_TOKEN; no refs, commits, or labels'
         type: boolean
         default: false
         required: false
       reservation_run_id:
-        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'
+        description: 'Authenticated dispatcher reservation run ID; exact HEAD, bot identity and task key required'
         type: string
         default: ''
   push:
@@ -33,6 +33,8 @@ on:
     paths:
       - '.github/workflows/hh-pr-ci-worker.yml'
       - 'scripts/ci-pr-ci-worker.cjs'
+      - 'scripts/ci-pr-core-metadata-wake.cjs'
+      - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'scripts/ci-pr-owner-token-probe.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
@@ -62,8 +64,9 @@ jobs:
       - name: Check trusted CI worker syntax
         run: |
           node --check scripts/ci-pr-ci-worker.cjs
+          node --check scripts/ci-pr-core-metadata-wake.cjs
           node --check scripts/ci-pr-priority.cjs
-      - name: Bootstrap at most one legacy PR without Core CI
+      - name: Request one exact-HEAD PR Core CI after authenticated claim
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
@@ -71,11 +74,10 @@ jobs:
           # Only this repo-scoped GITHUB_TOKEN reads the queue and places leases.
           github-token: ${{ github.token }}
           script: |
-            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ci-worker.cjs');
+            const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-core-metadata-wake.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
-            // Default-branch pushes check reads plus one UNREFERENCED Git blob
-            // to test Contents:write. Manual token_probe=true stays read-only.
-            // No leases, source refs, commits or required checks are modified.
+            // Prior PR #3108 proved object write. Subsequent push/manual probes
+            // remain READ-ONLY and never mutate source or required checks.
             const tokenProbeRequested=context.eventName==='push' ||
               String(context.payload.inputs?.token_probe ?? 'false')==='true';
             if(tokenProbeRequested){
@@ -84,7 +86,7 @@ jobs:
               const result=await probeOwnerToken({
                 github,ownerToken:token,
                 prNumber:Number(context.payload.inputs?.pr_number||2169),
-                writeProbe:context.eventName==='push',
+                writeProbe:false,
                 report:observation=>core.info('HH_OWNER_TOKEN_PROBE_STAGE '+JSON.stringify(observation))
               });
               core.info('HH_OWNER_TOKEN_PROBE '+JSON.stringify(result));
@@ -94,82 +96,29 @@ jobs:
                 core.setFailed('HH_OWNER_TOKEN_PROBE_FAILED: '+result.status);
               return;
             }
-            // A GITHUB_TOKEN-created commit would suppress push/PR CI. Reuse
-            // the already-configured owner AutoMerge token instead. No new
-            // service, AI billing or paid API is involved.
-            const callOwner=async(method,path,payload)=>{
-              if(!token)throw Error('No existing owner source token');
-              const result=await fetch('https://api.github.com'+path,{
-                method,
-                signal:AbortSignal.timeout(20000),
-                headers:{
-                  Authorization:'Bearer '+token,
-                  Accept:'application/vnd.github+json',
-                  'Content-Type':'application/json',
-                  'X-GitHub-Api-Version':'2022-11-28'
-                },
-                ...(payload?{body:JSON.stringify(payload)}:{})
-              });
-              const data=await result.json().catch(()=>({}));
-              const rawRemaining=result.headers.get('x-ratelimit-remaining');
-              const remaining=rawRemaining===null ? NaN : Number(rawRemaining);
-              if(method==='GET' && Number.isFinite(remaining) && remaining<100)
-                throw Error('Dedicated owner token API reserve exhausted ('+remaining+')');
-              if(!result.ok){
-                const error=new Error('Dedicated owner token HTTP '+result.status+': '+
-                  String(data.message || 'request declined').slice(0,160));
-                error.status=result.status;
-                throw error;
-              }
-              return data;
-            };
-            const sourceGit=token?{
-              bootstrap:async({owner,repo,branch,sha,number})=>{
-                const sameRepo=owner===context.repo.owner && repo===context.repo.repo;
-                if(!sameRepo || !/^[a-f0-9]{40}$/i.test(sha) ||
-                   !Number.isSafeInteger(number) || number<1 ||
-                   !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch) ||
-                   branch.includes('..') || branch.includes('//') ||
-                   branch.includes('@{') || branch.endsWith('/') ||
-                   ['codex/bootstrap-books','codex/public-book-library'].includes(branch))
-                  throw Error('Unsafe legacy PR source ref');
-                const prefix='/repos/'+owner+'/'+repo;
-                const safeBranch=branch.split('/').map(encodeURIComponent).join('/');
-                // Verify owner token reserve and exact ref before creating
-                // any commit object. Non-force ref update is the final CAS.
-                const original=await callOwner('GET',prefix+'/git/ref/heads/'+safeBranch);
-                if(original?.ref!=='refs/heads/'+branch || original?.object?.sha!==sha)
-                  throw Error('Source branch changed before CI bootstrap');
-                const parent=await callOwner('GET',prefix+'/git/commits/'+sha);
-                if(!/^[a-f0-9]{40}$/i.test(parent?.tree?.sha || ''))
-                  throw Error('No verified parent commit tree');
-                const commit=await callOwner('POST',prefix+'/git/commits',{
-                  message:'chore(ci): one-time legacy Core CI bootstrap for PR #'+number,
-                  tree:parent.tree.sha,parents:[sha]
-                });
-                if(!/^[a-f0-9]{40}$/i.test(commit?.sha || '') || commit.sha===sha)
-                  throw Error('Source-preserving CI commit not accepted');
-                // No force: a concurrently changed branch rejects a stale
-                // update. This produces real pull_request.synchronize.
-                await callOwner('PATCH',prefix+'/git/refs/heads/'+safeBranch,{
-                  sha:commit.sha,force:false
-                });
-                return {sha:commit.sha};
-              }
-            }:null;
+            // Metadata-only CI wake, never a source commit or ref update.
+            // Only an addressed dispatch with authenticated exact-head
+            // reservation may edit PR body via the owner token.
             const result=await run({
-              github,core,context,sourceGit,
-              prNumber:Number(context.payload.inputs?.pr_number || 0),
+              github,core,context,token,
+              number:Number(context.payload.inputs?.pr_number || 0),
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
               taskKey:String(context.payload.inputs?.task_key || ''),
-              dryRun:context.eventName==='push' ||
+              reservationRunId:String(context.payload.inputs?.reservation_run_id || ''),
+              dryRun:context.eventName!=='workflow_dispatch' ||
                 String(context.payload.inputs?.dry_run ?? 'false')==='true'
             });
-            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
-            core.info('HH_CI_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'ci',status:result.started>0?'started':'skipped',dryRun:result.dryRun,log:core.warning}));
-            // Never turn a denied owner write token into a green CI worker.
-            // The worker has already attempted an exact-HEAD diagnostic receipt.
-            if(result.terminalFailure){
-              core.setFailed('HH_CI_BOOTSTRAP_OWNER_TOKEN_PERMISSION_DENIED: no bootstrap '+
-                'or source commit confirmed; repair dedicated token permissions.');
-            }
+            core.info('HH_CI_METADATA_WAKE '+JSON.stringify(result));
+            await core.summary.addHeading('HH CI Worker: metadata event is not a Core result')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_CI_COMPLETION_WAKE '+await wakeAfterWorker({
+              github,context,kind:'ci',
+              status:result.metadataEditAccepted?'requested':'skipped',
+              dryRun:result.dryRun,log:core.warning
+            }));
+            if(result.terminalFailure)
+              core.setFailed('HH_CI_METADATA_OWNER_TOKEN_PERMISSION_DENIED: request not verified');
+            if(!result.dryRun && result.status!=='CI_WAKE_REQUESTED' && !result.terminalFailure)
+              core.setFailed('HH_CI_METADATA_WAKE_BLOCKED: '+result.reason);

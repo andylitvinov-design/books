@@ -43,7 +43,7 @@ async function wake({github,owner,repo,summary,enabled,hasToken,dryRun,
 // its delayed scan still enforces fresh capacity, owner leases and task receipts.
 async function wakeAfterWorker({github,context,kind,status,dryRun=false,log=()=>{}}){
   const permitted=kind==='repair' ? ['manual_conflict','manual_required','committed'] :
-    kind==='ci' ? ['started'] : [];
+    kind==='ci' ? ['started','requested'] : [];
   if(dryRun||context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books'||
      context.ref!=='refs/heads/'+DEFAULT||!['schedule','workflow_dispatch'].includes(context.eventName)||
      !Number.isSafeInteger(context.runId)||context.runId<1||!permitted.includes(status))return 'NOT_ACTIONABLE';

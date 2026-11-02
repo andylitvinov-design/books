@@ -2,7 +2,7 @@
 const CORE_WORKFLOW='HH PR core release gate';
 const WORKFLOWS={repair:'HH PR source Repair Worker',conflict:'HH PR source Repair Worker',
  ci:'HH zero-cost PR CI worker',merge:'HH native auto-merge'};
-const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxObservedJobs:38,maxWorkerRuns:1,
+const LIMIT={maxActiveRuns:24,maxQueuedRuns:60,maxRepairQueuedRuns:72,maxObservedJobs:38,maxWorkerRuns:1,
  maxJobReads:24,minRateReserve:100,maxOptionalCiActiveRuns:16};
 function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
@@ -28,7 +28,15 @@ function admission(lane,capacity){
  if(lane==='ci'&&capacity.inventoryConfidence==='BOUNDED_PARTIAL')
    return 'PARTIAL_CAPACITY_CI_BLOCKED';
  if(capacity.activeWorker[worker]>=LIMIT.maxWorkerRuns)return 'WORKER_BUSY';
- if(capacity.activeRuns>=LIMIT.maxActiveRuns||capacity.queuedRuns>=LIMIT.maxQueuedRuns)return 'RUNNERS_SATURATED';
+ // Optional CI retains the strict 60-run global stop (and its own 6-run
+ // limit). Admit at most ONE exact-head source Repair Worker into a modest
+ // overflow window when most queued runs are unrelated/no-op wrappers.
+ // Never infer a free runner or bypass a current Core result from this.
+ const queueLimit=lane==='repair'?LIMIT.maxRepairQueuedRuns:LIMIT.maxQueuedRuns;
+ if(capacity.activeRuns>=LIMIT.maxActiveRuns||capacity.queuedRuns>=queueLimit)
+   return 'RUNNERS_SATURATED';
+ if(lane==='repair'&&capacity.queuedRuns>=LIMIT.maxQueuedRuns&&
+    (capacity.coreQueuedRuns||0)>20)return 'CORE_PRIORITY_PENDING';
  const pressure=capacity.runningJobs+capacity.queuedJobs+
    (capacity.unknownActiveRuns||0)*8+(capacity.unknownQueuedRuns||0)*2;
  if(pressure>=LIMIT.maxObservedJobs)return 'JOBS_SATURATED';
@@ -65,7 +73,7 @@ async function snapshot(github,owner,repo){
   // When even the total count is saturated, do not waste API quota reading
   // runner jobs or accidentally treat an incomplete list as a free slot.
   if(Math.max(aCount,active.length)>=LIMIT.maxActiveRuns||
-     Math.max(qCount,queued.length)>=LIMIT.maxQueuedRuns){
+     Math.max(qCount,queued.length)>=LIMIT.maxRepairQueuedRuns){
     return {known:false,reason:'RUN_CAPACITY_SATURATED',activeRuns:aCount,queuedRuns:qCount};
   }
   if(aCount===active.length&&qCount===queued.length)break;

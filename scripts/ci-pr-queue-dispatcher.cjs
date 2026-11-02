@@ -2,6 +2,7 @@
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
+const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
@@ -100,7 +101,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   specialistReclassified:0,wouldSpecialistReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
-  capacityReason:null,blocked:{},
+  capacityReason:null,blocked:{},legacyCiRecovery:null,
   workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
@@ -146,6 +147,19 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  summary.discovered=prs.length;
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
+ // Reconcile a *proven* old terminal denial only after the new no-commit
+ // Worker is on trusted default. This cannot silently free a source owner:
+ // the helper validates bot-signed receipts, completed run, current HEAD,
+ // worker idle state and records a signed no-claim result before clearing
+ // one failed-attempt label.
+ try{
+  summary.legacyCiRecovery=await reconcileLegacyCiDenial({
+   github,context,prs:production,now,dryRun,limited
+  });
+ }catch(e){
+  summary.legacyCiRecovery={status:'UNAVAILABLE',
+   reason:'RECOVERY_UNVERIFIED',detail:String(e.message||e).slice(0,120)};
+ }
  const candidates=planCandidates(production,now);
  summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
  for(const pr of production){

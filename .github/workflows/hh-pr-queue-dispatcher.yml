@@ -12,10 +12,12 @@ on:
     paths:
       - '.github/workflows/hh-pr-queue-dispatcher.yml'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-ci-legacy-recovery.cjs'
       - 'scripts/ci-pr-task-state.cjs'
       - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-api-quota.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
+      - 'tests/ci-pr-ci-legacy-recovery.test.cjs'
       - 'tests/ci-pr-core-priority.test.cjs'
   pull_request:
     branches: ['codex/bootstrap-books']
@@ -23,8 +25,10 @@ on:
       - 'scripts/ci-pr-task-state.cjs'
       - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-ci-legacy-recovery.cjs'
       - 'tests/ci-pr-api-quota.test.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
+      - 'tests/ci-pr-ci-legacy-recovery.test.cjs'
       - 'tests/ci-pr-core-priority.test.cjs'
       - '.github/workflows/hh-pr-queue-dispatcher.yml'
       - 'scripts/ci-pr-ci-worker.cjs'
@@ -75,9 +79,10 @@ jobs:
           node --check scripts/ci-pr-api-quota.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-ci-legacy-recovery.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-core-priority.test.cjs
-          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
+          node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
   completion-wait:
     # Wait outside the writer lease: a later schedule event must not replace
     # a queued completion wake before the worker has actually exited.
@@ -139,6 +144,7 @@ jobs:
           node --check scripts/ci-pr-task-state.cjs
           node --check scripts/ci-pr-capacity.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-ci-legacy-recovery.cjs
           node --check scripts/ci-pr-ci-worker.cjs
       - name: Select one bounded PR worker per free lane and record a task receipt
         uses: actions/github-script@v7
