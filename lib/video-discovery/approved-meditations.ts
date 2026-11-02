@@ -3,6 +3,7 @@ import {unstable_cache} from "next/cache";
 import {getAppConfig} from "@/lib/app/config";
 import {transaction} from "@/lib/app/database.js";
 import {projectApprovedMeditationRows} from "@/lib/video-discovery/catalog.mjs";
+import type {ReviewedMeditationRow} from "@/lib/video-discovery/catalog.mjs";
 import type {LibraryFeedItem} from "@/components/library-feed";
 
 // Database and projector independently gate publication. No private
@@ -22,7 +23,7 @@ const APPROVED_QUERY=[
 const cachedReviewed=unstable_cache(async()=>{
   try{
     const config=getAppConfig();
-    const rows=await transaction(config,null,async db=>
+    const rows=await transaction(config,null,async (db: {query: (sql: string) => Promise<{rows: ReviewedMeditationRow[]}>})=>
       (await db.query(APPROVED_QUERY)).rows,{server:true});
     return projectApprovedMeditationRows(rows);
   }catch(error){
