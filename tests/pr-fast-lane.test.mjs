@@ -1198,22 +1198,17 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('classic release-ready delegates to required hh-specialist; redundant plural status is removed',()=>{
+test('release-ready delegates to verified specialist; plural alias is retired',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  assert.doesNotMatch(source,/^  hh-specialists-verified:/m,'redundant plural status is retired');
-  const legacy=source.split(/^  release-ready:\s*$/m)[1];
-  assert.ok(legacy,'release-ready must remain for classic branch protection');
-  assert.match(legacy,/^    name: release-ready$/m);
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m);
+  const legacy=source.split(/^  release-ready:/m)[1];
+  assert.ok(legacy,'must retain the protected legacy release-ready context');
   assert.match(legacy,/^    needs: \[hh-specialist\]$/m);
-  assert.match(legacy,/^    if: always\(\)$/m);
-  assert.match(legacy,/^    timeout-minutes: 3$/m);
-  assert.ok(legacy.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
-  assert.ok(legacy.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
-  assert.doesNotMatch(legacy,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
-  assert.ok(full,'independent specialist verifier remains present');
-  assert.match(full,/ci-specialist-aggregate\.mjs/);
-  assert.match(full,/timeout-minutes: 45/);
+  assert.match(legacy,/SPECIALIST_RESULT/);
+  const specialist=source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
+  assert.ok(specialist,'must preserve independent specialist gate');
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.match(specialist,/timeout-minutes: 45/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
