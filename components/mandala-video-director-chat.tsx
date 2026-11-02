@@ -137,6 +137,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setDraft(next);
    const nextStep=nextVideoChatTreeStep(next) as Step;
    setStep(nextStep);addLine("assistant",question(nextStep));
+   approvedPlanKeyRef.current="";cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setSymbolicAllowed(false);setAlternative(0);
    // A new goal entered outside the chat cannot inherit external-AI consent.
    setAiConsent(false);aiAskedKeyRef.current="";setAiStatus("idle");
@@ -284,6 +285,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        edit:{...plan.edit,captionTexts:captions}};
    }catch{return null;}
  },[canPlan,selected,draft,locale,filmTheme,goalForPlan,presets,scenes,proposal,options,renderOptions,currentAiCut]);
+ // Approval is bound to actual scene assets/timings, not only the chosen filters.
+ const executionKey=JSON.stringify([planKey,executable?.edit.clipIds,
+   executable?.edit.durationSecondsByStage]);
  const needSymbolic=Boolean(proposal?.requiresNewAiFootage||parseVideoChatIntent(goalForPlan).specificVisual);
  const reviewAvailable=Boolean(executable);
  const offerSymbolic=needSymbolic&&!symbolicAllowed;
@@ -544,16 +548,18 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const reset=()=>{
    if(disabled)return;
    cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
+   approvedPlanKeyRef.current="";
    setDraft(initial("",locale));onGoalChange("");setStep("category");setSymbolicAllowed(false);
    aiAskedKeyRef.current="";setAiStatus("idle");setAiConsent(false);
    setAlternative(0);setCaptureStarted(false);setCaptureObserved(false);
    setLines([{id:++counter.current,role:"assistant",text:t.intro+"\n"+t.category}]);setInput("");
  };
  const confirm=()=>{
-   if(disabled||!executable||offerSymbolic)return;
+   if(disabled||!executable||offerSymbolic||aiCutState==="loading")return;
+   cutAbortRef.current?.abort();
    const ok=onConfirm({scenario:executable});
    if(!ok){addLine("assistant",t.blocked);return;}
-   approvedPlanKeyRef.current=planKey;
+   approvedPlanKeyRef.current=executionKey;
    setStep("ready");addLine("assistant",t.ready);setCaptureStarted(false);setCaptureObserved(false);
  };
  const enhanceExecutable=async()=>{
@@ -596,8 +602,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    }
  };
  const start=()=>{
-   if(disabled||!canCreate||captureStarted)return;
-   if(approvedPlanKeyRef.current!==planKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
+   if(disabled||!canCreate||captureStarted||step!=="ready")return;
+   if(approvedPlanKeyRef.current!==executionKey){setStep("review");onInvalidate();addLine("assistant",t.promptChanged);return;}
    const accepted=onCreate();
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
@@ -648,9 +654,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          {commandChoices.length>0?<div className={css.commandChoices} role="group" aria-label={t.quickActions}>
            {commandChoices.map(([label,value])=><button type="button" key={value}
              disabled={disabled||captureStarted||
-               (step==="review"&&value==="подтверждаю"&&(!reviewAvailable||offerSymbolic))||
+               (step==="review"&&value==="подтверждаю"&&(!reviewAvailable||offerSymbolic||aiCutState==="loading"))||
                (step==="ready"&&value==="создавай"&&!canCreate)}
-             data-chat-command={value} onClick={()=>answer(value)}>{label}</button>)}
+             data-chat-command={value} data-video-chat-auto={value==="выбери сам"?"true":undefined} onClick={()=>answer(value)}>{label}</button>)}
          </div>:null}
          {step==="review"?<div className={css.inlineFunctions} role="group" aria-label={t.quickActions}>
            <button type="button" disabled={disabled||captureStarted}
@@ -715,7 +721,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
          <button type="button" disabled={disabled} onClick={reset}>{t.retryGoal}</button>
        </div>:null}
        {step==="review"&&!offerSymbolic?<div className={css.storyActions}>
-         <button type="button" className={css.primary} disabled={disabled} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
+         <button type="button" className={css.primary} disabled={disabled||aiCutState==="loading"} data-video-chat-confirm onClick={confirm}><Check size={17}/>{t.confirm}</button>
          {options.length>1?<button type="button" className={css.secondary} disabled={disabled} onClick={()=>{
            cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");onInvalidate();
            setAlternative(n=>(n+1)%options.length);

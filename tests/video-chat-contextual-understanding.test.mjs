@@ -158,3 +158,13 @@ test("inline answers and free text share the same state machine and renderer",()
  for(const prompt of ["Какова цель вашего видео?","What is your video's goal?",
    "¿Cuál es el objetivo de tu vídeo?"])assert.ok(chat.includes(prompt));
 });
+
+
+test("specific cut approval and rendering must survive AI timing races",()=>{
+ const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ for(const marker of ["const executionKey=JSON.stringify([planKey,executable?.edit.clipIds",
+  "executable?.edit.durationSecondsByStage","approvedPlanKeyRef.current=executionKey",
+  "approvedPlanKeyRef.current!==executionKey",'captureStarted||step!=="ready"',
+  'offerSymbolic||aiCutState==="loading"','data-video-chat-auto={value==="выбери сам"?"true":undefined}'])
+  assert.ok(chat.includes(marker),"missing live production safety "+marker);
+});
