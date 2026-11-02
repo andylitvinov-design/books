@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       <h2>Choices</h2>
       <p>You can use available guest features without Google sign-in where offered. You may request account deletion from the account privacy area; deletion removes the associated application data according to the displayed workflow.</p>
       <h2>Optional website analytics</h2>
-      <p>On public pages, an optional, non-blocking choice notice asks whether we may count anonymous first-party visits. Nothing is measured before you actively allow it. You can decline or change your choice below without affecting site access. Google and Meta analytics remain disabled.</p>
+      <p>We automatically count aggregate entrances, page views and button/link clicks on public marketing pages, with coarse traffic sources. These statistics do not store visitor or session IDs, IP addresses, full referrers, search queries, assessment answers or private account activity, and do not set tracking cookies. Counts are deleted after 90 days. You can opt out of future counting below without affecting site access. Previously aggregated counts cannot be linked back to you. Google and Meta analytics remain disabled.</p>
       <AnalyticsPreferences />
       <FirstPartyStatsPreferences />
       <h2>Important scope</h2>
