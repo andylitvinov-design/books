@@ -14,7 +14,13 @@ export function context(env, event) {
   }
   const pr = event?.pull_request;
   // PR target workflow must execute BASE-owned script, never untrusted PR code.
-  if (env.GITHUB_EVENT_NAME === 'pull_request_target' && env.GITHUB_REF === 'refs/heads/' + TARGET &&
+  // GitHub executes pull_request_target on the repository default ref even
+  // for PRs whose BASE is the protected nondefault production branch.
+  // Trust only those two known refs; the payload still proves exact PR,
+  // repository, base, same-repo HEAD and immutable synchronize before/after.
+  const trustedRunnerRef = env.GITHUB_REF === 'refs/heads/' + TARGET ||
+    env.GITHUB_REF === 'refs/heads/codex/bootstrap-books';
+  if (env.GITHUB_EVENT_NAME === 'pull_request_target' && trustedRunnerRef &&
       event?.action === 'synchronize' && event?.repository?.full_name === env.GITHUB_REPOSITORY &&
       pr?.base?.ref === TARGET && pr?.head?.repo?.full_name === env.GITHUB_REPOSITORY &&
       Number.isSafeInteger(pr?.number) && pr.number > 0 &&
