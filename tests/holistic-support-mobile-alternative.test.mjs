@@ -58,7 +58,9 @@ test("four real recording cards from published sources, not arbitrary stock samp
 test("playback keeps visible selectors and explicit meditation topics filter honestly", () => {
   assert.ok(client.includes('data-playing={playing ? "true" : "false"}'));
   assert.ok(client.includes('theme !== "all"'));
-  assert.ok(client.includes('return eligible.slice(0, 4)'));
+  assert.ok(client.includes('const relevantVideos = choice === "pump" && program !== "all" ? catalogVideos : catalogVideos.slice(0, 4)'),
+    "four featured cards remain, while the same source-backed full catalogue stays available below");
+  assert.ok(client.includes('data-support-meditation-feed'));
   assert.ok(css.includes('.hero[data-playing="true"] .heroFilters'));
   assert.ok(css.includes('.iframeWrap { position: relative'));
   assert.ok(css.includes('aspect-ratio: 16 / 9'));
@@ -94,7 +96,7 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   // Orders, not the already-approved person-by-person conversations.
   assert.match(orders, /q\.has\('tab'\)\?'clients':'orders'/);
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
-  assert.match(page, /<MessagesOrdersClients locale=\{locale\}><MessagesHub locale=\{locale\}\/><\/MessagesOrdersClients>/);
+  assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);
   assert.match(inbox, /<DirectMessageInbox/);
   assert.doesNotMatch(client, /<DirectMessageInbox|<CrmMessengerPanel|<MessagesHub/);

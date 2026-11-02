@@ -23,9 +23,10 @@ on:
       - 'components/practice-showcase.module.css'
       - 'scripts/verify-practice-post-google-browser.mjs'
       - '.github/workflows/practice-google-browser.yml'
+  workflow_dispatch:
 concurrency:
-  group: hh-practice-google-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-practice-google-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 
 permissions:
   contents: read
@@ -52,13 +53,20 @@ jobs:
           node --check scripts/verify-practice-post-google-browser.mjs
           node --test tests/practice-google-return-and-services-v5.test.mjs tests/practitioner-preview-auth.test.mjs
           npx eslint components/app/app-workspace.jsx components/app/my-services-dashboard.jsx components/app/practice-inner-navigation.jsx components/practice-showcase.jsx scripts/verify-practice-post-google-browser.mjs
-          npx tsc --noEmit --pretty false
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" || "${GITHUB_BASE_REF:-}" != "codex/public-book-library" ]]; then
+            npx --no-install tsc --noEmit --pretty false
+          else
+            echo 'Full TypeScript delegated to required Core release-ready'
+          fi
       - name: Install Chromium and WebKit
+        # PR keeps auth/source contracts; full browser coverage runs after merge or manually.
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/holistic-practice-browser
           npm install --prefix /tmp/holistic-practice-browser --no-audit --no-fund playwright@1.63.0
           /tmp/holistic-practice-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Render signed-in Practice and verify OAuth intent
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p artifacts/practice-after-google
           npx next dev --hostname 127.0.0.1 --port 3121 > /tmp/practice-after-google-next.log 2>&1 &
@@ -71,7 +79,7 @@ jobs:
           done
           node scripts/verify-practice-post-google-browser.mjs
       - name: Upload synthetic screenshots and geometry only
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: practice-post-google-browser

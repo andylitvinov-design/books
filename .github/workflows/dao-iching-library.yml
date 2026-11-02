@@ -16,25 +16,12 @@ on:
       - 'lib/public-locales.ts'
       - 'tests/dao-*.test.mjs'
       - '.github/workflows/dao-iching-library.yml'
-  push:
-    branches: ['codex/public-book-library']
-    paths:
-      - 'app/[locale]/dao/hexagrams/**'
-      - 'app/es/dao/hexagrams/**'
-      - 'app/[locale]/library/page.tsx'
-      - 'app/es/library/page.tsx'
-      - 'components/dao-*'
-      - 'data/dao-*'
-      - 'data/dao-hexagrams-editorial/**'
-      - 'lib/dao-divination.*'
-      - 'tests/dao-*.test.mjs'
-      - '.github/workflows/dao-iching-library.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: dao-iching-library-verify-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: dao-iching-library-verify-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   verified-dao-library:
     runs-on: ubuntu-latest

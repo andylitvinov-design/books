@@ -39,7 +39,7 @@ const COPY={
     brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',media:'Public photo/video URL',mediaAlt:'Image description (alt text)',mediaHint:'Use a public JPG, PNG, WEBP, GIF or MP4 file on the selected brand website. Never use private client files.',
     source:'Public landing URL',campaign:'Campaign code (optional)',schedule:'Planned time',scheduleNote:'Input uses your device timezone; calendar is shown in Toronto time.',
     sourceHint:'Use public site URLs only; never include client information in these posts or links.',
-    captionHint:'Write platform-specific copy. AI drafting and translation will be added after approvals and account setup.',
+    captionHint:'Write platform-specific copy. AI drafting and translation will be added after approvals and account setup.',characterLabel:'Characters for selected channel',characterWithLink:'Includes appended UTM link · draft advisory only',characterWithoutLink:'No campaign link appended · draft advisory only',
     preview:'Post preview',tracking:'Tracked public link',copy:'Copy link',copyPost:'Copy post',copyPostOk:'Post text copied.',save:'Save draft',approve:'Approve saved draft',
     plan:'Add to manual calendar',edit:'Edit',archive:'Archive',reopen:'Reopen draft',
     sourceLabel:'Source',noPosts:'No posts here yet. Create your first draft.',
@@ -80,7 +80,7 @@ const COPY={
     brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',media:'Публичная ссылка на фото/видео',mediaAlt:'Описание изображения (alt)',mediaHint:'Публичный JPG, PNG, WEBP, GIF или MP4 на сайте выбранного проекта. Не используйте личные файлы клиентов.',
     source:'Публичная ссылка',campaign:'Код кампании (необязательно)',schedule:'Планируемое время',scheduleNote:'Ввод времени по часовому поясу устройства; календарь — по Торонто.',
     sourceHint:'Только открытые страницы сайта. Никаких личных данных клиентов в публикации и ссылке.',
-    captionHint:'Пишите текст для конкретной соцсети. AI-генерацию и переводы добавим после настройки аккаунтов.',
+    captionHint:'Пишите текст для конкретной соцсети. AI-генерацию и переводы добавим после настройки аккаунтов.',characterLabel:'Символы для площадки',characterWithLink:'С учётом UTM-ссылки · только проверка черновика',characterWithoutLink:'Без UTM-ссылки · только проверка черновика',
     preview:'Предпросмотр',tracking:'Ссылка с UTM',copy:'Копировать ссылку',copyPost:'Копировать пост',copyPostOk:'Текст публикации скопирован.',save:'Сохранить черновик',approve:'Одобрить сохранённый',
     plan:'В ручной календарь',edit:'Редактировать',archive:'В архив',reopen:'Вернуть в черновики',
     sourceLabel:'Источник',noPosts:'Публикаций пока нет. Создайте первый черновик.',
@@ -107,8 +107,8 @@ const COPY={
 }
 
 const CHANNEL_WARNINGS={
-  en:{media_required:'Attach a public photo or video.',video_required:'This platform requires MP4 video.',text_too_long:'Text plus tracked link exceeds the supported single-post limit.',pinterest_board_not_configured:'Select a Pinterest board in an authorized publisher.',business_location_not_configured:'A verified business location is needed.',event_details_required:'Real event date, venue and organizer must be verified.',media_type_unsupported:'Unsupported media format.',telegram_media_unsupported:'Telegram supports JPG/PNG photo or MP4 video in this adapter.',telegram_brand_not_configured:'Telegram is configured only for Holistic House.',telegram_not_configured:'Telegram bot environment settings are missing.',telegram_channel_not_verified:'Verify posting rights in Connections.'},
-  ru:{media_required:'Добавьте публичное фото или видео.',video_required:'Для этого канала требуется MP4-видео.',text_too_long:'Текст вместе с UTM-ссылкой превышает ограничение площадки.',pinterest_board_not_configured:'Выберите доску в авторизованном Pinterest.',business_location_not_configured:'Нужен подтверждённый адрес организации.',event_details_required:'Нужна проверенная дата события, место и организатор.',media_type_unsupported:'Неподдерживаемый формат медиа.',telegram_media_unsupported:'Для Telegram разрешены JPG/PNG фото или MP4 видео.',telegram_brand_not_configured:'Бот Telegram настроен только на Holistic House.',telegram_not_configured:'Серверные настройки бота не заданы.',telegram_channel_not_verified:'Проверьте права в разделе подключений.'},
+  en:{media_required:'Attach a public photo or video.',video_required:'This platform requires MP4 video.',text_too_long:'Text plus tracked link exceeds the supported single-post limit.',pinterest_board_not_configured:'Select a Pinterest board in an authorized publisher.',business_location_not_configured:'A verified business location is needed.',event_details_required:'Real event date, venue and organizer must be verified.',media_type_unsupported:'Unsupported media format.',telegram_media_unsupported:'Telegram supports JPG/PNG photo or MP4 video in this adapter.',telegram_brand_not_configured:'Telegram is configured only for Holistic House.',telegram_not_configured:'Telegram bot environment settings are missing.',telegram_channel_not_verified:'Verify posting rights in Connections.',instagram_image_conversion_required:'Instagram photo requires reviewed JPEG conversion; this editor cannot convert images.',google_business_video_unsupported:'Video posting is unavailable for Google Business here; use a verified photo.',image_alt_required:'Add an image description (alt text) before saving the media draft.'},
+  ru:{media_required:'Добавьте публичное фото или видео.',video_required:'Для этого канала требуется MP4-видео.',text_too_long:'Текст вместе с UTM-ссылкой превышает ограничение площадки.',pinterest_board_not_configured:'Выберите доску в авторизованном Pinterest.',business_location_not_configured:'Нужен подтверждённый адрес организации.',event_details_required:'Нужна проверенная дата события, место и организатор.',media_type_unsupported:'Неподдерживаемый формат медиа.',telegram_media_unsupported:'Для Telegram разрешены JPG/PNG фото или MP4 видео.',telegram_brand_not_configured:'Бот Telegram настроен только на Holistic House.',telegram_not_configured:'Серверные настройки бота не заданы.',telegram_channel_not_verified:'Проверьте права в разделе подключений.',instagram_image_conversion_required:'Для фото Instagram нужна проверенная конвертация в JPEG; этот редактор не конвертирует изображения.',google_business_video_unsupported:'Публикация видео в Google Business здесь недоступна; используйте проверенное фото.',image_alt_required:'Добавьте описание изображения (alt) перед сохранением медиа-черновика.'},
 }
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
@@ -212,6 +212,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const trackingLink=useMemo(()=>{
     try {return publicCampaignLink({...form,scheduledAt:isoFromLocal(form.scheduledAt)})} catch {return ''}
   },[form])
+  const draftPreflight=reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified})
   const plannedConflict=form.scheduledAt?findManualTimeConflicts({records,brand:form.brand,channel:form.channel,
     scheduledAt:isoFromLocal(form.scheduledAt),excludeId:editing?.id}).length:0
   const suggestManualTime=()=>{
@@ -451,8 +452,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>}
         <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
-          {reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.length>0
-            && <ul>{reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified}).issues.map(code=>
+          {draftPreflight.characterLimit&&<p className={styles.hint}>{t.characterLabel}: <strong>{draftPreflight.characterCount} / {draftPreflight.characterLimit}</strong> · {draftPreflight.campaignLinkIncluded?t.characterWithLink:t.characterWithoutLink}</p>}
+          {draftPreflight.issues.length>0&&<ul>{draftPreflight.issues.map(code=>
               <li key={code}>{CHANNEL_WARNINGS[locale]?.[code]||CHANNEL_WARNINGS.en[code]||code}</li>)}</ul>}
         </div>
         <div className={styles.editorActions}>

@@ -147,3 +147,78 @@
 .detailChips button:focus-visible{outline:3px solid #81c9a8;outline-offset:2px}
 @media(min-width:740px){.detailChips{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:350px){.detailChips{gap:5px}.detailChips button{padding:6px;font-size:10.5px}}
+
+
+/* Owner-approved light mobile Courses & Practices, 01 Nov 2026: real guided course only. */
+.panel{border:0;border-radius:0;background:transparent;box-shadow:none;padding:0;margin:10px 0 18px;color:#173b34}
+.panel .header{padding:11px 13px;border-radius:20px;background:linear-gradient(120deg,#f7fffa,#fffdf8);border:1px solid #e0ede4;box-shadow:0 4px 15px #1c63490a}
+.panel .emblem{background:#eef9ed;border-color:#d9edd9}
+.panel .heading h3{font-size:clamp(19px,5vw,25px);font-weight:800}
+.panel .intro{margin:10px 4px 14px;font-size:clamp(14px,3.5vw,16px);line-height:1.48;color:#4d6a5e}
+.focusCard,.flowBlock{box-sizing:border-box;min-width:0;margin:0 0 12px;padding:clamp(14px,3.8vw,22px);background:#fffefb;border:1px solid #e5ece4;border-radius:22px;box-shadow:0 8px 23px #225c4310}
+.flowTitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;color:#076e55}
+.flowTitle>span{display:grid;place-items:center;min-width:43px;height:30px;padding:1px 7px;border-radius:999px;background:#dff7df;color:#1f7054;font-size:13px;font-weight:850}
+.flowTitle svg{flex:none}
+.flowTitle h4{margin:0;color:#173b34;font-size:clamp(19px,5vw,24px);line-height:1.2;font-weight:830;letter-spacing:-.025em}
+.focusSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.focusSwitch button{min-width:0;min-height:54px;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 8px;border:1px solid #d5e6da;border-radius:14px;background:#f7fbf5;color:#1a5945;font-size:clamp(13px,3.7vw,16px);font-weight:800;line-height:1.18;cursor:pointer}
+.focusSwitch button[aria-pressed=true],.flowPrimary,.meditationChoices button:first-child[aria-pressed=true],.practicePicker button[aria-pressed=true]{color:white;background:linear-gradient(112deg,#058d6b,#0ca57c);border-color:#078a65;box-shadow:0 4px 12px #087f5d20}
+.focusSwitch button svg{flex:none}
+.stateGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.stateGrid button{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:57px;padding:11px 9px;border:1px solid #e1e8e3;border-radius:13px;background:#fff;color:#21483b;text-align:left;font-size:clamp(12px,3.55vw,15px);font-weight:760;line-height:1.24;overflow-wrap:anywhere;cursor:pointer}
+.stateGrid button svg{flex:none;color:#0a7d61}.stateGrid button svg:last-child:not(:first-child){margin-left:auto}
+.stateGrid button[aria-pressed=true]{background:#e1f8ec;border-color:#25ad81;box-shadow:inset 0 0 0 1px #0ea57522}
+.focusHint{margin:10px 0 0;padding:9px 12px;border-radius:11px;background:#eff8ef;color:#4b7461;font-size:clamp(12px,3.3vw,14px);line-height:1.45}
+.focusFields{grid-template-columns:1fr;margin-top:12px;gap:12px}
+.focusFields label{font-size:clamp(13px,3.4vw,15px)}.focusFields textarea{font-size:16px;min-height:87px;background:#fff}
+.goalActions{margin-top:12px}.goalReview{min-height:49px;font-size:clamp(13px,3.5vw,15px)}.goalSelection{font-size:13px}
+.flowBlock{background:linear-gradient(170deg,#ffffff,#fffdf9)}
+.flowPrimary,.planButton{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:57px;padding:12px;border-radius:14px;background:linear-gradient(108deg,#058063,#0eab7a);border:1px solid #058064;color:#fff;font-size:clamp(15px,4.1vw,19px);font-weight:850;line-height:1.23;box-shadow:0 6px 17px #087d5b22;cursor:pointer;text-align:center}
+.flowPrimary svg:last-child,.planButton>svg:last-child{margin-left:auto;flex:none}
+.flowPrimary:disabled,.meditationChoices button:disabled{opacity:.5;cursor:not-allowed}
+.flowResult,.practicePanel{min-width:0;margin-top:12px;padding:14px;border:1px solid #d9e9df;border-radius:17px;background:#fff}
+.flowResult>strong{display:flex;align-items:center;gap:8px;color:#155540;font-size:clamp(16px,4.2vw,19px)}
+.meditationScript{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow-y:auto;margin:11px 0;padding:4px 3px;color:#284a3d;font-size:clamp(14px,3.65vw,16px);line-height:1.65}
+.meditationChoices{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr);gap:9px}
+.meditationChoices button,.practicePicker button,.practiceRefresh{min-width:0;min-height:48px;padding:9px 10px;border:1px solid #afcfbd;border-radius:12px;background:#fffefa;color:#176149;font-size:clamp(12px,3.35vw,15px);font-weight:800;line-height:1.3;cursor:pointer}
+.meditationChoices button{display:flex;align-items:center;justify-content:center;gap:7px;text-align:center}
+.meditationChoices button:first-child{background:#e5f6eb}
+.flowResult>small{display:block;margin-top:10px;color:#557563;font-size:12px;line-height:1.47}
+.practicePicker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:10px}
+.practicePanel h5{margin:8px 0;color:#164b3b;font-size:clamp(17px,4.6vw,22px);line-height:1.25}
+.practicePanel p,.practicePanel li{font-size:clamp(14px,3.6vw,16px);line-height:1.5;color:#35584a}
+.practicePanel p{margin:7px 0}.practicePanel ol{display:grid;gap:7px;padding-left:25px;margin:11px 0}
+.practicePanel li{padding-left:3px}
+.practiceRefresh{display:inline-flex;align-items:center;gap:8px;padding-inline:14px;min-height:46px}
+.planButton{margin:0;min-height:64px}.planButton span{display:grid;gap:2px}.planButton strong{font-size:clamp(14px,3.75vw,18px)}.planButton small{font-size:clamp(11px,2.9vw,13px)}
+.programme{margin:2px 0 14px;padding:15px;border:1px solid #e4ebe1;border-radius:20px;background:#fffefa;box-shadow:0 8px 23px #225c4310}
+.sessionTrack{display:none}
+.sessionList{display:grid;grid-template-columns:1fr;grid-auto-flow:row;grid-auto-columns:auto;gap:8px;overflow:visible;padding:0;scroll-snap-type:none}
+.sessionCard,.sessionCard:first-child{min-height:0;margin:0;padding:12px;border:1px solid #e0eae2;border-radius:13px;background:#fff;box-shadow:none}
+.sessionHeader{grid-template-columns:40px minmax(0,1fr) 18px;align-items:center}
+.number{height:37px;width:37px;border-radius:11px;font-size:16px}
+.sessionHeader h5{font-size:clamp(15px,3.8vw,17px)}.sessionHeader small{font-size:12px}.sessionHeader p{font-size:13px}
+.sessionCard:not(:first-child) .sessionHeader p{display:none}
+.sessionCard:not(:first-child) .locked{display:none}
+.first .apply{font-size:clamp(13px,3.5vw,15px);min-height:50px}
+.first>p,.script p{font-size:14px;line-height:1.56}
+.package{position:relative;isolation:isolate;overflow:hidden;margin-top:14px;padding:20px;border:1px solid #dbe7d8;border-radius:20px;background:linear-gradient(90deg,#fffefaf7 0%,#fffefbeb 62%,#ffffff2b 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat;box-shadow:0 8px 20px #205b3613}
+.package h4{color:#163d34;font-size:clamp(18px,4.7vw,22px);max-width:420px}
+.package p{color:#385949;max-width:400px;font-size:clamp(13px,3.5vw,15px)}
+.package a{width:100%;max-width:360px;min-height:52px;background:linear-gradient(110deg,#07765b,#0ca17a);border-radius:13px;font-size:clamp(15px,4vw,18px)}
+@media(max-width:355px){
+  .focusCard,.flowBlock{padding:12px}
+  .flowTitle{gap:7px}.flowTitle>span{min-width:38px}
+  .focusSwitch button,.stateGrid button{padding:8px 6px;font-size:12px;gap:5px}
+  .meditationChoices{grid-template-columns:1fr}
+  .panel .header{padding:9px}
+  .sessionList{grid-auto-columns:auto}
+}
+@media(min-width:740px){
+  .focusFields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stateGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .sessionList{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sessionCard:first-child{grid-column:1/-1}
+  .panel{max-width:100%}
+}
+.panel button:focus-visible,.panel a:focus-visible{outline:3px solid #e7b852;outline-offset:3px}

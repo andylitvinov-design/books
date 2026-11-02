@@ -1,4 +1,6 @@
 import test from "node:test";
+// Run the dedicated Phrases mobile approval/voice contracts in the existing specialist suite.
+import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
@@ -15,7 +17,7 @@ const transpile = ts.transpileModule(library,{
 assert.deepEqual(transpile.diagnostics || [],[]);
 const exposed = {};
 new Function("exports",transpile.outputText)(exposed);
-const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations,compactCustomAffirmationInput,MAX_AFFIRMATION_LENGTH} = exposed;
+const {defaultAffirmations,suggestedVideoAffirmations,linesForVideoAffirmations,paintVideoAffirmations,affirmationGoalCatalog,personalizedVideoAffirmations,compactCustomAffirmationInput,MAX_AFFIRMATION_LENGTH,buildHypnoFilteredPhrases} = exposed;
 const {videoProfileFocus} = await import("../lib/mandala/video-affirmation-focus.mjs");
 
 test("three locales and all six site themes have five ready-to-select, non-clinical phrases", () => {
@@ -78,14 +80,17 @@ test("the renderer draws only when enabled, uses visible readable text, and keep
 });
 
 test("existing video preview and export use identical overlays; frame mode requests 25fps", () => {
-  assert.match(studio,/<MandalaHypnoCompact key=\{theme\} locale=\{locale\} theme=\{theme\}/);
-  assert.match(read("components/mandala-hypno-compact.tsx"),/MandalaVideoAffirmations locale=\{locale\} theme=\{theme\}/);
+  assert.ok(studio.includes("<MandalaHypnoCompact locale={locale} theme={theme}"),"Hypno must remain mounted across theme changes");
+  assert.doesNotMatch(read("components/mandala-hypno-compact.tsx"),/<MandalaVideoAffirmations /,
+    "a second immediate-commit editor must not bypass Approve");
+  assert.match(read("components/mandala-hypno-compact.tsx"),/onPendingChange\?\.\(hasPendingEdits\)/);
   assert.match(studio,/const \[affirmations,setAffirmations\]/);
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
-  assert.match(studio,/caption,affirmations,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>shot\.sceneId\)\]\)/);
-  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,4);
+  assert.match(studio,/caption,affirmations,hypnoLight,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\]\),appliedStory\]\)/,
+    "changing a shot boundary must invalidate old recorded output as well as the source ID");
+  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
   assert.match(studio,/setAffirmations\(defaultAffirmations\)/);
@@ -199,29 +204,34 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   assert.deepEqual(jsx.diagnostics||[],[]);
 });
 
-test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+
+test("HD master fetch starts from Play/Create, never from a background effect",()=>{
   assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
-  assert.match(studio,/setPremiumReady\(decoded\)/,
-    "already decoded HD frames must remain ready even if preload beat the effect");
-  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
-    "unready scenes must still request real media data");
+  assert.match(studio,/setPremiumReady\(decoded\)/,"reuse only an actually decoded frame");
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "an initial page view must not download the source video");
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/,
+    "the real Create gesture starts a bounded MP4 decoder");
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/,
+    "failed decoding must block export, not fabricate a downloadable file");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
 
-test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+test("iPhone photo-consent and Create both prime real media without leaving Create disabled",()=>{
   assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
   assert.match(studio,/video\.load\(\)/);
   assert.match(studio,/void video\.play\(\)\.then/);
   assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
   assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
-    "Create stays disabled until a real decoded master frame is present");
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/,
+    "Create is tappable; async media readiness is enforced inside createVideo");
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/,
+    "hidden Safari MP4 preload must never deadlock the Create button");
 });
-
 
 test("compact request flows are locally sourced, goal-first, nonclinical and localized",()=>{
   const compact=read("components/mandala-hypno-compact.tsx");
@@ -242,14 +252,14 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
       }
     }
   }
-  for(const marker of ["data-hypno-request","data-hypno-request-edit","data-hypno-apply-request",
+  for(const marker of ["data-hypno-idea","data-hypno-idea-choice","data-hypno-idea-own","data-hypno-apply-request",
     "data-hypno-phrases","data-hypno-smart","data-hypno-ready","data-hypno-tests",
     "data-hypno-display","data-hypno-frequency","data-hypno-size","data-hypno-position",
     "data-hypno-design","data-hypno-scene","data-hypno-preview"]){
     assert.ok(compact.includes(marker),marker);
   }
   assert.match(studio,/activePoster=\{activeFilm\?\.poster\|\|null\}/);
-  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\}/);
+  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
   assert.ok(compact.indexOf("data-hypno-overview-enable")<compact.indexOf("data-hypno-preview"),
     "opt-in must be visible before preview/create");
 
@@ -259,7 +269,9 @@ test("compact request flows are locally sourced, goal-first, nonclinical and loc
   assert.match(compactCss,/@media\(max-width:360px\)/);
   assert.match(compactCss,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.doesNotMatch(compact,/sendBeacon|localStorage|sessionStorage|XMLHttpRequest|autoPlay/);
-  assert.match(compact,/maxLength=\{400\}/);
+  assert.match(compact,/requestText\.slice\(0,160\)/);
+  assert.match(compact,/maxLength=\{36\}/);
+  assert.ok(compact.indexOf("data-hypno-idea")<compact.indexOf("data-hypno-phrases"));
 });
 
 test("new text size and position change the actual shared canvas renderer",()=>{
@@ -288,4 +300,90 @@ test("new text size and position change the actual shared canvas renderer",()=>{
   }
   const px=fonts.map(x=>Number(x.match(/(\d+(?:\.\d+)?)px/)[1]));
   assert.ok(px[0]<px[1]&&px[1]<px[2]);
+});
+
+test("mobile Hypno v6 has one editable idea, consented profile and four active phrase filters",()=>{
+ const c=read("components/mandala-hypno-compact.tsx");
+ const css=read("components/mandala-hypno-compact.module.css");
+ for(const marker of ["data-hypno-idea-choice","data-hypno-idea-own","data-hypno-suggest-tests",
+  "data-hypno-profile-proposal","data-hypno-accept-proposal",
+  "data-hypno-filter-type","data-hypno-filter-tone",
+  "data-hypno-filter-focus","data-hypno-filter-length","data-hypno-generate-new",
+  "data-hypno-approve","data-hypno-phrase"]){
+   assert.ok(c.includes(marker),marker);
+ }
+ assert.match(c,/await appFetch\("video-affirmation-focus"\)/);
+ assert.match(c,/function acceptTestProposal\(\)/);
+ assert.match(c,/setTestProposal\(proposed\)/);
+ assert.match(css,/\.ideaRail\{display:flex/);
+ assert.match(css,/\.filterRow\{display:grid;grid-template-columns:/);
+ assert.match(css,/\.overview \.phraseMiniList\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.doesNotMatch(c,/data-hypno-accent=\{id\}/);
+ assert.match(css,/\.filtersMini\{display:grid/);
+ const compiled=ts.transpileModule(c,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true});
+ assert.deepEqual(compiled.diagnostics||[],[]);
+});
+test("locale-specific Hypno tone, role, focus, and length meaningfully change recommended text",()=>{
+ const themes=["energy","money","relationships","goals","life","health"];
+ const ids=["rhythm","value","boundaries","clarity","meaning","recovery"];
+ for(const locale of ["ru","en","es"]){
+   for(let i=0;i<themes.length;i++){
+     const theme=themes[i],goal=ids[i];
+     const a=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","medium",0);
+     const b=buildHypnoFilteredPhrases(locale,theme,0,goal,"balanced","support","support","medium",0);
+     const c=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","action","support","medium",0);
+     const d=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","confidence","medium",0);
+     const e=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","short",0);
+     assert.equal(a.length,5);
+     assert.ok(a.every(v=>v.length>4&&Array.from(v).length<=MAX_AFFIRMATION_LENGTH));
+     // Verify real replacement text, not a shuffle of the same five words.
+     for(const variants of [b,c,d,e]){
+       assert.ok(variants.some(word=>!a.includes(word)),
+         locale+" "+theme+" filter must introduce a new semantic phrase");
+     }
+     const regenerated=buildHypnoFilteredPhrases(locale,theme,0,goal,"gentle","support","support","medium",1);
+     assert.ok(regenerated.some(word=>!a.includes(word)),
+       "Generate new options must supply a different curated text");
+     assert.notDeepEqual(a,b);
+     assert.ok(!a.some(v=>/guaranteed cure|вылеч|garantiz/i.test(v)));
+   }
+ }
+});
+
+
+test("Wave/Gemini strategy appears before phrases, uses enum privacy and approved drafts",()=>{
+ const source=read("lib/mandala/hypno-psych-strategy.ts");
+ const transpiled=ts.transpileModule(source,{compilerOptions:{
+   module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,
+ },reportDiagnostics:true});
+ assert.deepEqual(transpiled.diagnostics||[],[]);
+ const exported={};new Function("exports",transpiled.outputText)(exported);
+ for(const locale of ["ru","en","es"])for(const [theme,goalId] of Object.entries({
+   energy:"rhythm",money:"value",relationships:"boundaries",
+   goals:"clarity",life:"meaning",health:"recovery",
+ })){
+   const input={locale,theme,problemIndex:0,goalId,tone:"gentle",focus:"support",
+     kind:"support",length:"medium"};
+   assert.ok(exported.buildWaveStrategy(input).length>70);
+   assert.notEqual(exported.buildWaveStrategy(input),
+     exported.buildWaveStrategy({...input,problemIndex:1}));
+   assert.throws(()=>exported.validateWaveInput({...input,privateNote:"sensitive"}));
+ }
+ const draft={strategy:"Notice everyday tension while choosing a small, gentle action without pressure.",
+   phrases:["I can choose one step","I allow a pause","I value my effort",
+     "I can seek support","I make room to learn"]};
+ assert.deepEqual(exported.reviewGeminiStrategy(draft,"en","medium"),draft);
+ assert.equal(exported.reviewGeminiStrategy({...draft,phrases:[...draft.phrases.slice(0,4),"I always heal"]},"en","medium"),null);
+ const ui=read("components/mandala-hypno-compact.tsx");
+ const route=read("app/api/holistic-support/hypno-strategy/route.js");
+ assert.ok(ui.indexOf("data-hypno-strategy>")<ui.indexOf("data-hypno-phrases>"));
+ for(const label of ["data-hypno-model=\"wave\"","data-hypno-model=\"gemini\"",
+   "data-hypno-gemini-consent","data-hypno-gemini-generate",
+   "data-hypno-strategy-summary","approvePhrases","externalModelOptIn:true"])
+   assert.ok(ui.includes(label),label);
+ for(const label of ["auth.verified()","requireSameOrigin(request,config)",
+   "onlyKeys(body,FIELDS)","externalModelOptIn!==true","HH_HYPNO_GEMINI_FREE_TIER_CONFIRMED",
+   "reviewGeminiStrategy","consumeRate(config","PRIVATE_HEADERS","gemini-3.5-flash-lite"])
+   assert.ok(route.includes(label),label);
+ assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|testScores|profile|custom|medicalHistory)/);
 });

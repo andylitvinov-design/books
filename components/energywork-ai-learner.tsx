@@ -1412,8 +1412,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       <li key={index}><Check size={15} aria-hidden="true" />{topic[locale]}</li>
                     ))}
                   </ul>
+                  {/* The personal audio greeting now has its own optional screen
+                      immediately before the original guided video. */}
+                </section>
+              ) : null}
+              {slide.kind === "audio-intro" && slide.introAudioKey ? (
+                <section className={styles.lessonIntroPanel} data-reiki-audio-welcome={slide.introAudioKey}
+                  aria-label={locale === "ru" ? "Личное аудиоприветствие" : "Personal audio welcome"}>
                   <ReikiLessonIntroAudio key={slide.introAudioKey + "-" + locale}
-                    lesson={slide.introAudioKey} locale={locale} />
+                    lesson={slide.introAudioKey} locale={locale} showEmpty />
+                  <p>{locale === "ru"
+                    ? "Прослушивание необязательно. Нажмите «Перейти к видео» для следующего шага."
+                    : "Listening is optional. Choose Continue to video for the next step."}</p>
                 </section>
               ) : null}
               {slide.id === "tan-05" ? (
@@ -1893,7 +1903,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 data-reiki-first-lesson-google-save={slide.id === "flight-done" && sync !== "ready" ? "" : undefined}>
                 {slide.id === "flight-done" && sync !== "ready"
                   ? (sync === "guest" ? t.firstSaveGoogle : t.firstSaveAccount)
-                  : slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree : t.continue}
+                  : slide.kind === "milestone" ? t.saveAndContinue : isMeditationFeedback ? t.saveReview
+                  : slide.kind === "audio-intro" ? (locale === "ru" ? "Перейти к видео" : "Continue to video")
+                  : slide.kind === "welcome" ? t.startFree : t.continue}
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             ) : null}

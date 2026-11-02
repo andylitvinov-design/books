@@ -6,7 +6,7 @@ const start = source.indexOf('        const selectors = ["#services-conversion-t
 const end = source.indexOf('      }), true, "Owner studio order:', start);
 assert.ok(start > 0 && end > start);
 const evaluate = new Function('document', 'Node', source.slice(start, end));
-const order = ['#services-conversion-title', '#free-insights', '#solutions', '[data-services-meet]', '[data-personal-testimonials="services"]', '#method-videos', '#consultation', '[data-services-directory-invitation]'];
+const order = ['#services-conversion-title', '#consultation', '#free-insights', '#solutions', '[data-services-meet]', '[data-personal-testimonials="services"]', '#method-videos', '[data-services-directory-invitation]'];
 function check(sequence) {
   const document = { querySelectorAll: selector => sequence.flatMap((value, index) => value === selector ? [{ index, compareDocumentPosition(other) { return this.index < other.index ? 4 : 2; } }] : []) };
   return evaluate(document, { DOCUMENT_POSITION_FOLLOWING: 4 });

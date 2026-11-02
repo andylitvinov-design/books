@@ -83,3 +83,14 @@
   display:none;
  }
 }
+
+/* A selected mobile conversation is a full-screen view. The cabinet dock and
+   page scrollbar must not sit above a reply or consume keyboard space. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-simple-messages][data-detail-open="true"]){
+  overflow:hidden
+ }
+ .hh-app.hh-messages-page:has([data-simple-messages][data-detail-open="true"]) .hh-mobile-app-nav{
+  display:none!important
+ }
+}

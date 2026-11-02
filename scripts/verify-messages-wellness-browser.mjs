@@ -1,0 +1,230 @@
+// Signed-in *synthetic* Messages UI only. No Google, production, customer data or real sends.
+import assert from 'node:assert/strict'
+import {createRequire} from 'node:module'
+import {mkdir,writeFile} from 'node:fs/promises'
+const require=createRequire(import.meta.url)
+const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||'playwright')
+const origin=process.env.HH_MESSAGES_QA_ORIGIN||'http://127.0.0.1:3127'
+if(!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
+  throw new Error('Loopback browser environment only')
+const dir='artifacts/messages-wellness'
+await mkdir(dir,{recursive:true})
+const accountId='11111111-1111-4111-8111-111111111111'
+const orderId='22222222-2222-4222-8222-222222222222'
+const requestId='33333333-3333-4333-8333-333333333333'
+const crmThreadId='44444444-4444-4444-8444-444444444444'
+const crmThread={
+  id:crmThreadId,contactId:'55555555-5555-4555-8555-555555555555',
+  name:'Synthetic Telegram Contact',channel:'telegram',lifecycle:'lead',
+  unreadCount:11,needsReply:true,reply:{ok:true},lastInboundAt:'2026-10-28T11:33:00Z',
+}
+
+const synthetic={
+  id:orderId,status:'in_progress',createdAt:'2026-10-27T14:02:00Z',
+  practitionerName:'Test Practitioner',unread:1,serviceCopy:{
+    ru:{title:'Тестовый разбор'},en:{title:'Synthetic review'},es:{title:'Revisión sintética'}},
+  message:'Synthetic-only enquiry, no private data',durationMinutes:45,
+}
+const client={
+  id:requestId,requestKind:'practice',contact:{displayName:'Synthetic Client'},
+  createdAt:'2026-10-27T15:12:00Z',lastConversationAt:'2026-10-28T11:22:00Z',
+  message:'Synthetic-only client enquiry',needsReply:true,newMessageCount:1,status:'requested',
+}
+const json=(route,status,body)=>route.fulfill({status,contentType:'application/json',
+  headers:{'Cache-Control':'no-store'},body:JSON.stringify(body)})
+async function intercept(page){
+ await page.route('**/api/app/**',async route=>{
+   const url=new URL(route.request().url()),path=url.pathname
+   if(route.request().method()!=='GET')return json(route,403,{error:'SYNTHETIC_READ_ONLY'})
+   if(path==='/api/app/messages/my-orders')
+     return json(route,200,{accountId,orders:[synthetic],hasPractice:true,hasMore:false})
+   if(path==='/api/app/messages/requests')
+     return json(route,200,url.searchParams.get('view')==='owner'
+       ?{accountId,ownerMessenger:true}
+       :{accountId,ownerMessenger:true,ownerAuthorized:true,hasPractice:true,
+         requests:[client],businessEnquiries:[],services:[],freeExpressV2Enabled:false})
+   if(path==='/api/app/crm/messenger')
+     return json(route,200,{accountId,threads:[crmThread],
+       messages:url.searchParams.has('thread')?[{
+         id:'66666666-6666-4666-8666-666666666666',text:'Synthetic Telegram message',
+         direction:'in',createdAt:'2026-10-28T11:33:00Z',status:'received',
+       }]:[],followups:[],channels:[],nextThreadsCursor:null,nextMessagesCursor:null})
+   if(path==='/api/app/direct-messages')
+     return json(route,200,{accountId,threads:[]})
+   if(path==='/api/app/practitioner-client-messages')
+     return json(route,200,{requestId:url.searchParams.get('requestId'),actorRole:'client',
+       canReply:true,canNote:false,unseenCount:0,messages:[],nextCursor:null})
+   return json(route,401,{error:'SYNTHETIC_FIXTURE_ONLY'})
+ })
+}
+const report=[]
+const labels={
+ ru:{orders:'Мои заказы',clients:'Мои клиенты',name:'Тестовый разбор'},
+ en:{orders:'My orders',clients:'My clients',name:'Synthetic review'},
+ es:{orders:'Mis pedidos',clients:'Mis clientes',name:'Revisión sintética'},
+}
+for(const browserType of [chromium,webkit]){
+ const browser=await browserType.launch({headless:true})
+ try{
+  for(const locale of ['ru','en','es'])for(const width of [320,354,390,430]){
+   const key=[browserType.name(),locale,width].join('-')
+   const page=await browser.newPage({viewport:{width,height:844},
+     deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'})
+   const errors=[],incidentalPrefetch=[]
+   page.on('pageerror',e=>{
+     const message=String(e.message||'')
+     // On WebKit, speculative prefetch of the unrelated public Practice link
+     // can report an access-control message while the protected Messenger and
+     // its tests remain healthy. Record only this exact external-to-Messages
+     // route warning separately, never ignore Messenger/hydration errors.
+     // WebKit can warn about a speculative, cross-CSP request for the
+     // *public* Practice destination under localhost while this isolated
+     // browser uses 127.0.0.1. The Spanish navigation may point to the
+     // English fallback. Accept only these three exact harmless warnings,
+     // never suppress private Messages failures or arbitrary JS errors.
+     const harmlessPracticePrefetch=['en','ru','es'].some(lang=>
+       message==='/localhost:3127/'+lang+'/practice due to access control checks.')
+     if(browserType.name()==='webkit'&&harmlessPracticePrefetch){
+       incidentalPrefetch.push(message)
+       return
+     }
+     errors.push(message)
+   })
+   try{
+    await intercept(page)
+    const result=await page.goto(origin+'/'+locale+'/app/messages',
+      {waitUntil:'domcontentloaded',timeout:90000})
+    assert.equal(result?.status(),200,key+' route')
+    const root=page.locator('[data-orders-clients-hub]')
+    await root.waitFor({state:'visible',timeout:40000})
+    const orderTab=root.getByRole('tab',{name:new RegExp(labels[locale].orders)})
+    await orderTab.waitFor({state:'visible',timeout:30000})
+    const orderCard=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
+    try{await orderCard.waitFor({state:'visible',timeout:35000})}
+    catch(error){
+      const snapshot=await page.evaluate(()=>({
+        url:location.pathname+location.search,
+        visible:document.querySelector('#hh-orders-panel')?.innerText?.slice(0,900),
+      })).catch(()=>({unavailable:true}))
+      console.error('MESSAGES_BROWSER_DIAGNOSTIC',key,JSON.stringify(snapshot),
+        'errors',JSON.stringify(errors))
+      await page.screenshot({path:dir+'/'+key+'-failure.png',fullPage:false}).catch(()=>{})
+      throw error
+    }
+    assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,
+      key+' private Messenger must not show marketing ribbon')
+    assert.equal(await orderTab.getAttribute('aria-selected'),'true',key+' order default')
+    const metrics=await page.evaluate(()=>{
+      const doc=document.documentElement
+      const root=document.querySelector('[data-orders-clients-hub]')
+      const box=el=>{if(!el)return null;const r=el.getBoundingClientRect()
+        return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}}
+      return {clientWidth:doc.clientWidth,scrollWidth:doc.scrollWidth,
+        heading:box(root.querySelector('header')),intro:box(root.querySelector('[class*="introCard"]')),
+        tabs:box(root.querySelector('[role="tablist"]')),
+        search:box(root.querySelector('input[type="search"]')),
+        card:box(root.querySelector('[data-order-card]'))}
+    })
+    assert.ok(metrics.scrollWidth<=metrics.clientWidth+3,key+' horizontal overflow '+JSON.stringify(metrics))
+    assert.ok(metrics.heading.bottom<=metrics.intro.top+4&&
+      metrics.intro.bottom<=metrics.tabs.top+4&&metrics.tabs.bottom<=metrics.search.top+4,
+      key+' section order '+JSON.stringify(metrics))
+    assert.ok(metrics.card.width>200&&metrics.card.right<=width+3,
+      key+' order card fits '+JSON.stringify(metrics))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-orders.png',fullPage:false})
+    await root.getByRole('tab',{name:new RegExp(labels[locale].clients)}).click()
+    const customer=page.locator('[data-embedded="true"][data-simple-messages]')
+    await customer.waitFor({state:'visible',timeout:30000})
+    await customer.getByRole('button',{name:/Synthetic Client/}).waitFor({state:'visible',timeout:25000})
+    assert.equal(await root.getByRole('tab',{name:new RegExp(labels[locale].clients)})
+      .getAttribute('aria-selected'),'true')
+    assert.equal(await customer.locator('[role="tablist"]').count(),0,
+      key+' no nested tabs')
+    const clientWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
+    assert.ok(clientWidth<=width+3,key+' clients overflow '+clientWidth)
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-clients.png',fullPage:false})
+    await customer.getByRole('button',{name:/Synthetic Client/}).click()
+    assert.equal(await customer.getAttribute('data-detail-open'),'true',key+' client detail')
+    const fullscreen=await customer.locator('[class*="window"]').first().evaluate(el=>{
+      const r=el.getBoundingClientRect()
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      return {position:getComputedStyle(el).position,top:r.top,width:r.width,height:r.height,
+        visualHeight:window.visualViewport?.height||window.innerHeight,
+        navDisplay:nav?getComputedStyle(nav).display:'missing'}
+    })
+    assert.equal(fullscreen.position,'fixed',key+' selected chat is full-screen')
+    assert.ok(Math.abs(fullscreen.height-fullscreen.visualHeight)<=4,
+      key+' full visual viewport '+JSON.stringify(fullscreen))
+    assert.ok(fullscreen.width>=width-2,key+' conversation is edge to edge')
+    assert.equal(fullscreen.navDisplay,'none',key+' dock hidden while chat open')
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-client-dialog.png',fullPage:false})
+    // Going back to the list is explicit, like Telegram, rather than reaching
+    // behind an open chat to click the old Orders/Clients navigation.
+    await customer.locator('[class*="personBar"] button[class*="back"]').click()
+    assert.equal(await customer.getAttribute('data-detail-open'),'false',
+      key+' back restores the client list')
+
+    await customer.getByRole('button',{name:/Synthetic Telegram Contact/}).click()
+    const crmDraft=customer.locator('#crm-messenger-compose')
+    await crmDraft.waitFor({state:'visible',timeout:15000})
+    await crmDraft.fill('Synthetic unsent draft')
+    const crmToolbar=customer.locator('[class*="detailConversation"] [class*="compose"]').first()
+    const crmSend=crmToolbar.locator(':scope > button').last()
+    const chatGeometry=await crmSend.evaluate(el=>{
+      const send=el.getBoundingClientRect()
+      const frame=el.closest('[class*="window"]')?.getBoundingClientRect()
+      const bot=document.querySelector('[data-salesbot-operator-mode="manual-only"]')
+      const assistant=bot?.getBoundingClientRect()
+      const textarea=document.querySelector('#crm-messenger-compose')?.getBoundingClientRect()
+      return {sendRight:send.right,sendBottom:send.bottom,frameBottom:frame?.bottom,
+        textareaTop:textarea?.top,assistantTop:assistant?.top,assistantBottom:assistant?.bottom}
+    })
+    assert.ok(chatGeometry.sendBottom<=chatGeometry.frameBottom+2,
+      key+' Send remains within chat '+JSON.stringify(chatGeometry))
+    assert.ok(Math.abs(chatGeometry.assistantTop-chatGeometry.textareaTop)<=6,
+      key+' AI stays inline beside the input '+JSON.stringify(chatGeometry))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-crm-compose.png',fullPage:false})
+    await page.setViewportSize({width,height:430})
+    await page.waitForFunction(()=>{
+      const el=document.querySelector('[data-simple-messages][data-detail-open="true"] [class*="window"]')
+      return el&&Math.abs(el.getBoundingClientRect().height-
+        (window.visualViewport?.height||window.innerHeight))<=4
+    })
+    const compactSend=await crmSend.evaluate(el=>({
+      bottom:el.getBoundingClientRect().bottom,
+      visualBottom:(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||window.innerHeight),
+    }))
+    assert.ok(compactSend.bottom<=compactSend.visualBottom+3,
+      key+' Send fits reduced visual viewport '+JSON.stringify(compactSend))
+    await page.setViewportSize({width,height:844})
+    await customer.locator('[class*="personBar"] button[class*="back"]').click()
+    await root.getByRole('tab',{name:new RegExp(labels[locale].orders)}).click()
+    const orderButton=root.locator('#hh-orders-panel [data-order-card="'+orderId+'"]')
+    await orderButton.click()
+    const orderChat=root.locator('[class*="conversation"]').first()
+    await orderChat.waitFor({state:'visible',timeout:25000})
+    await orderChat.locator('textarea').first().waitFor({state:'visible',timeout:30000})
+    assert.equal(await orderChat.locator('input[type="file"]').count()>=2,true,
+      key+' photo/audio/video composer')
+    const send=orderChat.locator('[class*="compose"] > button').last()
+    const geometry=await send.evaluate(element=>{
+      const r=element.getBoundingClientRect()
+      const nav=document.querySelector('.hh-messages-page .hh-mobile-app-nav')
+      const navTop=nav&&getComputedStyle(nav).display!=='none'
+        ?nav.getBoundingClientRect().top:window.innerHeight
+      return {bottom:r.bottom,navTop}
+    })
+    assert.ok(geometry.bottom<=geometry.navTop+3,
+      key+' Send stays above navigation '+JSON.stringify(geometry))
+    if(width===390)await page.screenshot({path:dir+'/'+key+'-chat.png',fullPage:false})
+    assert.equal(new URL(page.url()).pathname,'/'+locale+'/app/messages',
+      key+' must remain on private Messenger route')
+    report.push({key,status:'pass',metrics,clientWidth,
+      incidentalPublicPracticePrefetchWarnings:incidentalPrefetch.length})
+    if(errors.length)throw Error(key+' page errors: '+JSON.stringify(errors))
+   }finally{await page.close()}
+  }
+ }finally{await browser.close()}
+}
+await writeFile(dir+'/results.json',JSON.stringify(report,null,2))
+console.log('Messages wellness synthetic screenshots / geometry:',report.length)

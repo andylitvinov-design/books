@@ -1,0 +1,33 @@
+name: HH protected release status attestation (migration retired)
+# The admin migration already completed: both controls now require only
+# hh-merge-check. Manual read-only attestation; NEVER write protection.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  readback:
+    if: github.repository == 'andylitvinov-design/books'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Confirm classic and hosted singleton required status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          gh api "repos/$repo/branches/codex/public-book-library" > "$RUNNER_TEMP/branch.json"
+          gh api "repos/$repo/rulesets/26269892" > "$RUNNER_TEMP/ruleset.json"
+          jq -e '.protected == true and
+            (.protection.required_status_checks.checks | length) == 1 and
+            .protection.required_status_checks.checks[0].context == "hh-merge-check" and
+            .protection.required_status_checks.checks[0].app_id == 15368' "$RUNNER_TEMP/branch.json" >/dev/null
+          jq -e '.enforcement == "active" and
+            ([.rules[].type] | index("deletion") != null) and
+            ([.rules[].type] | index("non_fast_forward") != null) and
+            ([.rules[].type] | index("pull_request") != null) and
+            ([.rules[] | select(.type == "required_status_checks") |
+             .parameters.required_status_checks[]?.context] == ["hh-merge-check"])' "$RUNNER_TEMP/ruleset.json" >/dev/null
+          echo 'Verified: one mandatory hh-merge-check on both protections; no mutation.' >> "$GITHUB_STEP_SUMMARY"

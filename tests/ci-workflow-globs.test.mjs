@@ -6,7 +6,8 @@ const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, 
 
 test('My Progress uses a valid broad dynamic Next.js pathname and production push only', () => {
   const s = workflow('hh-my-progress-release.yml');
-  assert.match(s, /'app\/\*\*\/app\/\*\*\/page\.jsx'/);
+  assert.ok(s.includes("      - 'app/**/app/my-progress/**'"));
+  assert.ok(!s.includes("      - 'app/**/app/**/page.jsx'"));
   assert.doesNotMatch(s, /\[\[\.\.\.path\]\]/);
   assert.doesNotMatch(s, /codex\/my-progress-unified-history-20261028/);
   assert.match(s, /push:\s*\n\s*branches: \['codex\/public-book-library'\]/);
@@ -14,7 +15,10 @@ test('My Progress uses a valid broad dynamic Next.js pathname and production pus
 
 test('Practitioner editor validates dynamic routes without spurious push trigger', () => {
   const s = workflow('practice-visual-services.yml');
-  assert.match(s, /'app\/api\/app\/\*\*\/route\.js'/);
+  assert.ok(s.includes("      - 'app/api/app/practice/**'"));
+  assert.ok(s.includes("      - 'app/api/app/services/**'"));
+  assert.ok(!s.includes("      - 'app/api/app/**/route.js'"));
+  assert.ok(!s.includes("      - 'components/app/messages-simple-inbox.module.css'"));
   assert.match(s, /'app\/\*\*\/practice\/page\.jsx'/);
   assert.doesNotMatch(s, /app\/api\/app\/\[\.\.\.path\]/);
   assert.doesNotMatch(s.split(/^permissions:/m)[0], /^  push:/m);
@@ -40,14 +44,27 @@ test('deleted workflow-only changes cannot hide an unverified YAML removal', () 
   assert.match(workflow('hh-pr-core-release.yml'), /BASE_SHA:.*github.event.pull_request.base.sha/);
 });
 
-test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels superseded PR runs',()=>{
+test('Portrait PR runs focused current contracts while the old synthetic DB/browser matrix is manual-only',()=>{
   const s=workflow('hh-portrait-mobile-browser.yml');
   const dollar=String.fromCharCode(36);
   assert.match(s,/^  pull_request:\s*\n    types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/m);
-  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}"));
-  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' }}"));
+  assert.ok(s.includes('group: hh-portrait-mobile-'+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(s.includes('cancel-in-progress: '+dollar+"{{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
   assert.ok(s.includes("  synthetic-mobile:\n    if: "+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"));
-  assert.match(s,/browser: \[chromium, webkit\]/);
+  assert.ok(s.includes("fromJSON(github.event_name == 'workflow_dispatch'"),
+    'PR routing must not allocate two private DB/browser runners');
+  assert.ok(s.includes("'[\"chromium\",\"webkit\"]'"), 'manual full matrix remains available');
+  assert.ok(s.includes("'[\"chromium\"]'"), 'normal PR executes one Chromium core check');
+  for (const step of [
+    'Isolated Playwright browser (manual deep QA only)',
+    'Initialize isolated synthetic database',
+    'Five profile navigation with four scored sectors, goal check-in, mobile EN/RU',
+  ]) {
+    assert.ok(s.includes('- name: '+step+"\n        if: github.event_name == 'workflow_dispatch'"),
+      'obsolete portrait E2E must not block an ordinary PR: '+step);
+  }
+  assert.ok(s.includes('node --test tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs'),
+    'current profile source contracts still run');
   assert.match(s,/postgres:17-alpine/);
   assert.match(s,/HH_APP_TEST_RUNTIME: isolated/);
   assert.match(s,/verify-portrait-mobile\.mjs/);
@@ -57,8 +74,8 @@ test('Portrait Chromium/WebKit runs only on Ready PR HEAD and safely cancels sup
 });
 
 test('YouTube and Free Review: obsolete PR commits cancel safely; Draft saves browser runner minutes', () => {
-  const suffix = "${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}";
-  const cancel = "${{ github.event_name == 'pull_request' }}";
+  const suffix = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
   const ready = "    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}";
   for (const [file, prefix, job] of [
     ['youtube-phone-uploader.yml', 'hh-youtube-phone', 'test'],
@@ -110,4 +127,46 @@ test('express review accepts one real mobile tap only after radio and React card
   assert.match(source, /Single-tap focus was not committed/);
   assert.match(source, /input\[type="checkbox"\]/);
   assert.match(source, /TOTAL " \+ results.length/, 'all EN/RU/ES browser cases must still execute');
+});
+
+test('Public Services exact-head routing preserves source contracts and real risk-based browser acceptance', () => {
+  const s = workflow('hh-public-services-production.yml');
+  assert.ok(!s.includes("      - '.github/workflows/hh-public-services-production.yml'"),
+    'CI-only YAML is checked by required Core/actionlint, not 20-minute E2E');
+  assert.match(s, /node scripts\/ci-public-services-plan\.mjs/);
+  assert.match(s, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(s, /fetch-depth: 2/);
+  assert.match(s, /steps\.scope\.outputs\.browser == 'true'/);
+  assert.match(s, /steps\.scope\.outputs\.build == 'true'/);
+  assert.match(s, /HH_PUBLIC_CASES/);
+  assert.match(s, /wait "\$lane_a_pid"/);
+  assert.match(s, /wait "\$lane_b_pid"/);
+  assert.ok(!s.includes('run_case "verify-contact-channel-chooser-browser.mjs"'),
+    'obsolete contact-channel browser duplicate must not run');
+  for (const required of [
+    './node_modules/.bin/next build', 'playwright install --with-deps chromium webkit',
+    'run_case "verify-service-cart-browser.mjs"',
+    'run_case "verify-talisman-google-checkout-browser.mjs"',
+    "'app/api/payments/**'"
+  ]) assert.ok(s.includes(required),'lost current acceptance: '+required);
+  assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+
+test('Core scope uses bounded shallow checkout while preserving exact PR merge parent and base verification', () => {
+  const s=workflow('hh-pr-core-release.yml');
+  const scope=s.split('\n  scope:')[1]?.split('\n  code:')[0];
+  assert.ok(scope, 'Core scope job must exist');
+  assert.match(scope, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
+  assert.doesNotMatch(scope, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
+  assert.match(scope, /Verify bounded shallow scope ancestry before PR routing/);
+  assert.match(scope, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
+  assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
+  assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
+  assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
+  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" \|\|/);
+  assert.match(scope, /Verify live PR readiness before costly CI/);
+  assert.match(scope, /Classify strictly documentation-only PRs/);
+  assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
+  assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
 });
