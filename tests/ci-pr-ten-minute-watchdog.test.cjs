@@ -310,7 +310,7 @@ test('legacy bootstrap does not modify active, stacked or conflicted PRs',async(
   assert.equal(await bootstrapLegacyCore({...args,github:{...github,rest:{
     ...github.rest,pulls:{get:async()=>({data:{...live,mergeable_state:'dirty'}})}
   }}}),false);
-  assert.equal(hasActiveLease([{body:JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,
+  assert.equal(hasActiveLease([{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,
     state:'active',expires_at:new Date(NOW+60000).toISOString()})}],SHA,NOW),true);
   assert.equal(hasActiveLease([{body:'HH_PR_SWEEP_LEASE_V1 {bad}'}],SHA,NOW),true);
   assert.equal(writes,0);
@@ -965,6 +965,57 @@ test('expired legacy Codex leases release owner capacity, but active and malform
     lease_expires:new Date(NOW+3600_000).toISOString()})}],SHA,NOW),false);
   assert.equal(hasActiveLease([{body:body({...legacy,lease_expires:'not-a-date'})}],SHA,NOW),true);
   assert.equal(hasActiveLease([{body:body({...legacy,schema:'UNTRUSTED'})}],SHA,NOW),true);
+});
+
+test('Watchdog ignores unrelated historic releases and diagnostic mentions, like Control Tower',()=>{
+  const old='b'.repeat(40),next='c'.repeat(40);
+  const release={user:{login:'andylitvinov-design'},
+    body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+      schema:'HH_PR_SWEEP_LEASE_V1',owner:'historic-sweep',
+      lease_id:'old-release',state:'released_after_atomic_commit',
+      old_head:old,new_head:next})};
+  const note={body:'Investigation notes: the HH_PR_SWEEP_LEASE_V1 receipt was from another PR.'};
+  const malformed={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\nnot valid lease JSON'};
+  assert.equal(hasActiveLease([release,note],SHA,NOW),false);
+  assert.equal(hasActiveLease([malformed],SHA,NOW),true,'unverifiable exact receipt remains guarded');
+});
+
+test('Watchdog keeps modern exact-HEAD ownership until a matching actor releases it',()=>{
+  const actor={login:'andylitvinov-design'};
+  const lease={schema:'HH_PR_SWEEP_LEASE_V1',owner:'source-writer',lease_id:'writer-1',
+    head_sha:SHA,state:'active',expires_at:new Date(NOW-60_000).toISOString()};
+  const wrap=(doc,user=actor)=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(doc)});
+  assert.equal(hasActiveLease([wrap(lease)],SHA,NOW),true,
+    'nominal expiry alone never steals an explicit modern source claim');
+  assert.equal(hasActiveLease([wrap(lease),wrap({...lease,state:'released'},
+    {login:'other-user'})],SHA,NOW),true,'foreign actor cannot free a writer');
+  assert.equal(hasActiveLease([wrap(lease),wrap({...lease,state:'released'})],SHA,NOW),false);
+});
+
+test('legacy Core bootstrap checks all comment pages and respects an active claim beyond page three',async()=>{
+  const candidate={...pr(1475),updated_at:new Date(NOW-5*60*60000).toISOString()};
+  const live={...candidate,state:'open',mergeable:true,mergeable_state:'behind'};
+  const notes=Array.from({length:320},(_,i)=>({body:'Non-owner historical note '+i}));
+  let pages=0,branchWrites=0;
+  const github={rest:{
+    pulls:{get:async()=>({data:live})},
+    issues:{listComments:async({page})=>{
+      pages=Math.max(pages,page);
+      return {data:notes.slice((page-1)*100,page*100)};
+    },createComment:async()=>{throw Error('dry-run cannot write');}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const repairGithub={request:async()=>{branchWrites++;return {status:202}}};
+  const args={github,repairGithub,owner:'andylitvinov-design',repo:'books',
+    pr:candidate,all:[candidate],now:NOW,dryRun:true,log:()=>{},limited:async(_,fn)=>fn()};
+  assert.equal(await bootstrapLegacyCore(args),true);
+  assert.equal(pages,4);
+  assert.equal(branchWrites,0);
+  notes[310]={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+    schema:'HH_PR_SWEEP_LEASE_V1',owner:'another-writer',lease_id:'recent',
+    head_sha:SHA,state:'active',expires_at:new Date(NOW+600_000).toISOString()}),
+    user:{login:'andylitvinov-design'}};
+  assert.equal(await bootstrapLegacyCore(args),false);
+  assert.equal(branchWrites,0);
 });
 
 test('saturated Actions capacity defers new conflict Repair dispatch',async()=>{

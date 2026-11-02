@@ -33,7 +33,7 @@ const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
-const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task-state.cjs');
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 
 /**
@@ -352,34 +352,10 @@ function coreRunForCurrentPR(r,pr) {
 }
 
 function hasActiveLease(comments, headSha, now) {
-  for (const comment of comments) {
-    const body = comment.body || '';
-    if (!body.includes('HH_PR_SWEEP_LEASE_V1')) continue;
-    try {
-      const start = body.indexOf('{'), end = body.indexOf('}', start);
-      if (start < 0 || end < 0) return true; // Unparseable ownership: fail closed.
-      const lease = JSON.parse(body.slice(start,end+1));
-      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
-        if (lease.head_sha === headSha &&
-            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
-          const expiry = Date.parse(lease.expires_at || '');
-          if (!Number.isFinite(expiry) || expiry > now) return true;
-        }
-        continue;
-      }
-      // Older Codex leases have no schema and use lease_expires. Only a
-      // complete, time-bounded, exact-HEAD legacy record may expire safely.
-      const legacy = lease.schema == null &&
-        typeof lease.owner === 'string' && lease.owner.trim() &&
-        typeof lease.run_id === 'string' && lease.run_id.trim() &&
-        /^[a-f0-9]{40}$/i.test(lease.head_sha || '') &&
-        Number.isFinite(Date.parse(lease.lease_expires || ''));
-      if (!legacy) return true;
-      if (lease.head_sha === headSha && Date.parse(lease.lease_expires) > now)
-        return true;
-    } catch { return true; }
-  }
-  return false;
+  // A single exact-HEAD owner state machine for Watchdog and Control Tower.
+  // An unknown current owner or unreleased modern active lease stays blocked;
+  // archived/quoted lease notes never count as a live source writer.
+  return externalOwnerLeaseStatus(comments,headSha,now)!=='FREE';
 }
 
 async function verifyCoreRunOnExactHead({github,owner,repo,pr,run,limited}) {
@@ -411,15 +387,11 @@ async function bootstrapLegacyCore({github, repairGithub, owner, repo, pr, all, 
       live.head?.sha !== pr.head.sha || live.head.repo?.full_name !== owner+'/'+repo ||
       live.mergeable !== true || live.mergeable_state !== 'behind') return false;
   const marker = `<!-- ${LEGACY_MARKER} ${pr.head.sha} -->`;
-  const comments=[];
-  for(let page=1;page<=3;page++) {
-    const {data}=await limited('legacy-ownership',()=>github.rest.issues.listComments({
-      owner,repo,issue_number:pr.number,per_page:100,page}));
-    if(!Array.isArray(data))return false;
-    comments.push(...data);
-    if(data.length<100)break;
-    if(page===3)return false; // Incomplete lease history, fail closed.
-  }
+  // Read the complete owner history under the normal API/rate budget.
+  // A fixed 300-comment cap falsely blocks mature PRs, and a partial page
+  // must never authorize a source-preserving branch update.
+  const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  if(!comments)return false;
   // Once per PR, not once per HEAD: base updates change the SHA and must
   // never create an endless update/CI loop as production continues moving.
   if (comments.some(c=>(c.body || '').includes(LEGACY_MARKER)) ||
