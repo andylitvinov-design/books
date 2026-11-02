@@ -10,7 +10,7 @@ permissions:
   contents: read
   pull-requests: read
 concurrency:
-  group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}
+  group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   scope:

@@ -679,3 +679,12 @@ test('auxiliary visual PRs run source contracts; real Chromium/WebKit and duplic
   assert.match(home,/^  push:/m);
   assert.match(home,/tests\/home-locale-menu-state\.test\.mjs/);
 });
+
+test('Core SHA-scoped concurrency prevents older reruns from cancelling current valid builds',()=>{
+  const core=read('hh-pr-core-release.yml');
+  assert.ok(core.includes('group: hh-pr-core-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}'),
+    'old and new SHA must never contend for one Core concurrency group');
+  assert.ok(core.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+    'keep same-SHA redundant-synchronize cancellation');
+  assert.match(core,/^  release-ready:/m);
+});
