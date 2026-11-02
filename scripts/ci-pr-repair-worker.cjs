@@ -90,7 +90,7 @@ function prioritizedRepairCandidates(source,conflicts,now,max=MAX_CANDIDATES){
 async function claim({github,core,context,number=0,expectedSha='',taskKey='',dryRun=false,hasToken=false,now=Date.now()}) {
   const {owner,repo} = context.repo, fullRepo = owner + '/' + repo;
   const log = message => core.info('HH_REPAIR: ' + message);
-  const skip = reason => { log('SKIP ' + reason); return {status:'skipped',reason}; };
+  const skip = reason => { log('SKIP ' + reason); if(taskKey)writeOutputs(core,{decision:'SKIPPED',reason}); return {status:'skipped',reason}; };
   let reads=0, remaining=null;
   const limited=async(label,fn)=>{
     if(reads>=MAX_READS || (remaining !== null && remaining < RATE_RESERVE))
@@ -208,7 +208,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
       log('MANUAL_CONFLICT #' + pr.number+' queued as owner action, auto-queue released');
       return {status:'manual_conflict',number:pr.number,sha:pr.head.sha};
     }
-    writeOutputs(core,{strategy:'lint',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
+    writeOutputs(core,{strategy:'lint',decision:'CLAIMED',reason:'',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
       files_json:JSON.stringify(files)});
     log('CLAIMED #' + pr.number + ' priority=' + priorityFor(pr,now).tier + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
     return {status:'claimed',number:pr.number,sha:pr.head.sha,files};
@@ -291,6 +291,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     treeSha:parent.tree.sha,files:verified,number:prNumber});
   if (!SHA.test(created?.sha || '') || created.sha===expectedSha)
     throw Error('HH_REPAIR_PUBLISH_NOT_COMMITTED');
+  // Confirm the published branch ref, not just a writer API acknowledgement.
+  const published=(await github.rest.git.getRef({owner,repo,ref:'heads/'+pr.head.ref})).data;
+  if(published?.object?.sha!==created.sha)
+    throw Error('HH_REPAIR_PUBLISH_HEAD_READBACK_UNVERIFIED');
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
     'HH Repair Worker: committed targeted ESLint autofix ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
@@ -309,9 +313,10 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
  * existing owner/Codex manual lane, but only for the same authenticated run
  * and unchanged source HEAD. This is NOT evidence of a completed fix.
  */
-async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=Date.now()}){
+async function finalizeFailedFix({github,core,context,prNumber,expectedSha,failureStage='fix',now=Date.now()}){
  const {owner,repo}=context.repo, fullRepo=owner+'/'+repo;
  const skip=reason=>({status:'skipped',reason,source_published:false});
+ if(!['fix','publish'].includes(failureStage))return skip('UNSUPPORTED_TERMINAL_STAGE');
  if(fullRepo!=='andylitvinov-design/books' ||
    !Number.isSafeInteger(prNumber)||prNumber<1 ||
    !SHA.test(expectedSha||'')||!Number.isSafeInteger(context.runId))
@@ -356,16 +361,17 @@ async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=D
   await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
  }
  const runUrl='https://github.com/'+fullRepo+'/actions/runs/'+context.runId;
+ const outcome=failureStage==='fix'?'FIX_JOB_FAILED_NO_SOURCE_COMMIT':'PUBLISH_JOB_NOT_COMPLETED_NO_SOURCE_COMMIT';
  await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-  'HH Repair Worker: isolated source-fix job failed for exact HEAD '+expectedSha+
+  'HH Repair Worker: '+failureStage+' job failed or did not complete for exact HEAD '+expectedSha+
   '. No source commit was published. Inspect failing runner steps and apply a tested fix; '+
   'this task is now in the owner/Codex manual repair lane. Run: '+runUrl+
-  '\n'+commentBody({...receipt,state:'MANUAL',outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',
+  '\n'+commentBody({...receipt,state:'MANUAL',outcome,
    owner_run_id:String(context.runId),run_url:runUrl,source_published:false})});
  try{
   await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE});
  }catch(error){if(error.status!==404)core?.info?.('HH_REPAIR_FAILURE_QUEUE_CLEANUP: '+error.message);}
  return {status:'manual_required',number:prNumber,sha:expectedSha,
-  outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',source_published:false};
+  outcome,source_published:false};
 }
 module.exports={claim,publish,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
