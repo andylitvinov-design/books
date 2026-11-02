@@ -120,6 +120,10 @@ async function run({github,context,prs,now=Date.now(),dryRun=false,
   }else if(reservationStatus(task,comments,now)!=='RESERVED_REQUIRES_REVIEW'){
     return stop('RESERVATION_STATUS_CHANGED');
   }
+  // Never recover a head already claimed by a source-writing Repair Worker.
+  if(comments.some(c=>String(c.body||'').includes(
+    'HH_PR_REPAIR_WORKER_V1 '+task.head_sha)))
+    return stop('SOURCE_REPAIR_CLAIMED');
   const denied=denialReceipt(comments,task.head_sha,reservedAt);
   if(!denied)return stop('TRUSTED_TOKEN_DENIAL_MISSING');
   let runState;
@@ -174,6 +178,14 @@ async function run({github,context,prs,now=Date.now(),dryRun=false,
         owner,repo,issue_number:pr.number,body:commentBody(receipt)
       }));
       result.receiptWritten=true;
+      // A returned HTTP success is not yet an authenticated completion.
+      // Read it back as the GitHub Actions app, on the exact task and HEAD.
+      const observed=await read();
+      const proof=signedTaskEvents(observed||[],task);
+      if(!proof||proof.at(-1)?.record?.state!==TERMINAL||
+         proof.at(-1).record.reservation_run_id!==reservation.owner_run_id||
+         reservationStatus(task,observed,now)!=='NO_CLAIM_RETRY_BACKOFF')
+        return stop('SIGNED_RECOVERY_RECEIPT_UNVERIFIED');
     }catch{return stop('RECOVERY_RECEIPT_WRITE_FAILED');}
   }
   // This label is removed ONLY after the signed receipt was written and the

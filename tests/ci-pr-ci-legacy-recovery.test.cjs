@@ -103,6 +103,15 @@ test('no label release when active worker or wrong HEAD/hold',async()=>{
    assert.equal(f.counts().writes,0);
  }
 });
+test('source Repair Worker claim prevents CI failure recovery',async()=>{
+ const f=fixture();
+ f.comments.push({id:710,user:bot,performed_via_github_app:app,
+   body:'<!-- HH_PR_REPAIR_WORKER_V1 '+SHA+' -->'});
+ const r=await f.call();
+ assert.equal(r.reason,'SOURCE_REPAIR_CLAIMED');
+ assert.equal(f.counts().writes,0);
+ assert.equal(f.counts().labelRemovals,0);
+});
 test('dry run is diagnostic only',async()=>{
  const f=fixture();const r=await f.call({dryRun:true});
  assert.equal(r.status,'WOULD_RECOVER');
