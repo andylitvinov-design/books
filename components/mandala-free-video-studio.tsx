@@ -1849,7 +1849,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:attachedAudio.kind==="presets"
       ?"presets:"+attachedAudio.ids.join(","):"file:"+attachedAudio.id;
-  const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey;
+  // Auto-recommended music is only a suggestion until the visitor explicitly
+  // attaches it. In the Hypnocorrection workspace, free Create is allowed to
+  // render SILENT video when no soundtrack has been approved. Never bypass
+  // the attach gate for a manually picked track or uploaded personal file.
+  const hypnoUnattachedAutoSuggestion=activeWorkspace==="effects" &&
+    audioAuto && !uploadedAudio && attachedAudio===null;
+  const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey &&
+    !hypnoUnattachedAutoSuggestion;
   // For background-only video, async mandala/photo frame updates are
   // intentionally unrelated. Do not abort an active free export when
   // a decorative image finishes loading in a different editor panel.
@@ -3060,7 +3067,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
-      document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      // The sound attachment control is owned by Video. It is not visible
+      // behind the Effects tab, so reveal it before moving keyboard focus.
+      if(activeWorkspace==="effects"){
+        setActiveWorkspace("video");
+        window.requestAnimationFrame(()=>{
+          const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
+          if(details)details.open=true;
+          window.requestAnimationFrame(()=>
+            document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"}));
+        });
+      }else{
+        document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"});
+      }
       return false;
     }
     if(uploadedAudio && !audioRights){

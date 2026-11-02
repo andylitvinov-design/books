@@ -115,3 +115,12 @@ test("third Hypnocorrection mobile release QA performs real browser navigation i
   assert.match(browser,/data-video-quick-control="effects"/);
   assert.match(browser,/unexpectedWrites/);
 });
+test("Hypno Create never requires silent auto-recommended music to be manually attached",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/hypnoUnattachedAutoSuggestion=activeWorkspace==="effects"/);
+  assert.match(studio,/audioAuto && !uploadedAudio && attachedAudio===null/);
+  assert.match(studio,/audioNeedsAttachment=selectedAudioKey!==attachedAudioKey &&\s*!hypnoUnattachedAutoSuggestion/);
+  assert.match(studio,/if\(activeWorkspace==="effects"\)\{\s*setActiveWorkspace\("video"\)/);
+  assert.match(studio,/if\(details\)details.open=true/);
+  assert.match(studio,/if\(!canGenerate\)return false/);
+});
