@@ -9,15 +9,6 @@ on:
       - 'lib/app/business-coaching.js'
       - 'components/app/business-coaching*'
       - 'tests/business-coaching-90-days.test.mjs'
-  push:
-    branches:
-      - codex/public-book-library
-    paths:
-      - '.github/workflows/hh-business-coaching.yml'
-      - 'lib/business-coaching/**'
-      - 'lib/app/business-coaching.js'
-      - 'components/app/business-coaching*'
-      - 'tests/business-coaching-90-days.test.mjs'
   workflow_dispatch:
 jobs:
   business-coaching-contract:
