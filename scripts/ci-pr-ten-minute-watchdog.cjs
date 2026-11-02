@@ -444,7 +444,7 @@ function assessCronHealth(history,now,graceMinutes) {
     last,ageMinutes:Math.max(0,Math.floor(age/60_000))};
 }
 
-async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
+async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, eventFastPath=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
   const {createQuotaGuard}=require('./ci-pr-api-quota.cjs');
@@ -503,7 +503,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // 16-PR backstop is permitted only when actual scheduled Watchdog runs
   // are stale or absent; healthy cron must not amplify a Core failure storm.
   let failedCoreCronState='NOT_APPLICABLE',cronBackstop=false;
-  if(wake && priorityNumber!==null && !budget.exhausted) {
+  if(wake && priorityNumber!==null && !eventFastPath && !budget.exhausted) {
     try {
       const {data}=await limited('failed-core-schedule-health',()=>
         github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -547,7 +547,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,controlTowerWake:'NOT_PROBED',
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
-    checkedAt:new Date(now).toISOString(),failedCoreCronState,cronBackstop,
+    checkedAt:new Date(now).toISOString(),eventPrNumber:priorityNumber,
+    verifiedSourceFailures:0,failedCoreCronState,cronBackstop,
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
 
   // Reconcile only labels, never substitute evidence or alter protected CI.
@@ -927,6 +928,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
       } else if(handoffs < MAX_HANDOFFS) {
+        summary.verifiedSourceFailures++;
         try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
         catch(e){log(`#${pr.number} repair handoff unavailable: status=${e.status || 'unknown'} accepted=${e.response?.headers?.['x-accepted-github-permissions'] || 'not-reported'} ${e.message}`);}
       }
