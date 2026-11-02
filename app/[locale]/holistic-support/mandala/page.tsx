@@ -7,6 +7,7 @@ import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { getAppConfig } from "@/lib/app/config";
 
 import { MandalaMeditationClient } from "@/components/mandala-meditation-client";
+import { MeditationWriterPreview } from "@/components/meditation-writer-preview";
 import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandala-dock";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
@@ -89,6 +90,10 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
           {promo.action}<ArrowRight size={17} aria-hidden="true" />
         </Link>
       </aside>
+      {process.env.HH_MEDITATION_WRITER_BRIEF_ENABLED === "true" &&
+        (process.env.VERCEL_ENV !== "production" ||
+         process.env.HH_MEDITATION_WRITER_PRODUCTION_APPROVED === "true") ?
+          <MeditationWriterPreview locale={locale} /> : null}
       <HolisticSupportMandalaDock locale={locale} />
     </main>
   );

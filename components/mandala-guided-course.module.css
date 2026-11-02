@@ -57,7 +57,7 @@
 .locked{margin:10px 0 0 42px;font-size:11px;color:#7a806f}
 .package{margin-top:14px;padding:15px;background:#f1f7ef;border:1px solid #cfe1ce;border-radius:15px}
 .package p{font-size:12px;color:#476854;line-height:1.5;margin:0 0 10px}
-.package a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
+.package > a{display:inline-flex;min-height:44px;padding:10px 14px;align-items:center;justify-content:center;color:#fff;background:#087e5e;border-radius:11px;text-decoration:none;font-size:12px;font-weight:800}
 .safeguard{padding:11px 12px;background:#fbf4e8;border-radius:13px;font-size:12px;line-height:1.5;color:#82633e}
 .privacy{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#5a806d;font-size:11px;line-height:1.5}
 .privacy svg{flex:none;margin-top:1px;color:#218564}
@@ -205,7 +205,7 @@
 .package{position:relative;isolation:isolate;overflow:hidden;margin-top:14px;padding:20px;border:1px solid #dbe7d8;border-radius:20px;background:linear-gradient(90deg,#fffefaf7 0%,#fffefbeb 62%,#ffffff2b 100%),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center right/cover no-repeat;box-shadow:0 8px 20px #205b3613}
 .package h4{color:#163d34;font-size:clamp(18px,4.7vw,22px);max-width:420px}
 .package p{color:#385949;max-width:400px;font-size:clamp(13px,3.5vw,15px)}
-.package a{width:100%;max-width:360px;min-height:52px;background:linear-gradient(110deg,#07765b,#0ca17a);border-radius:13px;font-size:clamp(15px,4vw,18px)}
+.package > a{width:100%;max-width:360px;min-height:52px;background:linear-gradient(110deg,#07765b,#0ca17a);border-radius:13px;font-size:clamp(15px,4vw,18px)}
 @media(max-width:355px){
   .focusCard,.flowBlock{padding:12px}
   .flowTitle{gap:7px}.flowTitle>span{min-width:38px}
@@ -222,3 +222,47 @@
   .panel{max-width:100%}
 }
 .panel button:focus-visible,.panel a:focus-visible{outline:3px solid #e7b852;outline-offset:3px}
+
+/* One existing consented CRM form replaces the generic therapy link for the 8-video offer. */
+.package [data-meditation-course-order]{min-height:54px;border-radius:13px;background:linear-gradient(112deg,#08765a,#0ca17a);font-size:clamp(16px,4.1vw,19px)}
+.package .enquiryNote{display:block;margin-top:10px;color:#557060;font-size:12px;line-height:1.45}
+
+/* Approved 02–05 mobile continuation, in the real Video Studio workspace. */
+.journeyProgress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:330px;margin:0 auto 16px;min-height:7px}
+.journeyProgress span{height:7px;border-radius:99px;background:#e6e8de;transition:background .2s ease}
+.journeyProgress span[data-complete="true"]{background:#078361}
+.personalIntro,.ritualIntro,.programLead{margin:0 0 13px;color:#526f5f;font-size:clamp(14px,3.65vw,16px);line-height:1.45}
+.personalPreview{display:grid;gap:9px;margin-bottom:13px}
+.personalPreview>div{display:flex;align-items:center;gap:12px;min-width:0;min-height:65px;padding:12px 14px;border-radius:15px;border:1px solid #e3e8dd;background:linear-gradient(125deg,#f9fbf5,#f4f4eb);color:#254b3b}
+.personalPreview>div>svg{flex:none;color:#227856}
+.personalPreview>div>span{display:grid;gap:3px;min-width:0;font-size:clamp(13px,3.65vw,16px);line-height:1.4;overflow-wrap:anywhere}
+.personalPreview strong{color:#1d3e32;font-size:clamp(14px,3.8vw,17px)}
+.personalFeatures{display:grid;gap:9px;margin:14px 0 8px;padding:13px;border:1px solid #e6e8dd;border-radius:16px;background:#fffefa}
+.personalFeatures>div{display:flex;align-items:center;gap:11px;min-width:0;color:#2d5041;font-size:clamp(13px,3.5vw,16px);font-weight:700}
+.personalFeatures svg{flex:none;color:#168463}
+.personalNote{display:block;margin-top:7px;color:#688071;font-size:12px;line-height:1.45}
+.ritualArtwork{display:grid;place-items:center;min-height:150px;position:relative;overflow:hidden;margin:0 0 13px;border-radius:19px;background:linear-gradient(90deg,#e7bc8a52,#fffaef45),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') center 56%/cover no-repeat}
+.ritualArtwork::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#153e2d15,transparent 60%)}
+.ritualArtwork svg{width:76px;height:76px;padding:13px;position:relative;z-index:1;filter:drop-shadow(0 5px 13px #5e4b3265);color:#fff8eb;stroke-width:1.5}
+.ritualMoments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 13px}
+.ritualMoments button{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:66px;padding:9px 10px;border:1px solid #e2e3d9;border-radius:15px;background:#fffdf6;color:#244e3a;cursor:pointer;font-size:clamp(13px,3.45vw,16px);font-weight:800;line-height:1.25;text-align:center}
+.ritualMoments button svg{flex:none;color:#497855}
+.ritualMoments button[aria-pressed="true"]{background:#e6f6e7;border-color:#69bd92;box-shadow:inset 0 0 0 1px #3bad7328}
+.ritualMoments button:focus-visible{outline:3px solid #e7b852;outline-offset:2px}
+.ritualFormats{font-size:12px!important;color:#62806b!important;font-weight:800}
+.ritualCue{border-left:3px solid #46a87a;padding:7px 11px;background:#edf7ed;border-radius:0 12px 12px 0}
+.programTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 15px}
+.programTiles>div{display:flex;align-items:center;gap:8px;min-width:0;min-height:46px;padding:7px 9px;border:1px solid #e4e9df;border-radius:14px;background:#fffefa;color:#234a3a}
+.programTiles>div span{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#dff4df;color:#247a52;font-size:13px;font-weight:850}
+.programTiles>div strong{font-size:clamp(12px,3.35vw,15px);line-height:1.2;min-width:0;overflow-wrap:anywhere}
+.programBenefits{margin:4px 0 15px;padding:14px;border:1px solid #e6e8dc;border-radius:17px;background:linear-gradient(130deg,#fffdf4,#f9fbf5)}
+.programBenefits h5{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#22483a;font-size:clamp(16px,4.1vw,19px)}
+.programBenefits h5 svg{color:#bb9c35}
+.programBenefit{display:flex;align-items:flex-start;gap:12px;min-height:47px;margin:10px 0}
+.programBenefit>svg{flex:none;color:#417e58}
+.programBenefit>span{display:grid;gap:3px;min-width:0}
+.programBenefit strong{color:#24483a;font-size:clamp(13px,3.7vw,16px)}
+.programBenefit small{color:#627465;font-size:clamp(12px,3.35vw,14px);line-height:1.4}
+@media(min-width:680px){.personalPreview{grid-template-columns:repeat(3,minmax(0,1fr))}.personalPreview>div{align-items:flex-start}.ritualMoments{grid-template-columns:repeat(4,minmax(0,1fr))}.ritualArtwork{min-height:175px}}
+@media(max-width:355px){.ritualMoments{gap:7px}.ritualMoments button{padding:8px 6px;gap:5px;min-height:62px}.ritualMoments button svg{width:19px}.programTiles{gap:6px}.programTiles>div{padding:6px}.programTiles>div strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.journeyProgress span{transition:none}}
