@@ -64,9 +64,9 @@ test('trusted exact-merge concurrency scope ignores only its associated PR run',
  assert.deepEqual(result.expected,[syntax]);
  assert.deepEqual(result.advisory.concurrencyOnly,[file]);
  api.runs=async()=>[failed,syntaxRun,run({id:152,path:file,event:'push',conclusion:'failure'})];
- assert.ok((await verify(api,ctx,files,{maxWaitMs:0})).advisory.nonApplicable.includes('push:152:failure'));
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  api.runs=async()=>[syntaxRun,run({path:file,conclusion:'failure',pull_requests:[]})];
- assert.ok((await verify(api,ctx,files,{maxWaitMs:0})).advisory.nonApplicable.includes('orphan:151:failure'));
+ await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  const modifiedSyntax={...files,current:new Map([[file,next],[syntax,syntaxYaml+'# changed']])};
  api.runs=async()=>[failed,syntaxRun];
  await assert.rejects(()=>verify(api,ctx,modifiedSyntax,{maxWaitMs:0}),/SPECIALIST_FAILED/);
@@ -234,12 +234,11 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // Unrelated PUSH and orphaned checks are still reported but don't override
-  // verified BASE-owned PR checks. Expected specialist failures still block.
+  // An unassociated exact-head failure has unknown coverage and must block.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
-  assert.ok((await verify(api,ctx,sources,{maxWaitMs:0})).advisory.nonApplicable.includes('push:753:failure'));
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
-  assert.ok((await verify(api,ctx,sources,{maxWaitMs:0})).advisory.nonApplicable.includes('orphan:754:failure'));
+  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
   assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
 

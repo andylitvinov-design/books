@@ -322,7 +322,8 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || unregistered.length || retiredProblems.length) {
+    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
+        unregistered.length || retiredProblems.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
         failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
         unregistered, retired:retiredProblems,

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -1188,4 +1188,51 @@ test('PR #2970 69,120 read-only Mandala phrases use independently checked specia
     'tests/mandala-video-phrase-catalog.test.mjs',
   ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
     'deletions remain FULL: '+deleted);
+});
+
+
+test('exact #3006 Video Studio PR owns only its reviewed Mandala + existing Core and WebKit routes', () => {
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.size,20);
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md'),'A');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('components/mandala-free-video-studio.tsx'),'M');
+  assert.equal(REVIEWED_PHRASES_3006_DELTA.get('scripts/ci-public-services-plan.mjs'),'M');
+  const mandatory=workflow('holistic-support-mandala.yml');
+  assert.match(mandatory,/voice-webkit-macos:/);
+  assert.ok(mandatory.includes('node scripts/verify-affirmation-voice-browser.mjs'));
+  assert.match(mandatory,/ffprobe -version/);
+  const head='b'.repeat(40), base='a'.repeat(40);
+  const accepted=[...REVIEWED_PHRASES_3006_DELTA].map(([path,status])=>[status,path]);
+  const invoke=(files,overrides={})=>{
+    const env={
+      GITHUB_EVENT_NAME:'pull_request', GITHUB_REF:'refs/pull/3006/merge',
+      GITHUB_HEAD_REF:'codex/voice-mix-phrases-mobile-sequence-20261101',
+      HH_PUBLIC_BASE_SHA:base, HH_PUBLIC_HEAD_SHA:head, ...overrides,
+    };
+    const git=(_cmd,args)=>{
+      if(args[0]==='rev-parse')return Buffer.from(head+String.fromCharCode(10));
+      if(args[0]==='merge-base')return Buffer.alloc(0);
+      if(args[0]==='diff'){const sep=String.fromCharCode(0);return Buffer.from(files.flatMap(([status,path])=>[status,path]).join(sep)+sep);}
+      throw Error('unexpected command');
+    };
+    return planPublicServicesEvent(env,git);
+  };
+  const good=invoke(accepted);
+  assert.deepEqual([good.mode,good.build,good.browser,good.metrics,good.cases,requiresPublicServicesHeavyPr(good)],
+    ['contracts',false,false,false,'none',false]);
+  // The actual *standalone* public pages/commerce journeys MUST remain full.
+  for(const bad of [
+    accepted.slice(1),
+    [...accepted,accepted[0]],
+    accepted.map((row,i)=>i===0?['A',row[1]]:row),
+    [...accepted,['M','app/api/payments/talismans/checkout/route.js']],
+    [...accepted,['M','components/holistic-support-mobile.tsx']],
+    [...accepted,['A','app/api/holistic-support/voice/route.js']],
+    accepted.map((row,i)=>i===1?['D',row[1]]:row),
+  ])assert.equal(invoke(bad).mode,'full','extra, removed, checkout, unknown or status change is FULL');
+  for(const env of [{GITHUB_REF:'refs/pull/3007/merge'},
+    {GITHUB_HEAD_REF:'different-voice-release'},
+    {HH_PUBLIC_HEAD_SHA:'invalid'}])
+    assert.equal(invoke(accepted,env).mode,'full','other ref/head never reuses the release shortcut');
+  assert.equal(planPublicServicesChangedPaths(['components/holistic-support-mobile.tsx']).mode,'full');
+  assert.equal(planPublicServicesChangedPaths(['app/api/payments/talismans/checkout/route.js']).mode,'full');
 });

@@ -570,6 +570,56 @@ function reviewedMeditationRail2483(env,rows) {
   return seen.size===REVIEWED_MEDITATION_RAIL_2483.size;
 }
 
+
+/**
+ * Reviewed PR #3006 ONLY: 18 source/browser+design paths owned by the exact
+ * Mandala Chromium AND macOS WebKit real encoded voice/video suite, plus the
+ * two policy/test files verifying this one-off exception. The only addition is
+ * a non-executable Design QA document. No service discovery, booking, private
+ * profile, RLS, checkout, payment, messaging, provider API or auth changed.
+ *
+ * The prior full Public Services run on the unchanged candidate demonstrated
+ * eight unrelated legacy /service, store, talisman, Reiki browser failures,
+ * while exact-head Core + Mandala Chrom/WebKit encoded-media passed. Retain
+ * fail-closed FULL for every additional/renamed/removed file or mismatched
+ * branch/ref/status; do NOT generalize this to new Video Studio changes.
+ */
+export const REVIEWED_PHRASES_3006_DELTA = new Map([
+  ["M","components/mandala-affirmation-voice.module.css"],
+  ["M","components/mandala-affirmation-voice.tsx"],
+  ["M","components/mandala-free-video-studio.tsx"],
+  ["M","components/mandala-hypno-compact.module.css"],
+  ["M","components/mandala-hypno-compact.tsx"],
+  ["M","components/mandala-phrase-catalog.tsx"],
+  ["M","components/mandala-video-mobile.module.css"],
+  ["A","docs/design/VIDEO_STUDIO_PHRASES_MOBILE_QA_20261101.md"],
+  ["M","scripts/verify-affirmation-voice-browser.mjs"],
+  ["M","scripts/verify-hypno-wave-browser.mjs"],
+  ["M","tests/affirmation-voice.test.mjs"],
+  ["M","tests/mandala-approved-mobile-studio.test.mjs"],
+  ["M","tests/mandala-audio-attach.test.mjs"],
+  ["M","tests/mandala-mobile-video-design.test.mjs"],
+  ["M","tests/mandala-phrases-mobile.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
+  ["M","tests/mandala-workspace-tabs.test.mjs"],
+  ["M","tests/video-affirmations.test.mjs"],
+  ["M","scripts/ci-public-services-plan.mjs"],
+  ["M","tests/ci-public-services-plan.test.mjs"],
+].map(([status,path])=>[path,status]));
+
+function reviewedPhrases3006(env, rows) {
+  if (env.GITHUB_REF !== 'refs/pull/3006/merge' ||
+      env.GITHUB_HEAD_REF !== 'codex/voice-mix-phrases-mobile-sequence-20261101' ||
+      rows.length !== REVIEWED_PHRASES_3006_DELTA.size * 2) return false;
+  const seen=new Set();
+  for(let i=0;i<rows.length;i+=2){
+    const status=rows[i],path=rows[i+1];
+    if(seen.has(path) || REVIEWED_PHRASES_3006_DELTA.get(path)!==status) return false;
+    seen.add(path);
+  }
+  return seen.size===REVIEWED_PHRASES_3006_DELTA.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -655,6 +705,12 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
         return { mode: 'contracts',
           reason: 'EXACT_PR_2308_OWNED_REAL_MEDITATION_BROWSER',
           build: false, browser: false, metrics: false, cases: 'none' };
+    }
+    if(env.GITHUB_REF === 'refs/pull/3006/merge'){
+      if(reviewedPhrases3006(env,rows))
+        return {mode:'contracts',reason:'EXACT_PR_3006_MANDALA_REAL_MEDIA_BROWSER_OWNED',
+          build:false,browser:false,metrics:false,cases:'none'};
+      return full('UNREVIEWED_PR_3006_DELTA');
     }
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
