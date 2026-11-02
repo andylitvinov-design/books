@@ -147,9 +147,13 @@ test('one-time cron retry uses injected v9 getOctokit after verified pre-toggle 
 test('hourly coordinator verifies GitHub + Vercel LIVE independently of native merge',()=>{
  const s=read('hh-pr-full-inventory');
  assert.ok(s.includes('  verify-live:\n'));
- assert.ok(s.includes('name: independent production LIVE evidence (read-only)'));
+ assert.ok(s.includes('name: independent production LIVE evidence + durable PR receipt'));
  assert.ok(s.includes('statuses: read'));
- assert.ok(s.includes('node --test tests/ci-pr-live-verifier.test.cjs'));
+ assert.ok(s.includes('issues: write'));
+ assert.ok(s.includes('hh-pr-live-receipt-single-writer'));
+ assert.ok(s.includes('HH_PR_METRICS_PATH'));
+ assert.ok(s.includes('ci-pr-release-kpi.cjs'));
+ assert.ok(s.includes('node --test tests/ci-pr-live-verifier.test.cjs tests/ci-pr-release-kpi.test.cjs'));
  assert.ok(s.includes("scripts/ci-pr-live-verifier.cjs"));
  assert.ok(s.includes("secrets.VERCEL_TOKEN"));
  assert.ok(!s.includes('pull_request_target:'));
