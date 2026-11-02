@@ -612,3 +612,21 @@ test('Repair no-op never launches privileged publish and retains exact-HEAD diag
  assert.match(workflow,/--print-config/);
  assert.match(workflow,/ESLINT_SCOPE_NOT_CONFIGURED/);
 });
+
+test('normal repair completion avoids a fourth queued runner and preserves token isolation',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const claim=wf.split('  claim:\n')[1].split('  fix:\n')[0];
+ const fix=wf.split('  fix:\n')[1].split('  publish:\n')[0];
+ const pub=wf.split('  publish:\n')[1].split('  finalize:\n')[0];
+ const recovery=wf.split('  finalize:\n')[1];
+ assert.match(claim,/id: finalize_no_fix/);
+ assert.match(pub,/id: finalize_outcome/);
+ assert.match(pub,/HH_FIX_RESULT: \$\{\{ needs\.fix\.result \}\}/);
+ assert.match(pub,/steps\.download_candidate\.outcome/);
+ assert.match(recovery,/needs\.claim\.outputs\.no_fix_finalized != 'success'/);
+ assert.match(recovery,/needs\.publish\.outputs\.finalization_status != 'success'/);
+ assert.match(fix,/permissions:\n      contents: read/);
+ assert.doesNotMatch(fix,/HH_AUTOMERGE_TOKEN/);
+ assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.doesNotMatch(pub,/contents: write/);
+});
