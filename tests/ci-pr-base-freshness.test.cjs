@@ -66,3 +66,23 @@ test('a production base that moves during classification fails closed',async()=>
  const result=await assess({github,owner:'o',repo:'r',pr,classifierBase:head,decideRoute:()=> 'CORE'});
  assert.equal(result.reason,'BASE_MOVED_DURING_CHECK');
 });
+
+test('event-driven merge binds exact HEAD even when non-sensitive production base advanced',()=>{
+ const {matchesCurrentSource}=require('../scripts/ci-pr-base-freshness.cjs');
+ const p={number:3158,head:{ref:'fix/merge-fast',sha:'a'.repeat(40)},
+   base:{ref:'codex/public-book-library',sha:'b'.repeat(40)}};
+ const source={number:p.number,head:{...p.head},
+   base:{ref:'codex/public-book-library',sha:'c'.repeat(40)}};
+ const run={event:'pull_request',head_branch:p.head.ref,head_sha:'d'.repeat(40),
+   repository:{full_name:'o/r'},head_repository:{full_name:'o/r'},
+   pull_requests:[source]};
+ // GitHub may report a synthetic test-merge head_sha. Source HEAD is immutable.
+ assert.equal(matchesCurrentSource(run,p,p.number,'o/r'),true);
+ // A stale source HEAD, wrong target/ref/repo or absent base SHA fails closed.
+ assert.equal(matchesCurrentSource({...run,pull_requests:[{...source,head:{...source.head,sha:'e'.repeat(40)}}]},p,p.number,'o/r'),false);
+ assert.equal(matchesCurrentSource({...run,pull_requests:[{...source,base:{ref:'codex/bootstrap-books',sha:source.base.sha}}]},p,p.number,'o/r'),false);
+ assert.equal(matchesCurrentSource({...run,pull_requests:[{...source,base:{ref:source.base.ref,sha:'bad'}}]},p,p.number,'o/r'),false);
+ assert.equal(matchesCurrentSource({...run,repository:{full_name:'other/repo'}},p,p.number,'o/r'),false);
+ assert.equal(matchesCurrentSource({...run,head_branch:'different'},p,p.number,'o/r'),false);
+ assert.equal(matchesCurrentSource({...run,pull_requests:[]},p,p.number,'o/r'),false);
+});

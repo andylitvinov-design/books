@@ -2,6 +2,20 @@
 // The pull-request API's base SHA can reflect an older snapshot. A merge
 // policy change needs evidence against the current production branch.
 const SHA=/^[a-f0-9]{40}$/i;
+// Completed PR workflows are bound to their immutable source HEAD; the
+// current production base is checked later by assessBaseFreshness.
+// Never use workflow_run.head_sha here: it can identify a synthetic test merge.
+function matchesCurrentSource(run,pr,number,fullRepo){
+ if(!run||!pr||!Number.isSafeInteger(number)||number<1||!fullRepo||
+    run.event!=='pull_request'||run.repository?.full_name!==fullRepo||
+    run.head_repository?.full_name!==fullRepo||
+    run.head_branch!==pr.head?.ref||!SHA.test(pr.head?.sha||'')||
+    !Array.isArray(run.pull_requests))return false;
+ return run.pull_requests.some(item=>
+    item.number===number&&item.head?.sha===pr.head.sha&&
+    item.head?.ref===pr.head.ref&&
+    item.base?.ref==='codex/public-book-library'&&SHA.test(item.base?.sha||''));
+}
 async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
@@ -77,4 +91,4 @@ async function loadTrustedClassifier(workspace){
  if(typeof mod.decideRoute!=='function')throw Error('CLASSIFIER_UNAVAILABLE');
  return {classifierBase,decideRoute:mod.decideRoute};
 }
-module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier};
+module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,matchesCurrentSource};

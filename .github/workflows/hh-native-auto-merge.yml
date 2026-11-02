@@ -109,12 +109,13 @@ jobs:
             // A pull_request workflow can report a synthetic test-merge head_sha.
             // Its immutable PR association, not run.head_sha, identifies the actual
             // source HEAD and the production base against which CI ran.
-            const matchesCurrentSource = run => run.event === "pull_request" &&
-              run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
-                item.number === number &&
-                item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
-                item.base?.ref === "codex/public-book-library" &&
-                item.base?.sha === pr.base.sha);
+            // The production base may advance during CI. Bind the immutable
+            // PR source HEAD here and let assessBaseFreshness enforce the
+            // current protected base (including strict FULL-route checks).
+            const {matchesCurrentSource: isCurrentSourceRun} = require(
+              process.env.GITHUB_WORKSPACE + '/scripts/ci-pr-base-freshness.cjs');
+            const matchesCurrentSource = run =>
+              isCurrentSourceRun(run, pr, number, fullRepo);
             // Some active PRs have >100 CI runs on a single source HEAD.
             // Read only as many pages as necessary (max 3) and never infer
             // green from a truncated current-head page. Use the short path
