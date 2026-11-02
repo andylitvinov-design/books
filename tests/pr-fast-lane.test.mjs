@@ -1292,3 +1292,23 @@ test('one-time status migration is production-only, requires real replacement ev
   assert.match(merge, /const migrated/);
   assert.match(merge, /passed\("hh-specialist"\)/);
 });
+
+test('First Video LIVE export is manual-only; PRs retain fast source contracts',()=>{
+  const yaml=workflow('hh-first-video-live-export.yml');
+  assert.match(yaml,/^  pull_request:/m);
+  assert.match(yaml,/^  workflow_dispatch:/m);
+  assert.match(yaml,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  for(const name of [
+    'Reuse preinstalled Google Chrome; install pinned Playwright client only',
+    'Verify media inspection utilities',
+    'Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity',
+  ]){
+    assert.ok(yaml.includes('- name: '+name+'\n        if: github.event_name == \'workflow_dispatch\''),
+      name+' must never gate a PR on unrelated production deployment');
+  }
+  assert.match(yaml,/always\(\) && github\.event_name == 'workflow_dispatch'/);
+  assert.match(yaml,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(yaml,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
+  assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
+});
+

@@ -24,8 +24,10 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    # Test the deployed real MP4 and all four licensed source shots on every change to this gate.
-    # Research acceptance runs even on Draft; merging stays disabled until it passes.
+    # On PRs validate the deterministic source contracts only. Production
+    # LIVE site selectors and an unrelated deployment are operational smoke,
+    # never evidence that the proposed PR HEAD has an encoded video regression.
+    # The full licensed MP4/PCM/WebKit matrix remains manual via workflow_dispatch.
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -41,6 +43,7 @@ jobs:
           node --check scripts/benchmarking/video-director-chat-live-acceptance.mjs
           node --test tests/video-director-chat-live-acceptance.test.mjs
       - name: Reuse preinstalled Google Chrome; install pinned Playwright client only
+        if: github.event_name == 'workflow_dispatch'
         timeout-minutes: 2
         env:
           npm_config_ignore_scripts: 'true'
@@ -55,6 +58,7 @@ jobs:
           elif command -v google-chrome-stable >/dev/null; then google-chrome-stable --version;
           else echo 'RUNNER_SYSTEM_CHROME_MISSING' >&2; exit 1; fi
       - name: Verify media inspection utilities
+        if: github.event_name == 'workflow_dispatch'
         timeout-minutes: 4
         run: |
           set -euo pipefail
@@ -67,22 +71,21 @@ jobs:
           ffprobe -version | sed -n '1p'
       - name: Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity
         id: legacy_export
+        if: github.event_name == 'workflow_dispatch'
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
-          # Strict four-source identity is required for every PR; manual diagnostic may opt out.
-          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ github.event_name == 'pull_request' && 'true' || (inputs.require_licensed && 'true' || 'false') }}
+          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ inputs.require_licensed && 'true' || 'false' }}
         run: node scripts/benchmarking/first-video-live-export.mjs
       - name: Real LIVE Video Director Chat → guided storyboard → encoded audio-video
-        # Keep the chat acceptance observable even when the older optional
-        # first-video form fails. Both failures still make the job red.
-        if: ${{ always() && steps.legacy_export.outcome != 'skipped' }}
+        # Manual live diagnostics: keep both real encoded-media tests together.
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && steps.legacy_export.outcome != 'skipped' }}
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
         run: node scripts/benchmarking/video-director-chat-live-acceptance.mjs
       - name: Preserve only anonymous capability and failure summary
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: hh-first-video-live-encoded-evidence
