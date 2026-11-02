@@ -1,6 +1,7 @@
 import test from "node:test";
+import sourceCatalog from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
 import assert from "node:assert/strict";
-import {VIDEO_GOAL_TOPIC_STORY_CATALOG,VIDEO_STORY_CATEGORY_IDS,VIDEO_STORY_COUNTS,videoStoryCategory,videoStoryTopic,videoStoryScenario,videoStoryTopics,videoStoryScenarios,videoStoryLegacyGoalTopic,videoStoryPlan,findVideoStoryTopics} from "../lib/mandala/video-goal-topic-story-catalog.mjs";
+import {VIDEO_GOAL_TOPIC_STORY_CATALOG,VIDEO_STORY_CATEGORY_IDS,VIDEO_STORY_COUNTS,videoStoryCategory,videoStoryTopic,videoStoryScenario,videoStoryTopics,videoStoryScenarios,videoStoryLegacyGoalTopic,videoStoryPlan,findVideoStoryTopics,videoStorySourceCoverage} from "../lib/mandala/video-goal-topic-story-catalog.mjs";
 test("5 categories, 30 unique topics, 120 source-safe 4-beat narrative storyboards",()=>{
  assert.deepEqual(VIDEO_STORY_CATEGORY_IDS,["body","work","energy","love","stress"]);
  assert.deepEqual(VIDEO_STORY_COUNTS,{categories:5,topics:30,scenarios:120});
@@ -38,4 +39,44 @@ test("local recommendations respect the chosen category",()=>{
  assert.equal(findVideoStoryTopics({categoryId:"stress"}).length,6);
  assert.equal(findVideoStoryTopics({categoryId:"unknown"}).length,0);
  assert.equal(videoStoryPlan("fake"),null);
+});
+
+
+test("editorial story audit only cites approved real MP4 source IDs, never claims new footage",()=>{
+ const scenes=sourceCatalog.scenes;
+ const coverage=videoStorySourceCoverage("body-relaxation-encounter",scenes);
+ assert.equal(coverage.stageCount,4);
+ assert.equal(coverage.canRender,false);
+ assert.equal(coverage.externalFootageInvented,false);
+ assert.equal(coverage.mediaStatus,"requires_editorial_source_assignment");
+ assert.ok(coverage.matchedStageCount>=1);
+ assert.ok(coverage.matchedStageCount<4);
+ const allowed=new Map(scenes.map(s=>[s.id,s]));
+ for(const stage of coverage.stages){
+  assert.ok(stage.candidateSceneIds.length<=8);
+  for(const id of stage.candidateSceneIds){
+   assert.equal(allowed.get(id).status,"approved");
+   assert.equal(allowed.get(id).media,"licensed_mp4");
+   assert.match(allowed.get(id).video,/^\/videos\/holistic-house\//);
+  }
+ }
+ const withoutWater=videoStorySourceCoverage("body-relaxation-encounter",scenes,["water"]);
+ assert.equal(withoutWater.matchedStageCount,0);
+ assert.ok(withoutWater.stages.every(s=>s.candidateSceneIds.length===0));
+ assert.equal(videoStorySourceCoverage("unknown",scenes),null);
+ assert.equal(videoStorySourceCoverage("body-relaxation-encounter",scenes,["untrusted"]),null);
+ const malicious=[{id:"fake",media:"licensed_mp4",status:"approved",video:"https://external.com/film.mp4",motifs:["water"],tags:["water"]}];
+ const safe=videoStorySourceCoverage("body-relaxation-encounter",malicious);
+ assert.ok(safe.stages.every(s=>s.candidateSceneIds.length===0));
+});
+test("all 120 stories remain unrenderable until reviewed four-stage media assignment",()=>{
+ const scenes=sourceCatalog.scenes;
+ const ids=VIDEO_GOAL_TOPIC_STORY_CATALOG.categories.flatMap(c=>
+  c.topics.flatMap(t=>t.scenarios.map(s=>s.id)));
+ const checks=ids.map(id=>videoStorySourceCoverage(id,scenes));
+ assert.equal(checks.length,120);
+ assert.ok(checks.every(item=>item.canRender===false));
+ assert.ok(checks.every(item=>item.stages.length===4));
+ assert.ok(checks.some(item=>item.matchedStageCount>0));
+ assert.ok(checks.some(item=>item.matchedStageCount<4));
 });
