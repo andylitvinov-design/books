@@ -70,7 +70,7 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,visible:cover.open&&(!active||active==='video'||active==='pro')})};
@@ -173,4 +173,13 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
   assert.match(studio,/data-video-phrase-audio-shortcut/);
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-audio-details/);
+});
+
+test("pending Phrases selection blocks the actual shared hero handler in every workspace",()=>{
+  for(const workspace of workspaces){
+    const state=exercise(source,workspace,{phrasePending:true,photoConsent:true});
+    assert.equal(state.renders,0,"cannot export the old approved words");
+    assert.equal(state.workspace,"phrases","visitor is sent to the approval tab");
+    assert.ok(state.notices.some(note=>note.includes("Сначала утвердите фразы")));
+  }
 });
