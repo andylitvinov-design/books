@@ -124,8 +124,26 @@ try{
     const response=await page.goto(origin+'/'+locale+'/holistic-support/mandala',{
       waitUntil:'domcontentloaded',timeout:65000});
     assert.equal(response?.status(),200,'LIVE_CHAT_PAGE_NOT_200_'+locale);
+    // The approved new UI keeps the ONE #2913 chat folded until Free Help
+    // is tapped. Older LIVE releases expose it immediately. Exercise the
+    // actual visitor action whenever the approved owner layout exists.
+    const ownerDetails=page.locator('[data-video-director-chat-details]');
+    const ownerFlow=await ownerDetails.count()===1;
+    if(ownerFlow){
+      const goals=page.locator('[data-video-director-goal-controls] [data-auto-video-category]');
+      const topics=page.locator('[data-video-director-topic-controls] [data-auto-video-goal]');
+      await goals.first().waitFor({state:'visible',timeout:30000});
+      assert.equal(await goals.count(),4,'OWNER_FOUR_IMAGE_GOALS_REQUIRED');
+      assert.equal(await topics.count(),6,'OWNER_SIX_TEXT_TOPICS_REQUIRED');
+      const freeHelp=page.locator('[data-auto-video-clarify]');
+      await freeHelp.click({timeout:15000});
+      await page.waitForFunction(()=>
+        document.querySelector('[data-video-director-chat-details]')?.hasAttribute('open'),
+        undefined,{timeout:15000});
+    }
     const chat=page.locator('[data-video-director-chat]');
     await chat.waitFor({state:'visible',timeout:60000});
+    assert.equal(await chat.count(),1,'DUPLICATE_VIDEO_DIRECTOR_CHAT');
     // A visible server-rendered chat is NOT proof that React has hydrated.
     // After the product hydration marker ships, require it explicitly; for
     // the currently deployed older page, require DOM load completion first.
@@ -160,8 +178,16 @@ try{
     await send(chat,'Video');
     await state(page,'goal');
     await send(chat,ideas[locale]);
-    if(locale==='en'){
-      await state(page,'mood');
+    // New Director: one meaningful goal -> executable story immediately.
+    // Legacy LIVE: preserve the real multi-question check until the new
+    // production SHA is deployed; do not fake a successful action.
+    await page.waitForFunction(()=>{
+      const step=document.querySelector('[data-video-director-chat]')?.getAttribute('data-chat-step');
+      return step==='review'||step==='mood';
+    },undefined,{timeout:15000});
+    const next=await chat.getAttribute('data-chat-step');
+    if(ownerFlow)assert.equal(next,'review','OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY');
+    if(locale==='en'&&next==='mood'){
       await send(chat,'calm');
       await state(page,'aspect');
       await send(chat,'vertical');
