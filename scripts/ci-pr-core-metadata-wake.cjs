@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Wake real PR Core CI through pull_request.edited using an owner PAT.
+ * Wake real PR Core CI using a PAT-authored Ready-for-review transition.
  * Never creates source commits, changes refs, or manufactures check results.
  */
 const {taskFor,parseRecords,readCompleteIssueComments,externalOwnerLeaseStatus,
@@ -14,6 +14,7 @@ function eligible(pr,number,sha,key){
     pr.user?.login!=='andylitvinov-design'||pr.base?.ref!==PROD||
     pr.head?.repo?.full_name!==REPO||pr.head.sha!==sha||
     pr.mergeable!==true||!['clean','blocked'].includes(pr.mergeable_state)||
+    pr.auto_merge!=null||
     typeof pr.body!=='string'||pr.body.length>55000)return false;
   const labels=new Set((pr.labels||[]).map(l=>l.name));
   if(!labels.has('hh:ci-needed')||labels.has('hh:ci-bootstrap-attempted')||
@@ -108,8 +109,12 @@ async function run({github,context,token,number,expectedSha,taskKey,
     patPR=await ownerCall('GET','/repos/'+REPO+'/pulls/'+number);
   }catch(err){return stop('PAT_READ_UNAVAILABLE',err?.status===401||err?.status===403);}
   if(patPR?.head?.sha!==expectedSha||patPR?.base?.ref!==PROD||
-    patPR?.state!=='open'||patPR?.body!==pr.body)
+    patPR?.state!=='open'||patPR?.draft!==false||
+    patPR?.body!==pr.body||patPR?.auto_merge!=null)
     return stop('PAT_PR_STATE_CHANGED');
+  const nodeId=patPR?.node_id;
+  if(typeof nodeId!=='string'||!/^PR_[A-Za-z0-9_-]{1,160}$/.test(nodeId))
+    return stop('PAT_PR_NODE_ID_UNVERIFIED');
   const payload={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,head_ref:pr.head.ref,base_ref:PROD,lane:'ci',
     state:'CLAIMED',reservation_run_id:reservationRunId,
@@ -122,25 +127,53 @@ async function run({github,context,token,number,expectedSha,taskKey,
       body:commentBody(payload)});
   }catch{return stop('AUTHENTICATED_CLAIM_WRITE_FAILED');}
   result.claimed=true;
-  const marker='<!-- '+WAKE_MARKER+' task='+taskKey+' head='+expectedSha+
-    ' reservation='+reservationRunId+' source_unchanged=true -->';
-  const updatedBody=pr.body.trimEnd()+'\n\n'+marker+'\n';
-  let response;
+  // A PAT-authored PR body edit can return HTTP 200 without delivering
+  // pull_request.edited (observed on #2269, 2026-11-02). A real
+  // Ready-for-review event DOES launch current-HEAD Core and browser CI.
+  // We never alter source, refs, required checks or the PR's approved body.
+  const changed=async(ready)=>{
+    const field=ready?'markPullRequestReadyForReview':'convertPullRequestToDraft';
+    const query='mutation($id:ID!){'+field+'(input:{pullRequestId:$id}){pullRequest{id isDraft}}}';
+    const data=await ownerCall('POST','/graphql',{query,variables:{id:nodeId}});
+    const observed=data?.data?.[field]?.pullRequest;
+    if(data?.errors?.length||observed?.id!==nodeId||
+       observed?.isDraft!==!ready)throw Error('PAT_GRAPHQL_TRANSITION_UNVERIFIED');
+  };
+  const readPat=()=>ownerCall('GET','/repos/'+REPO+'/pulls/'+number);
+  const stillSame=(current,draft)=>current?.head?.sha===expectedSha&&
+    current?.base?.ref===PROD&&current?.state==='open'&&
+    current?.draft===draft&&current?.body===pr.body;
   try{
-    response=await ownerCall('PATCH','/repos/'+REPO+'/pulls/'+number,{body:updatedBody});
-  }catch(err){
-    return stop('PAT_PR_METADATA_EDIT_UNVERIFIED',err?.status===401||err?.status===403);
+    await changed(false);
+    const current=await readPat();
+    if(!stillSame(current,true))return stop('PAT_DRAFT_READBACK_UNVERIFIED',true);
+  }catch(error){
+    return stop('PAT_DRAFT_TRANSITION_UNVERIFIED',
+      error?.status===401||error?.status===403);
   }
-  if(response?.head?.sha!==expectedSha||response?.body!==updatedBody)
-    return stop('PAT_EDIT_READBACK_MISMATCH');
+  // If Ready's response is ambiguous, re-read before a bounded retry.
+  // Never call the request successful if the PR remained Draft.
+  let ready=false;
+  for(let attempt=0;attempt<2;attempt++){
+    try{await changed(true);}catch(error){/* re-read controls the outcome */}
+    let current;
+    try{current=await readPat();}catch{continue;}
+    if(stillSame(current,false)){ready=true;break;}
+    if(!stillSame(current,true))return stop('PAT_READY_HEAD_OR_BODY_CHANGED',true);
+  }
+  if(!ready)return stop('PAT_READY_RESTORE_REQUIRED',true);
   let fresh;
   try{fresh=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;}
-  catch{return stop('POST_EDIT_HEAD_UNVERIFIED');}
-  if(fresh?.state!=='open'||fresh?.head?.sha!==expectedSha||
-    !fresh?.body?.includes(marker))return stop('POST_EDIT_HEAD_UNVERIFIED');
+  catch{return stop('POST_READY_HEAD_UNVERIFIED');}
+  if(fresh?.state!=='open'||fresh.draft!==false||
+    fresh?.head?.sha!==expectedSha||fresh?.base?.ref!==PROD)
+    return stop('POST_READY_HEAD_UNVERIFIED');
+  const marker='<!-- '+WAKE_MARKER+' task='+taskKey+' head='+expectedSha+
+    ' reservation='+reservationRunId+' ready_event=true source_unchanged=true -->';
   try{
     await github.rest.issues.createComment({owner,repo,issue_number:number,
-      body:commentBody({...payload,state:'CI_WAKE_REQUESTED',
+      body:marker+'\n'+commentBody({...payload,state:'CI_WAKE_REQUESTED',
+        event:'pull_request.ready_for_review',
         observed_at:new Date().toISOString(),source_published:false})});
   }catch{return stop('WAKE_RECEIPT_WRITE_FAILED');}
   result.status='CI_WAKE_REQUESTED';result.reason='AWAITING_REAL_CORE_RUN';

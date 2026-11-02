@@ -10,7 +10,7 @@ const repo='andylitvinov-design/books';
 const context={repo:{owner:'andylitvinov-design',repo:'books'},
   eventName:'workflow_dispatch',ref:'refs/heads/codex/bootstrap-books',runId:900};
 const fakePR=(changes={})=>({
-  number:10,state:'open',draft:false,body:'## Approved original PR body',
+  number:10,state:'open',draft:false,node_id:'PR_NODE_10',body:'## Approved original PR body',
   user:{login:'andylitvinov-design'},mergeable:true,mergeable_state:'blocked',
   base:{ref:'codex/public-book-library'},
   head:{ref:'fix/source-10',sha:SHA,repo:{full_name:repo}},
@@ -42,14 +42,21 @@ function fixture(opts={}){
     if(url.endsWith('/user'))
       return {ok:true,status:200,json:async()=>({login:opts.wrongOwner?'stranger':'andylitvinov-design'})};
     if(settings.method==='GET')
-      return {ok:true,status:200,json:async()=>({head:pr.head,base:pr.base,state:pr.state,body:pr.body})};
-    assert.equal(settings.method,'PATCH');
-    assert.ok(url.endsWith('/pulls/10'));
-    assert.deepEqual(Object.keys(JSON.parse(settings.body)),['body']);
+      return {ok:true,status:200,json:async()=>({...pr})};
+    assert.equal(settings.method,'POST');
+    assert.ok(url.endsWith('/graphql'));
+    const {query,variables}=JSON.parse(settings.body);
+    assert.equal(variables.id,'PR_NODE_10');
+    const draft=query.includes('convertPullRequestToDraft');
+    const ready=query.includes('markPullRequestReadyForReview');
+    assert.ok(draft||ready);
     patched++;
-    if(opts.patchDenied)return {ok:false,status:403,json:async()=>({message:'denied '+TOKEN})};
-    pr={...pr,body:JSON.parse(settings.body).body};
-    return {ok:true,status:200,json:async()=>pr};
+    if(draft&&opts.draftDenied)return {ok:false,status:403,json:async()=>({message:'denied'})};
+    if(ready&&opts.readyDenied)return {ok:false,status:403,json:async()=>({message:'denied'})};
+    pr={...pr,draft:!ready};
+    const field=draft?'convertPullRequestToDraft':'markPullRequestReadyForReview';
+    return {ok:true,status:200,json:async()=>({data:{[field]:{
+      pullRequest:{id:pr.node_id,isDraft:pr.draft}}}})};
   };
   const execute=(over={})=>run({github,context,token:TOKEN,number:10,expectedSha:SHA,
     taskKey:key,reservationRunId:'42',fetcher,now:NOW,...over});
@@ -62,9 +69,12 @@ test('metadata CI wake requires exact authenticated reservation and changes no s
  assert.equal(r.claimed,true);
  assert.equal(r.sourceChanged,false);
  assert.equal(r.coreRunVerified,false);
- assert.equal(f.patched,1);
- assert.ok(f.pr.body.startsWith('## Approved original PR body'));
- assert.match(f.pr.body,new RegExp(WAKE_MARKER));
+ assert.equal(f.patched,2,'both Draft and Ready GraphQL transitions were accepted');
+ assert.equal(f.pr.body,'## Approved original PR body');
+ assert.equal(f.pr.draft,false);
+ assert.deepEqual(f.calls.filter(x=>x.includes('/graphql')),
+   ['POST:/graphql','POST:/graphql']);
+ assert.ok(f.receipts.some(x=>x.includes(WAKE_MARKER)));
  assert.ok(f.receipts.some(x=>x.includes('"state":"CLAIMED"')));
  assert.ok(f.receipts.some(x=>x.includes('"state":"CI_WAKE_REQUESTED"')));
  assert.ok(!JSON.stringify(r).includes(TOKEN));
@@ -117,16 +127,32 @@ test('existing Core history, stacked children and invalid owner never write',asy
  assert.equal((await c.execute()).reason,'TOKEN_OWNER_MISMATCH');
  assert.equal(c.patched,0);
 });
-test('403 during PAT metadata edit never reports requested Core CI as successful',async()=>{
- const f=fixture({patchDenied:true});
+test('403 during PAT draft conversion does not claim Core activation',async()=>{
+ const f=fixture({draftDenied:true});
  const r=await f.execute();
- assert.equal(r.reason,'PAT_PR_METADATA_EDIT_UNVERIFIED');
+ assert.equal(r.reason,'PAT_DRAFT_TRANSITION_UNVERIFIED');
  assert.equal(r.terminalFailure,true);
  assert.equal(r.metadataEditAccepted,false);
  assert.equal(r.sourceChanged,false);
  assert.equal(f.patched,1);
  assert.ok(f.receipts.some(x=>x.includes('"state":"CLAIMED"')));
  assert.ok(!JSON.stringify(r).includes(TOKEN));
+});
+test('failed PAT Ready transition is terminal and never marked as an accepted CI wake',async()=>{
+ const f=fixture({readyDenied:true});
+ const r=await f.execute();
+ assert.equal(r.reason,'PAT_READY_RESTORE_REQUIRED');
+ assert.equal(r.terminalFailure,true);
+ assert.equal(r.metadataEditAccepted,false);
+ assert.equal(r.sourceChanged,false);
+ assert.equal(f.patched,3,'one Draft followed by at most two recovery attempts');
+ assert.equal(f.pr.draft,true,'operator-visible recovery required; never fake Ready');
+ assert.ok(!f.receipts.some(x=>x.includes('"state":"CI_WAKE_REQUESTED"')));
+});
+test('an already armed PR is never converted to Draft',async()=>{
+ const f=fixture({pr:fakePR({auto_merge:{merge_method:'squash'}})});
+ assert.equal((await f.execute()).reason,'PR_STATE_OR_ATTEMPT_UNSAFE');
+ assert.equal(f.patched,0);
 });
 test('read-only cron and untrusted dispatch cannot write',async()=>{
  const f=fixture();
