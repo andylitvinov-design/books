@@ -80,7 +80,7 @@ test("six-voice affirmation editor is mounted in the approved Phrases workspace 
   const hidden=page.indexOf("data-video-quick-legacy");
   assert.ok(voiceEditor>0 && deepPane>voiceEditor && phraseMount>deepPane && music>phraseMount && hidden>music,
     "the single consented voice editor is mounted after the phrase catalog and before music in Phrases");
-  assert.match(page.slice(deepPane,music),/data-video-phrase-catalog-details[\\s\\S]*data-hypno-voice/);
+  assert.match(page.slice(voiceEditor,deepPane),/data-hypno-voice[\s\S]*data-video-narration-stale/);
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
     "do not duplicate the voice editor or API requests");
   assert.match(page.slice(voiceEditor,deepPane),/data-video-narration-stale/,
