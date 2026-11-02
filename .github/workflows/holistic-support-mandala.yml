@@ -158,7 +158,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Check browser acceptance script syntax before slow production build
-        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs
+        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/verify-mandala-holistic-light-mobile.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
@@ -245,6 +245,9 @@ jobs:
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
             node scripts/benchmarking/first-video-live-export.mjs
+          # Real UI screenshots and EN/RU/ES geometry in existing browser matrix;
+          # no provider render, external upload or duplicated workflow.
+          node scripts/verify-mandala-holistic-light-mobile.mjs
           # On this owner-approved conversation PR, prove actual category ->
           # scenario -> phrase taps and a real downloaded moving movie.
           # No external provider, payment, photo or client payload is sent.
