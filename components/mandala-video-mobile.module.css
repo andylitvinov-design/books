@@ -2740,3 +2740,19 @@
  }
  .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:5px 0 8px}
 }
+
+/* MyTube — seventh distinct destination, with six existing stateful tabs untouched. */
+.quickVideoNav{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.quickVideoNav>.quickMyTube{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;min-width:0;min-height:54px;padding:6px 1px;border:1px solid #b9deca;
+  border-radius:12px;background:linear-gradient(145deg,#eaf9f1,#fffdf8);color:#11684c;
+  text-align:center;text-decoration:none;font:800 11px/1.15 Arial,Helvetica,sans-serif}
+.quickVideoNav>.quickMyTube svg{flex:none;color:#087c5e}
+.quickVideoNav>.quickMyTube:focus-visible{outline:3px solid #daa755;outline-offset:2px}
+.quickVideoNav>.quickMyTube[aria-disabled="true"]{pointer-events:none;opacity:.45}
+@media(max-width:760px){
+ .studio .quickVideoNav{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+ .studio .quickVideoNav :is(button,a){min-height:57px;padding:5px 1px;font-size:clamp(8.2px,2.2vw,10px);line-height:1.1}
+ .studio .quickVideoNav>.quickMyTube svg{width:17px;height:17px}
+}
+@media(max-width:355px){.studio .quickVideoNav :is(button,a){font-size:8.3px;letter-spacing:-.02em}}
