@@ -266,3 +266,25 @@ test('inventory reports both valid merge destinations without false main-branch 
  assert.ok(source.includes('LIVE requires served deployment proof'));
  assert.ok(!source.includes('other-base: "+(all.length-production.length)'));
 });
+
+test('trusted PR synchronize cancels only ancestor-proven stale HEADs, never arms early AutoMerge',()=>{
+  const native=read('hh-native-auto-merge');
+  const enable=native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
+  const prune=native.split(/^  prune-head:\s*$/m)[1];
+  assert.ok(enable && prune, 'both isolated jobs must remain');
+  assert.ok(native.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(enable.includes("github.event.action != 'synchronize'"), 'new HEAD must not arm before Core success');
+  assert.ok(enable.includes("github.event.workflow_run.conclusion == 'success'"), 'post-Core ARM retained');
+  assert.ok(prune.includes("github.event.action == 'synchronize'"));
+  assert.ok(prune.includes("github.event.pull_request.base.ref == 'codex/public-book-library'"));
+  assert.ok(prune.includes('github.event.pull_request.head.repo.full_name == github.repository'));
+  assert.ok(prune.includes('ref: codex/public-book-library'));
+  assert.ok(prune.includes('persist-credentials: false'));
+  assert.ok(prune.includes('actions: write'));
+  assert.ok(prune.includes('HH_CI_PRUNE_LIMIT: ' + "'60'"));
+  assert.ok(prune.includes('node --test tests/ci-prune-stale-runs.test.mjs'));
+  assert.ok(prune.includes('node scripts/ci-prune-stale-runs.mjs'));
+  assert.ok(prune.includes('cancel-in-progress: true'));
+  assert.ok(!prune.includes('ref: ' + '$' + '{{ github.event.pull_request.head.sha'));
+  assert.ok(!prune.includes('--force') && !prune.includes('gh pr merge'));
+});
