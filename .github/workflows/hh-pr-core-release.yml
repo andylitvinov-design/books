@@ -142,6 +142,7 @@ jobs:
                   tests/pr-sweep-guard.test.mjs|\
                   tests/ci-heavy-draft-policy.test.mjs|\
                   tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-growth-course-core-reuse.test.mjs|\
                   tests/ci-head-cancellation.test.mjs|\
                   tests/ci-stale-run-deduplication.test.mjs) ;;
                 *) ci_only=false ;;

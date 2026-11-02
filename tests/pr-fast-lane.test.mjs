@@ -1087,6 +1087,7 @@ test('production-base impact analyzer runs CI-only contracts without unrelated N
   const source=workflow('hh-pr-core-release.yml');
   const allow=source.split('# CI-only allowlist')[1]?.split('esac')[0];
   assert.ok(allow?.includes('lib/ci/production-base-impact.mjs'),'pure CI module must use CI-only route');
+  assert.ok(allow?.includes('tests/ci-growth-course-core-reuse.test.mjs'),'pure Core-reuse CI contracts must avoid an unrelated Next production build');
   assert.match(source,/node --test tests\/ci-workflow-globs\.test\.mjs tests\/workflow-next-route-filters\.test\.mjs tests\/ci-specialist-aggregate\.test\.mjs/);
   assert.ok(source.includes("if: needs.scope.outputs.ci_only != 'true'"),'CI-only route must not run full Next build');
 });
