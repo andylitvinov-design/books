@@ -9,7 +9,10 @@ on:
     types: ['vercel.deployment.success', 'vercel.deployment.promoted']
   push:
     branches: ['codex/bootstrap-books']
-    paths: ['.github/workflows/hh-pr-full-inventory.yml']
+    paths:
+      - '.github/workflows/hh-pr-full-inventory.yml'
+      - 'scripts/ci-pr-release-kpi.cjs'
+      - 'tests/ci-pr-release-kpi.test.cjs'
 permissions:
   contents: read
   actions: read
@@ -292,7 +295,7 @@ jobs:
             await core.summary.addHeading("HH PR inventory: all open pages").addRaw(report.join("\n\n")).write();
 
   verify-live:
-    name: independent production LIVE evidence (read-only)
+    name: independent production LIVE evidence + durable PR receipt
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
@@ -302,22 +305,28 @@ jobs:
         github.event.client_payload.environment == 'production'))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
+    # Serialize receipts across scheduled and Vercel-completion events.
+    concurrency:
+      group: hh-pr-live-receipt-single-writer
+      cancel-in-progress: false
     permissions:
       contents: read
       statuses: read
       pull-requests: read
       actions: read
+      issues: write
     steps:
       - name: Checkout only trusted control-plane code
         uses: actions/checkout@v4
         with:
           ref: codex/bootstrap-books
           persist-credentials: false
-      - name: Verify read-only LIVE classifier contracts without credentials
+      - name: Verify trusted LIVE classifier and receipt contracts without credentials
         run: |
           node --check scripts/ci-pr-live-verifier.cjs
-          node --test tests/ci-pr-live-verifier.test.cjs
-      - name: Independently compare production HEAD, Vercel deployment and alias
+          node --check scripts/ci-pr-release-kpi.cjs
+          node --test tests/ci-pr-live-verifier.test.cjs tests/ci-pr-release-kpi.test.cjs
+      - name: Verify LIVE identity and persist exact merged-PR receipt
         uses: actions/github-script@v7
         env:
           # Existing optional read-only Vercel API credential; absent means UNVERIFIED.
@@ -335,6 +344,11 @@ jobs:
               '/scripts/ci-pr-release-outcomes.cjs');
             await outcomes.run({github,core,context,liveEvidence,
               reportPath:process.env.HH_PR_METRICS_PATH||''});
+            // No second Vercel check, no additional workflow or runner.
+            // This only records proof already certified by the read-only verifier.
+            const receipts=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-release-kpi.cjs');
+            await receipts.run({github,core,context,liveReport:liveEvidence});
 
       # Persist read-only outcome snapshots to compare throughput week over week.
       # A missing metrics file is explicit PARTIAL coverage, never a false LIVE.
