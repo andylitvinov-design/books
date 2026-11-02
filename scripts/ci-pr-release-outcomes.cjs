@@ -130,7 +130,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     liveEvidence.reason!=='PUBLIC_RUNTIME_PROOF_UNAVAILABLE'){
   try{
    const served=await verifyServedRevision({github,context,fetchImpl});
-   if(served.verified_live)actualLive=served;
+   if(served.verified_live){actualLive=served;report.live_evidence=served.reason;}
    else report.served_evidence_reason=served.reason;
   }catch(err){report.errors.push('SERVED_PROOF_READ_'+String(err.message||'error').slice(0,75));}
  }
