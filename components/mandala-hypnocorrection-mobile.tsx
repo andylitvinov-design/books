@@ -161,7 +161,7 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
 
 export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
-  onOpenPhraseEditor,onOpenScenes,onOpenMeditation,
+  onOpenPhraseEditor,onOpenScenes,
   onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
   voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
   onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
