@@ -870,6 +870,26 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
 });
 
 
+test('verified exact-head Core run retires only the matching stale CI queue hint',()=>{
+  const {canRetireCiHint}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const original={number:2269,state:'open',draft:false,
+    head:{sha:SHA,ref:'ci/legacy-2269'}};
+  const fresh={...original,base:{ref:'codex/public-book-library'},
+    head:{...original.head,repo:{full_name:'andylitvinov-design/books'}},
+    labels:[{name:'hh:ci-needed'}]};
+  assert.equal(canRetireCiHint(original,fresh),true);
+  assert.equal(canRetireCiHint(original,{...fresh,draft:true}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,number:2277}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    head:{...fresh.head,sha:'b'.repeat(40)}}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    base:{ref:'codex/bootstrap-books'}}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    labels:[{name:'hh:repair-needed'}]}),false);
+  assert.equal(canRetireCiHint(original,{...fresh,
+    head:{...fresh.head,repo:{full_name:'stranger/fork'}}}),false);
+});
+
 test('root classifier does not mislabel BASE_ADVANCED-like release failures as source defects',()=>{
   const {classifyCoreFailureJobs,latestCompletedFailedGate}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const success=name=>({name,conclusion:'success',status:'completed'});
