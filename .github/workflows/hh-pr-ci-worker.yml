@@ -37,7 +37,6 @@ on:
       - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'scripts/ci-pr-owner-token-probe.cjs'
       - 'scripts/ci-pr-schedule-fallback.cjs'
-      - 'tests/ci-pr-ci-worker.test.cjs'
       - 'scripts/ci-pr-priority.cjs'
       - '.github/hh-pr-directions.json'
       - 'tests/ci-pr-direction-watcher.test.cjs'
