@@ -3452,9 +3452,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
             <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
         </div>
+        {phrasePending&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
+          {locale==="ru"?"Подтвердите новые фразы выше, прежде чем создавать голос.":locale==="es"?"Confirma las frases nuevas arriba antes de crear la voz.":"Approve the new phrases above before generating their voice."}
+        </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
           enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing} onAttach={attachGeneratedAffirmationAudio}
+          disabled={recording||preparing||phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.narration?null:current)}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>

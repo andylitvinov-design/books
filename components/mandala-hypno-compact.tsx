@@ -222,7 +222,7 @@ export function MandalaHypnoCompact({
     ?suggestedVideoAffirmations[locale][theme]
     :settings.presetOverride?.length===5?settings.presetOverride:suggestedVideoAffirmations[locale][theme]);
   const chosen=draft?.selected??readyDraft?.selected??settings.selected;
-  const customPhraseText=customDraft??externalPhraseDraft??settings.custom;
+  const customPhraseText=externalPhraseDraft??customDraft??settings.custom;
   const selectedCount=chosen.length;
   const hasPendingEdits=Boolean(draft||readyDraft||customDraft!==null||externalPhraseDraft!==null||ideaPending);
   const signature=JSON.stringify([theme,settings.enabled,settings.selected,settings.custom,settings.presetOverride]);

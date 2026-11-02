@@ -1,4 +1,6 @@
 import test from "node:test";
+// Run the dedicated Phrases mobile approval/voice contracts in the existing specialist suite.
+import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";

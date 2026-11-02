@@ -249,6 +249,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
+      assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true,
+        "a pending edit may not synthesize the previously approved text");
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "unapproved phrase cannot invalidate existing sound");
       await page.locator('[data-hypno-approve]').click();

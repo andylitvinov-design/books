@@ -92,3 +92,12 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]*?setCatalogPhraseDraft\(phrase\)/);
  assert.doesNotMatch(studio,/custom:phrase,visibility:\["large"\]/);
 });
+
+test("TTS never speaks an outdated script when phrases are staged",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const compact=read("components/mandala-hypno-compact.tsx");
+  assert.match(studio,/disabled=\{recording\|\|preparing\|\|phrasePending\} onAttach=\{attachGeneratedAffirmationAudio\}/);
+  assert.match(studio,/data-video-voice-approval-required/);
+  assert.match(compact,/const customPhraseText=externalPhraseDraft\?\?customDraft\?\?settings\.custom/);
+  assert.match(compact,/setCustomDraft\(custom\);onExternalPhraseClear\?\.\(\)/);
+});
