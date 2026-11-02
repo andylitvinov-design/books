@@ -80,7 +80,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await programme.waitFor({state:"visible"});
       assert.equal(await programme.locator("[data-guided-session]").count(),8);
       assert.equal(await programme.locator("[data-guided-free-video]").count(),1);
-      assert.match(await programme.locator("a").last().getAttribute("href")||"","/services/imagery-therapy");
+      assert.ok((await programme.locator("a").last().getAttribute("href")||"").includes("/services/imagery-therapy"),
+        "enquiry opens existing course request route without initiating payment");
       const geometry=await course.evaluate((el)=>{
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];
