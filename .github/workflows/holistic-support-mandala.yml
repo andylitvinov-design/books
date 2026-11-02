@@ -160,11 +160,11 @@ on:
 permissions:
   contents: read
   pull-requests: read
-# One active run per PR: a new HEAD cancels stale macOS work for that PR,
-# while independent PRs and manually dispatched diagnostics remain parallel.
+# A new synchronize event replaces stale work for the same PR only.
+# Manual dispatches stay run-scoped; independent PRs never share a queue.
 concurrency:
   group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
   focused-unit-types-build:
@@ -384,6 +384,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+      HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       HH_VOICE_E2E_ENGINE: webkit
       # Test real WebKit native compositor rather than frozen headless media.
       HH_VOICE_E2E_HEADED: '1'
