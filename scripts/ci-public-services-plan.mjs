@@ -565,6 +565,7 @@ const REVIEWED_GOAL_TREE_AUDIO_2969 = new Map([
   ["A","tests/goal-tree-audio-playlists.test.mjs"],
   ["A","tests/import-reviewed-audio.test.mjs"],
   ["M","tests/mandala-smart-audio.test.mjs"],
+  ["M","tests/mandala-video-phrase-catalog.test.mjs"],
   ["M","scripts/ci-public-services-plan.mjs"],
   ["M","tests/ci-public-services-plan.test.mjs"],
 ].map(([status,path])=>[path,status]));
