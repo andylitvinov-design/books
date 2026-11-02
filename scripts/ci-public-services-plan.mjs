@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -255,26 +256,44 @@ const HARNESS_CASES = new Map([
   ['scripts/helpers/contact-channel-verifier.mjs', ['verify-public-services-production.mjs']],
 ]);
 
+// Cross-domain browser matrix is NOT a default requirement for changes that
+// the immutable BASE Mandala workflow independently owns. Any mixed checkout,
+// auth, payment, service-enquiry or unknown change still routes to full QA.
+const MANDALA_INDEPENDENT_DOMAIN = [
+  /^components\/mandala-[^/]+\.(?:tsx|module\.css)$/,
+  /^lib\/mandala\/[a-z0-9./-]+\.(?:mjs|ts|tsx)$/i,
+  /^tests\/(?:mandala|video|voice|affirmation|personal-guided)[a-z0-9.-]+\.test\.mjs$/i,
+  /^scripts\/verify-(?:holistic-mandala|affirmation-voice|hypno-wave)-browser\.mjs$/,
+  /^scripts\/benchmarking\/(?:first-video|video)[a-z0-9.-]+\.mjs$/i,
+  /^data\/video-catalog\/[a-z0-9.-]+\.json$/i,
+  /^app\/\[locale\]\/holistic-support\/mandala\/[a-z0-9./-]+\.(?:ts|tsx)$/i,
+];
+const PUBLIC_SERVICE_SENSITIVE_NAME = /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|checkout|client|consent|contact|credential|crm|database|enquiry|enquiries|health|medical|message|messaging|migration|order|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+export function isTrustedMandalaOwnerPath(path, trigger) {
+  return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
+    !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
+}
+const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
 
-export function planPublicServicesChangedPaths(files) {
+export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set() } = {}) {
   if (!Array.isArray(files) || files.length === 0 ||
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
     return full('MISSING_OR_INVALID_CHANGE_SET');
   }
   const selected = new Set();
-  let performance = false;
+  let performance = false, ownPublicTests = false;
   for (const file of files) {
-    if (TRUSTED_CI_CONTRACT_FILES.has(file)) continue;
+    if (mandalaOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
       continue;
     }
-    if (sourceTests.has(file)) continue;
+    if (sourceTests.has(file)) { ownPublicTests = true; continue; }
     if (SOURCE_COVERED_VISUAL_ONLY.has(file)) continue;
     if (IDEAS_SCOPED_BROWSER_HARNESS.has(file)) {
       selected.add('verify-ideas-mobile-browser.mjs');
@@ -310,7 +329,7 @@ export function planPublicServicesChangedPaths(files) {
       build: true, browser: true, metrics: false,
       cases: PUBLIC_BROWSER_CASES.filter(name => selected.has(name)).join(',') };
   }
-  return { mode: 'contracts', reason: 'EXISTING_NODE_SOURCE_TESTS_ONLY',
+  return { mode: 'contracts', reason: ownPublicTests ? 'EXISTING_NODE_SOURCE_TESTS_ONLY' : 'INDEPENDENT_OWNER_OR_CORE',
     build: false, browser: false, metrics: false, cases: 'none' };
 }
 
@@ -580,17 +599,25 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build: false, browser: false, metrics: false, cases: 'none' };
     }
     const changed = [];
+    const mandalaOwned = new Set();
+    let mandalaTrigger = null;
+    try {
+      const baseline = String(git('git',
+        ['show',diffBase+':.github/workflows/holistic-support-mandala.yml'],options));
+      mandalaTrigger = parsePrTrigger(baseline,'.github/workflows/holistic-support-mandala.yml');
+    } catch { /* Unavailable BASE owner never authorizes a fast lane. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
+      if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
       if (status !== 'M' && !(status === 'A' &&
-        (TRUSTED_CI_CONTRACT_FILES.has(file) || IDEAS_SCOPED_ADDITIONS.has(file) ||
-         MANDALA_REVIEWED_ADDITIONS.has(file))))
+        (mandalaOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
+         IDEAS_SCOPED_ADDITIONS.has(file) || MANDALA_REVIEWED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
-    return planPublicServicesChangedPaths(changed);
+    return planPublicServicesChangedPaths(changed,{mandalaOwned});
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
@@ -639,7 +666,7 @@ function main() {
   console.log(summary);
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT,
-      ['mode=' + plan.mode, 'build=' + plan.build,
+      ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),

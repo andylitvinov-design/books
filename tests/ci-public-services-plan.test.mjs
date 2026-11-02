@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
+import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -18,6 +19,45 @@ const covers = (patterns, file) => {
   return selected;
 };
 
+test('general BASE-owned Mandala routing works for all PRs, never for payment/private/unknown paths',()=>{
+  const yaml=workflow('holistic-support-mandala.yml');
+  const trigger=parsePrTrigger(yaml,'.github/workflows/holistic-support-mandala.yml');
+  for(const path of ['components/mandala-new-public-editor.tsx',
+    'lib/mandala/video-new-renderer.mjs','tests/mandala-new-renderer.test.mjs',
+    'tests/video-chat-natural-language.test.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),true,path);
+  for(const path of ['components/mandala-payment-checkout.tsx',
+    'components/mandala-client-profile.tsx','app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-router.mjs'])
+    assert.equal(isTrustedMandalaOwnerPath(path,trigger),false,path);
+  const base='a'.repeat(40),head='b'.repeat(40),nullByte=String.fromCharCode(0);
+  const run=rows=>planPublicServicesEvent({
+    GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+  },(_command,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='show')return Buffer.from(yaml);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);
+    throw Error('unexpected git request '+args[0]);
+  });
+  for(const rows of [
+    [['M','components/mandala-new-public-editor.tsx']],
+    [['A','components/mandala-brand-new-component.tsx']],
+    [['M','lib/mandala/video-new-renderer.mjs'],['A','tests/mandala-new-renderer.test.mjs']],
+  ]) assert.deepEqual([run(rows).mode,run(rows).reason],
+      ['contracts','INDEPENDENT_OWNER_OR_CORE']);
+  for(const rows of [
+    [['M','components/mandala-payment-checkout.tsx']],
+    [['A','components/mandala-client-profile.tsx']],
+    [['A','components/unknown-new-component.tsx']],
+    [['D','components/mandala-new-public-editor.tsx']],
+    [['M','components/mandala-new-public-editor.tsx'],['M','app/api/payments/checkout/route.js']],
+  ]) assert.equal(run(rows).mode,'full','unsafe or unknown scope must retain real E2E');
+  assert.equal(run([['M','tests/ci-any-existing-policy.test.mjs']]).reason,'INDEPENDENT_OWNER_OR_CORE');
+  assert.equal(run([['A','tests/ci-new-policy.test.mjs']]).mode,'full');
+  assert.match(workflow('hh-public-services-production.yml'),
+    /steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE'/);
+});
 test('13 current browser owners are unique and the old contact UI duplicate is retired', () => {
   const source = workflow('hh-public-services-production.yml');
   assert.equal(PUBLIC_BROWSER_CASES.length, 13);

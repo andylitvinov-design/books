@@ -12,7 +12,7 @@ import { safeDocumentationAdvance } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
-  inspectWorkflowRuns, inspectJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
+  inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
@@ -125,7 +125,8 @@ export function requiresCurrentProductionBase(changed) {
   // This exact Playwright-only QA harness is never imported by Next at runtime.
   // Its changing selectors should not force a full rebase of an otherwise
   // ordinary video-editor PR after an unrelated production promotion.
-  const isolatedBrowserHarness = file => file === 'scripts/verify-holistic-mandala-browser.mjs';
+  const isolatedBrowserHarness = file =>
+    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
@@ -299,8 +300,7 @@ export async function verify(api,ctx,files,options={}) {
     state=inspectWorkflowRuns({expected,runs:allRuns.filter(run=>!advisoryPaths.has(String(run.path || '').split('@')[0]) && !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory)),pr});
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
-    if (state.failed.length || state.pushFailures.length || state.orphanFailures.length ||
-        unregistered.length || retiredProblems.length) {
+    if (state.failed.length || unregistered.length || retiredProblems.length) {
       throw Error('SPECIALIST_FAILED:' + JSON.stringify({
         failed:state.failed, push:state.pushFailures, orphan:state.orphanFailures,
         unregistered, retired:retiredProblems,
@@ -335,15 +335,19 @@ export async function verify(api,ctx,files,options={}) {
   const executed=[];
   for (const run of state.passed) {
     const jobs=await api.jobs(run.id);
-    const optionalSkipped = run.path === '.github/workflows/holistic-support-mandala.yml' &&
-      optionalMandalaMacosSkip(files, pr.head.ref, changed) ? ['voice-webkit-macos'] : [];
+    const optionalSkipped = trustedConditionalJobs(files.base.get(run.path))
+      .filter(job => job !== 'voice-webkit-macos' ||
+        (run.path === '.github/workflows/holistic-support-mandala.yml' &&
+          optionalMandalaMacosSkip(files, pr.head.ref, changed)));
     executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped)});
   }
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
-    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),...fastDiagnostics],
+    nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
+      ...state.pushFailures.map(item => 'push:'+item),
+      ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};

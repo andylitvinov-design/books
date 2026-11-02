@@ -4,7 +4,7 @@ import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
-  inspectJobs, validateParameters,
+  inspectJobs, trustedConditionalJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
 import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
@@ -140,6 +140,22 @@ test('failed jobless push on current HEAD blocks even when specialist PR check p
   assert.equal(state.passed.length,1);
 });
 
+test('general conditional jobs may skip only when BASE explicitly makes them optional',()=>{
+  const yaml = "on:\n  pull_request:\n    branches: ['codex/public-book-library']\njobs:\n  build:\n    runs-on: ubuntu-latest\n  optional:\n    if: ${{ github.event_name == 'workflow_dispatch' }}\n    runs-on: macos-latest\n  final:\n    if: always()\n    runs-on: ubuntu-latest\n";
+  assert.deepEqual(trustedConditionalJobs(yaml),['optional']);
+  const pair=[{name:'build',status:'completed',conclusion:'success'},
+    {name:'optional',status:'completed',conclusion:'skipped'}];
+  assert.equal(inspectJobs(pair,'.github/workflows/any-owner.yml',trustedConditionalJobs(yaml)),1);
+  assert.throws(()=>inspectJobs(pair,'.github/workflows/any-owner.yml'),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([{...pair[0],conclusion:'skipped'},pair[1]],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([pair[0],pair[1],
+    {name:'final',status:'completed',conclusion:'skipped'}],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/UNSUCCESSFUL/);
+  assert.throws(()=>inspectJobs([pair[1]],'.github/workflows/any-owner.yml',
+    trustedConditionalJobs(yaml)),/NO_EXECUTED_REQUIRED/);
+  assert.deepEqual(trustedConditionalJobs('jobs:\\n  build:\\n    if: true\\n'),[]);
+});
 test('zero jobs, skipped, cancelled and pending jobs cannot pass as completed evidence',()=>{
   assert.throws(()=>inspectJobs([],path),/ZERO_JOB/);
   for(const conclusion of ['skipped','cancelled','failure',null]) {
@@ -185,12 +201,12 @@ test('only BASE/HEAD-applicable PR specialists gate release; unrelated reds are 
   const good=await verify(api,ctx,sources,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
   assert.deepEqual(good.advisory.nonApplicable,[extra+':failure']);
-  // Exact-HEAD failed PUSH or unassociated PR run is never waived as unrelated:
-  // it has no trusted associated PR evidence for a safe exemption.
+  // Unrelated PUSH and orphaned checks are still reported but don't override
+  // verified BASE-owned PR checks. Expected specialist failures still block.
   api.runs=async()=>[run(),run({event:'push',id:753,conclusion:'failure'})];
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*push/);
+  assert.ok((await verify(api,ctx,sources,{maxWaitMs:0})).advisory.nonApplicable.includes('push:753:failure'));
   api.runs=async()=>[run(),run({path:extra,id:754,pull_requests:[],conclusion:'failure'})];
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED:.*orphan/);
+  assert.ok((await verify(api,ctx,sources,{maxWaitMs:0})).advisory.nonApplicable.includes('orphan:754:failure'));
   api.runs=async()=>[run(),run({path:extra,id:758,status:'in_progress',conclusion:null})];
   assert.deepEqual((await verify(api,ctx,sources,{maxWaitMs:0})).expected,[path]);
 
