@@ -3651,13 +3651,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale==="es"?"Tu grabación es opcional; el vídeo exporta una sola pista final.":
             "Recording your own voice is optional; the video exports one final sound track."}
         </p>
-        <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
-          onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
-            document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
-          <AudioLines size={20} aria-hidden="true"/>
-          {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
-          <ChevronDown size={18} aria-hidden="true"/>
-        </button>
       </section>
   );
   const deepHypnoPane = (
