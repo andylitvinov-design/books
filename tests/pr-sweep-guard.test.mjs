@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, parseLease, productionSpecialists, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, requiredGateApp, groupDirtyPrFiles, planSameConflictResolutionReuse, resolveUnknownMergeability, rotateConflictSample } from '../lib/ci/pr-sweep-guard.mjs';
 
 const sha = x => x.repeat(40);
 const pr = (overrides={}) => ({state:'open',draft:false,head:{sha:sha('a')},base:{sha:sha('b'),ref:'codex/public-book-library'},mergeable:true,mergeable_state:'clean',...overrides});
@@ -70,7 +70,7 @@ test('route-deep rechecks live heads and never attributes an old failure to a ch
           if(options.method!=='POST')throw Error('wrong method');
           snapshots++;
           const nodes=[1,2].map(n=>({number:n,createdAt:'2020-01-01T00:00:00Z',isDraft:false,mergeable:'UNKNOWN',mergeStateStatus:'UNKNOWN',baseRefName:'codex/public-book-library',headRefOid:n===1?sha('a'):sha(snapshots===1?'b':'c')}));
-          return ok({data:{repository:{pullRequests:{totalCount:2,pageInfo:{hasNextPage:false},nodes}}}});
+          return ok({data:{repository:{ref:{target:{oid:sha('d')}},pullRequests:{totalCount:2,pageInfo:{hasNextPage:false},nodes}}}});
         }
         if(options.method && options.method!=='GET')throw Error('unexpected write');
         if(url.includes('/rules/branches/'))return ok([{type:'required_status_checks',parameters:{required_status_checks:[{context:'release-ready',integration_id:15368}]}}]);
@@ -577,9 +577,26 @@ test('production conflict route probes unknown PRs and rechecks before grouping'
   const m=String(url).match(/\/pulls\/(\d+)(\/files\?.*)?$/);assert.ok(m,url);
   return response(m[2]?[{filename:'components/shared.jsx'}]:{number:Number(m[1]),state:'open',mergeable:false,mergeable_state:'dirty',head:{sha:sha('a')},base:{ref:'codex/public-book-library'}});
  };
- const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{collectRouteSnapshot:async()=>({rows,total:2}),resolveUnknownMergeability,groupDirtyPrFiles,rotateConflictSample,fetch,AbortSignal,Date,Math,console:{log:x=>out.push(JSON.parse(x))}});
  await fn('andylitvinov-design/books','test-token');
  assert.equal(out[0].dirty_total,2);assert.equal(out[0].dirty_total_complete,true);
  assert.equal(out[0].groups.length,1);assert.equal(out[0].groups[0].blocked_pr_count,2);
  assert.equal(out[0].groups[0].verification,'SHARED_FILE_CANDIDATE_ONLY_NOT_CONFIRMED_HUNK');
+});
+
+
+test('bounded conflict sampling rotates over all dirty PRs',()=>{
+ const rows=Array.from({length:136},(_,number)=>({number:number+1}));const seen=new Set();
+ for(let turn=0;turn<4;turn++)for(const row of rotateConflictSample(rows,35,turn*600000))seen.add(row.number);
+ assert.equal(seen.size,136);assert.equal(rotateConflictSample(rows,35,0).length,35);
+});
+
+test('conflict snapshot uses current production ref, not a PR base snapshot',async()=>{
+ const vm=await import('node:vm');const source=readFileSync('scripts/pr-sweep-guard.mjs','utf8');
+ const start=source.indexOf('async function collectRouteSnapshot(repo, token) {');
+ const end=source.indexOf('async function reportRoutes(',start);assert.ok(start>=0&&end>start);
+ const fetch=async()=>({ok:true,json:async()=>({data:{repository:{ref:{target:{oid:sha('c')}},pullRequests:{totalCount:1,pageInfo:{hasNextPage:false},nodes:[{number:1,createdAt:'2026-01-01T00:00:00Z',isDraft:false,mergeable:'CONFLICTING',mergeStateStatus:'DIRTY',baseRefName:'codex/public-book-library',baseRefOid:sha('b'),headRefOid:sha('a')}]}}}})});
+ const fn=vm.runInNewContext('('+source.slice(start,end).trim()+')',{fetch,AbortSignal,Date});
+ const result=await fn('andylitvinov-design/books','test-token');
+ assert.equal(result.rows[0].base.sha,sha('c'));assert.equal(result.rows[0].reported_base_sha,sha('b'));
 });

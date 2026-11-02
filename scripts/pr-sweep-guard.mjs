@@ -4,7 +4,7 @@
  * Default is read-only. This command NEVER merges and NEVER reruns CI.
  * Required: GH_TOKEN or GITHUB_TOKEN for claim / release / heartbeat.
  */
-import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles, resolveUnknownMergeability } from '../lib/ci/pr-sweep-guard.mjs';
+import { activeLease, analyzeCI, evidenceKey, makeLease, renderLease, requiredCoreChecks, torontoPrDate, checkCohortDate, summarizePrCohort, routeSweep, assessRequiredGate, refineStaleRoutes, groupDirtyPrFiles, resolveUnknownMergeability, rotateConflictSample } from '../lib/ci/pr-sweep-guard.mjs';
 import { resolveRequiredGatePolicy, assessRequiredGates, observationsFromCompletePage } from '../lib/ci/required-gate-policy.mjs';
 
 async function collectRouteSnapshot(repo, token) {
@@ -12,6 +12,7 @@ async function collectRouteSnapshot(repo, token) {
   const [owner,name]=repo.split('/');
   const query=`query($owner:String!,$name:String!,$cursor:String) {
     repository(owner:$owner,name:$name) {
+      ref(qualifiedName:"refs/heads/codex/public-book-library") { target { oid } }
       pullRequests(first:100,after:$cursor,states:OPEN,baseRefName:"codex/public-book-library",orderBy:{field:CREATED_AT,direction:DESC}) {
         totalCount pageInfo { hasNextPage endCursor }
         nodes { number createdAt isDraft mergeable mergeStateStatus baseRefName baseRefOid headRefOid }
@@ -19,7 +20,7 @@ async function collectRouteSnapshot(repo, token) {
     }
   }`;
   const rows=[];
-  let cursor=null, total=null;
+  let cursor=null, total=null, productionBase=null;
   for (let page=0;page<25;page++) {
     const response=await fetch('https://api.github.com/graphql',{method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
@@ -27,12 +28,17 @@ async function collectRouteSnapshot(repo, token) {
     if (!response.ok) throw Error('SWEEP_GRAPHQL_HTTP_'+response.status);
     const body=await response.json();
     const prs=body.data?.repository?.pullRequests;
+    const currentBase=body.data?.repository?.ref?.target?.oid;
+    if(!/^[a-f0-9]{40}$/i.test(currentBase||'') || (productionBase && productionBase!==currentBase))
+      throw Error('SWEEP_PRODUCTION_BASE_UNVERIFIED_OR_MOVED');
+    productionBase=currentBase;
     if (body.errors?.length || !prs || !Array.isArray(prs.nodes)) throw Error('SWEEP_GRAPHQL_INCOMPLETE');
     if (total !== null && total !== prs.totalCount) throw Error('SWEEP_CHANGED_DURING_READ');
     total=prs.totalCount;
     rows.push(...prs.nodes.map(pr=>({number:pr.number,created_at:pr.createdAt,state:'open',draft:pr.isDraft,
       mergeable:pr.mergeable==='MERGEABLE' ? true : pr.mergeable==='CONFLICTING' ? false : null,
-      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},base:{ref:pr.baseRefName,sha:pr.baseRefOid}})));
+      mergeable_state:pr.mergeStateStatus?.toLowerCase(),head:{sha:pr.headRefOid},
+      reported_base_sha:pr.baseRefOid,base:{ref:pr.baseRefName,sha:productionBase}})));
     if (!prs.pageInfo.hasNextPage) {
       if (rows.length!==total) throw Error('SWEEP_CHANGED_DURING_READ');
       return {rows,observed:Date.now(),total};
@@ -131,7 +137,7 @@ async function reportConflictRoutes(repo,token) {
   const inventory=await resolveUnknownMergeability(first.rows,n=>get('/pulls/'+n),
     {limit:35,offset:unresolved?(Math.floor(Date.now()/600000)*35)%unresolved:0});
   const dirty=inventory.rows.filter(p=>p.mergeable===false&&p.base.ref==='codex/public-book-library');
-  const sample=dirty.slice(0,35);
+  const sample=rotateConflictSample(dirty,35,Date.now());
   let cursor=0;
   async function worker(){
     for (;;) {
@@ -174,6 +180,7 @@ async function reportConflictRoutes(repo,token) {
     total_open:first.total,dirty_total:dirty.length,dirty_total_complete:inventory.complete,
     unknown_mergeability:inventory.unresolved,unknown_probes:inventory.attempted,
     unknown_probe_errors:inventory.errors,sampled:sample.length,
+    grouping_complete:inventory.complete&&dirty.length<=sample.length&&!errors.length&&!moved.length,
     omitted_due_to_cap:Math.max(0,dirty.length-sample.length),moved_during_scan:moved,
     read_errors:errors,root_evidence:'CANDIDATE_CHANGED_PATHS_REQUIRES_GIT_MERGE_TREE_STAGE_PROOF',
     ...groups},null,2));
