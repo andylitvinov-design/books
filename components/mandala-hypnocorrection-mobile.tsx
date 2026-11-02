@@ -37,22 +37,22 @@ type Props = {
 const copy = {
   ru: {
     title:"Гипнокоррекция",sub:"Добавьте медитацию, визуальные эффекты, звук и слова поддержки",
-    wave:"Быстрая настройка с Wave",waveHelp:"Подберёт оптимальные эффекты на основе вашей цели",try:"Попробовать",
+    wave:"Быстрая настройка с Wave",waveHelp:"Подберёт мягкие эффекты по вашей цели",try:"Попробовать",
     suggested:"Предложен мягкий световой ритм и видимые фразы. Измените любой пункт или отключите его.",
-    phrases:"Установки и внушения",phrasesHelp:"Фразы и способы их появления",
-    text:"Текст на экране",textHelp:"Читаемые фразы из вашего набора",
-    frame:"25-й кадр",frameHelp:"Краткие вставки · экспериментально",
-    repeat:"Повторение в аудио",repeatHelp:"Паузы и частота речевых фраз",
-    audio:"Аудиоэффекты",audioHelp:"Голос и специальные звуковые дорожки",
-    speech:"Озвучка фраз",speechHelp:"Голос близкого или разрешённые записи вдохновляющих людей",
-    whisper:"Гипнозвук",whisperHelp:"Тихие повторы обычной речи",
-    binaural:"Бинауральные ритмы",binauralHelp:"Стереозвук для наушников · в разработке",
-    visual:"Визуальные эффекты",visualHelp:"Мягкий свет, природные образы и движение",
-    light:"Импульс энергии и света",lightHelp:"Волны, лучи и мандала без вспышек",
-    places:"Места силы",placesHelp:"Выберите сцену из видеокаталога",
-    photo:"Личное фото",photoHelp:"Ваш снимок с подтверждением прав",
-    meditation:"Личная медитация",meditationHelp:"Персональный текст по цели и утверждённым фразам",
-    generateMeditation:"Сгенерировать медитацию",meditationDetail:"Откроет существующий редактор текста и локального прослушивания.",
+    phrases:"Установки и внушения",phrasesHelp:"Слова поддержки и настройки",
+    text:"Текст на экране",textHelp:"Фразы в вашем видео",
+    frame:"25-й кадр",frameHelp:"Короткие вставки",
+    repeat:"Повторы в аудио",repeatHelp:"Частота и паузы",
+    audio:"Аудио",audioHelp:"Голос, гипнозвук и ритмы",
+    speech:"Озвучка фраз",speechHelp:"Ваш голос или разрешённая запись",
+    whisper:"Гипнозвук",whisperHelp:"Тихие повторы речи",
+    binaural:"Бинауральные ритмы",binauralHelp:"Стереоритмы · скоро",
+    visual:"Визуальные эффекты",visualHelp:"Образы, свет и движение",
+    light:"Импульс света",lightHelp:"Волны, лучи и мандала",
+    places:"Места силы",placesHelp:"Сцены из каталога",
+    photo:"Личное фото",photoHelp:"Ваш снимок с правами",
+    meditation:"Личная медитация",meditationHelp:"Текст под вашу цель",
+    generateMeditation:"Создать личную медитацию",meditationDetail:"Текст по вашей цели и утверждённым фразам.",
     settings:"Настроить",selected:"Включено",disabled:"Выключено",
     rhythm:"Темп плавных волн",intensity:"Интенсивность",cycles:"циклов/мин",
     voiceHint:"Озвучка возможна собственным голосом, с согласия близкого или из лицензированных оригинальных записей вдохновляющих людей. Загрузка и права — в настройках «Звук».",
@@ -66,19 +66,19 @@ const copy = {
     title:"Audio-visual support",sub:"Optional ways to present your personal video",
     wave:"Quick setup with Wave",waveHelp:"Suggests suitable effects based on your goal",try:"Try it",
     suggested:"Gentle light waves and visible phrases suggested. You can edit or disable any effect.",
-    phrases:"Phrases and suggestions",phrasesHelp:"Your words and how they appear",
+    phrases:"Phrases and suggestions",phrasesHelp:"Supportive words and timing",
     text:"On-screen text",textHelp:"Readable phrases from your selection",
     frame:"Brief frame",frameHelp:"Short inserts · experimental",
     repeat:"Audio repetition",repeatHelp:"Pauses and speech frequency",
-    audio:"Audio effects",audioHelp:"Voice and optional sound layers",
-    speech:"Spoken phrases",speechHelp:"Your voice or an authorized close person's voice",
+    audio:"Audio",audioHelp:"Voice and sound layers",
+    speech:"Spoken phrases",speechHelp:"Your voice or permitted audio",
     whisper:"Quiet speech",whisperHelp:"Low-volume audible repetitions",
-    binaural:"Binaural beats",binauralHelp:"Headphone stereo effect · in development",
-    visual:"Visual effects",visualHelp:"Soft light, imagery and motion",
+    binaural:"Binaural beats",binauralHelp:"Headphone audio · coming soon",
+    visual:"Visual effects",visualHelp:"Light, images and motion",
     light:"Light and energy pulse",lightHelp:"Waves, rays and mandala without flashes",
     places:"Meaningful places",placesHelp:"Choose from existing video scenes",
     photo:"Personal photo",photoHelp:"Your photo with rights confirmation",
-    meditation:"Personal meditation",meditationHelp:"A personal script based on your goal and chosen phrases",
+    meditation:"Personal meditation",meditationHelp:"A script for your goal",
     generateMeditation:"Create meditation",meditationDetail:"Opens the existing script editor with local voice preview.",
     settings:"Configure",selected:"On",disabled:"Off",
     rhythm:"Smooth wave tempo",intensity:"Intensity",cycles:"cycles/min",
@@ -93,19 +93,19 @@ const copy = {
     title:"Apoyo audiovisual",sub:"Formas opcionales de presentar tu vídeo personal",
     wave:"Ajuste rápido con Wave",waveHelp:"Sugiere efectos adecuados según tu objetivo",try:"Probar",
     suggested:"Se sugieren ondas de luz suaves y frases visibles. Puedes cambiar o desactivar todo.",
-    phrases:"Frases y sugerencias",phrasesHelp:"Tus palabras y su presentación",
+    phrases:"Frases y sugerencias",phrasesHelp:"Palabras de apoyo y ritmo",
     text:"Texto en pantalla",textHelp:"Frases legibles de tu selección",
     frame:"Fotograma breve",frameHelp:"Inserciones cortas · experimental",
     repeat:"Repetición en audio",repeatHelp:"Pausas y frecuencia de voz",
-    audio:"Efectos de audio",audioHelp:"Voz y capas de sonido opcionales",
+    audio:"Audio",audioHelp:"Voz y efectos de sonido",
     speech:"Frases narradas",speechHelp:"Tu voz o voz autorizada de alguien cercano",
     whisper:"Voz tenue",whisperHelp:"Repeticiones audibles a bajo volumen",
-    binaural:"Ritmos binaurales",binauralHelp:"Efecto estéreo con auriculares · en desarrollo",
-    visual:"Efectos visuales",visualHelp:"Luz suave, imágenes y movimiento",
+    binaural:"Ritmos binaurales",binauralHelp:"Audio estéreo · próximamente",
+    visual:"Efectos visuales",visualHelp:"Luz, imágenes y movimiento",
     light:"Pulso de luz y energía",lightHelp:"Ondas, rayos y mandala sin destellos",
     places:"Lugares especiales",placesHelp:"Elige una escena del catálogo existente",
     photo:"Foto personal",photoHelp:"Tu foto con confirmación de derechos",
-    meditation:"Meditación personal",meditationHelp:"Guion personal según tu objetivo y frases elegidas",
+    meditation:"Meditación personal",meditationHelp:"Texto según tu objetivo",
     generateMeditation:"Crear meditación",meditationDetail:"Abre el editor de guiones y la vista previa de voz local.",
     settings:"Configurar",selected:"Sí",disabled:"No",
     rhythm:"Ritmo de ondas suaves",intensity:"Intensidad",cycles:"ciclos/min",
@@ -185,13 +185,14 @@ export function MandalaHypnocorrectionMobile({
   return <section className={styles.panel} data-hypno-mobile lang={locale}
     aria-label={t.title}>
     {introTarget?createPortal(intro,introTarget):intro}
-    {groups.map(group=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
+    {groups.map((group,index)=><section className={styles.group} data-hypno-group={group.id} key={group.id}>
       <button type="button" className={styles.groupHeader} aria-expanded={open.includes(group.id)}
         aria-controls={"hypno-group-"+group.id}
         onClick={()=>setOpen(current=>current.includes(group.id)?current.filter(id=>id!==group.id):[...current,group.id])}>
         {/* First-party scene posters; no duplicated player or third-party images. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={posters[group.id]} alt="" loading="lazy"/>
+        <span className={styles.groupNumber} aria-hidden="true">{index+2}</span>
         <span className={styles.groupTitle}><strong>{group.title}</strong><small>{group.help}</small></span>
         <ChevronDown size={23} className={open.includes(group.id)?styles.expanded:styles.chevron} aria-hidden="true"/>
       </button>
@@ -261,9 +262,16 @@ export function MandalaHypnocorrectionMobile({
         </div>:null}
       </div>
     </section>)}
-    <button type="button" data-hypno-create className={styles.create} disabled={disabled}
+    <div className={styles.actions} data-hypno-actions>
+      <button type="button" data-hypno-meditation-action className={styles.meditationAction}
+        disabled={disabled} onClick={onOpenMeditation}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <strong>{locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create meditation"}</strong>
+      </button>
+      <button type="button" data-hypno-create className={styles.create} disabled={disabled}
       onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
       <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
+    </div>
     <button type="button" data-hypno-preview className={styles.preview}
       disabled={disabled} onClick={onPreview}><Waves size={21} aria-hidden="true"/>
       {t.preview}<ArrowRight size={19} aria-hidden="true"/></button>
