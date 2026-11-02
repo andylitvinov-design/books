@@ -194,7 +194,8 @@ test('temporary backlog route leaves private, policy and unknown changes on full
     assert.equal(decideRoute([row(path)],trusted),'CORE',path);
   assert.equal(decideRoute([row('components/public-greeting.jsx','D')],trusted),'FULL');
   const gate=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
-  assert.match(gate,/needs\.scope\.outputs\.route == 'FULL'/);
+  assert.match(gate,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.match(gate,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.match(gate,/^  hh-merge-check:/m);
   assert.doesNotMatch(gate,/^  release-ready:/m);

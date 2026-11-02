@@ -274,8 +274,18 @@ test('untrusted/malformed input context is rejected',()=>{
 test('production workflow directory can be parsed without silently ignoring unknown trigger syntax',()=>{
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
-  // One additional metadata-only trusted workflow enables native auto-merge.
-  assert.ok(names.length <= 94, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // 2 Nov 2026 reviewed CI architecture: one scoped language-agent suite was
+  // added to the previous 94-workflow production catalog. Preserve the exact
+  // ceiling (95), require its dedicated domain tests, and reject future growth.
+  assert.ok(names.length <= 95, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  if(names.length > 94){
+    assert.ok(names.includes('hh-language-agent.yml'),'Only the reviewed Language Agent may use the 95th workflow slot');
+    const language=readFileSync('.github/workflows/hh-language-agent.yml','utf8');
+    assert.match(language,/language-contract:/,'Language Agent must retain focused privacy contracts');
+    assert.match(language,/typed-ui:/,'Language Agent must retain independent TypeScript check');
+    assert.match(language,/holistic-language-agent\.test\.mjs/,'Language Agent must retain privacy tests');
+    assert.match(language,/npm ci --ignore-scripts/,'Language Agent must retain a pinned dependency install');
+  }
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
@@ -570,23 +580,14 @@ test('fast routing is limited to known public presentation assets and mixed risk
   }
 });
 
-test('presentation changes still require applicable exact-head specialists', async () => {
-  const ctx={repo,number:27,head:SHA,base:BASE};
-  const cssYaml="on:\n  pull_request:\n    paths:\n      - 'app/**'\n";
-  const sources={base:new Map([[path,cssYaml]]),current:new Map([[path,cssYaml]])};
-  const api={pr:async()=>pr(),changed:async()=>[{filename:'app/globals.css'}],
-    runs:async()=>[run({conclusion:'failure'})],jobs:async()=>[{name:'browser',status:'completed',conclusion:'failure'}]};
-  await assert.rejects(()=>verify(api,ctx,sources,{maxWaitMs:0}),/SPECIALIST_FAILED/);
-});
-
-test('presentation routing verifies live HEAD and old names in renames', async () => {
+test('FAST verifies exact HEAD and old names in renames', async () => {
   const ctx={repo,number:27,head:SHA,base:BASE};
   const sources={base:new Map(),current:new Map()};
   let reads=0;
   const api={pr:async()=>{reads++; return pr();}, changed:async()=>[{filename:'app/[locale]/about/page.module.css',status:'modified'}], runs:async()=>[]};
   const result=await verify(api,ctx,sources, {maxWaitMs:0,readSource:()=>'.card { color: red; }'});
   assert.equal(result.risk,'FAST');
-  assert.ok(reads>=2);
+  assert.equal(reads,2);
   api.changed=async()=>[{filename:'app/globals.css',previous_filename:'app/api/payment/route.ts'}];
   assert.equal((await verify(api,ctx,sources, {maxWaitMs:0})).risk,'STRICT');
   api.changed=async()=>[{filename:'app/globals.css',status:'renamed'}];

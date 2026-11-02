@@ -120,14 +120,17 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  // The protected production branch requires the unified hh-merge-check,
-  // which fail-closes on real Core and specialist results. The legacy
-  // release-ready job was intentionally removed after protection migrated.
-  assert.match(core, /^  hh-merge-check:\s*$/m);
-  assert.match(core, /needs: \[scope, code, hh-specialist\]/,
-    "Image CI must not replace the mandatory Core + Specialist merge gate");
-  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/,
-    "The unified gate must reject missing or failed specialist coverage");
+  // Unified protected gate replaces the obsolete release-ready wrapper.
+  // The aggregate must consume real Scope, Core and Specialist results.
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]/m);
+  assert.match(core.split(/^  hh-merge-check:/m)[1], /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(core, /- name: Require real Core and specialist results from this workflow/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
+  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(core, /if \[\[ "\$DOCS_ONLY" == true \|\| "\$ROUTE" == ASSETS \|\| "\$ROUTE" == TEXT \]\]; then/);
+  assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request && "\$CODE_RESULT" == skipped \]\]/);
+  assert.match(core, /\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.doesNotMatch(core, /^  release-ready:/m);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });

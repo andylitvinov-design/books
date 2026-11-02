@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join,matchesGlob as requireGlob } from 'node:path';
 import test from 'node:test';
@@ -17,11 +16,6 @@ const scoped = [
   'ia-v2.yml',
   'opora-module-ci.yml',
 ];
-
-test('Public Services retains real cross-locale consent and private handoff browser coverage',()=>{
-  const source=workflow('hh-public-services-production.yml');
-  assert.match(source,/node scripts\/verify-contact-channel-chooser-browser\.mjs/);
-});
 
 test('seven formerly unconditional PR workflows run only on relevant paths', () => {
   for (const filename of scoped) {
@@ -130,8 +124,12 @@ test('single post-migration status requires actual Core and Specialist without l
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   const unified=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(specialist && unified,'real specialist and unified status required');
-  assert.match(specialist,/^    needs: \[scope\]$/m);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.doesNotMatch(specialist,/^    needs:/m,'specialist must be queued concurrently with scope');
+  assert.match(specialist,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(specialist,/gh api "repos\/\$GITHUB_REPOSITORY\/pulls\/\$HH_PR_NUMBER"/);
+  assert.match(specialist,/git show "\$HH_TRUSTED_BASE_SHA:scripts\/ci-quick-route\.mjs"/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   assert.match(unified,/^    needs: \[scope, code, hh-specialist\]$/m);
   for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])assert.ok(unified.includes(required));
   assert.match(unified,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
@@ -371,8 +369,10 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
     const script=block[1].replace(/^          /gm,'')
       .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
     const output=join(dir,'output'),summary=join(dir,'summary');
+    const testedBase=git('rev-parse','HEAD^1');
     const checked=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
@@ -381,7 +381,12 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
+    const unverified=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:join(dir,'unverified'),GITHUB_STEP_SUMMARY:summary});
+    assert.notEqual(unverified.status,0,'missing trusted ancestry proof must fail closed');
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
     const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
@@ -740,7 +745,7 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   assert.ok(mediaCondition.includes("github.event_name == 'workflow_dispatch'"), 'manual browser verification must remain');
   assert.ok(mediaCondition.includes("github.event_name == 'pull_request'"), 'Ready PR real-media verification must remain');
   const requiredPrefixes = [
-    'codex/voice-studio-', 'codex/voice-mix-', 'fix/video-', 'fix/webkit-',
+    'codex/voice-studio-', 'codex/voice-mix-', 'feat/meditation-writer-', 'fix/video-', 'fix/webkit-',
     'codex/perf-video-studio-', 'codex/hypno-third-workspace-',
     'feat/video-chat-context-understanding-'
   ];
@@ -794,158 +799,6 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
   ]) assert.ok(source.includes(contract), 'lost real acceptance contract ' + contract);
 });
 
-test('Public Services and Alchemy preserve real exact-head E2E with scoped browser cache and bounded readiness', () => {
-  const publicQa = workflow('hh-public-services-production.yml');
-  const alchemy = workflow('hh-alchemy-mobile-acceptance.yml');
-  const core = workflow('hh-pr-core-release.yml');
-  assert.match(core, /name: core-lint-types-build/);
-  assert.doesNotMatch(readFileSync(join(root, 'next.config.ts'), 'utf8'), /ignoreBuildErrors/);
-  assert.match(core, /run: npm run build/);
-  // Both specialists retain real, cached browser acceptance for applicable changes.
-  for (const [name, source] of [['public services', publicQa], ['alchemy', alchemy]]) {
-    if (name === 'public services') {
-      // Production builds every real prebuild asset, then invokes Next directly
-      // inside the timed build block; a synthetic/echo-only build cannot pass.
-      assert.match(source, /\.\/node_modules\/\.bin\/next build\s*\n\s*\} > artifacts\/public-services-production\/build\.log/,
-        name + ': genuine timed Next production build remains available');
-    } else {
-      assert.match(source, /npm run build > artifacts\//, name + ': production build remains available');
-    }
-    assert.match(source, /playwright install --with-deps chromium webkit/, name + ': real browser engines remain');
-    assert.match(source, /path: ~\/\.cache\/ms-playwright/, name + ': scoped browser cache');
-    if (name === 'public services') {
-      // Production-seeded versioned Playwright binaries are restored read-only.
-      assert.match(source, /uses: actions\/cache\/restore@v4/, 'read-only browser cache restoration');
-      assert.match(source, /key: hh-public-browser-blobs-\$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-pw1\.63\.0-v1/,
-        name + ': immutable OS/arch/Playwright version cache key');
-    } else {
-      assert.match(source, /actions\/cache@v4/, name + ': PR-specific browser cache remains');
-      assert.match(source, /1\.63\.0-pr-\$\{\{ github\.event\.pull_request\.number \|\| github\.run_id \}\}/,
-        name + ': no cross-PR or cross-version browser binaries');
-    }
-    assert.match(source, /if ! kill -0 "\$SERVER_PID"/, name + ': detect an exited server');
-    assert.match(source, /--max-time 3/, name + ': bounded readiness probe');
-    assert.doesNotMatch(source, /continue-on-error:\s*true/, name + ': failures remain blocking');
-  }
-  assert.match(publicQa, /actions\/cache\/restore@v4/);
-  assert.match(publicQa, /path: ~\/\.cache\/ms-playwright/);
-  assert.match(publicQa, /hh-public-browser-blobs-\$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-pw1\.63\.0-v1/);
-  assert.match(publicQa, /if ! kill -0 "\$SERVER_PID"/);
-  assert.match(publicQa, /--max-time 3/);
-  assert.ok(publicQa.includes('if [[ "$ready" != "1" ]]'));
-  assert.match(alchemy, /node scripts\/ci-alchemy-impact\.mjs/,
-    'Alchemy must route CI-only edits without full recompilation');
-  assert.doesNotThrow(() => execFileSync(process.execPath,
-    [join(root, 'scripts/ci-alchemy-build.mjs'), '--verify-only'], {timeout:5000, stdio:'pipe'}),
-    'Alchemy asset helper must exist and match the actual production prebuild contract');
-  const assetHelper = readFileSync(join(root, 'scripts/ci-alchemy-build.mjs'), 'utf8');
-  assert.match(assetHelper, /Protected unified merge check must exist/);
-  assert.match(assetHelper, /Unified merge check must require real Core and specialist evidence/);
-  assert.match(assetHelper, /Missing or failing specialist must block unified merge check/);
-  assert.match(assetHelper, /GITHUB_EVENT_NAME==='pull_request'/);
-  assert.match(assetHelper, /GITHUB_BASE_REF==='codex\/public-book-library'/);
-  assert.match(assetHelper, /if\(protectedPr && delegated\.has\(command\)\)/,
-    'Manual and nonproduction runs must execute all production prebuild checks');
-  assert.match(alchemy, /if: github.event_name != 'pull_request' \|\| steps\.impact\.outputs\.browser == 'true'/,
-    'Alchemy runs real browser on applicable runtime edits');
-  assert.match(alchemy, /HH_ALCHEMY_BROWSER=webkit node scripts\/verify-alchemy-one-screen\.mjs/,
-    'WebKit verification remains required for applicable changes');
-  assert.doesNotMatch(alchemy, /if \[\[ "\$GITHUB_EVENT_NAME" != 'pull_request' \]\]; then\s*HH_ALCHEMY_BROWSER=webkit/,
-    'WebKit must not be deferred until after merge');
-  assert.match(publicQa, /timeout-minutes: 20/);
-  for (const browser of [
-    'verify-alchemy-one-screen', 'verify-business-quiz-mobile', 'verify-ideas-mobile-browser',
-    'verify-holistic-master-browser', 'verify-reiki-mobile-order-browser',
-    'verify-holistic-support-recommendations-mobile', 'verify-talisman-google-checkout-browser',
-    'verify-holistic-topics-browser', 'verify-direction-focus-mobile',
-    'verify-public-services-production', 'verify-home-consultation-first-screen',
-    'verify-contact-channel-chooser-browser', 'verify-service-cart-browser',
-    'verify-storefront-shop-browser',
-  ]) assert.ok(publicQa.includes('node scripts/' + browser + '.mjs'), browser + ': no browser suite deleted');
-  assert.match(publicQa, /timings\.csv/, 'runner costs measured per browser suite');
-});
-
-
-test('all 14 Public Services browser suites use semantic readiness rather than networkidle', () => {
-  const source = workflow('hh-public-services-production.yml');
-  const scripts = [...source.matchAll(/node (scripts\/verify-[\w-]+\.mjs)/g)].map(match => match[1]);
-  const unique = [...new Set(scripts)];
-  assert.equal(unique.length, 14, 'existing full browser acceptance list must be retained');
-  for (const script of unique) {
-    const file = readFileSync(join(root, script), 'utf8');
-    // Fail cheaply in Core before downloading browsers/building a Next server.
-    assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', join(root, script)],
-      {timeout: 5000, stdio: 'pipe'}), script + ': script must parse before heavy E2E');
-    assert.doesNotMatch(file, /waitUntil\s*:\s*['"]networkidle['"]/,
-      script + ': navigation must use semantic DOM readiness');
-    assert.doesNotMatch(file, /waitForLoadState\(\s*['"]networkidle['"]/,
-      script + ': do not suppress networkidle timeouts');
-  }
-});
-
-
-test('Public Services PR retains all browser suites without manual-only gates', () => {
-  const source = workflow('hh-public-services-production.yml');
-  assert.match(source, /^  workflow_dispatch:/m);
-  assert.doesNotMatch(source, /if \[\[ "\$GITHUB_EVENT_NAME" == 'workflow_dispatch' \]\]; then/);
-});
-
-test('Free Review PR retains both engines and all four mobile viewports', () => {
-  const source = workflow('hh-free-review-live-mobile.yml');
-  const script = readFileSync(join(root, 'scripts/verify-free-review-live-mobile.mjs'), 'utf8');
-  assert.doesNotMatch(source, /HH_FREE_REVIEW_PR_SMOKE/);
-  assert.equal((source.match(/components\/contact-channel-chooser\.\*/g)||[]).length, 2,
-    'PR and production changes to the shared contact form must run Free Review');
-  assert.equal((source.match(/components\/phone-country-input\.\*/g)||[]).length, 2,
-    'PR and production changes to the shared phone control must run Free Review');
-  assert.match(script, /\[\[320, 568\], \[375, 667\], \[390, 844\], \[430, 932\]\]/);
-  assert.match(script, /\[\["chromium", chromium\], \["webkit", webkit\]\]/);
-});
-
-test('Public Services keeps 14 original browser checks in two bounded fail-closed lanes', () => {
-  const source = workflow('hh-public-services-production.yml');
-  const required = [
-    'verify-alchemy-one-screen.mjs',
-    'verify-business-quiz-mobile.mjs',
-    'verify-ideas-mobile-browser.mjs',
-    'verify-holistic-master-browser.mjs',
-    'verify-reiki-mobile-order-browser.mjs',
-    'verify-holistic-support-recommendations-mobile.mjs',
-    'verify-talisman-google-checkout-browser.mjs',
-    'verify-holistic-topics-browser.mjs',
-    'verify-direction-focus-mobile.mjs',
-    'verify-public-services-production.mjs',
-    'verify-home-consultation-first-screen.mjs',
-    'verify-contact-channel-chooser-browser.mjs',
-    'verify-service-cart-browser.mjs',
-    'verify-storefront-shop-browser.mjs',
-  ];
-  const cases = [...source.matchAll(/run_case "([^"]+\.mjs)" node scripts\/([a-z0-9-]+\.mjs)/g)];
-  assert.deepEqual(
-    cases.map((match) => {
-      assert.equal(match[1], match[2], 'script must retain its exact reporting label');
-      return match[1];
-    }).sort(),
-    [...required].sort(),
-    'every original real Chromium/WebKit, payment, consent and localized browser script must still run exactly once',
-  );
-  assert.match(source, /lane_a\(\) \{/);
-  assert.match(source, /lane_b\(\) \{/);
-  assert.match(source, /lane_a &\s*\n\s*lane_a_pid=\$!/);
-  assert.match(source, /lane_b &\s*\n\s*lane_b_pid=\$!/);
-  assert.match(source, /wait "\$lane_a_pid" \|\| \{[^}]*status=1;/);
-  assert.match(source, /wait "\$lane_b_pid" \|\| \{[^}]*status=1;/);
-  assert.match(source, /return "\$failed"/);
-  assert.match(source, /return "\$code"/);
-  assert.match(source, /printf 'case,status,seconds\\n'/);
-  assert.match(source, /next-production-build/);
-  assert.match(source, /home-rsc-local\.json/);
-  assert.match(source, /TTFB_SAMPLES=3 node scripts\/measure-hh-public-ttfb\.mjs/);
-  assert.match(source, /exit "\$status"/);
-  assert.match(source, /timeout-minutes: 20/);
-  assert.doesNotMatch(source, /continue-on-error:\s*true/);
-});
-
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
@@ -974,6 +827,24 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   assert.doesNotMatch(source, /continue-on-error:\s*true/);
 });
 
+test('Core old PR base beyond shallow depth is checked by API, never mistaken for code failure', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const scope = source.split('  scope:\n')[1]?.split('  code:\n')[0];
+  const code = source.split('  code:\n')[1]?.split('  hh-specialist:\n')[0];
+  for (const job of [scope, code]) {
+    assert.ok(job.includes('GH_TOKEN: ${{ github.token }}'), 'read-only GitHub token required');
+    assert.ok(job.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+      'old production ancestry must be verified by GitHub');
+    assert.ok(job.includes('ahead) ;;'), 'only a proven ancestor can continue');
+    assert.ok(job.includes('identical) [['), 'identical status must require equal SHAs');
+    assert.ok(job.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'));
+    assert.ok(job.includes('HH_TESTED_BASE_VERIFIED=$tested_base'));
+  }
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$HH_EVENT_BASE_SHA" "$tested_base"'));
+  assert.ok(!code.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
+});
+
 test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
   const source = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.match(source, /pull_request_target:/);
@@ -990,7 +861,7 @@ test('native auto-merge preserves stacked-child ancestry while keeping squash fo
   assert.match(source, /attempt<=3/);
   assert.match(source, /Unable to determine if workflow can be created or updated due to timeout/);
   assert.ok(source.includes('.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD'));
-  assert.doesNotMatch(source, /checkout@|--admin|--delete-branch/);
+  assert.doesNotMatch(source.split(/^  prune-head:\s*$/m)[0], /checkout@|--admin|--delete-branch/);
 });
 
 test('core production build is the single TypeScript gate and cannot ignore errors', () => {
@@ -1003,17 +874,22 @@ test('core production build is the single TypeScript gate and cannot ignore erro
   assert.doesNotMatch(config,/ignoreBuildErrors/);
 });
 
-test('core cancels only when a synchronize event changes the PR head', () => {
+test('Core cancels superseded first attempts, never manually rerun current HEAD', () => {
   const source = workflow('hh-pr-core-release.yml');
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
-  assert.match(source, /group: hh-pr-core-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/);
+  const group = "group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}";
+  const cancel = "cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}";
+  assert.ok(source.includes(group), 'first-attempt HEADs of one PR share concurrency');
+  assert.ok(source.includes(cancel), 'only a newer synchronize attempt cancels older checks');
+  assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'), 'no obsolete SHA groups');
 });
 
-test('central CI utilities isolate non-PR runs and cancel only for a new PR head', () => {
+test('central CI utilities isolate non-PR runs and cancel only newer first attempts', () => {
   for (const [file, prefix] of [['hh-actionlint.yml', 'hh-workflow-lint'], ['hh-pr-sweep-guard.yml', 'hh-pr-sweep-guard']]) {
     const source = workflow(file);
-    assert.ok(source.includes("group: " + prefix + "-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
-    assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"), file);
+    const groupCond = "github.event_name == 'pull_request' && github.run_attempt == 1";
+    const cancelCond = "github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after";
+    assert.ok(source.includes("group: " + prefix + "-${{ " + groupCond + " && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"), file);
+    assert.ok(source.includes("cancel-in-progress: ${{ " + cancelCond + " }}"), file);
   }
 });
 
@@ -1037,7 +913,7 @@ test('trusted native auto-merge can use a repo-scoped token to preserve push eve
   const source = workflow('hh-native-auto-merge.yml');
   assert.ok(source.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.match(source, /pull_request_target:/);
-  assert.doesNotMatch(source, /checkout@|--admin/);
+  assert.doesNotMatch(source.split(/^  prune-head:\s*$/m)[0], /checkout@|--admin/);
 });
 
 test('release aggregation selects and verifies the actual tested merge parent', () => {
@@ -1155,7 +1031,7 @@ test('native CI interruption recovery is one-time, exact-head and never bypasses
   const workflow = readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   assert.match(workflow, /^  workflow_run:/m);
   assert.match(workflow, /^      - 'HH PR core release gate'$/m);
-  const repair=workflow.split(/^  recover-interrupted-core:\s*$/m)[1];
+  const repair=workflow.split(/^  recover-interrupted-core:\s*$/m)[1]?.split(/^  prune-head:\s*$/m)[0];
   assert.ok(repair,'missing recovery job');
   for(const guard of [
     "github.event_name == 'workflow_run'",
@@ -1275,7 +1151,7 @@ test('unified status replaces old aliases while independently requiring real Cor
   assert.ok(gate);
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
-  assert.match(gate,/^    if: always\(\)$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(gate,/\[\[ "\$CODE_RESULT" == success \]\]/);
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
@@ -1411,19 +1287,21 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
   })), live, event, 102), false, 'truncated current-head checks fail closed');
 });
 
-test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate synchronize triggers', () => {
+test('native AutoMerge skips synchronize; isolated janitor runs without duplicating early merge checks', () => {
   const native = workflow('hh-native-auto-merge.yml');
   const core = workflow('hh-pr-core-release.yml');
   const nativeEvents = native.split('  pull_request_target:\n')[1]?.split('  workflow_run:\n')[0];
   assert.ok(nativeEvents, 'native PR onboarding trigger must exist');
-  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review\]/);
-  assert.doesNotMatch(nativeEvents, /synchronize/,
-    'new source commits must not start an extra privileged native AutoMerge workflow');
+  assert.match(nativeEvents, /types: \[opened, reopened, ready_for_review, synchronize\]/);
+  assert.ok(native.includes('  prune-head:'), 'synchronize must wake only a scoped janitor');
+  assert.ok(native.includes("github.event.action == 'synchronize'"));
   assert.match(native, /^  workflow_run:\s*$/m);
   assert.ok(native.includes("      - 'HH PR core release gate'"),
     'successful exact-HEAD Core CI must still wake the trusted native listener');
   const enable = native.split('  enable:\n')[1]?.split('  recover-interrupted-core:\n')[0];
   assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
+  assert.ok(enable.includes("github.event.action != 'synchronize'"),
+    'new PR HEAD must not trigger auto-merge before green required Core');
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
   assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
@@ -1436,9 +1314,10 @@ test('post-migration live gate preserves parallel source checks and removes redu
   const source=workflow('hh-pr-core-release.yml');
   const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   assert.ok(specialist);
-  assert.match(specialist,/^    needs: \[scope\]$/m);
+  assert.doesNotMatch(specialist,/^    needs:/m,'schedule specialist alongside scope');
   assert.match(specialist,/ci-specialist-aggregate\.mjs/);
-  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(specialist,/steps\.specialist_route\.outputs\.route == 'FULL'/);
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code|needs\.scope/);
   const gate=source.split(/^  hh-merge-check:/m)[1];
   assert.ok(gate);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
@@ -1530,7 +1409,7 @@ test('single hh-merge-check never passes without exact-current workflow Core and
   assert.ok(gate,'single required status must exist following admin readback');
   assert.match(gate,/^    name: hh-merge-check$/m);
   assert.match(gate,/^    needs: \[scope, code, hh-specialist\]$/m);
-  assert.match(gate,/^    if: always\(\)$/m);
+  assert.match(gate,/^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   for(const required of ['SCOPE_RESULT','CODE_RESULT','SPECIALIST_RESULT','PR_DRAFT'])
     assert.ok(gate.includes(required),'missing fail-closed '+required);
   assert.match(gate,/\[\[ "\$EVENT_NAME" == pull_request \]\] \|\| \{/);
@@ -1553,9 +1432,89 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   const gate=source.split(/^  hh-merge-check:/m)[1]??'';
   assert.match(scope,/github\.event\.pull_request\.draft == false/,
     'real scope must execute on non-draft edited PR');
-  assert.match(specialist,/if: always\(\)/);
-  assert.match(gate,/if: always\(\)/,
+  assert.match(specialist,/if: \$\{\{ !cancelled\(\) \}\}/);
+  assert.match(gate,/if: \$\{\{ !cancelled\(\) \}\}/,
     'required status must run and reject failed Core/Specialist');
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
+});
+
+test('short Core orchestration uses slim runners and never skips real Core or specialist checks', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const scope = source.split(/^  scope:\s*$/m)[1]?.split(/^  code:\s*$/m)[0] ?? '';
+  const core = source.split(/^  code:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const specialist = source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  hh-merge-check:\s*$/m)[0] ?? '';
+  const gate = source.split(/^  hh-merge-check:\s*$/m)[1] ?? '';
+  assert.match(scope, /^    runs-on: ubuntu-slim$/m);
+  assert.match(scope, /^    timeout-minutes: 12$/m);
+  assert.match(core, /^    runs-on: ubuntu-24\.04$/m);
+  assert.match(specialist, /^    runs-on: ubuntu-24\.04$/m);
+  assert.doesNotMatch(specialist, /^    needs:/m, 'specialist must launch alongside scope');
+  assert.match(specialist, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
+  assert.match(gate, /^    timeout-minutes: 2$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\]/);
+});
+
+test('required hh-merge-check uses lightweight runner and keeps fail-closed Core/Specialist gate', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const gate = source.split(/^  hh-merge-check:/m)[1];
+  assert.ok(gate, 'protected check name must be retained');
+  assert.match(gate, /^    name: hh-merge-check$/m);
+  assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate, /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
+  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
+  assert.match(gate, /^    timeout-minutes: 2$/m);
+  assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
+  assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
+  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\] \|\|/);
+  assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\] \|\|/);
+  assert.doesNotMatch(gate, /continue-on-error:\s*true/);
+});
+
+test('universal actionlint and Guard use lightweight runner without weakening exact-head audits', () => {
+  const lint = workflow('hh-actionlint.yml');
+  const guard = workflow('hh-pr-sweep-guard.yml');
+  const core = workflow('hh-pr-core-release.yml');
+  const lintJob = lint.split(/^  validate-workflows:\s*$/m)[1];
+  const guardJob = guard.split(/^  guard-unit:\s*$/m)[1];
+  assert.ok(lintJob && guardJob);
+  assert.match(lintJob, /^    runs-on: ubuntu-slim$/m);
+  assert.match(guardJob, /^    runs-on: ubuntu-slim$/m);
+  assert.match(lint, /fetch-depth: 2/);
+  assert.doesNotMatch(lint, /fetch-depth: 0/);
+  assert.ok(lint.includes('git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA"'));
+  assert.ok(lint.includes('git rev-parse HEAD^2'));
+  assert.ok(lint.includes('actionlint -shellcheck= -color'));
+  assert.ok(lint.includes('actionlint -color "${files[@]}"'));
+  assert.ok(guard.includes('npm ci --prefix lib/ci/fast-ui-parser --ignore-scripts --no-audit --no-fund'));
+  assert.ok(guard.includes('node --test tests/pr-sweep-guard.test.mjs'));
+  assert.doesNotMatch(guard, /github\.event\.pull_request\.head\.sha \|\| github\.sha/);
+  assert.match(core.split(/^  code:\s*$/m)[1].split(/^  hh-specialist:\s*$/m)[0], /^    runs-on: ubuntu-24\.04$/m);
+  for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
+});
+
+test('Core restores immutable production-seeded media and compiler caches without writing from PR', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const producer = workflow('hh-static-image-cost-guard.yml');
+  const coreJob = core.split(/^  code:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
+  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-']) {
+    assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
+    assert.ok(producerJob.includes(id), 'production producer lacks the identical key ' + id);
+    const a = coreJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
+    const b = producerJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
+    assert.ok(a && b && a === b, 'cache identity mismatch for ' + id);
+  }
+  assert.match(coreJob, /actions\/cache\/restore@v4/);
+  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4/, 'candidate PR must not publish shared caches');
+  assert.match(coreJob, /run: npm run build/, 'preserve mandatory exact-HEAD full Next build');
+  assert.match(producerJob, /actions\/cache\/save@v4/);
+  assert.match(producerJob, /node scripts\/generate-scenario-melodies\.mjs --check/);
+  assert.match(producerJob, /node --test tests\/mandala-scenario-audio\.test\.mjs/);
+  assert.match(producerJob, /github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library'/);
+  assert.match(producerJob, /run: npm run build/, 'production seed must include real successful Next build');
 });

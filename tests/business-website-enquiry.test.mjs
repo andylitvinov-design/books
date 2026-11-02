@@ -73,13 +73,3 @@ test("mobile enquiry collects a single explicit reply contact, with an optional 
   assert.match(css,/@media\(max-width:350px\)/);
   for(const lang of ["en","ru","es"])assert.match(form,new RegExp(lang+": \\{"));
 });
-
-test("business direct-request anchor uses native fragment navigation before the free first-party CTA", () => {
-  const landing = read("components/business-consulting-landing.tsx");
-  const direct = landing.match(/<AcquisitionEventLink className=\{styles\.offerDirectLink\}[^>]*href="#business-direct-request"[^>]*>/s);
-  assert.ok(direct, "direct-request anchor exists in the current Business Consulting page");
-  assert.match(direct[0], /\bnativeNavigation\b/,
-    "same-page offer selection must not leave an in-flight App Router hash transition");
-  assert.match(landing, /nativeNavigation attributes=\{\{ "data-business-cta": "free-hero" \}\}/,
-    "real first-party free CTA remains a native one-click link");
-});

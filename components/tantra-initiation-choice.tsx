@@ -24,7 +24,6 @@ type Props = {
 export function TantraInitiationChoice({
   locale, service, heading, tagline, lead, choose, note, options,
 }: Props) {
-  const [interactive, setInteractive] = useState(false);
   const [intent, setIntent] = useState<Intent>("free");
   const selected = options.find(option => option.intent === intent) ?? options[0];
 
@@ -35,7 +34,6 @@ export function TantraInitiationChoice({
       if (next) setIntent(next.intent);
     };
     selectFromHash();
-    setInteractive(true);
     window.addEventListener("hashchange", selectFromHash);
     return () => window.removeEventListener("hashchange", selectFromHash);
   }, [options]);
@@ -55,7 +53,6 @@ export function TantraInitiationChoice({
         <span className={styles.whatsappSelectWrap}>
           <select
             id={"tantra-request-" + locale}
-            disabled={!interactive}
             value={intent}
             onChange={event => {
               const next = options.find(option => option.intent === event.target.value);

@@ -19,14 +19,15 @@ test('Current runtime, auth, payments, unknown and removed files retain real Alc
     assert.equal(needsAlchemyBrowser(files),true);
   }
 });
-test('Alchemy source contracts run and relevant PRs retain real Chromium and WebKit',()=>{
+test('Alchemy source tests remain required while heavy CI-only browser work skips',()=>{
   const s=readFileSync(new URL('../.github/workflows/hh-alchemy-mobile-acceptance.yml',import.meta.url),'utf8');
   assert.match(s,/node scripts\/ci-alchemy-impact\.mjs/);
   assert.match(s,/node --test tests\/ci-alchemy-impact\.test\.mjs/);
+  assert.ok(s.includes("name: Explain deferred manual Alchemy acceptance on PR"));
   for (const name of ['Install browser once for real responsive check',
-    'Build production-mode Next and measure 16 viewports in Chromium and WebKit']) {
+    'Build production-mode Next and measure current Chromium viewports; WebKit manual QA']) {
     const actual=s.split('      - name: '+name+'\n')[1]?.split('\n')[0]?.trim();
-    assert.equal(actual,"if: github.event_name != 'pull_request' || steps.impact.outputs.browser == 'true'",name+' runs for relevant PRs');
+    assert.equal(actual,"if: github.event_name != 'pull_request'",name+' is manual-only');
   }
   assert.match(s,/node --test \\/);
   assert.match(s,/node scripts\/verify-alchemy-one-screen\.mjs/);

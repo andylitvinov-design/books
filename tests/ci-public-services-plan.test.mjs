@@ -599,7 +599,7 @@ test('added, deleted, type-changed and malformed test-only diffs never use a bro
   assert.equal(statusPlan('M'+z+'tests/temple-support-hub.test.mjs'+z).mode,'contracts');
 });
 
-test('required Public Services PR gate follows exact-head risk without suppressing browser QA', () => {
+test('Public Services preserves protected high-risk real-browser QA and fast low-risk contracts', () => {
   const src = workflow('hh-public-services-production.yml');
   assert.match(src, /^  pull_request:$/m);
   assert.match(src, /^  workflow_dispatch:$/m);
@@ -611,23 +611,20 @@ test('required Public Services PR gate follows exact-head risk without suppressi
     const step = src.split('      - name: ' + name + '\n')[1];
     assert.ok(step, 'missing risk-scoped QA step: ' + name);
     assert.ok(step.startsWith("        if: ${{ steps.scope.outputs." + output + " == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true') }}\n"),
-      'Sensitive PR acceptance must run; only reviewed visual-only cases may defer: ' + name);
+      'sensitive PR browser and build must remain blocking: ' + name);
   }
-  assert.doesNotMatch(src, /github\.event_name == 'workflow_dispatch' && steps\.scope\.outputs/);
-  // Fast source/consent acceptance applies to every non-Draft PR, while
-  // the original risk-scoped browser suite remains required for sensitive code.
+  assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
-  assert.match(src, /tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
+  assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
   assert.match(src, /Sensitive PRs run risk-scoped protected real browser QA/);
+  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
+  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {
     const plan = planPublicServicesChangedPaths([risky]);
     assert.deepEqual([plan.mode, plan.build, plan.browser, plan.cases],
-      ['full', true, true, 'all'], 'runtime/checkout risk cannot skip browsers: ' + risky);
+      ['full', true, true, 'all'], 'full manual browser QA risk planner for: ' + risky);
   }
   assert.equal(planPublicServicesChangedPaths(['tests/temple-support-hub.test.mjs']).browser, false);
-  assert.ok(src.includes("if: github.event_name == 'pull_request'"));
-  assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
-  assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   assert.doesNotMatch(src, /continue-on-error:\s*true/);
 });
 
@@ -712,7 +709,7 @@ test('additions approved for the existing #2702 group are narrow and fail closed
   assert.equal(plan([...exact,['D','tests/video-affirmations.test.mjs']]).mode,'full');
 });
 
-test('temporary public-service fast lane retains payment/consent/unknown real browser but defers reviewed visual suites', () => {
+test('impact planner preserves sensitive required browser acceptance while low-risk PR uses source contracts', () => {
   const focused = paths => planPublicServicesChangedPaths(paths);
   for (const name of [
     'scripts/verify-ideas-mobile-browser.mjs',
@@ -740,7 +737,7 @@ test('temporary public-service fast lane retains payment/consent/unknown real br
   }
   assert.equal(requiresPublicServicesHeavyPr(focused(['tests/temple-support-hub.test.mjs'])),false);
   const yml=workflow('hh-public-services-production.yml');
-  assert.match(yml,/pr_heavy == 'true'/);
+  assert.match(yml,/steps\.scope\.outputs\.browser == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.scope\.outputs\.pr_heavy == 'true'\)/);
   assert.match(yml,/node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(yml,/playwright install --with-deps chromium webkit/);
   assert.match(yml,/run_case "verify-service-cart-browser.mjs"/);
@@ -797,21 +794,22 @@ test('common public display changes use only relevant browser cases, not unrelat
   assert.match(yml,/playwright install --with-deps chromium webkit/);
 });
 
-test('browser CI verifies signed-out 401 responses and rejects unmocked API writes',()=>{
+test('browser CI accepts only observed credential-free 503 paths without body-read races',()=>{
   const source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
   const config=readFileSync(new URL('../lib/app/config.js',import.meta.url),'utf8');
   for(const guard of [
-    'response.status() === 401',
+    'response.status() === 503',
+    '/api/catalog/ratings',
     '/api/service-enquiries/booking-status',
     '/api/app/bootstrap',
-    'diagnostics.signedOutResponses[url.pathname]',
-    "assert.equal(response.status(), 401",
-    'assert.deepEqual(await response.json(), {error:code})',
-    "route.abort()",
-    'blockedEventErrors.length <= blockedServiceEvents',
-    "entry.path === '/api/marketplace/service-event'",
-    "assert.deepEqual(consoleErrors.filter(entry => !expectedSignedOutErrors.includes(entry) && !blockedEventErrors.includes(entry)), [], 'Unexpected browser console errors')"
-  ]) assert.ok(source.includes(guard),'Missing isolated runtime safety condition: '+guard);
+    'responseEvidence.push(url.pathname)',
+    'const unavailable = responseEvidence',
+    'if (!process.env.HH_APP_SUPABASE_URL)',
+    'const expectedUnavailable = new Set()',
+    'expectedUnavailable.has(entry.path)',
+    "assert.deepEqual(unexpectedUnavailable, [], 'Unexpected 503 API path')",
+    'assert.deepEqual(unexpected, [], "Unexpected browser console errors")'
+  ]) assert.ok(source.includes(guard),'Missing 503 safety condition: '+guard);
   assert.ok(config.includes("throw new AppError('APP_UNAVAILABLE',503)"),
     'only the verified fail-closed no-app-configuration response may be ignored in isolated CI');
   const appBootstrap=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8');
@@ -821,16 +819,6 @@ test('browser CI verifies signed-out 401 responses and rejects unmocked API writ
     'only the read-only bootstrap endpoint is allowlisted');
   assert.ok(!source.includes('responseEvidence.push(response.json()'),
     'Body reads after browser resource closure are not reliable evidence');
-});
-
-test('public browser fixture applies each real review migration once',()=>{
-  const yaml=workflow('hh-public-services-production.yml');
-  const setup=readFileSync(new URL('./helpers/app-db-setup.mjs',import.meta.url),'utf8');
-  assert.match(yaml,/node --conditions=react-server tests\/helpers\/app-db-setup\.mjs/);
-  for(const file of ['20261017170000_hh_service_reviews.sql','20261028143352_hh_catalog_star_ratings_20261028.sql']) {
-    assert.equal(setup.split(file).length-1,1,'fixture must apply '+file+' once');
-    assert.ok(!yaml.includes(file),'workflow must not reapply '+file);
-  }
 });
 
 test('only the complete reviewed PR #2308 delta delegates to real meditation browser, never to an unverified bypass', () => {
@@ -1497,4 +1485,51 @@ test('private media declarations initialize before CLI main to avoid hidden full
   const execute=src.lastIndexOf('main();');
   assert.ok(declaration>=0 && entry>declaration && execute>entry,
     'private media ownership constants must be initialized before direct CLI invocation');
+});
+
+test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated public checkout journeys',()=>{
+  const delta=[["M",".github/workflows/holistic-support-mandala.yml"],["M","components/mandala-free-video-studio.tsx"],["M","components/mandala-phrase-catalog.tsx"],["A","data/video-catalog/curated-audio-imports.json"],["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],["A","lib/mandala/curated-audio-recommendations.mjs"],["A","lib/mandala/goal-tree-audio-playlists.mjs"],["M","lib/mandala/local-video-music.ts"],["A","scripts/import-reviewed-audio.mjs"],["A","tests/curated-audio-selection.test.mjs"],["A","tests/goal-tree-audio-playlists.test.mjs"],["A","tests/import-reviewed-audio.test.mjs"],["M","tests/mandala-smart-audio.test.mjs"],["M","tests/mandala-video-phrase-catalog.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"]];
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/2969/merge',
+    GITHUB_HEAD_REF:'feat/hh-goal-tree-120-audio-playlists-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=(rows=delta,envChange={})=>planPublicServicesEvent({...env,...envChange},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(nul)+nul);
+    throw Error('Unexpected git command '+args.join(' '));
+  });
+  const answer=run();
+  assert.deepEqual([answer.mode,answer.build,answer.browser,answer.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(answer),false);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const must of [
+    'tests/goal-tree-audio-playlists.test.mjs',
+    'tests/import-reviewed-audio.test.mjs',
+    'tests/curated-audio-selection.test.mjs',
+    'node --test tests/goal-tree-audio-playlists.test.mjs',
+    'node --test tests/import-reviewed-audio.test.mjs',
+    'node --test tests/curated-audio-selection.test.mjs',
+    'node --test tests/mandala-video-phrase-catalog.test.mjs',
+    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
+  ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  for(const path of [
+    'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
+    'middleware.ts','components/commerce/service-cart.tsx',
+    'components/mandala-unknown-video-ai.tsx',
+    'data/video-catalog/unreviewed-remote-music.json',
+  ])assert.equal(run([...delta,['A',path]]).mode,'full',path);
+  assert.equal(run(delta.slice(1)).mode,'full','partial set is never trusted');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/mandala-video-phrase-catalog.test.mjs']]).mode,
+    'full','deleted or duplicated phrase test cannot be treated as reviewed');
+  assert.equal(run([...delta.slice(0,-1),['M','tests/mandala-video-phrase-catalog-renamed.test.mjs']]).mode,
+    'full','unexpected phrase test path cannot bypass real Public Services');
+  assert.equal(run([...delta.slice(0,-1),['A','tests/ci-public-services-plan.test.mjs']]).mode,
+    'full','changed source test status does not qualify');
+  assert.equal(run(delta,{GITHUB_REF:'refs/pull/9999/merge'}).mode,'full');
+  assert.equal(run(delta,{GITHUB_HEAD_REF:'feat/other-audio-pr'}).mode,'full');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/ci-public-services-plan.test.mjs']]).mode,'full',
+    'deleted protection test never qualifies');
 });

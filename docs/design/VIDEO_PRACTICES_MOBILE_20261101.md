@@ -22,3 +22,29 @@
 - User action chain: state/vector selection → generated local text → add/omit decision → ritual selection → 8-session plan → first session editor / provider-independent inquiry.
 - No DB, RLS, account profiles, CRM, provider AI, automatic rendering or payment changes.
 - Screenshot comparison pending browser QA at matching guest state; authored art is design reference, not proof of rendered fidelity.
+
+## Browser coverage handoff · 2026-11-02
+
+- Existing production: user-approved light Courses & Practices is implemented in the original Studio workspace (do not fork the route).
+- The earlier legacy visual regression script used vector-only input fields without first selecting `Вектор развития`; updated to navigate the actual two-mode interface.
+- A real Playwright path now runs from the existing mandala voice/browser acceptance: Chromium and macOS WebKit, guest RU/320, EN/390, ES/430; mode switch, focus validation, generated text, all three curated practices, refresh, real narration-editor seed and revoke, eight-session preview, and mutation without any third-party/private request.
+- Synthetic course screenshots are saved with the existing browser artifacts if `HH_HYPNO_SCREENSHOT_DIR` is configured. A screenshot does not prove a paid course, Google OAuth or voice provider delivery.
+- This does not auto-render videos, enable paid AI, or change database/CRM/security state.
+
+## WebKit focus-change race correction · 2 Nov 2026
+- The deferred `useEffect` that observes `journeySignature` previously cleared `approvedSignature` and `programmeSignature` after fresh user clicks on WebKit. That was observed in macOS WebKit at ES/430 after successful RU/320 and EN/390. Retain precise signature gating during React render, and clear approval *only* in explicit focus editing handlers or profile consent changes; the observer still revokes an included old narration but no longer dismisses a new script.
+- Do not replace the real browser assertion with sleeps, retries, or a loose presence check. The same Chromium and WebKit lifecycle suite must pass on the final PR HEAD.
+
+## Post-merge mobile E2E hardening (2026-11-02)
+- Existing Chromium/WebKit acceptance `scripts/verify-practices-mobile-browser.mjs` exercises RU 320/390/430, EN/ES 390, state/vector, text, distinct practices, eight-session previews and the consented CRM enquiry without submitting.
+- Guest browser checks cannot verify a real CRM submission, provider audio/video delivery, payments, signed-in account or physical iPhone.
+
+## Four-screen visual continuation · owner-approved 2 Nov 2026
+
+- Reference identity: `/ru/holistic-support/mandala#guided-video-series`, public guest, existing `practices` workspace, mirrored EN/ES. Reference is four-phone owner-approved mockup for screens 02–05, not new app or private dashboard.
+- 02 Meditation: original local generator, actual text, explicit reversible Add to video/Do not add; no auto audio/render.
+- 03 Personal meditation: ivory focus/now/desired summary, 3 benefits, green CTA opens the one already existing `[data-video-therapy-meditation-audio]` composer. No second editor or stored private content.
+- 04 Ritual: existing first-party sunrise + lotus icon, four moment choices, actual `selectResourcePractice` action, ritual/exercise/daily selector and variant refresh; no diagnosis/clinical promise.
+- 05 Eight sessions: 2-column eight-stage preview, three realistic benefits, green generate, then real eight session cards and existing first-film editor handoff; seven further videos are only proposals. One consented `MeditationCourseEnquiry` request, no implied payment or video delivery.
+- Visual targets: warm ivory `#fffefa`, emerald `#078361`, 15–22px rounded cards, touch controls >=44px, font 14–19px at 320/354/390/430, EN/RU/ES, accessible focus and overflow.
+- Real browser screenshot/overlay QA of this exact route/state/viewport remains required; synthetic guest tests cannot prove signed-in CRM, iPhone Safari, paid provider delivery or clinical outcomes.
