@@ -61,6 +61,13 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   'tests/ci-site-video-scope.test.mjs',
   'tests/site-video-admin-e2e-gate.test.mjs',
   'tests/ci-heavy-draft-policy.test.mjs',
+  // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
+  'tests/ci-heavy-impact.test.mjs',
+  'tests/pr-fast-lane.test.mjs',
+  // Read-only PR conflict inventory/contract only; Public Services never reads
+  // this telemetry or writes to checkout, bookings, consent or payment APIs.
+  '.github/workflows/hh-pr-sweep-guard.yml',
+  'tests/pr-sweep-guard.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',
@@ -113,6 +120,9 @@ const MANDALA_OWNED_HYPNO_FILES = new Set([
 // checkout, booking, client-account, payment, app-wide routing or auth code.
 // Restrict this to explicitly reviewed files: all unknown/new paths remain FULL.
 const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
+  // Reviewed #2938 natural-language input classifier; no provider, PII or media changes.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // PR #2970: fixed, public-read-only phrase dictionary + UI under the
   // independently required Mandala specialist's schema/RLS/locale contracts.
   // This exact-file allowlist does NOT include payments, auth, general APIs,
@@ -152,8 +162,21 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'tests/video-executable-director.test.mjs',
   'app/[locale]/holistic-support/mandala/page.tsx',
   'components/mandala-cinematic-director.tsx',
+  // Approved four-goal/six-topic Video Studio is verified by Mandala specialist.
+  // Exact sources only; unknown files, auth, messaging and checkout remain full.
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
+  // Hypno browser QA has no Public Services runtime/checkout imports.
+  // Its own Mandala workflow owns the script and source safety checks.
+  'scripts/verify-hypno-wave-browser.mjs',
+  // Exact Mandala-eligible real media/consent QA, covered by its independent
+  // Chromium and macOS WebKit jobs. Do not send video-editor QA to checkout.
+  'scripts/verify-affirmation-voice-browser.mjs',
+  'tests/affirmation-voice-browser-attachment.test.mjs',
+  'tests/mandala-export.test.mjs',
   'tests/cinematic-studio.test.mjs',
   'tests/mandala-approved-mobile-studio.test.mjs',
   'tests/mandala-audio-attach.test.mjs',
@@ -170,6 +193,9 @@ const MANDALA_COURSE_ENQUIRY_FILES = new Set([
 // Only reviewed new files may enter the focused route as A. Everything else
 // (including new routes and unreviewed tests) fails closed to all browsers.
 const MANDALA_REVIEWED_ADDITIONS = new Set([
+  // Fail closed for all other new routes, source and tests.
+  'lib/mandala/video-chat-understanding.mjs',
+  'tests/video-chat-understanding.test.mjs',
   // The exact reviewed 2970 addition set. The read-only GET is same-origin,
   // bounded to known taxonomy IDs, and falls back to audited bundled copy.
   // SQL grants SELECT only; RLS is asserted in the dedicated specialist tests.
