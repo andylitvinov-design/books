@@ -15,9 +15,11 @@ function trusted(context) {
     ['schedule', 'workflow_dispatch', 'push', 'repository_dispatch'].includes(context.eventName);
 }
 const SERVED_METHOD = 'PUBLIC_RUNTIME_ALIAS_SHA_AND_DEPLOYMENT_ANCESTRY';
+const SERVED_API_METHOD = 'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY';
+const SERVED_METHODS = [SERVED_METHOD,SERVED_API_METHOD];
 function certified(report) {
   const method=report?.proof_method;
-  const served=method===SERVED_METHOD;
+  const served=SERVED_METHODS.includes(method);
   return report?.schema === 'HH_LIVE_EVIDENCE_V1' &&
     report.verified_live === true && report.reason === 'LIVE_VERIFIED' &&
     report.repo === REPO && report.production_branch === PROD &&
@@ -25,10 +27,13 @@ function certified(report) {
     /^dpl_[A-Za-z0-9]{8,64}$/.test(report.deployment_id || '') &&
     Array.isArray(report.evidence_urls) &&
     ['VERCEL_API_READY_AND_ALIAS','PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT',
-      SERVED_METHOD].includes(method) &&
+      ...SERVED_METHODS].includes(method) &&
     (!served || (SHA.test(report.current_head_sha || '') &&
       Number.isFinite(Date.parse(report.checked_at || '')) &&
-      report.evidence_urls.includes('https://'+report.alias+'/api/public/release-evidence'))) &&
+      (method===SERVED_METHOD
+        ? report.evidence_urls.includes('https://'+report.alias+'/api/public/release-evidence')
+        : report.evidence_urls.includes('https://vercel.com/super10/codex-public-book-library/'+
+            report.deployment_id.slice(4))))) &&
     report.evidence_urls.includes('https://github.com/' + REPO + '/commit/' + report.production_sha) &&
     report.evidence_urls.includes('https://' + report.alias + '/en');
 }
@@ -60,7 +65,7 @@ async function recordLive({github, context, report, logger}) {
     const current=branch?.commit?.sha;
     if(!branch?.protected||!SHA.test(current||''))return false;
     if(current===sha)return true;
-    if(report.proof_method!==SERVED_METHOD)return false;
+    if(!SERVED_METHODS.includes(report.proof_method))return false;
     const {data}=await github.rest.repos.compareCommits({owner,repo,
       base:sha,head:current});
     return data?.status==='ahead'&&data?.merge_base_commit?.sha===sha;
