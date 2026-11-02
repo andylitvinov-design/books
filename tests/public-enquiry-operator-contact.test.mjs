@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {normalizeEnquiryAttribution} from '../lib/analytics/enquiry-attribution.mjs'
 
 const source=readFileSync(new URL('../lib/practitioners/public-enquiry-operator-contact.js',import.meta.url),'utf8')
  .replace(/^import .*$/gm,'').replace(/export /g,'')+'; revealPublicEnquiryContact'
@@ -57,7 +58,7 @@ test('editing a visitor enquiry phone invalidates the old one-off consent instea
   contact_ciphertext:'original',description_ciphertext:'message',reference_code:'HH-112233445566'}
  let resealed=null
  class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status}}
- const fn=runInNewContext(raw,{AppError,requireUUID:()=>{},
+ const fn=runInNewContext(raw,{AppError,normalizeEnquiryAttribution,requireUUID:()=>{},
   openSealed:source=>source==='original'?visitor:source==='changed'?resealed:'Private message',
   seal:value=>{resealed=value;return 'changed'},
   relayContactView:contact=>({displayName:contact.displayName||'Client'}),
