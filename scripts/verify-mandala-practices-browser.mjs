@@ -5,6 +5,7 @@
  * This is complementary to the separate real encoded-media browser suite.
  */
 import assert from "node:assert/strict";
+import {expect} from "@playwright/test";
 import {mkdirSync} from "node:fs";
 import {join} from "node:path";
 
@@ -55,7 +56,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const titles=[];
       for(let i=0;i<3;i++){
         await kinds.nth(i).click();
-        assert.equal(await kinds.nth(i).getAttribute("aria-pressed"),"true");
+        await expect(kinds.nth(i)).toHaveAttribute("aria-pressed","true",{timeout:7000});
         titles.push(await practice.locator("h5").innerText());
       }
       assert.equal(new Set(titles).size,3,"all three choices produce genuinely different practices");
@@ -100,7 +101,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
 
       const modes=course.locator('[data-video-therapy-focus] [role="group"]').first().locator("button");
       await modes.nth(1).click();
-      assert.equal(await modes.nth(1).getAttribute("aria-pressed"),"true");
+      await expect(modes.nth(1)).toHaveAttribute("aria-pressed","true",{timeout:7000});
       await course.locator("[data-video-key-difficulty]").fill("I feel rushed");
       assert.equal(await generate.isDisabled(),true,"vector requires both fields");
       await course.locator("[data-video-key-goal]").fill("I would like to feel steady");
