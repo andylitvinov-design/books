@@ -7,7 +7,34 @@ const repo = 'andylitvinov-design/books';
 const ctx = { repo, target: TARGET, number: 5 };
 const OLD = 'a'.repeat(40), NEW = 'b'.repeat(40), MERGE = 'c'.repeat(40);
 const pr = (x = {}) => ({ number: 5, state: 'open', base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW, repo: { full_name: repo } }, ...x });
-const run = (x = {}) => ({ id: 100, event: 'pull_request', status: 'queued', head_sha: MERGE, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
+const run = (x = {}) => ({ id: 100, event: 'pull_request', status: 'queued', head_sha: OLD, head_branch: 'feat/one', head_repository: { full_name: repo }, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: OLD } }], ...x });
+
+test('a live-updated PR association is pruned only with proven old run ancestry', async () => {
+  const linkedCurrent = [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }];
+  const stale = run({ head_sha: OLD, pull_requests: linkedCurrent });
+  const cancelled = [];
+  const api = { list: async () => ({ workflow_runs: [stale] }), pr: async () => pr(),
+    run: async () => stale, compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async id => cancelled.push(id) };
+  assert.deepEqual((await prune(api, ctx)).cancelled, [100]);
+  assert.deepEqual(cancelled, [100]);
+  cancelled.length = 0;
+  api.compare = async () => ({ status: 'diverged', ahead_by: 2 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.deepEqual(cancelled, []);
+  api.compare = async () => { throw Error('compare unavailable'); };
+  const unknown = await prune(api, ctx);
+  assert.deepEqual(unknown.cancelled, []);
+  assert.equal(unknown.partial, true);
+  api.run = async () => ({ ...stale, head_sha: NEW });
+  api.compare = async () => ({ status: 'ahead', ahead_by: 1 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.run = async () => stale;
+  let reads = 0;
+  api.pr = async () => (++reads > 2 ? pr({ head: { ...pr().head, sha: MERGE } }) : pr());
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.deepEqual(cancelled, []);
+});
 
 test('only a verified production push can start a privileged cleanup', () => {
   const env = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo,
@@ -23,7 +50,7 @@ test('only a verified production push can start a privileged cleanup', () => {
 test('never cancel new SHA, production push, running jobs, unrelated or ambiguous PRs', () => {
   assert.equal(eligible(run(), pr(), ctx), true);
   for (const data of [
-    { pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }] }, { event: 'push' }, { event: 'workflow_dispatch' }, { event: 'merge_group' },
+    { head_sha: NEW }, { event: 'push' }, { event: 'workflow_dispatch' }, { event: 'merge_group' },
     { status: 'in_progress' }, { status: 'waiting' }, { head_repository: { full_name: 'fork/repo' } },
     { pull_requests: [] }, { head_branch: 'other' },
   ]) assert.equal(eligible(run(data), pr(), ctx), false, JSON.stringify(data));
@@ -34,8 +61,8 @@ test('never cancel new SHA, production push, running jobs, unrelated or ambiguou
 
 test('re-read exact live run and PR before cancellation; cap and dry-run', async () => {
   const cancelled = [];
-  const api = { pr: async () => pr(), run: async () => run(), cancel: async id => cancelled.push(id),
-    list: async () => ({ workflow_runs: [run(), run({ id: 101, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }] }), run({ id: 102 })] }) };
+  const api = { pr: async () => pr(), run: async () => run(), compare: async () => ({ status: 'ahead', ahead_by: 1 }), cancel: async id => cancelled.push(id),
+    list: async () => ({ workflow_runs: [run(), run({ id: 101, head_sha: NEW, pull_requests: [{ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha: NEW } }] }), run({ id: 102 })] }) };
   const dry = await prune(api, ctx, { limit: 2, dryRun: true });
   assert.deepEqual(dry.dryRun, [100, 102]); assert.deepEqual(cancelled, []);
   const result = await prune(api, ctx, { limit: 1 });
@@ -51,9 +78,10 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   const calls = [];
   const http = async (url, options) => { calls.push([url, options.method]); return { ok: true, json: async () => ({ workflow_runs: [] }) }; };
   const api = client(repo, 'fake', http);
-  await api.list(1, 'feat/one'); await api.pr(5); await api.run(100); await api.cancel(100);
+  await api.list(1, 'feat/one'); await api.pr(5); await api.run(100); await api.cancel(100); await api.compare(OLD, NEW);
   assert.match(calls[0][0], /status=queued/); assert.match(calls[0][0], /branch=feat%2Fone/);
   assert.match(calls[3][0], /\/actions\/runs\/100\/cancel/); assert.equal(calls[3][1], 'POST');
+  assert.ok(calls[4][0].endsWith('/compare/' + OLD + '...' + NEW)); assert.equal(calls[4][1], 'GET');
 });
 
 test('elevated GitHub token only used for trusted production checkout, not PR HEAD', () => {
@@ -76,10 +104,10 @@ test('cleanup concurrency isolates PRs and never cancels production push runs', 
 });
 
 
-test('synthetic merge SHA does not determine PR freshness; missing linked SHA fails closed', () => {
-  assert.equal(eligible(run({ head_sha: NEW }), pr(), ctx), true);
+test('different run SHA is only an ancestry candidate; missing linked SHA fails closed', () => {
+  assert.equal(eligible(run({ head_sha: NEW }), pr(), ctx), false);
   const linked = sha => ({ number: 5, base: { ref: TARGET }, head: { ref: 'feat/one', sha } });
-  assert.equal(eligible(run({ pull_requests: [linked(NEW)] }), pr(), ctx), false);
+  assert.equal(eligible(run({ pull_requests: [linked(NEW)] }), pr(), ctx), true);
   assert.equal(eligible(run({ pull_requests: [linked(undefined)] }), pr(), ctx), false);
   assert.equal(eligible(run({ pull_requests: [linked('bad')] }), pr(), ctx), false);
 });
@@ -88,7 +116,7 @@ test('batch cancels >20 stale queued runs while respecting configured limit and 
   const cancelled = [];
   const runs = Array.from({ length: 65 }, (_, i) => run({ id: 1000 + i }));
   const api = { list: async () => ({ workflow_runs: runs }), pr: async () => pr(),
-    run: async id => runs.find(item => item.id === id), cancel: async id => cancelled.push(id) };
+    run: async id => runs.find(item => item.id === id), compare: async () => ({ status: 'ahead', ahead_by: 1 }), cancel: async id => cancelled.push(id) };
   const s = await prune(api, ctx, { limit: 35 });
   assert.equal(s.cancelled.length, 35);
   assert.equal(s.confirmed.length, 0);
