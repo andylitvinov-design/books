@@ -847,6 +847,7 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
+  assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
   assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
@@ -868,7 +869,7 @@ test('green Core plus failed mandatory legacy release gate queues one gate-revie
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
     checks:{listForRef:async({check_name})=>({data:{
       total_count:1,check_runs:[{id:21,name:check_name,status:'completed',
-        conclusion:check_name==='hh-core-verified'?'success':'failure',
+        conclusion:['hh-core-verified','hh-specialist'].includes(check_name)?'success':'failure',
         app:{id:15368}}]
     }})},
     repos:{getBranch:async()=>({data:{protected:true,protection:{
@@ -986,7 +987,7 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   assert.equal(written,1);assert.equal(labeled,1);
 });
 
-test('failed-Core event only inspects the associated PR; periodic still rotates',async()=>{
+test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback',async()=>{
   const first=pr(401),second=pr(402);
   let graphQLSource='';
   const github={
@@ -996,6 +997,12 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
         number:401,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
         mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
         headRefName:first.head.ref,headRefOid:first.head.sha,
+        headRepository:{nameWithOwner:'andylitvinov-design/books'},
+        autoMergeRequest:null
+      },p402:{
+        number:402,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+        mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+        headRefName:second.head.ref,headRefOid:second.head.sha,
         headRepository:{nameWithOwner:'andylitvinov-design/books'},
         autoMergeRequest:null
       }},rateLimit:{remaining:4000}};
@@ -1014,10 +1021,10 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
     pull_requests:[{number:first.number}]
   }}};
   const outcome=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
-  assert.equal(outcome.inspected,1);
-  assert.equal(outcome.missingCore,1);
+  assert.equal(outcome.inspected,2);
+  assert.equal(outcome.missingCore,2);
   assert.match(graphQLSource,/p401:pullRequest/);
-  assert.ok(!graphQLSource.includes('p402:pullRequest'));
+  assert.match(graphQLSource,/p402:pullRequest/);
 });
 test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
   const fs=require('node:fs');
@@ -1059,4 +1066,14 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   for(let tick=0;tick<15;tick++)
     if(selectCandidates(prs,NOW+tick*600000).some(p=>p.number===10))audited=true;
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
+});
+
+test('live watchdog no longer gates periodic PR discovery on stale unit tests',()=>{
+  const fs=require('node:fs');
+  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  const reconcile=yaml.split('\n  reactivate-schedules:')[0];
+  assert.ok(!reconcile.includes('node --test'),'unit tests cannot block live reconciliation');
+  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+  assert.ok(contract.includes('Watchdog decision contracts'));
+  assert.ok(contract.includes('tests/ci-pr-ten-minute-watchdog.test.cjs'));
 });

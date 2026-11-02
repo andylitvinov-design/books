@@ -17,6 +17,8 @@ const REPAIR_LABEL = 'hh:repair-needed';
 // Core passing while the independent release/specialist gate fails is not
 // evidence of a broken TypeScript/build source. Keep it out of source Repair.
 const RELEASE_GATE_LABEL = 'hh:release-gate-review';
+// A failing real specialist/browser suite must not be misdiagnosed as an obsolete alias.
+const SPECIALIST_LABEL = 'hh:specialist-repair-needed';
 const MAX_RELEASE_GATE_LABELS = 2;
 const CONFLICT_LABEL = 'hh:conflict-repair-needed';
 const CI_BOOTSTRAP_LABEL = 'hh:ci-needed';
@@ -188,6 +190,12 @@ function classifyCoreFailureJobs(jobs) {
   const core=byName.get('hh-core-verified');
   const scope=byName.get('classify-change');
   const build=byName.get('core-lint-types-build');
+  // The compatibility release-ready job delegates to hh-specialist. Preserve
+  // its actual cause rather than routing an old alias to release-gate review.
+  if (failed.some(job=>job.name==='hh-specialist') &&
+      core?.conclusion==='success' && scope?.conclusion==='success' &&
+      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+    return 'SPECIALIST_FAILED';
   if (failed.every(job=>gateOnly.has(job.name)) &&
       core?.conclusion==='success' &&
       scope?.conclusion==='success' &&
@@ -495,8 +503,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // on each event multiplies API traffic and starves the real ten-minute sweep.
   // Only scheduled/manual runs perform the rotating full-inventory sample.
   // Missing/ambiguous event association fails closed, never guesses a PR.
+  // A failed Core callback is also a bounded fallback sweep when GitHub cron
+  // delivery stalls. Pin its exact PR first, then rotate across other open PRs.
+  // Missing/ambiguous association still fails closed instead of guessing.
   const selected = wake
-    ? (priorityNumber===null ? [] : review.filter(p=>p.number===priorityNumber))
+    ? (priorityNumber===null ? [] : selectCandidates(review,now,12,4,priorityNumber))
     : selectCandidates(review,now);
   const priorityTop=selected.slice(0,4).map(pr=>{
     const priority=priorityFor(pr,now);
@@ -510,7 +521,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,
-    releaseGateOnly:0,releaseGateQueued:0,coreFailureUnverified:0,
+    releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,coreFailureUnverified:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
@@ -689,12 +700,29 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
           summary.legacyRequiredPending++;
           // A known failed legacy gate after green Core is not an instruction
           // to run an AI source repair. Do not label still-pending checks.
-          if (latestCompletedFailedGate(legacy,'release-ready') &&
-              summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
-            summary.releaseGateOnly++;
-            if (await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
-              'Core passed; investigate required release gate, base or specialist result',
-              'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+          if (latestCompletedFailedGate(legacy,'release-ready') && !budget.exhausted) {
+            // Check the real delegated job on this same HEAD. Its failure is
+            // product QA, NOT a legacy release-ready-only failure or a reason
+            // to rerun the entire expensive browser suite unchanged.
+            let specialist=null;
+            try {
+              specialist=(await limited('real-specialist-head-check',()=>
+                github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+                  check_name:'hh-specialist',per_page:100,filter:'latest'}))).data;
+            } catch(e) { log('#'+pr.number+' specialist evidence unavailable: '+e.message); }
+            if (latestCompletedFailedGate(specialist,'hh-specialist')) {
+              summary.specialistFailures++;
+              if (summary.specialistQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted &&
+                  await ensureQueueLabel(github,owner,repo,live,SPECIALIST_LABEL,
+                    'Verified red specialist/browser QA; fix the failing test or feature before new CI',
+                    'd93f0b',dryRun,limited,log)) summary.specialistQueued++;
+            } else if (specialist && summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS &&
+                       !budget.exhausted) {
+              summary.releaseGateOnly++;
+              if (await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
+                'Core passed; required release compatibility status failed without verified specialist failure',
+                'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+            }
           }
           continue;
         }
@@ -769,6 +797,13 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
             'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
         }
         log('#'+pr.number+' gate-only Core failure; no speculative source repair');
+      } else if(root==='SPECIALIST_FAILED') {
+        summary.specialistFailures++;
+        if (summary.specialistQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted &&
+            await ensureQueueLabel(github,owner,repo,live,SPECIALIST_LABEL,
+              'Verified red specialist/browser QA; fix the failing test or feature before new CI',
+              'd93f0b',dryRun,limited,log)) summary.specialistQueued++;
+        log('#'+pr.number+' real specialist failure; no speculative legacy gate retry');
       } else if(root==='UNVERIFIED') {
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
