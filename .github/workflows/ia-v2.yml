@@ -116,9 +116,9 @@ jobs:
         run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
       - run: npm ci --no-audit --no-fund
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
-      # Keep IA-owned auth, encryption, ownership and navigation contracts on
-      # every PR. The unrelated repository-wide inventory remains available
-      # on manual runs; it must not prevent the real IA browser acceptance.
+      # Full IA auth/RLS/browser coverage remains mandatory for every mixed,
+      # sensitive or unclassified PR. Only the exact immutable-base dock scope
+      # uses its focused geometry/keyboard tests; Core and Messages gates still run.
       - name: IA security, ownership and navigation contracts
         if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
@@ -222,24 +222,21 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\npractitioner_meditation_only='+practitionerMeditationOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
-        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
-        if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.messenger_only == 'true' }}
         run: |
           node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs
           # Server-only imports have React Server conditional exports in Next.js.
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Exact operator-only contact consent and tenant authorization contracts
-        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
-        if: ${{ steps.messenger-scope.outputs.operator_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.operator_only == 'true' }}
         run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
       # Original IA security/app contracts above remain mandatory for every PR.
       # Repository-wide historical inventory stays on explicit maintenance/manual runs.
       # An additional exact-HEAD private-media suite; existing IA auth, RLS,
       # guest browser and production build remain mandatory and unchanged.
       - name: Private meditation owner, authentication, media and safe course contracts
-        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
-        if: ${{ steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' && steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
         run: |
           node --test tests/practitioner-meditation-studio.test.mjs tests/practitioner-preview-auth.test.mjs tests/practitioner-bridge.test.mjs tests/admin-login-security.test.mjs tests/course-slide-recorder.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/ci-practitioner-meditation-scope.test.mjs
       - name: Source-content validators
@@ -274,8 +271,7 @@ jobs:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
           HH_IA_MESSENGER_ONLY: ${{ steps.messenger-scope.outputs.messenger_only }}
       - name: Full unit inventory outside production PR
-        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' && steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run test:unit
       - uses: actions/upload-artifact@v4
         if: always()
