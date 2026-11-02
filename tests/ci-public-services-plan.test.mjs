@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, REVIEWED_VOICE_2629_DELTA } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -21,7 +21,17 @@ const covers = (patterns, file) => {
 
 test('general BASE-owned Mandala routing works for all PRs, never for payment/private/unknown paths',()=>{
   const yaml=workflow('holistic-support-mandala.yml');
+  const guardYaml=workflow('hh-pr-sweep-guard.yml');
   const trigger=parsePrTrigger(yaml,'.github/workflows/holistic-support-mandala.yml');
+  const guardTrigger=parsePrTrigger(guardYaml,'.github/workflows/hh-pr-sweep-guard.yml');
+  for(const path of ['lib/ci/specialist-aggregate.mjs',
+    'scripts/ci-specialist-aggregate.mjs','tests/ci-specialist-wait.test.mjs',
+    '.github/workflows/holistic-support-mandala.yml'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),true,
+      path+' must use BASE Guard+Core rather than 13 public browser journeys');
+  for(const path of ['app/api/payments/checkout/route.js',
+    'components/holistic-support-mobile.tsx','scripts/ci-unknown-policy.mjs'])
+    assert.equal(isTrustedCoreCiOwnerPath(path,guardTrigger),false,path);
   for(const path of ['components/mandala-new-public-editor.tsx',
     'lib/mandala/video-new-renderer.mjs','tests/mandala-new-renderer.test.mjs',
     'tests/video-chat-natural-language.test.mjs'])
@@ -36,7 +46,7 @@ test('general BASE-owned Mandala routing works for all PRs, never for payment/pr
   },(_command,args)=>{
     if(args[0]==='rev-parse')return Buffer.from(head+'\n');
     if(args[0]==='merge-base')return Buffer.alloc(0);
-    if(args[0]==='show')return Buffer.from(yaml);
+    if(args[0]==='show')return Buffer.from(String(args[1]).includes('hh-pr-sweep-guard.yml') ? guardYaml : yaml);
     if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);
     throw Error('unexpected git request '+args[0]);
   });
@@ -44,6 +54,9 @@ test('general BASE-owned Mandala routing works for all PRs, never for payment/pr
     [['M','components/mandala-new-public-editor.tsx']],
     [['A','components/mandala-brand-new-component.tsx']],
     [['M','lib/mandala/video-new-renderer.mjs'],['A','tests/mandala-new-renderer.test.mjs']],
+    [['M','lib/ci/specialist-aggregate.mjs'],['M','scripts/ci-specialist-aggregate.mjs']],
+    [['M','.github/workflows/holistic-support-mandala.yml'],
+     ['M','lib/ci/specialist-aggregate.mjs'],['M','components/mandala-new-public-editor.tsx']],
   ]) assert.deepEqual([run(rows).mode,run(rows).reason],
       ['contracts','INDEPENDENT_OWNER_OR_CORE']);
   for(const rows of [

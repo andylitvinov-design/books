@@ -274,11 +274,18 @@ export function isTrustedMandalaOwnerPath(path, trigger) {
     !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
 }
 const CORE_OWNED_MODIFIED_TEST = /^tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane)\.test\.mjs$/i;
+// BASE Guard is the independent CI/security policy owner. It, not browser
+// checkout/reiki tests, validates changed policy/workflow files in every PR.
+const CORE_CI_OWNER_DOMAIN = /^(?:lib\/ci\/[a-z0-9./-]+\.mjs|scripts\/(?:ci-[a-z0-9.-]+|pr-sweep-guard)\.mjs|\.github\/workflows\/[a-z0-9.-]+\.ya?ml|tests\/(?:ci-[a-z0-9.-]+|pr-fast-lane|pr-sweep-guard)\.test\.mjs)$/i;
+export function isTrustedCoreCiOwnerPath(path, trigger) {
+  return typeof path === 'string' && CORE_CI_OWNER_DOMAIN.test(path) &&
+    !!trigger && matchesTrigger(trigger,[path]);
+}
 function full(reason) {
   return { mode: 'full', reason, build: true, browser: true, metrics: true, cases: 'all' };
 }
 
-export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set() } = {}) {
+export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set(), coreOwned = new Set() } = {}) {
   if (!Array.isArray(files) || files.length === 0 ||
       files.some(file => typeof file !== 'string' || !file || file.startsWith('/') ||
         file.includes('..') || file.includes('\0') || file.includes('\n'))) {
@@ -287,7 +294,7 @@ export function planPublicServicesChangedPaths(files, { mandalaOwned = new Set()
   const selected = new Set();
   let performance = false, ownPublicTests = false;
   for (const file of files) {
-    if (mandalaOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
+    if (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) || CORE_OWNED_MODIFIED_TEST.test(file)) continue;
     if (MANDALA_OWNED_HYPNO_FILES.has(file) || MANDALA_OWNED_VIDEO_WORKSPACE_FILES.has(file)) continue;
     if (MANDALA_COURSE_ENQUIRY_FILES.has(file)) {
       selected.add('verify-public-services-production.mjs');
@@ -599,25 +606,31 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build: false, browser: false, metrics: false, cases: 'none' };
     }
     const changed = [];
-    const mandalaOwned = new Set();
-    let mandalaTrigger = null;
+    const mandalaOwned = new Set(), coreOwned = new Set();
+    let mandalaTrigger = null, guardTrigger = null;
     try {
       const baseline = String(git('git',
         ['show',diffBase+':.github/workflows/holistic-support-mandala.yml'],options));
       mandalaTrigger = parsePrTrigger(baseline,'.github/workflows/holistic-support-mandala.yml');
     } catch { /* Unavailable BASE owner never authorizes a fast lane. */ }
+    try {
+      const guardBaseline=String(git('git',
+        ['show',diffBase+':.github/workflows/hh-pr-sweep-guard.yml'],options));
+      guardTrigger=parsePrTrigger(guardBaseline,'.github/workflows/hh-pr-sweep-guard.yml');
+    } catch { /* Unknown BASE guard is not release proof. */ }
     for (let i = 0; i < rows.length; i += 2) {
       const status = rows[i], file = rows[i + 1];
       // Only newly introduced, explicit CI policy/test contracts may be added.
       // No new runtime, browser, SQL, payment or unknown file can fast-track.
       if (isTrustedMandalaOwnerPath(file, mandalaTrigger)) mandalaOwned.add(file);
+      if (isTrustedCoreCiOwnerPath(file, guardTrigger)) coreOwned.add(file);
       if (status !== 'M' && !(status === 'A' &&
-        (mandalaOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
+        (mandalaOwned.has(file) || coreOwned.has(file) || TRUSTED_CI_CONTRACT_FILES.has(file) ||
          IDEAS_SCOPED_ADDITIONS.has(file) || MANDALA_REVIEWED_ADDITIONS.has(file))))
         return full('ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS');
       changed.push(file);
     }
-    return planPublicServicesChangedPaths(changed,{mandalaOwned});
+    return planPublicServicesChangedPaths(changed,{mandalaOwned,coreOwned});
   } catch {
     return full('GIT_HISTORY_OR_CHANGED_FILES_UNVERIFIED');
   }
