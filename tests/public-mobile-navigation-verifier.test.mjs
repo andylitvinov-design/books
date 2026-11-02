@@ -75,6 +75,8 @@ for (const locale of ['en', 'ru', 'es']) {
   test(locale + ' hidden desktop bottom bar retains exact labels without requiring hidden accessible names', () => scenario(locale, 'client/tests', undefined, false));
   test(locale + ' hidden desktop bottom bar rejects a stale label', () => assert.rejects(scenario(locale, 'client/tests', 'wrong business label', false)));
   for (const suffix of ['client/private-selector', 'client/tests/hidden', 'client/session']) test(locale + '/' + suffix + ' retains no public navigation', () => assert.equal(render(locale, '/' + locale + '/' + suffix), null));
+  test(locale + '/cart keeps reply-only consent accessible without a fixed tab bar', () =>
+    assert.equal(render(locale, '/' + locale + '/cart'), null));
 }
 for (const locale of ['en', 'ru']) test(locale + ' private account hides the public navigation', () => {
   for (const path of ['app', 'app/portrait', 'app/tests', 'app/course', 'prescriptions/private']) assert.equal(render(locale, '/' + locale + '/' + path), null);

@@ -60,11 +60,17 @@ try {
         const page = await context.newPage()
         const name = locale + '/' + direction
         const response = await page.goto(origin + '/' + locale + '/explore/' + direction, {
-          waitUntil: 'networkidle', timeout: 60000,
+          waitUntil: 'domcontentloaded', timeout: 45000,
         })
         assert.equal(response?.status(), 200, 'Public direction route: ' + name)
         const panel = page.locator('[data-direction-topic-finder]')
         await panel.waitFor({ state: 'visible' })
+        // Bind to real React filters; never use background network idle as readiness.
+        // All nine topic/reset journeys remain tested at the original phone widths.
+        await page.waitForFunction(() => {
+          const button = document.querySelector('[data-direction-topic-finder] button[data-direction-filter]');
+          return !!button && Object.keys(button).some(key => key.startsWith('__reactProps$'));
+        }, null, { timeout: 15000 });
         assert.equal(await panel.locator('select').count(), 0, 'No native popup select: ' + name)
         const controls = panel.locator('button[data-direction-filter]')
         assert.equal(await controls.count(), 5, 'Four inline requests + reset: ' + name)

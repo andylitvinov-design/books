@@ -20,6 +20,13 @@ async function tapFocusAndVerify(page, enquiry, focus) {
   // the card into a visible touch position first: do the same, and ASSERT the
   // real card receives a hit before making exactly ONE native touch tap.
   await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  // Wait for the actual card to settle after the first scroll. At 375x667
+  // the expanded form can move it above the viewport before the hit test.
+  // Playwright performs a normal scroll only if needed; it does NOT force
+  // the eventual click or weaken the elementFromPoint assertion below.
+  await card.scrollIntoViewIfNeeded();
+  await card.evaluate(() => new Promise(resolve =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const targetHit = await card.evaluate(node => {
     const rect = node.getBoundingClientRect();
     const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;

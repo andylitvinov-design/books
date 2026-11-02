@@ -41,8 +41,7 @@ function fixture(direction,locale,suggestions={}){
     'next/link':{__esModule:true,default:props=>jsx('a',props)},
     '@/components/home-free-diagnosis-banner':{HomeFreeDiagnosisBanner:props=>jsx('aside',props)},
     'lucide-react':new Proxy({}, {get:()=>()=>null}),
-    react:{useSyncExternalStore:(_subscribe,getSnapshot)=>getSnapshot(),
-      useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
+    react:{useEffect:()=>{},useSyncExternalStore:(_subscribe,getSnapshot)=>getSnapshot(),useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
       return [state[i],next=>{state[i]=typeof next==='function'?next(state[i]):next}] }},
     '@/lib/assessments/topic-journeys':{journeyFocusForTopics:(j,selected)=>
       j.topics.find(t=>t.id===selected[0])?.focus || j.focus},
@@ -86,6 +85,7 @@ test('the single page shows hero then filter then three separate topic-specific 
       assert.equal(by(tree,'data-offer-action','course')[0].props.href,actualCourse)
       const service={energy:'alchemy-of-soul',relationships:'systemic-constellations',business:'business-consulting'}[direction]
       assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)
+      assert.equal(by(tree,'data-offer-action','session')[0].type,'a','session first tap uses native navigation')
     }
   }
 })
