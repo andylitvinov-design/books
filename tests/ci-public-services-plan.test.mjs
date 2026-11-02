@@ -953,6 +953,7 @@ test('Video Studio #2938 routes exact reviewed editor files to Mandala without u
     "scripts/ci-public-services-plan.mjs",
     "scripts/verify-affirmation-voice-browser.mjs",
     "scripts/verify-holistic-mandala-browser.mjs",
+    "scripts/verify-hypno-wave-browser.mjs",
     "tests/affirmation-voice-browser-attachment.test.mjs",
     "tests/ci-heavy-draft-policy.test.mjs",
     "tests/ci-heavy-impact.test.mjs",

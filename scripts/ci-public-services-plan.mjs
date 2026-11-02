@@ -165,6 +165,9 @@ const MANDALA_OWNED_VIDEO_WORKSPACE_FILES = new Set([
   'components/mandala-meditation.module.css',
   'components/mandala-video-mobile.module.css',
   'scripts/verify-holistic-mandala-browser.mjs',
+  // Hypno browser QA has no Public Services runtime/checkout imports.
+  // Its own Mandala workflow owns the script and source safety checks.
+  'scripts/verify-hypno-wave-browser.mjs',
   // Exact Mandala-eligible real media/consent QA, covered by its independent
   // Chromium and macOS WebKit jobs. Do not send video-editor QA to checkout.
   'scripts/verify-affirmation-voice-browser.mjs',
