@@ -1,7 +1,8 @@
 'use client'
 
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
-import Link from 'next/link'
+import {useSearchParams} from 'next/navigation'
+import {normalizeMessagesRequestId,findMessagesRequestRow} from '@/lib/app/messages-request-route.mjs'
 import {ArrowLeft,ArrowRight,IdCard,Link2,MessageCircle,RefreshCw,Search,SlidersHorizontal,ChevronRight} from 'lucide-react'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesContactCard from './messages-contact-card'
@@ -93,6 +94,8 @@ export default function MessagesSimpleInbox({
   websiteLoading=false,websiteUnavailable=false,onReload,embedded=false,crmEnabled=true,onClientsCount,onDetailChange,
 }){
   const t=COPY[locale]||COPY.en
+  const searchParams=useSearchParams()
+  const routeRequestId=normalizeMessagesRequestId(searchParams.get('requestId'))
   const [crmState,setCrmState]=useState({loading:crmEnabled,error:false,threads:[],partial:false})
   const [directThreads,setDirectThreads]=useState([])
   const [portraits,setPortraits]=useState({})
@@ -104,6 +107,7 @@ export default function MessagesSimpleInbox({
   const [openDetail,setOpenDetail]=useState(false)
   const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
+  const previousRequestIdRef=useRef('')
   const [refreshNonce,setRefreshNonce]=useState(0)
   const [offline,setOffline]=useState(false)
   useEffect(()=>{
@@ -177,6 +181,24 @@ export default function MessagesSimpleInbox({
     setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:crmEnabled,error:false,threads:[],partial:false})
     setDirectThreads([]);setPortraits({})
   },[accountId,crmEnabled])
+  // A URL UUID is only a selector: the current account-scoped rows authorize it.
+  useEffect(()=>{
+    const previous=previousRequestIdRef.current
+    previousRequestIdRef.current=routeRequestId
+    if(!routeRequestId){
+      if(previous&&selectedKey.startsWith('request:')){
+        setSelectedKey('');setOpenDetail(false);setShowCard(false)
+      }
+      return
+    }
+    const row=findMessagesRequestRow(rows,routeRequestId)
+    if(!row||!accountId)return
+    if(selectedKey!==row.key){
+      setSelectedKey(row.key);setShowCard(false);setOpenDetail(true)
+    }
+    if(!embedded)setTab(inMessagesTab(row,'chats')?'chats':'requests')
+  },[routeRequestId,accountId,rows,embedded,selectedKey])
+
   // Safari's keyboard shrinks the visual viewport but does NOT reliably update
   // vh/dvh sizing. Size the conversation to the actually visible area and
   // hide the fixed bottom navigation only while an editor has focus.
@@ -245,16 +267,35 @@ export default function MessagesSimpleInbox({
   },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
   const select=item=>{
-    setSelectedKey(item.key)
-    setShowCard(false)
-    setOpenDetail(true)
+    const url=new URL(window.location.href)
+    const id=item.kind==='request'?normalizeMessagesRequestId(item.id):''
+    if(id){
+      url.searchParams.set('section','clients')
+      url.searchParams.set('requestId',id)
+    }else url.searchParams.delete('requestId')
+    const next=url.pathname+url.search+url.hash
+    if(next!==window.location.pathname+window.location.search+window.location.hash)
+      window.history.pushState(window.history.state,'',next)
+    setSelectedKey(item.key);setShowCard(false);setOpenDetail(true)
+  }
+  const closeDetail=()=>{
+    setOpenDetail(false);setShowCard(false)
+    if(selected?.kind==='request'){
+      const url=new URL(window.location.href)
+      url.searchParams.delete('requestId')
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+      setSelectedKey('')
+    }
   }
   const switchTab=next=>{
     if(next!=='chats'&&next!=='requests')return
     setTab(next)
     // Return to the list on phones without disposing an in-flight reply or draft.
     setOpenDetail(false)
+    setShowCard(false)
+    if(selectedKey.startsWith('request:'))setSelectedKey('')
     const url=new URL(window.location.href)
+    url.searchParams.delete('requestId')
     if(next==='requests')url.searchParams.set('tab','requests')
     else url.searchParams.delete('tab')
     window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
@@ -350,7 +391,7 @@ export default function MessagesSimpleInbox({
       <div className={styles.detail} aria-live="polite"
         hidden={Boolean(selected)&&!embedded&&!inMessagesTab(selected,tab)}>
         {selected&&<header className={styles.personBar}>
-          <button type="button" className={styles.back} onClick={()=>{setOpenDetail(false);setShowCard(false)}}
+          <button type="button" className={styles.back} onClick={closeDetail}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>
           <PrivateAvatar small accountId={accountId} name={selected.name}
             portrait={selected.kind==='crm'&&portraits[selected.id]?{threadId:selected.id,messageId:portraits[selected.id]}:null}/>
@@ -361,7 +402,7 @@ export default function MessagesSimpleInbox({
         </header>}
         {!selected&&<div className={styles.placeholder}>
           <MessageCircle size={34} aria-hidden="true"/>
-          <p>{t.choose}</p>
+          <p>{routeRequestId&&!websiteLoading?(locale==='ru'?'Заявка недоступна':locale==='es'?'Solicitud no disponible':'Request unavailable'):t.choose}</p>
         </div>}
         {showCard&&selected&&<MessagesContactCard key={accountId+':'+selected.key}
           item={selected} accountId={accountId} locale={locale} onBack={()=>setShowCard(false)}/>}
@@ -387,8 +428,8 @@ export default function MessagesSimpleInbox({
               {selected.item.requestKind==='public'&&<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}
                 operatorMode={crmEnabled} accountId={accountId}/>}
               <div className={styles.requestActions}>
-                <Link href={'/'+locale+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}>
-                  {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
+                <button type="button" onClick={()=>setShowCard(true)}>
+                  {t.openCase} <ArrowRight size={16} aria-hidden="true"/></button>
               </div>
             </div>}
         </div>}

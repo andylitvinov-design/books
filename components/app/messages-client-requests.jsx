@@ -1,6 +1,8 @@
 'use client'
-import {useMemo,useState} from 'react'
+import {useEffect,useMemo,useRef,useState} from 'react'
+import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
+import {messagesRequestPath,normalizeMessagesRequestId} from '@/lib/app/messages-request-route.mjs'
 import {ArrowLeft,ArrowRight,CalendarDays,Inbox} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import PublicEnquiryContact from './public-enquiry-contact'
@@ -85,12 +87,35 @@ const incomingSort=(a,b)=>Number(b.needsReply)-Number(a.needsReply)||
 
 export default function MessagesClientRequests({data,locale='en',onReload,onOpenCrmThread,crmState={loading:false,error:false,threads:[],partial:false}}){
   const t=COPY[locale]||COPY.en
+  const requestIdFromUrl=normalizeMessagesRequestId(useSearchParams().get('requestId'))
+  const previousRequestIdRef=useRef('')
   const [filter,setFilter]=useState('all')
   const [selectedId,setSelectedId]=useState('')
   const [showContact,setShowContact]=useState(false)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const requests=useMemo(()=>[...(data.requests||[])].sort(incomingSort),[data.requests])
+  useEffect(()=>{
+    const previous=previousRequestIdRef.current
+    previousRequestIdRef.current=requestIdFromUrl
+    if(!requestIdFromUrl){
+      if(previous){setSelectedId('');setShowContact(false)}
+      return
+    }
+    // Query parameters do not authorize rows. Only signed-in API results
+    // may select a request; a foreign/unknown UUID remains unavailable.
+    if(!requests.some(item=>normalizeMessagesRequestId(item.id)===requestIdFromUrl))return
+    setFilter('all')
+    setSelectedId('request:'+requestIdFromUrl)
+    setShowContact(false)
+  },[requestIdFromUrl,requests])
+  const syncRequestUrl=(id,{replace=false}={})=>{
+    const url=new URL(window.location.href)
+    const safeId=normalizeMessagesRequestId(id)
+    if(safeId){url.searchParams.set('section','clients');url.searchParams.set('requestId',safeId)}
+    else url.searchParams.delete('requestId')
+    window.history[replace?'replaceState':'pushState'](window.history.state,'',url.pathname+url.search+url.hash)
+  }
   const business=data.businessEnquiries||[]
   const crmLeads=crmState.threads.filter(item=>item.lifecycle==='lead')
   const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply||item.unreadCount>0))
@@ -143,7 +168,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
     <div className={styles.filters} aria-label={t.title}>
       {[['open',t.need,openCount],['new',t.new,newCount],['all',t.all,total]].map(([id,label,count])=>
         <button type="button" key={id} aria-pressed={filter===id}
-          onClick={()=>{setFilter(id);setSelectedId('');setShowContact(false)}}>
+          onClick={()=>{setFilter(id);setSelectedId('');setShowContact(false);syncRequestUrl('',{replace:true})}}>
           {label} <span>{count}</span></button>)}
     </div>
     {error&&<p role="alert" className={styles.alert}>{error}</p>}
@@ -164,8 +189,12 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
           return <button type="button" key={row.key} className={styles.requestItem}
             aria-pressed={row.key===selectedId}
             onClick={()=>{
-              if(row.kind==='crm')onOpenCrmThread?.(item.id)
-              else {setSelectedId(row.key);setShowContact(false)}
+              if(row.kind==='crm'){
+                syncRequestUrl('',{replace:true});onOpenCrmThread?.(item.id)
+              }else{
+                setSelectedId(row.key);setShowContact(false)
+                syncRequestUrl(row.kind==='request'?item.id:'')
+              }
             }}>
             <span className={styles.requestAvatar} aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
             <span className={styles.requestText}>
@@ -189,7 +218,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
         </div>}
       </div>
       {selection&&<article className={styles.requestDetail} aria-label={t.details} key={selection.key}>
-        <button type="button" className={styles.backRequest} onClick={()=>{setSelectedId('');setShowContact(false)}}>
+        <button type="button" className={styles.backRequest} onClick={()=>{setSelectedId('');setShowContact(false);syncRequestUrl('',{replace:true})}}>
           <ArrowLeft size={17} aria-hidden="true"/>{t.back}
         </button>
         {businessSelected?<CrmBusinessEnquiries enquiries={[businessSelected]} locale={locale}
@@ -209,7 +238,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
               <button type="button" disabled={busy} onClick={()=>statusChange(selected,'contacted')}>{t.contacted}</button>}
             {['requested','contacted'].includes(selected.status)&&!selected.remoteBooking&&
               <button type="button" disabled={busy} onClick={()=>statusChange(selected,'closed')}>{t.closed}</button>}
-            <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}
+            <Link href={messagesRequestPath(locale,selected.id)}
               prefetch={false}>{t.full} <ArrowRight size={15}/></Link>
           </div>
           {selected.requestKind==='public'?<>
