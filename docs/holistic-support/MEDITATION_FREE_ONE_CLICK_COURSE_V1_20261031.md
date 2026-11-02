@@ -31,3 +31,9 @@ The text route still uses one shared authenticated Psychologist Mind
 preflight and builds the vetted intermediate objects in one pass.
 The current release is NOT LIVE before stack completion, safety/privacy
 acceptance, exact-head CI and Vercel SHA verification.
+
+## Four-step Studio → Writer contract (2 November 2026)
+
+The only visible customer journey remains the existing four-step `MandalaGuidedCourse` (PR #3066 + #3068). New `mandala-bridge.mjs` converts explicit locale/theme/current→desired selection to one reviewed `focus` / `intentionCode` Writer request in RU/EN/ES, validated by the existing `normalizeWriterRequest` and `resolveMeditationClientIntent`. It never reads the profile/tests, invents a clinical indication, transmits personal notes by default, enables provider consent, or creates media. Optional notes are sent only with a separate explicit first-party opt-in and remain excluded from free external-model payloads. Resource-imagery consent and external model consent are independently enforced by the existing authenticated route. Unknown state/theme, incomplete vector and invalid avoid codes fail closed.
+
+**Current scope:** contract + TypeScript declaration + focused tests, added in the same existing #2676 PR. This alone does not wire a new button or turn on Gemini. The optional UI adapter is to be mounted inside the canonical `MandalaGuidedCourse` **after** parent #2532 protected merge and the final #3068 production source reconciliation. The original local script, practice chooser, resource permissions and eight-session roadmap must remain usable without login or provider charges. Do not show another full meditation filter form as the primary practice screen. Editorial and real-provider smoke remain release requirements.
