@@ -7,6 +7,12 @@ on:
       - 'components/library-feed.tsx'
       - 'components/library-feed.module.css'
       - 'components/library-hub.tsx'
+      - 'components/mandala-free-video-studio.tsx'
+      - 'components/mandala-video-mobile.module.css'
+      - 'app/[locale]/mytube/**'
+      - 'lib/public-locales.ts'
+      - 'tests/mytube-navigation.test.mjs'
+      - 'scripts/verify-mytube-mobile-browser.mjs'
       - 'components/video-discovery.tsx'
       - 'components/video-discovery.module.css'
       - 'lib/video-discovery/**'
@@ -69,9 +75,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Test Library feed, existing book reference, and owner materials isolation
-        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs tests/greek-video-series.test.mjs tests/video-discovery.test.mjs tests/video-discovery-unified-catalog.test.mjs
+        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs tests/greek-video-series.test.mjs tests/video-discovery.test.mjs tests/video-discovery-unified-catalog.test.mjs tests/mytube-navigation.test.mjs
       - name: Lint changed TypeScript and JavaScript sources
-        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx data/academy/greek-video-series.ts components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs lib/ideas-preview-rotation.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js components/video-discovery.tsx lib/video-discovery/taxonomy.mjs lib/video-discovery/catalog.mjs lib/video-discovery/curation.mjs lib/video-discovery/ranker.mjs lib/video-discovery/approved-meditations.ts tests/video-discovery-unified-catalog.test.mjs
+        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx data/academy/greek-video-series.ts components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs lib/ideas-preview-rotation.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js components/video-discovery.tsx lib/video-discovery/taxonomy.mjs lib/video-discovery/catalog.mjs lib/video-discovery/curation.mjs lib/video-discovery/ranker.mjs lib/video-discovery/approved-meditations.ts tests/video-discovery-unified-catalog.test.mjs 'app/[locale]/mytube/page.tsx' components/mandala-free-video-studio.tsx lib/public-locales.ts tests/mytube-navigation.test.mjs
       - name: Production-mode Next build (no Vercel Preview created)
         run: npm run build
       - name: TypeScript type verification
@@ -98,9 +104,12 @@ jobs:
             sleep 2
           done
           node scripts/verify-ideas-mobile-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
+          node scripts/verify-mytube-mobile-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: hh-ideas-mobile-acceptance
-          path: artifacts/ideas-mobile/
+          path: |
+            artifacts/ideas-mobile/
+            artifacts/mytube-mobile/
           retention-days: 7
