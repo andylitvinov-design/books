@@ -69,7 +69,7 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
  assert.match(core,/^  hh-specialist:/m);
  assert.match(core,/^  hh-merge-check:/m);
  assert.doesNotMatch(core,/^  release-ready:|^  hh-core-verified:/m);
- const scope=core.split('  scope:')[1]?.split('  code:')[0];
+ const scope=core.split('  scope:')[1]?.split('  hh-specialist:')[0];
  assert.ok(scope?.includes("github.event.pull_request.draft == false"));
  const specialist=core.split('  hh-specialist:')[1]?.split('  hh-merge-check:')[0];
  assert.ok(specialist.includes('ci-specialist-aggregate.mjs'));
@@ -79,7 +79,7 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
  const merged=core.split('  hh-merge-check:')[1];
  assert.match(merged,/PR_DRAFT/);
  assert.match(merged,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
- assert.match(merged,/\[\[ "\$CODE_RESULT" == success \]\]/);
+ assert.match(merged,/Unified Core gate passed/);
  assert.match(core,/run: npm run build/);
 });
 
@@ -583,12 +583,12 @@ test('existing heavy jobs preflight before dependency install; core release gate
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
   const core = read('hh-pr-core-release.yml');
-  const scope = core.split('  scope:')[1]?.split('  code:')[0];
+  const scope = core.split('  scope:')[1]?.split('  hh-specialist:')[0];
   assert.ok(scope && scope.includes('run: node scripts/ci-pr-readiness.mjs'));
   assert.ok(scope.indexOf('run: node scripts/ci-pr-readiness.mjs') <
     scope.indexOf('name: Classify strictly documentation-only PRs'));
   assert.ok(core.includes('scripts/ci-pr-readiness.mjs|\\'));
-  assert.ok(core.includes('needs: scope'));
+  assert.doesNotMatch(scope,/^\s+needs:/m);
   assert.match(core, /^  hh-merge-check:/m);
   assert.match(core, /run: npm run build/);
   assert.ok(read('hh-pr-sweep-guard.yml').includes("'scripts/ci-pr-readiness.mjs'"));
