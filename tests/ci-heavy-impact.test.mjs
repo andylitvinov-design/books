@@ -278,7 +278,7 @@ test('App R1 short delegated jobs must complete successfully for verified non-ap
     assert.ok(section.includes("if: needs.impact.outputs."+scope+" == 'true'"),
       job+' must retain actual tests when required');
   }
-  assert.match(read('hh-pr-core-release.yml'),/^  release-ready:/m);
+  assert.match(read('hh-pr-core-release.yml'),/^  hh-merge-check:/m);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 

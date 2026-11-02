@@ -18,8 +18,7 @@ const wishes = {
 };
 const results = [];
 
-async function verify(engine, locale, width) {
-  const browser = await engine.launch({headless:true});
+async function verify(engine, browser, locale, width) {
   const label = engine.name() + ":" + locale + ":" + width;
   const context = await browser.newContext({
     viewport:{width,height:844},deviceScaleFactor:1,hasTouch:width<=430,
@@ -230,25 +229,37 @@ async function verify(engine, locale, width) {
     throw error;
   } finally {
     await context.close();
-    await browser.close();
   }
 }
 
-// Before React hydrates there is no filter handler; do not expose an enabled
-// control that can silently lose a visitor's first selection.
-{
-  const browser = await webkit.launch({headless:true});
-  const context = await browser.newContext({javaScriptEnabled:false, viewport:{width:375,height:844}});
-  try {
-    const page = await context.newPage();
-    await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
-    assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
-      'The server-rendered filter must wait for its real click handler');
-  } finally { await context.close(); await browser.close(); }
-}
+// Browser binaries are expensive: use exactly two engine processes for 15
+// independent contexts, plus a dedicated JavaScript-disabled WebKit context.
+// The real pointer, safety, consent, SSR and EN/RU/ES assertions stay unchanged.
+const browsers = new Map();
+try {
+  browsers.set(webkit, await webkit.launch({headless:true}));
+  browsers.set(chromium, await chromium.launch({headless:true}));
 
-for (const locale of ["en","ru","es"]) {
-  for (const width of [320,375,390,430]) results.push(await verify(webkit,locale,width));
-  results.push(await verify(chromium,locale,390));
+  // Before React hydrates there is no filter handler; do not expose an enabled
+  // control that can silently lose a visitor's first selection.
+  {
+    const context = await browsers.get(webkit).newContext({
+      javaScriptEnabled:false,viewport:{width:375,height:844}
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(origin + '/ru/explore/business', {waitUntil:'domcontentloaded',timeout:45000});
+      assert.equal(await page.locator('[data-direction-filter="work-stress"]').isDisabled(),true,
+        'The server-rendered filter must wait for its real click handler');
+    } finally { await context.close(); }
+  }
+
+  for (const locale of ["en","ru","es"]) {
+    for (const width of [320,375,390,430])
+      results.push(await verify(webkit,browsers.get(webkit),locale,width));
+    results.push(await verify(chromium,browsers.get(chromium),locale,390));
+  }
+} finally {
+  await Promise.all([...browsers.values()].map(browser => browser.close()));
 }
 console.log("Current Business direction → consent-gated €50/€100 service browser QA:",results.join(", "));
