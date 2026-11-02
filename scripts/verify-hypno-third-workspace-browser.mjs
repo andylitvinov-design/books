@@ -111,6 +111,19 @@ for(const [engine,driver] of [['chromium',playwright.chromium],['webkit',playwri
             getComputedStyle(node).display);
           assert.equal(titlePhoto,'none',id+': no oversized title photo panel beside controls');
         }
+        // Approved owner mock puts both final CTAs AFTER all four effect
+        // groups. Earlier flex order moved the CTA above Audio despite JSX.
+        const finalActionOrder=await effects.evaluate(panel=>{
+          const last=panel.querySelector('[data-hypno-group="phrases"]');
+          const actions=panel.querySelector('[data-hypno-actions]');
+          if(!(last instanceof HTMLElement)||!(actions instanceof HTMLElement))return null;
+          const l=last.getBoundingClientRect(),a=actions.getBoundingClientRect();
+          return {lastBottom:l.bottom,actionsTop:a.top,
+            order:getComputedStyle(actions).order,buttons:actions.querySelectorAll('button').length};
+        });
+        assert.ok(finalActionOrder&&finalActionOrder.actionsTop>=finalActionOrder.lastBottom-2&&
+          finalActionOrder.buttons===2,
+          engine+' '+locale+' '+width+' final CTA must follow the Effects settings: '+JSON.stringify(finalActionOrder));
         assert.equal(await page.locator('[data-hypno-meditation-action]').count(),1,
           'one actual personal meditation action');
         assert.equal(await page.locator('[data-hypno-create]').count(),1,'single Create');

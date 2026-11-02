@@ -205,3 +205,13 @@ test("hypno regression reuses the EXISTING Mandala browser workflow without CI-p
   assert.match(practice,/GITHUB_EVENT_NAME==="pull_request"/);
   assert.match(practice,/GITHUB_HEAD_REF\|\|""/);
 });
+
+test("last section must precede the two final actions on approved iPhone Hypno",()=>{
+  const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
+  assert.match(css,/\.actions\{order:3;display:grid/);
+  assert.match(css,/\.group\{order:2;display:grid/);
+  assert.match(browser,/data-hypno-actions/);
+  assert.match(browser,/final CTA must follow the Effects settings/);
+  assert.match(browser,/actionsTop>=finalActionOrder\.lastBottom-2/);
+});
