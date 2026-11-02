@@ -288,7 +288,7 @@ const MANDALA_INDEPENDENT_DOMAIN = [
   /^data\/video-catalog\/[a-z0-9.-]+\.json$/i,
   /^app\/\[locale\]\/holistic-support\/mandala\/[a-z0-9./-]+\.(?:ts|tsx)$/i,
 ];
-const PUBLIC_SERVICE_SENSITIVE_NAME = /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|checkout|client|consent|contact|credential|crm|database|enquiry|enquiries|health|medical|message|messaging|migration|order|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
+const PUBLIC_SERVICE_SENSITIVE_NAME = /(?:^|[\/_.-])(?:account|admin|auth|billing|booking|cart|checkout|client|commerce|consent|contact|consultation|credential|crm|database|enquiry|enquiries|health|medical|message|messaging|migration|order|patient|payment|private|privacy|profile|receipt|rls|secret|security|service|services|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
 export function isTrustedMandalaOwnerPath(path, trigger) {
   return typeof path === 'string' && MANDALA_INDEPENDENT_DOMAIN.some(rule => rule.test(path)) &&
     !PUBLIC_SERVICE_SENSITIVE_NAME.test(path) && !!trigger && matchesTrigger(trigger,[path]);
