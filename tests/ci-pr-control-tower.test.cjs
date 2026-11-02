@@ -7,7 +7,7 @@ test('Control Tower skips canceled/skipped callbacks while preserving separate P
  assert.ok(s.includes("github.event_name != 'workflow_run'"));
  assert.ok(s.includes("group: hh-control-tower-${{ github.event_name == 'pull_request'"));
 });
-const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
+const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
 const {trustedContext,planCandidates,run,workerBusyOrCooling}=require('../scripts/ci-pr-queue-dispatcher.cjs');
 const SHA='a'.repeat(40),NOW=Date.parse('2026-11-01T20:00:00Z');
@@ -503,4 +503,65 @@ test('exact-HEAD conflict receipt is idempotent and does not block a source work
  assert.equal(second.manualConflictHandoffs,0);
  assert.equal(same.calls.reserved.length,0);
  assert.equal(same.calls.dispatched.length,0);
+});
+
+test('explicit same-owner release frees modern exact-head owner without time expiry',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const actor={login:'andylitvinov-design'};
+ const lease={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-video',lease_id:'lease-17',
+  head_sha:SHA,state:'active',expires_at:new Date(NOW-5_000).toISOString()};
+ const release={...lease,state:'released',released_at:new Date(NOW+1_000).toISOString()};
+ const body=x=>'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x);
+ const events=[{id:100,user:actor,body:body(lease)},
+  {id:101,user:actor,body:body(release)}];
+ assert.equal(externalOwnerLeaseStatus(events,SHA,NOW),'FREE');
+ assert.equal(reservationStatus(task,events,NOW),'FREE');
+ assert.equal(reservationStatus(task,events.slice(0,1),NOW),'OWNER_LEASE_ACTIVE');
+});
+test('foreign actors, other lease IDs and fresh heartbeats cannot free source',()=>{
+ const task=taskFor(pr(1),{tier:'P1'});
+ const actor={login:'andylitvinov-design'},stranger={login:'other-user'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-voice',lease_id:'real-lease',
+  head_sha:SHA,state:'active',expires_at:new Date(NOW-1_000).toISOString()};
+ const wrap=(lease,user=actor)=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify(lease)});
+ const release={...base,state:'released'};
+ for(const wrong of [
+  wrap(release,stranger),
+  wrap({...release,owner:'other-owner'}),
+  wrap({...release,lease_id:'other-lease'})
+ ]){
+  assert.equal(reservationStatus(task,[wrap(base),wrong],NOW),'OWNER_LEASE_ACTIVE');
+ }
+ const events=[wrap(base),wrap(release),
+  wrap({...base,state:'heartbeat',expires_at:new Date(NOW+60_000).toISOString()})];
+ assert.equal(externalOwnerLeaseStatus(events,SHA,NOW),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([...events,wrap(release)],SHA,NOW),'FREE');
+});
+test('independent active leases cannot be revoked by a release for another lease',()=>{
+ const actor={login:'andylitvinov-design'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'editor',head_sha:SHA,
+  state:'active',expires_at:new Date(NOW+10000).toISOString()};
+ const wrap=l=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(l)});
+ const records=[wrap({...base,lease_id:'a'}),wrap({...base,lease_id:'b'}),
+  wrap({...base,lease_id:'a',state:'released'})];
+ assert.equal(externalOwnerLeaseStatus(records,SHA,NOW),'OWNER_LEASE_ACTIVE');
+ records.push(wrap({...base,lease_id:'b',state:'released'}));
+ assert.equal(externalOwnerLeaseStatus(records,SHA,NOW),'FREE');
+});
+test('release may identify original HEAD using previous_head_sha, not a changed source HEAD',()=>{
+ const actor={login:'andylitvinov-design'};
+ const base={schema:'HH_PR_SWEEP_LEASE_V1',owner:'editor',
+  head_sha:SHA,lease_id:'lease-previous',state:'active',
+  expires_at:new Date(NOW-30000).toISOString()};
+ const released={...base,head_sha:'b'.repeat(40),previous_head_sha:SHA,state:'released'};
+ const wrap=v=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(v)});
+ assert.equal(externalOwnerLeaseStatus([wrap(base),wrap(released)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(base),wrap(released)],'b'.repeat(40),NOW),'FREE');
+});
+test('malformed release histories remain fail-closed for all workflows',()=>{
+ const t=taskFor(pr(1),{tier:'P1'});
+ const bad=[{body:'<!-- HH_PR_SWEEP_LEASE_V1 --> not JSON'}];
+ assert.equal(externalOwnerLeaseStatus(bad,SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+ assert.equal(reservationStatus(t,bad,NOW),'OWNER_LEASE_UNVERIFIED');
 });
