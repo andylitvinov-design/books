@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { ArrowRight, BarChart3, Camera, Check, ChevronDown, Coins, Download, Film, HandHeart, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
@@ -1603,6 +1603,12 @@ const quickStyleSceneIds: Record<VideoTheme, readonly string[]> = {
   health:["morning-dew","sea-breeze","calm-sea","mossy-stream","gentle-falls","morning-dew"],
 };
 const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
+const effectsThemeOrder: VideoTheme[] = ["life","energy","relationships","goals","money","health"];
+const effectsThemeNames: Record<PublicLocale,Record<VideoTheme,string>> = {
+  ru:{life:"Спокойствие",energy:"Энергия",relationships:"Отношения",goals:"Цели",money:"Изобилие",health:"Здоровье"},
+  en:{life:"Calm",energy:"Energy",relationships:"Relationships",goals:"Goals",money:"Abundance",health:"Wellbeing"},
+  es:{life:"Calma",energy:"Energía",relationships:"Relaciones",goals:"Objetivos",money:"Abundancia",health:"Bienestar"},
+};
 /** These Canvas-only animated scenes have NO standalone H.264 master.
  * Curated first-party JPGs in the gallery are illustrative, not fake MP4s. */
 const quickCanvasScenePoster: Partial<Record<LocalSceneId,string>> = {
@@ -2112,15 +2118,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
-  // Restore the original all-topic theme rail on desktop. The compact
-  // 2×2 goal picker with collapsed optional themes is iPhone-only.
+  // The canonical theme selector is collapsed on small Video screens,
+  // expanded on desktop, and always visible in the third Effects workspace.
+  // Keep this DOM state in sync with the React open prop and media-query events.
   useEffect(()=>{
     const large=window.matchMedia("(min-width: 760px)");
-    const sync=()=>{if(quickThemeAdvancedRef.current)quickThemeAdvancedRef.current.open=large.matches;};
+    const sync=()=>{if(quickThemeAdvancedRef.current)
+      quickThemeAdvancedRef.current.open=large.matches||activeWorkspace==="effects";};
     sync();
     large.addEventListener("change",sync);
     return()=>large.removeEventListener("change",sync);
-  },[]);
+  },[activeWorkspace]);
 
 
   // A successful recording (or a codec failure) must be immediately visible
@@ -3165,9 +3173,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(route!==window.location.pathname+window.location.search+window.location.hash)return;
         if(hash==="video-audio"||hash==="voice-studio")
           document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
-        document.getElementById(hash==="voice-studio"?"video-audio":hash)?.scrollIntoView({
-          behavior:"instant" as ScrollBehavior,block:"start",
-        });
+        // Effects' hash target is *below* the player and goal step. Scroll
+        // the single brand entry instead so opening the third tab reveals its
+        // title, Wave, film and goals, not only the bottom options list.
+        const anchor=hash==="video-hypnocorrection-mobile"
+          ?document.querySelector<HTMLElement>("[data-video-hypno-scroll-start]")
+          :document.getElementById(hash==="voice-studio"?"video-audio":hash);
+        anchor?.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"start"});
       }));
     };
     reveal();window.addEventListener("hashchange",reveal);
@@ -3579,7 +3591,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
           enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing||phrasePending} onAttach={attachGeneratedAffirmationAudio}
+          disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.narration?null:current)}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
@@ -3831,6 +3843,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
+  // Only the third workspace may portal the original tab rail ahead of Wave.
+  // All other workspaces keep the source-order hero -> tabs hierarchy.
+  const [effectsNavTarget,setEffectsNavTarget]=useState<HTMLElement|null>(null);
+  useLayoutEffect(()=>{
+    const mobile=window.matchMedia("(max-width: 759px)");
+    const sync=()=>setEffectsNavTarget(activeWorkspace==="effects"&&mobile.matches
+      ?document.querySelector<HTMLElement>("[data-video-hypno-nav-slot]"):null);
+    sync();
+    mobile.addEventListener("change",sync);
+    return()=>mobile.removeEventListener("change",sync);
+  },[activeWorkspace]);
+
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode}
@@ -3842,7 +3866,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
-        <nav className={videoStyles.quickBrandBar} aria-label="Holistic House">
+        <nav className={videoStyles.quickBrandBar} data-video-hypno-scroll-start aria-label="Holistic House">
           <Link href={"/"+locale+"/"} prefetch={false} className={videoStyles.quickBrandBack}
             aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
             <Leaf size={29} aria-hidden="true"/>
@@ -3900,14 +3924,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal"}</h3>
+            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal")}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
           <div className={videoStyles.quickGoalHost} data-video-director-goal-controls/>
-          <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced>
+          <details ref={quickThemeAdvancedRef} className={videoStyles.quickThemeAdvanced} data-video-theme-advanced open={activeWorkspace==="effects"||undefined}>
             <summary>{locale==="ru"?"Все темы и образы":locale==="es"?"Más temas e imágenes":"More topics and imagery"}</summary>
           <div className={videoStyles.quickThemeRail} role="group" aria-label={quick.theme}>
-            {quickThemeOrder.map(value=>{
+            {(activeWorkspace==="effects"?effectsThemeOrder:quickThemeOrder).map(value=>{
               const Icon=value==="energy"?Zap:value==="health"?HeartPulse:value==="relationships"?Heart:value==="money"?Coins:value==="goals"?Target:Sprout;
               const poster=value==="money"
                 ?getRealMoneyFilm(quickStyleSceneIds[value][0] as MoneySceneId).poster
@@ -3924,7 +3948,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={poster} alt="" loading="lazy"/>
                 <span className={videoStyles.quickThemeIcon}><Icon size={23} aria-hidden="true"/></span>
-                <span className={videoStyles.quickThemeName}>{approved.themes[value]}</span>
+                <span className={videoStyles.quickThemeName}>{activeWorkspace==="effects"?effectsThemeNames[locale][value]:approved.themes[value]}</span>
               </button>;
             })}
           </div>
@@ -3998,6 +4022,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
+        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoNavSlot}
+          data-video-hypno-nav-slot/> : null}
         {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
           data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
 
@@ -4049,6 +4075,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
+      {(()=>{
+        // Original single rail stays in source order after the only player,
+        // then portals above Wave *only* when the Effects slot exists.
+        const nav=(
       <nav className={videoStyles.quickVideoNav} data-video-quick-controls
         aria-label={locale==="ru"?"Разделы видеостудии":locale==="es"?"Secciones del estudio":"Video Studio workspaces"}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
@@ -4061,6 +4091,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setTherapyJumpRequested(false);
           }}><item.Icon size={18} aria-hidden="true"/><span>{workspaceCopy[locale][item.id].tab}</span></button>)}
       </nav>
+        );
+        return activeWorkspace==="effects"&&effectsNavTarget
+          ?createPortal(nav,effectsNavTarget):nav;
+      })()}
       {/* Show the introductory film separately; the Canvas stays usable. */}
       {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
         data-workspace-section="practices" data-video-therapy-info>

@@ -95,6 +95,17 @@ export function AnalyticsPreferences() {
 
 const publicStatsCookie = "hh_public_stats_consent";
 const publicStatsChoiceEvent = "holistic-house:public-stats-consent";
+const enquiryAttributionConsent = "hh_enquiry_attribution_consent";
+const enquiryAttributionSource = "hh_enquiry_source_v1";
+function clearEnquiryAttribution() {
+  document.cookie = enquiryAttributionSource + "=; Path=/; Max-Age=0; SameSite=Lax";
+}
+export function setEnquiryAttributionConsent(allow: boolean) {
+  document.cookie = enquiryAttributionConsent + "=" + (allow ? "v1" : "denied") +
+    "; Path=/; Max-Age=31536000; SameSite=Lax; Secure";
+  if (!allow) clearEnquiryAttribution();
+  window.dispatchEvent(new Event(publicStatsChoiceEvent));
+}
 function firstPartyCookie(name: string) {
   return document.cookie.split("; ").find(part => part.startsWith(name + "="))?.split("=")[1];
 }
@@ -109,23 +120,49 @@ export function setFirstPartyConsent(allow: boolean) {
 /** Separate, explicit consent for anonymous first-party counters.
  * The Google/Meta safety hold above is never lifted by this preference. */
 export function FirstPartyStatsPreferences() {
+  const pathname = usePathname() || "";
+  const [attributionLanguage, setAttributionLanguage] = useState<"en" | "ru" | "es">("en");
   const [allowed, setAllowed] = useState(false);
+  const [attributionAllowed, setAttributionAllowed] = useState(false);
   const [excluded, setExcluded] = useState(false);
 
   useEffect(() => {
-    setAllowed(firstPartyCookie(publicStatsCookie) === "v1");
-    setExcluded(firstPartyCookie("hh_public_stats_skip") === "1");
-  }, []);
+    const pathLanguage = pathname.match(/^\/(en|ru|es)(?:\/|$)/)?.[1];
+    const language = pathLanguage || document.documentElement.lang;
+    setAttributionLanguage(language === "ru" || language === "es" ? language : "en");
+    const sync = () => {
+      setAllowed(firstPartyCookie(publicStatsCookie) === "v1");
+      setAttributionAllowed(firstPartyCookie(enquiryAttributionConsent) === "v1");
+      setExcluded(firstPartyCookie("hh_public_stats_skip") === "1");
+    };
+    sync();
+    window.addEventListener(publicStatsChoiceEvent, sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener(publicStatsChoiceEvent, sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, [pathname]);
 
   function decide(allow: boolean) {
     setFirstPartyConsent(allow);
     setAllowed(allow);
   }
+  function decideAttribution(allow: boolean) {
+    setEnquiryAttributionConsent(allow);
+    setAttributionAllowed(allow);
+  }
   function exclude(skip: boolean) {
     document.cookie = `hh_public_stats_skip=${skip ? "1" : ""}; Path=/; Max-Age=${skip ? 31536000 : 0}; SameSite=Lax; Secure`;
     setExcluded(skip);
+    if (skip) clearEnquiryAttribution();
     window.dispatchEvent(new Event(publicStatsChoiceEvent));
   }
+  const attributionCopy = {
+    en:{description:"Separately, allow the first and previous public pages recorded after consent, coarse source and approved campaign name, if present, from this browser to be linked to a service enquiry you submit. Earlier sources may be unknown. The practitioner can see this context with the enquiry. This is optional. Withdrawal stops future linking; it does not erase context already saved with an enquiry.",allow:"Allow enquiry source",deny:"Do not link source"},
+    ru:{description:"Отдельно разрешаю связать первую и предыдущую публичные страницы, записанные после согласия, общий источник перехода и название разрешённой кампании, если оно есть, с моей заявкой. Более ранний источник может остаться неизвестным. Мастер увидит этот контекст вместе с заявкой. Согласие необязательно. Отзыв остановит привязку к будущим заявкам, но не удалит уже сохранённый контекст.",allow:"Разрешить источник заявки",deny:"Не связывать источник"},
+    es:{description:"Por separado, permite vincular la primera página pública y la anterior registradas tras el consentimiento, el origen general y el nombre de una campaña aprobada, si existe, con una solicitud que envíes. El origen anterior puede ser desconocido. El profesional verá este contexto con la solicitud. Es opcional. Retirarlo detiene futuras vinculaciones, pero no borra el contexto ya guardado.",allow:"Permitir origen de solicitud",deny:"No vincular origen"},
+  }[attributionLanguage];
 
   return (
     <section data-first-party-consent className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Anonymous website statistics">
@@ -145,6 +182,13 @@ export function FirstPartyStatsPreferences() {
           className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800">
           Do not count my visit
         </button>
+      </div>
+      <p className="mb-0 mt-4 text-sm text-stone-800">{attributionCopy.description}</p>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={attributionCopy.allow}>
+        <button type="button" onClick={() => decideAttribution(true)} disabled={excluded} aria-pressed={attributionAllowed && !excluded}
+          className="min-h-11 rounded-full border border-amber-800 bg-white px-4 py-2 text-sm text-amber-950 disabled:opacity-50">{attributionCopy.allow}</button>
+        <button type="button" onClick={() => decideAttribution(false)} aria-pressed={!attributionAllowed}
+          className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800">{attributionCopy.deny}</button>
       </div>
       <label className="mt-3 flex items-center gap-3 text-sm text-stone-900">
         <input type="checkbox" checked={excluded} onChange={event => exclude(event.target.checked)}

@@ -148,6 +148,11 @@ test("express review WebKit reveal stays immediately below its button throughout
   const express = read("components/personal-express-enquiry.tsx");
   assert.match(express, /data-express-reveal aria-expanded=\{expanded\}/);
   assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(express, /const closeDisclosure = useCallback\(\(\) => \{/);
+  assert.match(express, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(express, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(express, /event\.key === "Escape"[\s\S]*?closeDisclosure\(\)/);
+  assert.match(read("scripts/verify-free-review-live-mobile.mjs"), /closing clears the stale review anchor/);
   assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
