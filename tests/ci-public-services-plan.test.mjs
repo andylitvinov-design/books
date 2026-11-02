@@ -451,7 +451,10 @@ test('Public Services runs real browsers for protected payments and consent, not
   assert.match(src, /if: always\(\) && steps\.scope\.outputs\.build == 'true' && \(github\.event_name != 'pull_request' \|\| steps\.guarded\.outputs\.critical == 'true'\)/);
   assert.match(src, /Fast public consent, service and Reiki contract tests/);
   assert.match(src, /node --test tests\/contact-channel-chooser\.test\.mjs tests\/services-browser-order-contract\.test\.mjs tests\/reiki-unified-order-capture\.test\.mjs tests\/public-service-enquiries\.test\.mjs/);
-  assert.match(src, /Only payment, consent, account and other explicitly protected source changes require real browser QA/);
+  assert.match(src, /Other high-risk Public Services changes use protected real/);
+  assert.match(src, /editor_only=true/);
+  assert.match(src, /steps\.scope\.outputs\.pr_heavy/);
+  assert.match(src, /Empty or unavailable PR diff, cannot narrow browser QA/);
   assert.match(src, /node --test tests\/ci-public-services-plan\.test\.mjs/);
   assert.match(src, /tests\/talisman-google-checkout\.test\.mjs/);
   for (const risky of ['app/api/payments/talismans/checkout/route.js', 'middleware.ts', 'components/commerce/service-cart.tsx']) {

@@ -224,21 +224,33 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             critical=true
           elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            # GitHub's two-parent PR test merge provides the exact file list.
-            git rev-parse HEAD^2 >/dev/null
+            # Only an isolated video-editor/CI delta may skip unrelated public
+            # checkout/browser suites. Other high-risk public changes keep
+            # the original risk-planner's mandatory full acceptance.
+            git rev-parse HEAD^1 HEAD^2 >/dev/null
             git diff --no-renames --name-only -z HEAD^1 HEAD > "$RUNNER_TEMP/hh-public-critical.z"
+            editor_only=true
+            count=0
             while IFS= read -r -d '' file; do
+              count=$((count + 1))
               case "$file" in
-                app/api/payments/*|app/api/service-enquiries/*|app/api/app/*|app/api/public/*|lib/commerce/*|lib/checkout/*|components/commerce/*|lib/practitioners/enquiry-receipt.mjs|components/*consent*|components/*checkout*|components/*payment*|components/contact-channel-chooser*|components/consultation-choice-capture*|components/public-consultation-cta*|components/free-diagnosis-offers*|components/phone-country-input*|middleware.ts|next.config.*|package.json|package-lock.json)
-                  critical=true
-                  break
+                .github/workflows/hh-pr-core-release.yml|.github/workflows/hh-public-services-production.yml|.github/workflows/holistic-support-mandala.yml|components/mandala-*|lib/mandala/*|tests/mandala-*|tests/video-*|tests/first-video-*|tests/affirmation-voice-browser-attachment.test.mjs|scripts/verify-holistic-mandala-browser.mjs|scripts/verify-affirmation-voice-browser.mjs|scripts/benchmarking/first-video-live-export.mjs|scripts/benchmarking/video-director-chat-live-acceptance.mjs|scripts/ci-public-services-plan.mjs|tests/ci-public-services-plan.test.mjs|tests/ci-heavy-impact.test.mjs|tests/ci-heavy-draft-policy.test.mjs|tests/pr-fast-lane.test.mjs|docs/design/HYPNOCORRECTION_MOBILE_V1_20261030.md)
+                  ;;
+                *)
+                  editor_only=false
                   ;;
               esac
             done < "$RUNNER_TEMP/hh-public-critical.z"
+            if (( count == 0 )); then
+              echo '::error::Empty or unavailable PR diff, cannot narrow browser QA' >&2
+              exit 1
+            fi
+            if [[ "$editor_only" != true && "${{ steps.scope.outputs.pr_heavy }}" == true ]]; then critical=true; fi
+            echo "Public Services editor-only: $editor_only; planner-heavy: ${{ steps.scope.outputs.pr_heavy }}; browser-required: $critical" >> "$GITHUB_STEP_SUMMARY"
           fi
           if [[ "$critical" == true ]]; then
             [[ "${{ steps.scope.outputs.browser }}" == true && "${{ steps.scope.outputs.build }}" == true ]] || {
-              echo '::error::Critical public payment/consent change must retain real-browser build' >&2
+              echo '::error::High-risk public change must retain real-browser production build' >&2
               exit 1
             }
           fi
@@ -273,7 +285,7 @@ jobs:
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
-          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Only payment, consent, account and other explicitly protected source changes require real browser QA on PRs. UI/editor work uses fast contracts; the full matrix remains available via manual workflow_dispatch. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Public Services PR: source, lint and targeted consent/service/booking contracts only. Impact=${{ steps.scope.outputs.mode }}; heavy-risk=${{ steps.scope.outputs.pr_heavy }}; candidate manual cases=${{ steps.scope.outputs.cases }}. Isolated Mandala/editor and CI-only PRs use fast contracts. Other high-risk Public Services changes use protected real browser QA; full manual workflow_dispatch remains available. For full standalone QA, run workflow_dispatch on the precise PR branch/commit before release; Core/security/release-ready remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Production build and public browser acceptance
         if: ${{ steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.guarded.outputs.critical == 'true') }}
         env:
