@@ -431,6 +431,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   let retryAfter=null,reservationRunId=null;
   const suppliedRun=String(context.payload?.inputs?.reservation_run_id||'');
   if(sameHead&&claimResult==='success'&&claimStatus==='skipped'&&
+     fixResult==='skipped'&&publishResult==='skipped'&&!publishStatus&&
      SAFE_NO_CLAIM_REASONS.has(claimReason)&&/^\d+$/.test(suppliedRun)){
     const signed=comments.filter(trustedControlComment);
     const records=signed.flatMap(comment=>parseRecords([comment])||[]);

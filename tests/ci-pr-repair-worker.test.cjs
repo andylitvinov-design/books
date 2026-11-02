@@ -484,7 +484,8 @@ test('preclaim retry is refused for unsigned reservations, active claims or budg
   const f=fixture({comments});
   const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
    number:11,expectedSha:sha,taskKey:task.task_key,claimStatus:'skipped',
-   claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success'});
+   claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'skipped',publishResult:'skipped'});
   assert.equal(x.state,'REJECTED');
   assert.equal(x.source_published,false);
   assert.equal(f.log.labels,0);
@@ -498,7 +499,9 @@ test('missing owner token and interrupted claim may not unlock a source reservat
   body:commentBody(reservation(task,Date.now()-1000,42))};
  for(const props of [
   {claimStatus:'skipped',claimReason:'HH_AUTOMERGE_TOKEN_MISSING',claimResult:'success'},
-  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'failure'}
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'failure'},
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'success',publishResult:'skipped'}
  ]){
   const f=fixture({comments:[reserved]});
   const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
