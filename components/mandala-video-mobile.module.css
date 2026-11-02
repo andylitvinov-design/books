@@ -2837,3 +2837,29 @@
  .studio[data-active-workspace="effects"] .hypnoNavSlot>.quickVideoNav{
    display:grid;width:100%;min-width:0;margin:0}
 }
+
+
+/* 2026-11-02: the Video page uses the compact Holistic House mobile hierarchy.
+   Keep the full brand and subtitle on desktop; do not add a second mobile header. */
+.quickBrandMobileTitle{display:none}
+@media(max-width:759px){
+  .studio .quickBuilder>.quickBrandBar{
+    min-height:44px;gap:8px;align-items:center;margin:0 0 3px;
+    padding:0 3px 4px;border:0;box-shadow:none;background:transparent
+  }
+  .studio .quickBuilder .quickBrandBack{
+    width:42px;height:42px;flex:none;border:1px solid #dce9de;
+    border-radius:14px;background:#fffdf8;color:#176d54
+  }
+  .studio .quickBuilder .quickBrandBack svg{width:25px;height:25px;color:#176d54}
+  .studio .quickBrandIdentity{gap:0;min-width:0}
+  .studio .quickBrandIdentity strong,.studio .quickBrandIdentity small{display:none}
+  .studio .quickBrandMobileTitle{
+    display:block;color:#163f34;font:800 clamp(18px,4.7vw,23px)/1.15 Arial,Helvetica,sans-serif;
+    letter-spacing:-.025em;overflow-wrap:anywhere
+  }
+  .studio .quickBrandProfile{
+    width:42px;height:42px;flex:none;border-radius:14px;
+    background:#f4f8ef;border-color:#dce9de;color:#176d54
+  }
+}

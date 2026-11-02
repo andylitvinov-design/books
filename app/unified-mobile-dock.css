@@ -16,3 +16,9 @@ body:has([data-hh-unified-dock]) [data-practice-showcase]{
 }
 body:has([data-hh-unified-dock]) [data-hh-unified-dock][data-keyboard-open="true"]{display:none}
 body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 20px)}
+
+/* The mandala editor has its own compact top context and a shared global dock.
+   The old end-of-page settings/header control must not appear as a second bar. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]) [data-mandala-legacy-header]{display:none!important}
+}

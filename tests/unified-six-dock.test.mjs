@@ -149,3 +149,22 @@ test("manual narration disclosure cancels deferred course omission close",()=>{
  assert.ok(studio.includes('<summary onClick={()=>{meditationDisclosureEpochRef.current++;}}>'));
  assert.match(studio,/if\(epoch!==meditationDisclosureEpochRef\.current\)return;/);
 });
+
+
+test("Video Mandala uses a compact, public mobile header and Reiki filters cannot lift navigation",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const studioCss=read("components/mandala-video-mobile.module.css");
+ const supportCss=read("components/holistic-support-mobile.module.css");
+ const originalDock=read("components/holistic-support-mandala-dock.tsx");
+ const global=read("app/unified-mobile-dock.css");
+ assert.ok(studio.includes('href={"/"+locale+"/holistic-support/mobile"} prefetch={false} className={videoStyles.quickBrandBack}'));
+ assert.match(studio,/quickBrandMobileTitle/);
+ for(const translated of ["Видео-мандала","Vídeo mandala","Video mandala"])
+  assert.ok(studio.includes(translated),translated);
+ assert.match(studioCss,/\.quickBrandMobileTitle\{display:none\}/);
+ assert.match(studioCss,/\.studio \.quickBrandMobileTitle\{\s*display:block/);
+ assert.doesNotMatch(supportCss,/\.page:has\(\[data-support-reiki-central\]\[data-active-tab="filter"\]\) \.bottomNav\s*\{/);
+ assert.match(originalDock,/data-mandala-legacy-header/);
+ assert.match(global,/data-mandala-legacy-header/);
+ assert.match(global,/data-mandala-support-bottom-nav/);
+});

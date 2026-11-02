@@ -82,6 +82,20 @@ try{
  await dock.locator('[data-unified-dock-item="video"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mandala\/?$/,{timeout:45000});
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
+ const videoHeader=page.locator("[data-video-hypno-scroll-start]");
+ await videoHeader.waitFor({state:"visible",timeout:45000});
+ assert.equal((await videoHeader.innerText()).trim(),"Видео-мандала","Video has a single short mobile title");
+ assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,
+   "no duplicate end-of-page header");
+ assert.equal(await page.locator("[data-mandala-support-bottom-nav]:visible").count(),0,
+   "no legacy footer alongside the unified dock");
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ await page.waitForFunction(()=>{
+   const el=document.querySelector("[data-hh-unified-dock]");
+   if(!el)return false;
+   const v=window.visualViewport;
+   return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
+ },null,{timeout:10000});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/#video-director-chat$/,{timeout:25000});
  const chat=page.locator("[data-video-director-chat-details]");
