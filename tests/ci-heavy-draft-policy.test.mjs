@@ -74,7 +74,8 @@ test('Draft cannot pass Specialist or required unified merge gate; Ready restore
  const specialist=core.split('  hh-specialist:')[1]?.split('  hh-merge-check:')[0];
  assert.ok(specialist.includes('ci-specialist-aggregate.mjs'));
  assert.ok(specialist.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
- assert.ok(specialist.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
+ assert.ok(specialist.includes('if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then'), 'draft specialist checks stay fail-closed');
+ assert.ok(specialist.includes('[[ "$EVENT_NAME" == pull_request ]] || {'), 'non-PR specialist checks stay fail-closed');
  const merged=core.split('  hh-merge-check:')[1];
  assert.match(merged,/PR_DRAFT/);
  assert.match(merged,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
