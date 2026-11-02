@@ -161,3 +161,16 @@ test('Android website APK rejects version rollback and certificate rotation',asy
     ['unknown status',{...empty,android:{status:'unknown'}},first]
   ])assert.throws(()=>verifyDirectApkCandidate(registry,input),/HH_DIRECT_APK_/,label)
 })
+
+test('operator release instructions keep direct website APK independent of stores and optional Firebase',()=>{
+  const runbook=readSource('docs/releases/HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md')
+  for(const text of [
+    'Google Play не требуется','build_play_aab=false','Firebase не нужен для сборки APK',
+    'HH_EXPECTED_WEBSITE_CERT_SHA256','HH-Website-APK-<version_code>-NOT-PUBLISHED',
+    'ownerApproved:true','HH_NATIVE_PUBLIC_RELEASES_ENABLED=true','Android Developer Console'
+  ])assert.ok(runbook.includes(text),'missing direct Android release contract: '+text)
+  assert.ok(!runbook.includes('Verify with [Play Console]'))
+  assert.ok(!runbook.includes('Fresh Play internal install'))
+  assert.ok(runbook.includes('/api/native-download/android'))
+  assert.ok(runbook.includes('сначала') || runbook.includes('До этого API обязан возвращать 404'))
+})
