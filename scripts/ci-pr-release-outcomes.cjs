@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const {trustedContext}=require('./ci-pr-live-verifier.cjs');
 const {verifyServedRevision}=require('./ci-pr-served-release.cjs');
 const PROD='codex/public-book-library', SHA=/^[0-9a-f]{40}$/i;
-const HOUR=3600000, WINDOW_HOURS=24, PAGE_LIMIT=5, ANCESTRY_LIMIT=40;
+const HOUR=3600000, WINDOW_HOURS=24, PAGE_LIMIT=5, ANCESTRY_LIMIT=200, HISTORY_PAGES=10;
 const round=n=>Math.round(n*10)/10;
 function percentile(values,p){
  const a=values.filter(Number.isFinite).sort((x,y)=>x-y);
@@ -76,20 +76,66 @@ async function recentCoreRuns(github,{owner,repo},sinceMs){
   p50_queue_minutes:percentile(rows.map(r=>
    elapsedMinutes(r.created_at,r.run_started_at)),.5)};
 }
-async function confirmedAncestry(github,{owner,repo},prs,productionSha){
- const evidence=[];let comparisons=0,errors=0;
+// A 24h cohort often contains >40 merged PRs. Walk the immutable served
+// commit's GitHub history once (100 SHA/page), rather than issuing one expensive
+// compare API request per successful merge. Missing entries are conservatively
+// classified with a bounded compare, never assumed not-live from a short page.
+async function confirmedAncestry(github,{owner,repo},prs,servedSha){
+ const confirmed=new Set(),valid=[],pending=new Map();
+ let errors=0,comparisons=0,historyPages=0,historyCommits=0,historyHits=0;
+ let historyFailed=false;
+ if(!SHA.test(servedSha||''))return {confirmed,comparisons,errors:1,
+  complete:false,historyPages,historyCommits,historyHits};
  for(const pr of prs.slice(0,ANCESTRY_LIMIT)){
-  const sha=pr.merge_commit_sha;
+  const sha=pr?.merge_commit_sha;
   if(!SHA.test(sha||'')){errors++;continue;}
+  valid.push(pr);
+  const key=sha.toLowerCase();
+  if(!pending.has(key))pending.set(key,[]);
+  pending.get(key).push(pr.number);
+ }
+ if(typeof github.rest.repos.listCommits==='function' && pending.size){
+  try{
+   for(let page=1;page<=HISTORY_PAGES && pending.size;page++){
+    const response=await github.rest.repos.listCommits({owner,repo,
+     sha:servedSha,per_page:100,page});
+    const batch=response?.data;
+    if(!Array.isArray(batch))throw Error('UNVERIFIED_GIT_COMMIT_PAGE');
+    // A response for a different ref must not become a positive LIVE proof.
+    if(page===1 && batch[0]?.sha?.toLowerCase()!==servedSha.toLowerCase())
+     throw Error('GIT_HISTORY_HEAD_MISMATCH');
+    historyPages++;historyCommits+=batch.length;
+    for(const item of batch){
+     const key=String(item?.sha||'').toLowerCase();
+     const linked=pending.get(key);
+     if(!linked)continue;
+     for(const number of linked)confirmed.add(number);
+     historyHits+=linked.length;
+     pending.delete(key);
+    }
+    if(batch.length<100)break;
+   }
+  }catch{historyFailed=true;}
+ }
+ // A merged PR newer than the deployed SHA is not in its history. Compare
+ // those remaining individually; 'behind' and 'diverged' are known NOT served.
+ // An unknown API outcome is incomplete coverage, never a verified LIVE.
+ for(const pr of valid){
+  if(confirmed.has(pr.number))continue;
+  const sha=pr.merge_commit_sha;
   comparisons++;
   try{
    const {data}=await github.rest.repos.compareCommits({owner,repo,
-     base:sha,head:productionSha});
-   if(ancestryValid(data,sha))evidence.push(pr.number);
+    base:sha,head:servedSha});
+   if(ancestryValid(data,sha))confirmed.add(pr.number);
+   else if(!['ahead','behind','diverged'].includes(data?.status))errors++;
+   else if(data.status==='ahead' && !SHA.test(data.merge_base_commit?.sha||''))errors++;
   }catch{errors++;}
  }
- return {confirmed:new Set(evidence),comparisons,errors,
-  complete:prs.length<=ANCESTRY_LIMIT && errors===0};
+ return {confirmed,comparisons,errors,
+  complete:prs.length<=ANCESTRY_LIMIT && errors===0,
+  historyPages,historyCommits,historyHits,historyFailed,
+  capped:prs.length>ANCESTRY_LIMIT};
 }
 async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
@@ -99,7 +145,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   live_coverage:'UNVERIFIED',merged_coverage:'UNVERIFIED',
   core:null,pr_to_merge_p50_minutes:null,pr_to_merge_p90_minutes:null,
   merge_to_live_observation_upper_bound_p50_minutes:null,
-  sampled_prs:[],errors:[]};
+  sampled_prs:[],ancestry:null,errors:[]};
  const finish=async()=>{
   if(reportPath){try{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');}
     catch(err){report.errors.push('WRITE_REPORT_'+String(err.code||'error'));}}
@@ -139,6 +185,10 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     SHA.test(actualLive.production_sha||'')){
   try{
    const proof=await confirmedAncestry(github,{owner,repo},prs,actualLive.production_sha);
+   report.ancestry={history_pages:proof.historyPages,history_commits:proof.historyCommits,
+    history_matches:proof.historyHits,compare_requests:proof.comparisons,
+    history_read_failed:proof.historyFailed,capped:proof.capped,
+    coverage:proof.complete?'complete':'partial'};
    const still=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
    if(still?.commit?.sha !== (actualLive.current_head_sha||actualLive.production_sha)){
     report.errors.push('PRODUCTION_HEAD_CHANGED');
