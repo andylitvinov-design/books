@@ -90,37 +90,18 @@ async function recordLive({github, context, report, logger}) {
   return {state: recorded.length ? 'RECORDED' : 'NO_EXACT_MERGED_PR', recorded};
 }
 
-async function countWindow({github, context, now = Date.now()}) {
-  if (!trusted(context)) return {state: 'UNTRUSTED_CONTEXT'};
-  const since = new Date(now - 86400000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-  const query = 'repo:' + REPO + ' is:pr is:merged base:' + PROD + ' merged:>=' + since;
-  const [merged, live] = await Promise.all([
-    github.rest.search.issuesAndPullRequests({q: query, per_page: 1}),
-    github.rest.search.issuesAndPullRequests({q: query + ' label:' + LABEL, per_page: 1}),
-  ]);
-  for (const x of [merged.data, live.data]) {
-    if (!Number.isSafeInteger(x?.total_count) || x.incomplete_results)
-      return {state: 'PARTIAL_SEARCH_RESULT', since};
-  }
-  return {state: 'OK', since, window: 'rolling_24h',
-    merged: merged.data.total_count, confirmed_live: live.data.total_count,
-    live_confirmation_rate: merged.data.total_count > 0 ?
-      Number((live.data.total_count / merged.data.total_count).toFixed(3)) : null,
-    note: 'Counts based on merge-date cohort and durable evidence receipts; LIVE may lag deployment. Do not interpret these labels as proof of live user/provider functionality.'};
-}
-
+// Only the independent LIVE verifier supplies deployment evidence. This job
+// writes a durable PR receipt, never makes its own assertion of deployment.
 async function run({github, core, context, liveReport, now = Date.now()}) {
-  const report = {schema: 'HH_PR_RELEASE_KPI_V1', checked_at: new Date(now).toISOString(),
+  const report = {schema: 'HH_LIVE_RECEIPTS_V1', checked_at: new Date(now).toISOString(),
     latest_live: certified(liveReport), latest_reason: liveReport?.reason || 'NO_LIVE_REPORT',
-    receipt: null, cohort: null};
-  if (!trusted(context)) {report.receipt = {state: 'UNTRUSTED_CONTEXT'}; return report;}
-  try {report.receipt = await recordLive({github, context, report: liveReport, logger: msg => core.info(msg)});}
+    receipt: null};
+  if (!trusted(context)) report.receipt = {state: 'UNTRUSTED_CONTEXT'};
+  else try {report.receipt = await recordLive({github, context, report: liveReport, logger: msg => core.info(msg)});}
   catch (e) {report.receipt = {state: 'RECEIPT_FAILED', error: String(e?.message || e).slice(0, 140)};}
-  try {report.cohort = await countWindow({github, context, now});}
-  catch (e) {report.cohort = {state: 'METRICS_UNAVAILABLE', error: String(e?.message || e).slice(0, 140)};}
-  core.info('HH_RELEASE_KPI ' + JSON.stringify(report));
-  await core.summary.addHeading('HH release throughput: merged vs verified LIVE')
+  core.info('HH_LIVE_RECEIPTS ' + JSON.stringify(report));
+  await core.summary.addHeading('HH verified LIVE — durable PR receipts')
     .addCodeBlock(JSON.stringify(report, null, 2)).write();
   return report;
 }
-module.exports = {REPO,PROD,DEFAULT,LABEL,MARKER,trusted,certified,exactMergedPR,receiptBody,recordLive,countWindow,run};
+module.exports = {REPO,PROD,DEFAULT,LABEL,MARKER,trusted,certified,exactMergedPR,receiptBody,recordLive,run};
