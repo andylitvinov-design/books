@@ -53,25 +53,42 @@ test('chat hydration readiness is explicit and preserves early mobile input',()=
  assert.match(qa,/hydration==='true'/);
 });
 
-test('legacy first-video disclosure waits for React hydration before opening lazy form',()=>{
- const legacy=readFileSync(new URL('../scripts/benchmarking/first-video-live-export.mjs',
-   import.meta.url),'utf8');
- assert.match(legacy,/data-chat-hydrated/);
- assert.match(legacy,/hydrated==='true'/);
- assert.ok(legacy.indexOf("data-chat-hydrated")<
-   legacy.indexOf("advanced.locator(':scope > summary').click()"));
+test('approved mobile entry opens one shared AI chat from free help; mandatory real media tests are retained',()=>{
+ assert.match(qa,/OWNER_FOUR_IMAGE_GOALS_REQUIRED/);
+ assert.match(qa,/OWNER_SIX_TEXT_TOPICS_REQUIRED/);
+ assert.match(qa,/\[data-auto-video-clarify\]/);
+ assert.match(qa,/OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY/);
+ assert.match(qa,/DUPLICATE_VIDEO_DIRECTOR_CHAT/);
+ assert.match(qa,/card\.locator\('\[data-video-chat-confirm\]'\)\.click/);
+ assert.match(qa,/await create\.click\(/);
+ assert.match(qa,/LICENSED_VIDEO_SOURCE_ABSENT_/);
+ assert.match(qa,/EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN/);
 });
 
-test('canonical five-level dialogue browser check works on the new release while preserving legacy LIVE gates',()=>{
- assert.match(qa,/entryStep==='category'/);
- assert.match(qa,/entryStep==='goal'|\['goal','category'\]/);
- for(const selector of ['love','love-trust','love-trust-s1','love-trust-s1-i1'])
-   assert.ok(qa.includes(selector),'missing canonical selection '+selector);
- for(const stage of ['category','topic','scenario','idea','phrase'])
-   assert.ok(qa.includes("pick('"+stage+"'")||qa.includes("state(page,'"+stage+"'"),
-     'stage not checked '+stage);
- assert.match(qa,/SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS/);
- assert.match(qa,/UNBOUND_CONCEPT_MUST_NOT_BE_FALSELY_EXPORTED/);
- assert.match(qa,/PREPARED_PHRASE_CHOICES_NOT_AVAILABLE/);
- assert.match(qa,/await state\(page,'review'\)/);
+test('PR runs source contracts; both LIVE media exports are manual after merge',()=>{
+  assert.match(workflow,/- name: Real LIVE four-shot montage[^\n]*\n        id: legacy_export\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && github\.event_name == 'workflow_dispatch' \}\}/);
+  assert.match(workflow, /name: PR scope summary .* candidate media verified in Mandala CI/);
+  assert.match(workflow, /Reuse preinstalled Google Chrome; install pinned Playwright client only\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /Verify media inspection utilities\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /node --check scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
+  assert.match(workflow,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
+
+test('LIVE canonical five-level chat stays separate from old goal-first acceptance',()=>{
+ assert.ok(qa.includes("entryStep==='category'"),'must detect the released tree');
+ for(const id of ['love','love-trust','love-trust-s1','love-trust-s1-i1'])
+   assert.ok(qa.includes(id),'missing canonical ID: '+id);
+ for(const step of ['category','topic','scenario','idea','phrase'])
+   assert.ok(qa.includes("pick('"+step+"'")||
+     qa.includes("state(page,'"+step+"'"),'missing actual step '+step);
+ assert.ok(qa.includes('PREPARED_PHRASE_CHOICES_NOT_AVAILABLE'));
+ assert.ok(qa.includes('UNBOUND_CONCEPT_MUST_NOT_BE_FALSELY_EXPORTED'));
+ assert.ok(qa.includes('SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS'));
+ assert.match(qa,/approved\.get\(item\.id\)/);
+ assert.match(workflow,/workflow_dispatch/);
 });

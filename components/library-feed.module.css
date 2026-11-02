@@ -115,3 +115,10 @@
 }
 
 @media(max-width:375px){.seriesFilters button{flex:1 1 120px;font-size:12px;padding:8px}.seriesHeading{padding:12px}.seriesHeading h3{font-size:20px}}
+
+/* Public videos only: optional lightweight actions, never shown in articles/guides. */
+.preferenceAction{display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;min-height:44px;border:1px solid #cde0d3;border-radius:10px;background:#f4fbf5;color:#28714e;padding:7px;cursor:pointer}
+.preferenceAction[aria-pressed=true]{background:#e1f4e8;border-color:#27835b}
+.preferenceAction:hover{background:#e9f8ee}
+.preferenceAction:focus-visible{outline:3px solid #2d9471;outline-offset:2px}
+@media(max-width:375px){.actions{gap:5px}.preferenceAction{flex-basis:35px;min-height:40px;padding:6px}}

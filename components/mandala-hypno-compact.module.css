@@ -350,3 +350,19 @@
   .filterRow button,.overview .filtersMini .filterRow button{font-size:11px;padding:5px 2px}
   .overview .phraseMiniList button{font-size:16px}
 }
+
+/* 320px iPhone: prioritize legibility, never break Russian words in the middle. */
+.fullText{display:inline}
+.mobileText{display:none}
+@media(max-width:370px){
+ .overview .filterRow{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+ .overview .filterRow>strong{font-size:15px;line-height:1.25}
+ .overview .filterRow>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .overview .filterRow button,.overview .filtersMini .filterRow button{
+   font-size:clamp(13px,3.7vw,15px);font-weight:760;min-height:48px;padding:8px 3px;overflow-wrap:normal;word-break:normal}
+ .overview .ideaGender{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .overview .ideaGender>span{grid-column:1/-1;font-size:14px}
+ .overview .ideaGender button{width:100%;min-height:47px;min-width:0;font-size:15px}
+ .overview .fullText{display:none}
+ .overview .mobileText{display:inline}
+}

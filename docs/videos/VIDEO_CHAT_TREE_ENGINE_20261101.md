@@ -2,7 +2,7 @@
 
 ## Branching / source of truth
 
-**This is a stacked PR only**, parent #2970 (69,120 phrase catalog), whose parent #2949 (canonical narrative taxonomy) is **also open**. Neither the new tree nor its unbound storyboards may be claimed to be deployed to Holistic House LIVE.
+**#2949 and #2970 are merged into the production source.** PR #2973 reconciles the one existing messenger with the taxonomy and the newer RU/EN/ES natural-language Video Conversation Mind. A merged catalog is not proof that the new chat is deployed; exact production SHA and browser acceptance remain required.
 
 The existing public RU/EN/ES Video Studio route is `/{locale}/holistic-support/mandala`, owned by the existing `MandalaVideoDirectorChat` and `MandalaFreeVideoStudio`. Do not create a second chat, a fake video generator or duplicate audio recording UI.
 
@@ -57,3 +57,9 @@ The exact integration branch for #2973 is reconciled against production `codex/p
 The source-backed LIVE browser script now supports both the older released `goal → filters` path while a PR is checked against the currently deployed site, and the new `category → topic → scenario → idea → phrase → filters` path immediately after its production deployment. The latter verifies all five hierarchy steps, a selected phrase in the real stage-caption track, the honest unbound-story disclaimer, four licensed decoded MP4 clips and actual audible encoded output. Do not mark a fully authored story as media-ready merely because a different generic montage can be rendered.
 
 **Exact-head acceptance is still required:** successful Node contract tests, TypeScript, lint, Next build, current protected GitHub checks, live-browser downloaded file evidence and Vercel READY on deployed SHA. No forced merge, bypass, paid AI/video request or direct production edit is authorized.
+
+## 2 November 2026: source-preserving rebase
+
+The production Video Conversation Mind adds meaningful one-message goal proposals, local language interpretation, "another story", edits to mood, duration, ratio, music and phrases, help and back/skip. These are preserved while five taxonomy levels remain the only editorial IDs. A concrete recognized goal may auto-complete the tree to Review immediately; an unknown goal stays unclassified and receives five category buttons. Explicit category/topic choices are never overridden by uncertain free text.
+
+The public editor remains a **single** mobile messenger and its existing verified four-shot Canvas/MediaRecorder engine. No new rendering service or second audio/voice UI is introduced. Unbound narrative concepts carry an explicit non-executable notice. AI calls remain opt-in and limited to trusted provider questions/validated licensed cuts. LIVE acceptance can detect both the still-deployed goal-first chat and the new five-level chat, but the new branch is released only after same-SHA required checks and an actual verified Vercel deployment.

@@ -208,3 +208,16 @@ test("source integration uses one existing renderer, safe unbound warning and cl
   assert.equal(listVideoGoalScenarios("love-trust","ru").length,4);
   assert.equal(listVideoPhraseIdeas("love-trust-s1","ru").length,4);
 });
+
+test("the same Messenger keeps goal-first one-message proposals AND free-text multi-intent replies",()=>{
+  const src=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+  assert.ok(src.includes("goalFirstVideoChatDraft(value,recommended.theme)"));
+  assert.ok(src.includes("understandVideoChatReply(value,step)"));
+  assert.ok(src.includes('reply.kind==="goal"||reply.kind==="append_goal"'));
+  assert.ok(src.includes('reply.kind==="edit"'));
+  assert.ok(src.includes('data-chat-hydrated={clientHydrated?"true":"false"}'));
+  assert.ok(src.includes('setStep("review");addLine("assistant",t.review)'));
+  assert.ok(src.includes("videoChatTreeOptions(draft,step,locale)"));
+  assert.ok(src.includes("draft.phraseText"));
+  assert.ok(!src.includes("hasVideoChatFilter"),"retired weak filter-only parser must not return");
+});
