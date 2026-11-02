@@ -143,6 +143,8 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         const vectorChoice=course.locator('[data-guided-focus-vector="energy"]');
         await vectorChoice.click();
         assert.equal(await vectorChoice.getAttribute("aria-pressed"),"true");
+        assert.equal(await primary.isEnabled(),true,
+          "a selected direction alone is sufficient; the context note is optional");
         const difficulty=course.locator("[data-video-key-difficulty]");
         await difficulty.fill(LABELS[locale].difficulty);
         assert.equal(await course.locator("[data-video-key-goal]").count(),0,
