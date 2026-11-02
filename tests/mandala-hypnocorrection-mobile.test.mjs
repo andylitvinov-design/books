@@ -87,7 +87,7 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(ui,/note==="voice"/,
     "opening the speech control reveals the inline voice editor");
   assert.match(ui,/note==="audio"/,
-    "audio guidance remains available only when required");
+    "audio guidance remains available only when required; the optional safety note stays compact");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
   assert.match(ui,/createPortal\(intro,introTarget\)/);
