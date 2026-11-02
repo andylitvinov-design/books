@@ -84,6 +84,26 @@ async function verify(engine, locale, width) {
     }, null, {timeout:10000});
     assert.equal(await root.locator('[data-offer-action="session"]').count(),4,
       label+": show more reveals four genuine session options");
+    // Wait for the expanded list and its toggle to settle before the next
+    // genuine user click. Under loaded WebKit the newly inserted cards can
+    // shift the control while the previous pointer action is finishing.
+    // We still require one real click to collapse, not a forced state write.
+    await sessionMore.scrollIntoViewIfNeeded();
+    await sessionMore.evaluate(async node => {
+      let last = null, stable = 0;
+      for (let frame=0; frame<60; frame++) {
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        if (!node.isConnected) throw new Error("BUSINESS_SESSION_TOGGLE_REMOUNTED");
+        const rect=node.getBoundingClientRect();
+        const position=[rect.x,rect.y,rect.width,rect.height];
+        stable=last&&position.every((v,i)=>Math.abs(v-last[i])<1)?stable+1:0;
+        if (stable>=4) return;
+        last=position;
+      }
+      throw new Error("BUSINESS_SESSION_TOGGLE_UNSTABLE");
+    });
+    assert.equal(await sessionMore.getAttribute("aria-expanded"),"true",
+      label+": expanded toggle committed before the collapse click");
     await sessionMore.click();
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-direction-offers="business"]');
