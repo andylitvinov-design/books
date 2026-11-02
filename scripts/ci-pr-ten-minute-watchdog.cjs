@@ -34,6 +34,7 @@ const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating R
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
 const {wake:notifyControlTower}=require('./ci-pr-control-tower-wakeup.cjs');
 const {readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -294,7 +295,7 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
   // The watchdog's existing API budget and rate reserve bound pagination.
   const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
   if(!comments){log('SKIP repair handoff: incomplete comment history');return false;}
-  if(comments.some(c=>(c.body||'').includes(marker))) {
+  if(hasVerifiedSourceHandoff(comments,pr.head.sha)) {
     // If a receipt exists but its queue label failed, retry only the label.
     if((pr.labels || []).some(label=>label.name===REPAIR_LABEL))return false;
     const recovered=await ensureQueueLabel(github,owner,repo,pr,REPAIR_LABEL,

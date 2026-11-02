@@ -975,7 +975,7 @@ test('watchdog retries a missing durable label after the handoff receipt, withou
   const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
   const head='a'.repeat(40), marker='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+head+' -->';
   const pr={number:421,head:{sha:head},labels:[]};
-  let comments=[{body:marker}],written=0,labeled=0;
+  let comments=[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:marker}],written=0,labeled=0;
   const gh={rest:{issues:{
     listComments:async()=>({data:comments}),
     createComment:async()=>{written++;throw Error('duplicate receipt')},
@@ -993,7 +993,7 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   const comments=[];let written=0,labeled=0,fail=true;
   const gh={rest:{issues:{
     listComments:async()=>({data:comments}),
-    createComment:async({body})=>{written++;comments.push({body});return {data:[]}},
+    createComment:async({body})=>{written++;comments.push({user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body});return {data:[]}},
     addLabels:async()=>{if(fail)throw Object.assign(Error('Resource not accessible by integration'),{status:403});
       labeled++;return {data:[]}}
   }}};
@@ -1100,13 +1100,22 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
 
+test('watchdog does not accept an outsider marker as a durable source handoff',async()=>{
+ const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const sha='a'.repeat(40),pr={number:99,head:{sha},labels:[]};let written=0,labeled=0;
+ const gh={rest:{issues:{listComments:async()=>({data:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}}]}),
+  createComment:async()=>{written++},addLabels:async()=>{labeled++}}}};
+ assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_,fn)=>fn()),true);
+ assert.equal(written,1);assert.equal(labeled,1);
+});
+
 
 test('watchdog finds an existing repair receipt after 300 comments',async()=>{
  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
  const sha='a'.repeat(40);const pages=[];let written=0;
  const gh={rest:{issues:{listComments:async({page})=>{
   pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
-   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  },createComment:async()=>{written++}}}};
  const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
  const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
