@@ -41,7 +41,7 @@ test('private push dispatch remains manual, cron paths are unique and housekeepi
    // All other jobs retain the existing no-hourly policy.
    assert.equal(cron.schedule,'*/5 * * * *','reviewed phone-push cadence is exact')
    const pushRoute=readFileSync('app/api/internal/direct-message-push/route.js','utf8')
-   assert.match(pushRoute,/cronAuthorized\\(request,process\\.env\\)/)
+   assert.ok(pushRoute.includes('cronAuthorized(request,process.env)'), 'private recovery must require the current Cron authorization')
    assert.match(pushRoute,/VERCEL_ENV==='preview'/)
    assert.match(pushRoute,/status:401/)
    assert.match(pushRoute,/PRIVATE_HEADERS/)
