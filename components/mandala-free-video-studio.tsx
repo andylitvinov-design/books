@@ -2424,6 +2424,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 ? locale==="ru"?"Одна из четырёх сцен не декодировалась. Повторите создание видео."
                   :locale==="es"?"Uno de los cuatro clips no se pudo decodificar. Prueba de nuevo."
                   :"One of four source clips failed to decode. Please retry."
+              :code==="first_party_audio_unavailable"
+                ? locale==="ru"?"Аудиофайл выбранного сценария недоступен на сайте. Проверьте музыкальную дорожку."
+                  :locale==="es"?"La pista de música seleccionada no está disponible en el sitio."
+                  :"The selected first-party soundtrack is missing from the site."
               :locale==="ru"?"Не удалось завершить MP4 на этом устройстве."
                 :locale==="es"?"No se pudo completar el MP4 en este dispositivo."
                 :"The MP4 could not be completed on this device.";
