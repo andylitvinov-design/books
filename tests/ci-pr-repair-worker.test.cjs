@@ -583,3 +583,32 @@ test('Repair respects Control Tower hold labels and finalizer can post PR outcom
  assert.ok(wf.includes("reservationRunId:String(context.payload.inputs?.reservation_run_id || '')"));
  assert.ok(wf.includes('cache: npm'));
 });
+
+
+test('empty ESLint candidate skips privileged publisher and finalizer routes to truthful manual outcome',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
+   state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
+ const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
+ const outcome=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+   claimResult:'success',fixResult:'success',publishResult:'skipped',
+   candidateStatus:'manual_required',candidateDetail:'ESLINT_SCOPE_NOT_CONFIGURED'});
+ assert.equal(outcome.state,'MANUAL');
+ assert.equal(outcome.reason_code,'NO_VERIFIED_SOURCE_CHANGE');
+ assert.equal(outcome.detail_code,'ESLINT_SCOPE_NOT_CONFIGURED');
+ assert.equal(outcome.source_published,false);
+ assert.equal(outcome.new_sha,null);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.match(f.log.commentBodies.at(-1),/"state":"MANUAL"/);
+ assert.doesNotMatch(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
+});
+test('Repair no-op never launches privileged publish and retains exact-HEAD diagnostic',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(workflow,/needs\.fix\.outputs\.candidate_status == 'ready'/);
+ assert.match(workflow,/candidate_detail/);
+ assert.match(workflow,/--print-config/);
+ assert.match(workflow,/ESLINT_SCOPE_NOT_CONFIGURED/);
+});
