@@ -164,9 +164,15 @@ for (const engine of [chromium, webkit]) {
           const categories = viewer.locator("[data-support-talisman-category]");
           assert.equal(await categories.count(), 6, label + " six real-data intent shortcuts");
           await viewer.locator('[data-support-talisman-category="relationships"]').click();
+          // WebKit may commit React state after click() resolves: require the real SKU transition.
+          await page.waitForFunction(expected => document.querySelector('[data-support-talisman]')?.getAttribute('data-support-talisman') === expected,
+            "fu-harmony", {timeout:12000});
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-harmony", label + " love category selects existing harmony art");
           await viewer.locator('[data-support-talisman-category="money"]').click();
+          // WebKit may commit React state after click() resolves: require the real SKU transition.
+          await page.waitForFunction(expected => document.querySelector('[data-support-talisman]')?.getAttribute('data-support-talisman') === expected,
+            "fu-prosperity", {timeout:12000});
           assert.equal(await viewer.locator("[data-support-talisman]").getAttribute("data-support-talisman"),
             "fu-prosperity", label + " money category selects existing prosperity art");
           const categoryRail = viewer.locator("[data-support-talisman-categories]");
