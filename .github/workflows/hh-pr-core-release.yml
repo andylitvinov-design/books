@@ -136,7 +136,6 @@ jobs:
                   scripts/ci-pr-readiness.mjs|\
                   scripts/ci-source-preflight.mjs|\
                   tests/ci-source-preflight.test.mjs|\
-                  tests/ci-quick-route.test.mjs|\
                   scripts/pr-sweep-guard.mjs|\
                   tests/pr-fast-lane.test.mjs|\
                   tests/ci-specialist-aggregate.test.mjs|\
