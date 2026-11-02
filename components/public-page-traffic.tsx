@@ -7,13 +7,15 @@ import { safePublicPagePath, sourceFromPublicEntry } from "@/lib/analytics/publi
 const hasCookie = (name: string, value: string) =>
   document.cookie.split("; ").some(part => part === name + "=" + value);
 
-function optedIn() {
-  return hasCookie("hh_public_stats_consent", "v1") &&
+function countAllowed() {
+  // An explicit refusal (including one saved before this change) stays binding.
+  // New visitors can contribute anonymous aggregates without a tracking cookie.
+  return !hasCookie("hh_public_stats_consent", "denied") &&
     !hasCookie("hh_public_stats_skip", "1");
 }
 
 function sendPublicStat(path: string, source: string, event: "landing" | "view" | "click") {
-  if (!optedIn()) return;
+  if (!countAllowed()) return;
   // Page, coarse source and event only: no arbitrary URL, campaign details,
   // user or session identifier, input values, or referral query parameters.
   void fetch("/api/analytics/public-page", {
@@ -26,7 +28,8 @@ function sendPublicStat(path: string, source: string, event: "landing" | "view" 
   }).catch(() => {});
 }
 
-/** Public marketing paths only; Google and advertising analytics remain on hold. */
+/** Automatic anonymous aggregate counts on allowlisted public marketing paths only.
+ * Google and advertising analytics remain off. */
 export function PublicPageTraffic() {
   const pathname = usePathname();
   const originalSource = useRef<string | null>(null);
@@ -41,20 +44,20 @@ export function PublicPageTraffic() {
     }
 
     const recordPage = () => {
-      if (!optedIn() || lastPath.current === path) return;
+      if (!countAllowed() || lastPath.current === path) return;
       if (originalSource.current === null)
         originalSource.current = sourceFromPublicEntry(window.location.href, document.referrer);
       sendPublicStat(path, originalSource.current, lastPath.current === null ? "landing" : "view");
       lastPath.current = path;
     };
 
-    // A visitor who explicitly consents on the current landing page should
-    // count that landing without requiring an additional route navigation.
+    // Record the public landing without a popup. The Privacy-page opt-out
+    // event permits counting again after someone deliberately resumes it.
     recordPage();
     window.addEventListener("holistic-house:public-stats-consent", recordPage);
 
     const recordClick = (event: MouseEvent) => {
-      if (!optedIn() || !event.isTrusted || event.defaultPrevented) return;
+      if (!countAllowed() || !event.isTrusted || event.defaultPrevented) return;
       const target = event.target;
       if (!(target instanceof Element) ||
           target.closest("[data-first-party-consent]") ||
