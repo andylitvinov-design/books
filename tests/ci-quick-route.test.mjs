@@ -117,8 +117,8 @@ test('Core workflow never accepts a skipped job on FULL or CORE',()=>{
   assert.match(w,/route: \${{ steps\.fast\.outputs\.route }}/);
   assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
   assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
-  assert.match(w,/\$ROUTE" == ASSETS/);
-  assert.match(w,/\$ROUTE" == TEXT/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.match(w,/steps\.fast\.outputs\.route != 'TEXT'/);
   assert.match(w,/npm run build/);
   assert.match(w,/git show "\$tested_base:scripts\/ci-quick-route\.mjs"/);
   assert.match(w,/HH_HEAD_SHA: \${{ github\.event\.pull_request\.head\.sha }}/);
