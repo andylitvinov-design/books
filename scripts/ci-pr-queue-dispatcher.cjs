@@ -82,7 +82,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
-  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
+  manualConflictHandoffs:0,wouldManualConflictHandoffs:0,conflictQueueReleased:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,capacityReason:null,blocked:{},
   workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
@@ -131,8 +131,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
  const usedWorkers=new Set();
- const ordered=[...candidates.filter(t=>t?.lane==='conflict'),
-  ...candidates.filter(t=>t?.lane!=='conflict')];
+ // Source repairs and CI get first access to bounded API/runner capacity.
+ // A DIRTY conflict is a manual handoff, never a Repair Worker assignment.
+ const ordered=[...candidates.filter(t=>t?.lane==='repair'),
+  ...candidates.filter(t=>t?.lane==='ci'),
+  ...candidates.filter(t=>t?.lane==='conflict')];
  for(const task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
   if(!task){blocked('UNCLASSIFIED');continue;}
@@ -203,12 +206,51 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty'&&
     (task.lane==='conflict'||fresh.labels?.some(l=>l.name==='hh:conflict-repair-needed'));
   if(isVerifiedDirty){
-   // A genuine DIRTY merge cannot be fixed by the ESLint-only Repair Worker.
-   // Hand it to the existing human/Codex conflict queue as an exact-HEAD
-   // issue receipt, without reserving a runner or starving CI/source workers.
+   // Conflicts cannot be repaired by the ESLint worker. Hand off once per
+   // exact HEAD, then retire the queue labels under a manual owner blocker.
+   // A retry may finish cleanup, but MUST NOT repost the handoff.
    const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+task.head_sha+' -->';
+   const releaseManualQueue=async()=>{
+    if(dryRun)return false;
+    try{
+     const before=(await limited('conflict-release-precheck',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(before?.head?.sha!==task.head_sha||before?.state!=='open'||
+        before.mergeable!==false||before.mergeable_state!=='dirty'||
+        before.head?.repo?.full_name!==REPO||before.base?.ref!==PROD){
+      blocked('CONFLICT_RELEASE_RECHECK_CHANGED');return false;
+     }
+     await limited('conflict-manual-owner-label',()=>github.rest.issues.addLabels({
+      owner,repo,issue_number:task.pr_number,labels:['hh:repair-manual']
+     }));
+     // Revalidate after the label mutation; do not delete newer-HEAD work.
+     const after=(await limited('conflict-release-postcheck',()=>
+      github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;
+     if(after?.head?.sha!==task.head_sha||after?.state!=='open'||
+        after.head?.repo?.full_name!==REPO||after.base?.ref!==PROD){
+      blocked('CONFLICT_RELEASE_HEAD_MOVED');return false;
+     }
+     for(const name of ['hh:repair-needed','hh:conflict-repair-needed']){
+      if(!after.labels?.some(l=>l.name===name))continue;
+      try{await limited('retire-conflict-queue-label',()=>
+       github.rest.issues.removeLabel({owner,repo,issue_number:task.pr_number,name}));}
+      catch(error){
+       if(error?.status!==404)throw error;
+      }
+     }
+     summary.conflictQueueReleased++;
+     log('CONFLICT_MANUAL_QUEUE_RELEASED #'+task.pr_number+' '+task.head_sha.slice(0,12));
+     return true;
+    }catch(error){
+     blocked('CONFLICT_RELEASE_FAILED');
+     log('Conflict queue release #'+task.pr_number+': '+error.message);
+     return false;
+    }
+   };
    if(comments.some(c=>String(c.body||'').includes(marker))){
-    blocked('CONFLICT_ALREADY_HANDED_OFF');continue;
+    blocked('CONFLICT_ALREADY_HANDED_OFF');
+    await releaseManualQueue();
+    continue;
    }
    if(summary.manualConflictHandoffs+summary.wouldManualConflictHandoffs>=MAX_MANUAL_CONFLICT_HANDOFFS){
     blocked('CONFLICT_HANDOFF_LIMIT');continue;
@@ -219,14 +261,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      owner,repo,issue_number:task.pr_number,
      body:marker+'\nConflict repair task for the existing Chat/Codex Conflict Repair lane. '+
       'Verified DIRTY against '+PROD+' at exact HEAD '+task.head_sha+'. '+
-      'Resolve conflicts in the PR source branch, batch changes, and let normal '+
-      'required CI run on the new HEAD. No automatic or unverified merge.'
+      'Resolve source conflicts in the same PR branch and rerun required CI. '+
+      'Handoff is NOT a source commit, a completed repair or approval to merge.'
     }));
     summary.manualConflictHandoffs++;
     log('CONFLICT_TO_CODEX_QUEUE #'+task.pr_number+' '+task.head_sha.slice(0,12));
-   }catch(err){
+    await releaseManualQueue();
+   }catch(error){
     blocked('CONFLICT_HANDOFF_UNAVAILABLE');
-    log('Conflict handoff #'+task.pr_number+': '+err.message);
+    log('Conflict handoff #'+task.pr_number+': '+error.message);
    }
    continue;
   }
