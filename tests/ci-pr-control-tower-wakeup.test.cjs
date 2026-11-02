@@ -114,3 +114,28 @@ test('completion relay rejects forged inputs and handles dispatch denial',async(
   assert.equal(await relayCompletionWake({github,context:bad,wait:async()=>true}),'NOT_ACTIONABLE');
  assert.equal(calls,0);assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'HANDOFF_UNAVAILABLE');assert.equal(calls,1);
 });
+
+
+test('PR contract and push audit noise cannot suppress an actionable watchdog handoff',async()=>{
+ const noise=[
+  {id:1,event:'pull_request',status:'in_progress',
+   created_at:new Date(NOW-1000).toISOString()},
+  {id:2,event:'push',status:'completed',
+   created_at:new Date(NOW-3000).toISOString()}
+ ];
+ assert.equal(readyHistory(noise,NOW),true);
+ const x=fixture(noise);
+ assert.equal(await wake({...base,github:x.github}),'DISPATCH_ACCEPTED');
+ assert.equal(x.calls.length,2);
+ const busy={id:3,event:'workflow_dispatch',status:'queued',
+   created_at:new Date(NOW-60000).toISOString()};
+ assert.equal(readyHistory([...noise,busy],NOW),false);
+});
+test('a completed real dispatch cools down from exit, not creation',()=>{
+ const run={id:1,event:'schedule',status:'completed',
+  created_at:new Date(NOW-900000).toISOString(),
+  updated_at:new Date(NOW-30000).toISOString()};
+ assert.equal(readyHistory([run],NOW),false);
+ assert.equal(readyHistory([{...run,updated_at:new Date(NOW-180000).toISOString()}],NOW),true);
+});
+
