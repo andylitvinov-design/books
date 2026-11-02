@@ -164,7 +164,11 @@ test('Core scope uses bounded shallow checkout while preserving exact PR merge p
   assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
   assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
   assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
-  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" \|\|/);
+  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" 2>\/dev\/null/);
+  assert.ok(scope.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+    'fallback must prove the old base using authenticated GitHub Compare');
+  assert.ok(scope.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'),
+    'verified event base is reused without a second shallow ancestry failure');
   assert.match(scope, /Verify live PR readiness before costly CI/);
   assert.match(scope, /Classify strictly documentation-only PRs/);
   assert.match(scope, /Route exact image and proven public JSX changes without Next build/);

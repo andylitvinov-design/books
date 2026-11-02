@@ -369,8 +369,10 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
     const script=block[1].replace(/^          /gm,'')
       .replaceAll('/tmp/hh-pr-changed-files.z',join(dir,'changed.z'));
     const output=join(dir,'output'),summary=join(dir,'summary');
+    const testedBase=git('rev-parse','HEAD^1');
     const checked=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
@@ -379,7 +381,12 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
       {BASE_SHA:base,PR_HEAD_SHA:'f'.repeat(40),EVENT_NAME:'pull_request',
+        HH_EVENT_BASE_VERIFIED:base,HH_TESTED_BASE_VERIFIED:testedBase,
         GITHUB_OUTPUT:join(dir,'bad-output'),GITHUB_STEP_SUMMARY:summary});
+    const unverified=run('bash',['--noprofile','--norc','-c',script],
+      {BASE_SHA:base,PR_HEAD_SHA:feature,EVENT_NAME:'pull_request',
+        GITHUB_OUTPUT:join(dir,'unverified'),GITHUB_STEP_SUMMARY:summary});
+    assert.notEqual(unverified.status,0,'missing trusted ancestry proof must fail closed');
     assert.notEqual(bad.status,0,'mismatched merge commit HEAD must fail closed');
     const lint=source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
     assert.ok(lint?.includes('BASE_SHA="$first_parent"'),
