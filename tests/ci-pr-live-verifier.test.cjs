@@ -114,3 +114,13 @@ test('outdated Vercel completion event cannot certify newer production HEAD',asy
  assert.equal(result.reason,'EVENT_SHA_NOT_CURRENT_PRODUCTION');
  assert.equal(f.reads.length,0);
 });
+test('hourly conflict diagnostics reuse the read-only LIVE job and pinned production code',()=>{
+ const s=require('node:fs').readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+ const start=s.indexOf('      - name: Resolve production SHA for hourly conflict diagnostics');
+ assert.ok(start>0);const part=s.slice(start);
+ assert.match(part,/if: github\.event_name == 'schedule'/);
+ assert.match(part,/ref: \$\{\{ steps\.conflict_base\.outputs\.sha \}\}/);
+ assert.match(part,/persist-credentials: false/);
+ assert.match(part,/node scripts\/pr-sweep-guard\.mjs route-conflicts/);
+ assert.doesNotMatch(part,/HH_AUTOMERGE_TOKEN|HH_VERCEL_READ_TOKEN/);
+});
