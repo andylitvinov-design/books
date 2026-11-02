@@ -130,8 +130,27 @@ try {
   // deployed layout has no such toggle. Both use the same original recorder.
   const ownerAdvanced=page.locator('[data-video-advanced-toggle]');
   if(await ownerAdvanced.count()){
-    await ownerAdvanced.click();
-    await page.waitForFunction(()=>document.querySelector('[data-video-advanced-toggle]')?.getAttribute('aria-expanded')==='true',undefined,{timeout:15000});
+    // Server HTML can receive a click before React has hydrated the editor.
+    // Retry only a real, bounded user gesture; never set UI state from tests.
+    await page.waitForLoadState('load',{timeout:30000});
+    let expanded=false;
+    for(let attempt=0;attempt<3;attempt++){
+      if(await ownerAdvanced.getAttribute('aria-expanded')==='true'){
+        expanded=true;break;
+      }
+      await ownerAdvanced.click({timeout:15000});
+      expanded=await page.waitForFunction(()=>{
+        const button=document.querySelector('[data-video-advanced-toggle]');
+        const studio=document.querySelector('[data-mandala-free-video]');
+        return button?.getAttribute('aria-expanded')==='true' &&
+          studio?.getAttribute('data-video-advanced-open')==='true';
+      },undefined,{timeout:2500}).then(()=>true,error=>{
+        if(!/Timeout/i.test(String(error)))throw error;
+        return false;
+      });
+      if(expanded)break;
+    }
+    assert.ok(expanded,'FIRST_VIDEO_ADVANCED_TOGGLE_NOT_INTERACTIVE');
   }
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
