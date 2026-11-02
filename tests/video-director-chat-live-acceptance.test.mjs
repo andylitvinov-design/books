@@ -52,3 +52,29 @@ test('chat hydration readiness is explicit and preserves early mobile input',()=
  assert.match(qa,/VIDEO_CHAT_SEND_NOT_READY/);
  assert.match(qa,/hydration==='true'/);
 });
+
+test('approved mobile entry opens one shared AI chat from free help; mandatory real media tests are retained',()=>{
+ assert.match(qa,/OWNER_FOUR_IMAGE_GOALS_REQUIRED/);
+ assert.match(qa,/OWNER_SIX_TEXT_TOPICS_REQUIRED/);
+ assert.match(qa,/\[data-auto-video-clarify\]/);
+ assert.match(qa,/OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY/);
+ assert.match(qa,/DUPLICATE_VIDEO_DIRECTOR_CHAT/);
+ assert.match(qa,/card\.locator\('\[data-video-chat-confirm\]'\)\.click/);
+ assert.match(qa,/await create\.click\(/);
+ assert.match(qa,/LICENSED_VIDEO_SOURCE_ABSENT_/);
+ assert.match(qa,/EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN/);
+});
+
+test('PR runs source contracts; both LIVE media exports are manual after merge',()=>{
+  assert.match(workflow,/- name: Real LIVE four-shot montage[^\n]*\n        id: legacy_export\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && github\.event_name == 'workflow_dispatch' \}\}/);
+  assert.match(workflow, /name: PR scope summary .* candidate media verified in Mandala CI/);
+  assert.match(workflow, /Reuse preinstalled Google Chrome; install pinned Playwright client only\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /Verify media inspection utilities\n        if: github\.event_name == 'workflow_dispatch'/);
+  assert.match(workflow, /node --check scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(workflow,/node scripts\/benchmarking\/video-director-chat-live-acceptance\.mjs/);
+  assert.match(workflow,/node --test tests\/video-director-chat-live-acceptance\.test\.mjs/);
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
+});
+
