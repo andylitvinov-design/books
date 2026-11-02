@@ -87,7 +87,8 @@ async function verify(engine, browser, locale, width) {
     // genuine user click. Under loaded WebKit the newly inserted cards can
     // shift the control while the previous pointer action is finishing.
     // We still require one real click to collapse, not a forced state write.
-    await sessionMore.scrollIntoViewIfNeeded();
+    // A visible center-of-viewport touch is not obstructed by the fixed mobile dock.
+    await sessionMore.evaluate(node => node.scrollIntoView({behavior:"auto", block:"center"}));
     await sessionMore.evaluate(async node => {
       let last = null, stable = 0;
       for (let frame=0; frame<60; frame++) {
@@ -102,8 +103,16 @@ async function verify(engine, browser, locale, width) {
       throw new Error("BUSINESS_SESSION_TOGGLE_UNSTABLE");
     });
     assert.equal(await sessionMore.getAttribute("aria-expanded"),"true",
-      label+": expanded toggle committed before the collapse click");
-    await sessionMore.click();
+      label+": expanded toggle committed before the collapse touch");
+    const touchTarget = await sessionMore.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return {onButton: hit === node || node.contains(hit), hit: hit?.tagName || null, x, y};
+    });
+    assert.ok(touchTarget.onButton, label+": collapse control blocked by overlay "+JSON.stringify(touchTarget));
+    // Genuine touch input, never a synthetic DOM event or forced state.
+    await sessionMore.tap();
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-direction-offers="business"]');
       return root?.querySelector('[data-direction-show-more="session"]')
