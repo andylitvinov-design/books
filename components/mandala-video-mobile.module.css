@@ -2762,3 +2762,104 @@
  }
  .studio[data-active-workspace="phrases"] .phraseEditorLead{margin:5px 0 8px}
 }
+
+
+/* Holistic Light — Warm & Alive, owner-approved 02 Nov 2026.
+   Larger MOBILE controls and editorial hierarchy; keep one working player,
+   existing tabs, original renderer, safe-area dock and advanced tools. */
+.heroEyebrow{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  border:1px solid #fff8;padding:7px 11px;border-radius:999px;
+  background:#fffdf5e8;color:#075b42;font:800 12px/1.2 Arial,Helvetica,sans-serif;
+  text-shadow:none;box-shadow:0 3px 12px #2d412d18}
+.heroEyebrow svg{flex:none}
+.quickPracticeShortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;min-width:0;margin:10px 0 2px}
+.quickPracticeShortcuts button{display:flex;align-items:center;justify-content:space-between;
+  gap:9px;min-width:0;min-height:70px;padding:13px 14px;
+  border:1px solid #d7e6d8;border-radius:20px;background:#eaf6e9;
+  color:#125940;text-align:left;font:800 15px/1.25 Arial,Helvetica,sans-serif;
+  box-shadow:0 5px 17px #214b3210}
+.quickPracticeShortcuts button:nth-child(2){border-color:#f3ddcb;background:#fff0e5;color:#9c602c}
+.quickPracticeShortcuts button:nth-child(3){border-color:#e7d8ef;background:#f4eafa;color:#745185}
+.quickPracticeShortcuts button>svg{flex:none}
+.quickPracticeShortcuts button span{flex:1;min-width:0;overflow-wrap:normal}
+.quickPracticeShortcuts button:disabled{opacity:.5;cursor:not-allowed}
+.quickPracticeShortcuts button:focus-visible{outline:3px solid #c99c55;outline-offset:3px}
+
+@media(max-width:759px){
+  .studio{font-size:16px;line-height:1.4}
+  .studio .quickBuilder{gap:14px;padding-bottom:20px}
+  .studio .quickBuilder>.quickBrandBar{min-height:78px;gap:12px;padding:8px 10px}
+  .studio .quickBuilder .quickBrandBack{width:48px;height:48px}
+  .studio .quickBuilder .quickBrandBack svg{width:35px;height:35px}
+  .studio .quickBrandIdentity strong{font:700 clamp(24px,6.6vw,30px)/1.05 Georgia,serif;letter-spacing:-.025em}
+  .studio .quickBrandIdentity small{font:500 clamp(12px,3.1vw,14px)/1.35 Arial,Helvetica,sans-serif}
+  .studio .quickBrandProfile{width:48px;height:48px}
+  .studio .quickBrandProfile svg{width:23px;height:23px}
+
+  /* Full-width hero, not the former 2.78:1 strip. Actual video/Canvas stays mounted. */
+  .studio .previewStage .hero,
+  .studio[data-video-studio-mode="therapy"] .previewStage .hero{
+    min-height:248px!important;aspect-ratio:1.54/1!important;max-height:none!important;
+    border:1px solid #e5ddcb;border-radius:25px!important;
+    box-shadow:0 12px 28px #493d2622}
+  .studio .previewStage .heroShade{
+    background:linear-gradient(90deg,#092c26c9 0%,#103c30a3 42%,#112f2815 100%),
+      linear-gradient(0deg,#0b312673,transparent 70%)}
+  .studio .heroEditorial{left:18px;right:auto;bottom:17px;max-width:67%;display:grid;gap:7px}
+  .studio .heroEditorial h2{
+    font:850 clamp(23px,6.7vw,30px)/1.08 Arial,Helvetica,sans-serif!important;
+    letter-spacing:-.035em;text-shadow:0 2px 8px #001d1780}
+  .studio .heroEditorial p{
+    font:550 clamp(12px,3.25vw,15px)/1.3 Arial,Helvetica,sans-serif!important;
+    color:#fffaf2!important;text-shadow:0 1px 7px #00251d99}
+  .studio .heroEyebrow{font-size:clamp(11px,2.8vw,13px);padding:7px 9px}
+  .studio .previewStage .heroPlay{left:81%;top:50%;width:60px;height:60px;
+    border:2px solid #fffcf0a8;background:#113d2db8;box-shadow:0 5px 24px #07372f70}
+  .studio .previewStage .heroPlay svg{width:30px;height:30px}
+  .studio .heroDuration{top:13px;right:13px;padding:8px 11px;border-radius:12px;font-size:13px}
+
+  /* Six REAL workspaces stay visible; 3×2 avoids illegible 8–10px labels. */
+  .studio .quickVideoNav{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0}
+  .studio .quickVideoNav button{
+    min-height:100px;padding:12px 7px;gap:8px;
+    border:1px solid #e6ded2;border-radius:21px;
+    background:linear-gradient(145deg,#fffcf7,#fff9f1);color:#173e34;
+    font:750 clamp(12px,3.5vw,15px)/1.18 Arial,Helvetica,sans-serif;
+    letter-spacing:0;hyphens:auto;overflow-wrap:normal;
+    box-shadow:0 4px 14px #3d4d3011}
+  .studio .quickVideoNav button svg{width:27px;height:27px;color:#087656}
+  .studio .quickVideoNav button[data-video-quick-control="phrases"] span{
+    font:750 clamp(12px,3.35vw,14px)/1.16 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;hyphens:auto}
+  .studio .quickVideoNav button[aria-pressed="true"]{
+    background:linear-gradient(135deg,#55ba80,#087e5a);border-color:#138b67;
+    color:#fff;box-shadow:0 6px 16px #08755335}
+  .studio .quickVideoNav button[aria-pressed="true"] svg{color:#fff}
+  .studio .quickVideoNav button:focus-visible{outline:3px solid #d6a653;outline-offset:3px}
+
+  /* Large numbered cards with generous gutters. */
+  .studio .quickBuilder>[data-video-quick-section="1"],
+  .studio .quickBuilder>[data-video-topic-section]{
+    padding:18px 15px 20px!important;gap:14px;border:1px solid #eee4d6;
+    border-radius:25px;background:linear-gradient(145deg,#fffefa,#fffaf5);
+    box-shadow:0 9px 25px #5c493014}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3{
+    font:850 clamp(21px,6vw,27px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:-.025em}
+  .studio .quickBuilder>[data-video-quick-section="1"] .quickSectionHeading h3 svg{
+    width:26px;height:26px;color:#08745a}
+  .studio .quickBuilder>[data-auto-video-director]{order:6;margin:0}
+  .studio .quickBuilder>.quickPracticeShortcuts{order:7;grid-template-columns:minmax(0,1fr);
+    gap:9px;margin:0}
+  .studio .quickPracticeShortcuts button{
+    min-height:62px;border-radius:18px;padding:12px 16px;
+    font-size:clamp(15px,4vw,17px)}
+  .studio .quickPracticeShortcuts button svg:first-child{width:25px;height:25px}
+  .studio .quickPracticeShortcuts button svg:last-child{margin-left:auto}
+  .studio .advancedVideoToggle{min-height:56px;padding:11px 15px;
+    border-radius:17px;font-size:clamp(14px,3.9vw,16px)}
+  .studio .workspaceHeading h3{font-size:clamp(22px,5.8vw,27px)}
+  .studio .workspaceHeading p{font-size:14px}
+}
+@media(min-width:760px){
+  .studio .heroEyebrow{margin-bottom:6px}
+}
