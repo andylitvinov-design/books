@@ -171,22 +171,28 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   assert.ok(calls[6][0].includes('/contents/.github/workflows/hh-pr-core-release.yml?ref=' + OLD)); assert.equal(calls[6][1], 'GET');
 });
 
-test('elevated GitHub token only used for trusted production checkout, not PR HEAD', () => {
+test('elevated GitHub token is used only with trusted protected production code', () => {
   const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
-  assert.doesNotMatch(yaml, /pull_request_target:/);
-  assert.match(yaml, /permissions: \{\}/);
+  assert.match(yaml, /pull_request_target:\\n    types: \[synchronize\]/);
+  assert.match(yaml, /permissions: \\{\\}/);
   assert.match(yaml, /actions: write/);
   assert.match(yaml, /pull-requests: read/);
-  assert.match(yaml, /ref: \$\{\{ github.sha \}\}/);
+  assert.match(yaml, /ref: \\$\\{\\{ github.sha \\}\\}/);
+  assert.match(yaml, /ref: codex\\/public-book-library\\n          persist-credentials: false/);
+  assert.doesNotMatch(yaml, /ref: \\$\\{\\{ github.event.pull_request.head.sha/);
   assert.match(yaml, /^  pull_request:/m);
-  assert.match(yaml, /if: github\.event_name == 'pull_request'/);
-  assert.match(yaml, /github\.event_name == 'push'/);
+  assert.match(yaml, /if: github\\.event_name == 'pull_request'/);
+  assert.match(yaml, /github\\.event_name == 'push'/);
 });
 
 test('cleanup concurrency isolates PRs and never cancels production push runs', () => {
   const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
-  assert.ok(yaml.includes("group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}"));
-  assert.ok(yaml.includes('cancel-in-progress: false'));
+  assert.ok(yaml.includes("group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}"));
+  // Event groups cannot collide: read-only PR policy and privileged
+  // trusted PR-target janitor must never cancel each other's runs.
+  assert.ok(yaml.includes("cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}"));
+  assert.ok(yaml.includes("github.event_name == 'push' && 'production'"));
+  assert.ok(yaml.includes("format('{0}-pr-{1}', github.event_name, github.event.pull_request.number)"));
   assert.match(yaml, /HH_CI_PRUNE_LIMIT: '300'/);
 });
 
@@ -250,7 +256,7 @@ test('optional conflict grouping cannot falsely fail a successful protected CI p
  assert.match(diag,/timeout-minutes: 2/);
  assert.match(diag,/steps\.conflict_diagnostic\.outcome == 'failure'/);
  assert.match(diag,/Conflict grouping: PARTIAL/);
- assert.doesNotMatch(yaml,/pull_request_target:/);
+ assert.match(yaml,/pull_request_target:\\n    types: \[synchronize\]/);
 });
 
 test('a trusted PR synchronize must match exact previous and new same-repo HEADs', () => {

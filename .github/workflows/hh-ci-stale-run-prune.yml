@@ -18,7 +18,7 @@ on:
 
 permissions: {}
 concurrency:
-  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
+  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
