@@ -121,7 +121,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   const permission=admission(task.lane,capacity);
   if(permission!=='ADMIT'){blocked(permission);continue;}
   const worker=WORKFLOWS[task.lane];
-  if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
+  // Manual conflict receipts use no worker slot; a source repair may run in parallel.
+  if(task.lane!=='conflict'&&usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   const listed=production.find(pr=>pr.number===task.pr_number);
   // A parent PR with open stacked children cannot be rewritten safely.
   if(prs.some(pr=>pr.number!==task.pr_number&&pr.base?.ref===task.head_ref)){
