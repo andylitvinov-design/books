@@ -306,6 +306,20 @@ jobs:
           else
             echo 'No changed JS/TS files to lint'
           fi
+      # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
+      # A miss safely falls back to the existing full real build and validations.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: needs.scope.outputs.ci_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore production-owned Next compiler cache (read-only)
+        if: needs.scope.outputs.ci_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Exact proposed release production build and TypeScript check
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
