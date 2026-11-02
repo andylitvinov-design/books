@@ -1312,3 +1312,17 @@ test('First Video LIVE export is manual-only; PRs retain fast source contracts',
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 
+
+test('IA browser and encrypted-data CI is not dispatched by unrelated Core fast-lane contracts',()=>{
+  const ia=workflow('ia-v2.yml');
+  const trigger=ia.split(/^permissions:/m)[0];
+  assert.match(trigger,/^  pull_request:/m);
+  assert.match(trigger,/^  workflow_dispatch:/m);
+  assert.doesNotMatch(trigger,/tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(trigger,/app\/api\/auth\/\*\*/);
+  assert.match(trigger,/lib\/security\/\*\*/);
+  assert.match(trigger,/supabase\/migrations\/\*\*/);
+  assert.match(trigger,/\.github\/workflows\/ia-v2\.yml/);
+  assert.match(workflow('hh-pr-core-release.yml'),/node --test tests\/pr-fast-lane\.test\.mjs/);
+});
+
