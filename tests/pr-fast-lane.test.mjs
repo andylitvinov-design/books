@@ -77,9 +77,14 @@ test('separate fail-closed specialist gate and legacy release-ready alias protec
   assert.doesNotMatch(source, /^  hh-specialists-verified:/m, 'duplicate legacy status must not consume a runner');
   assert.match(source, /^  hh-specialist:/m);
   assert.match(source, /name: hh-specialist/);
-  const alias = source.split(/^  release-ready:/m)[1]?.split(/^  hh-specialists-verified:/m)[0];
-  assert.match(alias, /needs: \[hh-specialist\]/);
+  const specialist = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  const alias = source.split(/^  release-ready:/m)[1];
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'parallel specialist');
+  assert.doesNotMatch(specialist, /CODE_RESULT|needs\.code/);
+  assert.match(alias, /^    needs: \[hh-core-verified, hh-specialist\]$/m);
+  assert.match(alias, /CORE_RESULT/);
   assert.match(alias, /SPECIALIST_RESULT/);
+  assert.match(alias, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.match(source, /^    needs: \[scope, code\]/m);
   assert.match(source, /^    if: always\(\)/m);
   assert.match(source, /git diff --no-renames --name-only -z/);
@@ -705,7 +710,7 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  code:/m)[0];
   const code = source.split(/^  code:/m)[1]?.split(/^  hh-specialist:/m)[0];
-  const release = source.split(/^  hh-specialist:/m)[1]?.split(/^  release-ready:/m)[0];
+  const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
   for (const [name, job] of [['scope', scope], ['code', code]]) {
     assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
     assert.doesNotMatch(job, /fetch-depth:\s*0/, `${name} must avoid full-history Git fetch`);
@@ -1199,23 +1204,25 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
 });
 
-test('legacy compatibility cannot bypass the real hh-specialist gate',()=>{
+test('legacy release-ready requires real Core and Specialist when parallel',()=>{
   const source=workflow('hh-pr-core-release.yml');
-  assert.doesNotMatch(source,/^  hh-specialists-verified:/m,
-    'deprecated plural alias must not launch an unnecessary runner or red status');
+  assert.doesNotMatch(source,/^  hh-specialists-verified:/m, 'duplicate alias must not return');
+  const specialist=source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
+  assert.ok(specialist, 'real Specialist gate must remain');
+  assert.match(specialist, /^    needs: \[scope\]$/m, 'Specialist begins beside Core');
+  assert.doesNotMatch(specialist,/CODE_RESULT|needs\.code/);
+  assert.match(specialist,/ci-specialist-aggregate\.mjs/);
+  assert.match(specialist,/timeout-minutes: 45/);
   const legacy=source.split(/^  release-ready:\s*$/m)[1];
-  assert.ok(legacy,'classic protection still requires the legacy compatibility status');
+  assert.ok(legacy,'required classic compatibility status remains');
   assert.match(legacy,/^    name: release-ready$/m);
-  assert.match(legacy,/^    needs: \[hh-specialist\]$/m);
+  assert.match(legacy,/^    needs: \[hh-core-verified, hh-specialist\]$/m);
   assert.match(legacy,/^    if: always\(\)$/m);
   assert.match(legacy,/^    timeout-minutes: 1$/m);
+  assert.ok(legacy.includes('CORE_RESULT: ' + '$' + "{{ needs['hh-core-verified'].result }}"));
   assert.ok(legacy.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
-  assert.ok(legacy.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
+  assert.ok(legacy.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
   assert.doesNotMatch(legacy,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
-  const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
-  assert.ok(full,'must retain independent full specialist verifier');
-  assert.match(full,/ci-specialist-aggregate\.mjs/);
-  assert.match(full,/timeout-minutes: 45/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
 
@@ -1318,5 +1325,6 @@ test('staged single hh-merge-check never passes without current-workflow Core an
   assert.doesNotMatch(newGate,/npm ci|npm run build|npx|playwright|continue-on-error/);
   const legacy=source.split(/^  release-ready:\s*$/m)[1];
   assert.ok(legacy,'old Branch Protection still requires release-ready until admin readback');
-  assert.ok(legacy.includes('needs: [hh-specialist]'));
+  assert.ok(legacy.includes('needs: [hh-core-verified, hh-specialist]'));
+  assert.match(legacy, /\[\[ "\$CORE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
 });
