@@ -130,6 +130,6 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.match(css,/\.switch\{grid-column:1;grid-row:1;z-index:3/);
   assert.match(ui,/data-hypno-meditation-action/);
   assert.equal((ui.match(/data-hypno-create/g)||[]).length,1,"one original local recording callback");
-  assert.match(ui,/onCreate=\{onCreate\}/);
+  assert.match(ui,/onClick=\{onCreate\}/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);
 });
