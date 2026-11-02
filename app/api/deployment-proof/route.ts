@@ -1,6 +1,6 @@
 // Public, read-only Vercel deployment identity. This reveals only IDs and
 // commit metadata already associated with the public GitHub repository.
-// Never expose tokens, user data, cookies, environment dumps or build logs.
+// Response deliberately contains only these approved public fields.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
