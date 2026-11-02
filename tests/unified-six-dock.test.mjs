@@ -149,12 +149,11 @@ test("central AI navigates to the single Messenger, original video deep link rem
  assert.doesNotMatch(dock,/onClick=\{id === "ai" \? \(\) =>/);
 });
 
-// Real WebKit checks still drive the accordion; this source guard prevents a
-// later refactor from letting deferred omission override explicit manual intent.
-test("manual narration disclosure cancels deferred course omission close",()=>{
+// Keep the original Video Director accordion synchronized with React state.
+test("manual Video Director disclosure remains synchronized with React state",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
- assert.ok(studio.includes('<summary onClick={()=>{meditationDisclosureEpochRef.current++;}}>'));
- assert.match(studio,/if\(epoch!==meditationDisclosureEpochRef\.current\)return;/);
+ assert.match(studio,/data-video-director-chat-details/);
+ assert.match(studio,/onToggle=\{event=>setDirectorChatOpen\(event\.currentTarget\.open\)\}/);
 });
 
 
