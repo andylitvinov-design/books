@@ -433,6 +433,56 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
+  # New single release status. Until GitHub Administration changes BOTH
+  # protections, the old release-ready compatibility check remains required.
+  # This job is read-only: it delegates to the existing Core and exact-head
+  # specialist checks without rerunning npm, browser, TypeScript or build.
+  hh-merge-check:
+    name: hh-merge-check
+    needs: [scope, code, hh-specialist]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Require real Core and specialist results from this workflow
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CODE_RESULT: ${{ needs.code.result }}
+          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          ROUTE: ${{ needs.scope.outputs.route }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request checks can authorize a merge; manual or merge_group jobs do not verify PR specialists.' >&2
+            exit 1
+          }
+          if [[ "$PR_DRAFT" == true ]]; then
+            echo 'Draft PR cannot pass the unified merge check' >&2
+            exit 1
+          fi
+          [[ "$SCOPE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
+            echo 'Scope or applicable specialist validation did not pass' >&2
+            exit 1
+          }
+          if [[ "$DOCS_ONLY" == true || "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
+            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || {
+              echo 'Trusted fast route requires intentionally skipped Core build' >&2
+              exit 1
+            }
+          else
+            [[ "$CODE_RESULT" == success ]] || {
+              echo 'Actual Core source check/build did not pass' >&2
+              exit 1
+            }
+          fi
+          echo 'hh-merge-check PASS: current workflow Core and specialist results verified.' >> "$GITHUB_STEP_SUMMARY"
+
   # Compatibility only: the classic branch rule may still require this name.
   # Never return success when the new full specialist check is missing or red.
   # Remove this legacy job in a separate PR ONLY after protection readback.
