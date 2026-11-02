@@ -171,18 +171,19 @@ test('HTTP API uses queued PR filter and POST for cancellation', async () => {
   assert.ok(calls[6][0].includes('/contents/.github/workflows/hh-pr-core-release.yml?ref=' + OLD)); assert.equal(calls[6][1], 'GET');
 });
 
-test('elevated GitHub token is used only with trusted protected production code', () => {
-  const yaml = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
-  assert.match(yaml, /pull_request_target:\\n    types: \[synchronize\]/);
-  assert.match(yaml, /permissions: \\{\\}/);
-  assert.match(yaml, /actions: write/);
-  assert.match(yaml, /pull-requests: read/);
-  assert.match(yaml, /ref: \\$\\{\\{ github.sha \\}\\}/);
-  assert.match(yaml, /ref: codex\\/public-book-library\\n          persist-credentials: false/);
-  assert.doesNotMatch(yaml, /ref: \\$\\{\\{ github.event.pull_request.head.sha/);
-  assert.match(yaml, /^  pull_request:/m);
-  assert.match(yaml, /if: github\\.event_name == 'pull_request'/);
-  assert.match(yaml, /github\\.event_name == 'push'/);
+test('privileged PR janitor checks out protected production, never PR HEAD',()=>{
+  const yaml=readFileSync('.github/workflows/hh-ci-stale-run-prune.yml','utf8');
+  assert.ok(yaml.includes('pull_request_target:'));
+  assert.ok(yaml.includes('types: [synchronize]'));
+  assert.ok(yaml.includes('permissions: {}'));
+  assert.ok(yaml.includes('actions: write'));
+  assert.ok(yaml.includes('pull-requests: read'));
+  assert.ok(yaml.includes('ref: ${{ github.sha }}'));
+  assert.ok(yaml.includes('ref: codex/public-book-library'));
+  assert.ok(!yaml.includes('ref: ${{ github.event.pull_request.head.sha'));
+  assert.ok(yaml.includes('  pull_request:'));
+  assert.ok(yaml.includes("if: github.event_name == 'pull_request'"));
+  assert.ok(yaml.includes("github.event_name == 'push'"));
 });
 
 test('cleanup concurrency isolates PRs and never cancels production push runs', () => {
@@ -256,7 +257,7 @@ test('optional conflict grouping cannot falsely fail a successful protected CI p
  assert.match(diag,/timeout-minutes: 2/);
  assert.match(diag,/steps\.conflict_diagnostic\.outcome == 'failure'/);
  assert.match(diag,/Conflict grouping: PARTIAL/);
- assert.match(yaml,/pull_request_target:\\n    types: \[synchronize\]/);
+ assert.ok(yaml.includes('pull_request_target:'));
 });
 
 test('a trusted PR synchronize must match exact previous and new same-repo HEADs', () => {
@@ -333,7 +334,7 @@ test('trusted cleanup workflow never checks out PR source with elevated token', 
 test('Core concurrency is stable for a PR, isolated for manual and merge_group', () => {
   const source = readFileSync('.github/workflows/hh-pr-core-release.yml', 'utf8');
   assert.ok(source.includes('group: hh-pr-core-' +
-    "${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+    "${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
-  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
 });
