@@ -59,7 +59,9 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(ui,/data-hypno-binaural-settings/);
   assert.match(ui,/whisperEnabled/);
   assert.match(ui,/binauralEnabled/);
-  assert.doesNotMatch(ui,/active=\{false\} unavailable/);
+  const audioGroup=ui.slice(ui.indexOf('{group.id==="audio"?<>'),ui.indexOf('{group.id==="visual"?<>'));
+  assert.ok(audioGroup.length>0,"audio group must exist");
+  assert.doesNotMatch(audioGroup,/unavailable|coming soon/);
   assert.match(studio,/onOpenPhraseEditor=\{\(\)=>\{/);
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
