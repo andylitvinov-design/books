@@ -102,7 +102,7 @@ function planCandidates(prs,now){
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -112,7 +112,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
   capacityReason:null,blocked:{},legacyCiRecovery:null,
-  workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
+  workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
+  eventFocused:focusPrNumber!==null,reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
  const blocked=reason=>{
@@ -162,15 +163,39 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // the helper validates bot-signed receipts, completed run, current HEAD,
  // worker idle state and records a signed no-claim result before clearing
  // one failed-attempt label.
- try{
-  summary.legacyCiRecovery=await reconcileLegacyCiDenial({
-   github,context,prs:production,now,dryRun,limited
-  });
- }catch(e){
-  summary.legacyCiRecovery={status:'UNAVAILABLE',
-   reason:'RECOVERY_UNVERIFIED',detail:String(e.message||e).slice(0,120)};
+ // An event is allowed to dispatch ONLY the PR whose current branch and
+ // linked event association were checked by Watchdog in this same job.
+ // A synthetic workflow_run.head_sha need not equal the PR HEAD; the
+ // Watchdog verifies the corresponding merge commit's second parent.
+ let focusedPR=null;
+ if(focusPrNumber!==null){
+  const event=context.payload?.workflow_run;
+  const selected=production.filter(pr=>pr.number===focusPrNumber && validPR(pr));
+  const associated=event?.pull_requests;
+  if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
+     context.eventName!=='workflow_run'||event?.name!=='HH PR core release gate'||
+     event?.status!=='completed'||event?.event!=='pull_request'||
+     !['failure','timed_out','startup_failure'].includes(event?.conclusion)||
+     selected.length!==1||event.head_branch!==selected[0].head?.ref||
+     (Array.isArray(associated)&&associated.length>0&&
+      !associated.some(link=>link.number===focusPrNumber))){
+   summary.reason='EVENT_FOCUS_UNVERIFIED';return finish();
+  }
+  focusedPR=selected[0];
+  summary.legacyCiRecovery={status:'SKIPPED_FOCUSED_EVENT'};
+ }else{
+  try{
+   summary.legacyCiRecovery=await reconcileLegacyCiDenial({
+    github,context,prs:production,now,dryRun,limited
+   });
+  }catch(e){
+   summary.legacyCiRecovery={status:'UNAVAILABLE',
+    reason:'RECOVERY_UNVERIFIED',detail:String(e.message||e).slice(0,120)};
+  }
  }
- const candidates=planCandidates(production,now);
+ const candidates=focusedPR
+  ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
+  : planCandidates(production,now);
  summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
  for(const pr of production){
   const lane=laneOf(pr);if(lane)summary.actionableByLane[lane]++;
