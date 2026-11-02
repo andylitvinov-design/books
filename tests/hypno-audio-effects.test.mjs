@@ -21,7 +21,7 @@ test("hypno audio UI uses the existing consented phrase narrator in-place, not t
   const mobile=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.match(mobile,/data-hypno-speech-settings/);
-  assert.match(mobile,/voiceEditor\|<p/);
+  assert.match(mobile,/voiceEditor\|\|<p/);
   assert.match(mobile,/onToggleWhisper/);
   assert.match(mobile,/onToggleBinaural/);
   assert.match(mobile,/data-hypno-binaural-settings/);
