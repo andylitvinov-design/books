@@ -77,7 +77,6 @@ test("owner's third workspace exposes the three requested image-led groups in sc
   assert.match(ui,/useState<GroupId\[\]>\(\["phrases","visual","audio"\]\)/);
   assert.match(ui,/data-hypno-card/);
   assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
-    "optional audio safety details must not stretch the approved default row");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
   assert.match(ui,/createPortal\(intro,introTarget\)/);
