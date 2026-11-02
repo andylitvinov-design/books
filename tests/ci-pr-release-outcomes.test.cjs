@@ -81,3 +81,62 @@ test('one status cannot masquerade as an ancestor when GitHub reports diverged',
  assert.equal(m.ancestryValid({status:'diverged',merge_base_commit:{sha:mergedSha}},mergedSha),false);
  assert.equal(m.percentile([1,2,3,4],.5),2);
 });
+
+
+test('served revision history confirms every PR in a 24h cohort larger than 40 with one API page',async()=>{
+ const prs=Array.from({length:80},(_,i)=>({
+  number:4000+i,merge_commit_sha:(i+1).toString(16).padStart(40,'0')
+ }));
+ let pages=0,compares=0;
+ const github={rest:{repos:{
+  listCommits:async({sha:ref,page,per_page})=>{
+   pages++;assert.equal(ref,sha);assert.equal(page,1);assert.equal(per_page,100);
+   return {data:[{sha},...prs.map(pr=>({sha:pr.merge_commit_sha}))]};
+  },
+  compareCommits:async()=>{compares++;throw Error('should not compare verified history');}
+ }}};
+ const result=await m.confirmedAncestry(github,ctx.repo,prs,sha);
+ assert.equal(result.complete,true);
+ assert.equal(result.confirmed.size,80);
+ assert.equal(result.historyHits,80);
+ assert.equal(result.historyPages,1);
+ assert.equal(result.comparisons,0);
+ assert.equal(pages,1);assert.equal(compares,0);
+});
+
+test('Git history positives and GitHub compare negatives give complete served-SHA coverage',async()=>{
+ const prs=Array.from({length:90},(_,i)=>({
+  number:5000+i,merge_commit_sha:(i+100).toString(16).padStart(40,'0')
+ }));
+ const listed=prs.slice(0,60);
+ let comparisons=0;
+ const github={rest:{repos:{
+  listCommits:async()=>({data:[{sha},...listed.map(pr=>({sha:pr.merge_commit_sha}))]}),
+  compareCommits:async({base,head:tested})=>{
+   comparisons++;assert.equal(tested,sha);
+   const index=prs.findIndex(pr=>pr.merge_commit_sha===base);
+   const newer=index>=80;
+   return {data:{status:newer?'behind':'ahead',merge_base_commit:{sha:base}}};
+  }
+ }}};
+ const result=await m.confirmedAncestry(github,ctx.repo,prs,sha);
+ assert.equal(result.complete,true);
+ assert.equal(result.confirmed.size,80);
+ assert.equal(result.comparisons,30);
+ assert.equal(result.historyHits,60);
+ assert.equal(comparisons,30);
+});
+
+test('malformed Git history never manufactures LIVE; ambiguous compare yields partial coverage',async()=>{
+ const prs=[{number:500,merge_commit_sha:'c'.repeat(40)}];
+ const github={rest:{repos:{
+  listCommits:async()=>({data:[{sha:'d'.repeat(40)},{sha:prs[0].merge_commit_sha}]}),
+  compareCommits:async()=>({data:{status:'queued'}})
+ }}};
+ const result=await m.confirmedAncestry(github,ctx.repo,prs,sha);
+ assert.equal(result.confirmed.size,0);
+ assert.equal(result.historyFailed,true);
+ assert.equal(result.comparisons,1);
+ assert.equal(result.complete,false);
+ assert.equal(result.errors,1);
+});
