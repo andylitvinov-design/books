@@ -26,8 +26,7 @@ async function renderMandalaDock(source, locale) {
     if(id==="react/jsx-runtime")return jsx;
     if(id==="next/link")return {__esModule:true,default:LinkStub};
     if(id==="lucide-react")return icons;
-    // The visualViewport effect does not run during server-side rendering.
-    // Keep the actual on-screen hook verified by the mobile dock browser suite.
+    // Client visualViewport effects are not executed by server-side markup checks.
     if(id==="./app/use-visual-bottom-dock")return {useVisualBottomDock:()=>{}};
     if(id.endsWith(".module.css"))return {__esModule:true,default:{}};
     throw new Error("Unexpected dependency in dock: "+id);
@@ -340,6 +339,7 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
     "single original Hypno editor mounted in either workspace");
   assert.match(studio,/activeWorkspace==="video" \? deepAudioPane/);
+  assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane/);
   assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
     "the sole phrase editor remains mounted to preserve its project state");
   for(const title of ["Видео-терапия","Своё фото / цель",
@@ -363,11 +363,12 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
   }
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
+  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\|\|hasPendingEdits\}/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
-  // Scope the contract to this handler, not every later video/renderer action.
+  // Restrict preview safety assertions to the real preview handler, not
+  // subsequent independent source-loading and recording operations.
   const previewHandler=studio.match(/const openAffirmationPreview = \(\) => \{[\s\S]*?\n  \};/)?.[0] || "";
-  assert.ok(previewHandler,"preview handler must remain in the canonical Studio");
+  assert.ok(previewHandler,"one real local preview handler remains");
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
   assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);
@@ -486,7 +487,8 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/Выберите тему для видеотерапии/);
+  assert.match(studio,/1\. Выберите цель видео/);
+  assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
   assert.match(studio,/data-video-quick-generate/);
   assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
@@ -501,8 +503,10 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(studio,/\{deepHypnoPane\}/);
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
-  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}custom:phrase,visibility:\["large"\]/,
-    "a chosen catalog phrase must enter the existing visible film caption track");
+  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}setCatalogPhraseDraft\(phrase\)/,
+    "a catalog phrase is staged in the existing editor before affecting the film");
+  assert.match(studio,/externalPhraseDraft=\{catalogPhraseDraft\}/);
+  assert.match(studio,/onExternalPhraseClear=\{\(\)=>setCatalogPhraseDraft\(null\)\}/);
   assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);

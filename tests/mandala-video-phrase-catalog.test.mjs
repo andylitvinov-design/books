@@ -97,7 +97,21 @@ test("phrase picker is wired to existing client settings and single audio UI",()
   assert.match(studio,/onOpenAudio=\{\(\)=>\{/);
   assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1,
     "reuse the approved single phrase editor");
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/setCatalogPhraseDraft\(phrase\)/);
+  assert.match(studio,/externalPhraseDraft=\{catalogPhraseDraft\}/);
+  assert.doesNotMatch(studio,/setAffirmations\(current=>\(\{\.\.\.current,enabled:true,selected:\[\],\s*custom:phrase/,
+    "selecting catalog phrases must not update video before Approve");
+});
+
+test("closed phrase catalog does not ship 69k possible variations into the initial Video workspace",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/const MandalaPhraseCatalog = dynamic\(\(\) => import\("\.\/mandala-phrase-catalog"\)/);
+  assert.doesNotMatch(studio,/import \{ MandalaPhraseCatalog \} from/, "large phrase taxonomy should be loaded on demand");
+  assert.match(studio,/const \[phraseCatalogActivated,setPhraseCatalogActivated\] = useState\(false\)/);
+  assert.match(studio,/if\(event\.currentTarget\.open\)setPhraseCatalogActivated\(true\)/);
+  assert.match(studio,/\{phraseCatalogActivated \? <MandalaPhraseCatalog/);
+  // Once opened, keep the panel mounted to preserve manually chosen story/idea filters.
+  assert.doesNotMatch(studio,/onToggle=\{event=>setPhraseCatalogActivated\(event\.currentTarget\.open\)\}/);
 });
 
 test("each tone keeps distinct wording for the same selected story/idea",()=>{
