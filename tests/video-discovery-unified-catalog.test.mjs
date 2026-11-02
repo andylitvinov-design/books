@@ -112,3 +112,12 @@ test("Supabase candidate rows stay invisible until complete independent review",
  assert.equal(buildPublishedVideoIndex(reviewed).length,1);
  assert.deepEqual(projectApprovedMeditationRows([{...base,editorial_status:"candidate"}]),[]);
 });
+
+test("high-risk original videos cannot be published through the discovery adapter",()=>{
+  const row={youtube_id:ID1,title:"Original",creator:"Owner",source_kind:"original",
+    source_url:"https://www.youtube.com/watch?v="+ID1,audio_language:"ru",
+    content_type:"guided",goals:["energy"],claims_risk:"high",
+    editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+    content_checked_at:"2026-11-01",embed_checked_at:"2026-11-01",metadata_checked_at:"2026-11-01"};
+  assert.deepEqual(projectApprovedMeditationRows([row]),[]);
+});
