@@ -72,28 +72,16 @@ jobs:
           }
           gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs?per_page=100&filter=latest" > "$temp/jobs.json"
           jq -e '
-            .total_count > 0 and .total_count <= 100 and
-            (.jobs | length) == .total_count and
+            . as $data |
+            ($data.total_count > 0 and $data.total_count <= 100 and
+             ($data.jobs | length) == $data.total_count) and
             (["classify-change","hh-core-verified","hh-specialist","hh-merge-check","release-ready"] |
               all(. as $name |
-                ([input.jobs[] | select(.name == $name and .status == "completed" and .conclusion == "success")] | length) == 1))
-          ' "$temp/jobs.json" >/dev/null 2>&1 || {
-            # jq input above is deliberately fail-closed; use a straightforward
-            # complete-page proof below to verify all five jobs unambiguously.
-            jq -e '
-              .total_count > 0 and .total_count <= 100 and
-              (.jobs | length) == .total_count and
-              ([.jobs[] | select(
-                (.name == "classify-change" or .name == "hh-core-verified" or
-                 .name == "hh-specialist" or .name == "hh-merge-check" or
-                 .name == "release-ready") and
-                .status == "completed" and .conclusion == "success"
-              )] | length) == 5 and
-              ([.jobs[] | select(.name == "hh-merge-check" and .conclusion == "success")] | length) == 1
-            ' "$temp/jobs.json" >/dev/null || {
-              echo '::error::Actual Core/Unified/Specialist/Legacy job proof not verified; no protection changed.' >&2
-              exit 1
-            }
+                ([$data.jobs[] | select(.name == $name and
+                  .status == "completed" and .conclusion == "success")] | length) == 1))
+          ' "$temp/jobs.json" >/dev/null || {
+            echo '::error::Actual Core/Unified/Specialist/Legacy job proof not verified; no protection changed.' >&2
+            exit 1
           }
           echo "Source PR #$PR_NUMBER and exact Core run $RUN_ID have a genuine successful unified check." >> "$GITHUB_STEP_SUMMARY"
 

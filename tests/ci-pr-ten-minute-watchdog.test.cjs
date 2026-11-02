@@ -636,6 +636,8 @@ test('admin-only migration safely replaces three old required statuses with one 
   assert.ok(source.includes('Already migrated: both required status sources read back cleanly.'));
   assert.ok(source.includes('["hh-merge-check"]'));
   assert.ok(source.includes('Both controls VERIFIED: only hh-merge-check is required'));
+  assert.ok(!source.includes('input.jobs[]'), 'admin proof must use one complete immutable jobs object');
+  assert.ok(source.includes('($data.jobs | length) == $data.total_count'));
   assert.ok(!source.includes('gh api --method DELETE '));
 });
 
