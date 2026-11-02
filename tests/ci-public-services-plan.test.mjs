@@ -1486,3 +1486,50 @@ test('private media declarations initialize before CLI main to avoid hidden full
   assert.ok(declaration>=0 && entry>declaration && execute>entry,
     'private media ownership constants must be initialized before direct CLI invocation');
 });
+
+test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated public checkout journeys',()=>{
+  const delta=[["M",".github/workflows/holistic-support-mandala.yml"],["M","components/mandala-free-video-studio.tsx"],["M","components/mandala-phrase-catalog.tsx"],["A","data/video-catalog/curated-audio-imports.json"],["A","data/video-catalog/goal-tree-audio-playlists-v1.json"],["A","docs/videos/AUDIO_120_SCENARIOS_LICENSED_IMPORT_20261101.md"],["A","lib/mandala/curated-audio-recommendations.mjs"],["A","lib/mandala/goal-tree-audio-playlists.mjs"],["M","lib/mandala/local-video-music.ts"],["A","scripts/import-reviewed-audio.mjs"],["A","tests/curated-audio-selection.test.mjs"],["A","tests/goal-tree-audio-playlists.test.mjs"],["A","tests/import-reviewed-audio.test.mjs"],["M","tests/mandala-smart-audio.test.mjs"],["M","tests/mandala-video-phrase-catalog.test.mjs"],["M","scripts/ci-public-services-plan.mjs"],["M","tests/ci-public-services-plan.test.mjs"]];
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/2969/merge',
+    GITHUB_HEAD_REF:'feat/hh-goal-tree-120-audio-playlists-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=(rows=delta,envChange={})=>planPublicServicesEvent({...env,...envChange},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(nul)+nul);
+    throw Error('Unexpected git command '+args.join(' '));
+  });
+  const answer=run();
+  assert.deepEqual([answer.mode,answer.build,answer.browser,answer.cases],
+    ['contracts',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(answer),false);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const must of [
+    'tests/goal-tree-audio-playlists.test.mjs',
+    'tests/import-reviewed-audio.test.mjs',
+    'tests/curated-audio-selection.test.mjs',
+    'node --test tests/goal-tree-audio-playlists.test.mjs',
+    'node --test tests/import-reviewed-audio.test.mjs',
+    'node --test tests/curated-audio-selection.test.mjs',
+    'node --test tests/mandala-video-phrase-catalog.test.mjs',
+    "startsWith(github.head_ref, 'feat/hh-goal-tree-')",
+  ])assert.ok(mandala.includes(must),'owning audio specialist missing '+must);
+  for(const path of [
+    'app/api/payments/checkout/route.js','app/api/service-enquiries/route.js',
+    'middleware.ts','components/commerce/service-cart.tsx',
+    'components/mandala-unknown-video-ai.tsx',
+    'data/video-catalog/unreviewed-remote-music.json',
+  ])assert.equal(run([...delta,['A',path]]).mode,'full',path);
+  assert.equal(run(delta.slice(1)).mode,'full','partial set is never trusted');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/mandala-video-phrase-catalog.test.mjs']]).mode,
+    'full','deleted or duplicated phrase test cannot be treated as reviewed');
+  assert.equal(run([...delta.slice(0,-1),['M','tests/mandala-video-phrase-catalog-renamed.test.mjs']]).mode,
+    'full','unexpected phrase test path cannot bypass real Public Services');
+  assert.equal(run([...delta.slice(0,-1),['A','tests/ci-public-services-plan.test.mjs']]).mode,
+    'full','changed source test status does not qualify');
+  assert.equal(run(delta,{GITHUB_REF:'refs/pull/9999/merge'}).mode,'full');
+  assert.equal(run(delta,{GITHUB_HEAD_REF:'feat/other-audio-pr'}).mode,'full');
+  assert.equal(run([...delta.slice(0,-1),['D','tests/ci-public-services-plan.test.mjs']]).mode,'full',
+    'deleted protection test never qualifies');
+});

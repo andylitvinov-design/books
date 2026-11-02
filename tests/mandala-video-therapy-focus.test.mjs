@@ -87,7 +87,8 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   }
   for(const marker of ["data-guided-focus-state","data-guided-generate-meditation",
     "data-guided-add-meditation","data-guided-skip-meditation",
-    "data-guided-practice-step","data-guided-programme-step",
+    "data-guided-personal-meditation-step","data-guided-open-personal-meditation",
+    "data-guided-practice-step","data-guided-ritual-moment","data-guided-create-ritual","data-guided-programme-step",
     "data-guided-create-plan","data-guided-free-video"]){
     assert.ok(guided.includes(marker),`real interaction exists: ${marker}`);
   }
@@ -101,5 +102,11 @@ test("approved courses & practices mobile flow preserves consent and reverses me
   assert.ok(meditation.includes('current===previousSeed?"":current'));
   assert.ok(styles.includes(".sessionList{display:grid;grid-template-columns:1fr;grid-auto-flow:row"));
   assert.ok(studio.includes("MandalaGuidedCourse"));
+  assert.match(guided,/ritualMoments\.map/);
+  assert.match(guided,/f\.programStages\.map/);
+  assert.match(guided,/onClick=\{openPersonalMeditation\}/);
+  assert.match(styles,/\.personalPreview\{/);
+  assert.match(styles,/\.ritualMoments\{/);
+  assert.match(styles,/\.programTiles\{/);
 
 });

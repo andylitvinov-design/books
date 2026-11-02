@@ -18,6 +18,22 @@ on:
       - 'components/mandala-phrase-catalog*'
       - 'data/video-catalog/video-phrase-*.json'
       - 'tests/mandala-video-phrase-catalog.test.mjs'
+      - 'tests/scenario-media-coverage.test.mjs'
+      - 'tests/mandala-video-goal-media-coverage.test.mjs'
+      - 'lib/mandala/video-goal-media-coverage.mjs'
+      - 'tests/mandala-classical-melodies.test.mjs'
+      - 'tests/mandala-scenario-media-import-contract.test.mjs'
+      - 'tests/mandala-scenario-soundtracks.test.mjs'
+      - 'scripts/audit-scenario-media.mjs'
+      - 'scripts/import-scenario-video-batch.mjs'
+      - 'scripts/read-live-film-presets.mjs'
+      - 'lib/mandala/scenario-soundtracks.mjs'
+      - 'data/video-catalog/dareful-verified-candidate-wave-20261101.json'
+      - 'data/video-catalog/dareful-verified-candidate-wave2-20261101.json'
+      - 'scripts/preview-dareful-candidates.mjs'
+      - 'scripts/render-dareful-candidate-masters.mjs'
+      - 'tests/dareful-preview-candidates.test.mjs'
+      - 'tests/dareful-draft-master-contract.test.mjs'
       - 'lib/mandala/video-executable-director.mjs'
       - 'lib/mandala/video-chat-executable-ai.mjs'
       - 'tests/video-executable-director.test.mjs'
@@ -63,6 +79,7 @@ on:
       - 'components/holistic-support-mobile.module.css'
       - 'lib/mandala/**'
       - 'scripts/verify-holistic-mandala-browser.mjs'
+      - 'scripts/verify-practices-mobile-browser.mjs'
       - 'scripts/benchmarking/video-scene-match.mjs'
       - 'tests/video-scene-match.test.mjs'
       - 'scripts/verify-hypno-wave-browser.mjs'
@@ -105,6 +122,12 @@ on:
       - 'scripts/generate-mandala-melodies.mjs'
       - 'scripts/generate-scenario-melodies.mjs'
       - 'tests/mandala-scenario-audio.test.mjs'
+      - 'tests/goal-tree-audio-playlists.test.mjs'
+      - 'tests/import-reviewed-audio.test.mjs'
+      - 'tests/curated-audio-selection.test.mjs'
+      - 'scripts/import-reviewed-audio.mjs'
+      - 'data/video-catalog/curated-audio-imports.json'
+      - 'data/video-catalog/goal-tree-audio-playlists-v1.json'
       - 'tests/mandala-audio-attach.test.mjs'
       - 'tests/meditation-filters.test.mjs'
       - 'tests/meditation-narration.test.mjs'
@@ -127,6 +150,13 @@ on:
       - 'scripts/ci-heavy-impact.mjs'
       - 'tests/ci-heavy-impact.test.mjs'
   workflow_dispatch:
+    inputs:
+      dareful_preview_wave:
+        description: 'Generate unapproved Dareful editorial previews; no public import'
+        type: choice
+        required: false
+        options: [none, wave1, wave2, both]
+        default: none
 permissions:
   contents: read
   pull-requests: read
@@ -157,8 +187,49 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify pending Dareful editorial source rights (no network)
+        run: |
+          if [ -e scripts/preview-dareful-candidates.mjs ] || [ -e tests/dareful-preview-candidates.test.mjs ]; then
+            test -f scripts/preview-dareful-candidates.mjs
+            test -f scripts/render-dareful-candidate-masters.mjs
+            test -f tests/dareful-preview-candidates.test.mjs
+            test -f tests/dareful-draft-master-contract.test.mjs
+            node --test tests/dareful-preview-candidates.test.mjs tests/dareful-draft-master-contract.test.mjs
+          fi
+      # Reuse the existing domain job; external stock previews require explicit owner dispatch.
+      - name: Generate Dareful editorial previews (manual opt-in only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dareful_preview_wave != 'none' }}
+        env:
+          HH_DAREFUL_WAVE: ${{ inputs.dareful_preview_wave }}
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          case "$HH_DAREFUL_WAVE" in wave1|wave2|both) ;; *) echo 'UNKNOWN_DAREFUL_EDITORIAL_WAVE' >&2; exit 1 ;; esac
+          if [[ "$HH_DAREFUL_WAVE" == wave1 || "$HH_DAREFUL_WAVE" == both ]]; then
+            node scripts/preview-dareful-candidates.mjs
+            node scripts/render-dareful-candidate-masters.mjs
+          fi
+          if [[ "$HH_DAREFUL_WAVE" == wave2 || "$HH_DAREFUL_WAVE" == both ]]; then
+            node scripts/preview-dareful-candidates.mjs --wave2
+            node scripts/render-dareful-candidate-masters.mjs --wave2
+          fi
+      - name: Preserve Dareful editorial artifacts without public publishing
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.dareful_preview_wave != 'none' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-dareful-editorial-preview-${{ github.run_id }}
+          path: |
+            artifacts/dareful-wave-previews/
+            artifacts/dareful-wave-masters/
+            artifacts/dareful-wave2-previews/
+            artifacts/dareful-wave2-masters/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Check browser acceptance script syntax before slow production build
-        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs
+        run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check scripts/audit-scenario-media.mjs && node --check scripts/import-scenario-video-batch.mjs && node --check scripts/read-live-film-presets.mjs && node --check lib/mandala/scenario-soundtracks.mjs && node --check lib/mandala/video-goal-media-coverage.mjs
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
@@ -180,8 +251,14 @@ jobs:
           node --check app/api/holistic-support/video-phrases/route.js
           node --test tests/mandala-video-phrase-catalog.test.mjs
           npx --no-install eslint components/mandala-phrase-catalog.tsx lib/mandala/video-phrase-catalog.mjs app/api/holistic-support/video-phrases/route.js
+      - name: Verify all 120 editorial scenarios map to four real soundtrack files
+        run: node --test tests/goal-tree-audio-playlists.test.mjs
+      - name: Verify copyrighted audio cannot be silently imported as reusable tracks
+        run: node --test tests/import-reviewed-audio.test.mjs
+      - name: Verify reviewed external music is credited and native MP3 selection is safe
+        run: node --test tests/curated-audio-selection.test.mjs
       - name: Mandala and mobile support contracts
-        run: node --test tests/video-chat-ai.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/video-project-v2.test.mjs tests/render-plan-v2.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/video-catalog-probe.test.mjs tests/free-film-source-clock.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs
+        run: node --test tests/video-chat-ai.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/video-project-v2.test.mjs tests/render-plan-v2.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/video-catalog-probe.test.mjs tests/free-film-source-clock.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs tests/mandala-scenario-media-import-contract.test.mjs tests/mandala-scenario-soundtracks.test.mjs tests/mandala-video-goal-media-coverage.test.mjs
       - name: Voice provider contract and negative cases
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs
       - name: Stories and Characters exact source acceptance
@@ -245,6 +322,8 @@ jobs:
           HH_LIVE_VIDEO_SOURCE=http://127.0.0.1:3100 HH_LIVE_VIDEO_REQUIRE_STOCK=true \
             HH_LIVE_VIDEO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
             node scripts/benchmarking/first-video-live-export.mjs
+          # Verify approved five-step guest course in Chromium and WebKit, no provider writes.
+          node scripts/verify-practices-mobile-browser.mjs
           # On this owner-approved conversation PR, prove actual category ->
           # scenario -> phrase taps and a real downloaded moving movie.
           # No external provider, payment, photo or client payload is sent.
@@ -284,7 +363,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots
-          path: artifacts/hypno-compact/*.png
+          path: |
+            artifacts/hypno-compact/*.png
+            artifacts/practices-mobile/*.png
           if-no-files-found: ignore
           retention-days: 3
 
@@ -293,7 +374,7 @@ jobs:
   # the closest supported CI platform to iPhone Safari. Never mock a download.
   # Video source-clock fixes require real macOS Safari encoded-output evidence.
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/video-')) }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-')) }}
     runs-on: macos-15
     timeout-minutes: 25
     permissions:

@@ -58,7 +58,7 @@ test('editing a visitor enquiry phone invalidates the old one-off consent instea
   contact_ciphertext:'original',description_ciphertext:'message',reference_code:'HH-112233445566'}
  let resealed=null
  class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status}}
- const fn=runInNewContext(raw,{AppError,normalizeEnquiryAttribution,requireUUID:()=>{},
+ const fn=runInNewContext(raw,{AppError,requireUUID:()=>{},normalizeEnquiryAttribution,
   openSealed:source=>source==='original'?visitor:source==='changed'?resealed:'Private message',
   seal:value=>{resealed=value;return 'changed'},
   relayContactView:contact=>({displayName:contact.displayName||'Client'}),
