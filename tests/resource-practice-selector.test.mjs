@@ -97,7 +97,8 @@ test("the existing meditation and eight-day preview share one focus and show the
   assert.match(code, /<MandalaResourcePractice /);
   assert.ok(code.indexOf("<MandalaResourcePractice ") < code.indexOf("data-meditation-eight-day-plan"));
   assert.match(code, /isMeditationSafetyResponse\(script,locale\)/);
-  assert.match(code, /focus=\{\{\.\.\.focus,goal:effectiveWish/);
+  assert.match(code, /focus=\{\{\.\.\.focus,goals:\[courseFocus\|\|actualTheme\],goal:effectiveWish/);
+  assert.match(code, /focus:sharedFocus,accents:selected/);
 });
 
 test("the resource component exposes working selection and bounded refresh without new network", async () => {
