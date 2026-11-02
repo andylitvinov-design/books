@@ -64,6 +64,10 @@ const TRUSTED_CI_CONTRACT_FILES = new Set([
   // Core/CI performance classification and PR fast-lane contracts, not public Services UI.
   'tests/ci-heavy-impact.test.mjs',
   'tests/pr-fast-lane.test.mjs',
+  // Read-only PR conflict inventory/contract only; Public Services never reads
+  // this telemetry or writes to checkout, bookings, consent or payment APIs.
+  '.github/workflows/hh-pr-sweep-guard.yml',
+  'tests/pr-sweep-guard.test.mjs',
   // Other independent CI harnesses, with no application runtime dependency.
   '.github/workflows/admin-seo-dashboard.yml',
   '.github/workflows/release-reaudit.yml',

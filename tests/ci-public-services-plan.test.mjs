@@ -939,6 +939,8 @@ test('Video Studio #2938 routes exact reviewed editor files to Mandala without u
   // The COMPLETE current #2938 source diff (not merely the old partial
   // videoOnly fixture) must not start 13 unrelated browser suites.
   const integrated2938 = [
+    ".github/workflows/hh-first-video-live-export.yml",
+    ".github/workflows/hh-pr-sweep-guard.yml",
     ".github/workflows/holistic-support-mandala.yml",
     "components/mandala-auto-video-director.module.css",
     "components/mandala-auto-video-director.tsx",
@@ -966,10 +968,11 @@ test('Video Studio #2938 routes exact reviewed editor files to Mandala without u
     "tests/mandala-mobile-video-design.test.mjs",
     "tests/mandala-workspace-tabs.test.mjs",
     "tests/pr-fast-lane.test.mjs",
+    "tests/pr-sweep-guard.test.mjs",
     "tests/video-chat-intent.test.mjs",
     "tests/video-chat-understanding.test.mjs",
     "tests/video-director-chat-live-acceptance.test.mjs",
-    "tests/video-executable-director.test.mjs"
+    "tests/video-executable-director.test.mjs",
   ];
   const integratedScope = planPublicServicesChangedPaths(integrated2938);
   assert.deepEqual([integratedScope.mode,integratedScope.build,integratedScope.browser,integratedScope.cases],
