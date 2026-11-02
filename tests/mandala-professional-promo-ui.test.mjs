@@ -40,3 +40,12 @@ test('shot keys are stable and public catalog arrays are readonly-safe',()=>{
   assert.ok(component.includes('presets:[...presets],scenes:[...scenes]'));
   assert.ok(component.includes('key={String(index)}'));
 });
+
+test('professional video branch executes real macOS WebKit rather than a skipped optional media gate',()=>{
+  const workflow=readFileSync('.github/workflows/holistic-support-mandala.yml','utf8');
+  assert.ok(workflow.includes("startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'codex/professional-growth-templates-20261031'"));
+  assert.ok(!workflow.includes("startsWith(github.head_ref, 'feat/video-' ||"),'startsWith argument must close before separate branch match');
+  assert.ok(workflow.includes('voice-webkit-macos:'));
+  assert.ok(workflow.includes('runs-on: macos-15'));
+  assert.ok(workflow.includes('HH_VOICE_E2E_ENGINE: webkit'));
+});
