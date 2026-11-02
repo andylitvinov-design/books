@@ -115,9 +115,9 @@ function watchdogCronDecision(schedule,manual,now){
   if(lastCron!==null&&(lastCron>now+60_000||now-lastCron<WATCHDOG_CRON_GRACE_MS))
     return lastCron>now+60_000?'WATCHDOG_CLOCK_UNVERIFIED':'WATCHDOG_CRON_HEALTHY';
   const recent=manual.some(run=>{
-    const created=Date.parse(run.created_at);
-    return created>now+60_000||
-      now-created<WATCHDOG_MANUAL_COOLDOWN_MS;
+    const completed=Date.parse(run.updated_at||run.created_at);
+    return completed>now+60_000||
+      now-completed<WATCHDOG_MANUAL_COOLDOWN_MS;
   });
   if(recent)return 'WATCHDOG_MANUAL_RECENT';
   return 'WAKE_STALE_WATCHDOG';
