@@ -4,8 +4,8 @@ import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
-  ArrowRight, AudioLines, ChevronDown, Clock3, Eye, FileText, Headphones, Image as Picture,
-  MapPin, Mic, Play, Quote, Repeat2, SlidersHorizontal, Sparkles, Sun, UserRound, Waves,
+  ArrowRight, AudioLines, ChevronDown, Eye, Headphones, Image as Picture,
+  MapPin, Mic, Play, Quote, Repeat2, Sparkles, Sun, Waves,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
