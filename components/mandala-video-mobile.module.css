@@ -2547,3 +2547,17 @@
   .studio .quickBuilder>.hypnoIntroSlot{order:0;margin:4px 0 2px}
   .studio[data-active-workspace="effects"] .workspaceHeading{display:none}
 }
+
+/* Hypnocorrection has one original player followed by its four owner-approved
+   effects groups. The actual encoded result/save follows Create, never precedes
+   the controls. Other five Video Studio workspaces keep their own ordering. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4}
+}
+
+/* Screenshot-specific third-workspace hero: the same Canvas preview is cropped
+   into a compact landscape poster; exported video dimensions are unchanged. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .previewStage .hero{aspect-ratio:3.3/1!important}
+}

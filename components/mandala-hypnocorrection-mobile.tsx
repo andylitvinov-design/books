@@ -218,7 +218,7 @@ export function MandalaHypnocorrectionMobile({
           <Feature icon={<Headphones/>} title={t.binaural} help={t.binauralHelp}
             active={false} unavailable onToggle={()=>showNote("audio")}
             onConfigure={()=>showNote("audio")} disabled={disabled} settings={t.settings}/>
-          <p className={styles.note}>{note==="audio"?t.pending:t.voiceHint}</p>
+          {note==="audio"||note==="voice" ? <p className={styles.note}>{note==="audio"?t.pending:t.voiceHint}</p> : null}
         </>:null}
         {group.id==="visual"?<>
           <Feature icon={<Sun/>} title={t.light} help={t.lightHelp} poster={posters.visual}

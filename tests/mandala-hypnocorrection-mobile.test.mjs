@@ -74,6 +74,8 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
   assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
   assert.match(ui,/data-hypno-card/);
+  assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
+    "optional audio safety details must not stretch the approved default row");
   assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
   assert.match(ui,/data-hypno-create/);
   assert.match(ui,/createPortal\(intro,introTarget\)/);
@@ -87,6 +89,14 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
   assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
     "generated video result must remain visible in third workspace");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-effects-panel\]\{order:3\}/,
+    "the four groups appear immediately after the single player/navigation");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-result\]\{order:4\}/,
+    "real generated output and Save appear after Effects/Create, not above them");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.previewStage \.hero\{aspect-ratio:3\.3\/1!important\}/);
+  assert.match(css,/@media\(min-width:375px\) and \(max-width:759px\)\{\s*\.groupHeader\{min-height:128px\}/);
+  assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
+  assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
   for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
   assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);

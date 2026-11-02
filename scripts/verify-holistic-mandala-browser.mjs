@@ -779,6 +779,18 @@ const runEngine = async ([engine, browserType]) => {
         const playerBox=await page.locator("[data-video-mandala-hero]").boundingBox();
         assert.ok(waveBox&&playerBox&&waveBox.y+waveBox.height<playerBox.y,
           engine+" "+locale+" "+width+" Wave should precede player as in owner mock");
+        const visualOrder=await page.evaluate(()=>{
+          const controls=document.querySelector("[data-video-effects-panel]");
+          const output=document.querySelector("[data-video-result]");
+          const nav=document.querySelector("[data-video-quick-controls]");
+          return {
+            controls:controls?Number(getComputedStyle(controls).order):null,
+            output:output?Number(getComputedStyle(output).order):null,
+            nav:nav?Number(getComputedStyle(nav).order):null,
+          };
+        });
+        assert.deepEqual(visualOrder,{controls:3,output:4,nav:2},
+          engine+" "+locale+" "+width+" owner screenshot order must put Create before finished video");
         const groups=effects.locator("[data-hypno-group]");
         assert.deepEqual(await groups.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hypno-group"))),
           ["audio","visual","meditation","phrases"]);
@@ -794,6 +806,13 @@ const runEngine = async ([engine, browserType]) => {
             engine+" "+locale+" "+width+" cards must share one legible row: "+JSON.stringify(cards));
         }
         assert.equal(await effects.locator("[data-hypno-create]").count(),1);
+        if(width>=375){
+          const heights=await effects.locator("[data-hypno-group]").evaluateAll(nodes=>nodes.map(node=>{
+            const rect=node.getBoundingClientRect();return {id:node.getAttribute("data-hypno-group"),height:rect.height};
+          }));
+          assert.ok(heights.every(row=>row.height<=175),
+            engine+" "+locale+" "+width+" owner screenshot groups must remain compact: "+JSON.stringify(heights));
+        }
         assert.equal(await page.locator("[data-video-hero-create]").count(),0,
           "Hypno uses the original renderer through ONE primary Create control");
         const effectGeometry=await effects.evaluate(el=>({

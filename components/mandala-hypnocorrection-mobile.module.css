@@ -184,3 +184,23 @@
 .intro *{box-sizing:border-box}
 .intro button:focus-visible{outline:3px solid #d6a958;outline-offset:2px}
 .intro .wave{margin:0}
+
+/* Follow the approved iPhone reference density without reducing touch targets:
+   keep 3 readable cards per row but never force 170px-high cards. */
+@media(min-width:375px) and (max-width:759px){
+ .groupHeader{min-height:128px}
+ .feature{min-height:128px;grid-template-rows:38px 1fr}
+ .feature[data-photo=true]{grid-template-rows:36px 1fr}
+ .featurePoster{height:36px}
+ .meditation{min-height:128px}
+ .meditationStart{min-height:60px}
+ .meditationOptions button{min-height:62px}
+ .create{min-height:54px}
+}
+@media(max-width:374px){
+ .groupHeader{min-height:84px}
+ .feature{min-height:120px}
+ .meditationStart{min-height:64px}
+ .meditationOptions button{min-height:64px}
+ .create{min-height:54px}
+}
