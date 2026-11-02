@@ -134,6 +134,24 @@ try {
       const consentInput = contactForm.locator('input[type="checkbox"][required]')
       const consentLabel = contactForm.locator('label:has(input[type="checkbox"][required])')
       assert.equal(await consentLabel.count(), 1, 'One visible reply-only consent label')
+      // A fixed public iPhone dock remains at the viewport bottom. A user
+      // scrolls the form above that dock before touching the checkbox; make
+      // the real browser perform that scroll, then assert the label can be hit.
+      await consentLabel.evaluate(element=>element.scrollIntoView({
+        behavior:'auto',block:'center'
+      }))
+      await page.waitForFunction(() => {
+        const label=document.querySelector(
+          '[data-cart-contact-form] label:has(input[type="checkbox"][required])')
+        const nav=document.querySelector('.mobile-bottom-navigation')
+        if(!label)return false
+        const rect=label.getBoundingClientRect()
+        if(rect.top<0)return false
+        if(nav&&getComputedStyle(nav).display!=='none' &&
+          rect.bottom>=nav.getBoundingClientRect().top-6)return false
+        const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2)
+        return Boolean(hit&&(hit===label||label.contains(hit)))
+      },null,{timeout:10000})
       await consentLabel.click()
       await page.waitForFunction(() => {
         const input = document.querySelector(
