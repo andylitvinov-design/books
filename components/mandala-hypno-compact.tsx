@@ -272,8 +272,11 @@ export function MandalaHypnoCompact({
     const chosenIdea=Array.from(ideaText).slice(0,maxLength).join("");
     const phrases=[...new Set([chosenIdea,...result.phrases,...fallbackPhrases])]
       .filter(line=>Array.from(line).length<=maxLength).slice(0,5);
+    // Keep the visitor's selected idea at the top while filling short sets
+    // with distinct approved local fallback phrases (from #3007).
+    const completed=[...phrases,...fallbackPhrases.filter(line=>!phrases.includes(line))].slice(0,5);
     return {model:"wave",key,strategy:result.strategy,
-      phrases:phrases.length===5?phrases:fallbackPhrases,selected:[0,1,2]};
+      phrases:completed.length===5?completed:fallbackPhrases,selected:[0,1,2]};
   }
   function filtered(nextTheme:VideoTheme=theme,nextProblem=problemIndex,nextGoal:VideoAffirmationGoal=extraGoal,
     overrides:Partial<Pick<typeof waveInput,"kind"|"tone"|"focus"|"length">>={}){
@@ -604,7 +607,7 @@ export function MandalaHypnoCompact({
           <button type="button" disabled={disabled} onClick={()=>setOwnOpen(v=>!v)}>{extra.add}<ChevronDown size={14}/></button>
         </div>
         {ownOpen&&<div className={css.shortNote+" "+css.miniOwn}>
-          <input value={ownText} data-hypno-own-phrase disabled={disabled} maxLength={36} placeholder={extra.add}
+          <input value={ownText} data-hypno-own-phrase aria-label={extra.add} disabled={disabled} maxLength={36} placeholder={extra.add}
             onChange={e=>setOwnText(e.target.value)}/>
           <button type="button" disabled={disabled||!ownText.trim()} onClick={addCustom}>{extra.addButton}</button>
         </div>}
