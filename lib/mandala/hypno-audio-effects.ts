@@ -75,7 +75,8 @@ export async function createHypnoAudioEffectFile(options: HypnoAudioMixOptions):
       source.start(startAt, 0, Math.min(decoded.duration, remaining));
     };
     if (options.whisperEnabled) {
-      const interval = Math.max(4, Math.min(20, options.repeatEverySeconds ?? 7));
+      const pause = Math.max(4, Math.min(20, options.repeatEverySeconds ?? 7));
+      const interval = decoded.duration + pause;
       const level = Math.max(0.04, Math.min(0.3, options.whisperGain ?? 0.16));
       for (let at = 0; at < duration; at += interval) playVoice(at, level);
     } else {
@@ -93,8 +94,8 @@ export async function createHypnoAudioEffectFile(options: HypnoAudioMixOptions):
       oscillator.type = "sine";
       oscillator.frequency.value = frequency;
       gain.gain.setValueAtTime(0, 0);
-      gain.gain.linearRampToValueAtTime(0.025, Math.min(2, duration / 4));
-      if (duration > 4) gain.gain.setValueAtTime(0.025, duration - 2);
+      gain.gain.linearRampToValueAtTime(0.04, Math.min(2, duration / 4));
+      if (duration > 4) gain.gain.setValueAtTime(0.04, duration - 2);
       gain.gain.linearRampToValueAtTime(0, duration);
       oscillator.connect(gain);
       gain.connect(merger, 0, channel);
