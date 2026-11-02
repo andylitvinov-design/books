@@ -783,7 +783,7 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
     const context={repo:{owner:'andylitvinov-design',repo:'books'},eventName:'pull_request_target',
       payload:{pull_request:pr}};
     await preflight(gh,{info:message=>notes.push(message),
-      setOutput:(key,value)=>outputs[key]=value},context,()=>({assessBaseFreshness:async()=>({ok:true})}));
+      setOutput:(key,value)=>outputs[key]=value},context,()=>({loadTrustedClassifier:async()=>({}),assessBaseFreshness:async()=>({ok:true})}));
     return {ok:outputs.eligible==='true',calls,notes};
   }
   const valid=await decide([current,[prior]],[101,101]);

@@ -2,14 +2,14 @@
 // The pull-request API's base SHA can reflect an older snapshot. A merge
 // policy change needs evidence against the current production branch.
 const SHA=/^[a-f0-9]{40}$/i;
-const SENSITIVE=/(?:^\.github\/|^scripts\/ci[-_/]|^lib\/ci\/|^tests\/ci[-_/]|^docs\/operations\/CI_RELEASE_POLICY\.md$|(?:^|\/)(?:auth|authorization|security|privacy|payments?|billing|consent|rls)(?:[\/._-]|$))/i;
-async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase}){
+async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
     !Number.isSafeInteger(pr.changed_files)||pr.changed_files<0||pr.changed_files>300)return fail('INVALID_PR_EVIDENCE');
  try{
   const branch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
   const actual=branch?.commit?.sha;if(!SHA.test(actual||''))return fail('CURRENT_BASE_UNAVAILABLE');
+  if(classifierBase!==actual||typeof decideRoute!=='function')return fail('CLASSIFIER_BASE_STALE');
   const files=[];
   for(let page=1;page<=3;page++){
    const rows=(await github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page})).data;
@@ -17,18 +17,25 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase}){
    files.push(...rows);if(rows.length<100)break;
   }
   if(files.length!==pr.changed_files||new Set(files.map(f=>f?.filename)).size!==files.length)return fail('FILES_INCOMPLETE');
-  let sensitive=false;
+  const statusMap={added:'A',modified:'M',removed:'D',renamed:'R',copied:'C',changed:'T',unchanged:'U'};
+  const rows=[];
   for(const f of files){
-   if(typeof f?.filename!=='string'||!f.filename||!['added','modified','removed','renamed','copied','changed','unchanged'].includes(f.status)||
+   if(typeof f?.filename!=='string'||!f.filename||!statusMap[f.status]||
       (f.status==='renamed'&&typeof f.previous_filename!=='string'))return fail('FILES_UNVERIFIED');
-   if(SENSITIVE.test(f.filename)||(f.previous_filename&&SENSITIVE.test(f.previous_filename)))sensitive=true;
+   rows.push({status:statusMap[f.status],filename:f.filename});
+   if(f.previous_filename)rows.push({status:'R',filename:f.previous_filename});
   }
+  const route=decideRoute(rows,null,null);
+  if(!['FULL','CORE','ASSETS','TEXT'].includes(route))return fail('CLASSIFIER_RESULT_UNVERIFIED');
+  const sensitive=route==='FULL';
   if(sensitive){
    if(actual!==pr.base.sha)return fail('SENSITIVE_BASE_STALE');
    if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase();
    if(!SHA.test(verifiedRunBase||''))return fail('SENSITIVE_CI_BASE_UNVERIFIED');
    if(verifiedRunBase!==actual)return fail('SENSITIVE_CI_BASE_STALE');
   }
+  const finalBranch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
+  if(finalBranch?.commit?.sha!==actual)return fail('BASE_MOVED_DURING_CHECK');
   return {ok:true,reason:sensitive?'SENSITIVE_BASE_VERIFIED':'NON_SENSITIVE_BASE_ADVANCE',base:actual};
  }catch{return fail('BASE_OR_FILES_UNAVAILABLE');}
 }
@@ -57,4 +64,14 @@ async function coreRunBaseForCheck({github,owner,repo,pr,check}){
   return coreRunBase(run,pr,owner+'/'+repo,check.check_suite?.id);
  }catch{return null;}
 }
-module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck};
+async function loadTrustedClassifier(workspace){
+ const path=require('node:path'),{execFileSync}=require('node:child_process'),{pathToFileURL}=require('node:url');
+ if(typeof workspace!=='string'||!path.isAbsolute(workspace))throw Error('CLASSIFIER_WORKSPACE_INVALID');
+ const dir=path.join(workspace,'.hh-merge-policy-production');
+ const classifierBase=execFileSync('git',['-C',dir,'rev-parse','HEAD'],{encoding:'utf8',timeout:10000}).trim();
+ if(!SHA.test(classifierBase))throw Error('CLASSIFIER_BASE_INVALID');
+ const mod=await import(pathToFileURL(path.join(dir,'scripts/ci-quick-route.mjs')).href);
+ if(typeof mod.decideRoute!=='function')throw Error('CLASSIFIER_UNAVAILABLE');
+ return {classifierBase,decideRoute:mod.decideRoute};
+}
+module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier};

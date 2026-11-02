@@ -39,6 +39,12 @@ jobs:
         with:
           ref: codex/bootstrap-books
           persist-credentials: false
+      - name: Checkout protected production classifier
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
       - name: Verify live PR and completed exact-head CI
         id: ready
         uses: actions/github-script@v7
@@ -207,7 +213,8 @@ jobs:
               return;
             }
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
-            const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,
+            const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
               verifiedRunBase:()=>baseEvidence.coreRunBase(coreRun,pr,fullRepo,coreRun.check_suite_id)});
             if(!freshness.ok){log('SKIP '+freshness.reason+' for PR #'+number);return;}
             // Do not modify branches or mark checks green; GitHub still enforces
