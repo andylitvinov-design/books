@@ -202,3 +202,43 @@ test('public GitHub Actions artifacts never contain unapproved plaintext APK or 
   assert.ok(!aabSection.split('\n').some(x=>x.trim()==='android/app/build/outputs/bundle/release/app-release.aab'))
   assert.ok(readSource('docs/releases/HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md').includes('age --decrypt'))
 })
+
+test('offline Android APK QA recomputes signed payload evidence and never claims real device acceptance',async()=>{
+  const {verifyApkEvidence}=await import('../scripts/verify-hh-direct-apk-qa.mjs')
+  const digest='a'.repeat(64), cert='b'.repeat(64)
+  const template={
+    filename:'Holistic-House-Android-v1.0.0.apk',
+    sha256:digest,
+    checksumText:digest+'  Holistic-House-Android-v1.0.0.apk\n',
+    certificateSha256:cert,
+    version:'1.0.0',versionCode:'2',
+    signerOutput:'Verifies\nVerified using v2 scheme (APK Signature Scheme v2): true\nSigner #1 certificate SHA-256 digest: '+cert+'\n',
+    badgingOutput:"package: name='com.holistichouse.app' versionCode='2' versionName='1.0.0'\n"+
+      "application-label:'Holistic House'\ntargetSdkVersion:'36'\n"
+  }
+  const ok=verifyApkEvidence(template)
+  assert.equal(ok.staticPackageChecks,'PASS')
+  assert.equal(ok.physicalDeviceE2E,'NOT_CHECKED')
+  assert.equal(ok.ownerApprovedForPublication,false)
+  for(const [name,change] of [
+    ['bad hash',{sha256:'c'.repeat(64)}],
+    ['wrong filename',{filename:'app-debug.apk'}],
+    ['wrong release version',{version:'1.0.0-rc'}],
+    ['downgraded versionCode',{versionCode:'1'}],
+    ['wrong checksum filename',{checksumText:digest+'  app-release.apk\n'}],
+    ['two checksum records',{checksumText:template.checksumText+template.checksumText}],
+    ['wrong signing key',{certificateSha256:'c'.repeat(64)}],
+    ['two signers',{signerOutput:template.signerOutput+'Signer #2 certificate SHA-256 digest: '+cert+'\n'}],
+    ['unsigned',{signerOutput:'Does not verify\nVerified using v2 scheme: false\n'}],
+    ['v1 signature only',{signerOutput:'Verifies\nVerified using v1 scheme (JAR): true\nSigner #1 certificate SHA-256 digest: '+cert+'\n'}],
+    ['wrong native package',{badgingOutput:template.badgingOutput.replace('com.holistichouse.app','app.psialchemy.mobile')}],
+    ['wrong app label',{badgingOutput:template.badgingOutput.replace('Holistic House','Other App')}],
+    ['wrong Android version',{badgingOutput:template.badgingOutput.replace("targetSdkVersion:'36'","targetSdkVersion:'35'")}],
+    ['debuggable',{badgingOutput:template.badgingOutput+"application-debuggable\n"}],
+    ['wrong app version',{badgingOutput:template.badgingOutput.replace("versionName='1.0.0'","versionName='2.0.0'")}]
+  ])assert.throws(()=>verifyApkEvidence({...template,...change}),/HH_APK_QA_/,name)
+  const code=readSource('scripts/verify-hh-direct-apk-qa.mjs')
+  assert.match(code,/spawnSync\(exe,args,\{shell:false/)
+  assert.match(code,/ownerApprovedForPublication: false/)
+  assert.doesNotMatch(code,/fetch\(|https:\/\/api\.github\.com|gh release create|upload-release-asset/)
+})

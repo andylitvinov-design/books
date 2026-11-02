@@ -44,6 +44,41 @@ shasum -a 256 Holistic-House-Android-vX.Y.Z.apk
 
 Для `version_name` используйте только три числовые части `X.Y.Z` без префикса `v`, суффикса `-rc`, `+build` и ведущих нулей (например, `1.0.0`). Это тот же формат, который разрешает `lib/native/public-downloads.mjs` для адреса GitHub Release. Скрипты `prepare-holistic-house-play-release.mjs` и `verify-hh-direct-apk-candidate.mjs` теперь отклоняют несовместимую версию до подписания.
 
+## Локальная проверка настоящего APK до установки и публикации
+
+После расшифровки QA-артефакта проверить именно полученный файл **локально**. Для этого используется
+`scripts/verify-hh-direct-apk-qa.mjs`. Потребуются Android SDK Build Tools 36.0.0
+(`apksigner` и `aapt`); инструмент не вызывает платные API, не загружает бинарник
+и не читает клиентские данные.
+
+Пример для проверенного кандидата `1.0.0` (подставьте истинный versionCode и
+SHA-256 отпечаток **ожидаемого постоянного сертификата**):
+
+```bash
+node scripts/verify-hh-direct-apk-qa.mjs \
+  --apk ./Holistic-House-Android-v1.0.0.apk \
+  --sha-file ./hh-website-apk-sha256.txt \
+  --expected-cert <64-символьный-SHA256-отпечаток-сертификата> \
+  --version 1.0.0 \
+  --version-code 2 \
+  --out ./hh-apk-static-qa.json
+```
+
+Если SDK вне `ANDROID_HOME`, передайте абсолютные пути к инструментам через
+`--apksigner` и `--aapt`. Команда проверяет SHA-256 реального APK против
+подписанного сборочного checksum-файла, реальную криптографическую подпись v2/v3,
+единственный ожидаемый сертификат, `com.holistichouse.app`,
+`Holistic House`, versionName, versionCode, targetSdk >= 36 и отсутствие debug-флага.
+При несоответствии завершает работу с ошибкой. Без SDK инструмент не выдаёт
+ложного PASS.
+
+Файл `hh-apk-static-qa.json` имеет **только** статус
+`staticPackageChecks=PASS`. Поля `physicalDeviceE2E=NOT_CHECKED` и
+`ownerApprovedForPublication=false` намеренно остаются неизменными.
+Это не разрешение публикации: отдельно нужны физическая установка, обновление
+на том же сертификате, Google OAuth/PKCE, личные сообщения, аудио/видео,
+logout, негативные проверки чужого аккаунта и решение владельца.
+
 ## Как получить приватный APK и проверить его
 
 1. Провести code/security review и все обязательные тесты PR #2230, затем разрешённым способом влить его **только в production** `codex/public-book-library`, не в GitHub default `codex/bootstrap-books`. Черновые/пропущенные проверки не равны успеху.
