@@ -192,12 +192,13 @@ test("source integration uses one existing renderer, safe unbound warning and cl
   assert.match(chat,/data-video-chat-phrase-filters/);
   assert.match(chat,/data-chat-concept-unbound/);
   assert.match(chat,/captionTexts:captions/);
-  assert.match(chat,/data-chat-hydrated=\\{clientHydrated\\?"true":"false"\\}/);
-  assert.match(chat,/composerRef\\.current\\?\\.value/);
-  assert.match(chat,/requestKey!==currentPlanKeyRef\\.current/);
-  assert.match(chat,/currentStepRef\\.current!=="review"/);
-  assert.match(chat,/approvedPlanKeyRef\\.current=executionKey/);
-  assert.match(chat,/approvedPlanKeyRef\\.current!==executionKey/);
+  // Strict source contract: avoid double-escaped regular-expression literals.
+  assert.ok(chat.includes('data-chat-hydrated={clientHydrated?"true":"false"}'));
+  assert.ok(chat.includes('composerRef.current?.value'));
+  assert.ok(chat.includes('requestKey!==currentPlanKeyRef.current'));
+  assert.ok(chat.includes('currentStepRef.current!=="review"'));
+  assert.ok(chat.includes('approvedPlanKeyRef.current=executionKey'));
+  assert.ok(chat.includes('approvedPlanKeyRef.current!==executionKey'));
   assert.match(studio,/MandalaVideoDirectorChat/);
   assert.match(studio,/scenario\.edit,scenario\.aspect/);
   assert.match(studio,/compileFreeFilmPreset/);
