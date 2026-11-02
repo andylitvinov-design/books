@@ -208,9 +208,27 @@ async function verify(engine, browser, locale, width) {
     assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
       label+": actual express SKU preselected on first-party contact form");
     await noOverflow("paid request");
+    // This is an iPhone/WebKit touch context. A mouse click can complete
+    // without committing the Next client-side transition under CI load.
+    // Require a real touch on an unobscured anchor, then independently prove
+    // both the destination URL and its loaded landing content.
+    const freeCta = page.locator('[data-business-cta="free-hero"]');
+    const freeHref = await freeCta.getAttribute("href");
+    const targetUrl = new URL(freeHref, origin);
+    assert.equal(targetUrl.pathname, "/"+locale+"/services/free-situation-review",
+      label+": actual free review route");
+    assert.equal(targetUrl.searchParams.get("topic"), "business",
+      label+": preserved business topic");
+    await freeCta.scrollIntoViewIfNeeded();
+    const touchTarget = await freeCta.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left+rect.width/2, rect.top+rect.height/2);
+      return hit === node || node.contains(hit);
+    });
+    assert.equal(touchTarget, true, label+": free review CTA must not be covered by mobile dock");
     const freeNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
-      url.searchParams.get("topic")==="business",{waitUntil:"domcontentloaded",timeout:25000});
-    await page.locator('[data-business-cta="free-hero"]').click();
+      url.searchParams.get("topic")==="business",{waitUntil:"commit",timeout:25000});
+    await freeCta.tap();
     await freeNavigation;
     await page.locator('main[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:25000});
     assert.deepEqual(externalPosts,[],label+": navigation never sends lead, payment or analytics POST");
