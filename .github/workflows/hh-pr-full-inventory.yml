@@ -66,10 +66,18 @@ jobs:
             // admin-scoped token can replace it. A ruleset with [] is not enough.
             const protectedBranch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
             const legacy=protectedBranch.protection?.required_status_checks?.contexts;
+            const protectionSignature=Array.isArray(legacy)?
+              [...new Set(legacy)].sort().join(",") : "";
+            const allowedProtection=new Set([
+              "release-ready","hh-core-verified,hh-specialist",
+              "hh-merge-check","hh-merge-check,release-ready"
+            ]);
             if(!protectedBranch.protected||!Array.isArray(legacy)||
-               legacy.includes("hh-core-verified")===legacy.includes("release-ready"))
+               legacy.length!==new Set(legacy).size||
+               !allowedProtection.has(protectionSignature))
               throw Error("UNRECOGNIZED_LEGACY_PROTECTION");
             const legacyReleaseMandatory=legacy.includes("release-ready");
+            const consolidatedMandatory=legacy.includes("hh-merge-check");
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0;
             async function latestChecks(sha){
@@ -89,6 +97,24 @@ jobs:
               if(!names)return {ok:false,reason:"INCOMPLETE_CHECKS"};
               const rows=[...names.entries()],gate=names.get("hh-core-verified");
               const legacyGate=names.get("release-ready");
+              const mergedGate=names.get("hh-merge-check");
+              // The single required status itself verifies Core plus relevant
+              // Specialist in the exact same workflow. No old alias is needed.
+              if(consolidatedMandatory){
+                if(!mergedGate||mergedGate.status!=="completed"||
+                   mergedGate.conclusion!=="success"||
+                   mergedGate.app?.slug!=="github-actions")
+                  return {ok:false,reason:"CONSOLIDATED_MERGE_NOT_GREEN"};
+                if(legacyReleaseMandatory&&(!legacyGate||legacyGate.status!=="completed"||
+                   legacyGate.conclusion!=="success"||
+                   legacyGate.app?.slug!=="github-actions"))
+                  return {ok:false,reason:"LEGACY_REQUIRED_RELEASE_NOT_GREEN"};
+                if(rows.some(([name,c])=>name!=="release-ready"&&red.has(c.conclusion)))
+                  return {ok:false,reason:"KNOWN_RED_PRODUCT_CHECK"};
+                if(rows.some(([name,c])=>quality.test(name)&&c.status!=="completed"))
+                  return {ok:false,reason:"FOCUSED_QA_RUNNING"};
+                return {ok:true,via:"CONSOLIDATED_MERGE_GATE"};
+              }
               if(legacyReleaseMandatory&&(!legacyGate||
                  legacyGate.status!=="completed"||legacyGate.conclusion!=="success"||
                  legacyGate.app?.slug!=="github-actions"))

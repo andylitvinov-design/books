@@ -194,8 +194,8 @@ function classifyCoreFailureJobs(jobs) {
   const build=byName.get('core-lint-types-build');
   // The compatibility release-ready job delegates to hh-specialist. Preserve
   // its actual cause rather than routing an old alias to release-gate review.
-  if (failed.some(job=>job.name==='hh-specialist') &&
-      core?.conclusion==='success' && scope?.conclusion==='success' &&
+  if (failed.some(job=>['hh-specialist','hh-merge-check'].includes(job.name)) &&
+      (!core||core.conclusion==='success') && scope?.conclusion==='success' &&
       (build?.conclusion==='success' || build?.conclusion==='skipped'))
     return 'SPECIALIST_FAILED';
   if (failed.every(job=>gateOnly.has(job.name)) &&
@@ -222,7 +222,7 @@ function verifiedRedSpecialist(checks) {
 }
 const INHERITED_CORE_CHECKS=new Set([
   'hh-core-verified','hh-specialist','hh-specialists-verified',
-  'release-ready','classify-change','core-lint-types-build'
+  'release-ready','hh-merge-check','classify-change','core-lint-types-build'
 ]);
 // A red aggregate alone can mean skipped macOS/optional QA or a changed
 // production base, NOT a broken product. Require independent same-HEAD
@@ -718,6 +718,20 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }
   let handoffs = 0, conflictHandoffs = 0;
   let auditedProtection = null, protectionRead = false;
+  const loadProductionProtection=async()=>{
+    if(protectionRead)return auditedProtection;
+    protectionRead=true;
+    try {
+      const branch=(await limited('production-protection',()=>github.rest.repos.getBranch({
+        owner,repo,branch:PROD
+      }))).data;
+      const required=branch?.protection?.required_status_checks?.contexts;
+      if(branch?.protected&&Array.isArray(required)&&required.length===1&&
+         ['release-ready','hh-core-verified','hh-merge-check'].includes(required[0]))
+        auditedProtection=required[0];
+    }catch(e){log('Production protection unavailable: '+e.message);}
+    return auditedProtection;
+  };
   for (const pr of (liveBatch ? selected : boundedRestFallback(selected))) {
     if(budget.exhausted) break;
     summary.inspected++;
@@ -799,22 +813,39 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       checks = (await limited('head-checks',()=>github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
         check_name:'hh-core-verified',per_page:100,filter:'latest'}))).data;
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
-    if (gateIsGreen(checks)) {
-      // Core success is not enough while legacy branch protection still
-      // requires release-ready. Read effective protection once per cycle.
-      if (!protectionRead) {
-        protectionRead = true;
+    let coreOrUnifiedGreen=gateIsGreen(checks);
+    let unifiedChecks=null;
+    // Once the old Core alias has been removed, only consult protected
+    // hh-merge-check on a genuinely missing old context, not every red Core.
+    if(!coreOrUnifiedGreen&&checks?.total_count===0&&hasMergeToken){
+      await loadProductionProtection();
+      if(auditedProtection==='hh-merge-check'){
         try {
-          const branch = (await limited('production-protection',()=>github.rest.repos.getBranch({
-            owner,repo,branch:PROD
-          }))).data;
-          const required = branch?.protection?.required_status_checks?.contexts;
-          if (branch?.protected && Array.isArray(required) && required.length === 1 &&
-              ['release-ready','hh-core-verified'].includes(required[0]))
-            auditedProtection = required[0];
-        } catch(e) { log('Production protection unavailable: '+e.message); }
+          unifiedChecks=(await limited('unified-required-head-check',()=>
+            github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+              check_name:'hh-merge-check',per_page:100,filter:'latest'}))).data;
+          coreOrUnifiedGreen=gateIsGreen(unifiedChecks,'hh-merge-check');
+        }catch(e){log('#'+pr.number+' consolidated CI unavailable: '+e.message);}
       }
+    }
+    if (coreOrUnifiedGreen) {
+      // Old/new protection are both honored: Core-only cannot arm a PR
+      // when the unified status is the real mandatory check.
+      await loadProductionProtection();
       if (!auditedProtection) { summary.protectionUnverified++; continue; }
+      if (auditedProtection === 'hh-merge-check') {
+        if(!unifiedChecks){
+          try {
+            unifiedChecks=(await limited('unified-required-head-check',()=>
+              github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
+                check_name:'hh-merge-check',per_page:100,filter:'latest'}))).data;
+          }catch(e){log('#'+pr.number+' consolidated CI unavailable: '+e.message);}
+        }
+        if(!gateIsGreen(unifiedChecks,'hh-merge-check')){
+          summary.legacyRequiredPending++;
+          continue;
+        }
+      }
       if (auditedProtection === 'release-ready') {
         let legacy = null;
         try {

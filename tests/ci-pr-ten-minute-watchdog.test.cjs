@@ -829,10 +829,11 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
       }}})},
       checks:{listForRef:async(args)=>{
         const legacy=args.check_name==='release-ready';
+        const consolidated=args.check_name==='hh-merge-check';
         if(legacy) legacyReads++;
         return {data:{total_count:1,check_runs:[{
-          id:legacy?2:1,name:legacy?'release-ready':'hh-core-verified',
-          status:'completed',conclusion:legacy?legacyConclusion:'success',app:{id:15368}
+          id:legacy?2:1,name:args.check_name,
+          status:'completed',conclusion:legacy||consolidated?legacyConclusion:'success',app:{id:15368}
         }]}};
       }}
     },request:async(route)=>{
@@ -853,6 +854,12 @@ test('watchdog honors legacy required status and stops spurious dispatch',async(
   const migrated=await probe(['hh-core-verified'],'failure');
   assert.equal(migrated.result.greenUnarmed,1);
   assert.equal(migrated.legacyReads,0);
+  const unified=await probe(['hh-merge-check'],'success');
+  assert.equal(unified.result.greenUnarmed,1);
+  assert.equal(unified.legacyReads,0);
+  const unifiedRed=await probe(['hh-merge-check'],'failure');
+  assert.equal(unifiedRed.result.greenUnarmed,0);
+  assert.equal(unifiedRed.dispatches,0);
   const ambiguous=await probe(['release-ready','hh-core-verified'],'success');
   assert.equal(ambiguous.result.protectionUnverified,1);
   assert.equal(ambiguous.dispatches,0);
@@ -867,6 +874,8 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
+  assert.equal(classifyCoreFailureJobs([...good,fail('hh-merge-check')]),'SPECIALIST_FAILED');
+  assert.equal(classifyCoreFailureJobs([good[0],good[1],fail('hh-merge-check')]),'SPECIALIST_FAILED');
   assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');

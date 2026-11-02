@@ -203,3 +203,17 @@ test('staged single-release-check policy preserves legacy until proven administr
   assert.ok(m.includes("Already migrated, both protections verified"));
   assert.ok(m.includes('strict: false'));
 });
+
+test('consolidated protected coordinator recognizes one real gate without stale aliases',()=>{
+  const inv=read('hh-pr-full-inventory');
+  const wd=readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+  assert.ok(inv.includes('const consolidatedMandatory=legacy.includes("hh-merge-check")'));
+  assert.ok(inv.includes('CONSOLIDATED_MERGE_NOT_GREEN'));
+  assert.ok(inv.includes('return {ok:true,via:"CONSOLIDATED_MERGE_GATE"}'));
+  assert.ok(inv.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(wd.includes('const loadProductionProtection=async()=>'));
+  assert.ok(wd.includes("['release-ready','hh-core-verified','hh-merge-check']"));
+  assert.ok(wd.includes("check_name:'hh-merge-check'"));
+  assert.ok(wd.includes("gateIsGreen(unifiedChecks,'hh-merge-check')"));
+  assert.ok(wd.includes("['hh-specialist','hh-merge-check']"));
+});
