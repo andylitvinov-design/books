@@ -48,7 +48,9 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/effects:\{tab:"Эффекты",title:"Гипноэффекты"/);
+  assert.match(studio,/effects:\{tab:"Гипноэффект",title:"Гипноэффекты"/);
+  assert.match(studio,/effects:\{tab:"Hypno effect",title:"Hypno effects"/);
+  assert.match(studio,/effects:\{tab:"Efecto hipno",title:"Efectos de hipnosis"/);
   assert.match(studio,/data-workspace-section="effects"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
   assert.match(studio,/onOpenAudioEditor=\{\(\)=>openQuickDetailed\("video-audio"\)\}/);
@@ -62,4 +64,41 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(css,/font-size:18px/);
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
+});
+
+test("owner's third workspace exposes all four image-led groups in screenshot order and one real Create handler",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
+  const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
+  assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
+  assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
+  assert.match(ui,/data-hypno-card/);
+  assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
+    "optional audio safety details must not stretch the approved default row");
+  assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
+  assert.match(ui,/data-hypno-create/);
+  assert.match(ui,/createPortal\(intro,introTarget\)/);
+  assert.match(ui,/data-hypno-intro/);
+  assert.match(studio,/data-hypno-intro-slot/);
+  assert.match(css,/\.intro\{display:grid/);
+  assert.match(studio,/onCreate=\{startFromHero\}/);
+  assert.match(studio,/studioMode==="pump"&&activeWorkspace!=="effects"/);
+  assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css,/@media\(max-width:374px\)/);
+  assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
+  assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
+    "generated video result must remain visible in third workspace");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-effects-panel\]\{order:3\}/,
+    "the four groups appear immediately after the single player/navigation");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-result\]\{order:4\}/,
+    "real generated output and Save appear after Effects/Create, not above them");
+  assert.match(videoCss,/data-active-workspace="effects"\] \.previewStage \.hero\{aspect-ratio:3\.3\/1!important\}/);
+  assert.match(css,/@media\(min-width:375px\) and \(max-width:759px\)\{\s*\.groupHeader\{min-height:128px\}/);
+  assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
+  assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
+  for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
+  assert.match(ui,/unavailable onToggle=\{\(\)=>showNote\("audio"\)\}/);
+  assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });

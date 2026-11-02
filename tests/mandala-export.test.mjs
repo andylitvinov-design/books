@@ -5,6 +5,15 @@ import ts from "typescript";
 
 const read = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
+test("mobile browser matrix covers every requested locale and width", () => {
+  const browser = read("scripts/verify-holistic-mandala-browser.mjs");
+  for (const locale of ["ru", "en", "es"]) {
+    for (const width of [320, 354, 375, 390, 430]) {
+      assert.ok(browser.includes(`{ locale: "${locale}", width: ${width} }`), `${locale}/${width}`);
+    }
+  }
+});
+
 test("mandala export preserves local-only image and no external upload", () => {
   const client = read("components/mandala-meditation-client.tsx");
   const exporter = read("lib/mandala/export-png.ts");

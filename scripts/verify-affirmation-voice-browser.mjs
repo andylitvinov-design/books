@@ -88,6 +88,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // the visible Phrases workspace. The deprecated legacy disclosure is
       // intentionally hidden; tests must not click an invisible summary.
       await page.locator('[data-video-quick-control="video"]').click();
+      const advancedToggle=page.locator("[data-video-advanced-toggle]");
+      if(await advancedToggle.isVisible() && await advancedToggle.getAttribute("aria-expanded")==="false")
+        await advancedToggle.click();
       const musicSettings=page.locator("[data-video-audio-details]");
       await musicSettings.waitFor({state:"visible",timeout:25000});
       // A previously opened disclosure must not be toggled closed. Exercise
@@ -113,14 +116,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
-      await phrases.locator("[data-hypno-pending-approval]").waitFor({state:"visible"});
-      await phrases.locator("[data-hypno-approve]").click();
-      await expect(phrases.locator("[data-hypno-pending-approval]")).toHaveCount(0);
+      // Phrase choices are explicitly pending until the visitor approves them.
+      // The voice transcript and attached movie must not change prematurely.
+      await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
       const transcript=await page.locator("[data-video-affirmation-spoken-text]").innerText();
       assert.ok(transcript.length>5,"should speak actual selected affirmations");
-      assert.equal(await page.locator("[data-video-affirmation-voice-select] option").count(),6);
+      const chooser=page.locator("[data-video-affirmation-voice-select]");
+      assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
+      await chooser.locator('[data-video-affirmation-gender="male"]').click();
+      assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
+      await chooser.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(chooser.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
@@ -143,6 +151,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
+      assert.equal(await page.locator('[data-hypno-music] [data-phrase-music-attach]').first().isDisabled(),true,
+        "standalone music cannot silently replace mixed narration WAV");
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
@@ -157,12 +167,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"offline-remix-ready");
       assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
       await page.locator('[data-video-quick-control="video"]').click();
+      await page.locator('[data-video-quick-control="editor"]').click();
+      const generate=page.locator("[data-video-quick-generate]");
+      await expect(generate).toBeVisible({timeout:30000});
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
       // Wait for actual capture readiness; an enabled button must not silently
       // prime an unloaded HD source and require a second user click.
-      const generate=page.locator("[data-video-quick-generate]");
       if(engine==="chromium"||engine==="webkit") {
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await page.waitForFunction(()=>{
@@ -242,8 +254,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
-      await expect(page.locator("[data-video-narration-stale]")).toHaveCount(0);
-      await page.locator('[data-workspace-section="phrases"] [data-hypno-approve]').click();
+      await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
+      // The phrase editor propagates its pending state to the shared voice
+      // panel in a React effect. Wait for the *actual disabled control*
+      // instead of racing the next render frame.
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
+      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
+        "unapproved phrase cannot invalidate existing sound");
+      await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
       await page.locator('[data-video-quick-control="video"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
