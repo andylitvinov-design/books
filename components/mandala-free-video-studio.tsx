@@ -164,7 +164,7 @@ const workspaceCopy = {
   video:{tab:"Стиль видео",title:"Стиль видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
   phrases:{tab:"Фразы поддержки",title:"Фразы поддержки и аудиогид",desc:"Подберите слова, утвердите их и настройте музыку и голос."},
   effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
-  practices:{tab:"Курс практик",title:"Курс практик",desc:"Личная медитация и программа восьми последовательных практик."},
+  practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO генерация",title:"PRO генерация",desc:"Персонажи, персональные сюжеты и расширенный режиссёрский бриф."},
   editor:{tab:"Монтаж",title:"Финальный монтаж",desc:"Порядок и длительность сцен, текст, звук и экспорт."}
  },
@@ -172,7 +172,7 @@ const workspaceCopy = {
   video:{tab:"Video style",title:"Video style",desc:"Real film scenes, atmosphere and visual direction."},
   phrases:{tab:"Support phrases",title:"Support phrases & audio guide",desc:"Choose and approve words; configure music and voice."},
   effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
-  practices:{tab:"Practice course",title:"Practice course",desc:"Personal meditation and an eight-session practice plan."},
+  practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO generation",title:"PRO generation",desc:"Characters, personal scenes and detailed director settings."},
   editor:{tab:"Montage",title:"Final montage",desc:"Scene order and timing, captions, audio and export."}
  },
@@ -180,7 +180,7 @@ const workspaceCopy = {
   video:{tab:"Estilo vídeo",title:"Estilo de vídeo",desc:"Escenas reales, ambiente y estilo visual."},
   phrases:{tab:"Frases de apoyo",title:"Frases de apoyo y audioguía",desc:"Elige y aprueba frases; configura la música y la voz."},
   effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
-  practices:{tab:"Curso práctico",title:"Curso de prácticas",desc:"Meditación y plan de ocho prácticas guiadas."},
+  practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"Generación PRO",title:"Generación PRO",desc:"Personajes, escenas personales y dirección avanzada."},
   editor:{tab:"Montaje",title:"Montaje final",desc:"Orden y tiempo de las escenas, texto, sonido y exportación."}
  }
@@ -1738,6 +1738,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [readyFreeFilmKey,setReadyFreeFilmKey] = useState("");
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
+  const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -4474,6 +4475,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </button>
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
+        onAddMeditation={script=>{
+          setCourseMeditationDraft(script);
+          window.requestAnimationFrame(()=>{
+            const details=document.querySelector("[data-video-therapy-meditation-audio]");
+            if(details instanceof HTMLDetailsElement){
+              details.open=true;
+              details.scrollIntoView({behavior:"smooth",block:"center"});
+            }
+          });
+        }}
+        onOmitMeditation={()=>{
+          if(courseMeditationDraft){
+            setCourseMeditationDraft("");
+            setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
+          }
+          const details=document.querySelector("[data-video-therapy-meditation-audio]");
+          if(details instanceof HTMLDetailsElement)details.open=false;
+        }}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
           // This is preparation, NOT a render or a claimed downloadable video.
@@ -4828,6 +4847,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </details>
         {activeWorkspace==="practices" ? <section className={videoStyles.workspaceCourses} data-workspace-section="practices">
+          <details className={videoStyles.therapyRelatedDetails}>
+            <summary>{locale==="ru"?"Другие курсы и медитации":locale==="es"?"Otros cursos y meditaciones":"Other courses and meditations"}<ChevronDown size={19} aria-hidden="true"/></summary>
           <div className={videoStyles.workspaceCourseGrid}>
             <Link href={"/"+locale+"/courses"} prefetch={false}><Film size={22} aria-hidden="true"/>
               <strong>{locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}</strong>
@@ -4841,17 +4862,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <strong>{locale==="ru"?"8 видеосессий":locale==="es"?"8 vídeos guiados":"8 guided sessions"}</strong>
               <span>{locale==="ru"?"Персональная программа":locale==="es"?"Plan personal":"Personal programme"}</span><ArrowRight size={18} aria-hidden="true"/></button>
           </div>
-          <div data-video-meditation-course-panel className={videoStyles.workspaceCourses}>
-            <MandalaPersonalMeditation coursePreview
-              locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
-              sound={attachedAudio?appliedAudioName:""}
-              audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
-                attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
-                  attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
-              pace={speed} brightness={brightness}
-              affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-              focus={meditationFocus} disabled={recording||preparing}/>
-          </div>
+          </details>
+          <details className={videoStyles.therapyAudioDetails} data-video-therapy-meditation-audio>
+            <summary>{locale==="ru"?"Настроить озвучку и добавить медитацию к видео":
+              locale==="es"?"Configurar voz y añadir la meditación al vídeo":
+              "Set up narration and add meditation to video"}<ChevronDown size={19} aria-hidden="true"/></summary>
+            <div data-video-meditation-course-panel className={videoStyles.workspaceCourses}>
+              <MandalaPersonalMeditation coursePreview seedScript={courseMeditationDraft}
+                locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
+                sound={attachedAudio?appliedAudioName:""}
+                audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+                  attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
+                    attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
+                pace={speed} brightness={brightness}
+                affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+                focus={meditationFocus} disabled={recording||preparing}
+                onNarrationReady={attachMeditationNarration}
+                onNarrationInvalidated={()=>setAttachedAudio(current=>
+                  current?.kind==="file"&&current.nonLoop?null:current)}/>
+            </div>
+          </details>
         </section> : null}
         <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
