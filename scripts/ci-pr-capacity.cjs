@@ -8,12 +8,16 @@ function computeCapacity(active,queued,jobs){
  if(!Array.isArray(active)||!Array.isArray(queued)||!Array.isArray(jobs))
   return {known:false,reason:'INCOMPLETE_CAPACITY'};
  const activeWorker={};for(const name of Object.values(WORKFLOWS))activeWorker[name]=0;
- for(const x of [...active,...queued])if(Object.prototype.hasOwnProperty.call(activeWorker,x.name))activeWorker[x.name]++;
+ // A transitioning Actions snapshot can include a completed run in a queued
+ // page. It is not an active worker lease; keep overall capacity conservative.
+ const occupiesSlot=x=>!x.status||['in_progress','queued','waiting','pending','requested'].includes(x.status);
+ for(const x of [...active,...queued])if(Object.prototype.hasOwnProperty.call(activeWorker,x.name)&&occupiesSlot(x))
+  activeWorker[x.name]++;
  const runningJobs=jobs.filter(x=>x.status==='in_progress').length;
  const queuedJobs=jobs.filter(x=>['queued','waiting','pending'].includes(x.status)).length;
  // GitHub controls native runner scheduling. Reserve optional CI worker capacity
  // while a release-blocking Core workflow/job is actually waiting.
- const coreQueuedRuns=queued.filter(x=>x.name===CORE_WORKFLOW).length;
+ const coreQueuedRuns=queued.filter(x=>x.name===CORE_WORKFLOW&&occupiesSlot(x)).length;
  const coreQueuedJobs=jobs.filter(x=>x.workflow_name===CORE_WORKFLOW&&
    ['queued','pending','waiting'].includes(x.status)).length;
  return {known:true,activeRuns:active.length,queuedRuns:queued.length,
