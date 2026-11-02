@@ -3562,7 +3562,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
           enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing||phrasePending} onAttach={attachGeneratedAffirmationAudio}
+          disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.narration?null:current)}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>

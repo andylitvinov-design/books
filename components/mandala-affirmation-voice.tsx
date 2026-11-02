@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AudioLines, Check, Download, LoaderCircle, Volume2 } from "lucide-react";
+import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
@@ -22,6 +22,7 @@ const copy={
   ru:{
     title:"Озвучить аффирмации",lead:"Одна кнопка превратит выбранные выше фразы в настоящий голосовой аудиотрек для вашего видео.",
     voice:"Голос",female:"Женские голоса (3)",male:"Мужские голоса (3)",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
+    sample:"Прослушать",sampleBusy:"Загрузка…",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",sampleTitle:"Образец голоса",
     preview:"Текст для озвучки",enable:"Сначала включите аффирмации и выберите фразы выше.",
     consent:"Разрешаю отправить только эти фразы в Gemini или через OpenRouter к Deepgram (бесплатно для английского) либо xAI (если разрешён платный резерв). Не включаю личных или медицинских данных. Правила обработки данных зависят от провайдера; Google может использовать бесплатные запросы для улучшения сервисов.",
     generate:"Создать аудиодорожку",busy:"Генерируем голос…",mixing:"Смешиваем звук и природу…",ready:"Аудиодорожка создана и автоматически прикреплена к итоговому видео.",
@@ -34,6 +35,7 @@ const copy={
   en:{
     title:"Narrate affirmations",lead:"Turn the exact phrases chosen above into a real AI voice track for your video.",
     voice:"Voice",female:"Female voices (3)",male:"Male voices (3)",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
+    sample:"Listen",sampleBusy:"Loading…",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",sampleTitle:"Voice sample",
     preview:"Text that will be spoken",enable:"First enable affirmations and select your phrases above.",
     consent:"I agree to send only the displayed phrases to Gemini or to Deepgram (free English backup) or xAI (operator-funded backup) via OpenRouter. No identifying or medical data are included. Provider data policies apply; free Google inputs may improve services.",
     generate:"Generate voice track",busy:"Generating speech…",mixing:"Mixing voice and nature…",ready:"Audio created and automatically attached to the final video.",
@@ -46,6 +48,7 @@ const copy={
   es:{
     title:"Poner voz a las afirmaciones",lead:"Convierte las frases elegidas arriba en una pista de voz real para tu vídeo.",
     voice:"Voz",female:"Voces femeninas (3)",male:"Voces masculinas (3)",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
+    sample:"Escuchar",sampleBusy:"Cargando…",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",sampleTitle:"Muestra de voz",
     preview:"Texto que se leerá",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
     consent:"Autorizo enviar solo estas frases a Gemini o a Deepgram (gratis en inglés) o xAI (respaldo de pago autorizado) mediante OpenRouter. No contienen datos médicos ni personales. Se aplican sus políticas; Google puede usar datos gratuitos para mejorar servicios.",
     generate:"Generar pista de voz",busy:"Generando voz…",mixing:"Mezclando voz y naturaleza…",ready:"Pista creada y añadida automáticamente al vídeo.",
@@ -75,9 +78,9 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,onAttach,onGenerating,onInvalidate,onPreferencesChange,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,onAttach,onGenerating,onInvalidate,onPreferencesChange,
 }:{
-  locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;
+  locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -101,6 +104,16 @@ export function MandalaAffirmationVoice({
   const [audioUrl,setAudioUrl]=useState("");
   const [message,setMessage]=useState("");
   const [speechSeconds,setSpeechSeconds]=useState(0);
+  // A sample speaks only the fixed server-owned public phrase. It is never the
+  // visitor's unapproved affirmation text, and never attaches to a video.
+  const [sampleUrl,setSampleUrl]=useState("");
+  const [sampleVoiceId,setSampleVoiceId]=useState("");
+  const [sampleBusyId,setSampleBusyId]=useState("");
+  const [sampleMessage,setSampleMessage]=useState("");
+  const sampleAudioRef=useRef<HTMLAudioElement|null>(null);
+  const sampleControllerRef=useRef<AbortController|null>(null);
+  const sampleJobRef=useRef(0);
+  const sampleCacheRef=useRef<Map<string,string>>(new Map());
   const jobRef=useRef(0);
   const controllerRef=useRef<AbortController|null>(null);
   const audioUrlRef=useRef("");
@@ -130,6 +143,9 @@ export function MandalaAffirmationVoice({
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
     const textChanged=originRef.current.speechText!==speechText;
     originRef.current={speechText,voiceId,language};
+    // Consent applies to the exact approved transcript, not to future edits.
+    // Public fixed voice samples remain available before new approval.
+    if(textChanged)setConsent(false);
     // Existing video marks a changed spoken script as STALE and shows
     // a regenerate warning. Do not suppress that explicit safety feedback.
     // A voice/language change with identical text instead detaches the file.
@@ -148,6 +164,11 @@ export function MandalaAffirmationVoice({
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
     controllerRef.current?.abort();
     if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current);
+    sampleJobRef.current++;
+    sampleControllerRef.current?.abort();
+    sampleAudioRef.current?.pause();
+    for(const uri of sampleCacheRef.current.values())URL.revokeObjectURL(uri);
+    sampleCacheRef.current.clear();
     onGeneratingRef.current(false);
   },[]);
 
@@ -190,8 +211,68 @@ export function MandalaAffirmationVoice({
     balanceTimerRef.current=setTimeout(()=>{balanceTimerRef.current=null;void renderBalance(clip,next,job);},250);
   }
 
+  function resetSample(){
+    sampleJobRef.current++;
+    sampleControllerRef.current?.abort();
+    sampleControllerRef.current=null;
+    if(sampleAudioRef.current){
+      sampleAudioRef.current.pause();
+      sampleAudioRef.current.removeAttribute("src");
+      sampleAudioRef.current.load();
+    }
+    setSampleUrl("");setSampleVoiceId("");setSampleBusyId("");setSampleMessage("");
+  }
+  async function previewSample(id:string){
+    if(disabled||busy||sampleBusyId)return;
+    resetSample();
+    if(!languageAvailable){setSampleMessage(t.unavailable);return;}
+    const job=sampleJobRef.current;
+    const cacheKey=language+":"+id;
+    setSampleBusyId(id);
+    try{
+      let uri=sampleCacheRef.current.get(cacheKey);
+      if(!uri){
+        const controller=new AbortController();
+        sampleControllerRef.current=controller;
+        const reply=await fetch("/api/holistic-support/voice",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          // Server chooses an impersonal fixed transcript. Never transmit lines.
+          body:JSON.stringify({mode:"sample",voiceId:id,language}),
+          signal:controller.signal,cache:"no-store",
+        });
+        if(!reply.ok)throw new Error(reply.status===429?"QUOTA":"TTS");
+        const audio=await reply.blob();
+        const seconds=audio.size>=44&&audio.size<=8*1024*1024
+          ?wavDurationFromHeader(await audio.slice(0,256).arrayBuffer()):0;
+        if(!seconds||seconds<.2||seconds>60)throw new Error("TTS");
+        if(job!==sampleJobRef.current)return;
+        uri=URL.createObjectURL(audio);
+        const cache=sampleCacheRef.current;
+        cache.set(cacheKey,uri);
+        // Bound retained WAV memory (six profiles across language choices).
+        if(cache.size>8){
+          const oldest=cache.keys().next().value;
+          if(oldest){const oldUri=cache.get(oldest);if(oldUri)URL.revokeObjectURL(oldUri);cache.delete(oldest);}
+        }
+      }
+      if(job!==sampleJobRef.current)return;
+      setSampleVoiceId(id);setSampleUrl(uri);setSampleMessage(t.sampleReady);
+    }catch(error){
+      if(job!==sampleJobRef.current)return;
+      if(error instanceof Error&&error.name==="AbortError")return;
+      setSampleMessage(error instanceof Error&&error.message==="QUOTA"?t.sampleQuota:t.sampleError);
+    }finally{
+      if(job===sampleJobRef.current){setSampleBusyId("");sampleControllerRef.current=null;}
+    }
+  }
+  // Attempt playback only after an explicit user request. On iPhone Safari the
+  // post-network play() may be denied; the visible native player is the fallback.
+  useEffect(()=>{
+    if(sampleUrl)void sampleAudioRef.current?.play().catch(()=>{});
+  },[sampleUrl]);
+
   async function createAudio(){
-    if(!languageAvailable||disabled||busy||!speechText||!consent)return;
+    if(!languageAvailable||disabled||approvalPending||busy||!speechText||!consent)return;
     const job=++jobRef.current;
     const controller=new AbortController();
     controllerRef.current=controller;
@@ -243,22 +324,36 @@ export function MandalaAffirmationVoice({
         {(["female","male"] as const).map(id=><button type="button" key={id}
           data-video-affirmation-gender={id} aria-pressed={voiceGender===id}
           disabled={busy||disabled} onClick={()=>{
-            setVoiceGender(id);setVoiceId(id==="female"?"maya":"mark");setConsent(false);
+            resetSample();setVoiceGender(id);setVoiceId(id==="female"?"maya":"mark");setConsent(false);
           }}>{id==="female"?t.female:t.male}</button>)}
       </div>
       <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
-        {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><button type="button" key={v.id}
-          data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
-          disabled={busy||disabled} onClick={()=>{setVoiceId(v.id);setConsent(false);}}>
-          <span><strong>{v.name[locale]}</strong><small>{v.description[locale]}</small></span>
-          <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
-        </button>)}
+        {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
+          <button type="button" className={css.voiceCardSelect}
+            data-video-affirmation-voice-card={v.id} aria-pressed={voiceId===v.id}
+            disabled={busy||disabled} onClick={()=>{resetSample();setVoiceId(v.id);setConsent(false);}}>
+            <span><strong>{v.name[locale]}</strong><small>{v.description[locale]}</small></span>
+            <span aria-hidden="true">{voiceId===v.id?"✓":"○"}</span>
+          </button>
+          <button type="button" className={css.sampleButton} data-video-affirmation-voice-preview={v.id}
+            aria-label={t.sample+" "+v.name[locale]} disabled={busy||disabled||!languageAvailable||Boolean(sampleBusyId)}
+            onClick={()=>void previewSample(v.id)}>
+            {sampleBusyId===v.id?<LoaderCircle size={16} aria-hidden="true"/>:<Play size={16} aria-hidden="true"/>}
+            <span>{sampleBusyId===v.id?t.sampleBusy:t.sample}</span>
+          </button>
+        </div>)}
       </div>
+      {sampleUrl?<div className={css.samplePlayer} data-video-affirmation-sample-ready>
+        <strong>{t.sampleTitle} · {VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]}</strong>
+        <audio ref={sampleAudioRef} controls preload="metadata" src={sampleUrl}
+          aria-label={t.sampleTitle+" "+(VOICE_STUDIO_VOICES.find(v=>v.id===sampleVoiceId)?.name[locale]||"")}/>
+      </div>:null}
+      {sampleMessage?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleMessage}</small>:null}
     </div>
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
-          onChange={event=>{setLanguage(event.currentTarget.value as SpeechLanguage);setConsent(false);}}>
+          onChange={event=>{resetSample();setLanguage(event.currentTarget.value as SpeechLanguage);setConsent(false);}}>
           <option value="ru">Русский</option><option value="en">English</option>
           <option value="es">Español</option>
         </select>
@@ -288,11 +383,11 @@ export function MandalaAffirmationVoice({
     <small className={css.hint}>{levels.balanced}</small>
     <label className={css.consent}>
       <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
-        disabled={busy||disabled||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
+        disabled={busy||disabled||approvalPending||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
       <span>{t.consent}</span>
     </label>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
-      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled}
+      disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}
       onClick={()=>void createAudio()}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
       {busy?mixing?t.mixing:t.busy:t.generate}

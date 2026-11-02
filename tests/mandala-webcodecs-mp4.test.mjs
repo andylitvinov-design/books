@@ -53,7 +53,7 @@ test("Real browser validation still requires downloaded video and non-silent aud
   for(const required of [
     'tracks.includes("video")','tracks.includes("audio")',
     "pcm.stdout.some(value=>value!==0)","await output.waitFor(",
-    "assert.equal(payloads.length,1)",
+    "assert.equal(affirmationRequests.length,1)",
   ])assert.ok(script.includes(required),required);
 });
 
