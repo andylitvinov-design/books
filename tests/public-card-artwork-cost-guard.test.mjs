@@ -122,7 +122,8 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
   // Unified protected gate replaces the obsolete release-ready wrapper.
   // The aggregate must consume real Scope, Core and Specialist results.
-  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]\n    if: always\(\)/m);
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]/m);
+  assert.match(core.split(/^  hh-merge-check:/m)[1], /^    if: \$\{\{ !cancelled\(\) \}\}$/m);
   assert.match(core, /- name: Require real Core and specialist results from this workflow/);
   assert.match(core, /\[\[ "\$EVENT_NAME" == pull_request \]\]/);
   assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);

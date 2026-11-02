@@ -120,8 +120,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
-      // Phrase choices are explicitly pending until the visitor approves them.
-      // The voice transcript and attached movie must not change prematurely.
+      // Reproduction of the phone screenshot: unsaved phrase edits block
+      // narration generation, NOT male/female selection or voice previews.
+      await expect(page.locator("[data-hypno-pending]")).toBeVisible();
+      const chooserPending=page.locator("[data-video-affirmation-voice-select]");
+      await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
+      await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
+      await chooserPending.locator('[data-video-affirmation-voice-card="leon"]').click();
+      await expect(chooserPending.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
+      const previewButton=chooserPending.locator('[data-video-affirmation-voice-preview="leon"]');
+      await expect(previewButton).toBeEnabled();
+      await previewButton.click();
+      await expect(page.locator('[data-video-affirmation-sample-ready] audio')).toBeVisible({timeout:30000});
+      const preview=payloads.find(item=>item.mode==="sample"&&item.voiceId==="leon");
+      assert.ok(preview,"actual male sample request reaches the TTS route");
+      assert.equal(preview.language,locale);
+      assert.ok(!("text" in preview)&&!("consent" in preview),"fixed public samples contain no private script");
+      await chooserPending.locator('[data-video-affirmation-gender="female"]').click();
+      await expect(page.locator("[data-video-affirmation-sample-ready]")).toHaveCount(0);
+      await expect(chooserPending.locator('[data-video-affirmation-voice-card="maya"]')).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
+      // Only the explicit phrase approval unlocks private narration.
       await page.locator("[data-hypno-approve]").click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
@@ -145,12 +164,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
           providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
-      assert.equal(payloads.length,1);
-      assert.equal(payloads[0].mode,"affirmations");
-      assert.equal(payloads[0].text,transcript);
-      assert.equal(payloads[0].voiceId,"maya");
-      assert.equal(payloads[0].consent,true);
-      assert.equal(payloads[0].language,locale);
+      const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
+      assert.equal(affirmationRequests.length,1);
+      assert.equal(affirmationRequests[0].text,transcript);
+      assert.equal(affirmationRequests[0].voiceId,"maya");
+      assert.equal(affirmationRequests[0].consent,true);
+      assert.equal(affirmationRequests[0].language,locale);
       const expectedFileName="holistic-house-affirmations-"+locale+"-maya.wav";
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
@@ -169,7 +188,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         return audio?.getAttribute("src") && audio.getAttribute("src")!==previous;
       },firstAudio,{timeout:25000});
       phase(engine,"offline-remix-ready");
-      assert.equal(payloads.length,1,"remixing voice/music must not invoke Google again");
+      assert.equal(payloads.filter(item=>item.mode==="affirmations").length,1,
+        "remixing voice/music must not invoke voice generation again");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
       const generate=page.locator("[data-video-quick-generate]");
@@ -271,6 +291,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Do not click the removed global voice disclosure in the first workspace.
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-basic-tab="voice"]').click();
+      // Consent for the previous transcript never carries over to new lines.
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
@@ -281,7 +303,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
       await studio.locator("[data-voice-studio-audio]").waitFor({state:"visible",timeout:30000});
-      const sample=payloads.find(item=>item.mode==="sample");
+      const sample=payloads.find(item=>item.mode==="sample"&&item.voiceId==="mark");
       assert.ok(sample,engine+" free text-to-speech sample reached provider");
       assert.equal(sample.voiceId,"mark");
       assert.equal(sample.language,locale);

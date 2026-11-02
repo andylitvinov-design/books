@@ -46,6 +46,8 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
+import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
@@ -206,7 +208,7 @@ const studioCopy = {
     format:"Format",duration:"Duration",seconds:"sec",speed:"Movement",slow:"Calm",dynamic:"Dynamic",
     brightness:"Brightness",soft:"Soft",bright:"Bright",music:"Original instrumental music",noMusic:"Silent",
     musicNames:{harmony:"Harmony",prosperity:"Prosperity",energy:"Energy",love:"Love",meditation:"Meditation"},
-    originalAudio:"22 original instrumental melodies (piano, harp, flute, strings and more), plus 17 optional sound textures. Original music, no third-party streaming. Add your own recording if you prefer.",
+    originalAudio:"Four distinct instrumental scores for each of 48 video stories (192 recordings), plus 24 original WAV melodies, four classical themes and 17 sound textures. All first-party recordings; add your own audio file if you prefer.",
     openAudioDirect:"Open soundtrack directly",retryAudio:"Retry playback",
     uploadAudio:"Add audio file",uploadAudioHint:"MP3, M4A, WAV or AAC · up to 15 MB · stored only on your device.",
     audioFileSelected:"Your audio file",audioRemove:"Remove",audioRights:"I have permission to use this audio in my video.",
@@ -246,7 +248,7 @@ const studioCopy = {
     format:"Формат",duration:"Длительность",seconds:"сек",speed:"Движение",slow:"Спокойное",dynamic:"Динамичное",
     brightness:"Яркость",soft:"Мягкая",bright:"Яркая",music:"Красивая инструментальная музыка",noMusic:"Без звука",
     musicNames:{harmony:"Гармония",prosperity:"Процветание",energy:"Энергия",love:"Любовь",meditation:"Медитация"},
-    originalAudio:"22 авторские инструментальные мелодии: фортепиано, арфа, флейта, струны и другие. Ещё 17 звуковых фактур доступны дополнительно. Без внешнего стриминга.",
+    originalAudio:"Четыре отдельные инструментальные мелодии для каждого из 48 сценариев (192 записи), плюс 24 авторские WAV-мелодии, четыре классические темы и 17 звуковых фактур. Можно добавить свой аудиофайл.",
     openAudioDirect:"Открыть аудиофайл отдельно",retryAudio:"Повторить",
     uploadAudio:"Добавить аудиофайл",uploadAudioHint:"MP3, M4A, WAV или AAC · до 15 МБ · только на вашем устройстве.",
     audioFileSelected:"Ваш аудиофайл",audioRemove:"Удалить",audioRights:"Я имею право использовать эту запись в своём видео.",
@@ -286,7 +288,7 @@ const studioCopy = {
     format:"Formato",duration:"Duración",seconds:"seg",speed:"Movimiento",slow:"Tranquilo",dynamic:"Dinámico",
     brightness:"Brillo",soft:"Suave",bright:"Vivo",music:"Melodías instrumentales",noMusic:"Sin sonido",
     musicNames:{harmony:"Armonía",prosperity:"Prosperidad",energy:"Energía",love:"Amor",meditation:"Meditación"},
-    originalAudio:"22 melodías instrumentales originales de piano, arpa, flauta y cuerdas, más 17 texturas opcionales. Sin streaming externo.",
+    originalAudio:"Cuatro piezas instrumentales distintas por cada uno de los 48 escenarios (192 grabaciones), más 24 melodías WAV originales, cuatro temas clásicos y 17 texturas opcionales. Puedes añadir tu audio.",
     openAudioDirect:"Abrir el archivo de audio",retryAudio:"Reintentar",
     uploadAudio:"Añadir archivo de audio",uploadAudioHint:"MP3, M4A, WAV o AAC · máximo 15 MB · solo en tu dispositivo.",
     audioFileSelected:"Tu archivo de audio",audioRemove:"Eliminar",audioRights:"Tengo permiso para usar este audio en mi vídeo.",
@@ -895,7 +897,7 @@ const FREE_FILM_CLIP_THEMES:Record<string,VideoTheme> = Object.fromEntries(
   FREE_FILM_CATALOG.filter(scene=>scene.status==="approved").map(scene=>[scene.id,scene.theme])
 ) as Record<string,VideoTheme>;
 function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string}|null {
-  if(theme==="money")return getRealMoneyFilm(id as MoneySceneId);
+  if(theme==="money")return getRealMoneyFilm(id as MoneySceneId)||getThemedRealFilm(theme,id as LocalSceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
 function compileFreeFilmPreset(
@@ -1747,6 +1749,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [cinematicPlan,setCinematicPlan] = useState<CinematicStoryboard|null>(null);
   const [appliedStory,setAppliedStory] = useState<StorySelection>({});
   const [activeFreeFilmPreset,setActiveFreeFilmPreset] = useState<string|null>(null);
+  const [goalTreeAudioScenarioId,setGoalTreeAudioScenarioId] = useState<string|null>(null);
   const [showAllFreeFilms,setShowAllFreeFilms] = useState(false);
   const [readyFreeFilmKey,setReadyFreeFilmKey] = useState("");
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
@@ -1882,7 +1885,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const audioTheme=audioThemeOverride||theme;
   // The existing 48 scenario packs each provide four original, distinct tracks.
   // Preserve the canonical scenario/classical collection in this compact UI.
-  const scenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
+  const goalTreeTracks=goalTreeAudioScenarioId?getGoalTreeAudioChoices(goalTreeAudioScenarioId):[];
+  const filmScenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
+  // The phrase catalog's explicit storyboard selection outranks the generic
+  // film preset recommendation. Every choice is a real, prebuilt first-party MP3.
+  const scenarioTracks=goalTreeTracks.length?goalTreeTracks:filmScenarioTracks;
   const matchingScenarioTracks=scenarioTracks.filter(track=>
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
@@ -1896,13 +1903,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
     (audioPace==="all"||track.pace===audioPace));
-  const audioMatches=[...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
-  const availableAudioTracks=[...scenarioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  const curatedMatches=recommendCuratedAudio({
+    theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
+    voiceFriendly:audioVoiceFriendly,
+  });
+  const audioMatches=[...matchingScenarioTracks,...curatedMatches,...baseAudioMatches,...classicMatches];
+  const availableAudioTracks=[...scenarioTracks,
+    ...filmScenarioTracks.filter(track=>!scenarioTracks.some(selected=>selected.id===track.id)),
+    ...curatedAudioTracks,...classicalAudioTracks,...mandalaAudioTracks];
   const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
     theme:audioTheme,kind:"melody",wish,
   })).slice(0,4);
   const recommendedAudioId = audioMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
+  const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
     ?attachedAudio.file.name:attachedAudio.kind==="presets"
       ?attachedAudio.ids.map(id=>availableAudioTracks.find(item=>item.id===id)?.name[locale]||id).join(" + ")
@@ -2968,6 +2982,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   /** Attach one of the scenario's real music files only with visitor auto-music enabled.
    * Manual silence/recordings take precedence and music preview never autoplays. */
   const selectScenarioMusic=(presetId:string)=>{
+    // A newly chosen executable film replaces an older editorial phrase path.
+    setGoalTreeAudioScenarioId(null);
     if(!audioAuto||uploadedAudio||micRecording)return;
     const track=scenarioAudioTracks(presetId)[0];
     if(!track)return;
@@ -3452,6 +3468,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.audioNowPlaying} data-video-audio-now>
             <span>{audioUi.now}</span>
             <strong>{uploadedAudio?uploadedAudio.file.name:selectedAudio?.name[locale]||ui.noMusic}</strong>
+            {reviewedRecording&&!uploadedAudio ? <small data-reviewed-music-license>
+              {locale==="ru"?"Запись по лицензии":locale==="es"?"Grabación licenciada":"Licensed recording"}: {reviewedRecording.rights.license} · {reviewedRecording.rights.creator} / {reviewedRecording.rights.performer}
+              {" · "}<a href={reviewedRecording.rights.sourcePage} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Источник":locale==="es"?"Fuente":"Source"}
+              </a>{" · "}<a href={reviewedRecording.rights.licenseUrl} target="_blank" rel="noopener noreferrer">
+                {locale==="ru"?"Лицензия":locale==="es"?"Licencia":"License"}
+              </a>
+            </small> : null}
             <button type="button" data-video-music="none" onClick={()=>{setAudioAuto(false);chooseMusic("none");}}
               aria-pressed={!uploadedAudio&&music==="none"}>{ui.noMusic}</button>
           </div>
@@ -3555,7 +3579,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // or invalidate its generated voice before explicit approval.
             setCatalogPhraseDraft(phrase);
           }}
-          onOpenAudio={()=>{
+          onOpenAudio={scenarioId=>{
+            setGoalTreeAudioScenarioId(scenarioId);
+            // Auto-assigned film music must not remain attached after choosing
+            // another story; keep manually selected recordings and silence.
+            if(audioAuto&&!uploadedAudio&&!micRecording){
+              setAttachedAudio(null);
+              setSamplePreviewId(null);
+            }
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
@@ -3572,7 +3603,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </p>}
         <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
           enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing||phrasePending} onAttach={attachGeneratedAffirmationAudio}
+          disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
           onInvalidate={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.narration?null:current)}
           onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
@@ -4401,6 +4432,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             ?(locale==="ru"?"Не прикреплён":locale==="es"?"Sin adjuntar":"Not attached")
             :appliedAudioName}
           onOpenAudio={()=>openQuickDetailed("video-audio")}
+          audioTrackId={attachedAudio?.kind==="preset"?attachedAudio.id:null}
+          onPickAudio={id=>{
+            const matched=[...mandalaAudioTracks,...classicalAudioTracks,
+              ...FREE_FILM_PRESETS.flatMap(film=>scenarioAudioTracks(film.id))]
+              .find(track=>track.id===id&&track.kind==="melody");
+            if(!matched)return;
+            const chosenId=matched.id as PresetId;
+            setAudioAuto(false);chooseMusic(chosenId);
+            setAttachedAudio({kind:"preset",id:chosenId});
+            if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
+          }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
