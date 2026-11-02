@@ -67,12 +67,39 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(18,43)),'ADMIT');
  assert.equal(admission('repair',cap(23,43)),'ADMIT');
  assert.equal(admission('repair',cap(24,43)),'RUNNERS_SATURATED');
- assert.equal(admission('repair',cap(18,60)),'RUNNERS_SATURATED');
+ assert.equal(admission('repair',cap(18,60)),'ADMIT',
+  'single short source worker may use bounded overflow without multiplying optional CI');
+ assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
  assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
+test('Core backpressure still protects mandatory CI when Repair gets bounded headroom',()=>{
+ const x=cap(12,64);
+ assert.equal(admission('repair',x),'ADMIT');
+ assert.equal(admission('ci',x),'CI_QUEUE_BUSY');
+ assert.equal(admission('conflict',x),'RUNNERS_SATURATED');
+ const manyCore=computeCapacity(
+  Array.from({length:12},(_,i)=>({name:'misc runner '+i})),
+  Array.from({length:64},(_,i)=>({name:i<21?'HH PR core release gate':'HH native auto-merge'})),[]);
+ assert.equal(admission('repair',manyCore),'CORE_PRIORITY_PENDING');
+ assert.equal(admission('ci',manyCore),'RUNNERS_SATURATED');
+});
+test('queue above optional cap is still completely verified before one Repair admission',async()=>{
+ const queued=Array.from({length:64},(_,i)=>({name:'HH native auto-merge',id:i+1}));
+ const api={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:status==='queued'?
+    {total_count:queued.length,workflow_runs:queued}:
+    {total_count:0,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>{throw Error('No active jobs to read');}
+ }}};
+ const state=await snapshot(api,'andylitvinov-design','books');
+ assert.equal(state.known,true);
+ assert.equal(state.queuedRuns,64);
+ assert.equal(admission('repair',state),'ADMIT');
+ assert.equal(admission('ci',state),'CI_QUEUE_BUSY');
+});
 test('repair still fails closed when runner jobs or its own worker are saturated',()=>{
  const unrelated=Array.from({length:18},(_,i)=>({name:'Other workflow '+i}));
  const jobs=Array.from({length:38},()=>({status:'in_progress'}));
