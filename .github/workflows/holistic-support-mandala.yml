@@ -160,8 +160,10 @@ on:
 permissions:
   contents: read
   pull-requests: read
+# A new synchronize event replaces stale work for the same PR only.
+# Manual dispatches stay run-scoped; independent PRs never share a queue.
 concurrency:
-  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: holistic-support-mandala-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
 jobs:
   # Keep focused source/provider contracts on PRs; full real media/browser suite is manual-only per production policy.
@@ -382,6 +384,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       HH_TEST_PUBLIC_ORIGIN: http://127.0.0.1:3100
+      HH_EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       HH_VOICE_E2E_ENGINE: webkit
       # Test real WebKit native compositor rather than frozen headless media.
       HH_VOICE_E2E_HEADED: '1'
@@ -393,10 +396,26 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Reuse Next.js compiler/build cache across adjacent exact-HEAD runs.
+      # The cache never substitutes for a build; npm run build always executes.
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - name: Install and build exact voice release candidate
         run: |
           npm ci --no-audit --no-fund
           npm run build
+      # Playwright's WebKit browser is version-pinned; restore it instead of
+      # downloading the same browser payload on every isolated macOS VM.
+      - name: Restore pinned Playwright WebKit browser
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/ms-playwright
+          key: hh-holistic-mandala-webkit-${{ runner.os }}-playwright-1.63.0
       - name: Install WebKit and real media decoders
         run: |
           mkdir -p "$RUNNER_TEMP/voice-playwright"
