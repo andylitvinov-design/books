@@ -7,7 +7,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-app-browser.yml'
       - 'scripts/helpers/isolated-browser-diagnostics.mjs'
       - 'scripts/verify-account-status-filters.mjs'
       - 'scripts/verify-asrs6-pdf.mjs'
