@@ -14,7 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor,commentBody,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -31,37 +31,11 @@ function eligible(pr, fullRepo) {
     pr.labels?.some(l => [SOURCE, CONFLICT].includes(l.name)) &&
     !pr.labels?.some(l => l.name===MANUAL || l.name==='hh:hold'));
 }
-function activeSweepLease(comments, sha, now) {
-  for (const c of comments) {
-    if (!(c.body || '').includes('HH_PR_SWEEP_LEASE_V1')) continue;
-    const start=(c.body || '').indexOf('{');
-    const end=(c.body || '').indexOf('}',start);
-    if (start<0 || end<0) return true;
-    try {
-      const lease = JSON.parse(c.body.slice(start,end+1));
-      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
-        if (lease.head_sha === sha &&
-            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
-          // A worker can remain active after its TTL expires. Never
-          // overwrite that worker's source just because the clock advanced.
-          return true;
-        }
-        continue;
-      }
-      // Historical Codex lease comments use lease_expires without schema.
-      // Unknown/malformed ownership always blocks; proven expired leases do not.
-      const legacy=lease.schema == null &&
-        typeof lease.owner === 'string' && lease.owner.trim() &&
-        typeof lease.run_id === 'string' && lease.run_id.trim() &&
-        SHA.test(lease.head_sha || '') &&
-        Number.isFinite(Date.parse(lease.lease_expires || ''));
-      if (!legacy) return true;
-      if (lease.head_sha === sha && Date.parse(lease.lease_expires) > now)
-        return true;
-    } catch { return true; }
-  }
-  return false;
+function activeSweepLease(comments,sha,now){
+ // The trusted Dispatcher and Repair must see the same exact-HEAD owner.
+ return externalOwnerLeaseStatus(comments,sha,now)!=='FREE';
 }
+
 function repairMode(pr) {
   const labels=new Set((pr?.labels || []).map(l=>l.name));
   const source=labels.has(SOURCE), conflict=labels.has(CONFLICT);

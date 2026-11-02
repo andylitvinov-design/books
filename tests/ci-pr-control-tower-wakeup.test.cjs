@@ -47,3 +47,70 @@ test('unknown run status and API errors fail closed without source mutations',as
  assert.equal(await wake({...base,github}),'HANDOFF_UNAVAILABLE');
  assert.equal(await wake({...base,github,dryRun:true}),'NOT_ACTIONABLE');
 });
+test('only durable worker outcomes trigger one deferred slot refill',async()=>{
+ const {wakeAfterWorker}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42};
+ for(const [kind,status] of [['repair','manual_conflict'],['repair','manual_required'],['repair','committed'],['ci','started']]){
+  const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>{calls.push(x)}}}};
+  assert.equal(await wakeAfterWorker({github,context,kind,status,dryRun:false}), 'DISPATCH_ACCEPTED');
+  assert.equal(calls.length,1);assert.deepEqual(calls[0].inputs,{dry_run:'false',completion_wake:'true',worker_run_id:'42'});
+ }
+});
+test('dry, untrusted, empty and failed worker outcomes cannot fan out',async()=>{
+ const {wakeAfterWorker}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',runId:42};
+ let sent=0;const github={rest:{actions:{createWorkflowDispatch:async()=>{sent++}}}};
+ for(const v of [{kind:'repair',status:'skipped'},{kind:'repair',status:'claimed'},{kind:'ci',status:'skipped'},
+  {kind:'repair',status:'manual_required',dryRun:true}, {kind:'repair',status:'committed',context:{...context,ref:'refs/heads/evil'}}])
+  assert.equal(await wakeAfterWorker({github,context,dryRun:false,...v}),'NOT_ACTIONABLE');
+ assert.equal(sent,0);
+});
+
+
+test('completion wake waits for a trusted finished worker and its cooldown',async()=>{
+ const {waitForWorkerCompletion}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ let now=NOW,calls=0;const sleeps=[];
+ const github={rest:{actions:{getWorkflowRun:async()=>({data:{id:42,
+   name:'HH PR source Repair Worker',head_branch:'codex/bootstrap-books',
+   repository:{full_name:'andylitvinov-design/books'},
+   status:++calls===1?'in_progress':'completed',conclusion:'success',updated_at:new Date(now).toISOString()}})}}};
+ const result=await waitForWorkerCompletion({github,owner:'andylitvinov-design',repo:'books',runId:'42',
+  clock:()=>now,sleep:async ms=>{sleeps.push(ms);now+=ms}});
+ assert.equal(result,true);assert.deepEqual(sleeps,[5000,31000]);
+});
+test('completion wake never trusts a foreign, failed, or perpetually active run',async()=>{
+ const {waitForWorkerCompletion}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ for(const change of [{name:'other'},{conclusion:'failure'},{status:'in_progress'}]){
+  let now=NOW;const github={rest:{actions:{getWorkflowRun:async()=>({data:{id:42,
+   name:'HH PR source Repair Worker',head_branch:'codex/bootstrap-books',
+   repository:{full_name:'andylitvinov-design/books'},status:'completed',conclusion:'success',
+   updated_at:new Date(NOW).toISOString(),...change}})}}};
+  assert.equal(await waitForWorkerCompletion({github,owner:'andylitvinov-design',repo:'books',runId:'42',
+   clock:()=>now,sleep:async ms=>{now+=ms}}),false);
+ }
+});
+test('completion relay only starts the writer after verified worker completion',async()=>{
+ const {relayCompletionWake}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{completion_wake:'true',worker_run_id:'42',dry_run:'false'}}};
+ const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>calls.push(x)}}};
+ assert.equal(await relayCompletionWake({github,context,wait:async()=>false}),'WORKER_UNVERIFIED');assert.equal(calls.length,0);
+ assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'DISPATCH_ACCEPTED');
+ assert.deepEqual(calls[0].inputs,{dry_run:'false'});
+ assert.equal(await relayCompletionWake({github,context:{...context,payload:{inputs:{...context.payload.inputs,dry_run:'true'}}},wait:async()=>true}),'NOT_ACTIONABLE');
+ assert.equal(calls.length,1);
+});
+test('completion waits do not occupy or replace the single-writer queue',()=>{
+ const s=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.match(s,/completion-wait:/);assert.match(s,/hh-control-wait-/);
+ assert.match(s,/hh-control-tower-single-writer/);assert.match(s,/relayCompletionWake/);
+ assert.doesNotMatch(s,/^concurrency:\s*$/m);
+});
+test('completion relay rejects forged inputs and handles dispatch denial',async()=>{
+ const {relayCompletionWake}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{completion_wake:'true',worker_run_id:'42',dry_run:'false'}}};
+ let calls=0;const github={rest:{actions:{createWorkflowDispatch:async()=>{calls++;throw Error('denied')}}}};
+ for(const bad of [{...context,repo:{owner:'other',repo:'books'}},{...context,eventName:'push'},
+  {...context,payload:{inputs:{...context.payload.inputs,worker_run_id:'x'}}}])
+  assert.equal(await relayCompletionWake({github,context:bad,wait:async()=>true}),'NOT_ACTIONABLE');
+ assert.equal(calls,0);assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'HANDOFF_UNAVAILABLE');assert.equal(calls,1);
+});
