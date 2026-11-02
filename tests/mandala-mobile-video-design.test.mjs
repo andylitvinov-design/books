@@ -6,7 +6,8 @@ const read = path => readFileSync(new URL("../"+path, import.meta.url),"utf8");
 
 // Exercise the real JSX settings button with React server rendering, so
 // removing aria-label makes the oracle fail in all three language variants.
-// Next Link / lucide / CSS are visual-only stubs; the component and hook are real.
+// Render the actual component; Next Link/icons/CSS and the client-only viewport
+// hook are inert during SSR. Functional dock behavior has separate browser tests.
 async function renderMandalaDock(source, locale) {
   const ts=await import("typescript");
   const React=await import("react");
@@ -25,6 +26,9 @@ async function renderMandalaDock(source, locale) {
     if(id==="react/jsx-runtime")return jsx;
     if(id==="next/link")return {__esModule:true,default:LinkStub};
     if(id==="lucide-react")return icons;
+    // The visualViewport effect does not run during server-side rendering.
+    // Keep the actual on-screen hook verified by the mobile dock browser suite.
+    if(id==="./app/use-visual-bottom-dock")return {useVisualBottomDock:()=>{}};
     if(id.endsWith(".module.css"))return {__esModule:true,default:{}};
     throw new Error("Unexpected dependency in dock: "+id);
   };
