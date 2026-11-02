@@ -121,3 +121,10 @@
 .vectorFields textarea{box-sizing:border-box;width:100%;min-height:69px;border:1px solid #b8d5c3;border-radius:12px;background:#fff;color:#234432;padding:10px;font:inherit;font-size:15px;line-height:1.45;resize:vertical}
 .vectorFields>small{font-size:12px;color:#755c2f;line-height:1.4}
 @media(min-width:620px){.focusPresets{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* A deliberate separate Step 4 button never silently orders or renders 8 videos. */
+.programmeAction{margin:15px 0 11px;padding:13px;border:1px solid #c3dccb;border-radius:17px;background:#fcfefb}
+.programmeAction h4{margin:0 0 10px;font-size:clamp(18px,4.3vw,22px);line-height:1.25;color:#1a523a}
+.programmeAction button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:49px;width:100%;border:1px solid #016a4a;border-radius:13px;padding:11px;background:linear-gradient(100deg,#0a7955,#008461);color:#fff;font:inherit;font-size:clamp(14px,3.6vw,17px);font-weight:800;text-align:center;cursor:pointer}
+.programmeAction button:disabled{opacity:.5;cursor:not-allowed}
+.programmeAction button:focus-visible{outline:3px solid #dba74b;outline-offset:3px}

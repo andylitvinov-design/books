@@ -97,6 +97,9 @@ test("the existing meditation and eight-day preview share one focus and show the
   assert.match(code, /<MandalaResourcePractice /);
   assert.ok(code.indexOf("<MandalaResourcePractice ") < code.indexOf("data-meditation-eight-day-plan"));
   assert.match(code, /isMeditationSafetyResponse\(script,locale\)/);
+  assert.match(code, /data-meditation-program-generate/);
+  assert.match(code, /showProgramme\(\)/);
+  assert.match(code, /courseDays.length===8&&planVisible/);
   assert.match(code, /focus=\{\{\.\.\.focus,goals:\[courseFocus\|\|actualTheme\],goal:effectiveWish/);
   assert.match(code, /focus:sharedFocus,accents:selected/);
 });
