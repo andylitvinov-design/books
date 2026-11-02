@@ -117,10 +117,14 @@ try {
     waitUntil: 'domcontentloaded', timeout: 60000,
   });
   assert.equal(response?.status(), 200, 'LIVE_MANDALA_NOT_200');
-  // The approved six-workspace Studio keeps the legacy first-video editor
-  // behind an explicit "Advanced: video from description" disclosure.
-  // Open it before expecting the hydrated form to be visible. Do not replace
-  // this real export acceptance with a source-only or mocked pass.
+  // The approved Video Studio's *whole* extra editor is collapsed by
+  // default. Open the real advanced controls on owner layout; the previously
+  // deployed layout has no such toggle. Both use the same original recorder.
+  const ownerAdvanced=page.locator('[data-video-advanced-toggle]');
+  if(await ownerAdvanced.count()){
+    await ownerAdvanced.click();
+    await page.waitForFunction(()=>document.querySelector('[data-video-advanced-toggle]')?.getAttribute('aria-expanded')==='true',undefined,{timeout:15000});
+  }
   const advanced=page.locator('[data-video-first-video-advanced]');
   await advanced.waitFor({state:'visible',timeout:40000});
   if(await advanced.getAttribute('open')===null)
