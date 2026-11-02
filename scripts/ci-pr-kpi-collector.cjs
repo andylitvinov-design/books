@@ -17,21 +17,20 @@ async function collectReceiptEvents({github,owner,repo,since,maxRequests=80,minR
   return res;
  };
  async function inventory(){
-  const selected=new Map();let prior=Infinity;
+  const selected=new Map();
   for(let page=1;page<=30;page++){
-   const r=await read(()=>github.rest.issues.listForRepo({owner,repo,state:'all',sort:'updated',direction:'desc',per_page:100,page}));
+   const r=await read(()=>github.rest.issues.listForRepo({owner,repo,state:'all',since:new Date(since).toISOString(),sort:'updated',direction:'desc',per_page:100,page}));
    if(!Array.isArray(r.data)||r.data.length>100)throw Error('INVENTORY_INCOMPLETE');
-   let older=false;
    for(const issue of r.data){
     const updated=Date.parse(issue?.updated_at||'');
-    if(!Number.isFinite(updated)||updated>prior)throw Error('INVENTORY_UNORDERED');
-    prior=updated;if(updated<since){older=true;continue;}
+    if(!Number.isFinite(updated))throw Error('INVENTORY_UNVERIFIED');
+    if(updated<since)continue;
     if(!issue.pull_request)continue;
     if(!Number.isSafeInteger(issue.number)||issue.number<1||!Number.isSafeInteger(issue.comments)||issue.comments<0||selected.has(issue.number))
      throw Error('INVENTORY_AMBIGUOUS');
     selected.set(issue.number,{number:issue.number,updated_at:issue.updated_at,comments:issue.comments});
    }
-   if(older||r.data.length<100)return selected;
+   if(r.data.length<100)return selected;
   }
   throw Error('INVENTORY_PAGE_LIMIT');
  }

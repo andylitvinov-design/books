@@ -23,14 +23,19 @@ async function collectCompletedJobs({github,owner,repo,since,until,maxRequests=8
   // UTC one-day partitions avoid the 1,000-run search cap when possible.
   // Boundaries are disjoint at GitHub's second precision.
   const floorSince=Math.floor(since/1000)*1000;
-  for(let end=Math.floor(until/1000)*1000;end>=floorSince;){
-   const begin=Math.max(end-86400000+1000,floorSince);
+  async function scanRange(begin,end){
    const range=new Date(begin).toISOString().replace('.000Z','Z')+'..'+new Date(end).toISOString().replace('.000Z','Z');
    let expected=null,seen=0;
    for(let page=1;page<=10;page++){
     const response=(await read(()=>github.rest.actions.listWorkflowRunsForRepo({owner,repo,created:range,per_page:100,page}))).data;
     if(!Array.isArray(response?.workflow_runs)||response.workflow_runs.length>100||!Number.isSafeInteger(response.total_count)||
-       response.total_count<0||response.total_count>1000||(expected!==null&&expected!==response.total_count))throw Error('RUN_INVENTORY_INCOMPLETE');
+       response.total_count<0||(expected!==null&&expected!==response.total_count))throw Error('RUN_INVENTORY_INCOMPLETE');
+    if(response.total_count>1000){
+     if(page!==1||begin>=end)throw Error('RUN_INVENTORY_TOO_DENSE');
+     const midpoint=Math.floor((begin+end)/2000)*1000;
+     if(midpoint<begin||midpoint>=end)throw Error('RUN_INVENTORY_TOO_DENSE');
+     await scanRange(midpoint+1000,end);await scanRange(begin,midpoint);return;
+    }
     expected=response.total_count;seen+=response.workflow_runs.length;
     for(const run of response.workflow_runs){
      const runCreated=Date.parse(run?.created_at||'');
@@ -59,10 +64,13 @@ async function collectCompletedJobs({github,owner,repo,since,until,maxRequests=8
       if(data.jobs.length<100||jobPage===3)throw Error('JOB_INVENTORY_INCOMPLETE');
      }
     }
-    if(seen===expected)break;
+    if(seen===expected)return;
     if(response.workflow_runs.length<100||page===10)throw Error('RUN_INVENTORY_INCOMPLETE');
    }
-   end=begin-1000;
+  }
+  for(let end=Math.floor(until/1000)*1000;end>=floorSince;){
+   const begin=Math.max(end-86400000+1000,floorSince);
+   await scanRange(begin,end);end=begin-1000;
   }
   if(result.activeExcluded){result.reason='ACTIVE_RUNS_EXCLUDED';return result;}
   if(since>created){result.reason='HISTORICAL_RUNS_UNVERIFIED';return result;}

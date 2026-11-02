@@ -13,34 +13,37 @@ async function collectMergeEvents({github,owner,repo,since,maxRequests=40,minRem
   result.remaining=Number(left);if(result.remaining<minRemaining)halted=true;return r;
  };
  async function inventory(){
-  const rows=new Map();let prior=Infinity;
+  const rows=new Map();
   for(let page=1;page<=30;page++){
-   const r=await read(()=>github.rest.pulls.list({owner,repo,state:'closed',sort:'updated',direction:'desc',per_page:100,page}));
+   const r=await read(()=>github.rest.issues.listForRepo({owner,repo,state:'closed',since:new Date(since).toISOString(),per_page:100,page}));
    if(!Array.isArray(r.data)||r.data.length>100)throw Error('INVENTORY_INCOMPLETE');
-   let older=false;
-   for(const pr of r.data){
-    const updated=Date.parse(pr?.updated_at||'');
-    if(!Number.isFinite(updated)||updated>prior)throw Error('INVENTORY_UNORDERED');
-    prior=updated;if(updated<since){older=true;continue;}
-    if(!Number.isSafeInteger(pr.number)||pr.number<1||rows.has(pr.number)||pr.state!=='closed'||
-       !SHA.test(pr.head?.sha||'')||typeof pr.base?.ref!=='string'||!Number.isFinite(Date.parse(pr.closed_at||'')))throw Error('PR_UNVERIFIED');
-    if(pr.merged_at!==null&&pr.merged_at!==undefined&&
-       (!Number.isFinite(Date.parse(pr.merged_at))||!SHA.test(pr.merge_commit_sha||'')))throw Error('MERGE_UNVERIFIED');
-    rows.set(pr.number,{number:pr.number,updated_at:pr.updated_at,closed_at:pr.closed_at,
-      merged_at:pr.merged_at||null,merge_sha:pr.merge_commit_sha||null,head:pr.head.sha,base:pr.base.ref});
+   for(const issue of r.data){
+    const updated=Date.parse(issue?.updated_at||'');
+    if(!Number.isFinite(updated))throw Error('INVENTORY_UNVERIFIED');
+    if(updated<since||!issue.pull_request)continue;
+    if(!Number.isSafeInteger(issue.number)||issue.number<1||rows.has(issue.number)||issue.state!=='closed'||
+       !Number.isFinite(Date.parse(issue.closed_at||'')))throw Error('PR_INVENTORY_UNVERIFIED');
+    rows.set(issue.number,{number:issue.number,updated_at:issue.updated_at,closed_at:issue.closed_at});
    }
-   if(older||r.data.length<100)return rows;
+   if(r.data.length<100)return rows;
   }
   throw Error('INVENTORY_PAGE_LIMIT');
  }
  try{
-  const first=await inventory(),second=await inventory();
+  const first=await inventory();
+  for(const row of first.values()){
+   const pr=(await read(()=>github.rest.pulls.get({owner,repo,pull_number:row.number}))).data;
+   if(pr?.number!==row.number||pr.state!=='closed'||!SHA.test(pr.head?.sha||'')||
+      typeof pr.base?.ref!=='string'||!Number.isFinite(Date.parse(pr.closed_at||''))||
+      pr.closed_at!==row.closed_at)throw Error('PR_UNVERIFIED');
+   if(pr.merged_at!==null&&pr.merged_at!==undefined&&
+      (!Number.isFinite(Date.parse(pr.merged_at))||!SHA.test(pr.merge_commit_sha||'')))throw Error('MERGE_UNVERIFIED');
+   if(pr.merged_at)result.events.push({kind:'merged',at:pr.merged_at,pr:pr.number,head:pr.head.sha,mergeSha:pr.merge_commit_sha,production:pr.base.ref===PROD});
+   else if(pr.base.ref===PROD)result.events.push({kind:'closed_unmerged',at:pr.closed_at,pr:pr.number,head:pr.head.sha});
+  }
+  const second=await inventory();
   const fingerprint=map=>JSON.stringify([...map.values()].sort((a,b)=>a.number-b.number));
   if(fingerprint(first)!==fingerprint(second))throw Error('INVENTORY_CHANGED');
-  for(const r of first.values()){
-   if(r.merged_at)result.events.push({kind:'merged',at:r.merged_at,pr:r.number,head:r.head,mergeSha:r.merge_sha,production:r.base===PROD});
-   else if(r.base===PROD)result.events.push({kind:'closed_unmerged',at:r.closed_at,pr:r.number,head:r.head});
-  }
   result.complete=true;result.reason='COMPLETE_NON_ATOMIC';
  }catch(error){result.reason=String(error?.message||error).slice(0,120);}
  return result;

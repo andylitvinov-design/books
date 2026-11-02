@@ -39,3 +39,14 @@ test('out-of-range runs and malformed job timing do not produce complete cost da
  const bad=fixture();bad.rest.actions.listJobsForWorkflowRun=async()=>({headers,data:{total_count:1,jobs:[{...job,started_at:END,completed_at:AT}]}});
  assert.equal((await collectCompletedJobs({github:bad,owner:'andylitvinov-design',repo:'books',since:NOW-3600000,until:NOW})).complete,false);
 });
+test('splits a busy time range before the GitHub 1000-run ceiling',async()=>{
+ const gh=fixture();let calls=0;
+ gh.rest.actions.listWorkflowRunsForRepo=async({created})=>{
+  calls++;const [a,b]=created.split('..').map(Date.parse);
+  if(b-a>1800000)return {headers,data:{total_count:2500,workflow_runs:Array(100).fill(run)}};
+  const inside=Date.parse(AT)>=a&&Date.parse(AT)<=b;
+  return {headers,data:{total_count:inside?1:0,workflow_runs:inside?[run]:[]}};
+ };
+ const result=await collectCompletedJobs({github:gh,owner:'andylitvinov-design',repo:'books',since:NOW-3600000,until:NOW});
+ assert.equal(result.complete,true);assert.equal(result.jobs.length,1);assert.ok(calls>=3);
+});

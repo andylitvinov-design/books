@@ -45,3 +45,10 @@ test('missing rate-limit evidence fails closed',async()=>{
  const r=await collectReceiptEvents({github:f.github,owner:'andylitvinov-design',repo:'books',since:NOW-3600000});
  assert.equal(r.complete,false);assert.equal(r.reason,'RATE_RESERVE_UNVERIFIED');
 });
+test('uses the provider since filter and does not assume issue order',async()=>{
+ const f=fixture({count:0});const older={...issue,number:8,comments:0,updated_at:'2026-11-01T22:10:00Z'};
+ let observedSince;
+ f.github.rest.issues.listForRepo=async args=>{observedSince=args.since;return {headers:{'x-ratelimit-remaining':'5000'},data:[older,{...issue,comments:0}]}};
+ const r=await collectReceiptEvents({github:f.github,owner:'andylitvinov-design',repo:'books',since:NOW-3600000});
+ assert.equal(observedSince,new Date(NOW-3600000).toISOString());assert.equal(r.complete,true);
+});
