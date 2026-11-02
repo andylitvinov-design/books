@@ -204,29 +204,34 @@ test("personal matching is click-only, auth-gated and no scores leave the server
   assert.deepEqual(jsx.diagnostics||[],[]);
 });
 
-test("HD master starts its own load and remains gated on a decoded frame in WebKit",()=>{
+
+test("HD master fetch starts from Play/Create, never from a background effect",()=>{
   assert.match(studio,/const decoded=Boolean\(activeFilm && master && master\.readyState>=2 &&[\s\S]*master\.videoWidth>0 && master\.videoHeight>0\)/);
-  assert.match(studio,/setPremiumReady\(decoded\)/,
-    "already decoded HD frames must remain ready even if preload beat the effect");
-  assert.match(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
-    "unready scenes must still request real media data");
+  assert.match(studio,/setPremiumReady\(decoded\)/,"reuse only an actually decoded frame");
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/,
+    "an initial page view must not download the source video");
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/,
+    "the real Create gesture starts a bounded MP4 decoder");
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/,
+    "failed decoding must block export, not fabricate a downloadable file");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
   assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
 
-test("iPhone photo-consent gesture wakes the real HD scene without bypassing readiness",()=>{
+test("iPhone photo-consent and Create both prime real media without leaving Create disabled",()=>{
   assert.match(studio,/function primeNativeMasterFromUserGesture\(\)/);
   assert.match(studio,/if\(!activeFilm \|\| !video \|\| video\.readyState>=2\)return/);
   assert.match(studio,/video\.load\(\)/);
   assert.match(studio,/void video\.play\(\)\.then/);
   assert.match(studio,/if\(video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0\)/);
   assert.match(studio,/if\(approved\)primeNativeMasterFromUserGesture\(\)/);
-  assert.match(studio,/\(!activeFilm \|\| premiumReady\)/,
-    "Create stays disabled until a real decoded master frame is present");
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/,
+    "Create is tappable; async media readiness is enforced inside createVideo");
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/,
+    "hidden Safari MP4 preload must never deadlock the Create button");
 });
-
 
 test("compact request flows are locally sourced, goal-first, nonclinical and localized",()=>{
   const compact=read("components/mandala-hypno-compact.tsx");
