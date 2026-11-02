@@ -132,7 +132,7 @@ try {
       // A real finger tap on the rendered consent label must toggle React's
       // controlled checkbox and enable the enquiry. Never set checked in JS.
       const consentInput = contactForm.locator('input[type="checkbox"][required]')
-      const consentLabel = contactForm.locator('label').filter({ has: consentInput })
+      const consentLabel = contactForm.locator('label:has(input[type="checkbox"][required])')
       assert.equal(await consentLabel.count(), 1, 'One visible reply-only consent label')
       await consentLabel.click()
       await page.waitForFunction(() => {

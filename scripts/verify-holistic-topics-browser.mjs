@@ -116,7 +116,8 @@ for (const engine of [chromium, webkit]) {
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
           await finder.locator("[data-support-search]").click();
-          try { await finder.locator('#holistic-inline-results article').first().waitFor(); }
+          try { await finder.locator('#holistic-inline-results article')
+            .filter({hasText:'Synthetic €20 consultation'}).waitFor({state:'visible'}); }
           catch (error) {
             console.error(JSON.stringify({ phase: "synthetic-consultation-directory", label,
               selection: await finder.locator('[aria-pressed="true"]').allTextContents(),
@@ -127,13 +128,17 @@ for (const engine of [chromium, webkit]) {
             label + " EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          await finder.locator('#holistic-inline-results article')
+            .filter({hasText:'Synthetic €100 consultation'}).waitFor({state:'visible'});
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
             label + " EUR 100 includes 2 EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
           await finder.locator('[data-support-budget="free"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
+          // Await the NEW matching result, never a stale business card
+          // retained until React starts its filtered directory fetch.
+          await finder.locator('#holistic-inline-results article')
+            .filter({hasText:'Synthetic free introduction'}).waitFor({state:'visible'});
           assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
             label + " free relationship consultation");
 

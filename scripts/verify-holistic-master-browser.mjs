@@ -132,6 +132,17 @@ async function verify(engine, locale, width) {
     await question.fill(copy[locale].intention);
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
       label + ": no stale response after changing the goal");
+    // iPhone WebKit can keep the textarea focused while the earlier Dao
+    // result scroll completes. Move focus with a real keyboard action,
+    // then ensure the link is the actual touch hit target.
+    await question.press("Tab");
+    await energy.scrollIntoViewIfNeeded();
+    const hitTarget=await energy.evaluate(element=>{
+      const rect=element.getBoundingClientRect();
+      const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      return Boolean(hit&&(hit===element||element.contains(hit)));
+    });
+    assert.equal(hitTarget,true,label+": Energy Link must receive a genuine touch");
     await energy.tap();
     try {
       await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
