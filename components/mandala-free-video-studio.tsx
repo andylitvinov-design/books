@@ -1744,6 +1744,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
+  // A deferred opener must never override a later explicit "Do not add" choice.
+  const meditationDisclosureEpochRef=useRef(0);
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -4575,8 +4577,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
         onAddMeditation={script=>{
+          const epoch=++meditationDisclosureEpochRef.current;
           setCourseMeditationDraft(script);
           window.requestAnimationFrame(()=>{
+            if(epoch!==meditationDisclosureEpochRef.current)return;
             const details=document.querySelector("[data-video-therapy-meditation-audio]");
             if(details instanceof HTMLDetailsElement){
               details.open=true;
@@ -4585,12 +4589,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           });
         }}
         onOmitMeditation={()=>{
+          const epoch=++meditationDisclosureEpochRef.current;
           if(courseMeditationDraft){
             setCourseMeditationDraft("");
             setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
           }
-          const details=document.querySelector("[data-video-therapy-meditation-audio]");
-          if(details instanceof HTMLDetailsElement)details.open=false;
+          const closeDetails=()=>{
+            if(epoch!==meditationDisclosureEpochRef.current)return;
+            const details=document.querySelector("[data-video-therapy-meditation-audio]");
+            if(details instanceof HTMLDetailsElement)details.open=false;
+          };
+          // Close immediately and once after React commits the cleared draft.
+          // WebKit may otherwise restore an older native details.open during rerender.
+          closeDetails();
+          window.requestAnimationFrame(closeDetails);
         }}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
