@@ -180,7 +180,8 @@ test('trusted PR-target janitor is separate from strict two-job read-only PR spe
   assert.ok(!original.includes('  pull_request_target:'));
   assert.ok(!original.includes('  prune-head:'));
   assert.ok(target.includes('  pull_request_target:'));
-  assert.ok(target.includes('types: [synchronize]'));
+  assert.ok(target.includes('types: [opened, reopened, ready_for_review, synchronize]'));
+  assert.ok(target.includes("github.event.action != 'synchronize'"), 'auto-merge must not arm before green Core');
   assert.ok(target.includes('  prune-head:'));
   assert.ok(target.includes('      actions: write'));
   assert.ok(target.includes('actions: write'));
@@ -330,7 +331,7 @@ test('trusted cleanup cannot load PR HEAD and strict CI-only change still runs C
   const source=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const core=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
   assert.ok(source.includes('pull_request_target:'));
-  assert.ok(source.includes('types: [synchronize]'));
+  assert.ok(source.includes('types: [opened, reopened, ready_for_review, synchronize]'));
   assert.ok(source.includes('ref: codex/public-book-library'));
   assert.ok(source.includes("cancel-in-progress: true"));
   assert.ok(!source.includes("ref: ${{ github.event.pull_request.head.sha"));
