@@ -82,7 +82,8 @@ test('core Draft cannot pass hh-specialist or legacy release-ready, and Ready re
   assert.ok(gate.includes("    if: always()"));
   assert.ok(gate.includes("PR_DRAFT: ${{ github.event.pull_request.draft }}"));
   assert.ok(gate.includes("if [[ \"$EVENT_NAME\" == pull_request && \"$PR_DRAFT\" == true ]]; then"));
-  assert.ok(gate.includes("[[ \"$SCOPE_RESULT\" == success ]] || exit 1"));
+  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success \]\] \|\| \{[\s\S]*?exit 1\s*\}/,
+    'an unsuccessful scope must fail the parallel specialist job');
   assert.ok(gate.includes("    needs: [scope]"), 'Specialist runs parallel to Core');
   assert.doesNotMatch(gate,/CODE_RESULT|needs\.code/);
   assert.ok(legacy.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
