@@ -75,12 +75,12 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("owner's third workspace exposes all four image-led groups in screenshot order and one real Create handler",()=>{
+test("owner's third workspace exposes three image-led groups in approved order and one real Create handler",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
+  const order=["phrases","visual","audio"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
   assert.match(ui,/useState<GroupId\[\]>\(\["phrases","visual","audio"\]\)/);
   assert.match(ui,/data-hypno-card/);
