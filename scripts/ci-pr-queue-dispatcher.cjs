@@ -3,6 +3,7 @@
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
+const {repairMode,safeFiles}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_API=85, MIN_RATE=100;
@@ -51,28 +52,29 @@ function planCandidates(prs,now){
  const available=prs.filter(pr=>validPR(pr)&&laneOf(pr));
  const ranked=rankedCandidates(available,now);
  if(!ranked.length)return [];
- // Reserve one candidate per genuinely different worker lane. A large
- // backlog of P1 manual conflicts must not hide a lower-tier source repair
- // or an available CI bootstrap from the bounded MAX_INSPECT slice.
- // Source repair precedes conflict triage because the latter can only hand
- // non-deterministic conflicts to a human / authorized coding agent.
- const leaders=['repair','ci','conflict'].flatMap(lane=>{
-  const entry=ranked.find(pr=>laneOf(pr)===lane);
-  return entry?[entry]:[];
- });
- const picked=[...leaders];
- const chosen=new Set(picked.map(pr=>pr.number));
- // Retain fast high-priority inspection without evicting a lane leader.
- for(const pr of ranked.slice(0,3))if(!chosen.has(pr.number)&&picked.length<MAX_INSPECT){
-  picked.push(pr);chosen.add(pr.number);
- }
+ // Source and manual conflict have separate resources. Inspect more than the
+ // first source before handing that worker to an owner-only conflict. One
+ // out of six ten-minute turns gives conflict triage first refusal so an
+ // indefinitely nonempty source queue cannot starve it.
+ const fairnessTurn=Math.floor(now/600000)%6===5;
+ const source=ranked.filter(pr=>laneOf(pr)==='repair');
+ const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
+ const ci=ranked.find(pr=>laneOf(pr)==='ci');
+ const picked=[],chosen=new Set();
+ const add=pr=>{if(pr&&!chosen.has(pr.number)&&picked.length<MAX_INSPECT){picked.push(pr);chosen.add(pr.number);}};
+ if(fairnessTurn)add(conflict);
+ add(source[0]);add(ci);
+ // Keep priority among the first three sources and rotate the remainder.
+ for(const pr of source.slice(1,3))if(picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0))add(pr);
+ const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
+ const tail=source.filter(pr=>!chosen.has(pr.number));
+ const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
+ for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
+ add(conflict);
  const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
- const offset=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
- for(let i=0;i<room;i++){
-  const pr=rest[(offset+i)%rest.length];
-  picked.push(pr);
- }
+ const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
+ for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  return picked.map(pr=>taskFor(pr,priorityFor(pr,now)));
 }
 async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot}){
@@ -81,7 +83,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
-  specialistReclassified:0,wouldSpecialistReclassify:0,blocked:{},
+  specialistReclassified:0,wouldSpecialistReclassify:0,capacityReason:null,blocked:{},
   workerRuns:[],apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  const blocked=reason=>{summary.blocked[reason]=(summary.blocked[reason]||0)+1;};
@@ -116,26 +118,35 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
  summary.candidates=candidates.length;
  if(!candidates.length){summary.reason='NO_ACTIONABLE_PR';return finish();}
- let capacity;
- try{capacity=await capacityFn(github,owner,repo);}catch(err){summary.reason='CAPACITY_UNVERIFIED: '+err.message;return finish();}
- if(!capacity?.known){summary.reason='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');return finish();}
- summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
+ // Metadata-only handoffs survive runner saturation or unknown inventory.
+ let capacity=null,capacityReason=null;
+ try{capacity=await capacityFn(github,owner,repo);}
+ catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
+ if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
+ summary.capacityReason=capacityReason;
+ if(capacity?.known)summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
   runningJobs:capacity.runningJobs,queuedJobs:capacity.queuedJobs,
   inventoryConfidence:capacity.inventoryConfidence||'VERIFIED',
   unknownActiveRuns:capacity.unknownActiveRuns||0,
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
  const usedWorkers=new Set();
- for(const task of candidates){
+ const ordered=[...candidates.filter(t=>t?.lane==='conflict'),
+  ...candidates.filter(t=>t?.lane!=='conflict')];
+ for(const task of ordered){
   if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
-  const permission=admission(task.lane,capacity);
-  if(permission!=='ADMIT'){blocked(permission);continue;}
   const worker=WORKFLOWS[task.lane];
-  // Manual conflict receipts use no worker slot; a source repair may run in parallel.
-  if(task.lane!=='conflict'&&usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   const listed=production.find(pr=>pr.number===task.pr_number);
+  const potentialConflict=task.lane==='conflict'||
+    listed?.labels?.some(l=>l.name==='hh:conflict-repair-needed');
+  if(!potentialConflict){
+   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
+   const permission=admission(task.lane,capacity);
+   if(permission!=='ADMIT'){blocked(permission);continue;}
+   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
+  }
   // A parent PR with open stacked children cannot be rewritten safely.
   if(prs.some(pr=>pr.number!==task.pr_number&&pr.base?.ref===task.head_ref)){
    blocked('STACKED_PARENT');continue;
@@ -189,7 +200,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
    continue;
   }
-  if(task.lane==='conflict'){
+  const isVerifiedDirty=fresh.mergeable===false&&fresh.mergeable_state==='dirty'&&
+    (task.lane==='conflict'||fresh.labels?.some(l=>l.name==='hh:conflict-repair-needed'));
+  if(isVerifiedDirty){
    // A genuine DIRTY merge cannot be fixed by the ESLint-only Repair Worker.
    // Hand it to the existing human/Codex conflict queue as an exact-HEAD
    // issue receipt, without reserving a runner or starving CI/source workers.
@@ -216,6 +229,12 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     log('Conflict handoff #'+task.pr_number+': '+err.message);
    }
    continue;
+  }
+  if(potentialConflict){
+   if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
+   const permission=admission(task.lane,capacity);
+   if(permission!=='ADMIT'){blocked(permission);continue;}
+   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
@@ -267,6 +286,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
    continue;
   }
+  if(task.lane==='repair'){
+   if(repairMode(fresh)!=='lint'){blocked('SOURCE_MERGEABILITY_UNVERIFIED');continue;}
+   let files;
+   try{files=(await limited('repair-files',()=>github.rest.pulls.listFiles({
+    owner,repo,pull_number:task.pr_number,per_page:100,page:1}))).data;}
+   catch(e){blocked('SOURCE_FILES_UNAVAILABLE');continue;}
+   const safe=safeFiles(files);
+   if(!safe||!safe.length){blocked('SOURCE_SCOPE_NOT_ACTIONABLE');continue;}
+  }
   let recent;
   try{const r=(await limited('worker-history',()=>github.request(
     'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -300,7 +328,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }catch(err){blocked('DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);}
  }
  summary.reason||=summary.dispatchAccepted?'DISPATCH_ACCEPTED':
-   summary.wouldDispatch?'DRY_RUN_CANDIDATES':'NO_SAFE_DISPATCH';
+   summary.manualConflictHandoffs?'CONFLICT_HANDOFF_ACCEPTED':
+   summary.wouldDispatch?'DRY_RUN_CANDIDATES':
+   summary.wouldManualConflictHandoffs?'DRY_RUN_CONFLICT_HANDOFF':
+   capacityReason||'NO_SAFE_DISPATCH';
  return finish();
 }
 /**
