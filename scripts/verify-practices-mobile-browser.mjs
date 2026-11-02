@@ -11,9 +11,9 @@ const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(
 const ORIGIN=new URL(BASE).origin;
 const CASES=[["ru",320],["ru",390],["ru",430],["en",390],["es",390]];
 const LABELS={
-  ru:{vector:"Вектор развития",difficulty:"Трудно расслабиться вечером",goal:"Спокойно отдыхать вечером",revised:"Спокойно отдыхать и восстанавливаться"},
-  en:{vector:"Development direction",difficulty:"Hard to unwind after work",goal:"Rest calmly after work",revised:"Rest and feel refreshed"},
-  es:{vector:"Dirección de desarrollo",difficulty:"Me cuesta descansar",goal:"Descansar con calma",revised:"Descansar y recuperar energía"}
+  ru:{vector:"Вектор развития",vectorGoal:"Энергия",difficulty:"Трудно расслабиться вечером"},
+  en:{vector:"Development direction",vectorGoal:"Energy",difficulty:"Hard to unwind after work"},
+  es:{vector:"Dirección de desarrollo",vectorGoal:"Energía",difficulty:"Me cuesta descansar"}
 };
 mkdirSync("artifacts/practices-mobile",{recursive:true});
 
@@ -51,6 +51,8 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
         const programmeButton=course.locator("[data-guided-create-plan]");
         assert.equal(await primary.isDisabled(),true,"require an explicit focus");
         assert.equal(await programmeButton.isDisabled(),true);
+        assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
+          "state mode must present six large choice cards");
         const state=course.locator('[data-guided-focus-state="calm"]');
         await state.click();
         assert.equal(await state.getAttribute("aria-pressed"),"true");
@@ -136,21 +138,24 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
           "main mobile tap targets >=44px: "+JSON.stringify(geometry));
         const vector=course.getByRole("button",{name:LABELS[locale].vector,exact:true});
         await vector.click();
+        assert.equal(await course.locator("[data-guided-focus-vector]").count(),6,
+          "vector mode must present six direction cards, not two empty fields");
+        const vectorChoice=course.locator('[data-guided-focus-vector="energy"]');
+        await vectorChoice.click();
+        assert.equal(await vectorChoice.getAttribute("aria-pressed"),"true");
         const difficulty=course.locator("[data-video-key-difficulty]");
-        const goal=course.locator("[data-video-key-goal]");
-        assert.equal(await primary.isDisabled(),true,"incomplete development vector cannot generate");
         await difficulty.fill(LABELS[locale].difficulty);
-        assert.equal(await primary.isDisabled(),true,"both vector endpoints required");
-        await goal.fill(LABELS[locale].goal);
+        assert.equal(await course.locator("[data-video-key-goal]").count(),0,
+          "desired direction is supplied by the selected card; only one optional note remains");
         assert.equal(await primary.isEnabled(),true);
         await primary.click();
         await result.waitFor({state:"visible"});
-        assert.ok((await result.innerText()).includes(LABELS[locale].goal),
-          "generated meditation must use the selected desired state");
+        assert.ok((await result.innerText()).includes(LABELS[locale].vectorGoal),
+          "generated meditation must use the selected goal card");
         await programmeButton.click();
         assert.equal(await course.locator("[data-guided-session]").count(),8);
-        await goal.fill(LABELS[locale].revised);
-        assert.equal(await result.count(),0,"edited goal invalidates previously generated meditation");
+        await course.locator('[data-guided-focus-vector="money"]').click();
+        assert.equal(await result.count(),0,"changing direction invalidates previously generated meditation");
         assert.equal(await course.locator("[data-guided-session]").count(),0,
           "edited goal invalidates the old eight-session outline");
         assert.deepEqual(writes,[],"no guest API writes, external rendering or payment");
