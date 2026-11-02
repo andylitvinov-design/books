@@ -128,9 +128,9 @@ export function importReviewedAudio({manifest,dryRun=false}){
   try{
     const result=spawnSync(executable,[
       "-nostdin","-hide_banner","-loglevel","error","-y",
-      "-i",file,"-vn","-t","32",
-      "-af","loudnorm=I=-23:TP=-2.5:LRA=9,afade=t=in:st=0:d=0.25,afade=t=out:st=31.4:d=0.6",
-      "-ar","44100","-ac","2","-codec:a","libmp3lame","-b:a","160k",
+      "-i",file,"-vn","-t","96",
+      "-af","loudnorm=I=-23:TP=-2.5:LRA=9,afade=t=in:st=0:d=0.25,afade=t=out:st=95.4:d=0.6",
+      "-ar","44100","-ac","2","-codec:a","libmp3lame","-b:a","256k",
       "-map_metadata","-1","-f","mp3",tmp
     ],{timeout:60000,maxBuffer:2*1024*1024});
     if(result.error||result.status!==0||!existsSync(tmp)||statSync(tmp).size<30000)
@@ -143,7 +143,7 @@ export function importReviewedAudio({manifest,dryRun=false}){
       url:"/audio/mandala/curated/"+meta.id+".mp3",
       name:meta.name,title:meta.title,creator:meta.creator,performer:meta.performer,
       categories:meta.categories,moods:meta.moods,pace:meta.pace,
-      voiceSafe:meta.voiceSafe,durationSeconds:32,sourcePage:meta.sourcePage,
+      voiceSafe:meta.voiceSafe,durationSeconds:96,sourcePage:meta.sourcePage,
       sourceSha256:meta.sha256,audioSha256:outputHash,recordingLicense:meta.recordingLicense,
       recordingLicenseUrl:meta.recordingLicenseUrl,
       recordingLicenseEvidence:meta.recordingLicenseEvidence,
