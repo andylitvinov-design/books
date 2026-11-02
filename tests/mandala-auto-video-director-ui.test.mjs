@@ -221,3 +221,37 @@ test("audio guidance remains actionable from both the compact Video screen and S
  assert.match(studio,/data-video-phrase-audio-shortcut/);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
 });
+
+
+test("Holistic Light mobile overrides the legacy small-card grid without adding a second renderer",()=>{
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ const autoCss=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
+ assert.match(css,/Holistic Light — Warm & Alive, owner-approved 02 Nov 2026/);
+ assert.match(css,/aspect-ratio:1\.54\/1!important/,"hero no longer uses a narrow 2.78:1 strip");
+ assert.match(css,/\.studio \.quickVideoNav\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);gap:9px/,
+   "six real workspaces form 3×2, not an unreadable row");
+ assert.match(autoCss,/\.goalPanel \.goalChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
+   "four photo goals form 2×2");
+ assert.match(autoCss,/\.topicChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:9px/,
+   "the six local topic chips are readable in two columns");
+ assert.match(autoCss,/\.storyChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:12px/,
+   "four real licensed film stories form 2×2");
+ assert.match(autoCss,/\.topicInput input\{\s*height:60px;min-height:60px/,
+   "real editable local topic input is tall enough for iPhone");
+ assert.match(autoCss,/\.storyChoices button\{\s*gap:7px;min-height:194px/,
+   "film posters and labels remain readable");
+ assert.match(autoCss,/\.confirm\{\s*width:100%;min-height:70px/,
+   "original support-and-audio CTA is prominent and touch-safe");
+ assert.match(studio,/className=\{videoStyles\.heroEyebrow\}/);
+ assert.match(studio,/Создавайте видео для поддержки, баланса и развития/);
+ assert.equal((studio.match(/data-video-practice-shortcuts/g)||[]).length,1);
+ assert.match(studio,/data-video-practice-shortcut=\{kind\}/);
+ assert.match(studio,/setActiveWorkspace\("practices"\);setStudioMode\("therapy"\)/,
+   "all three entry points reuse the existing guided course");
+ for(const selector of ["data-guided-meditation-step","data-guided-practice-step","data-guided-programme-step","data-video-therapy-focus"])
+   assert.ok(studio.includes(selector));
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1,
+   "do not duplicate the recorder or stage");
+ assert.equal((studio.match(/<MandalaGuidedCourse /g)||[]).length,1,
+   "create meditation, ritual and course with the existing one module");
+});
