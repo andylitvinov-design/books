@@ -35,7 +35,7 @@ test("the existing public editor retains one real video renderer and the new com
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
   assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
   assert.match(source,/\{activeWorkspace==="video" \? deepCharacterPhotoPane : null\}/);
-  assert.equal((source.match(/data-video-cover-options/g)||[]).length,1,
+  assert.equal((source.match(/<details className=\{videoStyles\.previewCoverOptions\} data-video-cover-options/g)||[]).length,1,
     "the same original photo/consent widget is reused in basic settings");
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
