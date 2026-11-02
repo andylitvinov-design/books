@@ -24,8 +24,9 @@ concurrency:
 
 jobs:
   anonymous-encoded-video:
-    # Test the deployed real MP4 and all four licensed source shots on every change to this gate.
-    # Research acceptance runs even on Draft; merging stays disabled until it passes.
+    # PRs gate on the real four-shot Chat MP4/audio export. The legacy
+    # published-first-video form is monitored manually: production cannot
+    # validate an unmerged UI selector and may change independently.
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -67,16 +68,17 @@ jobs:
           ffprobe -version | sed -n '1p'
       - name: Real LIVE four-shot montage → 20s download → ffprobe/PCM/source identity
         id: legacy_export
+        if: github.event_name == 'workflow_dispatch'
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
-          # Strict four-source identity is required for every PR; manual diagnostic may opt out.
-          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ github.event_name == 'pull_request' && 'true' || (inputs.require_licensed && 'true' || 'false') }}
+          # Explicit manual audit chooses whether all four licensed sources are mandatory.
+          HH_LIVE_VIDEO_REQUIRE_STOCK: ${{ inputs.require_licensed && 'true' || 'false' }}
         run: node scripts/benchmarking/first-video-live-export.mjs
       - name: Real LIVE Video Director Chat → guided storyboard → encoded audio-video
-        # Keep the chat acceptance observable even when the older optional
-        # first-video form fails. Both failures still make the job red.
-        if: ${{ always() && steps.legacy_export.outcome != 'skipped' }}
+        # Always verify the real Chat MP4 on PRs; manual QA runs Chat only
+        # after a successful legacy form audit. A real Chat failure stays red.
+        if: ${{ always() && (github.event_name == 'pull_request' || steps.legacy_export.outcome == 'success') }}
         timeout-minutes: 5
         env:
           HH_LIVE_VIDEO_PLAYWRIGHT: ${{ runner.temp }}/hh-live-video-browser/node_modules/playwright/index.mjs
