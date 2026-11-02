@@ -435,3 +435,12 @@ jobs:
           echo "HH_CONFLICT_MONITOR_CODE_SHA=$actual"
           node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY" | tee "$RUNNER_TEMP/hh-conflicts.json"
           { echo '### Hourly conflict diagnostics'; echo '```json'; cat "$RUNNER_TEMP/hh-conflicts.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report bounded Control Tower KPI evidence
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        timeout-minutes: 6
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const kpi=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-kpi-run.cjs');
+            await kpi.run({github,core,context});

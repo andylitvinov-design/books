@@ -23,6 +23,8 @@ on:
       - 'tests/ci-pr-release-outcomes.test.cjs'
       - 'scripts/ci-pr-release-kpi.cjs'
       - 'tests/ci-pr-release-kpi.test.cjs'
+      - 'scripts/ci-pr-kpi*.cjs'
+      - 'tests/ci-pr-kpi*.test.cjs'
       - 'tests/ci-pr-live-verifier.test.cjs'
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
       - '.github/workflows/hh-native-auto-merge.yml'
@@ -80,10 +82,11 @@ jobs:
           node --check scripts/ci-pr-served-release.cjs
           node --check tests/ci-pr-served-release.test.cjs
           node --check scripts/ci-pr-release-kpi.cjs
+          for f in scripts/ci-pr-kpi*.cjs tests/ci-pr-kpi*.test.cjs; do node --check "$f"; done
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:
@@ -92,3 +95,15 @@ jobs:
           persist-credentials: false
       - name: Verify pinned classifier integration without write credentials
         run: node --test tests/ci-pr-base-classifier-integration.test.cjs
+      - name: Probe real KPI evidence without write credentials
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          startsWith(github.head_ref, 'codex/control-tower-kpi-')
+        timeout-minutes: 6
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const kpi=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-kpi-run.cjs');
+            await kpi.run({github,core,context});
