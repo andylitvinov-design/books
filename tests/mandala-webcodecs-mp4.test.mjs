@@ -96,3 +96,16 @@ test("Safari failure exposes a safe code and an explicit lighter same-renderer r
   assert.match(studio,/audio:files.length\?\{files,volume:soundVolume\}:undefined/);
   assert.doesNotMatch(studio,/safeWebkitRetry\s*\?\s*null\s*:\s*attachedAudio/);
 });
+
+test("Safari WebCodecs loads the SAME scenario and classical MP3 URL as native audio",()=>{
+  const music=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
+  assert.match(music,/isScenarioAudioPreset\(preset\)/);
+  assert.match(music,/\/audio\/mandala\/scenarios\/" \+ preset \+ "\.mp3"/);
+  assert.match(helper,/import \{presetAudioUrl\} from "\.\/local-video-music"/);
+  assert.match(helper,/const audioUrl=presetAudioUrl\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
+  assert.match(helper,/fetch\(audioUrl,\{/);
+  assert.doesNotMatch(helper,/fetch\("\/audio\/mandala\/"\+entry\.preset\+"\.wav"/);
+  assert.match(helper,/credentials:"same-origin"/);
+  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(studio,/code==="first_party_audio_unavailable"/);
+});
