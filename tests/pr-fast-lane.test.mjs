@@ -1215,11 +1215,12 @@ test('legacy and plural compatibility statuses cannot bypass the real hh-special
   const special=source.split(/^  hh-specialists-verified:\s*$/m)[1];
   assert.ok(special,'must publish a named independent specialist status');
   assert.match(special,/^    name: hh-specialists-verified$/m);
-  assert.match(special,/^    needs: \[hh-specialist\]$/m);
+  assert.match(special,/^    needs: \[hh-core-verified, hh-specialist\]$/m);
   assert.match(special,/^    if: always\(\)$/m);
   assert.match(special,/^    timeout-minutes: 3$/m);
+  assert.ok(special.includes('CORE_RESULT: ' + '$' + "{{ needs['hh-core-verified'].result }}"));
   assert.ok(special.includes('SPECIALIST_RESULT: ' + '$' + "{{ needs['hh-specialist'].result }}"));
-  assert.ok(special.includes('[[ "$SPECIALIST_RESULT" == success ]]'));
+  assert.ok(special.includes('[[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]]'));
   assert.doesNotMatch(special,/ci-specialist-aggregate\.mjs|checkout@v4|npm run build/);
   const full=source.split(/^  hh-specialist:\s*$/m)[1]?.split(/^  release-ready:/m)[0];
   assert.ok(full,'must retain independent full specialist verifier');
