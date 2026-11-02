@@ -272,6 +272,11 @@ test('a trusted PR synchronize must match exact previous and new same-repo HEADs
     repository: { full_name: repo }, pull_request: { number: 5, base: { ref: TARGET },
       head: { sha: NEW, repo: { full_name: repo } } } };
   assert.deepEqual(context(env, e), { repo, target: TARGET, number: 5, headSha: NEW });
+  // pull_request_target uses the repository default ref, even though the PR
+  // targets the separate production branch. This must remain accepted.
+  assert.deepEqual(context({ ...env, GITHUB_REF: 'refs/heads/codex/bootstrap-books' }, e),
+    { repo, target: TARGET, number: 5, headSha: NEW });
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/unrelated' }, e));
   for (const bad of [
     { ...e, action: 'opened' }, { ...e, before: NEW },
     { ...e, after: OLD }, { ...e, after: 'bad' },
