@@ -585,8 +585,8 @@ export function RemoteEnergySupportBooking({
               : t.noMasters}</p>
             {compactFinder && priceBudget !== "any" && onClearBudget &&
               <button type="button" className={styles.clearBudget} onClick={onClearBudget}>{t.resetBudget}</button>}
-            <Link href={"/" + locale + "/masters"}>{t.more} →</Link>
-            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>{t.freeReiki} →</Link>
+            <Link href={"/" + locale + "/masters"} prefetch={false}>{t.more} →</Link>
+            <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"} prefetch={false}>{t.freeReiki} →</Link>
           </div>
         ) : (
           <div className={styles.cards}>
