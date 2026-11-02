@@ -7,7 +7,7 @@ const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
-const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=85, MIN_RATE=100;
+const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
