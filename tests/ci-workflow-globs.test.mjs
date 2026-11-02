@@ -153,26 +153,34 @@ test('Public Services exact-head routing preserves source contracts and real ris
 });
 
 
-test('Core scope uses bounded shallow checkout while preserving exact PR merge parent and base verification', () => {
+test('Core classification and all applicable Core checks share the first scheduled runner', () => {
   const s=workflow('hh-pr-core-release.yml');
-  const scope=s.split('\n  scope:')[1]?.split('\n  code:')[0];
-  assert.ok(scope, 'Core scope job must exist');
-  assert.match(scope, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
-  assert.doesNotMatch(scope, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
-  assert.match(scope, /Verify bounded shallow scope ancestry before PR routing/);
-  assert.match(scope, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
-  assert.match(scope, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
-  assert.match(scope, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
-  assert.match(scope, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
-  assert.match(scope, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" 2>\/dev\/null/);
-  assert.ok(scope.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
+  const core=s.split('\n  scope:')[1]?.split('\n  hh-specialist:')[0];
+  assert.ok(core, 'Unified Core job must exist');
+  assert.match(core, /name: core-lint-types-build/);
+  assert.match(core, /runs-on: ubuntu-24\.04/);
+  assert.doesNotMatch(core, /^\s+needs:/m, 'Core must not wait for a separate classification job');
+  assert.match(core, /fetch-depth: 2/, 'do not fetch all repository history for every Core PR');
+  assert.doesNotMatch(core, /fetch-depth: 0/, 'full-history Core scope would amplify CI traffic');
+  assert.match(core, /Verify bounded shallow scope ancestry before PR routing/);
+  assert.match(core, /tested_base="\$\(git rev-parse HEAD\^1\)"/);
+  assert.match(core, /tested_head="\$\(git rev-parse HEAD\^2\)"/);
+  assert.match(core, /\[\[ "\$tested_head" == "\$PR_HEAD_SHA" \]\]/);
+  assert.match(core, /git fetch --quiet --no-tags --deepen="\$extra" origin "\$tested_base"/);
+  assert.match(core, /git merge-base --is-ancestor "\$EVENT_BASE_SHA" "\$tested_base" 2>\/dev\/null/);
+  assert.ok(core.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
     'fallback must prove the old base using authenticated GitHub Compare');
-  assert.ok(scope.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'),
+  assert.ok(core.includes('HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA'),
     'verified event base is reused without a second shallow ancestry failure');
-  assert.match(scope, /Verify live PR readiness before costly CI/);
-  assert.match(scope, /Classify strictly documentation-only PRs/);
-  assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
-  assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
+  assert.match(core, /Verify live PR readiness before costly CI/);
+  assert.match(core, /Classify strictly documentation-only PRs/);
+  assert.match(core, /Route exact image and proven public JSX changes without Next build/);
+  assert.match(core, /npm ci --no-audit --no-fund/);
+  assert.match(core, /run: npm run build/);
+  assert.match(core, /steps\.diff\.outputs\.ci_only/);
+  assert.match(core, /steps\.fast\.outputs\.route != 'ASSETS'/);
+  assert.doesNotMatch(s, /^  code:/m, 'the delayed dependent Core job must be removed');
+  assert.doesNotMatch(core, /continue-on-error:\s*true|--force/);
 });
 
 test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores only trusted production caches', () => {
