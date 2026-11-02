@@ -618,8 +618,10 @@ test('admin-only migration safely replaces three old required statuses with one 
   assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
   assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
   assert.ok(source.includes('Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.'));
+  assert.ok(source.includes('[$data.jobs[] | select(.name == $name'),
+    'migration checks real completed jobs, rather than arbitrary requested names');
   for(const name of ['hh-merge-check','hh-core-verified','hh-specialist','release-ready','classify-change'])
-    assert.ok(source.includes('.name == "'+name+'"'),'proof missing '+name);
+    assert.ok(source.includes('"'+name+'"'),'proof missing '+name);
   const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
   const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
   const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
@@ -788,8 +790,9 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
+        listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
           {name:'hh-core-verified',status:'completed',conclusion:'success'},
+          {name:'hh-specialist',status:'completed',conclusion:'success'},
           {name:'release-ready',status:'completed',conclusion:'success'},
         ]}}),
       },
