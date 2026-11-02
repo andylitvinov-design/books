@@ -49,6 +49,7 @@ import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenari
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
+import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./mandala-meditation.module.css";
@@ -1847,7 +1848,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // needs user approval: createQuickVideo() opens the corresponding control.
   const canStartSelectedFilm=freeVideoSelected && freeFilmSourcesListed &&
     !micRecording && !preparing && !recording;
-  const canGenerate = Boolean(source) && (!activeFilm || premiumReady) &&
+  // Create remains available before optional MP4 decoding: the trusted Create
+  // tap performs the bounded decode, rather than disabling this action forever.
+  const canGenerate = Boolean(source) &&
     (!usingFreeFilmCompilation || freeFilmSourcesListed) &&
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
@@ -2046,12 +2049,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // The keyed HD element may finish decoding *before* this effect runs.
     // Resetting ready=false unconditionally then waiting only for a new
     // loadeddata/canplay event can leave Create disabled forever on Safari.
-    // Reconcile the real current frame first; request a load only if needed.
+    // Reconcile a previously user-decoded frame without fetching on page mount.
     const master=premiumVideoRef.current;
     const decoded=Boolean(activeFilm && master && master.readyState>=2 &&
       master.videoWidth>0 && master.videoHeight>0);
     setPremiumReady(decoded);
-    if(activeFilm && master && !decoded)master.load();
+    // An initial page view must not automatically download the 1 MB MP4.
+    // Play/Create or photo-consent user gestures initiate the decoder.
   },[activeFilm?.src]);
   useEffect(()=>{
     const video=premiumVideoRef.current;
@@ -2217,11 +2221,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         typeof AudioEncoder.isConfigSupported==="function"&&
         typeof OfflineAudioContext!=="undefined"));
     preparingRef.current=true;
-    setPreparing(true);setProgress(0);setNotice(t.preparing);setMusicWarning("");
+    setPreparing(true);setProgress(0);setNotice(activeFilm&&!premiumReady?quick.loading:t.preparing);setMusicWarning("");
     setResult(null);setExportUnavailable(false);setPlaybackStatus("checking");setPreviewPlaying(false);
     let stream:MediaStream|null=null;
     let musicSession:AmbientSession|null=null;
     try {
+      // Start the approved single-MP4 decoder synchronously inside Create's
+      // actual user gesture; a decoded frame is verified before any export.
+      const masterPreparation=activeFilm
+        ? premiumVideoRef.current
+          ? ensureDecodedVideoOnUserIntent(premiumVideoRef.current,{timeoutMs:20000})
+          : Promise.resolve(false)
+        : Promise.resolve(true);
       // The source loader must start synchronously from the trusted click.
       // Safari often suspends decoding of the four hidden MP4s until this tap.
       // Resolve errors to a value immediately so an awaited audio attachment
@@ -2258,6 +2269,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         return;
       }
 
+      if(!(await masterPreparation)){
+        if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        setNotice(ui.videoUnavailable);
+        setExportUnavailable(true);
+        return;
+      }
+      if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+      if(activeFilm)setPremiumReady(true);
       const image=await loadSceneImage(snapshot);
       if (sourceRef.current !== snapshotKey || !aliveRef.current) return;
       if(activeFilm) {
@@ -3131,11 +3150,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       openQuickDetailed("video-audio");
       return false;
     }
-    if(activeFilm&&!premiumReady){
-      primeNativeMasterFromUserGesture();
-      setNotice(quick.loading);
-      return false;
-    }
+    // createVideo now decodes the master on the SAME trusted Create gesture.
     startFromHero();
     return true;
   };
@@ -3959,7 +3974,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {activeFilm ? <video
                 key={activeFilm.src} ref={premiumVideoRef}
                 src={activeFilm.src} poster={activeFilm.poster}
-                muted playsInline loop preload="auto"
+                muted playsInline loop preload="none"
                 data-mandala-master-mp4={activeFilm.src}
                 onLoadedData={event=>{
                   if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
