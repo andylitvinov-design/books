@@ -5,11 +5,11 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'Optional exact PR number; 0 scans the repair queue'
+        description: 'Signed exact PR number; 0 audits queue only'
         type: string
         default: '0'
       expected_sha:
-        description: 'Optional exact PR HEAD SHA lease'
+        description: 'Exact PR HEAD SHA required for source writes'
         type: string
         default: ''
       task_key:
@@ -30,7 +30,9 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: hh-real-repair-worker
+  # One writer per source PR, without serializing unrelated source fixes.
+  # Dispatch inputs are verified against the signed exact-HEAD reservation.
+  group: hh-real-repair-pr-${{ inputs.pr_number || 'unaddressed' }}
   cancel-in-progress: false
 jobs:
   claim:
@@ -47,6 +49,7 @@ jobs:
       claim_reason: ${{ steps.select.outputs.claim_reason }}
       code_available: ${{ steps.select.outputs.code_available }}
       no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
+      audit_only: ${{ steps.select.outputs.audit_only }}
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v4
@@ -70,7 +73,17 @@ jobs:
           script: |
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
             const requested=Number(context.payload.inputs?.pr_number || 0);
-            const dryRun=context.eventName==='push' || String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            // A requested PR number becomes a writer lock key only for a
+            // canonical signed exact-HEAD dispatch; other runs are audit-only.
+            const addressed=context.eventName==='workflow_dispatch' &&
+              Number.isSafeInteger(requested) && requested>0 &&
+              String(requested)===String(context.payload.inputs?.pr_number || '') &&
+              /^[0-9a-f]{40}$/i.test(String(context.payload.inputs?.expected_sha || '')) &&
+              /^[0-9a-f]{32}$/i.test(String(context.payload.inputs?.task_key || '')) &&
+              /^[1-9][0-9]{0,18}$/.test(String(context.payload.inputs?.reservation_run_id || ''));
+            const dryRun=!addressed || String(context.payload.inputs?.dry_run ?? 'false')==='true';
+            core.setOutput('audit_only',String(dryRun));
+            if(!addressed)core.info('HH_REPAIR: unaddressed dispatch is audit-only');
             const result=await worker.claim({github,core,context,
               number:Number.isSafeInteger(requested)?requested:0,
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
@@ -97,6 +110,7 @@ jobs:
           HH_CLAIM_REASON: ${{ steps.select.outputs.claim_reason }}
           HH_CLAIM_RESULT: ${{ steps.select.outcome }}
           HH_CODE_AVAILABLE: ${{ steps.select.outputs.code_available }}
+          HH_AUDIT_ONLY: ${{ steps.select.outputs.audit_only }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -112,7 +126,7 @@ jobs:
               fixResult:'skipped',
               codeAvailable:process.env.HH_CODE_AVAILABLE==='true',
               codeResult:'skipped',codeVerifyResult:'skipped',publishResult:'skipped',
-              dryRun:String(inputs.dry_run||'false')==='true'});
+              dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   fix:
     needs: claim
@@ -455,6 +469,7 @@ jobs:
           HH_CLAIM_NUMBER: ${{ needs.claim.outputs.pr_number }}
           HH_CLAIM_SHA: ${{ needs.claim.outputs.sha }}
           HH_CLAIM_KEY: ${{ needs.claim.outputs.task_key }}
+          HH_AUDIT_ONLY: ${{ needs.claim.outputs.audit_only }}
           HH_CLAIM_STATUS: ${{ needs.claim.outputs.claim_status }}
           HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
           HH_CLAIM_RESULT: ${{ needs.claim.result }}
@@ -499,7 +514,7 @@ jobs:
               publishSha:process.env.HH_PUBLISH_SHA,
               candidateStatus:process.env.HH_CANDIDATE_STATUS,
               candidateDetail:process.env.HH_CANDIDATE_DETAIL,
-              dryRun:String(inputs.dry_run||'false')==='true'});
+              dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
@@ -537,6 +552,7 @@ jobs:
           HH_CLAIM_NUMBER: ${{ needs.claim.outputs.pr_number }}
           HH_CLAIM_SHA: ${{ needs.claim.outputs.sha }}
           HH_CLAIM_KEY: ${{ needs.claim.outputs.task_key }}
+          HH_AUDIT_ONLY: ${{ needs.claim.outputs.audit_only }}
           HH_CLAIM_STATUS: ${{ needs.claim.outputs.claim_status }}
           HH_CLAIM_REASON: ${{ needs.claim.outputs.claim_reason }}
           HH_CLAIM_RESULT: ${{ needs.claim.result }}
@@ -578,5 +594,5 @@ jobs:
               publishSha:process.env.HH_PUBLISH_SHA,
               candidateStatus:process.env.HH_CANDIDATE_STATUS,
               candidateDetail:process.env.HH_CANDIDATE_DETAIL,
-              dryRun:String(inputs.dry_run||'false')==='true'});
+              dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));

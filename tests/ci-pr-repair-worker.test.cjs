@@ -285,6 +285,21 @@ test('publisher distinguishes moved owner HEAD from unauthorized PR and never wr
    expectedSha:sha,candidate:c,writer:x.writer}),/HH_REPAIR_PUBLISH_STALE_OR_UNAUTHORIZED/);
  assert.equal(x.log.commit,0);
 });
+test('source Repair locks by canonical PR and only signed exact-HEAD tasks may write',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(wf.includes("group: hh-real-repair-pr-${{ inputs.pr_number || 'unaddressed' }}"));
+ assert.ok(wf.includes('cancel-in-progress: false'));
+ assert.ok(!wf.includes('group: hh-real-repair-worker\n'));
+ assert.ok(wf.includes("String(requested)===String(context.payload.inputs?.pr_number || '')"));
+ for(const key of ['expected_sha','task_key','reservation_run_id'])
+  assert.ok(wf.includes('context.payload.inputs?.'+key),key+' required for live claim');
+ assert.ok(wf.includes('const dryRun=!addressed ||'));
+ assert.ok(wf.includes("core.setOutput('audit_only',String(dryRun))"));
+ assert.ok(wf.includes("HH_AUDIT_ONLY: ${{ steps.select.outputs.audit_only }}"));
+ assert.ok(wf.includes("HH_AUDIT_ONLY: ${{ needs.claim.outputs.audit_only }}"));
+ assert.ok(wf.includes('expectedSha:process.env.HH_REPAIR_SHA'));
+ assert.ok(wf.includes("HH_REPAIR_PUBLISH_STALE_HEAD"));
+});
 test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(yml,/error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'/);

@@ -75,7 +75,11 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
   'single short source worker may use bounded overflow without multiplying optional CI');
  assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
- assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'ADMIT',
+  'an independent PR can use the second Repair slot');
+ assert.equal(admission('repair',computeCapacity([
+  {name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
+ assert.equal(admission('ci',computeCapacity([{name:'HH zero-cost PR CI worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
@@ -109,7 +113,7 @@ test('repair still fails closed when runner jobs or its own worker are saturated
  const jobs=Array.from({length:38},()=>({status:'in_progress'}));
  assert.equal(admission('repair',computeCapacity(unrelated,[],jobs)),'JOBS_SATURATED');
  assert.equal(admission('repair',computeCapacity(
-  [{name:'HH PR source Repair Worker'},...unrelated],[],[]
+  [{name:'HH PR source Repair Worker'},{name:'HH PR source Repair Worker'},...unrelated],[],[]
  )),'WORKER_BUSY');
  assert.equal(admission('conflict',cap(18,43)),'ADMIT');
 });
@@ -138,6 +142,30 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
  assert.equal(f.calls.dispatched[0].inputs.reservation_run_id,'42');
+});
+test('two independent Repair PRs dispatch concurrently with exact HEAD receipts',async()=>{
+ const items=[pr(101),pr(102),pr(103)];
+ const f=fixture(items,{comments:{101:[proof()],102:[proof()],103:[proof()]}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,2);
+ assert.equal(result.repairDispatchAccepted,2);
+ assert.equal(f.calls.reserved.length,2);
+ assert.deepEqual(new Set(f.calls.dispatched.map(x=>x.inputs.pr_number)),new Set(['101','102']));
+ for(const dispatched of f.calls.dispatched){
+  assert.equal(dispatched.workflow_id,'hh-pr-repair-worker.yml');
+  assert.equal(dispatched.inputs.expected_sha,SHA);
+  assert.equal(dispatched.inputs.task_key.length,32);
+  assert.equal(dispatched.inputs.reservation_run_id,'42');
+ }
+});
+test('one already running Repair leaves room for only one additional PR',async()=>{
+ const items=[pr(201),pr(202)];
+ const f=fixture(items,{comments:{201:[proof()],202:[proof()]}});
+ const capacity=computeCapacity([{name:'HH PR source Repair Worker'}],[],[]);
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:async()=>capacity});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.blocked.WORKER_BUSY,1);
+ assert.equal(f.calls.dispatched.length,1);
 });
 test('source repair lane cannot starve behind sixteen higher-ranked conflicts',()=>{
  const conflicts=Array.from({length:23},(_,i)=>pr(i+100,'conflict',{
@@ -342,7 +370,7 @@ test('completed push audit cannot starve a ready source-repair dispatch',async()
  assert.equal(f.calls.dispatched[0].inputs.pr_number,'1');
  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
 });
-test('running audit or recent real completion still blocks source dispatch',async()=>{
+test('unrelated Repair audit and recent worker completion do not block a different PR',async()=>{
  for(const recent of [
   [{event:'push',status:'in_progress',created_at:new Date(NOW-5000).toISOString()}],
   [{event:'workflow_dispatch',status:'completed',conclusion:'success',
@@ -351,8 +379,8 @@ test('running audit or recent real completion still blocks source dispatch',asyn
   const f=fixture([pr(1)],{comments:{1:[proof()]},recent});
   const r=await run({github:f.github,core:core(),context,now:NOW,
    capacityFn:f.capacityFn});
-  assert.equal(r.dispatchAccepted,0);
-  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN,1);
+  assert.equal(r.dispatchAccepted,1);
+  assert.equal(r.blocked.WORKER_BUSY_OR_COOLDOWN||0,0);
  }
 });
 test('real conflict requires a fresh dirty merge state',async()=>{

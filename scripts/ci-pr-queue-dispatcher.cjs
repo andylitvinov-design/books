@@ -197,7 +197,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   unknownActiveRuns:capacity.unknownActiveRuns||0,
   unknownQueuedRuns:capacity.unknownQueuedRuns||0,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
+ // CI keeps a repository-wide one-worker slot. Source Repair capacity is
+ // bounded globally, but ownership and writer serialization are per PR.
  const usedWorkers=new Set();
+ const occupyRepairSlot=worker=>{
+  if(capacity?.known){
+   capacity.activeWorker[worker]=(capacity.activeWorker[worker]||0)+1;
+   capacity.queuedRuns++;
+  }
+ };
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
  for(const task of ordered){
@@ -213,7 +221,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
    const permission=admission(task.lane,capacity);
    if(permission!=='ADMIT'){blocked(permission);continue;}
-   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
+   if(task.lane==='ci'&&usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   }
   // A parent PR with open stacked children cannot be rewritten safely.
   if(prs.some(pr=>pr.number!==task.pr_number&&pr.base?.ref===task.head_ref)){
@@ -407,7 +415,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!capacity?.known){blocked('CAPACITY_UNVERIFIED');continue;}
    const permission=admission(task.lane,capacity);
    if(permission!=='ADMIT'){blocked(permission);continue;}
-   if(usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
+   if(task.lane==='ci'&&usedWorkers.has(worker)){blocked('LANE_ALREADY_SELECTED');continue;}
   }
   // Source must have an exact-HEAD trusted Watchdog diagnosis; labels alone
   // are stale hints and must not give privileged source write permission.
@@ -467,18 +475,23 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    const safe=safeFiles(files);
    if(!safe||!safe.length){blocked('SOURCE_SCOPE_NOT_ACTIONABLE');continue;}
   }
-  let recent;
-  try{const r=(await limited('worker-history',()=>github.request(
-    'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-     owner,repo,workflow_id:WORKER_PATH[task.lane],per_page:5}))).data;
-   if(!Array.isArray(r?.workflow_runs)){blocked('WORKER_HISTORY_INCOMPLETE');continue;}
-   recent=r.workflow_runs;
-  }catch(err){blocked('WORKER_HISTORY_UNAVAILABLE');continue;}
-  if(workerBusyOrCooling(recent,now,task.lane)){
-   blocked('WORKER_BUSY_OR_COOLDOWN');continue;
+  // Source workers on OTHER PRs must not impose a repository-wide cooldown.
+  // Signed exact-HEAD reservations + per-PR workflow concurrency prevent
+  // duplicate writes; bounded live capacity protects the runner pool.
+  if(task.lane==='ci'){
+   let recent;
+   try{const r=(await limited('worker-history',()=>github.request(
+     'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+      owner,repo,workflow_id:WORKER_PATH[task.lane],per_page:5}))).data;
+    if(!Array.isArray(r?.workflow_runs)){blocked('WORKER_HISTORY_INCOMPLETE');continue;}
+    recent=r.workflow_runs;
+   }catch(err){blocked('WORKER_HISTORY_UNAVAILABLE');continue;}
+   if(workerBusyOrCooling(recent,now,task.lane)){
+    blocked('WORKER_BUSY_OR_COOLDOWN');continue;
+   }
   }
   if(dryRun){summary.wouldDispatch++;summary.workerRuns.push({task_key:task.task_key,
-   pr_number:task.pr_number,lane:task.lane,outcome:'WOULD_DISPATCH'});usedWorkers.add(worker);continue;}
+   pr_number:task.pr_number,lane:task.lane,outcome:'WOULD_DISPATCH'});usedWorkers.add(worker);if(task.lane==='repair')occupyRepairSlot(worker);continue;}
   // The trusted single writer reserves the exact task before dispatch.
   // On interrupted dispatch this reservation fails closed pending a human
   // inspection of worker history: never duplicate a possible source write.
@@ -499,6 +512,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
     sourceCommitConfirmed:false});
    usedWorkers.add(worker);
+   if(task.lane==='repair')occupyRepairSlot(worker);
    log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
   }catch(err){
    blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
