@@ -275,7 +275,9 @@ test('production workflow directory can be parsed without silently ignoring unkn
   const names=readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x));
   assert.ok(names.length >= 25, 'Unexpectedly empty workflow catalog; review approved migrations');
   // One additional metadata-only trusted workflow enables native auto-merge.
-  assert.ok(names.length <= 94, 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR');
+  // Production has 95 reviewed suites after Meditation Writer; avoid a 96th.
+  assert.ok(names.includes('hh-language-agent.yml'), 'Reviewed Meditation Writer specialist must remain');
+  assert.ok(names.length <= 95, 'Workflow budget exceeded: reuse an existing domain suite');
   const protectedChecks = ['hh-pr-core-release.yml', 'hh-actionlint.yml', 'hh-pr-sweep-guard.yml',
     'hh-billing-isolated.yml', 'hh-app-r1.yml', 'hh-app-browser.yml', 'ia-v2.yml',
     'hh-interpretation-database.yml', 'hh-ci-stale-run-prune.yml', 'ga4-safety-hold.yml',
