@@ -1,9 +1,17 @@
 name: Visual-to-Code Pro — PNG comparison unit checks
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: '21 11 * * 1'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
       - 'AGENTS.md'
+      - 'app/layout.tsx'
+      - 'app/holistic-light-tokens.css'
+      - 'docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md'
+      - 'scripts/holistic-light-design-qa.mjs'
+      - 'tests/holistic-light-design-qa.test.mjs'
       - '.agents/skills/visual-to-code-pro/**'
       - 'scripts/compare-ui-screenshots.mjs'
       - 'tests/compare-ui-screenshots.test.mjs'
@@ -32,4 +40,37 @@ jobs:
         run: |
           node --check scripts/compare-ui-screenshots.mjs
           node --check scripts/capture-public-ui-reference.mjs
-          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs
+          node --check scripts/holistic-light-design-qa.mjs
+          node --test tests/compare-ui-screenshots.test.mjs tests/visual-browser-tooling-config.test.mjs tests/capture-public-ui-reference.test.mjs tests/holistic-light-design-qa.test.mjs
+
+  design-live-audit:
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-design-tools/node_modules/playwright
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Chromium/WebKit (no account cookies or secrets)
+        run: |
+          mkdir -p /tmp/hh-design-tools
+          npm install --prefix /tmp/hh-design-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-design-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Check PUBLIC mobile design at 320/390 and EN/RU/ES
+        run: |
+          node scripts/holistic-light-design-qa.mjs --origin=https://holistichouse.vercel.app --out=artifacts/holistic-light-design-qa
+      - name: Preserve guest-only screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holistic-light-design-qa-${{ github.run_id }}
+          path: artifacts/holistic-light-design-qa/
+          retention-days: 3
+          if-no-files-found: warn
