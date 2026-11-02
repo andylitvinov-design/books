@@ -343,11 +343,10 @@ jobs:
             const outcomes=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-release-outcomes.cjs');
             const outcomesReport=await outcomes.run({github,core,context,liveEvidence,
-              reportPath:process.env.HH_PR_METRICS_PATH||''});
-            // The outcome observer already verified an older served revision
-            // when production HEAD raced ahead of the canonical Vercel alias.
-            // Reuse that proof for the historical PR receipt; no second Vercel
-            // check, no additional workflow and no browser runner.
+              reportPath:process.env.HH_PR_METRICS_PATH||'',
+              vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
+            // Reuse the independent served deployment proof already collected
+            // by outcomes. No second Vercel call, browser, runner or workflow.
             const receipts=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-release-kpi.cjs');
             await receipts.run({github,core,context,
