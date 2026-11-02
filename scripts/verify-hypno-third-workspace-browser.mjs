@@ -41,6 +41,28 @@ for(const [engine,driver] of [['chromium',playwright.chromium],['webkit',playwri
         assert.equal(await page.locator('[data-hypno-wave]').count(),1,'one Wave control');
         assert.equal(await page.locator('[data-hypno-mobile]').count(),1,'one original editor');
         const player=page.locator('[data-video-mandala-hero]');
+        const goalControls=page.locator('[data-video-quick-section="1"] [data-video-quick-theme]');
+        await goalControls.first().waitFor({state:'visible',timeout:25000});
+        assert.equal(await goalControls.count(),6,'exactly six existing real goal selectors');
+        const goalRects=await goalControls.evaluateAll(nodes=>nodes.map(node=>{
+          const r=node.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};
+        }));
+        assert.ok(goalRects.every(r=>r.width>=65&&r.height>=44),'goal buttons remain readable and touchable');
+        assert.ok(goalRects.slice(0,3).every(r=>Math.abs(r.y-goalRects[0].y)<=2),
+          'three goal chips in the first row');
+        assert.ok(goalRects.slice(3).every(r=>Math.abs(r.y-goalRects[3].y)<=2)&&
+          goalRects[3].y>goalRects[0].y+25,'three goal chips in the second row');
+        assert.equal(await page.locator('[data-video-quick-control="effects"]').count(),1,
+          'the original workspace nav must not duplicate');
+        const navTop=await page.locator('[data-video-quick-controls]').boundingBox();
+        const waveTop=await wave.boundingBox();
+        assert.ok(navTop&&waveTop&&navTop.y+navTop.height<=waveTop.y+3,
+          'the single mobile tab rail appears before Wave');
+        // Both clicks use the existing shared theme/scene state; no mock chips.
+        await page.locator('[data-video-quick-theme="life"]').click();
+        assert.equal(await page.locator('[data-video-quick-theme="life"]').getAttribute('aria-pressed'),'true');
+        await page.locator('[data-video-quick-theme="energy"]').click();
+        assert.equal(await page.locator('[data-video-quick-theme="energy"]').getAttribute('aria-pressed'),'true');
         // The lazy portal and its font/layout can settle after the Wave button
         // becomes visible, especially on mobile WebKit. Verify the real pixels,
         // not merely DOM order; do not waive a persistent layout regression.
@@ -76,12 +98,21 @@ for(const [engine,driver] of [['chromium',playwright.chromium],['webkit',playwri
           assert.equal(await group.locator('button[aria-expanded]').getAttribute('aria-expanded'),'true',
             id+': expanded by default');
           const rects=await group.locator('[data-hypno-card]').evaluateAll(nodes=>nodes.map(x=>{
-            const r=x.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width};
+            const r=x.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};
           }));
-          assert.ok(rects.every(r=>r.width>=52&&r.x>=-2),id+' card readable');
+          const headerBox=await group.locator('button[aria-expanded]').boundingBox();
+          assert.ok(headerBox&&rects.every(r=>r.y>=headerBox.y+headerBox.height-2),
+            id+': full-width section heading must be ABOVE the three cards');
+          assert.ok(rects.every(r=>r.width>=width*.22&&r.x>=-2),
+            id+': cards must use the whole section width, not 27% photo strip');
           assert.ok(Math.max(...rects.map(x=>x.y))-Math.min(...rects.map(x=>x.y))<=2,
             id+' cards must share one horizontal row');
+          const titlePhoto=await group.locator('button[aria-expanded] > img').evaluate(node=>
+            getComputedStyle(node).display);
+          assert.equal(titlePhoto,'none',id+': no oversized title photo panel beside controls');
         }
+        assert.equal(await page.locator('[data-hypno-meditation-action]').count(),1,
+          'one actual personal meditation action');
         assert.equal(await page.locator('[data-hypno-create]').count(),1,'single Create');
         assert.equal(await page.locator('[data-video-hero-create]').count(),0,'no duplicate hero Create');
         assert.equal(await effects.locator('[data-hypno-create]').isEnabled(),true,'real Create enabled');
@@ -149,6 +180,8 @@ for(const [engine,driver] of [['chromium',playwright.chromium],['webkit',playwri
         }
         if(screenshotDir&&width===390){
           mkdirSync(screenshotDir,{recursive:true});
+          await page.locator('[data-video-quick-section="1"]').screenshot({
+            path:join(screenshotDir,engine+'-'+locale+'-390-goals.png'),animations:'disabled'});
           await page.locator('[data-hypno-intro-slot]').screenshot({
             path:join(screenshotDir,engine+'-'+locale+'-390-wave.png'),animations:'disabled'});
           await page.locator('[data-hypno-mobile]').screenshot({

@@ -264,9 +264,8 @@ jobs:
             node scripts/verify-hypno-wave-browser.mjs
             node scripts/verify-holistic-mandala-browser.mjs
           fi
-          # The approved third screen needs actual browser clicks and one real
-          # Create-to-download proof, not just a successful source/build check.
-          # Limit the added matrix to its own QA branches to conserve CI.
+          # Reuse the existing Chromium/WebKit install and local Next server.
+          # Run the approved third-screen 14-case matrix only on its QA PR.
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_HEAD_REF" == codex/hypno-third-workspace-live-qa-* ]]; then
             HH_HYPNO_PLAYWRIGHT=/tmp/hh-mandala-playwright/node_modules/playwright/index.mjs \
               node scripts/verify-hypno-third-workspace-browser.mjs
