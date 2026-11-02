@@ -174,3 +174,25 @@ test('Core scope uses bounded shallow checkout while preserving exact PR merge p
   assert.match(scope, /Route exact image and proven public JSX changes without Next build/);
   assert.doesNotMatch(scope, /continue-on-error:\s*true|--force/);
 });
+
+test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores only trusted production caches', () => {
+  const s = workflow('ia-v2.yml');
+  for (const file of [
+    'app/[locale]/app/[[...path]]/workspace.css',
+    'app/[locale]/app/messages/messages-page.css',
+    'components/app/messages-bottom-navigation.jsx',
+    'lib/mobile-visual-bottom.mjs',
+    'tests/mobile-visual-dock.test.mjs',
+  ]) assert.ok(s.includes(file), 'mobile dock exact scope missing ' + file);
+  assert.match(s, /const mobileDockExpected=new Map\(\[/);
+  assert.match(s, /mobileDockOnly=fields\.at\(-1\)===''/);
+  assert.match(s, /\|\|operatorOnly\|\|mobileDockOnly/);
+  assert.ok(!s.includes('/^\\.github\\/workflows\\/ia-v2\\.yml$/'),
+    'editing the IA workflow itself must retain the full specialist path');
+  assert.match(s, /uses: actions\\/cache\\/restore@v4/);
+  assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}"));
+  assert.ok(s.includes("key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
+  assert.match(s, /path: \.next\\/cache/);
+  assert.doesNotMatch(s, /actions\\/cache\\/save@v4/,
+    'PR workflow restores only; trusted production remains the sole cache writer');
+});
