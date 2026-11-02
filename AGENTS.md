@@ -6,6 +6,16 @@ The canonical website is https://holistichouse.vercel.app. The GitHub default br
 
 Keep existing pages/components instead of adding duplicates. Preserve EN/RU/ES routes, signed-in navigation, private data, CSP nonce, CRM, protected media, real service IDs, consent and existing E2E contracts. Never claim real delivery, booking, payment, OAuth, or photo upload from a mock, a screenshot, HTTP 200 or CI alone. Use synthetic screenshots in public artifacts and respect privacy.
 
+## Sitewide UX policy — no unsolicited popup requests (owner, 2026-11-02)
+
+**P0 product decision:** Never automatically open or mount a promotional, analytics/cookie opt-in, newsletter/subscription, notification-permission, survey, review/rating, "help improve the site", upsell, or similar nonessential request as a floating dialog, modal, toast, bottom sheet, fixed overlay, or blocking full-screen prompt. This applies to first visit, route change, timers, scroll, returning visitors, mobile, RU/EN/ES and authenticated sessions. No rebranding or delayed animation may bypass this policy. In particular, do **not** restore `FirstPartyStatsNotice` or invent a replacement for it.
+
+**Supported alternatives:** Show helpful information inline in normal page flow, link to the dedicated `/privacy` settings, or put an optional action in an existing user-invoked menu. Never obscure meditation/video playback, primary actions or the mobile bottom navigation. No automatic marketing push/notification permission requests. Keep the pre-existing approved compact navigation/ribbon without turning it into an overlay.
+
+**Allowed exceptions:** Dialogs intentionally opened by a clear user action (e.g. login, booking/payment confirmation, media picker), unavoidable security/transaction failures and legally mandatory notices. Required privacy consent must be obtained *before* nonessential personal tracking is enabled; removing a banner does **not** give permission to enable GA4, Meta, advertising identifiers, personal-data profiling, sensitive test tracking, or nonessential cookies. Any mandatory first-use notice must be narrowly scoped, accessible, reviewed for the actual jurisdictions served and approved by the owner; do not camouflage it as a marketing popup.
+
+**Release guard:** `tests/public-page-traffic.test.mjs` locks the approved global shell component mounts and forbids the obsolete stats prompt. An added global widget requires explicit owner UX review and a deliberate guard change, **not** an automatic whitelist update. For any changed public mobile shell, verify fresh and returning guest sessions on RU/EN/ES at phone widths 320/390/430, plus opt-out/private paths; no unrequested overlay and no blocked player or bottom navigation. CI/test success is not a substitute for rendered live mobile E2E.
+
 ## Automatic visual QA tool order
 
 For each owner screenshot, URL or Figma-based page design request, **do not ask the owner to name tools**. Inspect the correct canonical route and auth/view state first; then invoke the tools that are actually connected:
