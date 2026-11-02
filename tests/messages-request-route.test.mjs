@@ -45,3 +45,15 @@ test('foreign or unknown request cannot be treated as verified private contact',
  assert.match(simple,/Request unavailable/)
  assert.doesNotMatch(simple,/action:'send'|POST \/api\/app\/crm|sendMessage\(/)
 })
+
+test('switching Messages folders preserves selected conversation and restores URL history',()=>{
+ const inbox=read('components/app/messages-simple-inbox.jsx')
+ const tab=inbox.slice(inbox.indexOf('  const switchTab=next=>{'),
+   inbox.indexOf('  const publicBotUrl='))
+ assert.ok(tab.includes('const switchTab=next=>{'))
+ assert.doesNotMatch(tab,/setSelectedKey\(''\)/)
+ assert.match(tab,/setOpenDetail\(false\)/)
+ assert.match(tab,/url\.searchParams\.delete\('requestId'\)/)
+ assert.match(inbox,/if\(previous!==routeRequestId\|\|selectedKey!==row\.key\)/)
+ assert.match(inbox,/setOpenDetail\(true\)/)
+})

@@ -186,15 +186,20 @@ export default function MessagesSimpleInbox({
     const previous=previousRequestIdRef.current
     previousRequestIdRef.current=routeRequestId
     if(!routeRequestId){
+      // Browser Back or a tab change closes the pane but preserves the
+      // mounted conversation and its unsent draft in the selected row.
       if(previous&&selectedKey.startsWith('request:')){
-        setSelectedKey('');setOpenDetail(false);setShowCard(false)
+        setOpenDetail(false);setShowCard(false)
       }
       return
     }
     const row=findMessagesRequestRow(rows,routeRequestId)
     if(!row||!accountId)return
-    if(selectedKey!==row.key){
-      setSelectedKey(row.key);setShowCard(false);setOpenDetail(true)
+    if(selectedKey!==row.key)setSelectedKey(row.key)
+    // Reopening the same UUID via browser Forward must restore its detail.
+    // Do not reset its draft for unrelated row refreshes.
+    if(previous!==routeRequestId||selectedKey!==row.key){
+      setShowCard(false);setOpenDetail(true)
     }
     if(!embedded)setTab(inMessagesTab(row,'chats')?'chats':'requests')
   },[routeRequestId,accountId,rows,embedded,selectedKey])
@@ -291,7 +296,8 @@ export default function MessagesSimpleInbox({
     // Return to the list on phones without disposing an in-flight reply or draft.
     setOpenDetail(false)
     setShowCard(false)
-    if(selectedKey.startsWith('request:'))setSelectedKey('')
+    // Keep selectedKey intact: switching folder tabs must not unmount the
+    // current CRM/request conversation or discard its unsent content.
     const url=new URL(window.location.href)
     url.searchParams.delete('requestId')
     if(next==='requests')url.searchParams.set('tab','requests')
