@@ -1,6 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {trustedContext,latestVercelStatus,evidenceDecision,run,ALIAS,PROJECT_ID}=require('../scripts/ci-pr-live-verifier.cjs');
+const {trustedContext,latestVercelStatus,evidenceDecision,publicEvidenceDecision,
+ run,ALIAS,PROJECT_ID}=require('../scripts/ci-pr-live-verifier.cjs');
 const sha='a'.repeat(40),id='dpl_6fNgUY64EQdmMK9baHvgxc7K32oU';
 const status={context:'Vercel',state:'success',
  target_url:'https://vercel.com/super10/codex-public-book-library/6fNgUY64EQdmMK9baHvgxc7K32oU',
@@ -13,14 +14,21 @@ const publicSite={status:200,contentType:'text/html; charset=utf-8',host:ALIAS,h
 const ctx={repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
-function fixture(){
- let reads=[];
+function fixture({publicProof=false,proofOverride=null,changedHead=false}={}){
+ let reads=[],branchReads=0;
+ const proof=proofOverride||{schema:'HH_PUBLIC_RELEASE_EVIDENCE_V1',available:true,sha,
+  deployment_id:id,project_id:PROJECT_ID,environment:'production',
+  branch:'codex/public-book-library',repo:'andylitvinov-design/books'};
  const github={rest:{repos:{
-  getBranch:async()=>({data:{commit:{sha}}}),
+  getBranch:async()=>({data:{commit:{sha:changedHead&&++branchReads>1?'b'.repeat(40):sha}}}),
   getCombinedStatusForRef:async()=>({data:{total_count:1,statuses:[status]}})
  }}};
  const fetchImpl=async url=>{
   reads.push(url);
+  if(url.includes('/api/public/release-evidence'))
+   return {status:publicProof?200:404,url:'https://'+ALIAS+'/api/public/release-evidence',
+    headers:{get:()=> 'application/json; charset=utf-8'},
+    async json(){return proof}};
   if(url.includes('/v13/deployments/'))return {status:200,async json(){return deployment}};
   if(url.includes('/v4/aliases/'))return {status:200,async json(){return alias}};
   return {status:200,url:'https://'+ALIAS+'/en',
@@ -68,14 +76,14 @@ test('only exact SHA, production READY, current alias ID and working HTML prove 
   assert.equal(outcome.verified_live,false,JSON.stringify(changed));
  }
 });
-test('missing Vercel credential reports partial evidence and never claims LIVE',async()=>{
+test('missing Vercel credential with no public runtime proof is not LIVE',async()=>{
  const f=fixture();
  const r=await run({github:f.github,core:core(),context:ctx,vercelToken:'',
   fetchImpl:f.fetchImpl,now:Date.parse('2026-11-01T22:30:00Z')});
  assert.equal(r.verified_live,false);
- assert.equal(r.reason,'VERCEL_READ_CREDENTIAL_UNAVAILABLE');
+ assert.equal(r.reason,'PUBLIC_RUNTIME_PROOF_UNAVAILABLE');
  assert.equal(r.production_sha,sha);
- assert.equal(f.reads.length,0);
+ assert.equal(f.reads.length,1);
 });
 test('read-only verifier confirms exact Vercel READY and live alias for GitHub HEAD',async()=>{
  const f=fixture();
@@ -114,6 +122,55 @@ test('outdated Vercel completion event cannot certify newer production HEAD',asy
  assert.equal(result.reason,'EVENT_SHA_NOT_CURRENT_PRODUCTION');
  assert.equal(f.reads.length,0);
 });
+
+test('public identity with exact production SHA/deployment/alias HTML verifies LIVE without token',async()=>{
+ const f=fixture({publicProof:true});
+ const result=await run({github:f.github,core:core(),context:ctx,vercelToken:'',
+  fetchImpl:f.fetchImpl});
+ assert.equal(result.verified_live,true);
+ assert.equal(result.reason,'LIVE_VERIFIED');
+ assert.equal(result.proof_method,'PUBLIC_RUNTIME_EXACT_SHA_AND_DEPLOYMENT');
+ assert.deepEqual(f.reads,[
+  'https://'+ALIAS+'/api/public/release-evidence',
+  'https://'+ALIAS+'/en']);
+});
+test('public proof never passes on a wrong SHA, deployment, project, env or repo',()=>{
+ const good={schema:'HH_PUBLIC_RELEASE_EVIDENCE_V1',available:true,sha,
+  deployment_id:id,project_id:PROJECT_ID,environment:'production',
+  branch:'codex/public-book-library',repo:'andylitvinov-design/books'};
+ assert.equal(publicEvidenceDecision({sha,status,proof:good,publicSite}).verified_live,true);
+ for(const patch of [
+  {available:false}, {sha:'b'.repeat(40)}, {deployment_id:'dpl_other'},
+  {project_id:'prj_other'}, {environment:'preview'}, {branch:'feature'},
+  {repo:'someone-else/books'}, {schema:'UNTRUSTED'}
+ ]){
+  assert.equal(publicEvidenceDecision({sha,status,proof:{...good,...patch},
+   publicSite}).verified_live,false,JSON.stringify(patch));
+ }
+});
+test('stale public identity and live-head races cannot certify an older deployment',async()=>{
+ const bad=fixture({publicProof:true,proofOverride:{
+  schema:'HH_PUBLIC_RELEASE_EVIDENCE_V1',available:true,sha:'b'.repeat(40),
+  deployment_id:id,project_id:PROJECT_ID,environment:'production',
+  branch:'codex/public-book-library',repo:'andylitvinov-design/books'}});
+ const a=await run({github:bad.github,core:core(),context:ctx,
+  fetchImpl:bad.fetchImpl});
+ assert.equal(a.verified_live,false);
+ assert.equal(a.reason,'PUBLIC_RUNTIME_DEPLOYMENT_MISMATCH');
+ const moving=fixture({publicProof:true,changedHead:true});
+ const b=await run({github:moving.github,core:core(),context:ctx,
+  fetchImpl:moving.fetchImpl});
+ assert.equal(b.verified_live,false);
+ assert.equal(b.reason,'PRODUCTION_HEAD_CHANGED_DURING_VERIFY');
+});
+test('a production head change also invalidates a valid Vercel API ready result',async()=>{
+ const f=fixture({changedHead:true});
+ const result=await run({github:f.github,core:core(),context:ctx,
+  vercelToken:'synthetic',fetchImpl:f.fetchImpl});
+ assert.equal(result.verified_live,false);
+ assert.equal(result.reason,'PRODUCTION_HEAD_CHANGED_DURING_VERIFY');
+});
+
 test('hourly conflict diagnostics reuse the read-only LIVE job and pinned production code',()=>{
  const s=require('node:fs').readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
  const start=s.indexOf('      - name: Resolve production SHA for hourly conflict diagnostics');

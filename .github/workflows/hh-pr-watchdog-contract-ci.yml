@@ -17,30 +17,35 @@ on:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - '.github/workflows/hh-pr-full-inventory.yml'
       - 'scripts/ci-pr-live-verifier.cjs'
-      - 'tests/ci-pr-live-verifier.test.cjs'
+      - 'scripts/ci-pr-release-outcomes.cjs'
+      - 'scripts/ci-pr-served-release.cjs'
+      - 'tests/ci-pr-served-release.test.cjs'
+      - 'tests/ci-pr-release-outcomes.test.cjs'
+      - 'scripts/ci-pr-release-kpi.cjs'
+      - 'tests/ci-pr-release-kpi.test.cjs'
       - 'scripts/ci-pr-kpi*.cjs'
       - 'tests/ci-pr-kpi*.test.cjs'
+      - 'tests/ci-pr-live-verifier.test.cjs'
       - 'tests/ci-pr-orchestration-triggers.test.cjs'
       - '.github/workflows/hh-native-auto-merge.yml'
-      - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
-      - 'tests/ci-pr-merge-gates.test.cjs'
       - 'scripts/ci-pr-base-freshness.cjs'
       - 'tests/ci-pr-base-freshness.test.cjs'
       - 'tests/ci-pr-base-classifier-integration.test.cjs'
+      - 'tests/ci-pr-merge-gates.test.cjs'
+      - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - '.github/workflows/hh-pr-watchdog-contract-ci.yml'
       - '.github/workflows/hh-pr-ci-worker.yml'
       - '.github/workflows/hh-pr-repair-worker.yml'
       - '.github/workflows/hh-pr-cron-owner-repair.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
+      - 'scripts/ci-pr-repair-test-scope.cjs'
       - 'tests/ci-pr-repair-worker.test.cjs'
+      - 'tests/ci-pr-repair-test-scope.test.cjs'
       - 'scripts/ci-pr-ci-worker.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
-  issues: read
-  pull-requests: read
 concurrency:
   group: hh-watchdog-contract-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -48,7 +53,7 @@ jobs:
   watchdog-contract:
     name: watchdog-contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,22 +74,27 @@ jobs:
           node --check tests/ci-pr-ten-minute-watchdog.test.cjs
           node --check scripts/ci-pr-ci-worker.cjs
           node --check scripts/ci-pr-repair-worker.cjs
+          node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-live-verifier.cjs
+          node --check scripts/ci-pr-base-freshness.cjs
+          node --check tests/ci-pr-merge-gates.test.cjs
+          node --check scripts/ci-pr-release-outcomes.cjs
+          node --check scripts/ci-pr-served-release.cjs
+          node --check tests/ci-pr-served-release.test.cjs
+          node --check scripts/ci-pr-release-kpi.cjs
           for f in scripts/ci-pr-kpi*.cjs tests/ci-pr-kpi*.test.cjs; do node --check "$f"; done
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-kpi*.test.cjs
-
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
           path: .hh-merge-policy-production
           persist-credentials: false
-      - name: Verify production classifier integration without write credentials
+      - name: Verify pinned classifier integration without write credentials
         run: node --test tests/ci-pr-base-classifier-integration.test.cjs
-
       - name: Probe real KPI evidence without write credentials
         if: >-
           github.event_name == 'pull_request' &&

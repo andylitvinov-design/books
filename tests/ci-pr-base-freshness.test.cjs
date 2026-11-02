@@ -38,8 +38,8 @@ test('hourly verifier binds the Core job to its original run',async()=>{
  const {coreRunBaseForCheck}=require('../scripts/ci-pr-base-freshness.cjs');
  const p={...pr,head:{ref:'fix',sha:'c'.repeat(40)}};
  const run={id:42,event:'pull_request',name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',status:'completed',conclusion:'success',check_suite_id:55,repository:{full_name:'o/r'},head_repository:{full_name:'o/r'},head_branch:'fix',pull_requests:[{number:p.number,head:{sha:p.head.sha,ref:'fix'},base:{ref:'codex/public-book-library',sha:old}}]};
- const github={rest:{actions:{getWorkflowRun:async()=>({data:run}),getJobForWorkflowRun:async()=>({data:{id:5,run_id:42,name:'hh-core-verified',status:'completed',conclusion:'success',check_run_url:'https://api.github.com/repos/o/r/check-runs/5'}})}}};
- assert.equal(await coreRunBaseForCheck({github,owner:'o',repo:'r',pr:p,check:{id:5,details_url:'https://github.com/o/r/actions/runs/42/job/5',check_suite:{id:55}}}),old);
+ const github={rest:{actions:{getWorkflowRun:async()=>({data:run}),getJobForWorkflowRun:async()=>({data:{id:5,run_id:42,name:'hh-merge-check',status:'completed',conclusion:'success',check_run_url:'https://api.github.com/repos/o/r/check-runs/5'}})}}};
+ assert.equal(await coreRunBaseForCheck({github,owner:'o',repo:'r',pr:p,check:{id:5,name:'hh-merge-check',app:{id:15368,slug:'github-actions'},details_url:'https://github.com/o/r/actions/runs/42/job/5',check_suite:{id:55}}}),old);
 });
 test('the observed #2868 CI base predates current production',async()=>{
  const p={number:2868,base:{sha:'66f05429167887a7171cd7086a0138fa0b654c80'},changed_files:8};

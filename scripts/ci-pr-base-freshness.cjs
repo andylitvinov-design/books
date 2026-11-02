@@ -57,7 +57,10 @@ async function coreRunBaseForCheck({github,owner,repo,pr,check}){
   const runId=Number(m[1]),jobId=Number(m[2]);
   if(!Number.isSafeInteger(runId)||runId<1||!Number.isSafeInteger(jobId)||jobId<1||!Number.isSafeInteger(check.id))return null;
   const job=(await github.rest.actions.getJobForWorkflowRun({owner,repo,job_id:jobId})).data;
-  if(job?.id!==jobId||job.run_id!==runId||job.name!=='hh-core-verified'||job.status!=='completed'||job.conclusion!=='success'||
+  if(job?.id!==jobId||job.run_id!==runId||
+     !['hh-merge-check','hh-core-verified'].includes(check.name)||job.name!==check.name||
+     check.app?.id!==15368||check.app?.slug!=='github-actions'||
+     job.status!=='completed'||job.conclusion!=='success'||
      job.check_run_url!=='https://api.github.com/repos/'+owner+'/'+repo+'/check-runs/'+check.id)return null;
   const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
   if(run?.id!==runId)return null;

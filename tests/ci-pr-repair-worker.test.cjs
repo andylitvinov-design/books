@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -16,7 +17,7 @@ function fixture(options={}){
     get:async()=>({data:options.fresh||p}),list:async()=>({data:options.children||[]}),
     listFiles:async()=>({data:sourceFiles})},
     issues:{listForRepo:async()=>({data:[{number:11,pull_request:{}}]}),
-      listComments:async()=>({data:options.comments ?? [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
+      listComments:async()=>({data:options.comments ?? [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+p.head.sha+' -->'}]}),
       createComment:async({body})=>{log.comments++;log.commentBodies.push(body)},
       addAssignees:async()=>{log.assigned++},
       addLabels:async()=>{log.labels++},removeLabel:async({name})=>{log.removed.push(name)}},
@@ -59,21 +60,26 @@ test('Repair Worker reads owner lease and exact-head source receipt beyond page 
  f.github.rest.issues.listComments=async({page,per_page})=>{
   assert.equal(per_page,100);pages.push(page);
   return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):
-   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  core.outputs={};
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.deepEqual(pages,[1,2]);
  assert.equal(result.status,'claimed');assert.equal(f.log.comments,1);
 });
-test('Repair Worker fails closed when history cannot be fully paginated',async()=>{
- const f=fixture();
- let pages=[];
+test('Repair Worker reads source receipt beyond 300 comments',async()=>{
+ const f=fixture();const pages=[];
  f.github.rest.issues.listComments=async({page})=>{
-  pages.push(page);return {data:Array.from({length:100},()=>({body:'old'}))};
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
  };
  const result=await claim({github:f.github,core,context,hasToken:true,number:11});
- assert.deepEqual(pages,[1,2,3]);
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result.status,'claimed');
+});
+test('Repair Worker fails closed when comment history exhausts the API budget',async()=>{
+ const f=fixture();
+ f.github.rest.issues.listComments=async()=>({data:Array.from({length:100},()=>({body:'old'}))});
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
  assert.equal(result.status,'skipped');assert.equal(f.log.comments,0);
 });
 test('dry run and absent owner token never claim or modify source',async()=>{
@@ -163,7 +169,7 @@ test('expired historical sweep comments cannot permanently suppress real Repair 
   assert.equal(activeSweepLease([{body:wrap({...old,head_sha:'f'.repeat(40),
     lease_expires:'2026-11-02T00:00:00Z'})}],sha,now),false);
   assert.equal(activeSweepLease([{body:wrap({...old,lease_expires:'unknown'})}],sha,now),true);
-  const f=fixture({comments:[{body:wrap(old)},{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
+  const f=fixture({comments:[{body:wrap(old)},{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]});
   const claimResult=await claim({github:f.github,core,context,hasToken:true,number:11,now});
   assert.equal(claimResult.status,'claimed');
   assert.equal(f.log.comments,1);
@@ -205,7 +211,7 @@ test('current mergeability overrides stale conflict labels for exact-head source
   assert.equal(f.log.comments,1);
 });
 test('a source label without a trusted receipt for exact HEAD never edits newer code',async()=>{
-  const f=fixture({comments:[{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
+  const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'},body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+'e'.repeat(40)+' -->'}]});
   assert.equal(hasVerifiedSourceHandoff([{body:'not verified'}],sha),false);
   const result=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(result.status,'skipped');
@@ -280,4 +286,234 @@ test('trusted workflow treats only stale source HEAD as a non-fix no-op',()=>{
  assert.match(yml,/status:'skipped_stale_head',reason:'STALE_HEAD_ABORTED'/);
  assert.match(yml,/source_published:false/);
  assert.match(yml,/if \(error\?\.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD'\) throw error/);
+});
+
+test('forged source receipt cannot authorize a repair claim',async()=>{
+ const forged={body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->',user:{id:123,login:'outsider',type:'User'}};
+ assert.equal(hasVerifiedSourceHandoff([forged],sha),false);
+ const f=fixture({comments:[forged]});
+ assert.equal((await claim({github:f.github,core,context,hasToken:true,number:11})).status,'skipped');
+ assert.equal(f.log.comments,0);
+});
+
+test('source Repair uses same explicit-release interpretation as the single Dispatcher',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z'),user={login:owner};
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'repair-lock',
+  head_sha:sha,state:'heartbeat',expires_at:'2026-11-01T21:00:00Z'};
+ const wrap=x=>({user,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ const events=[wrap(item),wrap({...item,state:'released'})];
+ assert.equal(activeSweepLease(events,sha,now),false);
+ assert.equal(activeSweepLease(events.slice(0,1),sha,now),true);
+});
+test('source Repair ignores a release from another GitHub commenter',()=>{
+ const now=Date.parse('2026-11-01T22:00:00Z');
+ const item={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',lease_id:'lock',
+  head_sha:sha,state:'active',expires_at:'2026-11-01T21:00:00Z'};
+ const events=[{user:{login:owner},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(item)},
+  {user:{login:'unrelated'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+    JSON.stringify({...item,state:'released'})}];
+ assert.equal(activeSweepLease(events,sha,now),true);
+});
+
+test('failed isolated fix is signed off as manual only after the same-run verified claim',async()=>{
+ const runId=777, current=pr(),task=taskFor(current,{tier:'P1'});
+ const owned={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- '+MARKER+' '+sha+' -->\n'+commentBody({...task,state:'CLAIMED',
+   owner_run_id:String(runId),outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'})};
+ const f=fixture({comments:[owned]});
+ const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId},
+  prNumber:11,expectedSha:sha});
+ assert.equal(result.status,'manual_required');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.commit,0);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.equal(f.log.comments,1);
+ assert.ok(f.log.commentBodies[0].includes('FIX_JOB_FAILED_NO_SOURCE_COMMIT'));
+});
+test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HEAD',async()=>{
+ const runId=888,current=pr(),task=taskFor(current,{tier:'P1'});
+ const body='<!-- '+MARKER+' '+sha+' -->\n'+commentBody({...task,state:'CLAIMED',
+  owner_run_id:String(runId)});
+ const signed={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},body};
+ const cases=[
+  {comments:[{body}]},
+  {comments:[{...signed,body:body.replace('888','other')}]},
+  {comments:[signed],fresh:pr({head:{ref:'fix/pr-11',sha:newSha,
+   repo:{full_name:owner+'/'+repo}}})},
+  {comments:[signed,{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+   JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',owner:'other',
+    head_sha:sha,lease_id:'foreign',state:'active'})}]}
+ ];
+ for(const options of cases){
+  const f=fixture(options);
+  const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId},
+   prNumber:11,expectedSha:sha});
+  assert.equal(result.status,'skipped');
+  assert.equal(f.log.labels,0);
+  assert.equal(f.log.comments,0);
+  assert.deepEqual(f.log.removed,[]);
+ }
+});
+test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
+ const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(yml.includes('  finalize:'));
+ assert.ok(yml.includes('needs: [claim,fix,publish]'));
+ assert.ok(yml.includes('always()'));
+ assert.ok(yml.includes('worker.finalize({github,core,context,'));
+});
+
+const outcomeCore={...core,warning:()=>{},summary:{
+ addHeading(){return this;},addCodeBlock(){return this;},async write(){}
+}};
+const outcomeContext={...context,runId:41350000123};
+const receiptKey='f'.repeat(32);
+test('finalizer verifies a real parented source commit on the PR HEAD',async()=>{
+ const original=pr(),f=fixture({pr:pr({head:{...original.head,sha:newSha}})});
+ f.github.rest.git.getCommit=async()=>({data:{parents:[{sha}]}});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',publishResult:'success',
+  publishStatus:'committed',publishSha:newSha});
+ assert.equal(result.state,'PUBLISHED');
+ assert.equal(result.source_published,true);
+ assert.equal(result.new_sha,newSha);
+ assert.equal(f.log.labels,0);
+ assert.match(f.log.commentBodies.at(-1),/SOURCE_COMMIT_VERIFIED_ON_PR_HEAD/);
+ assert.match(f.log.commentBodies.at(-1),/HH_PR_REPAIR_OUTCOME_V1/);
+});
+test('failed isolated fix emits terminal step-level diagnostic and manual owner handoff',async()=>{
+ const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- '+MARKER+' '+sha+' -->\\n'+commentBody({...taskFor(pr(),{tier:'P1'}),
+    state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey})}]});
+ f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+  {name:'fix',conclusion:'failure',steps:[{name:'Install dependencies',conclusion:'failure'}]}
+ ]}})};
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'failure',publishResult:'skipped'});
+ assert.equal(result.state,'FAILED');
+ assert.equal(result.reason_code,'FIX_JOB_FAILURE');
+ assert.equal(result.failed_step,'Install dependencies');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.match(f.log.commentBodies.at(-1),/FIX_JOB_FAILURE/);
+});
+test('skipped claim due missing token produces explicit rejection, not a fake completion',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'skipped',
+  claimReason:'HH_AUTOMERGE_TOKEN_MISSING',claimResult:'success',
+  fixResult:'skipped',publishResult:'skipped'});
+ assert.equal(result.state,'REJECTED');
+ assert.equal(result.reason_code,'HH_AUTOMERGE_TOKEN_MISSING');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,0,'an unclaimed task must not change owner labels');
+});
+test('head movement is recorded as superseded without touching fresh source',async()=>{
+ const original=pr(),f=fixture({pr:pr({head:{...original.head,sha:newSha}})});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',publishResult:'success',
+  publishStatus:'skipped_stale_head'});
+ assert.equal(result.state,'SUPERSEDED');
+ assert.equal(result.reason_code,'SOURCE_HEAD_MOVED_BEFORE_PUBLISH');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.labels,0);
+});
+test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
+ const marker='<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' '+outcomeContext.runId+' -->';
+ const f=fixture({comments:[{body:marker,
+  user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}}]});
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'failure'});
+ assert.equal(result.status,'already_finalized');
+ assert.equal(f.log.comments,0);
+});
+test('workflow guarantees a finalizer after all three stages with explicit results',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/  finalize:\n/);
+ assert.match(wf,/needs: \[claim,fix,publish\]/);
+ assert.match(wf,/always\(\)/);
+ assert.match(wf,/HH_REPAIR_FINAL_OUTCOME/);
+ assert.match(wf,/claim_status/);
+ assert.match(wf,/publish_status/);
+});
+
+
+test('preclaim refusal has signed retry proof for an exact dispatcher reservation',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const actor={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const reserved={...actor,body:commentBody(reservation(task,Date.now()-1000,42))};
+ const f=fixture({comments:[reserved]});
+ const result=await finalize({github:f.github,core:outcomeCore,context:ctx,
+  number:11,expectedSha:sha,taskKey:task.task_key,claimStatus:'skipped',
+  claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+  fixResult:'skipped',publishResult:'skipped'});
+ assert.equal(result.state,'NO_CLAIM_RETRYABLE');
+ assert.equal(result.source_published,false);
+ assert.equal(result.reservation_run_id,'42');
+ assert.ok(Date.parse(result.retry_after)>Date.now());
+ assert.equal(f.log.labels,0,'no coding claim means no manual source escalation');
+ assert.equal(f.log.commit,0);
+ assert.equal(reservationStatus(task,[reserved,{...actor,
+  body:f.log.commentBodies.at(-1)}],Date.parse(result.retry_after)+1000),'FREE');
+});
+test('preclaim retry is refused for unsigned reservations, active claims or budget exhaustion',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const actor={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const reserveBody=commentBody(reservation(task,Date.now()-1000,42));
+ const cases=[
+  [{body:reserveBody}],
+  [{...actor,body:reserveBody},{body:'<!-- '+MARKER+' '+sha+' -->'}],
+  [{...actor,body:reserveBody},
+   {...actor,body:commentBody({...task,state:'NO_CLAIM_RETRYABLE'})},
+   {...actor,body:commentBody({...task,state:'NO_CLAIM_RETRYABLE'})}]
+ ];
+ for(const comments of cases){
+  const f=fixture({comments});
+  const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
+   number:11,expectedSha:sha,taskKey:task.task_key,claimStatus:'skipped',
+   claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'skipped',publishResult:'skipped'});
+  assert.equal(x.state,'REJECTED');
+  assert.equal(x.source_published,false);
+  assert.equal(f.log.labels,0);
+ }
+});
+test('missing owner token and interrupted claim may not unlock a source reservation',async()=>{
+ const task=taskFor(pr(),{tier:'P1'}),ctx={
+  ...outcomeContext,payload:{inputs:{reservation_run_id:'42'}}};
+ const reserved={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:commentBody(reservation(task,Date.now()-1000,42))};
+ for(const props of [
+  {claimStatus:'skipped',claimReason:'HH_AUTOMERGE_TOKEN_MISSING',claimResult:'success'},
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'failure'},
+  {claimStatus:'skipped',claimReason:'NO_UNCLAIMED_OWNER_PR',claimResult:'success',
+   fixResult:'success',publishResult:'skipped'}
+ ]){
+  const f=fixture({comments:[reserved]});
+  const x=await finalize({github:f.github,core:outcomeCore,context:ctx,
+   number:11,expectedSha:sha,taskKey:task.task_key,...props});
+  assert.notEqual(x.state,'NO_CLAIM_RETRYABLE');
+  assert.equal(x.source_published,false);
+ }
+});
+test('existing Repair Worker workflow carries reservation identity without source tokens',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(wf.includes('reservation_run_id:'));
+ assert.ok(wf.includes('ref: codex/bootstrap-books'));
+ const dispatcher=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });

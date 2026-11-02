@@ -147,9 +147,13 @@ test('one-time cron retry uses injected v9 getOctokit after verified pre-toggle 
 test('hourly coordinator verifies GitHub + Vercel LIVE independently of native merge',()=>{
  const s=read('hh-pr-full-inventory');
  assert.ok(s.includes('  verify-live:\n'));
- assert.ok(s.includes('name: independent production LIVE evidence (read-only)'));
+ assert.ok(s.includes('name: independent production LIVE evidence + durable PR receipt'));
  assert.ok(s.includes('statuses: read'));
- assert.ok(s.includes('node --test tests/ci-pr-live-verifier.test.cjs'));
+ assert.ok(s.includes('issues: write'));
+ assert.ok(s.includes('hh-pr-live-receipt-single-writer'));
+ assert.ok(s.includes('HH_PR_METRICS_PATH'));
+ assert.ok(s.includes('ci-pr-release-kpi.cjs'));
+ assert.ok(s.includes('node --test tests/ci-pr-live-verifier.test.cjs tests/ci-pr-release-kpi.test.cjs'));
  assert.ok(s.includes("scripts/ci-pr-live-verifier.cjs"));
  assert.ok(s.includes("secrets.VERCEL_TOKEN"));
  assert.ok(!s.includes('pull_request_target:'));
@@ -167,5 +171,90 @@ test('Vercel dispatch only starts LIVE evidence, never the PR merge scan',()=>{
  assert.ok(s.includes("if: github.event_name != 'repository_dispatch'"));
  assert.ok(s.includes("github.event.client_payload.environment == 'production'"));
  assert.ok(s.includes("hh-pr-full-inventory-" + '$' + "{{ github.event_name == 'repository_dispatch'"));
- assert.ok(s.includes("vercel-event' || 'periodic'"));
+ assert.ok(s.includes("format('vercel-sha-{0}', github.event.client_payload.git.sha || github.run_id)"));
+ assert.ok(s.includes("|| 'periodic'"));
+ assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'repository_dispatch' }}"));
+ // Same-SHA Vercel events can supersede, but different SHA values must retain
+ // independent leases. Unknown SHA must not cancel another deployment.
+ assert.doesNotMatch(s, /'vercel-event' \|\| 'periodic'/);
+});
+
+test('useful worker completion wakes only the existing serialized dispatcher with cooldown',()=>{
+ const repair=read('hh-pr-repair-worker'),ci=read('hh-pr-ci-worker'),dispatcher=read('hh-pr-queue-dispatcher');
+ assert.ok(repair.includes("kind:'repair',status:result.status"));
+ assert.ok(ci.includes("kind:'ci',status:result.started>0?'started':'skipped'"));
+ assert.ok(dispatcher.includes('completion_wake:'));
+ assert.ok(dispatcher.includes('relayCompletionWake'));
+ assert.ok(dispatcher.includes('worker_run_id:'));
+ assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
+ assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+});
+
+test('hourly native merge requires explicit verified release for modern active ownership',()=>{
+ const yml=read('hh-pr-full-inventory');
+ assert.ok(yml.includes('leases.delete(key)'));
+ assert.ok(yml.includes('lease.previous_head_sha!==c.head'));
+ assert.ok(yml.includes('const key=actor+":"+owner+":"+leaseId'));
+ assert.ok(yml.includes('Untrusted release author'));
+ assert.ok(yml.includes('lease.historical_expiry_allowed=true'));
+ assert.ok(yml.includes('l.historical_expiry_allowed!==true'));
+ assert.ok(!yml.includes('force:true'));
+});
+
+test('staged single-release-check policy preserves legacy until proven administrative cutover',()=>{
+  const auto=read('hh-native-auto-merge');
+  assert.ok(auto.includes('const allowedRequiredSets = new Map(['));
+  assert.ok(auto.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'));
+  assert.ok(auto.includes('["hh-merge-check", ["hh-merge-check"]]'));
+  assert.ok(auto.includes('["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]]'));
+  assert.ok(auto.includes('const notPassed = need.filter(name => !passed(name))'));
+  assert.ok(auto.includes('jobPage.total_count !== jobs.length'));
+  assert.ok(auto.includes('required.length !== new Set(required).size || !need'));
+  assert.ok(!auto.includes("oldRequired === coreRequired"));
+  const m=read('hh-migrate-legacy-core-check');
+  assert.ok(m.includes('HH_BRANCH_ADMIN_TOKEN'));
+  assert.ok(m.includes('head_sha=$head'));
+  assert.ok(m.includes('evidence_pr_number:'));
+  assert.ok(m.includes('required: true'));
+  assert.ok(!m.includes("default: '3054'"),'closed unmerged proof PR must not be silently preselected');
+  assert.ok(m.includes('Actually merged production PR with successful hh-merge-check'));
+  assert.ok(m.includes('["hh-core-verified","hh-specialist","release-ready","hh-merge-check"]'));
+  assert.ok(m.includes('.parameters.required_status_checks = ['));
+  assert.ok(m.includes('"context":"hh-merge-check","integration_id":15368'));
+  assert.ok(m.includes('"context":"hh-merge-check","app_id":15368'));
+  assert.ok(m.includes('gh api --method PUT'));
+  assert.ok(m.includes('gh api --method PATCH'));
+  assert.ok(m.includes("Already migrated, both protections verified"));
+  assert.ok(m.includes('strict: false'));
+});
+
+test('live workers avoid duplicate unit suites while changes retain the full contract gate',()=>{
+  const contract=read('hh-pr-watchdog-contract-ci');
+  for(const file of [
+    'ci-pr-slot-wakeup','ci-pr-priority','ci-pr-ci-worker',
+    'ci-pr-repair-worker','ci-pr-repair-test-scope','ci-pr-orchestration-triggers'
+  ])assert.ok(contract.includes('tests/'+file+'.test.cjs'),file+' contract coverage');
+
+  const slot=read('hh-pr-ten-minute-watchdog').split('\n  core-slot-wakeup:\n')[1];
+  assert.ok(slot && !slot.includes('node --test'),'slot wake remains lightweight');
+  assert.ok(slot.includes('scripts/ci-pr-slot-wakeup.cjs'));
+
+  const ci=read('hh-pr-ci-worker');
+  assert.ok(!ci.includes('node --test'),'CI worker live job does not rerun unit tests');
+  assert.ok(ci.includes('node --check scripts/ci-pr-ci-worker.cjs'));
+  const repairClaim=read('hh-pr-repair-worker').split('\n  fix:\n')[0];
+  assert.ok(!repairClaim.includes('node --test'),'repair claim does not rerun unit tests');
+  assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-worker.cjs'));
+  assert.ok(repairClaim.includes('node --check scripts/ci-pr-repair-test-scope.cjs'));
+});
+
+test('inventory reports both valid merge destinations without false main-branch warnings',()=>{
+ const source=read('hh-pr-full-inventory');
+ assert.ok(source.includes('CONTROL="codex/bootstrap-books"'));
+ assert.ok(source.includes('production-base: '));
+ assert.ok(source.includes('control-base: '));
+ assert.ok(source.includes('other/stacked-base: '));
+ assert.ok(source.includes('MERGED_PRODUCTION'));
+ assert.ok(source.includes('LIVE requires served deployment proof'));
+ assert.ok(!source.includes('other-base: "+(all.length-production.length)'));
 });

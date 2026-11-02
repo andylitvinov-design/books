@@ -14,7 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor,commentBody,readCompleteIssueComments}=require('./ci-pr-task-state.cjs');
+const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -31,37 +31,11 @@ function eligible(pr, fullRepo) {
     pr.labels?.some(l => [SOURCE, CONFLICT].includes(l.name)) &&
     !pr.labels?.some(l => l.name===MANUAL || l.name==='hh:hold'));
 }
-function activeSweepLease(comments, sha, now) {
-  for (const c of comments) {
-    if (!(c.body || '').includes('HH_PR_SWEEP_LEASE_V1')) continue;
-    const start=(c.body || '').indexOf('{');
-    const end=(c.body || '').indexOf('}',start);
-    if (start<0 || end<0) return true;
-    try {
-      const lease = JSON.parse(c.body.slice(start,end+1));
-      if (lease.schema === 'HH_PR_SWEEP_LEASE_V1') {
-        if (lease.head_sha === sha &&
-            ['active','claim','heartbeat'].includes(lease.state || lease.last_action)) {
-          // A worker can remain active after its TTL expires. Never
-          // overwrite that worker's source just because the clock advanced.
-          return true;
-        }
-        continue;
-      }
-      // Historical Codex lease comments use lease_expires without schema.
-      // Unknown/malformed ownership always blocks; proven expired leases do not.
-      const legacy=lease.schema == null &&
-        typeof lease.owner === 'string' && lease.owner.trim() &&
-        typeof lease.run_id === 'string' && lease.run_id.trim() &&
-        SHA.test(lease.head_sha || '') &&
-        Number.isFinite(Date.parse(lease.lease_expires || ''));
-      if (!legacy) return true;
-      if (lease.head_sha === sha && Date.parse(lease.lease_expires) > now)
-        return true;
-    } catch { return true; }
-  }
-  return false;
+function activeSweepLease(comments,sha,now){
+ // The trusted Dispatcher and Repair must see the same exact-HEAD owner.
+ return externalOwnerLeaseStatus(comments,sha,now)!=='FREE';
 }
+
 function repairMode(pr) {
   const labels=new Set((pr?.labels || []).map(l=>l.name));
   const source=labels.has(SOURCE), conflict=labels.has(CONFLICT);
@@ -74,7 +48,12 @@ function repairMode(pr) {
 }
 function hasVerifiedSourceHandoff(comments, sha) {
   const receipt='<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->';
+  // The marker is public text and can be copied into an issue comment.
+  // Only the GitHub Actions app identity can establish this handoff.
   return Array.isArray(comments) && comments.some(c=>
+    c?.user?.id===41898282 && c.user.login==='github-actions[bot]' &&
+    c.user.type==='Bot' && c.performed_via_github_app?.id===15368 &&
+    c.performed_via_github_app.slug==='github-actions' &&
     typeof c.body==='string' && c.body.includes(receipt));
 }
 function safeFiles(items) {
@@ -230,7 +209,7 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',dry
       return {status:'manual_conflict',number:pr.number,sha:pr.head.sha};
     }
     writeOutputs(core,{strategy:'lint',pr_number:pr.number,sha:pr.head.sha,branch:pr.head.ref,
-      files_json:JSON.stringify(files)});
+      files_json:JSON.stringify(files),task_key:receipt?.task_key||''});
     log('CLAIMED #' + pr.number + ' priority=' + priorityFor(pr,now).tier + ' owner=' + pr.user.login + ' SHA=' + pr.head.sha);
     return {status:'claimed',number:pr.number,sha:pr.head.sha,files};
   }
@@ -324,4 +303,202 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
 }
-module.exports={claim,publish,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
+/**
+ * A failed isolated fix job has never published source. Close the silent
+ * CLAIMED gap: record a real terminal source-failure receipt and enqueue the
+ * existing owner/Codex manual lane, but only for the same authenticated run
+ * and unchanged source HEAD. This is NOT evidence of a completed fix.
+ */
+async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=Date.now()}){
+ const {owner,repo}=context.repo, fullRepo=owner+'/'+repo;
+ const skip=reason=>({status:'skipped',reason,source_published:false});
+ if(fullRepo!=='andylitvinov-design/books' ||
+   !Number.isSafeInteger(prNumber)||prNumber<1 ||
+   !SHA.test(expectedSha||'')||!Number.isSafeInteger(context.runId))
+  return skip('INVALID_FIX_FAILURE_CONTEXT');
+ const pr=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
+ if(!eligible(pr,fullRepo) || pr.head?.sha!==expectedSha ||
+    repairMode(pr)!=='lint')return skip('SOURCE_CHANGED_OR_NOT_ACTIONABLE');
+ let reads=0,comments;
+ try{
+  comments=await readCompleteIssueComments(github,owner,repo,prNumber,async(_,fn)=>{
+   if(++reads>MAX_READS)throw Error('FIX_FAILURE_HISTORY_BUDGET');
+   return fn();
+  });
+ }catch(error){core?.info?.('HH_REPAIR_FAILURE_HISTORY '+error.message);return skip('OWNER_HISTORY_UNAVAILABLE');}
+ if(!comments)return skip('OWNER_HISTORY_INCOMPLETE');
+ const owned=comments.some(c=>{
+  if(!trustedControlComment(c)||
+     !String(c.body||'').includes('<!-- '+MARKER+' '+expectedSha+' -->'))return false;
+  const records=parseRecords([c]);
+  return records?.some(r=>r.head_sha===expectedSha &&
+   r.pr_number===prNumber && r.owner_run_id===String(context.runId) &&
+   r.state==='CLAIMED');
+ });
+ if(!owned)return skip('TRUSTED_EXACT_RUN_CLAIM_MISSING');
+ if(externalOwnerLeaseStatus(comments,expectedSha,now)!=='FREE')
+  return skip('OTHER_SOURCE_OWNER_LEASE');
+ const existing=parseRecords(comments);
+ if(!existing)return skip('MALFORMED_TASK_HISTORY');
+ if(existing.some(r=>r.pr_number===prNumber && r.head_sha===expectedSha &&
+    ['PUBLISHED','REPAIRED','DONE','MANUAL'].includes(r.state)))
+  return skip('ALREADY_TERMINAL');
+ const receipt=taskFor(pr,priorityFor(pr,now));
+ if(!receipt)return skip('TASK_NO_LONGER_ACTIONABLE');
+ try{
+  await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+ }catch(error){
+  if(error.status!==422&&error.status!==404)throw error;
+  try{
+   await github.rest.issues.createLabel({owner,repo,name:MANUAL,color:'d93f0b',
+    description:'Source repair failed; owner or coding agent must inspect'});
+  }catch(createError){if(createError.status!==422)throw createError;}
+  await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+ }
+ const runUrl='https://github.com/'+fullRepo+'/actions/runs/'+context.runId;
+ await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
+  'HH Repair Worker: isolated source-fix job failed for exact HEAD '+expectedSha+
+  '. No source commit was published. Inspect failing runner steps and apply a tested fix; '+
+  'this task is now in the owner/Codex manual repair lane. Run: '+runUrl+
+  '\n'+commentBody({...receipt,state:'MANUAL',outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',
+   owner_run_id:String(context.runId),run_url:runUrl,source_published:false})});
+ try{
+  await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE});
+ }catch(error){if(error.status!==404)core?.info?.('HH_REPAIR_FAILURE_QUEUE_CLEANUP: '+error.message);}
+ return {status:'manual_required',number:prNumber,sha:expectedSha,
+  outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',source_published:false};
+}
+const SAFE_NO_CLAIM_REASONS=new Set([
+ 'NO_UNCLAIMED_OWNER_PR','INCOMPLETE_QUEUE','GITHUB_API_BUDGET_PAUSE','GITHUB_API_RESERVE'
+]);
+async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
+  claimStatus='',claimReason='',claimResult='',fixResult='',publishResult='',
+  publishStatus='',publishSha='',dryRun=false}) {
+  const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
+  const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
+  if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
+  if(!Number.isSafeInteger(number)||number<1||!SHA.test(expectedSha)||
+     !/^[a-f0-9]{32}$/i.test(taskKey))return skip('NO_VALID_ADDRESSED_TASK');
+  const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+  if(pr?.user?.login!==owner || pr?.head?.repo?.full_name!==fullRepo)
+    return skip('PR_OWNER_NOT_VERIFIED');
+  const sameHead=pr.head.sha===expectedSha;
+  let state='FAILED',reason='NO_SOURCE_COMMIT',sourcePublished=false,newSha=null;
+  if(publishStatus==='committed'){
+    if(!SHA.test(publishSha)){
+      reason='PUBLISH_REPORTED_INVALID_COMMIT_SHA';
+    }else{
+      const commit=(await github.rest.git.getCommit({owner,repo,commit_sha:publishSha})).data;
+      const parentVerified=Array.isArray(commit?.parents)&&
+        commit.parents.some(p=>p.sha===expectedSha);
+      newSha=publishSha;
+      if(!parentVerified)reason='PUBLISHED_COMMIT_PARENT_UNVERIFIED';
+      else if(pr.head.sha!==publishSha){
+        state='VERIFY_REQUIRED';reason='SOURCE_COMMIT_EXISTS_BUT_HEAD_MOVED';
+      }else{
+        state='PUBLISHED';reason='SOURCE_COMMIT_VERIFIED_ON_PR_HEAD';sourcePublished=true;
+      }
+    }
+  }else if(!sameHead){
+    state='SUPERSEDED';reason='SOURCE_HEAD_MOVED_BEFORE_PUBLISH';
+  }else if(claimStatus==='manual_conflict'){
+    state='MANUAL';reason='CONFLICT_REQUIRES_SOURCE_RESOLUTION';
+  }else if(claimResult!=='success'){
+    state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
+  }else if(claimStatus!=='claimed'){
+    state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
+  }else if(publishStatus==='manual_required'){
+    state='MANUAL';reason='NO_VERIFIED_SOURCE_CHANGE';
+  }else if(fixResult!=='success'){
+    reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
+  }else if(publishResult!=='success'){
+    reason='PUBLISH_JOB_'+String(publishResult||'UNKNOWN').toUpperCase();
+  }else{
+    reason='PUBLISH_RETURNED_NO_VERIFIED_SOURCE_COMMIT';
+  }
+  const runId=String(context.runId||'unknown');
+  const marker='<!-- HH_PR_REPAIR_OUTCOME_V1 '+expectedSha+' '+runId+' -->';
+  let reads=0;
+  const comments=await readCompleteIssueComments(github,owner,repo,number,async(label,fn)=>{
+    if(++reads>36)throw Error('HH_REPAIR_OUTCOME_HISTORY_BUDGET_EXCEEDED');
+    return fn();
+  });
+  if(!comments)throw Error('HH_REPAIR_OUTCOME_HISTORY_UNVERIFIED');
+  if(comments.some(c=>String(c.body||'').includes(marker)&&trustedControlComment(c)))
+    return {status:'already_finalized',number,expected_sha:expectedSha};
+  // An addressed worker that refused BEFORE claiming may be retried without
+  // touching source, but only after proving the exact dispatcher reservation.
+  let retryAfter=null,reservationRunId=null;
+  const suppliedRun=String(context.payload?.inputs?.reservation_run_id||'');
+  if(sameHead&&claimResult==='success'&&claimStatus==='skipped'&&
+     fixResult==='skipped'&&publishResult==='skipped'&&!publishStatus&&
+     SAFE_NO_CLAIM_REASONS.has(claimReason)&&/^\d+$/.test(suppliedRun)){
+    const signed=comments.filter(trustedControlComment);
+    const records=signed.flatMap(comment=>parseRecords([comment])||[]);
+    const reserved=records.some(x=>x.task_key===taskKey&&x.head_sha===expectedSha&&
+      x.pr_number===number&&x.state==='RESERVED'&&x.owner_run_id===suppliedRun);
+    const claimed=comments.some(c=>String(c.body||'').includes(
+      '<!-- '+MARKER+' '+expectedSha+' -->'));
+    const prior=records.filter(x=>x.task_key===taskKey&&x.head_sha===expectedSha&&
+      x.state==='NO_CLAIM_RETRYABLE').length;
+    if(reserved&&!claimed&&prior<2){
+      state='NO_CLAIM_RETRYABLE';
+      retryAfter=new Date(Date.now()+15*60_000).toISOString();
+      reservationRunId=suppliedRun;
+    }else if(reserved&&prior>=2){
+      state='REJECTED';reason='NO_CLAIM_RETRY_BUDGET_EXHAUSTED';
+    }else core.warning('HH_REPAIR_RETRY_PROOF_MISSING '+
+      (claimed?'SOURCE_CLAIM_PRESENT':'RESERVATION_NOT_VERIFIED'));
+  }
+  let failedStep=null;
+  if(['FAILED','REJECTED'].includes(state)){
+    try{
+      const jobs=(await github.rest.actions.listJobsForWorkflowRun({
+        owner,repo,run_id:Number(context.runId),per_page:100})).data?.jobs||[];
+      const failed=jobs.find(j=>j.conclusion==='failure');
+      failedStep=failed?.steps?.find(s=>s.conclusion==='failure')?.name||
+        failed?.name||null;
+    }catch(error){core.info('HH_REPAIR_OUTCOME_JOB_DIAGNOSTICS_UNAVAILABLE '+error.message);}
+  }
+  const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
+    head_sha:expectedSha,lane:'repair',state,reason_code:reason,
+    source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
+    claim_status:claimStatus||'unknown',claim_result:claimResult||'unknown',
+    reservation_run_id:reservationRunId,retry_after:retryAfter,
+    created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
+    publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
+    owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  await github.rest.issues.createComment({owner,repo,issue_number:number,
+    body:marker+'\n'+commentBody(result)});
+  // No destructive operation, source overwrite, force push or CI bypass.
+  // An attempted failed source fix needs a coding agent; retire its queue
+  // label only when the original HEAD is still current and owner-verified.
+  if(state==='FAILED'&&claimStatus==='claimed'&&sameHead){
+    // Only the authenticated exact-run CLAIMED receipt may elevate the
+    // same source HEAD to manual coding. A copied/foreign receipt cannot.
+    const claimedBySameRun=comments.some(comment=>
+      trustedControlComment(comment)&&
+      String(comment.body||'').includes('<!-- '+MARKER+' '+expectedSha+' -->')&&
+      parseRecords([comment])?.some(record=>record.state==='CLAIMED'&&
+        record.owner_run_id===runId&&record.head_sha===expectedSha&&
+        record.pr_number===number&&record.task_key===taskKey));
+    const leaseFree=externalOwnerLeaseStatus(comments,expectedSha,Date.now())==='FREE';
+    if(!claimedBySameRun||!leaseFree){
+      core.warning('HH_REPAIR_OUTCOME_MANUAL_QUEUE_NOT_VERIFIED '+(claimedBySameRun?'OWNER_LEASE_ACTIVE':'CLAIM_PROOF_MISSING'));
+    }else{
+    const fresh=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+    if(fresh?.head?.sha===expectedSha&&fresh?.state==='open'&&
+       fresh.labels?.some(l=>l.name===SOURCE)){
+      await github.rest.issues.addLabels({owner,repo,issue_number:number,labels:[MANUAL]});
+      try{await github.rest.issues.removeLabel({owner,repo,issue_number:number,name:SOURCE});}
+      catch(error){if(error.status!==404)core.warning('HH_REPAIR_OUTCOME_LABEL_RELEASE '+error.message);}
+    }
+    }
+  }
+  core.info('HH_REPAIR_OUTCOME '+JSON.stringify(result));
+  await core.summary.addHeading('HH Repair Worker — verified final outcome')
+    .addCodeBlock(JSON.stringify(result,null,2)).write();
+  return result;
+}
+
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
