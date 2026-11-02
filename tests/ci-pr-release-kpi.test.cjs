@@ -130,3 +130,19 @@ test('served proof cannot label diverged, unverified, missing endpoint or malfor
  assert.equal(result.state,'PRODUCTION_HEAD_MOVED_OR_UNPROTECTED');
  assert.deepEqual(diverged.mutations,[]);
 });
+
+test('Vercel API-backed served revision can issue a historical LIVE receipt without public JSON',async()=>{
+ const served={...proof,
+  checked_at:'2026-11-02T06:31:39Z',
+  current_head_sha:old,
+  proof_method:'VERCEL_API_READY_AND_ALIAS_WITH_GITHUB_STATUS_ANCESTRY'};
+ assert.equal(certified(served),true);
+ const v=f({head:old});
+ const result=await recordLive({github:v.github,context:ctx,report:served});
+ assert.equal(result.state,'RECORDED');
+ assert.deepEqual(result.recorded,[8]);
+ assert.deepEqual(v.mutations,[['comment',8],['label',8]]);
+ const noStatus={...served,
+  evidence_urls:served.evidence_urls.filter(x=>!x.includes('vercel.com'))};
+ assert.equal(certified(noStatus),false);
+});
