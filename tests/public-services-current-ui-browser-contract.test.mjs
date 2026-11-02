@@ -71,3 +71,21 @@ test('WebKit mobile disclosure stays accessible and unused Next routes are not p
  assert.match(gallery,/href=\{profileLink\} prefetch=\{false\}/)
  assert.match(gallery,/href=\{"\/" \+ locale \+ "\/masters"\} prefetch=\{false\}/)
 });
+
+test('Business free-review CTAs retain browser-native WebKit navigation and consent-gated analytics',()=>{
+ const landing=read('components/business-consulting-landing.tsx')
+ const acquisition=read('components/acquisition-event-link.tsx')
+ const browser=read('scripts/verify-business-quiz-mobile.mjs')
+ assert.match(landing,/free-situation-review\?topic=business/)
+ assert.equal((landing.match(/nativeNavigation/g)||[]).length,4)
+ assert.match(landing,/data-business-cta": "free-hero"/)
+ assert.match(acquisition,/if \(nativeNavigation\) return <a/)
+ assert.match(acquisition,/analyticsConsent !== "granted"/)
+ assert.match(acquisition,/emit\(event\)/)
+ assert.match(acquisition,/prefetch=\{prefetch\}/)
+ // The original real-click, exact destination and consent browser assertions
+ // remain mandatory; no synthetic navigation or WebKit skip is introduced.
+ assert.match(browser,/await page\.locator\('\[data-business-cta="free-hero"\]'\)\.click\(\)/)
+ assert.match(browser,/await freeNavigation/)
+ assert.match(browser,/assert\.deepEqual\(externalPosts,\[\]/)
+})

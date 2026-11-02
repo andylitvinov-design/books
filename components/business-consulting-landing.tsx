@@ -61,7 +61,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <p className={styles.heroLead}>{t.lead}</p>
             <p className={styles.audiences}><Check size={17} aria-hidden="true" />{t.audiences}</p>
             <div className={styles.heroActions}>
-              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
+              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} nativeNavigation attributes={{ "data-business-cta": "free-hero" }}>
                 {t.freeCta}<ArrowRight size={19} aria-hidden="true" />
               </AcquisitionEventLink>
               <a href="#business-offers" className={styles.secondary}>{t.paidCta}<ArrowUpRight size={18} aria-hidden="true" /></a>
@@ -87,7 +87,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         <nav className={styles.quickStart} aria-label={t.offersTitle} data-business-quick-start>
           <span className={styles.quickStartTitle}>{locale === "ru" ? "С чего начать?" : locale === "es" ? "¿Por dónde empezar?" : "Where to begin?"}</span>
           <div className={styles.quickStartActions}>
-            <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.quickStartFree} prefetch={false}
+            <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.quickStartFree} prefetch={false} nativeNavigation
               attributes={{ "data-business-quick-action": "free-written-review" }}>
               {t.offers[0].name}<ArrowRight size={16} aria-hidden="true" />
             </AcquisitionEventLink>
@@ -131,7 +131,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                   <div className={styles.offerActions}>
                     {offer.kind === "free" ? (
                       <AcquisitionEventLink href={freeHref} event="service_request_start"
-                        className={styles.offerLink} prefetch={false}
+                        className={styles.offerLink} prefetch={false} nativeNavigation
                         attributes={{ "data-business-format": "free" }}>
                         {offer.cta}<ArrowRight size={17} aria-hidden="true" />
                       </AcquisitionEventLink>
@@ -236,7 +236,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         <section className={styles.bottom}>
           <h2>{t.finalTitle}</h2>
           <AcquisitionEventLink href={freeHref} event="service_request_start" prefetch={false}
-            className={styles.bottomAction} attributes={{ "data-business-cta": "free-bottom" }}>
+            className={styles.bottomAction} nativeNavigation attributes={{ "data-business-cta": "free-bottom" }}>
             {t.finalCta}<ArrowRight size={18} aria-hidden="true"/>
           </AcquisitionEventLink>
         </section>

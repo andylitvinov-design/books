@@ -17,6 +17,7 @@ type AcquisitionEventLinkProps = {
   href: string;
   id?: string;
   onClick?: () => void;
+  nativeNavigation?: boolean;
   prefetch?: boolean;
   rel?: string;
   target?: string;
@@ -29,6 +30,13 @@ function emit(event: AcquisitionEvent) {
   window.dispatchEvent(new CustomEvent("holistic-house:acquisition", { detail: { event } }));
 }
 
-export function AcquisitionEventLink({ analyticsEvent, attributes, children, event, onClick, ...props }: AcquisitionEventLinkProps) {
-  return <Link {...props} {...attributes} onClick={() => { onClick?.(); emit(event); if (analyticsEvent) emit(analyticsEvent); }}>{children}</Link>;
+export function AcquisitionEventLink({
+  analyticsEvent, attributes, children, event, onClick, nativeNavigation = false, prefetch, ...props
+}: AcquisitionEventLinkProps) {
+  const handleClick = () => { onClick?.(); emit(event); if (analyticsEvent) emit(analyticsEvent); };
+  // The free-review handoff must work even when WebKit's hydrated Next router
+  // is busy after an in-page request-form hash navigation. Preserve the real
+  // browser GET and the same consent-gated acquisition event.
+  if (nativeNavigation) return <a {...props} {...attributes} onClick={handleClick}>{children}</a>;
+  return <Link {...props} {...attributes} prefetch={prefetch} onClick={handleClick}>{children}</Link>;
 }
