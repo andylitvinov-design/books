@@ -2,10 +2,10 @@
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
+const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
-const {isRateLimitError,retryAt}=require('./ci-pr-api-budget.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
@@ -101,7 +101,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   specialistReclassified:0,wouldSpecialistReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
   actionableByLane:{repair:0,ci:0,conflict:0},
-  capacityReason:null,blocked:{},
+  capacityReason:null,blocked:{},legacyCiRecovery:null,
   workerRuns:[],blockerExamples:{},apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',reason:null};
  const log=s=>core.info('HH_CONTROL_TOWER: '+s);
  let currentTask=null;
@@ -118,28 +118,19 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
- const {owner,repo}=context.repo;let exhausted=false;
+ const {owner,repo}=context.repo;
+ const {createQuotaGuard,classify}=require('./ci-pr-api-quota.cjs');
+ const quota=createQuotaGuard({maxCalls:MAX_API,minRemaining:MIN_RATE,
+  onPause:state=>log('API_PAUSED '+state.reason+' retryAt='+(state.retryAt||'next cycle'))});
  const limited=async(name,fn)=>{
-  if(exhausted||summary.apiRequests>=MAX_API){
-   exhausted=true;summary.reason||='LOCAL_API_BUDGET_PAUSE';
-   throw Error('HH_CONTROL_API_BUDGET:'+name);
-  }
-  summary.apiRequests++;
-  try{
-   const result=await fn();const rate=result?.headers?.['x-ratelimit-remaining'];
-   if(rate!==undefined&&rate!==null&&Number.isFinite(Number(rate))){
-    summary.apiRemaining=Number(rate);
-    if(summary.apiRemaining<MIN_RATE){
-     exhausted=true;summary.reason='GITHUB_RATE_RESERVE_PAUSE';
-    }
+  try{return await quota.limited(name,fn);}
+  finally{
+   summary.apiRequests=quota.state.requests;
+   summary.apiRemaining=quota.state.remaining;
+   if(quota.state.paused){
+    summary.apiPauseReason=quota.state.reason;
+    summary.apiRetryAt=quota.state.retryAt;
    }
-   return result;
-  }catch(error){
-   if(isRateLimitError(error)){
-    exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';
-    summary.retryAt=retryAt(error,now);
-   }
-   throw error;
   }
  };
  let prs=[];
@@ -151,11 +142,24 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(res.data.length<100)break;
    if(page===6)throw Error('PR_PAGINATION_LIMIT');
   }
- }catch(err){summary.reason||='INVENTORY_UNVERIFIED: '+err.message;return finish();}
+ }catch(err){summary.reason=quota.state.paused?'API_PAUSED_INVENTORY':'INVENTORY_UNVERIFIED: '+err.message;return finish();}
+ if(quota.state.paused){summary.reason='API_PAUSED_INVENTORY';return finish();}
  summary.discovered=prs.length;
- if(exhausted)return finish(); // Keep headroom; never reserve while rate is low.
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
+ // Reconcile a *proven* old terminal denial only after the new no-commit
+ // Worker is on trusted default. This cannot silently free a source owner:
+ // the helper validates bot-signed receipts, completed run, current HEAD,
+ // worker idle state and records a signed no-claim result before clearing
+ // one failed-attempt label.
+ try{
+  summary.legacyCiRecovery=await reconcileLegacyCiDenial({
+   github,context,prs:production,now,dryRun,limited
+  });
+ }catch(e){
+  summary.legacyCiRecovery={status:'UNAVAILABLE',
+   reason:'RECOVERY_UNVERIFIED',detail:String(e.message||e).slice(0,120)};
+ }
  const candidates=planCandidates(production,now);
  summary.actionable=production.filter(pr=>validPR(pr)&&laneOf(pr)).length;
  for(const pr of production){
@@ -166,26 +170,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Metadata-only handoffs survive runner saturation or unknown inventory.
  let capacity=null,capacityReason=null;
  try{capacity=await capacityFn(github,owner,repo);}
- catch(e){
-  if(isRateLimitError(e)){
-   exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';summary.retryAt=retryAt(e,now);
-   return finish();
-  }
-  capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);
- }
+ catch(e){capacityReason='CAPACITY_UNVERIFIED: '+String(e.message||e).slice(0,120);}
  // A transitional partial inventory must never admit CI. Re-read once so a
  // settled GitHub snapshot can unblock this sweep without waiting for cron.
  // If the recheck fails, retain the conservative partial snapshot.
  if(capacity?.inventoryConfidence==='BOUNDED_PARTIAL'&&candidates.some(t=>t?.lane==='ci')){
   try{capacity=await capacityFn(github,owner,repo);}
-  catch(e){
-   if(isRateLimitError(e)){
-    exhausted=true;summary.reason='GITHUB_RATE_LIMIT_PAUSE';summary.retryAt=retryAt(e,now);
-    return finish();
-   }
-   log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));
-  }
+  catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
  }
+ if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
  if(capacity?.known)summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
@@ -198,7 +191,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
  for(const task of ordered){
-  if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
+  if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
@@ -498,11 +491,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    usedWorkers.add(worker);
    log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
   }catch(err){
-   blocked('DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
+   blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
    // Never release an ambiguous reservation. A definite non-accepted HTTP
    // response can be requeued after an authenticated ten-minute backoff.
    const code=Number(err?.status||err?.response?.status||0);
-   if(DEFINITIVE_DISPATCH_DENIAL.has(code)){
+   if(DEFINITIVE_DISPATCH_DENIAL.has(code)&&!classify(err)){
     const rejected={...claim,state:'DISPATCH_REJECTED',
      created_at:new Date(now+1000).toISOString(),
      outcome:'DEFINITIVELY_NOT_ACCEPTED',http_status:code,
@@ -519,7 +512,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
   }
  }
- summary.reason||=summary.dispatchAccepted?'DISPATCH_ACCEPTED':
+ summary.reason||=quota.state.paused?'API_PAUSED':summary.dispatchAccepted?'DISPATCH_ACCEPTED':
    summary.manualConflictHandoffs?'CONFLICT_HANDOFF_ACCEPTED':
    summary.wouldDispatch?'DRY_RUN_CANDIDATES':
    summary.wouldManualConflictHandoffs?'DRY_RUN_CONFLICT_HANDOFF':

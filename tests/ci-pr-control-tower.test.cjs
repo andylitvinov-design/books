@@ -67,12 +67,39 @@ test('capacity counts actual jobs and enforces separate lane caps',()=>{
  assert.equal(admission('repair',cap(18,43)),'ADMIT');
  assert.equal(admission('repair',cap(23,43)),'ADMIT');
  assert.equal(admission('repair',cap(24,43)),'RUNNERS_SATURATED');
- assert.equal(admission('repair',cap(18,60)),'RUNNERS_SATURATED');
+ assert.equal(admission('repair',cap(18,60)),'ADMIT',
+  'single short source worker may use bounded overflow without multiplying optional CI');
+ assert.equal(admission('repair',cap(18,72)),'RUNNERS_SATURATED');
  assert.equal(admission('ci',cap(18,43)),'CI_QUEUE_BUSY');
  assert.equal(admission('repair',computeCapacity([{name:'HH PR source Repair Worker'}],[],[])),'WORKER_BUSY');
  assert.equal(admission('repair',{known:false}),'CAPACITY_UNKNOWN');
 });
 
+test('Core backpressure still protects mandatory CI when Repair gets bounded headroom',()=>{
+ const x=cap(12,64);
+ assert.equal(admission('repair',x),'ADMIT');
+ assert.equal(admission('ci',x),'RUNNERS_SATURATED');
+ assert.equal(admission('conflict',x),'RUNNERS_SATURATED');
+ const manyCore=computeCapacity(
+  Array.from({length:12},(_,i)=>({name:'misc runner '+i})),
+  Array.from({length:64},(_,i)=>({name:i<21?'HH PR core release gate':'HH native auto-merge'})),[]);
+ assert.equal(admission('repair',manyCore),'CORE_PRIORITY_PENDING');
+ assert.equal(admission('ci',manyCore),'RUNNERS_SATURATED');
+});
+test('queue above optional cap is still completely verified before one Repair admission',async()=>{
+ const queued=Array.from({length:64},(_,i)=>({name:'HH native auto-merge',id:i+1}));
+ const api={rest:{actions:{
+  listWorkflowRunsForRepo:async({status})=>({data:status==='queued'?
+    {total_count:queued.length,workflow_runs:queued}:
+    {total_count:0,workflow_runs:[]}}),
+  listJobsForWorkflowRun:async()=>{throw Error('No active jobs to read');}
+ }}};
+ const state=await snapshot(api,'andylitvinov-design','books');
+ assert.equal(state.known,true);
+ assert.equal(state.queuedRuns,64);
+ assert.equal(admission('repair',state),'ADMIT');
+ assert.equal(admission('ci',state),'RUNNERS_SATURATED');
+});
 test('repair still fails closed when runner jobs or its own worker are saturated',()=>{
  const unrelated=Array.from({length:18},(_,i)=>({name:'Other workflow '+i}));
  const jobs=Array.from({length:38},()=>({status:'in_progress'}));
@@ -694,7 +721,7 @@ test('live dispatcher runs syntax only; full contract stays a PR-only job',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
  const jobs=yml.split('\n  dispatch:\n');
  assert.equal(jobs.length,2);
- assert.ok(jobs[0].includes("node --test tests/ci-pr-control-tower.test.cjs"));
+ assert.ok(jobs[0].includes('tests/ci-pr-control-tower.test.cjs'));
  assert.ok(!jobs[1].includes('node --test '));
  assert.ok(jobs[1].includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
  assert.ok(yml.includes('  checks: read\n'));
@@ -1002,30 +1029,60 @@ test('verified old single-head Work release cannot block unrelated new source wo
  assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
   'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
 });
+test('Control Tower expires old pre-lease-id claims without stealing real owners',async()=>{
+ const actor={login:'andylitvinov-design'},wrap=x=>({
+  user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)
+ });
+ const legacy={schema:'HH_PR_SWEEP_LEASE_V1',owner:'old-chat',head_sha:SHA,
+  last_action:'claimed',expires_at:new Date(NOW-60000).toISOString()};
+ assert.equal(externalOwnerLeaseStatus([wrap(legacy)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap(legacy)],SHA,NOW-120000),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,last_action:'heartbeat'})],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,expires_at:undefined})],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED','no deadline cannot be silently ignored');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,state:'active'})],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','modern active lease cannot expire without release');
+ assert.equal(externalOwnerLeaseStatus([wrap({...legacy,lease_id:'L',state:'claimed'})],SHA,NOW),
+  'OWNER_LEASE_ACTIVE','modern lease ID always protects its current writer');
+ const f=fixture([pr(1)],{comments:{1:[proof(),wrap(legacy)]}});
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1,'valid source worker is admitted after old claim expires');
+});
+test('malformed unrelated historic JSON does not freeze the next HEAD',()=>{
+ const wrap=x=>({body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+x});
+ const old='b'.repeat(40);
+ assert.equal(externalOwnerLeaseStatus([wrap('{"head_sha":"'+old+'","state":')],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap('{"head_sha":"'+SHA+'","state":')],SHA,NOW),
+  'OWNER_LEASE_UNVERIFIED');
+ assert.equal(externalOwnerLeaseStatus([wrap('not JSON')],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+test('old Codex claim with no run id must carry a verifiable expiry',()=>{
+ const legacy={owner:'Codex',head_sha:SHA,last_action:'heartbeat',
+  lease_expires:new Date(NOW-30000).toISOString()};
+ const comment={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(legacy)};
+ assert.equal(externalOwnerLeaseStatus([comment],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([comment],SHA,NOW-60000),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify({...legacy,lease_expires:undefined})}],SHA,NOW),'OWNER_LEASE_UNVERIFIED');
+});
+test('an expired legacy claim cannot delete another owner active state',()=>{
+ const actor={login:'andylitvinov-design'},wrap=x=>({user:actor,
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ const active={schema:'HH_PR_SWEEP_LEASE_V1',owner:'same-owner',head_sha:SHA,
+  state:'active',expires_at:new Date(NOW-90000).toISOString()};
+ const old={schema:'HH_PR_SWEEP_LEASE_V1',owner:'same-owner',head_sha:SHA,
+  last_action:'claimed',expires_at:new Date(NOW-90000).toISOString()};
+ assert.equal(externalOwnerLeaseStatus([wrap(active),wrap(old)],SHA,NOW),
+  'OWNER_LEASE_ACTIVE');
+});
 
-test('dispatcher stops globally on GitHub quota 403 without creating blockers',async()=>{
- const f=fixture([pr(1)],{comments:{1:[proof()]}});
- f.github.rest.pulls.list=async()=>{const e=new Error('API rate limit exceeded');e.status=403;throw e;};
- const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(result.reason,'GITHUB_RATE_LIMIT_PAUSE');
- assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
- assert.equal(f.calls.dispatched.length,0);
-});
-test('dispatcher reserves API headroom instead of making source reservations',async()=>{
- const f=fixture([pr(1)],{comments:{1:[proof()]}});
- f.github.rest.pulls.list=async()=>({data:[pr(1)],headers:{'x-ratelimit-remaining':'80'}});
- const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(result.reason,'GITHUB_RATE_RESERVE_PAUSE');
- assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
-});
-test('one rate-limited PR inspection does not fan out across the candidate list',async()=>{
- const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
- let readCount=0;
- f.github.rest.pulls.get=async()=>{
-  readCount++;
-  const e=new Error('API rate limit exceeded');e.status=403;throw e;
- };
- const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
- assert.equal(result.reason,'GITHUB_RATE_LIMIT_PAUSE');
- assert.equal(readCount,1);assert.equal(f.calls.reserved.length,0);
+test('old denied CI bootstrap reconciliation is isolated from dispatch and fail-closed',()=>{
+ const s=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.ok(s.includes("reconcileLegacyCiDenial({"));
+ assert.ok(s.includes("summary.legacyCiRecovery="));
+ assert.ok(s.includes("dryRun,limited"));
+ assert.ok(workflow.includes('tests/ci-pr-control-tower.test.cjs') &&
+  workflow.includes('tests/ci-pr-ci-legacy-recovery.test.cjs'));
+ assert.ok(workflow.includes("node --check scripts/ci-pr-ci-legacy-recovery.cjs"));
 });

@@ -522,3 +522,93 @@ test('existing Repair Worker workflow carries reservation identity without sourc
  const dispatcher=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });
+
+
+test('exact-head addressed Repair verifies signed dispatcher reservation without queue scan',async()=>{
+ const now=Date.parse('2026-11-02T15:10:00Z');
+ const task=taskFor(pr(),{tier:'P1'});
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const proof={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'};
+ const hold={...bot,body:commentBody(reservation(task,now-1000,42))};
+ const ctx={...context,eventName:'workflow_dispatch',runId:99};
+ const f=fixture({comments:[proof,hold]});
+ f.github.rest.issues.listForRepo=async()=>{throw Error('Must not scan unrelated queues');};
+ core.outputs={};
+ const args={github:f.github,core,context:ctx,hasToken:true,
+   number:11,expectedSha:sha,taskKey:task.task_key,reservationRunId:'42',now};
+ const ok=await claim(args);
+ assert.equal(ok.status,'claimed');
+ assert.equal(f.log.comments,1);
+ assert.equal(core.outputs.strategy,'lint');
+ const unsigned=fixture({comments:[proof,{body:hold.body}]});
+ assert.equal((await claim({...args,github:unsigned.github})).status,'skipped');
+ assert.equal(unsigned.log.comments,0);
+ const superseded=fixture({comments:[proof,hold,{...bot,
+   body:commentBody({...task,state:'CLAIMED',owner_run_id:'other'})}]});
+ assert.equal((await claim({...args,github:superseded.github})).status,'skipped');
+ assert.equal(superseded.log.comments,0);
+ const invalid=await claim({...args,reservationRunId:''});
+ assert.equal(invalid.reason,'INVALID_ADDRESSED_REPAIR_TASK');
+});
+
+test('scheduled Repair avoids conflict-only queue and active dispatcher reservations',async()=>{
+ const conflict=fixture({pr:pr({mergeable:false,mergeable_state:'dirty',
+   labels:[{name:'hh:conflict-repair-needed'}]})});
+ conflict.github.rest.issues.listForRepo=async args=>{
+   assert.equal(args.labels,'hh:repair-needed');return {data:[]};
+ };
+ conflict.github.rest.pulls.get=async()=>{throw Error('Cron must not claim conflict');};
+ const r=await claim({github:conflict.github,core,context:{...context,eventName:'schedule'},
+   hasToken:true,number:0});
+ assert.equal(r.status,'skipped');assert.equal(conflict.log.comments,0);
+ const task=taskFor(pr(),{tier:'P1'}),now=Date.now();
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const f=fixture({comments:[{...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'},
+   {...bot,body:commentBody(reservation(task,now-1000,42))}]});
+ const held=await claim({github:f.github,core,context:{...context,eventName:'schedule'},
+   hasToken:true,number:0,now});
+ assert.equal(held.status,'skipped');assert.equal(f.log.comments,0);
+});
+
+test('Repair respects Control Tower hold labels and finalizer can post PR outcome',()=>{
+ for(const blocked of ['hh:blocked','hh:worker-claimed','hh:direction-override:invalid']){
+   assert.equal(eligible(pr({labels:[{name:'hh:repair-needed'},{name:blocked}]}),owner+'/'+repo),false);
+ }
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const final=wf.split('\n  finalize:\n')[1];
+ assert.ok(final&&final.includes('pull-requests: write'));
+ assert.ok(final.includes('issues: write'));
+ assert.ok(wf.includes("reservationRunId:String(context.payload.inputs?.reservation_run_id || '')"));
+ assert.ok(wf.includes('cache: npm'));
+});
+
+
+test('empty ESLint candidate skips privileged publisher and finalizer routes to truthful manual outcome',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
+   state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
+ const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
+ const outcome=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+   claimResult:'success',fixResult:'success',publishResult:'skipped',
+   candidateStatus:'manual_required',candidateDetail:'ESLINT_SCOPE_NOT_CONFIGURED'});
+ assert.equal(outcome.state,'MANUAL');
+ assert.equal(outcome.reason_code,'NO_VERIFIED_SOURCE_CHANGE');
+ assert.equal(outcome.detail_code,'ESLINT_SCOPE_NOT_CONFIGURED');
+ assert.equal(outcome.source_published,false);
+ assert.equal(outcome.new_sha,null);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.match(f.log.commentBodies.at(-1),/"state":"MANUAL"/);
+ assert.doesNotMatch(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
+});
+test('Repair no-op never launches privileged publish and retains exact-HEAD diagnostic',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(workflow,/needs\.fix\.outputs\.candidate_status == 'ready'/);
+ assert.match(workflow,/candidate_detail/);
+ assert.match(workflow,/--print-config/);
+ assert.match(workflow,/ESLINT_SCOPE_NOT_CONFIGURED/);
+});

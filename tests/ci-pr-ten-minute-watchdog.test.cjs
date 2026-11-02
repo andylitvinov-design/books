@@ -481,7 +481,8 @@ test('hourly full-inventory reads use per-repo token; owner PAT is reserved for 
   assert.ok(source.includes('          github-token: ${{ github.token }}'));
   assert.ok(source.includes('          GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
   assert.ok(!source.includes('github-token: ${{ secrets.HH_AUTOMERGE_TOKEN'));
-  assert.ok(source.includes('if(token&&!apiPaused)'), 'privileged merge must stop after verified API quota exhaustion');
+  assert.ok(source.includes('if(token&&!apiPaused)'), 'quota pause rejects new merge requests');
+  assert.ok(source.includes('selectDeepScan(pending,Date.now())'), 'hourly deep inspection is bounded');
 });
 
 test('one GraphQL batch replaces sixteen per-PR REST mergeability reads',async()=>{
@@ -878,6 +879,20 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
+  // Reproduces real run 41465939704 on PR #3121: source jobs green;
+  // modern Core no longer emits separate hh-core-verified.
+  const unified=[success('classify-change'),success('core-lint-types-build')];
+  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-specialist'),
+    fail('hh-merge-check')]),'SPECIALIST_FAILED',
+    'specialist failure must not reserve ESLint-only Repair Worker');
+  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-merge-check')]),
+    'RELEASE_GATE_ONLY','policy-only failure is not a source defect');
+  assert.equal(classifyCoreFailureJobs([...unified,fail('core-lint-types-build'),
+    fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
+    'a genuinely failed source build must not be hidden');
+  assert.equal(classifyCoreFailureJobs([...unified,fail('hh-core-verified'),
+    fail('hh-specialist'),fail('hh-merge-check')]),'SOURCE_OR_PREFLIGHT',
+    'an explicitly failed legacy Core job blocks specialist-only classification');
   assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');

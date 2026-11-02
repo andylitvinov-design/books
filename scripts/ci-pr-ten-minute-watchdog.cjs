@@ -193,16 +193,24 @@ function classifyCoreFailureJobs(jobs) {
   const core=byName.get('hh-core-verified');
   const scope=byName.get('classify-change');
   const build=byName.get('core-lint-types-build');
-  // The compatibility release-ready job delegates to hh-specialist. Preserve
-  // its actual cause rather than routing an old alias to release-gate review.
-  if (failed.some(job=>job.name==='hh-specialist') &&
-      core?.conclusion==='success' && scope?.conclusion==='success' &&
-      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+  // Current unified Core has classify-change + core-lint-types-build and
+  // hh-merge-check; old Core also emitted a separate hh-core-verified.
+  // Its ABSENCE is not a source failure, but a present failed Core is.
+  // Only the unified hh-merge-check explicitly identifies the modern
+  // workflow. Old release-ready without hh-core-verified is INCOMPLETE, not
+  // policy-green. A red present legacy Core must still fail closed.
+  const coreVerified=core?.conclusion==='success' ||
+    (core===undefined&&byName.has('hh-merge-check'));
+  const sourceGreen=scope?.conclusion==='success' &&
+    (build?.conclusion==='success' || build?.conclusion==='skipped') &&
+    coreVerified;
+  // Do not consume a deterministic ESLint source-writing slot for a verified
+  // specialist/policy failure. Independent Specialist checks still determine
+  // whether Product Repair is allowed; no result is treated as merge approval.
+  if(sourceGreen&&failed.some(job=>job.name==='hh-specialist') &&
+     failed.every(job=>job.name==='hh-specialist'||gateOnly.has(job.name)))
     return 'SPECIALIST_FAILED';
-  if (failed.every(job=>gateOnly.has(job.name)) &&
-      core?.conclusion==='success' &&
-      scope?.conclusion==='success' &&
-      (build?.conclusion==='success' || build?.conclusion==='skipped'))
+  if(sourceGreen&&failed.every(job=>gateOnly.has(job.name)))
     return 'RELEASE_GATE_ONLY';
   // Aggregate gates report downstream consequences, not the causal step.
   // Treat setup/checkout failures as environment triage at any age; the
@@ -439,35 +447,16 @@ function assessCronHealth(history,now,graceMinutes) {
 async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
-  const budget={requests:0,remaining:null,exhausted:false,reason:null};
-  const limited=async(name,operation)=>{
-    if(budget.exhausted||budget.requests>=MAX_API_CALLS){
-      budget.exhausted=true;
-      budget.reason ||= 'LOCAL_REQUEST_BUDGET';
-      throw Error('HH_API_BUDGET_EXHAUSTED: '+name);
-    }
-    budget.requests++;
-    try{
-      const result=await operation();
-      const remaining=result?.headers?.['x-ratelimit-remaining'];
-      if(remaining!==undefined&&Number.isFinite(Number(remaining))){
-        budget.remaining=Number(remaining);
-        if(budget.remaining<MIN_RATE_REMAINING){
-          budget.exhausted=true;
-          budget.reason='GITHUB_RATE_RESERVE';
-          log('PAUSE GitHub API: remaining='+budget.remaining);
-        }
-      }
-      return result;
-    }catch(error){
-      if(([403,429].includes(error?.status) || error?.status == null || error?.status === 200) &&
-         /rate.limit|rate limit|abuse|secondary/i.test(String(error?.message))){
-        budget.exhausted=true;
-        budget.reason='GITHUB_RATE_LIMIT';
-      }
-      throw error;
-    }
-  };
+  const {createQuotaGuard}=require('./ci-pr-api-quota.cjs');
+  const quota=createQuotaGuard({maxCalls:MAX_API_CALLS,minRemaining:MIN_RATE_REMAINING,
+    onPause:state=>log('PAUSE GitHub API '+state.reason+' retryAt='+(state.retryAt||'next cycle'))});
+  const budget={get requests(){return quota.state.requests;},
+    get remaining(){return quota.state.remaining;},
+    get exhausted(){return quota.state.paused;},
+    set exhausted(value){quota.state.paused=Boolean(value);},
+    get reason(){return quota.state.reason;},
+    set reason(value){quota.state.reason=value;}};
+  const limited=quota.limited;
   let all;
   try {
     all=await listOpen(github,owner,repo,limited);
