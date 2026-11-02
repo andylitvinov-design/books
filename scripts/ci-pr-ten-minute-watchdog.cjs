@@ -213,6 +213,11 @@ function classifyCoreFailureJobs(jobs) {
     return 'SPECIALIST_FAILED';
   if(sourceGreen&&failed.every(job=>gateOnly.has(job.name)))
     return 'RELEASE_GATE_ONLY';
+  // A failed classify-change is an ancestry/routing preflight, not evidence
+  // that a TypeScript/ESLint build even ran. For old PR bases the source job
+  // can be skipped and must not reserve the source-coding Repair Worker.
+  if(scope?.conclusion==='failure' && build?.conclusion!=='failure')
+    return 'CI_PREFLIGHT_OR_ROUTING';
   // Aggregate gates report downstream consequences, not the causal step.
   // Treat setup/checkout failures as environment triage at any age; the
   // separate retry policy still decides whether and when a rerun is safe.
@@ -962,6 +967,16 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       } else if(root==='SPECIALIST_FAILED') {
         await routeVerifiedSpecialist(live);
         log('#'+pr.number+' specialist aggregate failed; independently verified cause decides its queue');
+      } else if(root==='CI_PREFLIGHT_OR_ROUTING') {
+        summary.infraOrEnvironment++;
+        // Keep CI preflight in the existing owner release-gate review lane.
+        // A red prerequisite is not permission to edit PR source files.
+        if(summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
+          if(await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
+            'Core classify-change/ancestry preflight failed; repair CI routing, not PR source',
+            'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
+        }
+        log('#'+pr.number+' Core preflight/routing failure; no speculative source Repair');
       } else if(root==='CI_INFRA_OR_ENVIRONMENT') {
         summary.infraOrEnvironment++;
         log('#'+pr.number+' setup or infrastructure failure; no speculative source repair');
