@@ -76,4 +76,17 @@ async function waitForWorkerCompletion({github,owner,repo,runId,clock=Date.now,
   }
   return false;
 }
-module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,DISPATCHER};
+async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,log=()=>{}}){
+  const inputs=context?.payload?.inputs||{},runId=String(inputs.worker_run_id||'');
+  if(context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books'||
+     context.ref!=='refs/heads/'+DEFAULT||context.eventName!=='workflow_dispatch'||
+     String(inputs.completion_wake)!=='true'||String(inputs.dry_run)!=='false'||
+     !/^\d{1,16}$/.test(runId)||!Number.isSafeInteger(Number(runId))||Number(runId)<1)return 'NOT_ACTIONABLE';
+  try{
+    if(!await wait({github,owner:context.repo.owner,repo:context.repo.repo,runId}))return 'WORKER_UNVERIFIED';
+    await github.rest.actions.createWorkflowDispatch({owner:context.repo.owner,repo:context.repo.repo,
+      workflow_id:DISPATCHER,ref:DEFAULT,inputs:{dry_run:'false'}});
+    return 'DISPATCH_ACCEPTED';
+  }catch(error){log('Worker completion relay deferred: '+String(error.message||error).slice(0,160));return 'HANDOFF_UNAVAILABLE';}
+}
+module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,relayCompletionWake,DISPATCHER};

@@ -89,3 +89,28 @@ test('completion wake never trusts a foreign, failed, or perpetually active run'
    clock:()=>now,sleep:async ms=>{now+=ms}}),false);
  }
 });
+test('completion relay only starts the writer after verified worker completion',async()=>{
+ const {relayCompletionWake}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{completion_wake:'true',worker_run_id:'42',dry_run:'false'}}};
+ const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>calls.push(x)}}};
+ assert.equal(await relayCompletionWake({github,context,wait:async()=>false}),'WORKER_UNVERIFIED');assert.equal(calls.length,0);
+ assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'DISPATCH_ACCEPTED');
+ assert.deepEqual(calls[0].inputs,{dry_run:'false'});
+ assert.equal(await relayCompletionWake({github,context:{...context,payload:{inputs:{...context.payload.inputs,dry_run:'true'}}},wait:async()=>true}),'NOT_ACTIONABLE');
+ assert.equal(calls.length,1);
+});
+test('completion waits do not occupy or replace the single-writer queue',()=>{
+ const s=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.match(s,/completion-wait:/);assert.match(s,/hh-control-wait-/);
+ assert.match(s,/hh-control-tower-single-writer/);assert.match(s,/relayCompletionWake/);
+ assert.doesNotMatch(s,/^concurrency:\s*$/m);
+});
+test('completion relay rejects forged inputs and handles dispatch denial',async()=>{
+ const {relayCompletionWake}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch',payload:{inputs:{completion_wake:'true',worker_run_id:'42',dry_run:'false'}}};
+ let calls=0;const github={rest:{actions:{createWorkflowDispatch:async()=>{calls++;throw Error('denied')}}}};
+ for(const bad of [{...context,repo:{owner:'other',repo:'books'}},{...context,eventName:'push'},
+  {...context,payload:{inputs:{...context.payload.inputs,worker_run_id:'x'}}}])
+  assert.equal(await relayCompletionWake({github,context:bad,wait:async()=>true}),'NOT_ACTIONABLE');
+ assert.equal(calls,0);assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'HANDOFF_UNAVAILABLE');assert.equal(calls,1);
+});

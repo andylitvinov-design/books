@@ -5,7 +5,8 @@ test('Control Tower skips canceled/skipped callbacks while preserving separate P
  assert.ok(s.includes("github.event.workflow_run.conclusion != 'cancelled'"));
  assert.ok(s.includes("github.event.workflow_run.conclusion != 'skipped'"));
  assert.ok(s.includes("github.event_name != 'workflow_run'"));
- assert.ok(s.includes("group: hh-control-tower-${{ github.event_name == 'pull_request'"));
+ assert.ok(s.includes('group: hh-control-contract-'));
+ assert.ok(s.includes('group: hh-control-tower-single-writer'));
 });
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
@@ -346,7 +347,8 @@ test('incomplete job inventory stops without dispatch',async()=>{
 
 test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.ok(wf.includes("github.event_name == 'pull_request' && github.event.pull_request.number || 'single-writer'"));
+ assert.ok(wf.includes('hh-control-contract-'));
+ assert.ok(wf.includes('hh-control-tower-single-writer'));
  assert.ok(wf.includes('cancel-in-progress: false'));
 });
 

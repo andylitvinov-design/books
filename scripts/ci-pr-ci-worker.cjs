@@ -105,6 +105,28 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     summary.reason='CI_QUEUE_BUSY';
     return writeSummary();
   }
+  // The independent scheduled worker has its own admission path: it must
+  // respect queued mandatory Core workflows, not only global totals.
+  if(active>=8||queued>=2){
+    try{
+      const coreRun=await limited('queued-mandatory-core',()=>github.request(
+        'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
+          owner,repo,workflow_id:CORE,status:'queued',per_page:1
+        }));
+      const pending=coreRun?.data?.total_count;
+      if(!Number.isSafeInteger(pending)||pending<0){
+        summary.reason='CORE_QUEUE_UNVERIFIED';return writeSummary();
+      }
+      if(summary.apiPause)return writeSummary();
+      if(pending>0){
+        summary.reason='CORE_PRIORITY_PENDING';return writeSummary();
+      }
+    }catch(error){
+      summary.reason ||= 'CORE_QUEUE_UNVERIFIED';
+      log('SKIP mandatory Core inventory: '+error.message);
+      return writeSummary();
+    }
+  }
   if(taskKey && (!/^[a-f0-9]{32}$/i.test(taskKey) || !SHA.test(expectedSha) ||
       !Number.isSafeInteger(prNumber) || prNumber<1)){
     summary.reason='INVALID_ADDRESSED_CI_TASK';return writeSummary();
