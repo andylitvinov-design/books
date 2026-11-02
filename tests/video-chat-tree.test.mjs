@@ -168,6 +168,45 @@ test("auto-selected extended phrase keeps both sentences for two actual scene ca
   assert.ok(auto?.phraseText.length>35);
 });
 
+test("broad LOVE goals use only their editorial parent in RU, EN and ES",()=>{
+  for(const [goal,locale] of [
+    ["Видео про любовь","ru"],
+    ["A video about love","en"],
+    ["Vídeo sobre amor","es"],
+  ]){
+    const path=initialVideoChatTree(goal,locale);
+    assert.equal(path.categoryId,"love",goal);
+    const selected=autocompleteVideoChatTree({...draft(goal,locale),...path},
+      "relationships",locale);
+    assert.equal(selected?.categoryId,"love",goal);
+    assert.ok(selected?.topicId?.startsWith("love-"),goal);
+    assert.ok(selected?.scenarioId,goal);
+  }
+  const unknown=initialVideoChatTree("food", "en");
+  assert.equal(unknown.categoryId,null);
+  assert.equal(autocompleteVideoChatTree(draft("food","en"),"energy","en"),null);
+});
+
+test("autocomplete preserves a manually selected prepared phrase or custom copy",()=>{
+  let path=pick(pick(pick(pick(draft(),"category","love"),"topic","love-trust"),
+    "scenario","love-trust-s3"),"idea","love-trust-s3-i2");
+  const choices=videoChatTreeOptions(path,"phrase","ru");
+  path=pick(path,"phrase",choices[2].id);
+  const selected=autocompleteVideoChatTree({...path,aspect:"square"},
+    "relationships","ru");
+  assert.equal(selected?.phraseId,choices[2].id);
+  assert.equal(selected?.phraseText,choices[2].label);
+  assert.equal(selected?.aspect,"square");
+  const own=chooseCustomVideoChatPhrase(path,"Я выбираю свой путь.");
+  const preserved=autocompleteVideoChatTree(own,"relationships","ru");
+  assert.equal(preserved?.phraseId,"custom");
+  assert.equal(preserved?.phraseText,"Я выбираю свой путь.");
+  const noText=autocompleteVideoChatTree({...path,phrases:false},
+    "relationships","ru");
+  assert.equal(noText?.phraseId,null);
+  assert.equal(noText?.phraseText,null);
+});
+
 test("source integration uses one existing renderer, safe unbound warning and client-only prepared copy",()=>{
   const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");

@@ -120,7 +120,11 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  assert.match(core, /^  release-ready:/m);
+  // Production branch rules require the unified, fail-closed hh-merge-check.
+  // Its actual Core build and specialist jobs must remain hard prerequisites.
+  assert.match(core, /^  hh-merge-check:/m);
+  assert.match(core, /needs: \[scope, code, hh-specialist\]/);
+  assert.match(core, /name: Require real Core and specialist results from this workflow/);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
