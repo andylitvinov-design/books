@@ -2104,15 +2104,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
 
-  // Restore the original all-topic theme rail on desktop. The compact
-  // 2×2 goal picker with collapsed optional themes is iPhone-only.
+  // The canonical theme selector is collapsed on small Video screens,
+  // expanded on desktop, and always visible in the third Effects workspace.
+  // Keep this DOM state in sync with the React open prop and media-query events.
   useEffect(()=>{
     const large=window.matchMedia("(min-width: 760px)");
-    const sync=()=>{if(quickThemeAdvancedRef.current)quickThemeAdvancedRef.current.open=large.matches;};
+    const sync=()=>{if(quickThemeAdvancedRef.current)
+      quickThemeAdvancedRef.current.open=large.matches||activeWorkspace==="effects";};
     sync();
     large.addEventListener("change",sync);
     return()=>large.removeEventListener("change",sync);
-  },[]);
+  },[activeWorkspace]);
 
 
   // A successful recording (or a codec failure) must be immediately visible
