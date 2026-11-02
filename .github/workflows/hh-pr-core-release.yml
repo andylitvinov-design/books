@@ -20,7 +20,10 @@ jobs:
     name: classify-change
     # Draft PRs avoid full checkout; original full code is required after ready_for_review.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
+    # Lightweight Git/Node classification: keep build-class runners available for Core.
+    # ubuntu-slim has a 15-minute hard limit; this job does no full build.
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
     outputs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
@@ -312,10 +315,11 @@ jobs:
 
   hh-specialist:
     name: hh-specialist
-    # Start BASE-trusted specialist evidence while Core builds.
-    # hh-merge-check requires completed and successful real Core and Specialist.
-    needs: [scope]
-    if: always()
+    # Queue specialist alongside scope, not after a delayed scope runner.
+    # Independently verify exact HEAD and use ONLY immutable tested-BASE routing.
+    # hh-merge-check still requires successful real scope, Core and Specialist.
+    # A cancelled stale HEAD must not acquire another specialist runner.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -323,23 +327,32 @@ jobs:
       actions: read
       pull-requests: read
     steps:
-      - name: Verify trusted scope and Ready before independent specialist validation
+      - name: Verify ready exact PR HEAD before independently scheduled specialist
         shell: bash
         env:
-          SCOPE_RESULT: ${{ needs.scope.result }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
           EVENT_NAME: ${{ github.event_name }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
             echo 'Draft: specialists remain deferred.' >&2
             exit 1
           fi
-          [[ "$SCOPE_RESULT" == success ]] || {
-            echo 'Trusted PR scope not successful.' >&2
+          [[ "$EVENT_NAME" == pull_request ]] || {
+            echo 'Only pull_request events run a release specialist.' >&2
             exit 1
           }
-          echo 'Parallel specialist preflight passed; hh-merge-check still checks Core.' >> "$GITHUB_STEP_SUMMARY"
+          [[ "$HH_EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$HH_PR_NUMBER" =~ ^[0-9]+$ ]] || exit 1
+          # Avoid occupying a specialist runner on a superseded HEAD.
+          live_head="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$HH_PR_NUMBER" --jq '.head.sha')"
+          [[ "$live_head" == "$HH_EVENT_HEAD_SHA" ]] || {
+            echo 'Superseded PR HEAD: specialist refuses stale evidence.' >&2
+            exit 1
+          }
+          echo 'Independent exact-HEAD specialist started; hh-merge-check still checks trusted scope and Core.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -371,8 +384,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Classify specialist with immutable tested-BASE policy
+        id: specialist_route
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "${HH_TRUSTED_BASE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          route=FULL
+          # Never use candidate-PR routing logic to decide whether to skip a specialist.
+          if git cat-file -e "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-specialist-route"
+            git show "$HH_TRUSTED_BASE_SHA:scripts/ci-quick-route.mjs" > "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs"
+            route="$(HH_TESTED_BASE_SHA="$HH_TRUSTED_BASE_SHA" HH_HEAD_SHA="$HH_HEAD_SHA" node "$RUNNER_TEMP/hh-specialist-route/ci-quick-route.mjs")"
+          fi
+          case "$route" in ASSETS|TEXT|CORE|FULL) ;; *) echo 'Invalid trusted specialist route' >&2; exit 1 ;; esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Independent trusted specialist route: $route" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate exact-head risk and required specialist workflows
-        if: github.event_name == 'pull_request' && needs.scope.outputs.route == 'FULL'
+        if: github.event_name == 'pull_request' && steps.specialist_route.outputs.route == 'FULL'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -411,7 +443,9 @@ jobs:
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, code, hh-specialist]
-    if: always()
+    # Evaluate failed/skipped dependencies, but not cancelled obsolete runs.
+    if: ${{ !cancelled() }}
+    # Read-only required aggregator: no Next build, npm or privileged tools.
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
