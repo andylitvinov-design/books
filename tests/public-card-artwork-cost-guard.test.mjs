@@ -120,7 +120,12 @@ test("image-only QA generates and decodes all 85 pinned WebP while Core owns pro
   assert.match(workflow, /^  workflow_dispatch:/m);
   assert.match(workflow, /node --test tests\/public-card-artwork-generated\.test\.mjs/);
   assert.match(workflow, /node --test tests\/public-card-artwork-cost-guard\.test\.mjs tests\/public-card-artwork-reuse-secondary\.test\.mjs/);
-  assert.match(core, /^  release-ready:/m);
+  // Production protection now requires one unified check; it must still
+  // consume actual Core, Scope and Specialist results, not bypass the build.
+  assert.match(core, /^  hh-merge-check:\n    name: hh-merge-check\n    needs: \[scope, code, hh-specialist\]\n    if: always\(\)/m);
+  assert.match(core, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
+  assert.match(core, /\[\[ "\$CODE_RESULT" == success \]\]/);
+  assert.match(core, /\[\[ "\$CODE_RESULT" == skipped \]\]/);
   assert.match(core, /run: npm run build/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
 });
