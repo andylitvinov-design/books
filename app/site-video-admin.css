@@ -157,3 +157,7 @@
 .kling-studio-local-result { display: grid; justify-items: start; gap: .65rem; padding: .6rem 0; }
 .kling-studio-local-result video { width: 100%; max-width: 220px; height: auto; max-height: 340px; aspect-ratio: 9 / 16; object-fit: contain; background: #261a15; border-radius: .6rem; }
 .kling-studio-local-result > a { text-decoration: none; }
+
+.site-video-review-entry{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:17px 20px;margin:16px 0;background:linear-gradient(110deg,#eaf8f2,#eef5ff);border:1px solid #cbe3dc;border-radius:15px;color:#174d59}
+.site-video-review-entry strong{font-size:18px}.site-video-review-entry p{margin:5px 0 0;font-size:15px;line-height:1.45}.site-video-review-entry a{flex-shrink:0;background:#17756e;color:white;text-decoration:none;border-radius:10px;padding:12px 14px;font-weight:700}
+@media(max-width:650px){.site-video-review-entry{flex-direction:column;align-items:stretch}.site-video-review-entry a{text-align:center;min-height:45px}}
