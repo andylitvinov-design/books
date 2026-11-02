@@ -103,3 +103,66 @@
  text-align:left;cursor:pointer;color:#205b49}
 .filterSummary button span{font-size:10px;font-weight:600;color:#5b806d}
 .filterSummary button strong{font-size:12px;line-height:1.1}
+
+/* Canonical phrase filters stay in the one chat, with compact horizontal
+   scrolling on iPhone rather than another stacked editor. */
+.phraseFilters{flex:none;display:flex;align-items:end;gap:9px;overflow-x:auto;
+  max-height:122px;padding:8px 12px;border-top:1px solid #e4ece4;background:#fbfdf8;
+  -webkit-overflow-scrolling:touch}
+.phraseFilters fieldset{border:0;padding:0;margin:0;flex:none;min-width:0}
+.phraseFilters legend{font:600 11px/1.3 system-ui,-apple-system,sans-serif;color:#527565;
+  margin-bottom:4px}
+.phraseFilters fieldset div{display:flex;gap:4px}
+.phraseFilters button{min-height:40px;padding:7px 9px;border:1px solid #c3d8cc;
+  border-radius:10px;background:#fff;color:#245940;cursor:pointer;
+  font:650 12px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap}
+.phraseFilters button[aria-pressed="true"]{background:#e5f4e8;border-color:#16896b;color:#14664e}
+.phraseFilters .skipPhrase{align-self:end;margin-left:auto;color:#81643b;border-color:#e2ceb1}
+.window[data-chat-step="category"] .choices{max-height:140px}
+.window[data-chat-step="phrase"] .choices{max-height:144px}
+.window[data-chat-step="phrase"] .choices button{white-space:normal;text-align:left;overflow-wrap:anywhere}
+@media(max-width:355px){
+  .phraseFilters{padding:6px 8px;gap:5px}
+  .phraseFilters button{padding:7px;font-size:11px}
+}
+
+
+/* Inline conversational choices belong to the active assistant message. */
+.assistantTurn{align-self:flex-start;display:flex;flex-direction:column;gap:7px;
+  width:min(100%,560px);min-width:0}
+.assistantTurn .assistant{max-width:min(100%,480px)}
+.inlineAnswers{min-width:0;max-width:100%;padding:11px;border-radius:17px;
+  border:1px solid #d9e9df;background:#fff;box-shadow:0 4px 15px #234a3112}
+.inlineAnswers .choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;max-height:none;overflow:visible;padding:0;background:transparent;border:0}
+.inlineAnswers .choices button{min-height:46px;padding:11px 12px;border-radius:13px;
+  font:700 14px/1.32 system-ui,-apple-system,sans-serif;text-align:left;
+  white-space:normal;overflow-wrap:anywhere;color:#1d6553;background:#f1faf6}
+.window[data-chat-step="scenario"] .inlineAnswers .choices,
+.window[data-chat-step="idea"] .inlineAnswers .choices,
+.window[data-chat-step="phrase"] .inlineAnswers .choices{grid-template-columns:minmax(0,1fr)}
+.window[data-chat-step="category"] .inlineAnswers .choices,
+.window[data-chat-step="phrase"] .inlineAnswers .choices{max-height:none;overflow:visible}
+.commandChoices,.inlineFunctions{display:flex;flex-wrap:wrap;gap:7px;min-width:0;
+  padding-top:9px;margin-top:9px;border-top:1px solid #e6ede7}
+.commandChoices button,.inlineFunctions button{display:inline-flex;align-items:center;
+  gap:6px;min-height:44px;max-width:100%;padding:8px 11px;border:1px solid #d1e2d6;
+  border-radius:11px;background:#f9fcf8;color:#316e5b;text-align:left;
+  font:650 13px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer;
+  white-space:normal;overflow-wrap:anywhere}
+.inlineAnswers .phraseFilters{display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  overflow:visible;max-height:none;padding:0 0 11px;border:0;background:transparent}
+.inlineAnswers .phraseFilters fieldset div{display:flex;flex-wrap:wrap;gap:5px}
+.inlineAnswers .phraseFilters button{min-height:44px}
+.inlineAnswers .phraseFilters .skipPhrase{margin-left:0;align-self:flex-start}
+@media(max-width:700px){
+  .assistantTurn{width:100%}
+  .assistantTurn .assistant{max-width:93%}
+  .inlineAnswers{padding:10px}
+  .inlineAnswers .choices button{min-height:46px;font-size:14px}
+}
+@media(max-width:355px){
+  .inlineAnswers .choices{gap:6px}
+  .inlineAnswers .choices button{padding:9px;font-size:13px}
+  .commandChoices button,.inlineFunctions button{padding:8px}
+}

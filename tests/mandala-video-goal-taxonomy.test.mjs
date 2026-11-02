@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import licensedCatalog from "../data/video-catalog/scene-taxonomy.json" with {type:"json"};
+import {isSafeMontageScene} from "../lib/mandala/video-montage-sources.mjs";
 import {
   auditVideoGoalTaxonomy,VIDEO_GOAL_TAXONOMY_VERSION,
   VIDEO_GOAL_CATEGORY_ORDER,VIDEO_GOAL_LEGACY_PROFILE_TOPICS,
@@ -7,6 +9,7 @@ import {
   VIDEO_STORY_MOTIFS,
   listVideoGoalCategories,listVideoGoalTopics,listVideoGoalScenarios,
   getVideoGoalTopic,buildVideoGoalScenarioPlan,resolveVideoGoalTopic,
+  auditVideoGoalMediaCoverage,
 } from "../lib/mandala/video-goal-taxonomy.mjs";
 
 test("five categories, thirty specific topics, 120 different storyboards and 480 beats",()=>{
@@ -128,5 +131,48 @@ test("output contains original four-stage semantic ideas, never fake media filen
     assert.ok(!serialized.includes("youtube.com"));
     assert.ok(!serialized.includes("storage_url"));
     assert.equal(p.shots.length,4);
+  }
+});
+
+test("canonical 120-story media audit only proposes real approved MP4 sources",()=>{
+  const scenes=licensedCatalog.scenes;
+  const withOcean=VIDEO_GOAL_SCENARIOS.find(s=>s.visualMotifs.includes("ocean"));
+  assert.ok(withOcean);
+  const input={topicId:withOcean.topicId,scenarioId:withOcean.id,scenes};
+  const audit=auditVideoGoalMediaCoverage(input);
+  assert.equal(audit.shots.length,4);
+  assert.equal(audit.canExport,false);
+  assert.equal(audit.mediaStatus,"candidate_clips_need_editorial_approval");
+  assert.equal(audit.externalMediaGenerated,false);
+  const stage=audit.shots.find(s=>s.visualMotifId==="ocean");
+  assert.ok(stage.candidateSceneIds.length>0,
+    "an actual approved sea/ocean shot should exist in the first-party catalog");
+  for(const id of stage.candidateSceneIds){
+    const source=scenes.find(s=>s.id===id);
+    assert.ok(isSafeMontageScene(source));
+    assert.match(source.video,/^\/videos\/holistic-house\//);
+  }
+  const blocked=auditVideoGoalMediaCoverage({...input,excludedMotifs:["water"]});
+  assert.equal(blocked.shots.find(s=>s.visualMotifId==="ocean").candidateSceneIds.length,0);
+  assert.equal(auditVideoGoalMediaCoverage({...input,excludedMotifs:["unsafe"]}),null);
+  const malicious=[{id:"remote",status:"approved",media:"licensed_mp4",
+    video:"https://external.test/movie.mp4",motifs:["sea"],tags:["sea"]}];
+  const rejected=auditVideoGoalMediaCoverage({...input,scenes:malicious});
+  assert.ok(rejected.shots.every(shot=>shot.candidateSceneIds.length===0));
+});
+test("new media coverage reads exactly the existing hierarchy without creating a second tree",()=>{
+  const scenes=licensedCatalog.scenes;
+  const audited=VIDEO_GOAL_SCENARIOS.map(s=>
+    auditVideoGoalMediaCoverage({topicId:s.topicId,scenarioId:s.id,scenes}));
+  assert.equal(audited.length,120);
+  assert.ok(audited.every(s=>s.canExport===false&&s.shots.length===4));
+  assert.ok(audited.some(s=>s.matchedBeatCount>0));
+  assert.ok(audited.some(s=>s.matchedBeatCount<4));
+  for(const lang of ["ru","en","es"]){
+    const s=VIDEO_GOAL_SCENARIOS[0];
+    const x=auditVideoGoalMediaCoverage({topicId:s.topicId,scenarioId:s.id,
+      scenes,locale:lang});
+    assert.ok(x.shots.every(shot=>Boolean(shot.visualHint)));
+    assert.deepEqual(x.shots.map(shot=>shot.visualMotifId),[...s.visualMotifs]);
   }
 });
