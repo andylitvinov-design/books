@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
 import {chromium,webkit,expect} from "@playwright/test";
+import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 function wav(seconds=3) {
@@ -58,6 +59,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     context.setDefaultTimeout(25000);
     context.setDefaultNavigationTimeout(90000);
     try{
+      phase(engine,"guided-practices-mobile");
+      await verifyGuidedPractices({browser,base:BASE,engine});
+      phase(engine,"guided-practices-passed");
       const page=await context.newPage();
       const payloads=[];
       const errors=[];
@@ -173,14 +177,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
-      // Wait for actual capture readiness; an enabled button must not silently
-      // prime an unloaded HD source and require a second user click.
+      // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
+        const sourceVideo=page.locator("[data-mandala-master-mp4]");
+        if(await sourceVideo.count()) {
+          assert.equal(await sourceVideo.getAttribute("preload"),"none",
+            "the initial Video Studio must defer the 1 MB HD source");
+        }
         // Real locally encoded file: not a mere blob preview or a silent fake.
-        await page.waitForFunction(()=>{
-          const v=document.querySelector("[data-mandala-master-mp4]");
-          return !v || v.readyState>=2;
-        },undefined,{timeout:25000});
         await expect(generate).toBeEnabled({timeout:30000});
         const mediaCapabilities=await page.evaluate(()=>({
           userAgent:navigator.userAgent,
