@@ -51,7 +51,8 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     sourceTokenAvailable:Boolean(sourceGit),
     candidateIssues:0,examined:0,eligible:0,wouldStart:0,started:0,failed:0,
     activeActions:null,queuedActions:null,apiRequests:0,apiRemaining:null,
-    apiPause:false,reason:null
+    apiPause:false,reason:null,terminalFailure:false,
+    sourceRefUnchanged:null,diagnosticReceiptWritten:false
   };
   const writeSummary=async()=>{
     await core.summary.addHeading('HH zero-cost PR CI worker')
@@ -153,8 +154,9 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
   for(const issue of candidates){
     if(summary.apiPause)break;
     summary.examined++;
+    let pr=null;
     try{
-      let pr=(await limited('live-pr',()=>github.rest.pulls.get({
+      pr=(await limited('live-pr',()=>github.rest.pulls.get({
         owner,repo,pull_number:issue.number
       }))).data;
       if(pr.number!==issue.number || !validPR(pr,fullRepo))continue;
@@ -234,6 +236,47 @@ async function run({github,core,context,sourceGit=null,dryRun=false,now=Date.now
     }catch(error){
       summary.failed++;
       log('PR #'+issue.number+' worker blocked: '+error.message);
+      // An owner PAT 401/403 is a hard credential/permissions failure,
+      // NOT a successful CI bootstrap. Never retry via an empty commit.
+      // Read the source HEAD again before claiming that nothing was pushed:
+      // a 403 after an uncertain network/write outcome is not commit proof.
+      const status=Number(error?.status||0);
+      const tokenDenied=[401,403].includes(status) &&
+        /^Dedicated owner token HTTP (401|403):/.test(String(error.message||''));
+      if(tokenDenied){
+        summary.terminalFailure=true;
+        summary.reason='OWNER_SOURCE_TOKEN_PERMISSION_DENIED';
+        let fresh;
+        try{
+          fresh=(await limited('readback-after-owner-token-denial',()=>
+            github.rest.pulls.get({owner,repo,pull_number:issue.number}))).data;
+          summary.sourceRefUnchanged=fresh?.state==='open'&&
+            fresh.head?.sha===pr.head.sha&&fresh.head?.ref===pr.head.ref;
+        }catch(readError){
+          log('Token denial HEAD readback unavailable #'+issue.number+': '+readError.message);
+        }
+        if(summary.sourceRefUnchanged===true&&!summary.apiPause){
+          const marker='<!-- HH_CI_BOOTSTRAP_TOKEN_DENIED_V1 '+pr.head.sha+' -->';
+          // The attempted label is a durable one-shot circuit breaker.
+          // This receipt is a precise human repair request, not a CI result.
+          try{
+            await limited('record-owner-token-denial',()=>github.rest.issues.createComment({
+              owner,repo,issue_number:issue.number,
+              body:marker+'\nCI bootstrap was NOT started: dedicated owner token returned HTTP '+
+                status+' (insufficient repository access). Exact source HEAD remained '+
+                pr.head.sha+' on readback. No source commit or Core check was created. '+
+                'An owner must repair the existing HH_AUTOMERGE_TOKEN permissions before '+
+                'any approved bootstrap; do not push an empty commit or remove required checks. '+
+                'Actions run: https://github.com/'+fullRepo+'/actions/runs/'+
+                String(context.runId||'unavailable')
+            }));
+            summary.diagnosticReceiptWritten=true;
+          }catch(writeError){
+            log('Token-denial diagnostic receipt unavailable: '+writeError.message);
+          }
+        }
+        break;
+      }
       if(summary.apiPause)break;
     }
   }

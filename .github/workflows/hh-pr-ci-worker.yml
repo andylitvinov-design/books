@@ -19,6 +19,10 @@ on:
       task_key:
         type: string
         default: ''
+      reservation_run_id:
+        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'
+        type: string
+        default: ''
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -136,3 +140,9 @@ jobs:
             });
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_CI_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'ci',status:result.started>0?'started':'skipped',dryRun:result.dryRun,log:core.warning}));
+            // Never turn a denied owner write token into a green CI worker.
+            // The worker has already attempted an exact-HEAD diagnostic receipt.
+            if(result.terminalFailure){
+              core.setFailed('HH_CI_BOOTSTRAP_OWNER_TOKEN_PERMISSION_DENIED: no bootstrap '+
+                'or source commit confirmed; repair dedicated token permissions.');
+            }
