@@ -286,7 +286,7 @@ jobs:
                 // Exact protected SHA and execFileSync argument vectors: no shell.
                 execFileSync('git',['-C',checkout,'fetch','--no-tags','--depth=1','origin',base],
                   {timeout:35000});
-                execFileSync('git',['-C',checkout,'checkout','--detach','--force',base],
+                execFileSync('git',['-C',checkout,'checkout','--detach',base],
                   {timeout:15000});
               }
               const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
