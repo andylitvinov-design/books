@@ -1100,10 +1100,15 @@ test('behind PR with verified real specialist failure is reclassified without ne
   const github={rest:{
     pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
-    checks:{listForRef:async({check_name})=>({data:{total_count:1,check_runs:[{
-      id:check_name==='hh-specialist'?2:1,name:check_name,
-      status:'completed',conclusion:check_name==='hh-specialist'?'failure':'success',
-      app:{id:15368}}]}})},
+    checks:{listForRef:async({check_name})=>({data:check_name
+      ? {total_count:1,check_runs:[{
+          id:check_name==='hh-specialist'?2:1,name:check_name,
+          status:'completed',conclusion:check_name==='hh-specialist'?'failure':'success',
+          app:{id:15368}}]}
+      : {total_count:3,check_runs:[
+          {id:3,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+          {id:4,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+          {id:5,name:'public-services',status:'completed',conclusion:'failure',app:{id:15368}}]}})},
     issues:{
       addLabels:async({labels})=>{mutations.add.push(...labels);live.labels.push({name:labels[0]});return {data:[]};},
       removeLabel:async({name})=>{mutations.remove.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]};}
@@ -1131,4 +1136,68 @@ test('only trusted completed hh-specialist failures qualify for backfill',()=>{
   assert.equal(needsFailedCoreCronBackstop('UNKNOWN'),false);
   assert.equal(needsFailedCoreCronBackstop('STALE'),true);
   assert.equal(needsFailedCoreCronBackstop('UNOBSERVED'),true);
+});
+
+test('skipped optional MacOS check does not create a fake Product Repair task',async()=>{
+  const src=pr(566);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:4,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'public-services',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:5,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistFailures,0);
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.deepEqual(writes.added,[]);
+  assert.deepEqual(writes.removed,[]);
+});
+test('misrouted policy-only aggregate is restored to gate review on the same HEAD',async()=>{
+  const src=pr(567);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:specialist-repair-needed'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:3,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);live.labels.push({name:labels[0]});return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.equal(result.policyRelabeled,1);
+  assert.deepEqual(writes.added,['hh:release-gate-review']);
+  assert.deepEqual(writes.removed,['hh:specialist-repair-needed']);
+});
+test('independent specialist failures require complete trusted same-HEAD evidence',()=>{
+  const classify=require('../scripts/ci-pr-ten-minute-watchdog.cjs').classifyIndependentSpecialistChecks;
+  const row=(id,name,conclusion,status='completed',app=15368)=>({id,name,conclusion,status,app:{id:app}});
+  const rows=[row(1,'hh-core-verified','success'),row(2,'hh-specialist','failure'),
+    row(3,'public-services','failure')];
+  assert.equal(classify({total_count:3,check_runs:rows}),'PRODUCT_FAILURE');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'voice-webkit-macos','skipped')]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:3,check_runs:rows.slice(0,2)}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services',null,'in_progress')]}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services','failure','completed',999)]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:101,check_runs:rows}),'UNKNOWN');
 });
