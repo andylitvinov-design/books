@@ -141,7 +141,6 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
     report.merge_to_live_observation_upper_bound_p50_minutes=percentile(lags,.5);
    }
   }catch(err){report.errors.push('LIVE_READ_'+String(err.message||'error').slice(0,75));}
-  }
  }else if(prs.length===0 && report.merged_count===0 &&
           liveEvidence.verified_live===true){
   report.live_confirmed_count=0;report.unverified_live_count=0;
