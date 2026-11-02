@@ -5,7 +5,9 @@ import { HolisticSupportMandalaDock } from "@/components/holistic-support-mandal
 import { loadPublicLibraryFeed } from "@/lib/public-library-feed";
 import { loadApprovedVideoDiscoveries } from "@/lib/video-discovery/approved-meditations";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
+import { publicLocales, type PublicLocale } from "@/lib/public-locales";
+const isPublicLocale = (value: string): value is PublicLocale =>
+  publicLocales.includes(value as PublicLocale);
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,12 +15,12 @@ export const revalidate = 0;
 type Props = { params: Promise<{ locale: string }> };
 
 export function generateStaticParams() {
-  return getHomeopathyLocaleParams();
+  return publicLocales.map(locale => ({ locale }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) return { title: "Not found" };
+  if (!isPublicLocale(locale)) return { title: "Not found" };
   return {
     metadataBase: metadataBaseFor(),
     title: "MyTube — Holistic House",
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MyTubePage({ params }: Props) {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
+  if (!isPublicLocale(locale)) notFound();
   // Use only the already published public library and independently reviewed
   // meditation catalog. No private client recordings or provider scraping.
   const [{ videos }, approvedMeditations] = await Promise.all([

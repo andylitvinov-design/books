@@ -1,7 +1,10 @@
 name: HH PR core release gate
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Metadata-only backfill: a PAT-authored PR body edit runs REAL exact-HEAD
+    # Core and Specialist jobs without a no-op source commit. Ordinary PR
+    # edits also receive the full fail-closed release gate; no skipped required jobs.
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
     branches: ['codex/public-book-library']
   merge_group:
     types: [checks_requested]
@@ -142,6 +145,7 @@ jobs:
                   tests/pr-sweep-guard.test.mjs|\
                   tests/ci-heavy-draft-policy.test.mjs|\
                   tests/ci-heavy-impact.test.mjs|\
+                  tests/ci-growth-course-core-reuse.test.mjs|\
                   tests/ci-head-cancellation.test.mjs|\
                   tests/ci-stale-run-deduplication.test.mjs) ;;
                 *) ci_only=false ;;
@@ -302,46 +306,12 @@ jobs:
         # adds no coverage for workflow/router/test changes.
         if: needs.scope.outputs.ci_only != 'true'
         run: npm run build
-  # Core component of the guarded release-ready migration. This status
-  # checks Core prerequisites only; it never replaces specialist/security gates.
-  hh-core-verified:
-    name: hh-core-verified
-    needs: [scope, code]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    permissions:
-      contents: read
-    steps:
-      - name: Fail closed on missing, cancelled or failing required core jobs
-        shell: bash
-        env:
-          SCOPE_RESULT: ${{ needs.scope.result }}
-          CODE_RESULT: ${{ needs.code.result }}
-          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
-          ROUTE: ${{ needs.scope.outputs.route }}
-          PR_DRAFT: ${{ github.event.pull_request.draft }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          if [[ "$EVENT_NAME" == pull_request && "$PR_DRAFT" == true ]]; then
-            echo 'Draft: core checks deferred; hh-core-verified must remain red until Ready is fully validated.' >&2
-            exit 1
-          fi
-          [[ "$SCOPE_RESULT" == success ]] || exit 1
-          if [[ "$DOCS_ONLY" == true ]]; then
-            [[ "$CODE_RESULT" == skipped ]] || exit 1
-          elif [[ "$ROUTE" == ASSETS || "$ROUTE" == TEXT ]]; then
-            [[ "$EVENT_NAME" == pull_request && "$CODE_RESULT" == skipped ]] || exit 1
-            echo "Trusted quick route $ROUTE: no Next.js build needed" >> "$GITHUB_STEP_SUMMARY"
-          else
-            [[ "$CODE_RESULT" == success ]] || exit 1
-          fi
-          echo 'Core routing verified; specialist/security validation is separately required before merge.' >> "$GITHUB_STEP_SUMMARY"
+
+
   hh-specialist:
     name: hh-specialist
     # Start BASE-trusted specialist evidence while Core builds.
-    # release-ready requires BOTH independent completed jobs.
+    # hh-merge-check requires completed and successful real Core and Specialist.
     needs: [scope]
     if: always()
     runs-on: ubuntu-24.04
@@ -367,7 +337,7 @@ jobs:
             echo 'Trusted PR scope not successful.' >&2
             exit 1
           }
-          echo 'Parallel specialist preflight passed; release-ready still checks Core.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Parallel specialist preflight passed; hh-merge-check still checks Core.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -433,10 +403,9 @@ jobs:
             # a reviewed same-repository source PR.
             node scripts/ci-specialist-aggregate.mjs
           fi
-  # New single release status. Until GitHub Administration changes BOTH
-  # protections, the old release-ready compatibility check remains required.
-  # This job is read-only: it delegates to the existing Core and exact-head
-  # specialist checks without rerunning npm, browser, TypeScript or build.
+  # Both GitHub production protection sources were read back on 2 November:
+  # exactly hh-merge-check is required. Preserve Core+Specialist fail-closed
+  # evidence while removing only redundant legacy wrapper runners.
   hh-merge-check:
     name: hh-merge-check
     needs: [scope, code, hh-specialist]
@@ -483,28 +452,4 @@ jobs:
           fi
           echo 'hh-merge-check PASS: current workflow Core and specialist results verified.' >> "$GITHUB_STEP_SUMMARY"
 
-  # Compatibility only: the classic branch rule may still require this name.
-  # Never return success when the new full specialist check is missing or red.
-  # Remove this legacy job in a separate PR ONLY after protection readback.
-  release-ready:
-    name: release-ready
-    needs: [hh-core-verified, hh-specialist]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 1
-    permissions:
-      contents: read
-    steps:
-      - name: Preserve legacy fail-closed status until admin switch
-        shell: bash
-        env:
-          CORE_RESULT: ${{ needs['hh-core-verified'].result }}
-          SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
-        run: |
-          set -euo pipefail
-          [[ "$CORE_RESULT" == success && "$SPECIALIST_RESULT" == success ]] || {
-            echo 'Core or Specialist failed; legacy compatibility cannot pass.' >&2
-            exit 1
-          }
-          echo 'Both real Core and Specialist validations passed.' >> "$GITHUB_STEP_SUMMARY"
 

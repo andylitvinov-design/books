@@ -1169,6 +1169,31 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
 
+test('VideoProjectV2 source changes require real macOS WebKit acceptance on video feature PRs', () => {
+  const path = '.github/workflows/holistic-support-mandala.yml';
+  const actual = readFileSync(path, 'utf8');
+  const guard = actual.match(/^  voice-webkit-macos:\n    if: \$\{\{ (.+) \}\}$/m)?.[1];
+  assert.ok(guard, 'Real macOS WebKit job guard must remain intact');
+  assert.ok(guard.includes("startsWith(github.head_ref, 'feat/video-')"),
+    'Video feature branches must route into genuine macOS encoded movie acceptance');
+  assert.ok(guard.includes("github.event.pull_request.draft == false"));
+  assert.match(actual,/voice-webkit-macos:[\s\S]*?runs-on: macos-15/);
+  assert.match(actual,/HH_LIVE_VIDEO_ENGINE=webkit/);
+  assert.match(actual,/scripts\/benchmarking\/first-video-live-export\.mjs/);
+  const changed = [
+    'lib/mandala/render-plan-v2.mjs',
+    'lib/mandala/video-project-v2.mjs',
+    'lib/mandala/video-executable-director.mjs',
+    'tests/render-plan-v2.test.mjs',
+    'tests/video-project-v2.test.mjs',
+    path,
+  ];
+  const files = {base:new Map([[path,actual]]),current:new Map([[path,actual]])};
+  assert.equal(optionalMandalaMacosSkip(
+    files,'feat/video-studio-project-renderplan-v2-20261102',changed),false,
+    'A video render plan must not be incorrectly excused from real WebKit acceptance');
+});
+
 test('signed APK code routes through Native without dragging unrelated public services browsers',()=>{
   const services='.github/workflows/hh-public-services-production.yml';
   const native='.github/workflows/holistic-house-native.yml';
@@ -1204,4 +1229,52 @@ test('signed APK code routes through Native without dragging unrelated public se
   const owners=expectedWorkflows({base:sources,current:sources,changed:actualApkPrFiles});
   assert.ok(owners.includes(native),'Native owner must remain mandatory');
   assert.ok(!owners.includes(services),'Services browser must not be required for standalone APK');
+});
+
+test('Mandala macOS branch-gated skip is wired into exact-head specialist verify without weakening true failures', async () => {
+  const mandalaPath = '.github/workflows/holistic-support-mandala.yml';
+  const mandala = [
+    'on:',
+    '  pull_request:',
+    "    branches: ['codex/public-book-library']",
+    "    paths: ['tests/ci-*', 'lib/mandala/**']",
+    'jobs:',
+    '  focused-unit-types-build:',
+    '    runs-on: ubuntu-latest',
+    '  voice-webkit-macos:',
+    "    if: \${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'fix/video-')) }}",
+    '    runs-on: macos-15',
+    '',
+  ].join('\n');
+  const focused = {name:'focused-unit-types-build',status:'completed',conclusion:'success'};
+  const mac = {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'};
+  const ctx = {repo,number:27,head:SHA,base:BASE};
+  const check = ({branch='ci/retire-old-status',changed=['tests/ci-specialist-aggregate.test.mjs'],
+     candidate=mandala,jobRows=[focused,mac]}={}) => {
+    const p = pr();
+    p.head.ref = branch;
+    const api = {
+      pr: async () => p,
+      runs: async () => [run({path:mandalaPath,head_branch:branch})],
+      jobs: async () => jobRows,
+    };
+    const files = {
+      base:new Map([[mandalaPath,mandala]]),
+      current:new Map([[mandalaPath,candidate]]),
+      changedRows:changed.map(filename => ({filename,status:'modified'})),
+    };
+    return verify(api,ctx,files,{maxWaitMs:0});
+  };
+  const safe = await check();
+  assert.deepEqual(safe.executed.map(row => row.jobs),[1],
+    'BASE-validated branch-excluded macOS may skip while focused Linux passes');
+  for (const scenario of [
+    {branch:'fix/video-encoder-change'},
+    {changed:['tests/ci-specialist-aggregate.test.mjs','lib/mandala/webcodecs-mp4-export.ts']},
+    {candidate:mandala.replace('runs-on: macos-15','runs-on: macos-14')},
+    {candidate:mandala.replace("startsWith(github.head_ref, 'fix/video-')","startsWith(github.head_ref, 'ci/')")},
+    {jobRows:[{...focused,conclusion:'failure'},mac]},
+    {jobRows:[focused,{...mac,conclusion:'failure'}]},
+  ]) await assert.rejects(check(scenario),/UNSUCCESSFUL_SPECIALIST_JOB/,
+    'all untrusted or failed jobs remain release-blocking');
 });

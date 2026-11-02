@@ -76,3 +76,13 @@ test("Unreviewed, private and candidate source records cannot leak into MyTube",
   assert.deepEqual(index.map(v=>v.youtubeId),["aa123456789"]);
   assert.deepEqual(rankDiscoveryVideos(index,{goal:"stress"}).map(v=>v.youtubeId),["aa123456789"]);
 });
+
+
+test("MyTube serves all three public locales rather than the RU/EN-only remedy guard",()=>{
+ const page=read("app/[locale]/mytube/page.tsx");
+ assert.match(page,/publicLocales\.map\(locale => \(\{ locale \}\)\)/);
+ assert.match(page,/const isPublicLocale = \(value: string\): value is PublicLocale/);
+ assert.match(page,/if \(!isPublicLocale\(locale\)\)/);
+ assert.doesNotMatch(page,/isSupportedLocale|getHomeopathyLocaleParams/);
+ assert.match(read("lib/public-locales.ts"),/publicLocales: readonly PublicLocale\[\] = \['ru', 'en', 'es'\]/);
+});

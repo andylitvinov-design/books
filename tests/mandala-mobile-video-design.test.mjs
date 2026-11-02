@@ -25,6 +25,8 @@ async function renderMandalaDock(source, locale) {
     if(id==="react/jsx-runtime")return jsx;
     if(id==="next/link")return {__esModule:true,default:LinkStub};
     if(id==="lucide-react")return icons;
+    // Viewport listeners are client-only; the SSR name oracle still renders real JSX.
+    if(id==="./app/use-visual-bottom-dock")return {useVisualBottomDock:()=>{}};
     if(id.endsWith(".module.css"))return {__esModule:true,default:{}};
     throw new Error("Unexpected dependency in dock: "+id);
   };

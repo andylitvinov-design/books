@@ -1204,6 +1204,17 @@
   .videoFeedChoose { font-size: 11px; }
 }
 
+/* A native mobile touch must land on the actual source-backed thumbnail, not
+   on its overlaid image/caption or the fixed app dock during auto-scrolling. */
+@media(max-width:640px){
+  .videoSection .videoCard{
+    scroll-margin-block-start:65px;
+    scroll-margin-block-end:calc(125px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  .videoSection .videoCard > :is(img,span){pointer-events:none}
+}
+
 /* Video Studio and MyTube: seven genuinely usable fixed navigation actions.
    Other public/private docks keep their existing five/six slots. */
 .bottomNav.mandalaBottomNav{grid-template-columns:repeat(7,minmax(0,1fr));padding-inline:max(3px,env(safe-area-inset-left))}
