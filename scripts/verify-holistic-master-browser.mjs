@@ -29,6 +29,8 @@ async function verify(engine, locale, width) {
   const page = await browser.newPage({
     viewport: {width, height: 844}, deviceScaleFactor: 1, hasTouch: true, isMobile: true,
     reducedMotion: "reduce",
+    // Prevent older installed service workers from racing loopback RSC navigation.
+    serviceWorkers: "block",
   });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
