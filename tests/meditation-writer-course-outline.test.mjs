@@ -84,3 +84,10 @@ test("One API call returns one meditation and seven future topics, no extra bill
  assert.ok(ui.includes("/services/imagery-therapy"));
  assert.ok(ui.includes("id=\"meditation-courses\""));
 });
+
+test("first session and seven next sessions have an expandable approved method in mobile UI",()=>{
+ const ui=readFileSync(new URL("../components/meditation-writer-preview.tsx",import.meta.url),"utf8");
+ assert.ok(ui.includes("preview.coursePlan.dayOne.plannedPractice.steps.map"));
+ assert.ok(ui.includes("topic.plannedPractice.steps.map"));
+ assert.ok(ui.includes("additionalScriptsGenerated:false"));
+});

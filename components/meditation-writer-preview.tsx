@@ -27,7 +27,7 @@ type PlannedPractice = {methodId:string;title:string;steps:string[];
 type NextTopic = {day:number;title:string;description:string;
   plannedPractice?:PlannedPractice|null;practicePlanReady?:boolean;
   status:"topic_only";meditationGenerated:false;};
-type CoursePlan = {totalDays:8;goalCode:string;dayOne:{day:1;title:string};
+type CoursePlan = {totalDays:8;goalCode:string;dayOne:{day:1;title:string;plannedPractice?:PlannedPractice|null};
   nextTopics:NextTopic[];additionalScriptsGenerated:false;};
 type Preview = {status:string;title:string;segments:Segment[];coursePlan?:CoursePlan;
   activityFormats?:ActivityChoices;
@@ -55,8 +55,8 @@ const lang={
     desired:"К чему хотели бы прийти?",desiredPlaceholder:"Например, найти спокойствие и ясность",
     wishesPrivacy:"Пожелания используются внутри защищённого Psychologist Mind. Бесплатный AI получает только общие коды темы и стиля, не ваши личные записи.",
     courseTitle:"Ваш план: восемь дней медитаций",
-    courseExplanation:"Медитация первого дня подготовлена. Вот семь тем для продолжения.",
-    firstCreated:"Текст первого дня подготовлен",courseNote:"Дни 2–8 — пока только темы, не готовые аудиозаписи или оплаченный курс.",
+    courseExplanation:"План из 8 сессий: цель, практика и шаг в жизни для каждого занятия.",
+    firstCreated:"Текст первого дня подготовлен",courseNote:"Темы и рекомендованные практики 2–8 подготовлены, но дополнительные медитации, аудио и видео ещё не созданы.",
     courseRequest:"Обсудить заказ курса из 8 медитаций",
     courseRequestNote:"Это переход к заявке специалисту, не автоматическая покупка или списание.",
     consent:"Я добровольно выбираю мягкую образную практику; могу пропустить её или остановиться.",
@@ -87,8 +87,8 @@ const lang={
     desired:"What would you like to move toward?",desiredPlaceholder:"For example, find steadiness and clarity",
     wishesPrivacy:"Your wishes are used only inside protected Psychologist Mind. Free AI receives generic theme and style codes, never your notes.",
     courseTitle:"Your eight-day meditation path",
-    courseExplanation:"Your first meditation is prepared. Here are seven topics to continue.",
-    firstCreated:"First-day text prepared",courseNote:"Days 2–8 are topics only, not finished audio or a purchased course.",
+    courseExplanation:"Your 8-session plan: a goal, practice and small daily step for each session.",
+    firstCreated:"First-day text prepared",courseNote:"Days 2–8 include goals and practice plans, but not generated scripts, audio or videos.",
     courseRequest:"Discuss ordering the eight-meditation course",
     courseRequestNote:"This opens a practitioner enquiry, not a purchase or automatic charge.",
     consent:"I choose this optional resource imagery practice and may skip or stop it.",
@@ -119,8 +119,8 @@ const lang={
     desired:"¿Hacia qué te gustaría avanzar?",desiredPlaceholder:"Por ejemplo, sentir más estabilidad y claridad",
     wishesPrivacy:"Tus deseos se usan solo dentro de Psychologist Mind protegido. La IA gratuita recibe códigos generales, nunca tus notas.",
     courseTitle:"Tu programa de ocho días",
-    courseExplanation:"La primera meditación está preparada. Estos son los siete temas siguientes.",
-    firstCreated:"Texto del primer día preparado",courseNote:"Los días 2–8 son solo temas, no audios terminados ni un curso comprado.",
+    courseExplanation:"Tu plan de ocho sesiones incluye metas, prácticas y pequeños pasos cotidianos.",
+    firstCreated:"Texto del primer día preparado",courseNote:"Los días 2–8 incluyen metas y prácticas, pero no meditaciones, audios ni vídeos generados.",
     courseRequest:"Consultar el pedido del curso de ocho meditaciones",
     courseRequestNote:"Abre una consulta con un profesional, no una compra ni un cobro automático.",
     consent:"Elijo voluntariamente esta práctica de imágenes y puedo omitirla o detenerla.",
@@ -422,6 +422,13 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
         <div className={styles.firstDay}>
           <strong>{preview.coursePlan.dayOne.title}</strong>
           <span>{t.firstCreated}</span>
+          {preview.coursePlan.dayOne.plannedPractice&&
+            <details className={styles.sessionPractice}>
+              <summary>{a.programmeMethod}: {preview.coursePlan.dayOne.plannedPractice.title}</summary>
+              <ol>{preview.coursePlan.dayOne.plannedPractice.steps.map((step,i)=>
+                <li key={i}>{step}</li>)}</ol>
+              <p>{preview.coursePlan.dayOne.plannedPractice.transferAction}</p>
+            </details>}
         </div>
         <ol start={2}>
           {preview.coursePlan?.nextTopics.map(topic=>
