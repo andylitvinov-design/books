@@ -141,17 +141,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}
         aria-label={label} aria-current={active === id ? "page" : undefined}
-        onClick={id === "ai" ? () => {
-          // On the same route, Next's Link updates history without always
-          // dispatching hashchange. Open the existing chat on the actual click.
-          setHash("#video-director-chat");
-          if (!pathname.endsWith("/holistic-support/mandala")) return;
-          const videoTab = document.querySelector<HTMLButtonElement>('[data-video-quick-control="video"]');
-          if (videoTab?.getAttribute("aria-pressed") !== "true") videoTab?.click();
-          const detail = document.querySelector<HTMLDetailsElement>("[data-video-director-chat-details]");
-          if (detail && !detail.open) detail.open = true;
-          requestAnimationFrame(() => document.getElementById("video-director-chat")?.scrollIntoView({ block: "nearest" }));
-        } : id === "video" ? () => setHash("") : undefined}>
+        onClick={id === "video" ? () => setHash("") : undefined}>
         <Icon size={24} strokeWidth={2} aria-hidden="true" /><span>{label}</span>
       </Link>;
     })}

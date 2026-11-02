@@ -12,7 +12,7 @@ test("owner-approved exact six dock destinations, no seventh or displaced center
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/holistic-support/mandala#video-director-chat",
+   "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/holistic-support/mobile",
    "/"+locale+"/practice",
    "/"+(locale==="es"?"en":locale)+"/app/portrait"
@@ -74,7 +74,7 @@ test("one screenshot-1 style six-button dock and protected old docks removed vis
   ".hh-mobile-app-nav",".hh-practice-inner-dock","data-legacy-practice-bottom-nav",".mobile-bottom-navigation"])
   assert.ok(hide.includes(former),former);
 });
-test("AI is the existing video director; top tabs preserve actual private Orders and Clients",()=>{
+test("center AI opens the existing Messenger agent; Video Director is a separate real action",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  assert.match(dock,/data-video-director-chat-details/);
  assert.match(dock,/detail.open = true/);
@@ -84,7 +84,10 @@ test("AI is the existing video director; top tabs preserve actual private Orders
  assert.match(chat,/app\/messages\?section=clients/);
  const privateMessages=read("components/app/messages-orders-clients.jsx");
  assert.match(privateMessages,/data-chat-top-tabs/);
- assert.match(privateMessages,/holistic-support\/mandala#video-director-chat/);
+ assert.match(privateMessages,/id="hh-ai-panel"/);
+ const assistant=read("components/app/messenger-ai-workspace.jsx");
+ assert.match(assistant,/holistic-support\/mandala#video-director-chat/);
+ assert.match(assistant,/HolisticAgentChat/);
  assert.match(privateMessages,/role="tab"/);
 });
 test("both private message composers reserve the real visible dock boundary without spoofed chat delivery",()=>{
@@ -137,12 +140,13 @@ test("MyTube unified branch triggers real macOS WebKit, without hiding specialis
 });
 
 
-test("same-page Video to AI click opens the original hidden details instead of relying on hashchange",()=>{
+test("central AI navigates to the single Messenger, original video deep link remains available",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
- assert.match(dock,/onClick=\{id === "ai" \? \(\) =>/);
- assert.match(dock,/pathname\.endsWith\("\/holistic-support\/mandala"\)/);
- assert.match(dock,/if \(detail && !detail\.open\) detail\.open = true/);
- assert.match(dock,/setHash\("#video-director-chat"\)/);
+ const agent=read("components/app/messenger-ai-workspace.jsx");
+ assert.match(dock,/data-hh-unified-dock/);
+ assert.match(dock,/data-video-director-chat-details/);
+ assert.match(agent,/holistic-support\/mandala#video-director-chat/);
+ assert.doesNotMatch(dock,/onClick=\{id === "ai" \? \(\) =>/);
 });
 
 // Real WebKit checks still drive the accordion; this source guard prevents a
