@@ -1,7 +1,7 @@
 name: HH PR source Repair Worker
 on:
-  # Only signed tasks are dispatched from Control Tower; idle cron/push runs
-  # must not contend for the global Repair Worker lease.
+  # Only explicit authenticated task dispatch. No empty cron/push claim runs
+  # may occupy the global worker lease while real tasks wait.
   workflow_dispatch:
     inputs:
       pr_number:
