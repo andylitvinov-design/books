@@ -1421,6 +1421,31 @@ test('new LIVE evidence endpoint routes only audited immutable blobs to focused 
     {coreOwned}).mode,'full');
 });
 
+
+// Preserve the full current consented Business QA plus SSR pre-hydration
+// oracle while reusing two real browser engines across isolated viewports.
+test('Business current UI keeps 15 real cases and pre-hydration safety in two browser engines',()=>{
+  const source=readFileSync(new URL('../scripts/verify-business-quiz-mobile.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes('[data-direction-offers="business"]'));
+  assert.ok(source.includes('javaScriptEnabled:false'));
+  assert.ok(source.includes('serviceWorkers:"block"'));
+  assert.ok(source.includes('data-business-website-enquiry'));
+  assert.ok(source.includes('externalPosts'));
+  assert.equal(source.includes('data-business-consultation-finder'),false);
+  assert.ok(source.includes('waitUntil:"domcontentloaded"'));
+  assert.equal(source.includes('networkidle'),false);
+  assert.equal((source.match(/\.launch\(/g)||[]).length,2,'two process launches, never 16');
+  assert.ok(source.includes('await browser.newContext('));
+  assert.ok(source.includes('await context.close()'));
+  assert.ok(source.includes('browsers.get(webkit)'));
+  assert.ok(source.includes('browsers.get(chromium)'));
+  assert.ok(source.includes('for (const width of [320,375,390,430])'));
+  assert.ok(source.includes('for (const locale of ["en","ru","es"])'));
+  assert.ok(source.includes('await Promise.all([...browsers.values()]'));
+  assert.ok(workflow('hh-public-services-production.yml')
+    .includes('node scripts/verify-business-quiz-mobile.mjs'));
+});
+
 test('private practitioner meditation is publicly smoke-tested without unrelated checkout matrices',()=>{
   const owned=PRIVATE_PRACTITIONER_MEDIA_OWNERS;
   assert.equal(owned.length,30);
