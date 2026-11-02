@@ -225,6 +225,18 @@ test('Mandala PR retains units and runs full media browser only manually or for 
   assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'.*/);
 });
 
+test('Video Studio and Hypnocorrection release branches run real browser and macOS WebKit gates', () => {
+  const yaml = read('holistic-support-mandala.yml');
+  const browser = yaml.match(/- name: Public mandala photo, PNG and video browser flow[^\n]*\n\s*if: ([^\n]+)/)?.[1] || '';
+  const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
+  for (const branch of ['fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
+    assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
+    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
+  }
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(yaml, /ffprobe -version/);
+});
+
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
   const yaml = read('site-video-browser.yml');
   const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
