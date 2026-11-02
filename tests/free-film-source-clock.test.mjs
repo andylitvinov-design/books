@@ -90,3 +90,21 @@ test("existing Studio remains the sole Canvas renderer and uses source-clock val
   assert.match(source,/encodeLocalWebCodecsMp4\(/);
   assert.match(source,/prepareFourFilmSources\(/);
 });
+
+test("an asynchronous WebKit encoder must not auto-play source masters before frame zero",()=>{
+  const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  const start=source.indexOf("function freeFilmVideoAt(");
+  const end=source.indexOf("function updateFreeFilmReadiness()",start);
+  assert.ok(start>=0 && end>start,"the existing Studio remains the one licensed-source renderer");
+  const selector=source.slice(start,end);
+  assert.ok(selector.includes("function freeFilmVideoAt(seconds:number,advancePlayback=false)"));
+  assert.ok(selector.includes("if(video.paused&&advancePlayback)"));
+  for(const unexpected of ["preparingRef.current","webCodecJobRef.current","||recording"])
+    assert.equal(selector.includes(unexpected),false,"preflight cannot start source clocks: "+unexpected);
+  assert.ok(source.includes("const firstStockFrame=freeFilmVideoAt(0,false)"),
+    "initial still must remain paused during asynchronous audio preparation");
+  for(const required of ["freeFilmVideoAt(0,previewPlaying)",
+    "freeFilmVideoAt(frameSecond,previewPlaying)","freeFilmVideoAt(frameTime,true)",
+    "freeFilmVideoAt(time,true)"])
+    assert.ok(source.includes(required),"missing explicit playback intent: "+required);
+});
