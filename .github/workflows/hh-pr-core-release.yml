@@ -444,7 +444,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
-                    CODE_RESULT: ${{ needs.code.result }}
+          CODE_RESULT: ${{ needs.code.result }}
           SPECIALIST_RESULT: ${{ needs['hh-specialist'].result }}
           DOCS_ONLY: ${{ needs.code.outputs.docs_only }}
           ROUTE: ${{ needs.code.outputs.route }}
