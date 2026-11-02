@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {VIDEO_LIFE_AREAS,lifeAreasForIntent,lifeAreasForStudioCategory,
   normalizeDiscoveryFacets,videoMatchesFacets} from "../lib/video-discovery/taxonomy.mjs";
-import {buildPublishedVideoIndex,relatedPublishedVideos} from "../lib/video-discovery/catalog.mjs";
+import {buildPublishedVideoIndex,relatedPublishedVideos,projectApprovedMeditationRows} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 import {parseYouTubeVideoId,normalizeVideoCandidate,parseAiVideoLabels,curationAudit}
   from "../lib/video-discovery/curation.mjs";
@@ -91,4 +91,24 @@ test("candidate status audit separates approved records from unknown entries",()
     {youtube_id:ID2},{youtube_id:"bad"}]),{
       candidates:2,external:1,original:1,approvedEmbeds:1,linkOnly:0,duplicates:1,invalid:1,
     });
+});
+
+test("Supabase candidate rows stay invisible until complete independent review",()=>{
+ const base={youtube_id:ID1,title:"Public meditation",creator:"Reviewed author",
+   source_kind:"external",source_url:"https://www.youtube.com/watch?v="+ID1,
+   source_evidence_url:"https://example.org/public-review",audio_language:"en",
+   content_type:"guided",goals:["energy","meaning"],claims_risk:"low",
+   editorial_status:"approved",embed_status:"confirmed",rights_status:"embed_approved",
+   content_checked_at:"2026-11-01",embed_checked_at:"2026-11-01",metadata_checked_at:"2026-11-01"};
+ const unchecked={...base,youtube_id:ID2,source_url:"https://www.youtube.com/watch?v="+ID2,
+   content_checked_at:null};
+ const unreliable={...base,youtube_id:ID3,source_url:"https://www.youtube.com/watch?v="+ID3,
+   source_evidence_url:null};
+ const reviewed=projectApprovedMeditationRows([base,unchecked,unreliable]);
+ assert.equal(reviewed.length,1);
+ assert.equal(reviewed[0].youtubeId,ID1);
+ assert.equal(reviewed[0].audioLanguage,"en");
+ assert.deepEqual(reviewed[0].topicTags,["energy","meaning"]);
+ assert.equal(buildPublishedVideoIndex(reviewed).length,1);
+ assert.deepEqual(projectApprovedMeditationRows([{...base,editorial_status:"candidate"}]),[]);
 });
