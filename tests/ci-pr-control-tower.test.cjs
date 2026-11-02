@@ -1086,3 +1086,82 @@ test('old denied CI bootstrap reconciliation is isolated from dispatch and fail-
   workflow.includes('tests/ci-pr-ci-legacy-recovery.test.cjs'));
  assert.ok(workflow.includes("node --check scripts/ci-pr-ci-legacy-recovery.cjs"));
 });
+
+
+test('complete historical previous_head/new_head releases never poison a newer unrelated HEAD',()=>{
+ const old='b'.repeat(40),next='c'.repeat(40);
+ const doc={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-audio',
+   state:'released_after_concurrent_equivalent_fix',previous_head:old,new_head:next,
+   released_at:'2026-11-02T16:15:00Z'};
+ const actor={login:'andylitvinov-design'};
+ const wrap=x=>({user:actor,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(x)});
+ assert.equal(externalOwnerLeaseStatus([wrap(doc)],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([wrap({...doc,new_head:'invalid'})],SHA,NOW),
+   'OWNER_LEASE_UNVERIFIED','incomplete historical release remains untrusted');
+ const live={schema:'HH_PR_SWEEP_LEASE_V1',owner:'another-agent',lease_id:'real-owner',
+   state:'active',head_sha:SHA,expires_at:'2026-11-02T10:00:00Z'};
+ assert.equal(externalOwnerLeaseStatus([wrap(live),wrap(doc)],SHA,NOW),
+   'OWNER_LEASE_ACTIVE','unrelated release must not clear a modern active writer');
+});
+
+test('completed transition snapshots cannot reserve a worker slot',()=>{
+ const stale=computeCapacity([{name:'HH PR source Repair Worker',status:'completed'}],
+   [{name:'HH PR core release gate',status:'completed'}],[]);
+ assert.equal(stale.activeWorker['HH PR source Repair Worker'],0);
+ assert.equal(stale.coreQueuedRuns,0);
+ assert.equal(admission('repair',stale),'ADMIT');
+ const live=computeCapacity([{name:'HH PR source Repair Worker',status:'in_progress'}],[],[]);
+ assert.equal(admission('repair',live),'WORKER_BUSY');
+});
+
+test('source Repair Worker only runs addressed tasks, with no cron or push lease contention',()=>{
+ const fs=require('node:fs');
+ // CI has an independent schedule backstop and a separate concurrency group;
+ // it is covered by its own capacity and workflow contract below.
+ for(const path of ['.github/workflows/hh-pr-repair-worker.yml']){
+  const content=fs.readFileSync(path,'utf8');
+  const triggers=content.slice(content.indexOf('\non:\n'),content.indexOf('\npermissions:\n'));
+  assert.match(triggers,/workflow_dispatch:/);
+  assert.doesNotMatch(triggers,/\n  schedule:/);
+  assert.doesNotMatch(triggers,/\n  push:/);
+  assert.match(content,/cancel-in-progress: false/);
+ }
+});
+
+
+
+test('completed Action wrapper does not occupy a live repair worker lease',()=>{
+ const capx=computeCapacity(
+  [{id:1,name:'HH PR source Repair Worker',status:'completed'}],
+  [{id:2,name:'HH PR source Repair Worker',status:'completed'}],[]);
+ assert.equal(capx.activeWorker['HH PR source Repair Worker'],0);
+ assert.equal(admission('repair',capx),'ADMIT');
+ const queued=computeCapacity([],[{id:3,name:'HH PR source Repair Worker',status:'queued'}],[]);
+ assert.equal(queued.activeWorker['HH PR source Repair Worker'],1);
+ assert.equal(admission('repair',queued),'WORKER_BUSY');
+});
+test('complete previous_head + new_head owner release cannot block unrelated future source HEAD',()=>{
+ const old='b'.repeat(40),newHead='c'.repeat(40);
+ const release={schema:'HH_PR_SWEEP_LEASE_V1',owner:'chat-owner-audio',
+  state:'released_after_atomic_commit',previous_head:old,new_head:newHead,
+  released_at:new Date(NOW-1000).toISOString()};
+ const event={id:1,user:{login:'andylitvinov-design'},
+  body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(release)};
+ assert.equal(externalOwnerLeaseStatus([event],SHA,NOW),'FREE');
+ assert.equal(externalOwnerLeaseStatus([event],old,NOW),'FREE');
+ const active={...release,head_sha:SHA,state:'active',lease_id:'newer-writer'};
+ const actual={...event,id:2,body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(active)};
+ assert.equal(externalOwnerLeaseStatus([event,actual],SHA,NOW),'OWNER_LEASE_ACTIVE',
+  'old release cannot steal a current writer lock');
+});
+
+test('scheduled CI metadata backstop cannot steal addressed worker slot',()=>{
+ const meta=computeCapacity([{name:'HH zero-cost PR CI worker',event:'schedule',status:'in_progress'}],[],[]);
+ assert.equal(meta.activeWorker['HH zero-cost PR CI worker'],0);
+ assert.equal(admission('ci',meta),'ADMIT');
+ const scheduled={event:'schedule',status:'in_progress',created_at:new Date(NOW).toISOString()};
+ assert.equal(workerBusyOrCooling([scheduled],NOW,'ci'),false);
+ assert.equal(workerBusyOrCooling([scheduled],NOW,'repair'),true);
+ const addressed=computeCapacity([{name:'HH zero-cost PR CI worker',event:'workflow_dispatch',status:'in_progress'}],[],[]);
+ assert.equal(admission('ci',addressed),'WORKER_BUSY');
+});

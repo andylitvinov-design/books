@@ -1,21 +1,7 @@
 name: HH PR source Repair Worker
 on:
-  schedule:
-    - cron: '5,15,25,35,45,55 * * * *'
-  # No workflow_run fanout: Watchdog dispatches only an actionable queue.
-  push:
-    branches: ['codex/bootstrap-books']
-    paths:
-      - '.github/workflows/hh-pr-repair-worker.yml'
-      - 'scripts/ci-pr-repair-worker.cjs'
-      - 'scripts/ci-pr-repair-test-scope.cjs'
-      - 'scripts/ci-pr-repair-code-candidate.cjs'
-      - 'scripts/ci-pr-priority.cjs'
-      - '.github/hh-pr-directions.json'
-      - 'tests/ci-pr-direction-watcher.test.cjs'
-      - 'tests/ci-pr-priority.test.cjs'
-      - 'tests/ci-pr-repair-worker.test.cjs'
-      - 'tests/ci-pr-repair-test-scope.test.cjs'
+  # Exact-head task dispatch only; no empty cron/push claims may hold the
+  # source writing lease. Independent CI schedule wakes Control Tower instead.
   workflow_dispatch:
     inputs:
       pr_number:

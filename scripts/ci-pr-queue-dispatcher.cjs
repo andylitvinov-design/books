@@ -36,9 +36,13 @@ function trustedContext(context){
  * still fail closed. Successful real worker completions get a short
  * propagation grace; failed attempts keep the longer backoff.
  */
-function workerBusyOrCooling(runs,now){
+function workerBusyOrCooling(runs,now,lane=null){
  if(!Array.isArray(runs))return true;
  return runs.some(r=>{
+  if(!r||typeof r!=='object')return true;
+  // A schedule/push CI backstop is read-only, with a different workflow lease.
+  // Only addressed CI workers can claim task capacity or delay the next claim.
+  if(lane==='ci'&&['schedule','push'].includes(r.event))return false;
   if(['in_progress','queued','requested','waiting','pending'].includes(r.status))return true;
   if(r.status!=='completed')return true;
   if(r.event==='push')return false;
@@ -464,7 +468,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(!Array.isArray(r?.workflow_runs)){blocked('WORKER_HISTORY_INCOMPLETE');continue;}
    recent=r.workflow_runs;
   }catch(err){blocked('WORKER_HISTORY_UNAVAILABLE');continue;}
-  if(workerBusyOrCooling(recent,now)){
+  if(workerBusyOrCooling(recent,now,task.lane)){
    blocked('WORKER_BUSY_OR_COOLDOWN');continue;
   }
   if(dryRun){summary.wouldDispatch++;summary.workerRuns.push({task_key:task.task_key,

@@ -129,7 +129,10 @@ function externalOwnerLeaseStatus(comments,headSha,now){
   // An abbreviated prefix matching THIS head stays unverified, never free.
   const released=/^released(?:_|$)/.test(String(doc.state||''))||
    (!doc.state&&/^release(?:_|$)/.test(String(doc.last_action||'')));
-  const oldHead=doc.old_head_sha||doc.old_head;
+  // Historical owner/Codex releases may use previous_head + new_head instead
+   // of old_head + new_head. A complete, unrelated RELEASED pair is not
+   // an owner of every subsequent HEAD; malformed/current claims still block.
+   const oldHead=doc.old_head_sha||doc.old_head||doc.previous_head_sha||doc.previous_head;
   const newHead=doc.new_head_sha||doc.new_head;
   const oldPair=released&&SHA.test(oldHead||'')&&SHA.test(newHead||'');
   const shortReleased=released&&SHA.test(doc.previous_head_sha||'')&&

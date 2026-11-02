@@ -14,19 +14,26 @@ test('watchdog has independent ten-minute cron and failed Core wakeup',()=>{
   assert.ok(s.includes("context.eventName === 'push'"));
   assert.ok(s.includes('default: false'));
 });
-for(const [file,cron] of [
-  ['hh-pr-ci-worker','4,14,24,34,44,54'],
-  ['hh-pr-repair-worker','5,15,25,35,45,55']
-]){
-  test(file+' uses cron and explicit queue dispatch, never workflow_run fanout',()=>{
-    const s=read(file);
-    assert.ok(s.includes("cron: '"+cron+" * * * *'"));
-    assert.ok(s.includes('workflow_dispatch:'));
-    assert.ok(!s.includes('  workflow_run:'));
-    assert.ok(s.includes('cancel-in-progress: false'));
-    assert.ok(s.includes('default: false'));
-  });
-}
+test('source Repair Worker is addressed only; no empty cron consumes its publish lease',()=>{
+ const s=read('hh-pr-repair-worker');
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(!s.includes('  schedule:'));
+ assert.ok(!s.includes('  push:'));
+ assert.ok(!s.includes('  workflow_run:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('expected_sha:'));
+ assert.ok(s.includes('task_key:'));
+});
+test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
+ const s=read('hh-pr-ci-worker');
+ assert.ok(s.includes("cron: '4,14,24,34,44,54 * * * *'"));
+ assert.ok(s.includes('workflow_dispatch:'));
+ assert.ok(s.includes('cancel-in-progress: false'));
+ assert.ok(s.includes("github.event_name == 'workflow_dispatch' && 'addressed' || 'background'"));
+ assert.ok(s.includes('reservation_run_id:'));
+ assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
+});
 test('full inventory retains independent hourly recovery',()=>{
   assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
 });
@@ -187,7 +194,8 @@ test('useful worker completion wakes only the existing serialized dispatcher wit
  assert.ok(dispatcher.includes('relayCompletionWake'));
  assert.ok(dispatcher.includes('worker_run_id:'));
  assert.ok(dispatcher.includes('hh-control-tower-single-writer'));
- assert.ok(dispatcher.includes('await run({github,core,context,dryRun})'));
+ assert.ok(dispatcher.includes('const summary=await run({github,core,context,dryRun})'));
+ assert.ok(dispatcher.includes('await wakeStaleWatchdog({github,context,summary,dryRun'));
 });
 
 test('hourly native merge requires explicit verified release for modern active ownership',()=>{

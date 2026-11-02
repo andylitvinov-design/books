@@ -157,7 +157,8 @@ jobs:
             const dryRun=context.eventName==='push'||input;
             // Trust checks inside run() and exact-HEAD check before each mutation.
             // Push is audit-only; cron and completed trusted worker events are live.
-            const report=await run({github,core,context,dryRun});
+            const summary=await run({github,core,context,dryRun});
+            const report=summary;
             // Public KPI snapshot for the PR monitor. Never affects dispatch or release gates.
             // Do not publish audit-only runs, PR contracts, or unverified owner data.
             if (!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
@@ -198,3 +199,7 @@ jobs:
             // never if Direction Watcher is queued/running. Does not create PR
             // checks, edit source or pretend that GitHub cron delivered events.
             await wakeDirectionWatcher({github,core,context,dryRun});
+            // Resilient fallback when GitHub has not delivered scheduled Watchdog runs.
+            const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-control-tower-wakeup.cjs');
+            await wakeStaleWatchdog({github,context,summary,dryRun,log:core.info});
