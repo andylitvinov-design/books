@@ -137,7 +137,8 @@ test('PR automation policy and agent entry point require specialist safety gates
   assert.match(docs, /The replacement checks are `hh-core-verified` \(Core\) and `hh-specialist`/);
   assert.match(docs, /SUCCESS on the exact PR HEAD/);
   assert.match(docs, /Applicable specialist CI workflows must execute and succeed/);
-  assert.match(docs, /production advance alone does not require updating the PR branch/);
+  assert.match(docs, /when strict required checks are enabled, a production advance requires updating the PR branch/);
+  assert.doesNotMatch(docs, /GitHub uses loose required-status checks/);
   assert.match(docs, /FAST presentation-only/);
   for (const requiredSafetyGate of ['RLS', 'auth', 'privacy', 'payment']) {
     assert.match(docs, new RegExp(requiredSafetyGate, 'i'));
@@ -697,7 +698,17 @@ test('proven CI fast wins remove duplicate jobs but preserve domain coverage',()
   assert.ok(perf.includes("if: ${{ github.event_name != 'pull_request' }}"));
   assert.match(perf,/^  push:\s*$/m);
   const services=workflow('hh-public-services-production.yml');
-  assert.ok(services.includes('npm run build')&&services.includes('node scripts/verify-public-services-production.mjs'));
+  // Public Services still compiles the entire production app, while the
+  // required Core retains unrelated prebuild coaching regression suites.
+  assert.ok(services.includes('./node_modules/.bin/next build') &&
+    services.includes('node scripts/verify-public-services-production.mjs'));
+  for (const generator of ['ensure-owner-video-renderer.mjs',
+    'cache-ancient-coaching-photos.mjs','generate-soft-ocean-melody.mjs',
+    'build-public-card-artwork.mjs','build-report-pdf-art.mjs']) {
+    assert.ok(services.includes('node scripts/' + generator),'missing prerequisite '+generator);
+  }
+  assert.ok(workflow('hh-pr-core-release.yml').includes('run: npm run build'),
+    'required Core must retain the full original prebuild suite');
   assert.ok(!services.includes('npx tsc --noEmit'));
 });
 
@@ -985,15 +996,9 @@ test('native AutoMerge reevaluates on CI completion, guards exact HEAD and avoid
     'must query current PR branch with bounded pagination because CI head_sha may be synthetic');
   assert.ok(enable.includes('completedRunId && !observed.some(run => run.id === completedRunId)'), 'must reject stale or misassociated CI events');
   assert.ok(enable.includes('coreRun.conclusion !== "success"'), 'must require green core CI');
-  assert.ok(enable.includes('job.name === "hh-core-verified"'), 'must check exact Core job');
-  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
-    'must honor legacy branch protection until admin migration');
-  assert.ok(enable.includes('oldRequired && !passed("release-ready")'),
-    'must not bypass presently required release-ready');
-  assert.ok(enable.includes('specialistRequired && !passed("hh-specialist")'),
-    'a red specialist check blocks after migration');
-  assert.ok(enable.includes('const coreRequired = Array.isArray(required) && required.includes("hh-core-verified")'),
-    'must recognize migrated protection without weakening actual CI');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'must recognize unified protection');
+  assert.ok(enable.includes('["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]]'), 'legacy protection remains fail-closed');
+  assert.ok(enable.includes('matching.length === 1'), 'duplicate jobs cannot pass');
 
   assert.ok(enable.includes('run.status !== "completed"'), 'must wait for ongoing specialists');
   assert.ok(enable.includes('["success","skipped","neutral"].includes(run.conclusion)'), 'must refuse red CI');
@@ -1130,9 +1135,10 @@ test('event-driven CI recognizes synthetic merge SHA only through exact PR sourc
         args.push(params);
         return {data: {total_count: totalCount, workflow_runs: runs}};
       }, listJobsForWorkflowRun: async () => ({data: {
-        total_count: (options.jobs || []).length || 2,
+        total_count: (options.jobs || []).length || 3,
         jobs: options.jobs || [
           {name: 'hh-core-verified', status: 'completed', conclusion: 'success'},
+          {name: 'hh-specialist', status: 'completed', conclusion: 'success'},
           {name: 'release-ready', status: 'completed', conclusion: 'success'},
         ],
       }})},
@@ -1221,10 +1227,7 @@ test('native AutoMerge uses CI-completed event for new HEAD instead of duplicate
   assert.ok(enable?.includes("github.event.workflow_run.conclusion == 'success'"));
   assert.ok(enable.includes("completedRunId && !observed.some(run => run.id === completedRunId)"),
     'the current source run association must not be weakened');
-  assert.ok(enable.includes("job.name === \"hh-core-verified\""),
-    'native merge must still verify real successful Core');
-  assert.ok(enable.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'),
-    'retain actual legacy branch protection until admin migration');
+  assert.ok(enable.includes('["hh-merge-check", ["hh-merge-check"]]'), 'unified gate must be recognized');
   assert.match(core, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/,
     'Core CI MUST still rerun for every source push');
   assert.doesNotMatch(enable, /--admin|--force|checkout@|continue-on-error:/);
@@ -1291,8 +1294,9 @@ test('native AutoMerge bounded CI pagination handles 100+ current runs safely',a
           return {data:{total_count:totals[index]??totals[0],
             workflow_runs:pages[index]??[]}};
         },
-        listJobsForWorkflowRun:async()=>({data:{total_count:2,jobs:[
+        listJobsForWorkflowRun:async()=>({data:{total_count:3,jobs:[
           {name:'hh-core-verified',status:'completed',conclusion:'success'},
+          {name:'hh-specialist',status:'completed',conclusion:'success'},
           {name:'release-ready',status:'completed',conclusion:'success'},
         ]}}),
       },
@@ -1329,9 +1333,8 @@ test('one-time status migration is production-only, requires real replacement ev
   assert.match(migration, /non_fast_forward/);
   assert.match(migration, /branches\/codex%2Fpublic-book-library\/protection\/required_status_checks/);
   assert.match(migration, /--method PATCH/);
-  assert.match(merge, /const dualEnforced/);
-  assert.match(merge, /const migrated/);
-  assert.match(merge, /passed\("hh-specialist"\)/);
+  assert.match(merge, /hh-merge-check/);
+  assert.match(merge, /hh-specialist/);
 });
 
 

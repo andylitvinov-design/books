@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import "./mandala-therapy-video-intro.test.mjs";
+import "./resource-practice-selector.test.mjs";
 import {readFileSync} from "node:fs";
 import {buildPersonalImageryCourse} from "../lib/mandala/personal-guided-course.mjs";
 

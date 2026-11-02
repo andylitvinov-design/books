@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
 import vm from "node:vm";
+import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read = name => readFileSync(new URL("../" + name, import.meta.url), "utf8");
 const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
@@ -101,7 +102,9 @@ test("Video Blogs have two standalone, filterable original channels, episodes be
   assert.match(library, /greekVideoSeries\(locale\)/);
   assert.match(library, /seriesId: series\.id/);
   assert.match(library, /seriesOrder: lesson\.order/);
-  assert.match(library, /const seriesVideoIds = new Set/);
+  assert.match(library, /const seenDiscoveryIds = new Set<string>/);
+  assert.match(library, /if \(seenDiscoveryIds\.has\(key\)\) return false/);
+  assert.match(read("components/video-discovery.tsx"), /<LibraryFeed locale=\{locale\} items=\{ordered\} videosOnly preserveOrder/);
   assert.match(feed, /data-library-series-filter=\{series\.id\}/);
   assert.match(feed, /data-library-video-series=\{item\.seriesId\}/);
   assert.match(feed, /a\.seriesOrder \?\? Number\.MAX_SAFE_INTEGER/);
@@ -131,4 +134,14 @@ test("new and changed TSX/TS source parse without diagnostics", () => {
     assert.deepEqual((result.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error)
       .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), [], path);
   }
+});
+
+test("new discovery keeps the two Greek original series ahead of duplicates in Series mode",()=>{
+  const input=[
+    {id:"greek-dionysus-1",kind:"video",youtubeId:"qipPFBpRNF8",title:"Dionysus lesson 1",audioLanguage:"ru",topicTags:["relationships"]},
+    {id:"greek-dionysus-2",kind:"video",youtubeId:"_9y1lR0lpPA",title:"Dionysus lesson 7",audioLanguage:"ru",topicTags:["relationships"]},
+    {id:"duplicate",kind:"video",youtubeId:"qipPFBpRNF8",title:"Duplicate",audioLanguage:"ru",topicTags:["relationships"]},
+  ];
+  const ranked=rankDiscoveryVideos(input,{sort:"series",language:"ru",goal:"relationships"});
+  assert.deepEqual(ranked.map(item=>item.youtubeId),["qipPFBpRNF8","_9y1lR0lpPA"]);
 });
