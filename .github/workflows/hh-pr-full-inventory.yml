@@ -260,10 +260,11 @@ jobs:
        (github.event_name == 'repository_dispatch' &&
         github.event.client_payload.environment == 'production'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 4
+    timeout-minutes: 8
     permissions:
       contents: read
       statuses: read
+      pull-requests: read
     steps:
       - name: Checkout only trusted control-plane code
         uses: actions/checkout@v4
@@ -287,3 +288,43 @@ jobs:
               '/scripts/ci-pr-live-verifier.cjs');
             await verifier.run({github,core,context,
               vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
+
+      - name: Resolve production SHA for hourly conflict diagnostics
+        if: github.event_name == 'schedule'
+        id: conflict_base
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const branch=(await github.rest.repos.getBranch({owner:context.repo.owner,
+              repo:context.repo.repo,branch:'codex/public-book-library'})).data;
+            if(!branch.protected || !/^[a-f0-9]{40}$/i.test(branch.commit?.sha||''))
+              throw Error('PRODUCTION_REF_UNVERIFIED');
+            core.setOutput('sha',branch.commit.sha);
+      - name: Checkout pinned production conflict diagnostics
+        if: github.event_name == 'schedule'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.conflict_base.outputs.sha }}
+          path: .hh-production
+          persist-credentials: false
+      - name: Run bounded read-only conflict diagnostics
+        if: github.event_name == 'schedule'
+        timeout-minutes: 4
+        working-directory: .hh-production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PINNED_PRODUCTION_SHA: ${{ steps.conflict_base.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -q 'export function conflictRotationOffset' lib/ci/pr-sweep-guard.mjs; then
+            echo '::warning::CONFLICT_ROTATION_UNAVAILABLE: awaiting production rollout'
+            echo 'Conflict diagnostics: UNAVAILABLE — production rotation is not deployed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          actual="$(git rev-parse HEAD)"
+          [[ "$actual" == "$PINNED_PRODUCTION_SHA" ]] || { echo '::error::Production checkout changed'; exit 1; }
+          echo "HH_CONFLICT_MONITOR_CODE_SHA=$actual"
+          node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY" | tee "$RUNNER_TEMP/hh-conflicts.json"
+          { echo '### Hourly conflict diagnostics'; echo '```json'; cat "$RUNNER_TEMP/hh-conflicts.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
