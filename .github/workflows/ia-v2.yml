@@ -145,10 +145,17 @@ jobs:
             /^lib\/practitioners\/public-service-enquiry\.js$/,
             /^tests\/public-enquiry-reply-handoff\.test\.mjs$/,
             /^\.github\/workflows\/hh-messages-wellness-v2\.yml$/,
-            /^\.github\/workflows\/ia-v2\.yml$/,
           ]
+          const mobileDockExpected=new Map([
+            ["app/[locale]/app/[[...path]]/workspace.css","M"],
+            ["app/[locale]/app/messages/messages-page.css","M"],
+            ["components/app/messages-bottom-navigation.jsx","M"],
+            ["lib/mobile-visual-bottom.mjs","A"],
+            ["tests/mobile-visual-dock.test.mjs","A"],
+          ])
           const operatorExpected=new Map([[".github/workflows/hh-messages-wellness-v2.yml","M"],[".github/workflows/ia-v2.yml","M"],["app/api/app/messages/public-enquiries/[id]/reply-contact/route.js","A"],["components/app/messages-contact-card.jsx","M"],["components/app/messages-simple-inbox.jsx","M"],["components/app/public-enquiry-contact.jsx","M"],["components/app/public-enquiry-operator-reply.jsx","A"],["components/app/public-enquiry-reply.jsx","A"],["components/app/public-enquiry-reply.module.css","A"],["lib/practitioners/public-enquiry-operator-contact.js","A"],["lib/practitioners/public-enquiry-reply-links.mjs","A"],["lib/practitioners/public-service-enquiry.js","M"],["scripts/ci-public-services-plan.mjs","M"],["supabase/migrations/20261101041500_hh_public_enquiry_contact_disclosure_audit.sql","A"],["tests/ci-public-services-plan.test.mjs","M"],["tests/messages-reply-contact-route.test.mjs","A"],["tests/public-enquiry-contact-audit-rls.integration.mjs","A"],["tests/public-enquiry-operator-contact.test.mjs","A"],["tests/public-enquiry-operator-ui.test.mjs","A"],["tests/public-enquiry-reply-handoff.test.mjs","A"]])
           let operatorOnly=false
+          let mobileDockOnly=false
           let messengerOnly=false
           let practitionerMeditationOnly=false
           if(process.env.HH_PR_EVENT==='pull_request'){
@@ -159,6 +166,14 @@ jobs:
               const files=git('diff','--name-only','HEAD^1','HEAD').split('\n').filter(Boolean)
               const raw=execFileSync('git',['diff','--name-status','-z','HEAD^1','HEAD'],{encoding:'utf8'})
               const fields=raw.split('\0')
+              mobileDockOnly=fields.at(-1)==='' &&
+                fields.length===mobileDockExpected.size*2+1 &&
+                files.length===mobileDockExpected.size &&
+                files.every(file=>mobileDockExpected.has(file)) &&
+                [...mobileDockExpected].every(([path,status])=>{
+                  const i=fields.indexOf(path)
+                  return i>0 && fields[i-1]===status
+                })
               operatorOnly=fields.at(-1)==='' &&
                 fields.length===operatorExpected.size*2+1 &&
                 files.length===operatorExpected.size &&
@@ -178,12 +193,12 @@ jobs:
               }
               messengerOnly=baseValid &&
                 head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
-                (files.every(file=>allowed.some(pattern=>pattern.test(file)))||operatorOnly)
+                (files.every(file=>allowed.some(pattern=>pattern.test(file)))||operatorOnly||mobileDockOnly)
               operatorOnly=operatorOnly&&messengerOnly
               practitionerMeditationOnly=baseValid &&
                 head===process.env.HH_EXPECTED_HEAD && files.length>0 &&
                 isPrivateMeditationRelease(files)
-              console.log(JSON.stringify({base,head,files,operatorOnly,messengerOnly,practitionerMeditationOnly}))
+              console.log(JSON.stringify({base,head,files,operatorOnly,mobileDockOnly,messengerOnly,practitionerMeditationOnly}))
             }catch(err){
               console.error('Messenger scoped classification unavailable; keeping full IA',err.message)
             }
@@ -214,6 +229,18 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run lint
       - run: npm run native:check && npm run pwa:check
+      # Read-only restores from the production-seeded cache used by Core.
+      # PR jobs never publish shared cache entries; a miss is a safe full build.
+      - name: Restore trusted production-owned scenario media cache
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore trusted production Next compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .next/cache
+          key: hh-core-next-v1-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - run: npm run build
       - name: Full TypeScript outside production PR (core release-ready owns production typing)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
