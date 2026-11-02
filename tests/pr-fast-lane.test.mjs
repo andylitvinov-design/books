@@ -1471,3 +1471,25 @@ test('universal actionlint and Guard use lightweight runner without weakening ex
   assert.match(core.split(/^  code:\s*$/m)[1].split(/^  hh-specialist:\s*$/m)[0], /^    runs-on: ubuntu-24\.04$/m);
   for(const s of [lint,guard]) assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
+
+test('Core restores immutable production-seeded media and compiler caches without writing from PR', () => {
+  const core = workflow('hh-pr-core-release.yml');
+  const producer = workflow('hh-static-image-cost-guard.yml');
+  const coreJob = core.split(/^  code:\s*$/m)[1]?.split(/^  hh-specialist:\s*$/m)[0] ?? '';
+  const producerJob = producer.split(/^  static-image-cost-guard:\s*$/m)[1] ?? '';
+  for (const id of ['hh-core-media-v1-', 'hh-core-next-v1-']) {
+    assert.ok(coreJob.includes(id), 'Core lacks trusted cache key ' + id);
+    assert.ok(producerJob.includes(id), 'production producer lacks the identical key ' + id);
+    const a = coreJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
+    const b = producerJob.split('\n').find(line => line.includes('key: ' + id))?.trim();
+    assert.ok(a && b && a === b, 'cache identity mismatch for ' + id);
+  }
+  assert.match(coreJob, /actions\/cache\/restore@v4/);
+  assert.doesNotMatch(coreJob, /actions\/cache\/save@v4/, 'candidate PR must not publish shared caches');
+  assert.match(coreJob, /run: npm run build/, 'preserve mandatory exact-HEAD full Next build');
+  assert.match(producerJob, /actions\/cache\/save@v4/);
+  assert.match(producerJob, /node scripts\/generate-scenario-melodies\.mjs --check/);
+  assert.match(producerJob, /node --test tests\/mandala-scenario-audio\.test\.mjs/);
+  assert.match(producerJob, /github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library'/);
+  assert.match(producerJob, /run: npm run build/, 'production seed must include real successful Next build');
+});
