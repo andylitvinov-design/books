@@ -904,3 +904,64 @@ test('Director Chat LIVE encoded-media QA is narrowly owned and preserves full u
   }
   assert.equal(run([...rows,['D','tests/video-director-chat-live-acceptance.test.mjs']]).mode,'full');
 });
+
+test('PR #2970 69,120 read-only Mandala phrases use independently checked specialist, never unrelated checkout browsers',()=>{
+  const reviewedNew=[
+    'app/api/holistic-support/video-phrases/route.js',
+    'components/mandala-phrase-catalog.module.css',
+    'components/mandala-phrase-catalog.tsx',
+    'data/video-catalog/video-phrase-actions-v1.json',
+    'data/video-catalog/video-phrase-templates-v1.json',
+    'docs/videos/VIDEO_PHRASE_CATALOG_20261101.md',
+    'lib/mandala/video-phrase-catalog.d.mts',
+    'lib/mandala/video-phrase-catalog.mjs',
+    'sql/hh-video-phrase-catalog-v1-20261101.sql',
+    'sql/hh-video-phrase-story-arc-copy-v1-20261101.sql',
+    'sql/hh-video-phrase-tone-copy-revision-v1-20261101.sql',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ];
+  const modified=['.github/workflows/holistic-support-mandala.yml',
+    'components/mandala-free-video-studio.tsx',
+    'tests/mandala-mobile-video-design.test.mjs',
+    'scripts/ci-public-services-plan.mjs',
+    'tests/ci-public-services-plan.test.mjs'];
+  const selected=[...reviewedNew,...modified];
+  const plan=planPublicServicesChangedPaths(selected);
+  assert.deepEqual([plan.mode,plan.build,plan.browser,plan.cases],
+    ['contracts',false,false,'none']);
+  const mandala=workflow('holistic-support-mandala.yml');
+  for(const required of [
+    "app/api/holistic-support/video-phrases/route.js",
+    "components/mandala-phrase-catalog*",
+    "data/video-catalog/video-phrase-*.json",
+    "tests/mandala-video-phrase-catalog.test.mjs",
+    "node --test tests/mandala-video-phrase-catalog.test.mjs",
+  ])assert.ok(mandala.includes(required),'independent Mandala owner: '+required);
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/2970/merge',
+    GITHUB_HEAD_REF:'feat/video-phrase-catalog-goal-tree-20261101',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const run=rows=>planPublicServicesEvent(env,(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,path])=>[st,path]).join(nul)+nul);
+    throw Error('unexpected scoped test '+args.join(' '));
+  });
+  const rows=[...reviewedNew.map(x=>['A',x]),...modified.map(x=>['M',x])];
+  assert.equal(run(rows).mode,'contracts');
+  for(const unsafe of [
+    'app/api/payments/checkout/route.js',
+    'app/api/holistic-support/video-phrases/write/route.js',
+    'app/api/holistic-support/video-phrases/draft-user/route.js',
+    'components/commerce/service-cart.tsx',
+    'middleware.ts',
+  ]) {
+    assert.equal(planPublicServicesChangedPaths([...selected,unsafe]).mode,'full',unsafe);
+    assert.equal(run([...rows,['A',unsafe]]).mode,'full',unsafe);
+  }
+  for(const deleted of [
+    'app/api/holistic-support/video-phrases/route.js',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ])assert.equal(run([...rows.filter(x=>x[1]!==deleted),['D',deleted]]).mode,'full',
+    'deletions remain FULL: '+deleted);
+});

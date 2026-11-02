@@ -497,7 +497,8 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(studio,/\{deepHypnoPane\}/);
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
-  assert.doesNotMatch(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}custom:phrase,visibility:\["large"\]/,
+    "a chosen catalog phrase must enter the existing visible film caption track");
   assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
