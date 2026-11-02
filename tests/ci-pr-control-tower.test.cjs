@@ -850,7 +850,13 @@ test('source dispatch requires a complete nonempty worker-safe changed-file scop
   const f=fixture([pr(77)],{comments:{77:[proof()]}});
   f.github.rest.pulls.listFiles=async()=>({data:files});
   const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
-  assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+  assert.equal(result.dispatchAccepted,0);
+  // The only allowed write is a terminal owner handoff, NOT a source writer
+  // reservation or a workflow dispatch for these prohibited file scopes.
+  assert.equal(result.manualSourceEscalations,1);
+  assert.ok(f.calls.reserved.some(c=>c.body.includes('"state":"MANUAL"')));
+  assert.ok(!f.calls.reserved.some(c=>c.body.includes('"state":"RESERVED"')));
+  assert.equal(f.calls.dispatched.length,0);
  }
 });
 
