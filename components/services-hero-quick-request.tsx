@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, X } from "lucide-react";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./services-conversion-hero.module.css";
@@ -182,6 +183,7 @@ export function ServicesHeroQuickRequest({
             <input type="checkbox" checked={consent} required onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <EnquiryAttributionChoice locale={locale} disabled={sending} />
           <button type="submit" disabled={!consent || sending} className={styles.requestSubmit}>
             {sending ? t.sending : t.submit}<ArrowRight size={17} aria-hidden="true" />
           </button>
