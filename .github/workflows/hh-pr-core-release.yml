@@ -412,7 +412,7 @@ jobs:
     name: hh-merge-check
     needs: [scope, code, hh-specialist]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       contents: read

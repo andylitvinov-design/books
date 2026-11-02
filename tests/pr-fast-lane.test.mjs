@@ -1409,3 +1409,19 @@ test('legacy PR CI backfill accepts PAT-authored edited event without skipping r
   assert.match(gate,/\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\]/);
   assert.doesNotMatch(gate,/continue-on-error:\s*true/);
 });
+
+test('required hh-merge-check uses lightweight runner and keeps fail-closed Core/Specialist gate', () => {
+  const source = workflow('hh-pr-core-release.yml');
+  const gate = source.split(/^  hh-merge-check:/m)[1];
+  assert.ok(gate, 'protected check name must be retained');
+  assert.match(gate, /^    name: hh-merge-check$/m);
+  assert.match(gate, /^    needs: \[scope, code, hh-specialist\]$/m);
+  assert.match(gate, /^    if: always\(\)$/m);
+  assert.match(gate, /^    runs-on: ubuntu-slim$/m);
+  assert.match(gate, /^    timeout-minutes: 2$/m);
+  assert.match(gate, /\[\[ "\$EVENT_NAME" == pull_request \]\] \|\|/);
+  assert.match(gate, /if \[\[ "\$PR_DRAFT" == true \]\]; then/);
+  assert.match(gate, /\[\[ "\$SCOPE_RESULT" == success && "\$SPECIALIST_RESULT" == success \]\] \|\|/);
+  assert.match(gate, /\[\[ "\$CODE_RESULT" == success \]\] \|\|/);
+  assert.doesNotMatch(gate, /continue-on-error:\s*true/);
+});
