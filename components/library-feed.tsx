@@ -22,6 +22,11 @@ export type LibraryFeedItem = {
   seriesTitle?: string;
   seriesHref?: string;
   seriesOrder?: number;
+  topicTags?: string[];
+  audioLanguage?: "ru" | "en" | "es";
+  curation?: "verified" | "published";
+  sourceGroup?: string;
+  sourceLabel?: string;
 };
 
 const words = {
@@ -205,6 +210,7 @@ export function LibraryFeed({ locale, items, videosOnly = false, guidesOnly = fa
               {item.seriesOrder != null && <span>{copy.episode} {item.seriesOrder}</span>}
               {date && <span>{date}</span>}
               {item.author && <span className={styles.author}>{item.author}</span>}
+              {item.sourceLabel && <span className={styles.author}>{item.sourceLabel}</span>}
             </p>
             <h2>{canPlay ? (
               <button type="button" className={styles.titleButton} onClick={() => setPlayingId(playing ? null : item.id)}>
