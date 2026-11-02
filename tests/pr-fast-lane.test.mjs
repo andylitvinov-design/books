@@ -802,9 +802,8 @@ test('Mandala PR retains focused source checks plus protected Voice or manual me
 test('core release checkout preserves ancestry jobs and pins exact base for bounded aggregation', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split(/^  scope:/m)[1]?.split(/^  hh-specialist:/m)[0];
-  const code = scope;
   const release = source.match(/^  hh-specialist:\s*\n([\s\S]*?)(?=^  [a-z][a-z0-9-]*:\s*$)/m)?.[1];
-  for (const [name, job] of [['scope', scope], ['code', code]]) {
+  for (const [name, job] of [['unified Core', scope]]) {
     assert.match(job, /fetch-depth:\s*2/, `${name} needs exact synthetic merge and its two parents`);
     assert.doesNotMatch(job, /fetch-depth:\s*0/, `${name} must avoid full-history Git fetch`);
     assert.match(job, /git merge-base --is-ancestor/, `${name} must retain fail-closed ancestry verification`);
@@ -830,8 +829,7 @@ test('core release checkout preserves ancestry jobs and pins exact base for boun
 test('Core old PR base beyond shallow depth is checked by API, never mistaken for code failure', () => {
   const source = workflow('hh-pr-core-release.yml');
   const scope = source.split('  scope:\n')[1]?.split('  hh-specialist:\n')[0];
-  const code = source.split('  scope:\n')[1]?.split('  hh-specialist:\n')[0];
-  for (const job of [scope, code]) {
+  for (const job of [scope]) {
     assert.ok(job.includes('GH_TOKEN: ${{ github.token }}'), 'read-only GitHub token required');
     assert.ok(job.includes('gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base"'),
       'old production ancestry must be verified by GitHub');
@@ -842,7 +840,7 @@ test('Core old PR base beyond shallow depth is checked by API, never mistaken fo
   }
   assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
   assert.ok(scope.includes('git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"'));
-  assert.ok(!code.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
+  assert.ok(!scope.includes('git merge-base --is-ancestor "$BASE_SHA" "$first_parent"'));
 });
 
 test('native auto-merge preserves stacked-child ancestry while keeping squash for unrelated PRs', () => {
