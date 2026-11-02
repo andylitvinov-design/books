@@ -14,7 +14,7 @@ const MAX_CANDIDATES = 4;
 const MAX_READS = 36;
 const RATE_RESERVE = 100;
 const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
-const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task-state.cjs');
+const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment}=require('./ci-pr-task-state.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -303,13 +303,71 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
   catch (e) { core.info('HH_REPAIR: fix pushed; queue label remains: '+e.message); }
   return {status:'committed',number:prNumber,sha:created.sha};
 }
-
 /**
- * Close every addressed Repair handoff with a durable, exact-HEAD outcome.
- * GitHub accepting workflow_dispatch or a successful claim is NOT a source
- * commit. This runs with read-only checkout after all upstream jobs, even
- * when install, tests, publisher or the claim job failed.
+ * A failed isolated fix job has never published source. Close the silent
+ * CLAIMED gap: record a real terminal source-failure receipt and enqueue the
+ * existing owner/Codex manual lane, but only for the same authenticated run
+ * and unchanged source HEAD. This is NOT evidence of a completed fix.
  */
+async function finalizeFailedFix({github,core,context,prNumber,expectedSha,now=Date.now()}){
+ const {owner,repo}=context.repo, fullRepo=owner+'/'+repo;
+ const skip=reason=>({status:'skipped',reason,source_published:false});
+ if(fullRepo!=='andylitvinov-design/books' ||
+   !Number.isSafeInteger(prNumber)||prNumber<1 ||
+   !SHA.test(expectedSha||'')||!Number.isSafeInteger(context.runId))
+  return skip('INVALID_FIX_FAILURE_CONTEXT');
+ const pr=(await github.rest.pulls.get({owner,repo,pull_number:prNumber})).data;
+ if(!eligible(pr,fullRepo) || pr.head?.sha!==expectedSha ||
+    repairMode(pr)!=='lint')return skip('SOURCE_CHANGED_OR_NOT_ACTIONABLE');
+ let reads=0,comments;
+ try{
+  comments=await readCompleteIssueComments(github,owner,repo,prNumber,async(_,fn)=>{
+   if(++reads>MAX_READS)throw Error('FIX_FAILURE_HISTORY_BUDGET');
+   return fn();
+  });
+ }catch(error){core?.info?.('HH_REPAIR_FAILURE_HISTORY '+error.message);return skip('OWNER_HISTORY_UNAVAILABLE');}
+ if(!comments)return skip('OWNER_HISTORY_INCOMPLETE');
+ const owned=comments.some(c=>{
+  if(!trustedControlComment(c)||
+     !String(c.body||'').includes('<!-- '+MARKER+' '+expectedSha+' -->'))return false;
+  const records=parseRecords([c]);
+  return records?.some(r=>r.head_sha===expectedSha &&
+   r.pr_number===prNumber && r.owner_run_id===String(context.runId) &&
+   r.state==='CLAIMED');
+ });
+ if(!owned)return skip('TRUSTED_EXACT_RUN_CLAIM_MISSING');
+ if(externalOwnerLeaseStatus(comments,expectedSha,now)!=='FREE')
+  return skip('OTHER_SOURCE_OWNER_LEASE');
+ const existing=parseRecords(comments);
+ if(!existing)return skip('MALFORMED_TASK_HISTORY');
+ if(existing.some(r=>r.pr_number===prNumber && r.head_sha===expectedSha &&
+    ['PUBLISHED','REPAIRED','DONE','MANUAL'].includes(r.state)))
+  return skip('ALREADY_TERMINAL');
+ const receipt=taskFor(pr,priorityFor(pr,now));
+ if(!receipt)return skip('TASK_NO_LONGER_ACTIONABLE');
+ try{
+  await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+ }catch(error){
+  if(error.status!==422&&error.status!==404)throw error;
+  try{
+   await github.rest.issues.createLabel({owner,repo,name:MANUAL,color:'d93f0b',
+    description:'Source repair failed; owner or coding agent must inspect'});
+  }catch(createError){if(createError.status!==422)throw createError;}
+  await github.rest.issues.addLabels({owner,repo,issue_number:prNumber,labels:[MANUAL]});
+ }
+ const runUrl='https://github.com/'+fullRepo+'/actions/runs/'+context.runId;
+ await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
+  'HH Repair Worker: isolated source-fix job failed for exact HEAD '+expectedSha+
+  '. No source commit was published. Inspect failing runner steps and apply a tested fix; '+
+  'this task is now in the owner/Codex manual repair lane. Run: '+runUrl+
+  '\n'+commentBody({...receipt,state:'MANUAL',outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',
+   owner_run_id:String(context.runId),run_url:runUrl,source_published:false})});
+ try{
+  await github.rest.issues.removeLabel({owner,repo,issue_number:prNumber,name:SOURCE});
+ }catch(error){if(error.status!==404)core?.info?.('HH_REPAIR_FAILURE_QUEUE_CLEANUP: '+error.message);}
+ return {status:'manual_required',number:prNumber,sha:expectedSha,
+  outcome:'FIX_JOB_FAILED_NO_SOURCE_COMMIT',source_published:false};
+}
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',publishResult='',
   publishStatus='',publishSha='',dryRun=false}) {
@@ -388,12 +446,25 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.
   if(state==='FAILED'&&claimStatus==='claimed'&&sameHead){
+    // Only the authenticated exact-run CLAIMED receipt may elevate the
+    // same source HEAD to manual coding. A copied/foreign receipt cannot.
+    const claimedBySameRun=comments.some(comment=>
+      trustedControlComment(comment)&&
+      String(comment.body||'').includes('<!-- '+MARKER+' '+expectedSha+' -->')&&
+      parseRecords([comment])?.some(record=>record.state==='CLAIMED'&&
+        record.owner_run_id===runId&&record.head_sha===expectedSha&&
+        record.pr_number===number&&record.task_key===taskKey));
+    const leaseFree=externalOwnerLeaseStatus(comments,expectedSha,Date.now())==='FREE';
+    if(!claimedBySameRun||!leaseFree){
+      core.warning('HH_REPAIR_OUTCOME_MANUAL_QUEUE_NOT_VERIFIED '+(claimedBySameRun?'OWNER_LEASE_ACTIVE':'CLAIM_PROOF_MISSING'));
+    }else{
     const fresh=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
     if(fresh?.head?.sha===expectedSha&&fresh?.state==='open'&&
        fresh.labels?.some(l=>l.name===SOURCE)){
       await github.rest.issues.addLabels({owner,repo,issue_number:number,labels:[MANUAL]});
       try{await github.rest.issues.removeLabel({owner,repo,issue_number:number,name:SOURCE});}
       catch(error){if(error.status!==404)core.warning('HH_REPAIR_OUTCOME_LABEL_RELEASE '+error.message);}
+    }
     }
   }
   core.info('HH_REPAIR_OUTCOME '+JSON.stringify(result));
@@ -402,4 +473,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,PROD,SOURCE,CONFLICT,MARKER};

@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,finalize,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {taskFor,commentBody}=require('../scripts/ci-pr-task-state.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -314,6 +315,56 @@ test('source Repair ignores a release from another GitHub commenter',()=>{
  assert.equal(activeSweepLease(events,sha,now),true);
 });
 
+test('failed isolated fix is signed off as manual only after the same-run verified claim',async()=>{
+ const runId=777, current=pr(),task=taskFor(current,{tier:'P1'});
+ const owned={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- '+MARKER+' '+sha+' -->\n'+commentBody({...task,state:'CLAIMED',
+   owner_run_id:String(runId),outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'})};
+ const f=fixture({comments:[owned]});
+ const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId},
+  prNumber:11,expectedSha:sha});
+ assert.equal(result.status,'manual_required');
+ assert.equal(result.source_published,false);
+ assert.equal(f.log.commit,0);
+ assert.equal(f.log.labels,1);
+ assert.deepEqual(f.log.removed,['hh:repair-needed']);
+ assert.equal(f.log.comments,1);
+ assert.ok(f.log.commentBodies[0].includes('FIX_JOB_FAILED_NO_SOURCE_COMMIT'));
+});
+test('failed fix finalizer cannot escalate a forged, foreign, leased or moved HEAD',async()=>{
+ const runId=888,current=pr(),task=taskFor(current,{tier:'P1'});
+ const body='<!-- '+MARKER+' '+sha+' -->\n'+commentBody({...task,state:'CLAIMED',
+  owner_run_id:String(runId)});
+ const signed={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},body};
+ const cases=[
+  {comments:[{body}]},
+  {comments:[{...signed,body:body.replace('888','other')}]},
+  {comments:[signed],fresh:pr({head:{ref:'fix/pr-11',sha:newSha,
+   repo:{full_name:owner+'/'+repo}}})},
+  {comments:[signed,{body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+   JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',owner:'other',
+    head_sha:sha,lease_id:'foreign',state:'active'})}]}
+ ];
+ for(const options of cases){
+  const f=fixture(options);
+  const result=await finalizeFailedFix({github:f.github,core,context:{...context,runId},
+   prNumber:11,expectedSha:sha});
+  assert.equal(result.status,'skipped');
+  assert.equal(f.log.labels,0);
+  assert.equal(f.log.comments,0);
+  assert.deepEqual(f.log.removed,[]);
+ }
+});
+test('source-fix terminal finalizer is restricted to failed fix jobs in the trusted workflow',()=>{
+ const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.ok(yml.includes('  finalize:'));
+ assert.ok(yml.includes('needs: [claim,fix,publish]'));
+ assert.ok(yml.includes('always()'));
+ assert.ok(yml.includes('worker.finalize({github,core,context,'));
+});
+
 const outcomeCore={...core,warning:()=>{},summary:{
  addHeading(){return this;},addCodeBlock(){return this;},async write(){}
 }};
@@ -334,7 +385,10 @@ test('finalizer verifies a real parented source commit on the PR HEAD',async()=>
  assert.match(f.log.commentBodies.at(-1),/HH_PR_REPAIR_OUTCOME_V1/);
 });
 test('failed isolated fix emits terminal step-level diagnostic and manual owner handoff',async()=>{
- const f=fixture();
+ const f=fixture({comments:[{user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},
+  body:'<!-- '+MARKER+' '+sha+' -->\\n'+commentBody({...taskFor(pr(),{tier:'P1'}),
+    state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey})}]});
  f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
   {name:'fix',conclusion:'failure',steps:[{name:'Install dependencies',conclusion:'failure'}]}
  ]}})};

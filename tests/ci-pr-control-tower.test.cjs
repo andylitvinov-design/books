@@ -753,6 +753,57 @@ test('duplicate exact-HEAD conflict handoff remains idempotent with no runners',
  assert.equal(f.calls.reserved.length,0);
 });
 
+test('conflict-only queue rotates six exact-head inspections instead of repeating sixteen handoffs',()=>{
+ const conflicts=Array.from({length:47},(_,i)=>pr(i+500,'conflict',{
+  title:'fix(video): actual DIRTY merge conflict '+i,mergeable:false,mergeable_state:'dirty'
+ }));
+ const first=planCandidates(conflicts,NOW);
+ const next=planCandidates(conflicts,NOW+600000);
+ assert.equal(first.length,6);
+ assert.equal(next.length,6);
+ assert.ok(first.every(t=>t.lane==='conflict'));
+ assert.notEqual(first[0].pr_number,next[0].pr_number);
+ assert.equal(new Set([...first,...next].map(t=>t.pr_number)).size,12);
+});
+test('a denied dispatch only unlocks after an authenticated exact-task backoff receipt',()=>{
+ const task=taskFor(pr(1),{tier:'P1'}),hold=reservation(task,NOW,123);
+ const denied={...hold,state:'DISPATCH_REJECTED',
+  created_at:new Date(NOW+1000).toISOString(),
+  outcome:'DEFINITIVELY_NOT_ACCEPTED',http_status:422,
+  retry_after:new Date(NOW+600000).toISOString()};
+ const held={body:commentBody(hold)};
+ const signed={...proof(),body:commentBody(denied)};
+ assert.equal(reservationStatus(task,[held,signed],NOW+60_000),'DISPATCH_RETRY_BACKOFF');
+ assert.equal(reservationStatus(task,[held,signed],NOW+600_001),'FREE');
+ assert.equal(reservationStatus(task,[held,{body:commentBody(denied)}],NOW+600_001),
+  'RESERVED_REQUIRES_REVIEW','a forged comment cannot release the single writer');
+ assert.equal(reservationStatus(task,[held,{...signed,
+  body:commentBody({...denied,http_status:503})}],NOW+600_001),
+  'RESERVED_REQUIRES_REVIEW','ambiguous server errors never unlock');
+ assert.equal(reservationStatus(task,[held,{...signed,
+  body:commentBody({...denied,owner_run_id:'another-run'})}],NOW+600_001),
+  'RESERVED_REQUIRES_REVIEW','foreign tasks cannot unlock');
+});
+test('definitive 422 dispatch denial records a retryable receipt without claiming source success',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.actions.createWorkflowDispatch=async()=>{const error=Error('not accepted');error.status=422;throw error};
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.repairDispatchAccepted,0);
+ assert.equal(r.definitiveDispatchRejections,1);
+ assert.equal(f.calls.reserved.length,2);
+ assert.ok(f.calls.reserved[1].body.includes('"state":"DISPATCH_REJECTED"'));
+ assert.ok(f.calls.reserved[1].body.includes('"http_status":422'));
+});
+test('ambiguous failed dispatch retains the safety reservation for manual reconciliation',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.actions.createWorkflowDispatch=async()=>{const error=Error('timeout');error.status=503;throw error};
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,0);
+ assert.equal(r.definitiveDispatchRejections,0);
+ assert.equal(f.calls.reserved.length,1);
+});
+
 test('source receives first scheduling priority and DIRTY cleanup does not reserve Repair',async()=>{
  const dirty=pr(77,'conflict',{mergeable:false,mergeable_state:'dirty'});
  const clean=pr(78,'repair');

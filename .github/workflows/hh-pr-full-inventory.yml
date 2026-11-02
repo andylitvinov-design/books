@@ -306,6 +306,7 @@ jobs:
       contents: read
       statuses: read
       pull-requests: read
+      actions: read
     steps:
       - name: Checkout only trusted control-plane code
         uses: actions/checkout@v4
@@ -322,13 +323,29 @@ jobs:
           # Existing optional read-only Vercel API credential; absent means UNVERIFIED.
           # No Vercel credential is exposed to PR source or public browser.
           HH_VERCEL_READ_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          HH_PR_METRICS_PATH: ${{ runner.temp }}/hh-pr-outcome-metrics.json
         with:
           github-token: ${{ github.token }}
           script: |
             const verifier=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-live-verifier.cjs');
-            await verifier.run({github,core,context,
+            const liveEvidence=await verifier.run({github,core,context,
               vercelToken:process.env.HH_VERCEL_READ_TOKEN||''});
+            const outcomes=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-release-outcomes.cjs');
+            await outcomes.run({github,core,context,liveEvidence,
+              reportPath:process.env.HH_PR_METRICS_PATH||''});
+
+      # Persist read-only outcome snapshots to compare throughput week over week.
+      # A missing metrics file is explicit PARTIAL coverage, never a false LIVE.
+      - name: Archive merged / verified LIVE outcome metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-pr-outcomes-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hh-pr-outcome-metrics.json
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Resolve production SHA for hourly conflict diagnostics
         if: github.event_name == 'schedule'
