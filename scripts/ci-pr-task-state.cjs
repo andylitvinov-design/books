@@ -140,7 +140,13 @@ function externalOwnerLeaseStatus(comments,headSha,now){
 function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
- if(matches.some(x=>['CLAIMED','PUBLISHED','MANUAL','REPAIRED','DISPATCH_ACCEPTED','DONE'].includes(x.state)))return 'ALREADY_HANDLED';
+ // Transport, reservation and claim are NEVER a verified source result.
+ // Terminal refusals are durable, exact-head diagnostics; do not dispatch
+ // the same failed source again until an owner explicitly requeues a new HEAD.
+ if(matches.some(x=>['PUBLISHED','MANUAL','REPAIRED','DONE',
+  'FAILED','REJECTED','SUPERSEDED','VERIFY_REQUIRED','UNCONFIRMED'].includes(x.state)))
+  return 'ALREADY_HANDLED';
+ if(matches.some(x=>x.state==='CLAIMED'))return 'CLAIMED_AWAITING_OUTCOME';
  if(matches.some(x=>x.state==='RESERVED'))return 'RESERVED_REQUIRES_REVIEW';
  if(matches.length)return 'UNRECOGNIZED_STATE';
  // Never claim a source HEAD that a legacy Repair Worker already claimed.
