@@ -88,13 +88,12 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:374px\)/);
   assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
-  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number all four illustrated groups");
+  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number the three remaining groups");
   assert.match(ui,/styles\.groupNumber/, "number badge is on original photo tile");
   assert.match(css,/\.groupNumber\{position:absolute/, "number badge remains legible on photo");
   assert.match(css,/\.feature\{height:124px;min-height:124px;max-height:124px;/,
     "375-430 CSS-pixel iPhone cards must be compact, not 170px high");
-  assert.match(css,/\.meditation \.meditationStart\{display:grid/,
-    "meditation action uses white card override over legacy purple button");
+  assert.doesNotMatch(ui,/group\.id==="meditation"|data-hypno-meditation-action/);
   assert.match(videoCss,/scroll-margin-top:min\(44svh,390px\)/,
     "third-tab deep-link must reveal the original header/Wave/player above groups");
   assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
@@ -145,4 +144,18 @@ test("effects moves the single original tab rail above Wave on mobile only",()=>
   assert.match(studio,/createPortal\(nav,effectsNavTarget\)/);
   assert.match(css,/\.studio\[data-active-workspace="effects"\] \.quickBuilder>\.hypnoNavSlot/);
   assert.match(css,/\.hypnoNavSlot\{display:none\}/);
+});
+
+test("Effects workspace follows requested three-block order",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ assert.match(studio,/activeWorkspace!=="effects" \? \(/);
+ const groups=ui.slice(ui.indexOf("const groups:"),ui.indexOf("const intro="));
+ assert.ok(groups.indexOf('{id:"phrases"')<groups.indexOf('{id:"visual"'));
+ assert.ok(groups.indexOf('{id:"visual"')<groups.indexOf('{id:"audio"'));
+ assert.doesNotMatch(groups,/meditation/);
+ assert.match(ui,/audio:"Аудио эффекты"/);
+ assert.doesNotMatch(ui,/data-hypno-meditation-action|group\.id==="meditation"/);
+ assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
+ assert.doesNotMatch(studio,/onOpenMeditation=\{\(\)=>/);
 });

@@ -3921,6 +3921,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
+        {activeWorkspace!=="effects" ? (
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
@@ -3954,6 +3955,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           </details>
         </section>
+        ) : null}
         <section className={videoStyles.quickSection} data-video-topic-section
           data-workspace-section="video" aria-label={
             locale==="ru"?"2. Опишите свою тему":locale==="es"?"2. Describe tu tema":"2. Describe your topic"}>
@@ -4325,7 +4327,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
               audio:"/images/holistic-house/support-reference-avatar.webp",
               visual:getThemedRealFilm("energy",otherVideoScenes.energy[1].id)?.poster||quickCanvasPoster(otherVideoScenes.energy[1].id),
-              meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
             hasVoiceFile={attachedAudio?.kind==="file"&&audioRights}
             hasPhoto={!backgroundOnly&&Boolean(photoUrl)}
@@ -4335,10 +4336,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
             onOpenScenes={()=>openQuickDetailed("video-templates")}
-            onOpenMeditation={()=>{
-              setActiveWorkspace("practices");setStudioMode("therapy");
-              window.requestAnimationFrame(()=>document.querySelector('[data-video-meditation-course-panel]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
-            }}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
             onPreview={openAffirmationPreview}

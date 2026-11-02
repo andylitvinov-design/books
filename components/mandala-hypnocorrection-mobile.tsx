@@ -4,15 +4,15 @@ import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
-  ArrowRight, AudioLines, ChevronDown, Clock3, Eye, FileText, Headphones, Image as Picture,
-  MapPin, Mic, Play, Quote, Repeat2, SlidersHorizontal, Sparkles, Sun, UserRound, Waves,
+  ArrowRight, AudioLines, ChevronDown, Eye, Headphones, Image as Picture,
+  MapPin, Mic, Play, Quote, Repeat2, SlidersHorizontal, Sparkles, Sun, Waves,
 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
 export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number };
-type GroupId = "phrases" | "audio" | "visual" | "meditation";
+type GroupId = "phrases" | "visual" | "audio";
 type Props = {
   locale: PublicLocale;
   disabled: boolean;
@@ -23,7 +23,6 @@ type Props = {
   onOpenPhraseEditor: () => void;
   onOpenAudioEditor: () => void;
   onOpenScenes: () => void;
-  onOpenMeditation: () => void;
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
   onPreview: () => void;
@@ -43,7 +42,7 @@ const copy = {
     text:"Текст на экране",textHelp:"Фразы в вашем видео",
     frame:"25-й кадр",frameHelp:"Короткие вставки",
     repeat:"Повторы в аудио",repeatHelp:"Частота и паузы",
-    audio:"Аудио",audioHelp:"Голос, гипнозвук и ритмы",
+    audio:"Аудио эффекты",audioHelp:"Голос, гипнозвук и ритмы",
     speech:"Озвучка фраз",speechHelp:"Ваш голос или разрешённая запись",
     whisper:"Гипнозвук",whisperHelp:"Тихие повторы речи",
     binaural:"Бинауральные ритмы",binauralHelp:"Стереоритмы · скоро",
@@ -70,7 +69,7 @@ const copy = {
     text:"On-screen text",textHelp:"Readable phrases from your selection",
     frame:"Brief frame",frameHelp:"Short inserts · experimental",
     repeat:"Audio repetition",repeatHelp:"Pauses and speech frequency",
-    audio:"Audio",audioHelp:"Voice and sound layers",
+    audio:"Audio effects",audioHelp:"Voice and sound layers",
     speech:"Spoken phrases",speechHelp:"Your voice or permitted audio",
     whisper:"Quiet speech",whisperHelp:"Low-volume audible repetitions",
     binaural:"Binaural beats",binauralHelp:"Headphone audio · coming soon",
@@ -97,7 +96,7 @@ const copy = {
     text:"Texto en pantalla",textHelp:"Frases legibles de tu selección",
     frame:"Fotograma breve",frameHelp:"Inserciones cortas · experimental",
     repeat:"Repetición en audio",repeatHelp:"Pausas y frecuencia de voz",
-    audio:"Audio",audioHelp:"Voz y efectos de sonido",
+    audio:"Efectos de audio",audioHelp:"Voz y efectos de sonido",
     speech:"Frases narradas",speechHelp:"Tu voz o voz autorizada de alguien cercano",
     whisper:"Voz tenue",whisperHelp:"Repeticiones audibles a bajo volumen",
     binaural:"Ritmos binaurales",binauralHelp:"Audio estéreo · próximamente",
@@ -163,11 +162,12 @@ export function MandalaHypnocorrectionMobile({
     onAffirmationsChange({...affirmations,visibility,enabled:visibility.length>0});
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
+  // Requested order: affirmations first, visuals second, audio last.
+  // Personal meditation belongs to the separate Practices workspace.
   const groups: {id:GroupId;title:string;help:string}[]=[
-    {id:"audio",title:t.audio,help:t.audioHelp},
-    {id:"visual",title:t.visual,help:t.visualHelp},
-    {id:"meditation",title:t.meditation,help:t.meditationHelp},
     {id:"phrases",title:t.phrases,help:t.phrasesHelp},
+    {id:"visual",title:t.visual,help:t.visualHelp},
+    {id:"audio",title:t.audio,help:t.audioHelp},
   ];
   const intro=<div className={styles.intro} data-hypno-intro>
     <div className={styles.heading}><h3>{t.title}</h3><p>{t.sub}</p></div>
@@ -192,7 +192,7 @@ export function MandalaHypnocorrectionMobile({
         {/* First-party scene posters; no duplicated player or third-party images. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={posters[group.id]} alt="" loading="lazy"/>
-        <span className={styles.groupNumber} aria-hidden="true">{index+2}</span>
+        <span className={styles.groupNumber} aria-hidden="true">{index+1}</span>
         <span className={styles.groupTitle}><strong>{group.title}</strong><small>{group.help}</small></span>
         <ChevronDown size={23} className={open.includes(group.id)?styles.expanded:styles.chevron} aria-hidden="true"/>
       </button>
@@ -242,32 +242,10 @@ export function MandalaHypnocorrectionMobile({
             active={hasPhoto} onToggle={hasPhoto?onRemovePhoto:onPickPhoto}
             onConfigure={onPickPhoto} disabled={disabled} settings={t.settings}/>
         </>:null}
-        {group.id==="meditation"?<div className={styles.meditation}>
-          <button type="button" className={styles.meditationStart} onClick={onOpenMeditation} disabled={disabled}>
-            <FileText size={27} aria-hidden="true"/>
-            <span><strong>{t.generateMeditation}</strong><small>{t.meditationDetail}</small></span>
-            <ArrowRight size={21} aria-hidden="true"/>
-          </button>
-          <div className={styles.meditationOptions}>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <Clock3 size={19} aria-hidden="true"/><strong>{t.meditationDuration}</strong><small>{t.meditationTime}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <SlidersHorizontal size={19} aria-hidden="true"/><strong>{t.meditationStyle}</strong><small>{t.meditationStyles}</small>
-            </button>
-            <button type="button" onClick={onOpenMeditation} disabled={disabled}>
-              <UserRound size={19} aria-hidden="true"/><strong>{t.meditationVoice}</strong><small>{t.meditationVoices}</small>
-            </button>
-          </div>
-        </div>:null}
+
       </div>
     </section>)}
     <div className={styles.actions} data-hypno-actions>
-      <button type="button" data-hypno-meditation-action className={styles.meditationAction}
-        disabled={disabled} onClick={onOpenMeditation}>
-        <Sparkles size={23} aria-hidden="true"/>
-        <strong>{locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create meditation"}</strong>
-      </button>
       <button type="button" data-hypno-create className={styles.create} disabled={disabled}
       onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
       <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
