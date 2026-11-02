@@ -8,11 +8,21 @@ const int = (v) => Number.isSafeInteger(Number(v)) && Number(v) > 0 ? Number(v) 
 
 export function context(env, event) {
   if (!env.GITHUB_TOKEN || !/^[-\w.]+\/[-\w.]+$/.test(env.GITHUB_REPOSITORY || '')) throw Error('Invalid Actions identity');
-  if (env.GITHUB_EVENT_NAME !== 'push' || env.GITHUB_REF !== 'refs/heads/' + TARGET ||
-      event?.ref !== 'refs/heads/' + TARGET || event?.repository?.full_name !== env.GITHUB_REPOSITORY) {
-    throw Error('Not the verified production push event');
+  if (env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/' + TARGET &&
+      event?.ref === 'refs/heads/' + TARGET && event?.repository?.full_name === env.GITHUB_REPOSITORY) {
+    return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: null };
   }
-  return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: null };
+  const pr = event?.pull_request;
+  // PR target workflow must execute BASE-owned script, never untrusted PR code.
+  if (env.GITHUB_EVENT_NAME === 'pull_request_target' && env.GITHUB_REF === 'refs/heads/' + TARGET &&
+      event?.action === 'synchronize' && event?.repository?.full_name === env.GITHUB_REPOSITORY &&
+      pr?.base?.ref === TARGET && pr?.head?.repo?.full_name === env.GITHUB_REPOSITORY &&
+      Number.isSafeInteger(pr?.number) && pr.number > 0 &&
+      /^[a-f0-9]{40}$/i.test(event.before || '') && /^[a-f0-9]{40}$/i.test(event.after || '') &&
+      event.before !== event.after && event.after === pr.head.sha) {
+    return { repo: env.GITHUB_REPOSITORY, target: TARGET, number: pr.number, headSha: event.after };
+  }
+  throw Error('Not a trusted production push or verified same-repo synchronize');
 }
 
 const sha40 = value => typeof value === 'string' && /^[a-f0-9]{40}$/i.test(value);
@@ -21,7 +31,8 @@ const CORE_FORCE_JOBS = new Set(['classify-change', 'core-lint-types-build', 'hh
   'hh-specialist', 'hh-merge-check', 'release-ready']);
 
 export function eligible(run, pr, ctx) {
-  if (!run || run.event !== 'pull_request' || run.status !== 'queued' ||
+  if (!run || run.event !== 'pull_request' ||
+      (run.status !== 'queued' && !(ctx.headSha && run.status === 'in_progress')) ||
       run.pull_requests?.length !== 1 || run.pull_requests[0]?.number !== pr?.number ||
       (ctx.number && pr.number !== ctx.number) ||
       run.pull_requests[0]?.base?.ref !== TARGET || pr.base?.ref !== TARGET ||
@@ -30,7 +41,8 @@ export function eligible(run, pr, ctx) {
       !sha40(run.head_sha) || !sha40(run.pull_requests[0]?.head?.sha) || !sha40(pr.head?.sha)) return false;
   // The association can report today's PR head, not the run's original head.
   // A different run SHA is only a candidate: ancestry is proved before cancel.
-  return pr.state === 'open' && run.head_sha.toLowerCase() !== pr.head.sha.toLowerCase();
+  return pr.state === 'open' && (!ctx.headSha || pr.head.sha === ctx.headSha) &&
+    run.head_sha.toLowerCase() !== pr.head.sha.toLowerCase();
 }
 
 export async function prune(api, ctx, { limit = 300, dryRun = false,
@@ -38,14 +50,21 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
   const max = Math.min(500, int(limit) || 300);
   const current = ctx.number ? await api.pr(ctx.number) : null;
   const found = [];
-  for (let page = 1; page <= 10; page++) {
-    const res = await api.list(page, current?.head?.ref);
-    if (!Array.isArray(res.workflow_runs)) throw Error('Unexpected GitHub runs response');
-    found.push(...res.workflow_runs);
-    if (res.workflow_runs.length < 100) break;
+  let truncated = false;
+  // The event handler may cancel an already-running old HEAD; production push
+  // cleanup remains queued-only. Current HEAD is guarded by an exact event lease.
+  const filters = ctx.headSha ? ['queued', 'in_progress'] : ['queued'];
+  for (const status of filters) {
+    for (let page = 1; page <= 10; page++) {
+      const res = await api.list(page, current?.head?.ref, status);
+      if (!Array.isArray(res.workflow_runs)) throw Error('Unexpected GitHub runs response');
+      found.push(...res.workflow_runs);
+      if (res.workflow_runs.length < 100) break;
+      if (page === 10) truncated = true;
+    }
   }
   const cache = new Map(current ? [[ctx.number, current]] : []);
-  const summary = { scanned: found.length, candidates: 0, cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], partial: found.length === 1000 };
+  const summary = { scanned: found.length, candidates: 0, cancelled: [], forced: [], confirmed: [], dryRun: [], errors: [], partial: truncated };
   const accepted = new Map();
   const baseWorkflows = new Map();
   const seen = new Set();
@@ -53,7 +72,8 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     if (summary.cancelled.length + summary.dryRun.length >= max) { summary.partial = true; break; }
     if (seen.has(run.id)) continue;
     seen.add(run.id);
-    if (run.event !== 'pull_request' || run.status !== 'queued' || run.pull_requests?.length !== 1 || !int(run.id)) continue;
+    if (run.event !== 'pull_request' || (run.status !== 'queued' && !(ctx.headSha && run.status === 'in_progress')) ||
+        run.pull_requests?.length !== 1 || !int(run.id)) continue;
     const n = int(run.pull_requests[0].number);
     if (!n || (ctx.number && n !== ctx.number)) continue;
     let pr = cache.get(n);
@@ -79,7 +99,7 @@ export async function prune(api, ctx, { limit = 300, dryRun = false,
     catch (e) {
       // Another janitor may have cancelled the same run between GET and POST.
       const after = await api.run(run.id).catch(() => null);
-      if (after?.status === 'queued') summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) });
+      if (after?.status === freshRun.status) summary.errors.push({ id: run.id, status: String(e.message || e).slice(0, 100) });
     }
   }
   // A normal cancel can leave always() jobs queued and block the next SHA.
@@ -208,8 +228,9 @@ export function client(repo, token, transport = fetch) {
     compare: (base, head) => call('/compare/' + base + '...' + head),
     recent: (page, since) => call('/actions/runs?' + new URLSearchParams({ event: 'pull_request', created: '>=' + since, per_page: '100', page: String(page) })),
     jobs: id => call('/actions/runs/' + id + '/jobs?per_page=100&page=1'),
-    list: (page, branch) => {
-      const query = new URLSearchParams({ status: 'queued', event: 'pull_request', per_page: '100', page: String(page) });
+    list: (page, branch, status = 'queued') => {
+      if (!['queued', 'in_progress'].includes(status)) throw Error('Invalid run status');
+      const query = new URLSearchParams({ status, event: 'pull_request', per_page: '100', page: String(page) });
       if (branch) query.set('branch', branch); // Performance filter; PR association is verified separately.
       return call('/actions/runs?' + query);
     },
@@ -223,14 +244,17 @@ async function main() {
     limit: env.HH_CI_PRUNE_LIMIT, dryRun: env.HH_CI_PRUNE_DRY_RUN === 'true',
   });
   let m = null, metricError = null;
-  try {
-    m = await observeCI(client(ctx.repo, env.GITHUB_TOKEN), {
-      windowMinutes: int(env.HH_CI_WINDOW_MINUTES) || 60,
-      sampleRuns: int(env.HH_CI_JOB_SAMPLE) || 20,
-    });
-  } catch (e) { metricError = String(e.message || e).slice(0, 150); }
+  if (!ctx.headSha) {
+    try {
+      m = await observeCI(client(ctx.repo, env.GITHUB_TOKEN), {
+        windowMinutes: int(env.HH_CI_WINDOW_MINUTES) || 60,
+        sampleRuns: int(env.HH_CI_JOB_SAMPLE) || 20,
+      });
+    } catch (e) { metricError = String(e.message || e).slice(0, 150); }
+  }
   const fmt = ms => ms == null ? 'n/a' : (ms / 60000).toFixed(2) + ' min';
-  const msg = 'CI queued-only prune: scanned=' + s.scanned + ' eligible=' + s.candidates +
+  const msg = (ctx.headSha ? 'CI targeted stale-HEAD prune: ' : 'CI queued-only prune: ') +
+    'scanned=' + s.scanned + ' eligible=' + s.candidates +
     ' cancelled=' + s.cancelled.length + ' dry_run=' + s.dryRun.length + ' errors=' + s.errors.length +
     '\nCancellation accepted IDs: ' + (s.cancelled.join(',') || 'none') + '\n' +
     '\n## CI queue monitoring\n\n| Metric | Observation |\n| --- | --- |\n' +

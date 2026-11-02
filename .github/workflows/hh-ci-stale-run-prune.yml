@@ -1,8 +1,8 @@
 name: HH CI prune superseded queued runs
 
-# Elevated cleanup runs exclusively on trusted production PUSH.
-# PRs execute only a separate read-only policy job. Do not execute PR HEAD
-# with an actions:write token. The production branch is NOT GitHub default.
+# Elevated cleanup runs only on trusted production PUSH or base-owned
+# pull_request_target synchronize. PR HEAD code is NEVER executed with
+# actions:write. The production branch is NOT GitHub default.
 on:
   pull_request:
     branches: ['codex/public-book-library']
@@ -10,13 +10,16 @@ on:
       - '.github/workflows/hh-ci-stale-run-prune.yml'
       - 'scripts/ci-prune-stale-runs.mjs'
       - 'tests/ci-prune-stale-runs.test.mjs'
+  pull_request_target:
+    types: [synchronize]
+    branches: ['codex/public-book-library']
   push:
     branches: ['codex/public-book-library']
 
 permissions: {}
 concurrency:
   group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
   policy:
@@ -75,3 +78,34 @@ jobs:
         run: |
           echo '::warning::Read-only PR conflict grouping is unavailable; successful queued-run prune remains valid.'
           echo '- Conflict grouping: PARTIAL (read-only diagnostic failed); inspect this job log. CI prune outcome remains independently enforced.' >> "$GITHUB_STEP_SUMMARY"
+
+  prune-head:
+    # Only trusted BASE source is checked out; never run PR HEAD with actions:write.
+    if: >-
+      github.repository == 'andylitvinov-design/books' &&
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'synchronize' &&
+      github.event.pull_request.base.ref == 'codex/public-book-library' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Checkout trusted production only
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test fail-closed CI prune policy
+        run: node --test tests/ci-prune-stale-runs.test.mjs
+      - name: Cancel ancestor-proven older PR HEAD checks, including running
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_CI_PRUNE_LIMIT: '60'
+        run: node scripts/ci-prune-stale-runs.mjs

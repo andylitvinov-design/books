@@ -252,3 +252,82 @@ test('optional conflict grouping cannot falsely fail a successful protected CI p
  assert.match(diag,/Conflict grouping: PARTIAL/);
  assert.doesNotMatch(yaml,/pull_request_target:/);
 });
+
+test('a trusted PR synchronize must match exact previous and new same-repo HEADs', () => {
+  const env = { GITHUB_TOKEN: 'fake', GITHUB_REPOSITORY: repo,
+    GITHUB_EVENT_NAME: 'pull_request_target', GITHUB_REF: 'refs/heads/' + TARGET };
+  const e = { action: 'synchronize', before: OLD, after: NEW,
+    repository: { full_name: repo }, pull_request: { number: 5, base: { ref: TARGET },
+      head: { sha: NEW, repo: { full_name: repo } } } };
+  assert.deepEqual(context(env, e), { repo, target: TARGET, number: 5, headSha: NEW });
+  for (const bad of [
+    { ...e, action: 'opened' }, { ...e, before: NEW },
+    { ...e, after: OLD }, { ...e, after: 'bad' },
+    { ...e, pull_request: { ...e.pull_request, head: { sha: OLD, repo: { full_name: repo } } } },
+    { ...e, pull_request: { ...e.pull_request, head: { sha: NEW, repo: { full_name: 'fork/repo' } } } },
+    { ...e, pull_request: { ...e.pull_request, base: { ref: 'main' } } },
+  ]) assert.throws(() => context(env, bad));
+  assert.throws(() => context({ ...env, GITHUB_REF: 'refs/heads/main' }, e));
+});
+
+test('only a verified PR synchronize cancels an already-running ancestor HEAD, never forces it', async () => {
+  const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
+  const active = run({ id: 301, status: 'in_progress' });
+  const accepted = [];
+  let completed = false;
+  const api = {
+    list: async (page, branch, status) => {
+      assert.equal(branch, 'feat/one');
+      return { workflow_runs: status === 'in_progress' ? [active] : [] };
+    },
+    pr: async () => pr(),
+    run: async () => completed ? { ...active, status: 'completed', conclusion: 'cancelled' } : active,
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async id => { accepted.push(id); completed = true; },
+    forceCancel: async () => { throw Error('Never force started runs'); },
+  };
+  assert.equal(eligible(active, pr(), ctx), true);
+  assert.equal(eligible(active, pr(), { repo, target: TARGET, number: 5 }), false);
+  const result = await prune(api, ctx, { sleep: async () => {}, settleMs: 0 });
+  assert.deepEqual(accepted, [301]);
+  assert.deepEqual(result.cancelled, [301]);
+  assert.deepEqual(result.confirmed, [301]);
+  assert.deepEqual(result.forced, []);
+});
+
+test('a moved head or non-ancestor history blocks cancellation even during synchronize', async () => {
+  const ctx = { repo, target: TARGET, number: 5, headSha: NEW };
+  const active = run({ id: 302, status: 'in_progress' });
+  let cancelled = 0;
+  const api = {
+    list: async (page, branch, status) => ({ workflow_runs: status === 'in_progress' ? [active] : [] }),
+    pr: async () => pr({ head: { ...pr().head, sha: MERGE } }),
+    run: async () => active,
+    compare: async () => ({ status: 'ahead', ahead_by: 1 }),
+    cancel: async () => { cancelled++; },
+  };
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.pr = async () => pr();
+  api.compare = async () => ({ status: 'diverged', ahead_by: 1 });
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  api.compare = async () => { throw Error('Compare unavailable'); };
+  assert.deepEqual((await prune(api, ctx)).cancelled, []);
+  assert.equal(cancelled, 0);
+});
+
+test('trusted cleanup workflow never checks out PR source with elevated token', () => {
+  const source = readFileSync('.github/workflows/hh-ci-stale-run-prune.yml', 'utf8');
+  assert.ok(source.includes('pull_request_target:'));
+  assert.ok(source.includes('types: [synchronize]'));
+  assert.ok(source.includes('ref: codex/public-book-library'));
+  assert.ok(source.includes("cancel-in-progress: " + "${{ github.event_name == 'pull_request_target' }}"));
+  assert.ok(!source.includes("ref: " + "${{ github.event.pull_request.head.sha"));
+});
+
+test('Core concurrency is stable for a PR, isolated for manual and merge_group', () => {
+  const source = readFileSync('.github/workflows/hh-pr-core-release.yml', 'utf8');
+  assert.ok(source.includes('group: hh-pr-core-' +
+    "${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(!source.includes('github.event.pull_request.head.sha || github.sha'));
+  assert.ok(source.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+});

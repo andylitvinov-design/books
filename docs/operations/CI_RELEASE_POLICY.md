@@ -17,6 +17,8 @@ This is the authoritative current policy for CI and production delivery. GitHub 
 
 - One responsible agent per PR. Acquire and re-read a GitHub comment lease before branch changes; respect an active foreign lease, heartbeat and release at handoff. Technical commands and fingerprint semantics are in [PR Sweep Guard](PR_SWEEP_GUARD_20261029.md).
 - Inspect exact-head logs and shared evidence. Fix one confirmed root cause with one coherent correction; do not repeatedly rerun unchanged failures or push empty commits. Batch related commits, run focused checks locally before a meaningful push, and allow applicable current checks to finish. Minimize duplicate checks without reducing coverage.
+- **One repair episode = one meaningful push per PR.** Accumulate related fixes within the existing single-writer PR lease, run local targeted tests and inspect the full diff, then publish one atomic commit/ref update. No no-op commits, repeated micro-pushes, needless branch updates or parallel repair writers. A newly proven current-HEAD failure or critical security fix may start the next episode without delaying required security checks.
+- **Event-driven stale HEAD cancellation.** Protected production owns the pull_request_target synchronize handler. Only ancestor-proven superseded queued or running PR checks can be cancelled after live PR/run rereads. No current HEAD, rewritten/unproven history, unrelated/fork PR, production push or merge_group is cancelled. Keep all applicable Core/Specialist release checks green before protected merge.
 
 ## LIVE acceptance
 

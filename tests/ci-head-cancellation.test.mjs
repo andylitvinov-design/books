@@ -75,6 +75,10 @@ const stablePRConcurrency = new Set([
   'hh-app-browser.yml', 'hh-app-r1.yml', 'ia-v2.yml',
   'site-video-browser.yml', 'hh-public-services-production.yml',
   'holistic-support-mandala.yml',
+  'hh-assessment-quality.yml', 'hh-billing-isolated.yml',
+  'hh-messages-wellness-v2.yml', 'hh-messenger-mobile-release.yml',
+  'hh-messenger-notification-build.yml', 'hh-private-audio-e2e.yml',
+  'hh-alchemy-mobile-acceptance.yml', 'practice-visual-browser.yml',
 ]);
 
 test('specialist concurrency isolates unrelated events and only cancels an older PR head', () => {
