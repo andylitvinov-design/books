@@ -692,3 +692,12 @@
   .optionsSection{max-height:calc(100svh - 80px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
   .optionsSection:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
 }
+
+/* Keep Spanish booking content within short phone screens without shrinking controls. */
+@media(max-width:350px) and (max-height:650px){
+ .page[lang="es"] .requestText>.panelPhoto{height:44px}
+ .page[lang="es"] .requestText .eyebrow{margin-bottom:3px}
+ .page[lang="es"] .requestSection{gap:4px}
+ .page[lang="es"] .requestSection .leadForm{padding:8px}
+ .page[lang="es"] .requestSection .leadForm > label > select{height:44px;min-height:44px}
+}
