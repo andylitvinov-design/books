@@ -244,3 +244,109 @@
 .overview .preview{min-height:86px;gap:3px;padding:8px}
 .overview .preview strong{font-size:17px}
 @media(max-width:360px){.sceneMiniSummary{padding:3px 6px;min-height:44px}.overview .metaGrid strong{font-size:10.4px}}
+
+
+/* Owner reference 01 Nov: bright mobile-first Phrases workspace, no duplicate
+   request/vector panel; ideas are a single swipeable line, sentences one column. */
+.overview{gap:13px;color:#17354a;font-family:Arial,Helvetica,sans-serif}
+.overview>.card{padding:15px 14px 16px;border:1px solid #e8e6db;border-radius:21px;
+  background:linear-gradient(142deg,#fffefa 0%,#fffdf8 75%,#faf9f3 100%);
+  box-shadow:0 6px 22px rgba(47,62,54,.065)}
+.overview .cardHead{gap:10px;align-items:flex-start}
+.overview .emblem{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#e8f6f0,#fff3dd);color:#0a826c}
+.overview .heading h4{font-size:clamp(22px,5.5vw,27px);font-weight:800;line-height:1.15;color:#152d44;letter-spacing:-.02em}
+.overview .heading p{margin-top:5px;font-size:clamp(13px,3.5vw,15px);line-height:1.35;color:#6a7c88}
+.ideaRail{display:flex;gap:9px;min-width:0;margin-top:14px;padding:1px 1px 8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:thin}
+.ideaRail button{display:flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;
+  min-width:145px;min-height:54px;max-width:210px;padding:10px 13px;
+  border:1px solid #e2e3dd;border-radius:13px;background:#fff;
+  color:#25405a;font-size:clamp(15px,4vw,17px);font-weight:730;line-height:1.2;
+  scroll-snap-align:start;text-align:center;cursor:pointer}
+.ideaRail button[aria-pressed="true"]{border:1.5px solid #17a28a;background:#e9f8f1;color:#086951;box-shadow:0 3px 11px #0b806d16}
+.ideaRail button svg{flex:none;color:#078b72}
+.ideaOwn{display:grid;gap:6px;margin-top:5px;color:#4c6576;font-size:14px;font-weight:650}
+.ideaOwn input{width:100%;min-width:0;min-height:49px;padding:12px 14px;border:1px solid #dce5e3;
+  border-radius:13px;background:#fff;color:#182f46;font:600 16px/1.25 Arial,Helvetica,sans-serif}
+.ideaOwn input::placeholder{color:#8a9a9b;font-weight:400}
+.ideaGender{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:12px;color:#4c6373;font-size:13.5px}
+.ideaGender>span{margin-right:auto;font-weight:750}
+.ideaGender button{min-height:43px;padding:9px 13px;border:1px solid #d8e5dd;border-radius:12px;background:#fff;
+  color:#335667;font-size:14px;font-weight:700;cursor:pointer}
+.ideaGender button[aria-pressed="true"]{background:#e6f6ee;border-color:#80c9b2;color:#087356}
+.ideaActions{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.8fr);gap:9px;margin-top:13px}
+.ideaActions>a,.ideaActions>button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;
+  min-height:49px;padding:10px 8px;border-radius:12px;text-align:center;font-size:clamp(12.5px,3.2vw,14.5px);line-height:1.2;
+  font-weight:800;cursor:pointer;text-decoration:none}
+.ideaActions>.profilePrimary{border:1px solid #158b79;background:linear-gradient(110deg,#07876b,#079e84);color:#fff}
+.ideaActions>a{border:1px solid #c6e4d5;background:#f2fbf4;color:#186d56}
+.ideaActions :is(button,a) svg{flex:none}
+.ideaApply{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:12px;
+  min-height:52px;padding:11px;border:0;border-radius:13px;background:linear-gradient(106deg,#fff1d7,#f8e8c3);
+  color:#99611a;font-size:17px;font-weight:800;cursor:pointer}
+.ideaApply svg:last-child{margin-left:auto}
+.strategyDisclosure{overflow:hidden;border:1px solid #e3e8df;border-radius:13px;background:#fbfcf8}
+.strategyDisclosure>summary{min-height:45px;padding:9px 13px;color:#547267;font-size:14px}
+.strategyDisclosure>summary svg{margin-left:auto}
+.strategyDisclosure>summary::after{display:none}
+.overview .strategyCard{display:grid;grid-template-columns:1fr;grid-template-areas:"strategyhead" "strategychoice" "strategysummary" "strategyprivacy";
+  padding:12px;margin:0 7px 8px;border-radius:12px;gap:7px;background:#fffdf9}
+.overview .strategyHead h4{font-size:16px}
+.overview .modelChoice button{font-size:14px}
+.overview .strategySummary{font-size:13px;-webkit-line-clamp:unset;display:block}
+.overview .strategyPrivacy{font-size:11.5px;white-space:normal;max-height:none}
+.overview .modeRail{margin-top:13px;gap:7px}
+.overview .modeRail button{min-height:49px;padding:8px 7px;border-radius:12px;
+  border-color:#d5e4dd;background:#fff;color:#255b57;font-size:clamp(12px,3.3vw,15px);line-height:1.2}
+.overview .modeRail button[aria-pressed="true"]{background:#e6f5ee;color:#08725b;border-color:#7bbfa7}
+.overview .filtersMini{display:grid;grid-template-columns:1fr;gap:7px;margin-top:13px}
+.filterRow{display:grid;grid-template-columns:minmax(77px,.28fr) minmax(0,1fr);align-items:center;gap:8px}
+.filterRow>strong{color:#1c374f;font-size:clamp(13px,3.5vw,15px);font-weight:760}
+.filterRow>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.filterRow button,.overview .filtersMini .filterRow button{display:flex;align-items:center;justify-content:center;
+  min-width:0;min-height:44px;padding:6px 4px;border:1px solid #e4e5e0;border-radius:10px;
+  background:#fff;color:#3d5664;font-size:clamp(11.5px,3vw,13.5px);font-weight:700;
+  line-height:1.16;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.filterRow button[aria-pressed="true"],.overview .filtersMini .filterRow button[aria-pressed="true"]{border-color:#78c7ae;background:#eaf8f0;color:#06705c}
+.overview .regenerate{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;
+  width:100%;margin:13px 0 4px;border:1px solid #9bd6be;border-radius:13px;background:#f0fbf3;
+  color:#087a5e;font-size:15px;font-weight:800;cursor:pointer}
+.overview .phraseCounter{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 10px}
+.overview .phraseCounter strong{color:#17354d;font-size:clamp(18px,4.6vw,21px)}
+.overview .phraseCounter span{color:#588474;font-size:14px}
+.overview .phraseMiniList{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.overview .phraseMiniList button{display:flex;align-items:center;gap:12px;width:100%;
+  min-height:57px;padding:12px 13px;border:1px solid #e0e9e0;border-radius:14px;
+  background:#fff;color:#1e3a4c;font-size:clamp(16px,4.2vw,18px);font-weight:650;line-height:1.4;text-align:left}
+.overview .phraseMiniList button[aria-pressed="true"]{border-color:#abd6c3;background:#eef9f2;color:#173e3d}
+.overview .phraseMiniList button>svg{width:23px;height:23px;flex:none;color:#009477}
+.overview .phraseMiniList button>span:first-child:not(:last-child){flex:none;color:#8496a4;font-size:25px;line-height:1}
+.overview .phraseMiniList button>span:last-child{flex:1}
+.customPhrase{display:flex;align-items:center;gap:12px;min-height:52px;margin-top:7px;
+  padding:10px 13px;border:1px solid #9bcfba;border-radius:12px;background:#eff7ed;
+  color:#1c574a;font-size:16px;font-weight:700}
+.customPhrase svg{flex:none;color:#09896c}
+.overview .phraseFoot button{min-height:44px;font-size:14px}
+.overview .shortNote input{height:48px;font-size:16px}
+.overview .shortNote button{min-height:48px;font-size:14px}
+.overview .approveMini{min-height:54px;margin-top:13px;border-radius:14px;font-size:17px;
+  background:linear-gradient(110deg,#028568,#05a084);box-shadow:0 5px 13px #0a745127}
+.advanced{display:grid;gap:0;min-width:0;border:1px solid #e5e8df;border-radius:14px;background:#fffdf9}
+.advanced:not([open]){display:block}
+.advanced>summary{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:45px;
+  padding:10px 13px;color:#446d63;font-size:14px;font-weight:720;cursor:pointer}
+.advanced>section{margin:7px;padding:10px}
+.overview .preview{min-height:76px;padding:10px;border-radius:14px}
+.overview .preview strong{font-size:clamp(16px,4.2vw,19px)}
+.overview .preview button{width:48px;min-width:48px;max-width:48px;min-height:48px}
+.overview .enable{min-height:48px;font-size:15px}
+.overview .privacy{font-size:12px}
+.overview .create{min-height:54px;font-size:17px;border-radius:14px}
+.overview :is(button,input,summary,a):focus-visible{outline:3px solid #deac54;outline-offset:2px}
+@media(max-width:370px){
+  .overview>.card{padding:13px 11px}
+  .ideaRail button{min-width:137px}
+  .ideaActions>a,.ideaActions>button{font-size:12px}
+  .filterRow{grid-template-columns:72px minmax(0,1fr);gap:5px}
+  .filterRow button,.overview .filtersMini .filterRow button{font-size:11px;padding:5px 2px}
+  .overview .phraseMiniList button{font-size:16px}
+}

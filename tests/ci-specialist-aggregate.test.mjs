@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, githubReader, optionalMandalaMacosSkip } from '../scripts/ci-specialist-aggregate.mjs';
 
 const repo='andylitvinov-design/books', SHA='a'.repeat(40), BASE='b'.repeat(40);
 const pr=()=>({number:27,state:'open',draft:false,head:{sha:SHA,ref:'feat/test',repo:{full_name:repo}},base:{sha:BASE,ref:TARGET,repo:{full_name:repo}}});
@@ -1071,4 +1071,48 @@ test('production-base drift is allowed only for complete, verified independent d
   assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:Array(100).fill({filename:'docs/x.md',status:'modified'})},base,live,[]),false);
   assert.equal(safeDocumentationAdvance(compare(['docs/x.md']),base,base,[]),false);
   assert.equal(safeDocumentationAdvance({...compare(['docs/x.md']),files:[{filename:'docs/x.md',status:'removed'}]},base,live,[]),false);
+});
+
+test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures stay blocking', () => {
+  const path = '.github/workflows/holistic-support-mandala.yml';
+  const workflow = "on:\n  pull_request:\n    paths: ['components/mandala-*']\njobs:\n  focused-unit-types-build:\n    runs-on: ubuntu-latest\n  voice-webkit-macos:\n    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'fix/video-')) }}\n    runs-on: macos-15\n";
+  const files = {base:new Map([[path,workflow]]),current:new Map([[path,workflow]])};
+  const ui = ['components/mandala-free-video-studio.tsx','scripts/verify-holistic-mandala-browser.mjs'];
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/hypno-third-workspace-owner-v2-20261101',ui),true);
+  assert.equal(optionalMandalaMacosSkip(files,'fix/video-studio-restore-approved-mobile-20261101',ui),false);
+  assert.equal(optionalMandalaMacosSkip(files,'codex/perf-video-studio-lazy-panels-20261101',['scripts/verify-affirmation-voice-browser.mjs']),false);
+  // A route/glob-only Mandala change is NOT a change to the BASE macOS job.
+  const updatedPaths = workflow.replace("paths: ['components/mandala-*']",
+    "paths: ['components/mandala-*', 'tests/video-chat-*.test.mjs']");
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,'tests/ci-specialist-aggregate.test.mjs']),true);
+  // PR-authored edits to macOS conditions or platform cannot self-certify.
+  for (const changedJob of [
+    updatedPaths.replace('runs-on: macos-15','runs-on: macos-14'),
+    updatedPaths.replace("startsWith(github.head_ref, 'fix/video-')",
+      "startsWith(github.head_ref, 'ci/')"),
+    updatedPaths.replace('  voice-webkit-macos:', '  voice-webkit-macos:\n    timeout-minutes: 1'),
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,changedJob]])},
+    'codex/ci-general-release-fastlane-20261101',[path]),false);
+  for(const critical of [
+    'lib/mandala/recording-codecs.mjs',
+    'lib/mandala/webcodecs-mp4-export.ts',
+    'lib/mandala/audio-render.mjs',
+    'app/api/holistic-support/voice/route.js',
+  ]) assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'codex/ci-general-release-fastlane-20261101',[path,critical]),false);
+  assert.equal(optionalMandalaMacosSkip(
+    {...files,current:new Map([[path,updatedPaths]])},
+    'fix/video-source-clock-parity-20261101',[path]),false);
+  assert.equal(optionalMandalaMacosSkip({...files,current:new Map([[path,workflow+'# modified']])},'codex/perf-video-studio-lazy-panels-20261101',ui),false);
+  const jobs = [{name:'focused-unit-types-build',status:'completed',conclusion:'success'},
+    {name:'voice-webkit-macos',status:'completed',conclusion:'skipped'}];
+  assert.throws(()=>inspectJobs(jobs,path),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.equal(inspectJobs(jobs,path,['voice-webkit-macos']),1);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
+  assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });

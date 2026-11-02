@@ -224,3 +224,14 @@ test("new TSX parses with no diagnostics", () => {
   const errors = (result.diagnostics ?? []).filter(item => item.category === ts.DiagnosticCategory.Error);
   assert.deepEqual(errors.map(item => ts.flattenDiagnosticMessageText(item.messageText, " ")),[]);
 });
+
+
+// A focused input still owns its current value at pointerdown. Both buttons
+// preserve the native click after preventing blur-triggered WebKit remount.
+test("money editor Save and Next keep native click stable with focused numbers", () => {
+  const actions = editor.slice(editor.indexOf('data-support-goal-category-actions'),
+    editor.indexOf('<fieldset', editor.indexOf('data-support-goal-category-actions')));
+  assert.match(actions, /data-support-goal-save\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{saveCurrent\}/);
+  assert.match(actions, /data-support-goal-next\s+onMouseDown=\{event=>event\.preventDefault\(\)\}\s+onClick=\{nextSector\}/);
+  assert.match(editor, /function nextSector\(\)[\s\S]*?flushSync\(\(\) => \{\s*saveCurrent\(\);\s*\}\)/);
+});

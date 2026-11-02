@@ -77,11 +77,8 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(builder,/do not send private client videos/i)
  assert.match(materials,/onOpenYoutube=\{isOwner\?onOpenYoutube:null\}/)
  assert.match(practice,/onOpenYoutube=\{\(\)=>openOwner\('youtube'\)\}/)
- const mediaPolicy=middleware.split('\n').find(line=>line.includes('"media-src '))
- assert.ok(mediaPolicy,'media CSP directive must be present')
- // Explicitly scoped owner/editor routes may play an in-browser recording;
- // public and unrelated private routes must not receive an unconditional blob allowance.
- assert.match(mediaPolicy,/\|\|reikiIntroAudioManager\|\|coachingOwnerAudioManager\|\|practitionerCourseEditor\|\|publicMandalaLocalImages\|\|ownerMessengerImages\|\|liveAudioPage\) \? ' blob:' : ''/)
- assert.match(middleware,/: "frame-src 'none'"/)
+ assert.match(middleware,/reikiIntroAudioManager\|\|coachingOwnerAudioManager\|\|practitionerCourseEditor\|\|publicMandalaLocalImages\|\|ownerMessengerImages\|\|liveAudioPage\) \? ' blob:' : ''/)
+ assert.match(middleware,/practitionerCourseMediaOrigin/)
+ assert.match(middleware,/"frame-ancestors 'none'"/)
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
 })

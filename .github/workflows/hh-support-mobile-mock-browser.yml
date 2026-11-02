@@ -11,6 +11,7 @@ on:
       - 'tests/holistic-support-course-profiles.test.mjs'
       - 'tests/holistic-support-course-scene-branches.test.mjs'
       - 'tests/holistic-support-mobile-alternative.test.mjs'
+      - 'tests/holistic-meditation-mobile-categories.test.mjs'
       - 'components/holistic-support-goal-filter.tsx'
       - 'components/holistic-support-goal-filter.module.css'
       - 'lib/holistic-support/goal-filter.js'
@@ -45,6 +46,7 @@ on:
       - 'tests/holistic-support-course-profiles.test.mjs'
       - 'tests/holistic-support-course-scene-branches.test.mjs'
       - 'tests/holistic-support-mobile-alternative.test.mjs'
+      - 'tests/holistic-meditation-mobile-categories.test.mjs'
       - 'components/holistic-support-goal-filter.tsx'
       - 'components/holistic-support-goal-filter.module.css'
       - 'lib/holistic-support/goal-filter.js'
@@ -95,19 +97,19 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
+          node --test tests/holistic-meditation-mobile-categories.test.mjs tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
           npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
       - name: Full TypeScript on non-production PR or production push
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
       - name: Install Chromium and WebKit (post-merge visual audit)
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number == 2483 }}
         run: |
           mkdir -p /tmp/hh-support-mock-tools
           npm install --prefix /tmp/hh-support-mock-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-support-mock-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Check 320 / 390 / 430 in Chromium and WebKit
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number == 2483 }}
         run: |
           mkdir -p artifacts/holistic-support-mock-fidelity
           npx next dev --hostname 127.0.0.1 --port 3118 > /tmp/hh-support-mock-next.log 2>&1 &

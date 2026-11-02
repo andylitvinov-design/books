@@ -30,14 +30,14 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     fileName: "greek-video-series.ts",
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  const module = { exports: {} };
+  const sandboxModule = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, require: specifier => {
+    module: sandboxModule, exports: sandboxModule.exports, require: specifier => {
       assert.equal(specifier, "@/data/academy/catalog");
       return catalog;
     },
   }, { timeout: 2000 });
-  const ru = JSON.parse(JSON.stringify(module.exports.greekVideoSeries("ru")));
+  const ru = JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("ru")));
   assert.deepEqual(ru.map(series => [series.id, series.lessons.length]), [
     ["greek-dionysus", 7], ["greek-demeter", 5],
   ]);
@@ -46,8 +46,8 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     assert.deepEqual(series.lessons.map(video => video.order),
       Array.from({ length: series.lessons.length }, (_, index) => index + 1));
   }
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("en"))), []);
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("es"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("en"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("es"))), []);
 });
 
 test("Dionysus and Demeter retain their own original, complete numbered episode sequences", () => {
@@ -87,7 +87,8 @@ test("mobile Courses selects one Greek channel, not the combined 12-video Greece
   assert.match(supportPage, /seriesHref: entry\.id\.startsWith\("greek-"\)/);
   assert.match(support, /"greek-dionysus": "Канал Диониса"/);
   assert.match(support, /"greek-demeter": "Канал Деметры"/);
-  assert.match(support, /choice === "pump" && program !== "all"\) return eligible/);
+  assert.match(support, /const relevantVideos = choice === "pump" && program !== "all"/);
+  assert.match(support, /catalogVideos\.slice\(0, 4\)/, "regular meditation retains exactly four featured posters");
   assert.match(support, /data-source-order=\{video\.lessonOrder\}/);
   assert.match(support, /data-support-lesson-navigation/);
   assert.match(support, /relevantVideos\[selectedLessonIndex \+ 1\]\.id/);
