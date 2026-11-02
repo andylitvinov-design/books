@@ -187,7 +187,7 @@ function classifyCoreFailureJobs(jobs) {
   const byName=new Map(jobs.map(job=>[job.name,job]));
   const failed=jobs.filter(job=>['failure','timed_out','startup_failure'].includes(job.conclusion));
   if (!failed.length) return 'UNVERIFIED';
-  const gateOnly=new Set(['release-ready','hh-specialists-verified']);
+  const gateOnly=new Set(['release-ready','hh-specialists-verified','hh-merge-check']);
   const core=byName.get('hh-core-verified');
   const scope=byName.get('classify-change');
   const build=byName.get('core-lint-types-build');
@@ -221,7 +221,7 @@ function verifiedRedSpecialist(checks) {
 }
 const INHERITED_CORE_CHECKS=new Set([
   'hh-core-verified','hh-specialist','hh-specialists-verified',
-  'release-ready','classify-change','core-lint-types-build'
+  'release-ready','hh-merge-check','classify-change','core-lint-types-build'
 ]);
 // A red aggregate alone can mean skipped macOS/optional QA or a changed
 // production base, NOT a broken product. Require independent same-HEAD
@@ -798,15 +798,25 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }
       continue;
     }
-    let checks;
+    let checks, checkedName=auditedProtection==='hh-merge-check' ?
+      'hh-merge-check':'hh-core-verified';
     try {
-      // Query the verified Core gate only: many specialist checks may exceed
-      // GitHub's first-page 100 limit. Full coordinator still validates ALL
-      // required checks, rules and leases before native auto-merge.
-      checks = (await limited('head-checks',()=>github.rest.checks.listForRef({owner,repo,ref:pr.head.sha,
-        check_name:'hh-core-verified',per_page:100,filter:'latest'}))).data;
+      // Use the current protected status when known. A single bounded extra
+      // unified lookup handles the FIRST post-migration candidate without a
+      // new full repository scan or invented green legacy alias.
+      checks = (await limited('head-checks',()=>github.rest.checks.listForRef({
+        owner,repo,ref:pr.head.sha,check_name:checkedName,per_page:100,filter:'latest'
+      }))).data;
+      if(!gateIsGreen(checks,checkedName) && !protectionRead){
+        const candidate=(await limited('head-unified-probe',()=>github.rest.checks.listForRef({
+          owner,repo,ref:pr.head.sha,check_name:'hh-merge-check',per_page:100,filter:'latest'
+        }))).data;
+        if(gateIsGreen(candidate,'hh-merge-check')){
+          checks=candidate;checkedName='hh-merge-check';
+        }
+      }
     } catch(e) { log(`#${pr.number} checks unavailable: ${e.message}`); continue; }
-    if (gateIsGreen(checks)) {
+    if (gateIsGreen(checks,checkedName)) {
       // Core success is not enough while legacy branch protection still
       // requires release-ready. Read effective protection once per cycle.
       if (!protectionRead) {
@@ -817,11 +827,21 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
           }))).data;
           const required = branch?.protection?.required_status_checks?.contexts;
           if (branch?.protected && Array.isArray(required) && required.length === 1 &&
-              ['release-ready','hh-core-verified'].includes(required[0]))
+              ['release-ready','hh-core-verified','hh-merge-check'].includes(required[0]))
             auditedProtection = required[0];
         } catch(e) { log('Production protection unavailable: '+e.message); }
       }
       if (!auditedProtection) { summary.protectionUnverified++; continue; }
+      if(auditedProtection==='hh-merge-check' && checkedName!=='hh-merge-check'){
+        try{
+          const current=(await limited('required-unified-head-check',()=>github.rest.checks.listForRef({
+            owner,repo,ref:pr.head.sha,check_name:'hh-merge-check',per_page:100,filter:'latest'
+          }))).data;
+          if(!gateIsGreen(current,'hh-merge-check')){summary.legacyRequiredPending++;continue;}
+        }catch(error){log('Required unified check unavailable: '+error.message);continue;}
+      }else if(auditedProtection!=='hh-merge-check' && checkedName!=='hh-core-verified'){
+        summary.protectionUnverified++;continue;
+      }
       if (auditedProtection === 'release-ready') {
         let legacy = null;
         try {

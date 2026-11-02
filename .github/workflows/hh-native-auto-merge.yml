@@ -157,34 +157,61 @@ jobs:
               log("SKIP core CI not green on current HEAD of PR #" + number);
               return;
             }
-            // Require the real Core job on the current PR's verified workflow.
-            // A successful workflow without this job is not source QA.
+            // Read the complete latest Core workflow jobs, not a subset or a
+            // synthetic check. Do not call this true when Actions pagination
+            // omits any job on the tested source HEAD.
             const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
             })).data;
-            if (!Array.isArray(jobPage.jobs) || jobPage.total_count > 100 ||
-                !jobPage.jobs.some(job => job.name === "hh-core-verified" &&
-                  job.status === "completed" && job.conclusion === "success")) {
-              log("SKIP current source missing verified Core job for PR #" + number);
+            if (!Array.isArray(jobPage.jobs) || !Number.isSafeInteger(jobPage.total_count) ||
+                jobPage.total_count < 1 || jobPage.total_count > 100 ||
+                jobPage.total_count !== jobPage.jobs.length) {
+              log("SKIP incomplete current-workflow jobs for PR #" + number);
               return;
             }
-            // Support both verified protection states without bypassing the
-            // old required status while the admin token is still insufficient.
+            const passed = name => {
+              const checks = jobPage.jobs.filter(job => job.name === name);
+              return checks.length === 1 && checks[0].status === "completed" &&
+                checks[0].conclusion === "success";
+            };
+            // The real protected branch, not an in-repo config or a PR label,
+            // chooses the supported old, staged or unified status contract.
             const branchProtection = (await github.rest.repos.getBranch({
               owner, repo, branch: "codex/public-book-library"
             })).data;
             const required = branchProtection.protection?.required_status_checks?.contexts;
             const oldRequired = Array.isArray(required) && required.includes("release-ready");
             const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            const unifiedRequired = Array.isArray(required) && required.includes("hh-merge-check");
+            const specialistRequired = Array.isArray(required) && required.includes("hh-specialist");
+            const names = Array.isArray(required) ? [...new Set(required)].sort().join(",") : "";
+            let mode = null;
+            if (names === "release-ready") mode = "legacy";
+            else if (names === "hh-core-verified,hh-specialist") mode = "old-dual";
+            else if (names === "hh-merge-check") mode = "unified";
+            else if (names === "hh-merge-check,release-ready") mode = "unified-transition";
             if (!branchProtection.protected || !Array.isArray(required) ||
-                (oldRequired === coreRequired)) {
-              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+                required.length !== new Set(required).size || !mode) {
+              log("SKIP unknown effective branch check policy for PR #" + number);
               return;
             }
-            if (oldRequired && !jobPage.jobs.some(job =>
-                job.name === "release-ready" && job.status === "completed" &&
-                job.conclusion === "success")) {
-              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
+            const requiredJobs = mode === "legacy" || mode === "unified-transition"
+              ? ["release-ready", "hh-core-verified", "hh-specialist"]
+              : mode === "old-dual" ? ["hh-core-verified", "hh-specialist"] : [];
+            if (unifiedRequired) requiredJobs.push("hh-merge-check");
+            if (!requiredJobs.every(passed)) {
+              log("SKIP failed or absent real Core/required status in " + mode + " for PR #" + number);
+              return;
+            }
+            // Unified status is an actual core workflow result. After the
+            // admin migration removes old wrappers it still requires scope
+            // and the applicable real Code job from THIS run.
+            if (unifiedRequired &&
+                (!passed("classify-change") ||
+                 !jobPage.jobs.some(job => job.name === "core-lint-types-build" &&
+                   job.status === "completed" &&
+                   (job.conclusion === "success" || job.conclusion === "skipped")))) {
+              log("SKIP incomplete unified Core/scope evidence for PR #" + number);
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||

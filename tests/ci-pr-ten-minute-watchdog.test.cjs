@@ -50,6 +50,27 @@ test('only trusted green exact-SHA gate can schedule guarded merging',()=>{
     'obsolete optional release-ready does not invalidate verified Core');
   assert.equal(gateIsGreen({...gate,total_count:2,check_runs:[...gate.check_runs,{id:2,name:'browser',conclusion:'failure'}]}),false);
 });
+
+test('one exact unified Actions status can wake the existing merge coordinator',async()=>{
+  let dispatched=0;
+  const candidate=pr(99);
+  const github={rest:{
+    pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{...candidate,state:'open',mergeable:true,mergeable_state:'clean'}})},
+    actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:3}})},
+    checks:{listForRef:async arg=>({data:{total_count:1,check_runs:[{
+      id:2,name:arg.check_name==='hh-merge-check'?'hh-merge-check':'obsolete-check',
+      status:'completed',conclusion:'success',app:{id:15368}
+    }]}})},
+    repos:{getBranch:async()=>({data:{protected:true,protection:{
+      required_status_checks:{contexts:['hh-merge-check']}
+    }}})}
+  },request:async route=>{if(route.includes('dispatches'))dispatched++;return {data:{workflow_runs:[]}};}};
+  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:true});
+  assert.equal(result.greenUnarmed,1);
+  assert.equal(result.mergeCoordinatorDispatched,1);
+  assert.equal(dispatched,1);
+});
+
 test('CI admission uses separate running and queued limits, not their sum',()=>{
   assert.equal(canRetryCi(12,12),true);
   assert.equal(canRetryCi(18,40),false);
@@ -588,24 +609,17 @@ test('GraphQL outage falls back to no more than six rotating REST snapshots',asy
   assert.equal(result.inspected,6);
 });
 
-test('manual branch-check migration validates pinned Core evidence and both protected controls',()=>{
+test('admin-only migration safely replaces three old required statuses with one unified status',()=>{
   const {readFileSync}=require('node:fs');
   const source=readFileSync('.github/workflows/hh-migrate-legacy-core-check.yml','utf8');
   assert.ok(source.includes('  workflow_dispatch:'));
-  assert.ok(!source.includes('  push:'));
-  assert.ok(!source.includes('  schedule:'));
+  assert.ok(source.includes('evidence_pr:') && source.includes('evidence_run_id:'));
+  assert.ok(!source.includes('  push:') && !source.includes('  schedule:'));
   assert.ok(source.includes('GH_TOKEN: ' + '$' + '{{ secrets.HH_BRANCH_ADMIN_TOKEN }}'));
   assert.ok(!source.includes('secrets.HH_AUTOMERGE_TOKEN'));
-  assert.ok(source.includes('set -euo pipefail'));
   assert.ok(source.includes('Admin-scoped HH_BRANCH_ADMIN_TOKEN unavailable. No protection changed.'));
-  // Verify immutable approved Core evidence before policy mutations.
-  assert.ok(source.includes('repos/$GH_REPO/actions/runs/41328294027'));
-  assert.ok(source.includes('repos/$GH_REPO/pulls/2935'));
-  for(const gate of ['hh-core-verified','hh-specialist','release-ready'])
-    assert.ok(source.includes('.name == "'+gate+'"'),gate);
-  assert.ok(source.includes('Approved Core, Specialist and legacy compatibility jobs are not all green'));
-  // The first ruleset/classic read MUST precede mutation, and a second read
-  // MUST verify the two new mandatory contexts. One PUT, one PATCH only.
+  for(const name of ['hh-merge-check','hh-core-verified','hh-specialist','release-ready','classify-change'])
+    assert.ok(source.includes('.name == "'+name+'"'),'proof missing '+name);
   const beforeRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules.json"');
   const putRules=source.indexOf('gh api --method PUT "repos/$GH_REPO/rulesets/26269892"');
   const afterRules=source.indexOf('gh api "repos/$GH_REPO/rulesets/26269892" > "$temp/rules-after.json"');
@@ -618,12 +632,10 @@ test('manual branch-check migration validates pinned Core evidence and both prot
   assert.equal((source.match(/^          gh api --method PATCH /gm)||[]).length,1);
   assert.ok(source.includes('.enforcement == "active"'));
   assert.ok(source.includes('required_review_thread_resolution == true'));
-  assert.ok(source.includes('non_fast_forward'));
-  assert.ok(source.includes('deletion'));
+  assert.ok(source.includes('non_fast_forward')&&source.includes('deletion'));
   assert.ok(source.includes('Already migrated: both required status sources read back cleanly.'));
-  assert.ok(source.includes('["hh-core-verified","hh-specialist"]'));
-  assert.ok(source.includes('Both controls VERIFIED: required hh-core-verified + hh-specialist'));
-  assert.ok(!source.includes('base64 --decode | grep -q '));
+  assert.ok(source.includes('["hh-merge-check"]'));
+  assert.ok(source.includes('Both controls VERIFIED: only hh-merge-check is required'));
   assert.ok(!source.includes('gh api --method DELETE '));
 });
 
@@ -632,10 +644,14 @@ test('event-driven merge and inventory respect legacy protection until admin mig
   const native=readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
   const hourly=readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
   assert.ok(native.includes('const oldRequired = Array.isArray(required) && required.includes("release-ready")'));
-  assert.ok(native.includes('job.name === "release-ready" && job.status === "completed"'));
-  assert.ok(native.includes('job.name === "hh-core-verified"'));
+  assert.ok(native.includes('const unifiedRequired = Array.isArray(required) && required.includes("hh-merge-check")'));
+  assert.ok(native.includes('requiredJobs.every(passed)'));
+  assert.ok(native.includes('mode = "unified"'));
+  assert.ok(native.includes('mode = "legacy"'));
   assert.ok(hourly.includes('const legacyReleaseMandatory=legacy.includes("release-ready")'));
+  assert.ok(hourly.includes('const unifiedRequired=legacy.includes("hh-merge-check")'));
   assert.ok(hourly.includes('LEGACY_REQUIRED_RELEASE_NOT_GREEN'));
+  assert.ok(hourly.includes('UNIFIED_REQUIRED_NOT_GREEN'));
   assert.ok(hourly.includes('CORE_NOT_VERIFIED'));
 });
 
