@@ -1100,7 +1100,7 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     GITHUB_HEAD_REF:'feat/hh-goal-tree-120-audio-playlists-20261101',
     HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
   const run=(rows=delta,envChange={})=>planPublicServicesEvent({...env,...envChange},(_cmd,args)=>{
-    if(args[0]==='rev-parse')return Buffer.from(head+'\\n');
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
     if(args[0]==='merge-base')return Buffer.alloc(0);
     if(args[0]==='diff')return Buffer.from(rows.flatMap(([status,path])=>[status,path]).join(nul)+nul);
     throw Error('Unexpected git command '+args.join(' '));
