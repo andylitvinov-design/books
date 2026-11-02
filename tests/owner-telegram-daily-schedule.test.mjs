@@ -73,6 +73,7 @@ test('all cron paths authenticate and enforce Toronto slot, no anonymous or prev
     {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
     {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
     {path:'/api/internal/market-intel-telegram',schedule:'0 18,19 * * *'},
+    {path:'/api/internal/pr-watchdog-backstop',schedule:'*/10 * * * *'},
   ])
   for(const [route,slot] of [
     ['revenue-ideas-telegram','revenue'],
