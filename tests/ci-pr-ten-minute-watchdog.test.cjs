@@ -847,6 +847,7 @@ test('root classifier does not mislabel BASE_ADVANCED-like release failures as s
   const good=[success('classify-change'),success('core-lint-types-build'),success('hh-core-verified')];
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready')]),'RELEASE_GATE_ONLY');
   assert.equal(classifyCoreFailureJobs([...good,fail('release-ready'),fail('hh-specialists-verified')]),'RELEASE_GATE_ONLY');
+  assert.equal(classifyCoreFailureJobs([...good,fail('hh-specialist'),fail('release-ready')]),'SPECIALIST_FAILED');
   assert.equal(classifyCoreFailureJobs([success('classify-change'),fail('core-lint-types-build'),
     fail('hh-core-verified'),fail('release-ready')]),'SOURCE_OR_PREFLIGHT');
   assert.equal(classifyCoreFailureJobs([...good.slice(0,2),fail('release-ready')]),'UNVERIFIED');
@@ -868,7 +869,7 @@ test('green Core plus failed mandatory legacy release gate queues one gate-revie
     actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
     checks:{listForRef:async({check_name})=>({data:{
       total_count:1,check_runs:[{id:21,name:check_name,status:'completed',
-        conclusion:check_name==='hh-core-verified'?'success':'failure',
+        conclusion:['hh-core-verified','hh-specialist'].includes(check_name)?'success':'failure',
         app:{id:15368}}]
     }})},
     repos:{getBranch:async()=>({data:{protected:true,protection:{
@@ -986,9 +987,9 @@ test('a comment-only partial handoff cannot claim that Repair Worker was queued'
   assert.equal(written,1);assert.equal(labeled,1);
 });
 
-test('failed-Core event only inspects the associated PR; periodic still rotates',async()=>{
+test('failed-Core event prioritizes exact PR and rotates a bounded cron fallback',async()=>{
   const first=pr(401),second=pr(402);
-  let graphQLSource='';
+  let graphQLSource='',cronHealthy=true;
   const github={
     graphql:async query=>{
       graphQLSource=query;
@@ -998,6 +999,12 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
         headRefName:first.head.ref,headRefOid:first.head.sha,
         headRepository:{nameWithOwner:'andylitvinov-design/books'},
         autoMergeRequest:null
+      },p402:{
+        number:402,state:'OPEN',isDraft:false,mergeable:'MERGEABLE',
+        mergeStateStatus:'CLEAN',baseRefName:'codex/public-book-library',
+        headRefName:second.head.ref,headRefOid:second.head.sha,
+        headRepository:{nameWithOwner:'andylitvinov-design/books'},
+        autoMergeRequest:null
       }},rateLimit:{remaining:4000}};
     },
     rest:{
@@ -1005,19 +1012,32 @@ test('failed-Core event only inspects the associated PR; periodic still rotates'
       actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
       checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})}
     },
-    request:async(route,args)=>args.workflow_id==='hh-pr-core-release.yml'
-      ? {data:{total_count:0,workflow_runs:[]}}
-      : {data:{workflow_runs:[]}}
+    request:async(route,args)=>{
+      if(args.workflow_id==='hh-pr-ten-minute-watchdog.yml')
+        return {data:cronHealthy
+          ? {total_count:1,workflow_runs:[{created_at:new Date(NOW-2*60000).toISOString()}]}
+          : {total_count:0,workflow_runs:[]}};
+      return args.workflow_id==='hh-pr-core-release.yml'
+        ? {data:{total_count:0,workflow_runs:[]}}
+        : {data:{workflow_runs:[]}};
+    }
   };
   const wake={...context,eventName:'workflow_run',payload:{workflow_run:{
     event:'pull_request',status:'completed',head_branch:first.head.ref,
     pull_requests:[{number:first.number}]
   }}};
-  const outcome=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
-  assert.equal(outcome.inspected,1);
-  assert.equal(outcome.missingCore,1);
+  const healthy=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(healthy.inspected,1,'healthy cron restricts failed CI to exact PR');
+  assert.equal(healthy.cronBackstop,false);
+  assert.equal(healthy.missingCore,1);
   assert.match(graphQLSource,/p401:pullRequest/);
   assert.ok(!graphQLSource.includes('p402:pullRequest'));
+  cronHealthy=false;
+  const stale=await run({github,context:wake,core:core(),now:NOW,dryRun:true});
+  assert.equal(stale.inspected,2,'absent cron gets bounded fallback');
+  assert.equal(stale.cronBackstop,true);
+  assert.equal(stale.missingCore,2);
+  assert.match(graphQLSource,/p402:pullRequest/);
 });
 test('Watchdog isolates per-PR failures from ten-minute periodic concurrency',()=>{
   const fs=require('node:fs');
@@ -1072,4 +1092,125 @@ test('watchdog finds an existing repair receipt after 300 comments',async()=>{
  const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
  const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
  assert.deepEqual(pages,[1,2,3,4]);assert.equal(result,false);assert.equal(written,0);
+});
+
+test('live watchdog no longer gates periodic PR discovery on stale unit tests',()=>{
+  const fs=require('node:fs');
+  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+  const reconcile=yaml.split('\n  reactivate-schedules:')[0];
+  assert.ok(!reconcile.includes('node --test'),'unit tests cannot block live reconciliation');
+  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+  assert.ok(contract.includes('Watchdog decision contracts'));
+  assert.ok(contract.includes('tests/ci-pr-ten-minute-watchdog.test.cjs'));
+});
+
+
+test('behind PR with verified real specialist failure is reclassified without new CI',async()=>{
+  const src=pr(771);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const mutations={add:[],remove:[],retries:0};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name
+      ? {total_count:1,check_runs:[{
+          id:check_name==='hh-specialist'?2:1,name:check_name,
+          status:'completed',conclusion:check_name==='hh-specialist'?'failure':'success',
+          app:{id:15368}}]}
+      : {total_count:3,check_runs:[
+          {id:3,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+          {id:4,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+          {id:5,name:'public-services',status:'completed',conclusion:'failure',app:{id:15368}}]}})},
+    issues:{
+      addLabels:async({labels})=>{mutations.add.push(...labels);live.labels.push({name:labels[0]});return {data:[]};},
+      removeLabel:async({name})=>{mutations.remove.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]};}
+    }
+  },request:async()=>{mutations.retries++;throw Error('No CI bootstrap or manual rerun');}};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.behindProduction,1);
+  assert.equal(result.specialistFailures,1);
+  assert.equal(result.specialistQueued,1);
+  assert.equal(result.staleGateReclassified,1);
+  assert.deepEqual(mutations.add,['hh:specialist-repair-needed']);
+  assert.deepEqual(mutations.remove,['hh:release-gate-review']);
+  assert.equal(mutations.retries,0);
+});
+
+test('only trusted completed hh-specialist failures qualify for backfill',()=>{
+  const {verifiedRedSpecialist,needsFailedCoreCronBackstop}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const evidence=(app,conclusion,status='completed')=>({total_count:1,
+    check_runs:[{id:1,name:'hh-specialist',app:{id:app},status,conclusion}]});
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure')),true);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'success')),false);
+  assert.equal(verifiedRedSpecialist(evidence(444,'failure')),false);
+  assert.equal(verifiedRedSpecialist(evidence(15368,'failure','in_progress')),false);
+  assert.equal(needsFailedCoreCronBackstop('HEALTHY'),false);
+  assert.equal(needsFailedCoreCronBackstop('UNKNOWN'),false);
+  assert.equal(needsFailedCoreCronBackstop('STALE'),true);
+  assert.equal(needsFailedCoreCronBackstop('UNOBSERVED'),true);
+});
+
+test('skipped optional MacOS check does not create a fake Product Repair task',async()=>{
+  const src=pr(566);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:release-gate-review'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:4,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'public-services',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:5,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistFailures,0);
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.deepEqual(writes.added,[]);
+  assert.deepEqual(writes.removed,[]);
+});
+test('misrouted policy-only aggregate is restored to gate review on the same HEAD',async()=>{
+  const src=pr(567);
+  const live={...src,state:'open',mergeable:true,mergeable_state:'behind',
+    labels:[{name:'hh:specialist-repair-needed'}]};
+  const writes={added:[],removed:[]};
+  const github={rest:{
+    pulls:{list:async()=>({data:[live]}),get:async()=>({data:live})},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:0}})},
+    checks:{listForRef:async({check_name})=>({data:check_name?
+      {total_count:1,check_runs:[{id:1,name:check_name,status:'completed',
+        conclusion:check_name==='hh-specialist'?'failure':'success',app:{id:15368}}]}:
+      {total_count:3,check_runs:[
+        {id:2,name:'hh-core-verified',status:'completed',conclusion:'success',app:{id:15368}},
+        {id:3,name:'hh-specialist',status:'completed',conclusion:'failure',app:{id:15368}},
+        {id:4,name:'voice-webkit-macos',status:'completed',conclusion:'skipped',app:{id:15368}}
+      ]}})},
+    issues:{addLabels:async({labels})=>{writes.added.push(...labels);live.labels.push({name:labels[0]});return {data:[]}},
+      removeLabel:async({name})=>{writes.removed.push(name);live.labels=live.labels.filter(l=>l.name!==name);return {data:[]}}}
+  },request:async()=>({data:{total_count:0,workflow_runs:[]}})};
+  const result=await run({github,core:core(),context,now:NOW});
+  assert.equal(result.specialistPolicyHolds,1);
+  assert.equal(result.policyRelabeled,1);
+  assert.deepEqual(writes.added,['hh:release-gate-review']);
+  assert.deepEqual(writes.removed,['hh:specialist-repair-needed']);
+});
+test('independent specialist failures require complete trusted same-HEAD evidence',()=>{
+  const classify=require('../scripts/ci-pr-ten-minute-watchdog.cjs').classifyIndependentSpecialistChecks;
+  const row=(id,name,conclusion,status='completed',app=15368)=>({id,name,conclusion,status,app:{id:app}});
+  const rows=[row(1,'hh-core-verified','success'),row(2,'hh-specialist','failure'),
+    row(3,'public-services','failure')];
+  assert.equal(classify({total_count:3,check_runs:rows}),'PRODUCT_FAILURE');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'voice-webkit-macos','skipped')]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:3,check_runs:rows.slice(0,2)}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services',null,'in_progress')]}),'UNKNOWN');
+  assert.equal(classify({total_count:3,check_runs:[rows[0],rows[1],row(3,'public-services','failure','completed',999)]}),'POLICY_OR_SKIPPED');
+  assert.equal(classify({total_count:101,check_runs:rows}),'UNKNOWN');
 });

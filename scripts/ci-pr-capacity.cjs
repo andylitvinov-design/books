@@ -39,8 +39,10 @@ function admission(lane,capacity){
    return 'CORE_PRIORITY_PENDING';
  // CI bootstrap competes with Core and gets a stricter queue budget.
  if(lane==='ci'&&(capacity.activeRuns>=12||capacity.queuedRuns>=6))return 'CI_QUEUE_BUSY';
- // A single bounded Repair claim can operate during busy Core CI.
- if(['repair','conflict'].includes(lane)&&(capacity.activeRuns>=18||capacity.queuedRuns>=80))return 'REPAIR_QUEUE_BUSY';
+ // A single bounded Repair claim must not starve behind unrelated CI runs.
+ // Hard runner/queue/job-pressure limits above and the one-active-worker cap
+ // still hold. The dispatcher independently checks the exact worker history,
+ // task ownership and SHA before reserving and starting this lane.
  return 'ADMIT';
 }
 async function snapshot(github,owner,repo){
