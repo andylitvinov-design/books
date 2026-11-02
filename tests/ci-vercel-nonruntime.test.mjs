@@ -39,12 +39,14 @@ test('GitHub compare confirms a bounded CI-only diff for Vercel skip', async () 
     calls++;
     assert.match(url, /compare\//);
     return {ok:true,status:200,json:async()=>({
-      base_commit:{sha:prev},head_commit:{sha:cur},status:'ahead',ahead_by:2,
+      base_commit:{sha:prev},status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+      commits:[{sha:'c'.repeat(40)},{sha:cur}],
       files:[{filename:'.github/workflows/hh-pr-core-release.yml',status:'modified'},
         {filename:'scripts/ci-source-preflight.mjs',status:'modified'}]
     })};
   };
   const diagnostic = await inspectGithubCompare(prev,cur,fetcher);
+  // This matches the actual REST compare schema: no head_commit property.
   assert.equal(diagnostic.reason,'github-verified');
   assert.equal(maySkipBuild(diagnostic.paths),true);
   assert.equal((await changedFilesViaGithub(prev,cur,fetcher)).length,2);
@@ -55,10 +57,15 @@ test('GitHub compare is fail-closed on missing hashes, rate limits, divergence a
   assert.equal((await inspectGithubCompare('',cur)).reason,'invalid-sha');
   assert.equal((await inspectGithubCompare(prev,cur,async()=>({ok:false,status:403}))).reason,'github-http-403');
   const fetcher = (overrides={}) => async()=>({ok:true,json:async()=>({
-    base_commit:{sha:prev},head_commit:{sha:cur},status:'ahead',ahead_by:2,
+    base_commit:{sha:prev},status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+    commits:[{sha:'c'.repeat(40)},{sha:cur}],
     files:[{filename:'.github/workflows/work.yml',status:'modified'}],...overrides
   })});
   assert.equal((await inspectGithubCompare(prev,cur,fetcher({status:'diverged'}))).paths,null);
+  assert.equal((await inspectGithubCompare(prev,cur,fetcher({commits:[{sha:cur}]}))).reason,'github-commit-history-incomplete');
+  assert.equal((await inspectGithubCompare(prev,cur,fetcher({commits:[{sha:'c'.repeat(40)},{sha:'d'.repeat(40)}]}))).reason,'github-commit-history-incomplete');
+  assert.equal((await inspectGithubCompare(prev,cur,fetcher({total_commits:3}))).reason,'github-commit-history-incomplete');
+  assert.equal((await inspectGithubCompare(prev,cur,fetcher({behind_by:1}))).reason,'github-not-verified-ahead');
   assert.equal((await inspectGithubCompare(prev,cur,fetcher({files:new Array(300).fill({filename:'README.md',status:'modified'})}))).paths,null);
   assert.equal((await inspectGithubCompare(prev,cur,fetcher({files:[{filename:'README.md',status:'renamed'}]}))).paths,null);
   assert.equal((await inspectGithubCompare(prev,cur,async()=>{throw Error('network');})).reason,'github-request-failed');

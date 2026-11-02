@@ -129,7 +129,20 @@ try {
       await contactForm.locator('input[type="tel"]').fill('416 555 1234')
       assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
         'Phone without reply-only opt-in is insufficient')
-      await contactForm.locator('input[type="checkbox"][required]').check()
+      // A real finger tap on the rendered consent label must toggle React's
+      // controlled checkbox and enable the enquiry. Never set checked in JS.
+      const consentInput = contactForm.locator('input[type="checkbox"][required]')
+      const consentLabel = contactForm.locator('label').filter({ has: consentInput })
+      assert.equal(await consentLabel.count(), 1, 'One visible reply-only consent label')
+      await consentLabel.click()
+      await page.waitForFunction(() => {
+        const input = document.querySelector(
+          '[data-cart-contact-form] input[type="checkbox"][required]')
+        const submit = document.querySelector(
+          '[data-cart-contact-form] button[type="submit"]')
+        return input?.checked === true && submit?.disabled === false
+      }, null, { timeout: 10000 })
+      assert.equal(await consentInput.isChecked(), true, 'Real opt-in remains checked after React update')
       await contactForm.locator('button[type="submit"]').click()
       await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
       await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })

@@ -541,7 +541,7 @@ export function MandalaHypnoCompact({
           <div className={css.heading}><h4>{ui.design}</h4><p>{ui.designHint}</p></div>
           <button type="button" className={css.edit} disabled={disabled}
             data-hypno-design-edit aria-expanded={open==="design"} aria-controls="hypno-design-options"
-            onClick={()=>toggle("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
+            onClick={()=>setOpen("design")}>{ui.change}<Pencil size={14} aria-hidden="true"/></button>
         </div>
         <button type="button" className={css.sceneMiniSummary} data-hypno-scene-summary
           disabled={disabled} aria-expanded={open==="design"} aria-controls="hypno-design-options"
