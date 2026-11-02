@@ -150,8 +150,12 @@ test("effects moves the single original tab rail above Wave on mobile only",()=>
 test("third Hypnocorrection mobile release QA performs real browser navigation instead of manual-only simulation",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
   const browser=readFileSync(new URL("../scripts/verify-hypno-third-workspace-browser.mjs",import.meta.url),"utf8");
-  assert.match(workflow,/node scripts\/verify-hypno-third-workspace-browser\.mjs/);
-  assert.match(workflow,/GITHUB_HEAD_REF.*codex\/hypno-third-workspace-live-qa-/);
+  const entry=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
+  assert.match(workflow,/node scripts\/verify-practices-mobile-browser\.mjs/);
+  assert.doesNotMatch(workflow,/node scripts\/verify-hypno-third-workspace-browser\.mjs/);
+  assert.match(entry,/GITHUB_EVENT_NAME==="pull_request"/);
+  assert.match(entry,/codex\\/hypno-third-workspace-live-qa-/);
+  assert.match(entry,/import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
   assert.match(browser,/HYPNO_THIRD_MOBILE_MATRIX_PASS/);
   assert.match(browser,/HYPNO_THIRD_CREATE_DOWNLOAD_PASS/);
   assert.match(browser,/data-hypno-wave/);
@@ -190,4 +194,14 @@ test("macOS WebKit guided practices waits for the real button rather than thrott
   assert.match(source,/generateDisabled:el\.querySelector/);
   assert.match(source,/meditationResultCount:el\.querySelectorAll/);
   assert.match(source,/HYPNO_THIRD_MOBILE_MATRIX_PASS|PASS guided-practices/);
+});
+
+test("hypno regression reuses the EXISTING Mandala browser workflow without CI-policy changes",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const practice=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
+  assert.match(workflow,/node scripts\/verify-practices-mobile-browser\.mjs/);
+  assert.doesNotMatch(workflow,/GITHUB_HEAD_REF.*codex\/hypno-third-workspace-live-qa-/);
+  assert.match(practice,/await import\("\.\/verify-hypno-third-workspace-browser\.mjs"\)/);
+  assert.match(practice,/GITHUB_EVENT_NAME==="pull_request"/);
+  assert.match(practice,/GITHUB_HEAD_REF\|\|""/);
 });

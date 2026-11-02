@@ -42,20 +42,19 @@ export async function verifyGuidedPractices({browser,base,engine}){
       const state=course.locator('[data-guided-focus-state="calm"]');
       await state.click();
       assert.equal(await state.getAttribute("aria-pressed"),"true");
-      // Headed macOS WebKit can throttle requestAnimationFrame while its
-      // real DOM controls are usable. Assert the *same* enabled button using
-      // Playwright's protocol-backed locator; never bypass a disabled action.
-      try{
+      // Headed WebKit can throttle requestAnimationFrame. Check the *real*
+      // clickable control via Playwright's protocol-backed enabled assertion.
+      try {
         await expect(generate).toBeEnabled({timeout:20000});
-      }catch(error){
-        const state=await course.evaluate(el=>({
-          focusMode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
-          selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute("data-guided-focus-state"),
-          generateDisabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
+      } catch(error) {
+        const details=await course.evaluate(el=>({
+          selectedState:el.querySelector('[data-guided-focus-state][aria-pressed="true"]')?.getAttribute('data-guided-focus-state'),
+          mode:el.querySelector('[data-video-therapy-focus] button[aria-pressed="true"]')?.textContent?.trim(),
+          disabled:el.querySelector('[data-guided-generate-meditation]')?.disabled,
           note:el.querySelector('[role="alert"],[role="note"]')?.textContent?.trim(),
-          meditationResultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
+          resultCount:el.querySelectorAll('[data-guided-meditation-result]').length,
         }));
-        throw new Error(engine+" "+locale+" "+width+" cannot generate meditation: "+JSON.stringify(state),{cause:error});
+        throw new Error(engine+" "+locale+" "+width+" state Generate unavailable "+JSON.stringify(details),{cause:error});
       }
       await generate.click();
       const result=course.locator("[data-guided-meditation-result]");

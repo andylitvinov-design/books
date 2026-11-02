@@ -160,3 +160,11 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]]){
     }
   }finally{await browser.close();}
 }
+
+// Reuse the existing protected Mandala browser workflow and its isolated
+// Chromium/WebKit installation. The owner's effects QA runs only on its
+// source-specific PR; other production and course runs are unchanged.
+if (process.env.GITHUB_EVENT_NAME==="pull_request" &&
+    /^codex\/hypno-third-workspace-live-qa-/.test(process.env.GITHUB_HEAD_REF||"")) {
+  await import("./verify-hypno-third-workspace-browser.mjs");
+}
