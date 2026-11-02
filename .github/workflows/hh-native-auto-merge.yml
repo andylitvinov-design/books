@@ -173,36 +173,43 @@ jobs:
             const jobPage = (await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: coreRun.id, per_page: 100, filter: "latest"
             })).data;
-            function hasVerifiedCoreJobs(page){
-              if (!Array.isArray(page?.jobs) || !Number.isSafeInteger(page.total_count) ||
-                  page.total_count !== page.jobs.length || page.total_count > 100) return false;
-              return ["hh-core-verified","hh-specialist"].every(name=>{
-                const matching=page.jobs.filter(job=>job.name === name);
-                return matching.length === 1 && matching[0].status === "completed" &&
-                  matching[0].conclusion === "success";
-              });
-            }
-            if (!hasVerifiedCoreJobs(jobPage)) {
-              log("SKIP incomplete Core/Specialist evidence for PR #" + number);
+            // Use the real exact-run named jobs. No absent/skipped/duplicate job
+            // can satisfy required evidence, including during the transition.
+            const jobs = jobPage.jobs;
+            if (!Array.isArray(jobs) || !Number.isSafeInteger(jobPage.total_count) ||
+                jobPage.total_count > 100 || jobPage.total_count !== jobs.length) {
+              log("SKIP incomplete Core job evidence for PR #" + number);
               return;
             }
-            // Support both verified protection states without bypassing the
-            // old required status while the admin token is still insufficient.
+            const passed = name => {
+              const matching = jobs.filter(job => job.name === name);
+              return matching.length === 1 && matching[0].status === "completed" &&
+                matching[0].conclusion === "success";
+            };
+            // The branch's actual required contexts must be one of the
+            // reviewed old, new or transitional sets. No zero-required fallback.
             const branchProtection = (await github.rest.repos.getBranch({
               owner, repo, branch: "codex/public-book-library"
             })).data;
             const required = branchProtection.protection?.required_status_checks?.contexts;
-            const oldRequired = Array.isArray(required) && required.includes("release-ready");
-            const coreRequired = Array.isArray(required) && required.includes("hh-core-verified");
+            const allowedRequiredSets = new Map([
+              ["release-ready", ["hh-core-verified", "hh-specialist", "release-ready"]],
+              ["hh-core-verified,hh-specialist", ["hh-core-verified", "hh-specialist"]],
+              ["hh-merge-check,release-ready", ["hh-merge-check", "release-ready"]],
+              ["hh-merge-check", ["hh-merge-check"]]
+            ]);
+            const signature = Array.isArray(required) ?
+              [...new Set(required)].sort().join(",") : "";
+            const need = allowedRequiredSets.get(signature);
             if (!branchProtection.protected || !Array.isArray(required) ||
-                (oldRequired === coreRequired)) {
-              log("SKIP unknown or conflicting legacy branch protection for PR #" + number);
+                required.length !== new Set(required).size || !need) {
+              log("SKIP unknown, empty or partially migrated branch protection for PR #" + number);
               return;
             }
-            const legacyJobs=jobPage.jobs.filter(job=>job.name === "release-ready");
-            if (oldRequired && (legacyJobs.length !== 1 ||
-                legacyJobs[0].status !== "completed" || legacyJobs[0].conclusion !== "success")) {
-              log("SKIP old mandatory release-ready is not successful on current HEAD #" + number);
+            const notPassed = need.filter(name => !passed(name));
+            if (notPassed.length) {
+              log("SKIP current Core status missing, skipped or red for PR #" +
+                number + ": " + notPassed.join(","));
               return;
             }
             const blocked = observed.find(run => run.status !== "completed" ||
@@ -212,24 +219,61 @@ jobs:
                 blocked.conclusion + " for PR #" + number);
               return;
             }
-            const baseEvidence=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
-            const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
-            const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
-              verifiedRunBase:()=>baseEvidence.coreRunBase(coreRun,pr,fullRepo,coreRun.check_suite_id)});
-            if(!freshness.ok){log('SKIP '+freshness.reason+' for PR #'+number);return;}
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");
             core.setOutput("pr", String(number));
+            core.setOutput("core_run", String(coreRun.id));
             core.setOutput("head", pr.head.sha);
             core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
-            core.setOutput("requires_current_base", String(freshness.reason === "SENSITIVE_BASE_VERIFIED"));
-            core.setOutput("verified_base", freshness.base);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
               " after " + observed.length + " latest exact-head PR workflows");
-      - name: Enable native auto-merge for this exact head
+      - name: Verify same-run unified gate and current sensitive production base
+        id: freshness
         if: steps.ready.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner,repo}=context.repo,fullRepo=owner+"/"+repo;
+            const number=Number('${{ steps.ready.outputs.pr }}');
+            const expectedHead='${{ steps.ready.outputs.head }}';
+            const expectedBase='${{ steps.ready.outputs.base }}';
+            const runId=Number('${{ steps.ready.outputs.core_run }}');
+            if(!Number.isSafeInteger(runId)||runId<1)return;
+            const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+            if(pr.state!=="open"||pr.draft||pr.base?.ref!=="codex/public-book-library"||
+               pr.base.sha!==expectedBase||pr.head?.sha!==expectedHead||
+               pr.head.repo?.full_name!==fullRepo||pr.mergeable!==true||
+               pr.mergeable_state==="dirty"){
+              core.info("CI_AUTO_MERGE: PR changed before base verification");return;
+            }
+            const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
+            const page=(await github.rest.actions.listJobsForWorkflowRun({
+              owner,repo,run_id:runId,per_page:100,filter:"latest"
+            })).data;
+            if(!Number.isSafeInteger(page.total_count)||page.total_count>100||
+               !Array.isArray(page.jobs)||page.jobs.length!==page.total_count)return;
+            const passed=name=>{
+              const match=page.jobs.filter(j=>j.name===name);
+              return match.length===1&&match[0].status==="completed"&&match[0].conclusion==="success";
+            };
+            if(!passed("hh-merge-check")||!passed("hh-specialist")){
+              core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
+            }
+            const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
+            const classifier=await policy.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            const freshness=await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
+              verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+            if(!freshness.ok){
+              core.info("CI_AUTO_MERGE: "+freshness.reason+" for PR #"+number);return;
+            }
+            core.setOutput("eligible","true");
+            core.setOutput("verified_base",freshness.base);
+            core.setOutput("requires_current_base",String(freshness.reason==="SENSITIVE_BASE_VERIFIED"));
+      - name: Enable native auto-merge for this exact head
+        if: steps.ready.outputs.eligible == 'true' && steps.freshness.outputs.eligible == 'true'
         env:
           # A repo-scoped token lets resulting merges trigger push workflows.
           # Preserve native auto-merge if the optional credential is absent.
@@ -240,8 +284,8 @@ jobs:
           PR_HEAD: ${{ steps.ready.outputs.head }}
           PR_BASE_SHA: ${{ steps.ready.outputs.base }}
           PR_HEAD_BRANCH: ${{ steps.ready.outputs.branch }}
-          PR_REQUIRES_CURRENT_BASE: ${{ steps.ready.outputs.requires_current_base }}
-          PR_VERIFIED_BASE: ${{ steps.ready.outputs.verified_base }}
+          PR_REQUIRES_CURRENT_BASE: ${{ steps.freshness.outputs.requires_current_base }}
+          PR_VERIFIED_BASE: ${{ steps.freshness.outputs.verified_base }}
         run: |
           set -euo pipefail
           if [[ "$HH_HAS_AUTOMERGE_TOKEN" != true ]]; then
@@ -267,7 +311,7 @@ jobs:
             exit 0
           fi
           if [[ "$current_method" == "$HH_EXPECTED_MERGE_METHOD" ]]; then
-            echo 'CI_AUTO_MERGE: SKIP already armed with correct method'
+            echo 'CI_AUTO_MERGE: already armed; never issue direct merge'
             exit 0
           fi
           if [[ "$current_method" != NONE ]]; then
@@ -277,13 +321,13 @@ jobs:
           for ((attempt=1; attempt<=3; attempt++)); do
             fresh="$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json state,isDraft,headRefOid,baseRefName --jq '(.state == "OPEN") and (.isDraft == false) and (.headRefOid == env.PR_HEAD) and (.baseRefName == "codex/public-book-library")')"
             if [[ "$fresh" != true ]]; then
-              echo 'CI_AUTO_MERGE: SKIP PR target, HEAD or state changed before native AutoMerge'
+              echo 'CI_AUTO_MERGE: SKIP target, state or HEAD changed before ARM'
               exit 0
             fi
             if [[ "$PR_REQUIRES_CURRENT_BASE" == true ]]; then
               current_base="$(gh api "repos/$GH_REPO/git/ref/heads/codex/public-book-library" --jq '.object.sha')"
               if [[ "$current_base" != "$PR_VERIFIED_BASE" ]]; then
-                echo 'CI_AUTO_MERGE: SKIP production advanced before native AutoMerge'
+                echo 'CI_AUTO_MERGE: SKIP production advanced since sensitive CI verification'
                 exit 0
               fi
             fi
@@ -295,8 +339,7 @@ jobs:
             if [[ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid,autoMergeRequest --jq '.headRefOid == env.PR_HEAD and .autoMergeRequest.mergeMethod == env.HH_EXPECTED_MERGE_METHOD' 2>/dev/null)" == true ]]; then
               exit 0
             fi
-            # A denied native AutoMerge is a blocker, never a reason to
-            # issue a separate direct merge command.
+            # Denied native ARM is a blocker, never a separate direct merge.
             if ! grep -Fq 'Unable to determine if workflow can be created or updated due to timeout' "$RUNNER_TEMP/auto-merge-error"; then
               exit 1
             fi
@@ -305,7 +348,17 @@ jobs:
           exit 1
   recover-interrupted-core:
     name: recover-interrupted-core
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.name == 'HH PR core release gate' && github.event.workflow_run.conclusion != 'success' }}
+    # Mirror the script's cheap trust and eligibility checks before reserving a runner.
+    # The script still revalidates all evidence before any rerun.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.name == 'HH PR core release gate' &&
+      github.event.workflow_run.status == 'completed' &&
+      github.event.workflow_run.repository.full_name == github.repository &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.run_attempt == 1 &&
+      contains(fromJSON('["cancelled","timed_out","startup_failure","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     concurrency:

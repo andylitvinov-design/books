@@ -19,6 +19,10 @@ on:
       task_key:
         type: string
         default: ''
+      reservation_run_id:
+        description: 'Trusted dispatcher reservation run ID (correlation only; exact SHA and task key remain enforced)'
+        type: string
+        default: ''
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -31,7 +35,7 @@ on:
       - 'tests/ci-pr-ci-worker.test.cjs'
 permissions:
   contents: read
-  actions: read
+  actions: write
   issues: write
   pull-requests: write
 concurrency:
@@ -48,10 +52,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
-      - name: Test deterministic worker without network
+      # Deterministic worker tests run in the separate code-change contract job.
+      - name: Check trusted CI worker syntax
         run: |
           node --check scripts/ci-pr-ci-worker.cjs
-          node --test tests/ci-pr-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
+          node --check scripts/ci-pr-priority.cjs
       - name: Bootstrap at most one legacy PR without Core CI
         uses: actions/github-script@v7
         env:
@@ -125,7 +130,7 @@ jobs:
                 return {sha:commit.sha};
               }
             }:null;
-            await run({
+            const result=await run({
               github,core,context,sourceGit,
               prNumber:Number(context.payload.inputs?.pr_number || 0),
               expectedSha:String(context.payload.inputs?.expected_sha || ''),
@@ -133,3 +138,11 @@ jobs:
               dryRun:context.eventName==='push' ||
                 String(context.payload.inputs?.dry_run ?? 'false')==='true'
             });
+            const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
+            core.info('HH_CI_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'ci',status:result.started>0?'started':'skipped',dryRun:result.dryRun,log:core.warning}));
+            // Never turn a denied owner write token into a green CI worker.
+            // The worker has already attempted an exact-HEAD diagnostic receipt.
+            if(result.terminalFailure){
+              core.setFailed('HH_CI_BOOTSTRAP_OWNER_TOKEN_PERMISSION_DENIED: no bootstrap '+
+                'or source commit confirmed; repair dedicated token permissions.');
+            }
