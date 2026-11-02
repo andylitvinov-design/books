@@ -689,3 +689,14 @@ test('Core SHA-scoped concurrency prevents older reruns from cancelling current 
     'keep same-SHA redundant-synchronize cancellation');
   assert.match(core,/^  release-ready:/m);
 });
+
+test('source-head concurrency also covers WebKit and Guard, not just Core',()=>{
+  for(const file of ['hh-pr-core-release.yml','holistic-support-mandala.yml','hh-pr-sweep-guard.yml']) {
+    const workflow=read(file);
+    assert.ok(workflow.includes('group: '), file);
+    assert.ok(workflow.includes('${{ github.event.pull_request.head.sha || github.sha }}'),
+      file+' older PR rerun must never cancel a newer source HEAD');
+    assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"),
+      file+' retains exact same-head cancellation and no weakened gates');
+  }
+});
