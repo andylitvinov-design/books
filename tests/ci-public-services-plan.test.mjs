@@ -37,7 +37,9 @@ test('general BASE-owned Mandala routing works for all PRs, never for payment/pr
     'tests/video-chat-natural-language.test.mjs'])
     assert.equal(isTrustedMandalaOwnerPath(path,trigger),true,path);
   for(const path of ['components/mandala-payment-checkout.tsx',
-    'components/mandala-client-profile.tsx','app/api/payments/checkout/route.js',
+    'components/mandala-client-profile.tsx','components/mandala-service-cart.tsx',
+    'components/mandala-cart-nav.tsx','components/mandala-consultation-cta.tsx',
+    'components/mandala-receipt-template.tsx','app/api/payments/checkout/route.js',
     'components/holistic-support-mobile.tsx','scripts/ci-unknown-router.mjs'])
     assert.equal(isTrustedMandalaOwnerPath(path,trigger),false,path);
   const base='a'.repeat(40),head='b'.repeat(40),nullByte=String.fromCharCode(0);
