@@ -60,6 +60,8 @@ test("explicit confirmation and rendering stay in separate stages",()=>{
 });
 test("navigation, repeat, auto and refusal follow conversation state",()=>{
  assert.equal(understand("назад","scenario").targetStep,"topic");
+ assert.equal(understand("назад","review").targetStep,"music");
+ assert.equal(understand("назад","ready").targetStep,"review");
  assert.equal(understand("вернись к фразам","review").targetStep,"phrase");
  assert.equal(understand("другая идея","review").targetStep,"idea");
  assert.equal(understand("сменить тему","review").targetStep,"topic");
@@ -129,4 +131,30 @@ test("existing real film pipeline, tree, data and content limits are preserved",
  assert.match(chat,/onInvalidate\(\)/);
  assert.doesNotMatch(chat,/hasVideoChatFilter/);
  assert.equal(nextVideoChatTreeStep(sample()),"category");
+});
+
+
+test("inline answers and free text share the same state machine and renderer",()=>{
+ const chat=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ const styles=readFileSync(new URL("../components/mandala-video-director-chat.module.css",import.meta.url),"utf8");
+ const thread=chat.indexOf("className={css.thread}");
+ const composer=chat.indexOf("<form className={css.composer}");
+ const choices=chat.indexOf("data-chat-inline-choices");
+ const commands=chat.indexOf("data-chat-command={value}");
+ assert.ok(thread>=0&&choices>thread&&choices<composer,"answer buttons must be inside chat history");
+ assert.ok(commands>thread&&commands<composer,"function buttons must be in the active bot turn");
+ for(const marker of ["line.id===activeAssistantId","data-chat-assistant-turn",
+   "data-chat-choice-stage={step}","data-video-chat-skip-phrase",
+   "data-video-chat-tree-choice","onClick={()=>answer(value)}",
+   "data-chat-hydrated={clientHydrated?", "ref={composerRef}"]) {
+   assert.ok(chat.includes(marker),"missing inline choice integration "+marker);
+ }
+ assert.match(chat,/onSubmit=\{\(event:FormEvent<HTMLFormElement>\)/);
+ assert.match(styles,/\.assistantTurn/);
+ assert.match(styles,/\.inlineAnswers/);
+ assert.match(styles,/\.window\[data-compose-active="true"\]/);
+ assert.ok(!chat.includes("className={css.autoChoices}"),"no duplicate detached answers");
+ assert.equal((chat.match(/<textarea/g)||[]).length,1,"single text input");
+ for(const prompt of ["Какова цель вашего видео?","What is your video's goal?",
+   "¿Cuál es el objetivo de tu vídeo?"])assert.ok(chat.includes(prompt));
 });
