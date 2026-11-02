@@ -53,7 +53,8 @@ test('only durable worker outcomes trigger one deferred slot refill',async()=>{
  for(const [kind,status] of [['repair','manual_conflict'],['repair','manual_required'],['repair','committed'],['ci','started'],['ci','requested']]){
   const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>{calls.push(x)}}}};
   assert.equal(await wakeAfterWorker({github,context,kind,status,dryRun:false}), 'DISPATCH_ACCEPTED');
-  assert.equal(calls.length,1);assert.deepEqual(calls[0].inputs,{dry_run:'false',completion_wake:'true',worker_run_id:'42'});
+  assert.equal(calls.length,1);assert.equal(calls[0].workflow_id,'hh-pr-ten-minute-watchdog.yml');
+  assert.deepEqual(calls[0].inputs,{dry_run:'false',completion_wake:'true',worker_run_id:'42'});
  }
 });
 test('dry, untrusted, empty and failed worker outcomes cannot fan out',async()=>{
@@ -95,14 +96,18 @@ test('completion relay only starts the writer after verified worker completion',
  const calls=[];const github={rest:{actions:{createWorkflowDispatch:async x=>calls.push(x)}}};
  assert.equal(await relayCompletionWake({github,context,wait:async()=>false}),'WORKER_UNVERIFIED');assert.equal(calls.length,0);
  assert.equal(await relayCompletionWake({github,context,wait:async()=>true}),'DISPATCH_ACCEPTED');
- assert.deepEqual(calls[0].inputs,{dry_run:'false'});
+ assert.equal(calls[0].workflow_id,'hh-pr-ten-minute-watchdog.yml');
+ assert.deepEqual(calls[0].inputs,{dry_run:'false',direct_dispatch:'true'});
  assert.equal(await relayCompletionWake({github,context:{...context,payload:{inputs:{...context.payload.inputs,dry_run:'true'}}},wait:async()=>true}),'NOT_ACTIONABLE');
  assert.equal(calls.length,1);
 });
-test('completion waits do not occupy or replace the single-writer queue',()=>{
- const s=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.match(s,/completion-wait:/);assert.match(s,/hh-control-wait-/);
+test('completion waits in Watchdog cannot occupy the direct writer lease',()=>{
+ const fs=require('node:fs');
+ const s=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ assert.match(s,/completion-wait:/);assert.match(s,/hh-direct-worker-completion-/);
  assert.match(s,/hh-control-tower-single-writer/);assert.match(s,/relayCompletionWake/);
+ assert.doesNotMatch(observer,/completion-wait:/);
  assert.doesNotMatch(s,/^concurrency:\s*$/m);
 });
 test('completion relay rejects forged inputs and handles dispatch denial',async()=>{

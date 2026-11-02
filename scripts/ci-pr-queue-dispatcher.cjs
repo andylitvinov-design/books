@@ -8,7 +8,7 @@ const {repairMode,safeFiles,hasVerifiedSourceHandoff}=require('./ci-pr-repair-wo
 const {classifyIndependentSpecialistChecks}=require('./ci-pr-ten-minute-watchdog.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
-const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker']);
+const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
 function verifiedSpecialistProductFailure(checks){
  if(classifyIndependentSpecialistChecks(checks)!=='PRODUCT_FAILURE')return false;
  const rows=[...checks.check_runs].sort((a,b)=>b.id-a.id);
@@ -24,7 +24,13 @@ function trustedContext(context){
     context.ref!=='refs/heads/'+DEFAULT)return false;
  if(context.eventName==='workflow_run'){
   const w=context.payload?.workflow_run;
+  const verifiedCoreFailure=w?.name==='HH PR core release gate' &&
+    w.event==='pull_request' &&
+    ['failure','timed_out','startup_failure'].includes(w.conclusion);
+  const trustedWorker=w?.name!=='HH PR core release gate' &&
+    ['workflow_dispatch','schedule'].includes(w?.event);
   return !!(w&&RELEVANT.has(w.name)&&w.status==='completed'&&
+    (verifiedCoreFailure||trustedWorker)&&
     w.repository?.full_name===REPO&&
     (!w.head_repository?.full_name||w.head_repository.full_name===REPO));
  }

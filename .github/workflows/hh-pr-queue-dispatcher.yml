@@ -1,12 +1,8 @@
 name: HH PR Control Tower queue dispatcher
 on:
   schedule:
-    - cron: '7,17,27,37,47,57 * * * *'
-  workflow_run:
-    workflows:
-      - 'HH PR source Repair Worker'
-      - 'HH zero-cost PR CI worker'
-    types: [completed]
+    - cron: '7 * * * *'
+  # Worker results now wake Watchdog directly; Control Tower observes hourly.
   push:
     branches: ['codex/bootstrap-books']
     paths:
@@ -40,21 +36,11 @@ on:
         type: boolean
         default: true
         required: false
-      completion_wake:
-        description: 'Delay a worker-completion wake until its slot is released'
-        type: boolean
-        default: false
-        required: false
-      worker_run_id:
-        description: 'Originating trusted worker run for completion wake'
-        type: string
-        default: ''
-        required: false
 permissions:
   contents: read
-  actions: write
-  issues: write
-  pull-requests: write
+  actions: read
+  issues: read
+  pull-requests: read
   checks: read
 jobs:
   contract:
@@ -83,123 +69,35 @@ jobs:
           node --check scripts/ci-pr-ci-worker.cjs
           node --check tests/ci-pr-core-priority.test.cjs
           node --test tests/ci-pr-api-quota.test.cjs tests/ci-pr-ci-legacy-recovery.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-core-priority.test.cjs tests/ci-pr-ci-worker.test.cjs
-  completion-wait:
-    # Wait outside the writer lease: a later schedule event must not replace
-    # a queued completion wake before the worker has actually exited.
+  observe:
+    # Legacy workflow name retained for existing monitor references.
+    # This job has no write permission and cannot reserve or dispatch tasks.
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.completion_wake == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    concurrency:
-      group: hh-control-wait-${{ github.event.inputs.worker_run_id }}
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      actions: write
-    steps:
-      - name: Checkout trusted completion handoff
-        uses: actions/checkout@v4
-        with:
-          ref: codex/bootstrap-books
-          persist-credentials: false
-      - name: Wait for actual worker completion and relay one wake
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const {relayCompletionWake}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
-            const result=await relayCompletionWake({github,context,log:core.warning});
-            core.info('HH_WORKER_COMPLETION_RELAY '+result);
-            if(result!=='DISPATCH_ACCEPTED')core.warning('Refill deferred: '+result);
-  dispatch:
-    # Ignore non-actionable upstream completions without reserving a runner.
-    # An independent per-PR contract concurrency lane is retained above.
-    if: >-
-      github.repository == 'andylitvinov-design/books' &&
-      github.ref == 'refs/heads/codex/bootstrap-books' &&
-      !(github.event_name == 'workflow_dispatch' && github.event.inputs.completion_wake == 'true') &&
-      (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.status == 'completed' &&
-        github.event.workflow_run.conclusion != 'cancelled' &&
-        github.event.workflow_run.conclusion != 'skipped'))
+      github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     concurrency:
-      group: hh-control-tower-single-writer
+      group: hh-control-tower-observer
       cancel-in-progress: false
     steps:
-      - name: Checkout only trusted default branch
+      - name: Checkout trusted observer only
         uses: actions/checkout@v4
         with:
           ref: codex/bootstrap-books
           persist-credentials: false
-          fetch-depth: 1
-      # The complete contract suite runs in the separate read-only PR job.
-      # A stale test assertion must not stop a 10-minute live dispatcher tick.
-      - name: Verify trusted dispatcher syntax before live work
-        run: |
-          node --check scripts/ci-pr-task-state.cjs
-          node --check scripts/ci-pr-capacity.cjs
-          node --check scripts/ci-pr-queue-dispatcher.cjs
-          node --check scripts/ci-pr-ci-legacy-recovery.cjs
-          node --check scripts/ci-pr-ci-worker.cjs
-      - name: Select one bounded PR worker per free lane and record a task receipt
+      - name: Audit the exact-HEAD queue without mutation
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
           script: |
-            const {run,wakeDirectionWatcher}=require(process.env.GITHUB_WORKSPACE+
+            const {run}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-queue-dispatcher.cjs');
-            const input=String(context.payload.inputs?.dry_run ?? 'false')==='true';
-            const dryRun=context.eventName==='push'||input;
-            // Trust checks inside run() and exact-HEAD check before each mutation.
-            // Push is audit-only; cron and completed trusted worker events are live.
-            const summary=await run({github,core,context,dryRun});
-            const report=summary;
-            // Public KPI snapshot for the PR monitor. Never affects dispatch or release gates.
-            // Do not publish audit-only runs, PR contracts, or unverified owner data.
-            if (!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
-                context.repo.owner==='andylitvinov-design' && context.repo.repo==='books') {
-              try {
-                const issueNumber=3128;
-                const issue=(await github.rest.issues.get({owner:context.repo.owner,
-                  repo:context.repo.repo,issue_number:issueNumber})).data;
-                const marker='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
-                if (issue.state!=='open' || issue.pull_request ||
-                    !issue.body?.startsWith(marker)) throw Error('MONITOR_FEED_MARKER_MISSING');
-                const number=(value)=>Number.isSafeInteger(value)&&value>=0?value:null;
-                const snapshot={schema:'HH_CONTROL_DISPATCH_METRICS_V1',
-                  checked_at:report.checkedAt,run_id:context.runId,source_dry_run:false,
-                  source_schema:report.schema,
-                  counts:{candidates:number(report.candidates),
-                    unknown_owner_locks:number(report.blocked?.OWNER_LEASE_UNVERIFIED??0),
-                    worker_dispatches:number(report.dispatchAccepted)},
-                  reason:typeof report.reason==='string'?report.reason:null};
-                if(Object.values(snapshot.counts).some(value=>value===null) ||
-                   !Number.isFinite(Date.parse(snapshot.checked_at))) throw Error('BAD_MONITOR_COUNTS');
-                const sourceUrl='https://github.com/andylitvinov-design/books/actions/runs/'+context.runId;
-                const body=[marker,'## Control Tower — public read-only snapshot',
-                  'Live dispatcher receipt only; never a dry-run or proof of completed code repair.',
-                  'worker_dispatches counts accepted worker dispatches, not finished Worker jobs.',
-                  '', '```json',JSON.stringify(snapshot,null,2),'```','',
-                  'Источник: '+sourceUrl,''].join('\n');
-                if(issue.body!==body){await github.rest.issues.update({
-                  owner:context.repo.owner,repo:context.repo.repo,
-                  issue_number:issueNumber,body});}
-                core.info('HH_CONTROL_MONITOR_KPI_PUBLISHED #'+issueNumber);
-              }catch(error){
-                core.warning('HH_CONTROL_MONITOR_KPI_UNAVAILABLE status='+
-                  (Number(error.status)||'unknown'));
-              }
-            }
-            // Single-writer event fallback: once per 11+ minute inactivity,
-            // never if Direction Watcher is queued/running. Does not create PR
-            // checks, edit source or pretend that GitHub cron delivered events.
-            await wakeDirectionWatcher({github,core,context,dryRun});
-            // Resilient fallback when GitHub has not delivered scheduled Watchdog runs.
-            const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
-              '/scripts/ci-pr-control-tower-wakeup.cjs');
-            await wakeStaleWatchdog({github,context,summary,dryRun,log:core.info});
+            const outcome=await run({github,core,context,dryRun:true});
+            core.info('HH_CONTROL_OBSERVER_ONLY '+JSON.stringify({
+              candidates:outcome.candidates,
+              wouldDispatch:outcome.wouldDispatch,
+              blocked:outcome.blocked,
+              reason:outcome.reason
+            }));

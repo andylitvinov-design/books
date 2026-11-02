@@ -2,6 +2,7 @@
 /** Trusted event handoff: wake the single-writer dispatcher only for durable queue work. */
 const DEFAULT='codex/bootstrap-books';
 const DISPATCHER='hh-pr-queue-dispatcher.yml';
+const WATCHDOG='hh-pr-ten-minute-watchdog.yml';
 const COOLDOWN_MS=120000;
 const BUSY=new Set(['queued','in_progress','pending','requested','waiting']);
 const safeCount=v=>Number.isSafeInteger(v)&&v>0?v:0;
@@ -26,6 +27,8 @@ function readyHistory(history,now){
 }
 async function wake({github,owner,repo,summary,enabled,hasToken,dryRun,
   limited,log=()=>{},now=Date.now()}){
+  // New direct handoff lives in the Watchdog workflow; never wake Control Tower.
+  if(process.env.HH_DIRECT_HANDOFF_ENABLED==='true')return 'DIRECT_HANDOFF_ACTIVE';
   if(!needsWake(summary,enabled,hasToken,dryRun))return 'NOT_ACTIONABLE';
   try{
     const history=(await limited('control-tower-recent',()=>github.request(
@@ -42,10 +45,9 @@ async function wake({github,owner,repo,summary,enabled,hasToken,dryRun,
     return 'HANDOFF_UNAVAILABLE';
   }
 }
-// A finished useful worker may be the only event that frees its lane. GitHub
-// suppresses some recursive workflow_run callbacks from GITHUB_TOKEN dispatches.
-// The dispatcher's existing single-writer lease coalesces concurrent wakeups;
-// its delayed scan still enforces fresh capacity, owner leases and task receipts.
+// Completed useful Workers wake Watchdog directly. GitHub may suppress the
+// workflow_run callback after GITHUB_TOKEN dispatch; verified completion relay
+// is an independent fallback, without using Control Tower.
 async function wakeAfterWorker({github,context,kind,status,dryRun=false,log=()=>{}}){
   const permitted=kind==='repair' ? ['manual_conflict','manual_required','committed'] :
     kind==='ci' ? ['started','requested'] : [];
@@ -54,7 +56,7 @@ async function wakeAfterWorker({github,context,kind,status,dryRun=false,log=()=>
      !Number.isSafeInteger(context.runId)||context.runId<1||!permitted.includes(status))return 'NOT_ACTIONABLE';
   try{
     await github.rest.actions.createWorkflowDispatch({owner:context.repo.owner,repo:context.repo.repo,
-      workflow_id:DISPATCHER,ref:DEFAULT,inputs:{dry_run:'false',completion_wake:'true',worker_run_id:String(context.runId)}});
+      workflow_id:WATCHDOG,ref:DEFAULT,inputs:{dry_run:'false',completion_wake:'true',worker_run_id:String(context.runId)}});
     return 'DISPATCH_ACCEPTED';
   }catch(error){log('Worker completion wake deferred: '+String(error.message||error).slice(0,160));return 'HANDOFF_UNAVAILABLE';}
 }
@@ -90,7 +92,7 @@ async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,
   try{
     if(!await wait({github,owner:context.repo.owner,repo:context.repo.repo,runId}))return 'WORKER_UNVERIFIED';
     await github.rest.actions.createWorkflowDispatch({owner:context.repo.owner,repo:context.repo.repo,
-      workflow_id:DISPATCHER,ref:DEFAULT,inputs:{dry_run:'false'}});
+      workflow_id:WATCHDOG,ref:DEFAULT,inputs:{dry_run:'false',direct_dispatch:'true'}});
     return 'DISPATCH_ACCEPTED';
   }catch(error){log('Worker completion relay deferred: '+String(error.message||error).slice(0,160));return 'HANDOFF_UNAVAILABLE';}
 }
@@ -98,7 +100,6 @@ async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,
 // When GitHub silently delays its scheduled Watchdog, a *real* Control Tower
 // cycle can wake the same trusted workflow. Do not confuse workflow_run
 // wrappers with reconciliation, and do not create a second pending tick.
-const WATCHDOG='hh-pr-ten-minute-watchdog.yml';
 const WATCHDOG_CRON_GRACE_MS=35*60_000;
 const WATCHDOG_MANUAL_COOLDOWN_MS=11*60_000;
 function watchdogCronDecision(schedule,manual,now){

@@ -1,12 +1,16 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-test('Control Tower skips canceled/skipped callbacks while preserving separate PR contract lane',()=>{
- const s=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.ok(s.includes("github.event.workflow_run.conclusion != 'cancelled'"));
- assert.ok(s.includes("github.event.workflow_run.conclusion != 'skipped'"));
- assert.ok(s.includes("github.event_name != 'workflow_run'"));
- assert.ok(s.includes("group: hh-control-contract-"));
- assert.ok(s.includes("group: hh-control-tower-single-writer"));
+test('Control Tower is read-only; Watchdog owns the worker dispatch lease',()=>{
+ const fs=require('node:fs');
+ const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.ok(observer.includes('group: hh-control-contract-'));
+ assert.ok(observer.includes('group: hh-control-tower-observer'));
+ assert.ok(observer.includes('dryRun:true'));
+ assert.ok(!observer.includes('createWorkflowDispatch('));
+ assert.ok(!observer.includes('completion-wait:'));
+ assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
+ assert.ok(watchdog.includes('needs: reconcile'));
 });
 const {taskFor,validPR,laneOf,reservation,commentBody,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {computeCapacity,admission,snapshot}=require('../scripts/ci-pr-capacity.cjs');
@@ -114,6 +118,16 @@ test('only trusted default-branch repository and known workflow callbacks are ha
  assert.equal(trustedContext(context),true);
  assert.equal(trustedContext({...context,ref:'refs/heads/codex/public-book-library'}),false);
  assert.equal(trustedContext({...context,eventName:'workflow_run',payload:{workflow_run:{name:'unrelated',status:'completed',repository:{full_name:'andylitvinov-design/books'}}}}),false);
+});
+test('failed trusted Core callback admits direct Watchdog work, never Core success',()=>{
+ const bad={...context,eventName:'workflow_run',payload:{workflow_run:{
+  name:'HH PR core release gate',event:'pull_request',status:'completed',
+  conclusion:'failure',repository:{full_name:'andylitvinov-design/books'},
+  head_repository:{full_name:'andylitvinov-design/books'}
+ }}};
+ assert.equal(trustedContext(bad),true);
+ assert.equal(trustedContext({...bad,payload:{workflow_run:{...bad.payload.workflow_run,conclusion:'success'}}}),false);
+ assert.equal(trustedContext({...bad,payload:{workflow_run:{...bad.payload.workflow_run,repository:{full_name:'foreign/repo'}}}}),false);
 });
 test('single-writer dispatcher reserves before sending an exact-head repair',async()=>{
  const f=fixture([pr(1)],{comments:{1:[proof()]}});
@@ -421,13 +435,15 @@ test('incomplete job inventory stops without dispatch',async()=>{
 });
 
 
-test('PR contract CI has its own lease, separate from live queue dispatch',()=>{
- const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.ok(wf.includes('hh-control-contract-'));
- assert.ok(wf.includes('hh-control-tower-single-writer'));
- assert.ok(wf.includes('cancel-in-progress: false'));
+test('PR contract CI remains independent of observer and Watchdog direct writer',()=>{
+ const fs=require('node:fs');
+ const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.ok(observer.includes('hh-control-contract-'));
+ assert.ok(observer.includes('hh-control-tower-observer'));
+ assert.ok(watchdog.includes('hh-control-tower-single-writer'));
+ assert.ok(observer.includes('cancel-in-progress: false'));
 });
-
 
 test('persistent small GitHub count discrepancy admits bounded Repair but not CI',async()=>{
  let activeReads=0;
@@ -525,7 +541,7 @@ test('unknown runner reserve blocks Repair under conservative job pressure',()=>
 });
 const {wakeDirectionWatcher,DIRECTION_IDLE_MS}=require('../scripts/ci-pr-queue-dispatcher.cjs');
 const callback={...context,eventName:'workflow_run',payload:{workflow_run:{
- name:'HH PR source Repair Worker',status:'completed',conclusion:'success',
+ name:'HH PR source Repair Worker',event:'workflow_dispatch',status:'completed',conclusion:'success',
  repository:{full_name:'andylitvinov-design/books'}
 }}};
 function wakeFixture(items=[],opts={}){
@@ -607,17 +623,18 @@ test('event wake never acts during dry-run, push or untrusted workflow_run',asyn
 });
 
 
-test('Watchdog wakes the dispatcher only for durable work, not every completed Core callback',()=>{
+test('Watchdog handles worker events without Control Tower',()=>{
  const fs=require('node:fs');
- const workflow=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- assert.ok(!workflow.includes("      - 'HH PR 10-minute watchdog'"));
- assert.ok(workflow.includes("      - 'HH PR source Repair Worker'"));
- assert.ok(workflow.includes("      - 'HH zero-cost PR CI worker'"));
- const coordinator=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
- assert.ok(coordinator.includes('notifyControlTower({github,owner,repo'));
- assert.ok(coordinator.includes('summary.controlTowerWake='));
+ const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.ok(!observer.includes("      - 'HH PR source Repair Worker'"));
+ assert.ok(!observer.includes("      - 'HH zero-cost PR CI worker'"));
+ assert.ok(watchdog.includes("      - 'HH PR source Repair Worker'"));
+ assert.ok(watchdog.includes("      - 'HH zero-cost PR CI worker'"));
+ assert.ok(watchdog.includes('HH_WATCHDOG_DIRECT_HANDOFF'));
+ const coordinator=fs.readFileSync('scripts/ci-pr-control-tower-wakeup.cjs','utf8');
+ assert.ok(coordinator.includes('DIRECT_HANDOFF_ACTIVE'));
 });
-
 test('expired active foreign lease cannot be stolen by a second worker',()=>{
  const task=taskFor(pr(1),{tier:'P1'});
  const active={schema:'HH_PR_SWEEP_LEASE_V1',head_sha:SHA,state:'active',
@@ -717,14 +734,16 @@ test('malformed release histories remain fail-closed for all workflows',()=>{
  assert.equal(reservationStatus(t,bad,NOW),'OWNER_LEASE_UNVERIFIED');
 });
 
-test('live dispatcher runs syntax only; full contract stays a PR-only job',()=>{
- const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
- const jobs=yml.split('\n  dispatch:\n');
- assert.equal(jobs.length,2);
- assert.ok(jobs[0].includes('tests/ci-pr-control-tower.test.cjs'));
- assert.ok(!jobs[1].includes('node --test '));
- assert.ok(jobs[1].includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
+test('live Watchdog direct dispatch runs syntax only; tests run in PR contract',()=>{
+ const fs=require('node:fs');
+ const yml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const direct=yml.split('\n  direct-handoff:\n')[1].split('\n  reactivate-schedules:\n')[0];
+ assert.ok(!direct.includes('node --test '));
+ assert.ok(direct.includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
  assert.ok(yml.includes('  checks: read\n'));
+ const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+ assert.ok(contract.includes('tests/ci-pr-control-tower.test.cjs'));
+ assert.ok(contract.includes('tests/ci-pr-direct-handoff.test.cjs'));
 });
 test('unproven source label with exact-HEAD red product QA moves to specialist queue, never a worker',async()=>{
  const source=pr(120,'repair',{mergeable:true,mergeable_state:'behind'});
