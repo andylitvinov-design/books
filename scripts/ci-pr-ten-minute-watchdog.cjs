@@ -29,6 +29,7 @@ const MAX_API_CALLS = 65;
 const MIN_RATE_REMAINING = 100;
 const MAX_LEGACY_PROBES = 3;
 const MAX_LEGACY_BOOTSTRAPS = 1;
+const MAX_VERIFIED_CI_HINT_CLEARS = 2;
 const LEGACY_MARKER = 'HH_PR_10MIN_LEGACY_CORE_BOOTSTRAP_V1';
 const MAX_REST_FALLBACK_LOOKUPS = 6; // GraphQL outage: conservative, rotating REST slice.
 const {priorityFor,rankedCandidates,isFreeFor,selectNextAvailable} = require('./ci-pr-priority.cjs');
@@ -212,9 +213,9 @@ function classifyCoreFailureJobs(jobs) {
     return 'SPECIALIST_FAILED';
   if(sourceGreen&&failed.every(job=>gateOnly.has(job.name)))
     return 'RELEASE_GATE_ONLY';
-  // A failed classify-change is a Git history/routing preflight, not evidence
-  // that a TypeScript/ESLint build even ran. In particular an old PR base
-  // outside the bounded shallow depth must NEVER consume source Repair.
+  // A failed classify-change is an ancestry/routing preflight, not evidence
+  // that a TypeScript/ESLint build even ran. For old PR bases the source job
+  // can be skipped and must not reserve the source-coding Repair Worker.
   if(scope?.conclusion==='failure' && build?.conclusion!=='failure')
     return 'CI_PREFLIGHT_OR_ROUTING';
   // Aggregate gates report downstream consequences, not the causal step.
@@ -280,6 +281,18 @@ async function listOpen(github, owner, repo, limited) {
     if (data.length < 100) return all;
   }
   throw Error('Open PR inventory exceeded 3000; refusing partial inventory');
+}
+// A queue label is historical metadata, not evidence of missing CI. Once a
+// real pull_request Core run is independently bound to this exact PR HEAD,
+// retire only the hint after another authoritative live PR read. No checks
+// are set, rerun or bypassed by removing the stale queue label.
+function canRetireCiHint(pr,fresh){
+  return !!(pr&&fresh&&pr.state==='open'&&fresh.state==='open'&&
+    !pr.draft&&!fresh.draft&&fresh.number===pr.number&&
+    fresh.base?.ref===PROD&&fresh.head?.sha===pr.head?.sha&&
+    fresh.head?.ref===pr.head?.ref&&
+    fresh.head?.repo?.full_name==='andylitvinov-design/books'&&
+    (fresh.labels||[]).some(label=>label.name===CI_BOOTSTRAP_LABEL));
 }
 async function listJobs(github, owner, repo, id, limited) {
   const {data} = await limited('core-jobs',()=>github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:id, per_page:100, filter:'latest'}));
@@ -449,7 +462,7 @@ function assessCronHealth(history,now,graceMinutes) {
     last,ageMinutes:Math.max(0,Math.floor(age/60_000))};
 }
 
-async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, now=Date.now()}) {
+async function run({github, repairGithub=null, core, context, dryRun=false, hasMergeToken=false, eventFastPath=false, now=Date.now()}) {
   const {owner, repo} = context.repo;
   const log = msg => core.info('HH_10MIN_WATCHDOG: '+msg);
   const {createQuotaGuard}=require('./ci-pr-api-quota.cjs');
@@ -508,7 +521,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   // 16-PR backstop is permitted only when actual scheduled Watchdog runs
   // are stale or absent; healthy cron must not amplify a Core failure storm.
   let failedCoreCronState='NOT_APPLICABLE',cronBackstop=false;
-  if(wake && priorityNumber!==null && !budget.exhausted) {
+  if(wake && priorityNumber!==null && !eventFastPath && !budget.exhausted) {
     try {
       const {data}=await limited('failed-core-schedule-health',()=>
         github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
@@ -547,12 +560,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
     policyRelabeled:0,wouldPolicyRelabel:0,coreFailureUnverified:0,infraOrEnvironment:0,
     ciBootstrapQueued:0,ciWorkerDispatched:0,ciQueueBacklog,
+    verifiedCiHintsCleared:0,wouldClearVerifiedCiHints:0,
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
     transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,controlTowerWake:'NOT_PROBED',
     activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
-    checkedAt:new Date(now).toISOString(),failedCoreCronState,cronBackstop,
+    checkedAt:new Date(now).toISOString(),eventPrNumber:priorityNumber,
+    verifiedSourceFailures:0,failedCoreCronState,cronBackstop,
     dryRun,hasMergeToken,apiRequests:0,apiRateLimited:false,apiRemaining:null,apiBudgetReason:null};
 
   // Reconcile only labels, never substitute evidence or alter protected CI.
@@ -895,6 +910,33 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }
     }
     if(!latest){summary.coreAssociationUnverified++;continue;}
+    // A signed real Core association already exists on this exact source HEAD.
+    // Never leave its old hh:ci-needed hint monopolizing the CI queue. A
+    // separate live read protects concurrent HEAD/label changes.
+    const coreStarted=latest.status==='in_progress'||
+      (latest.status==='completed'&&['success','failure','timed_out'].includes(latest.conclusion));
+    if(coreStarted&&hasLabel(live,CI_BOOTSTRAP_LABEL)&&
+       summary.verifiedCiHintsCleared+summary.wouldClearVerifiedCiHints<
+         MAX_VERIFIED_CI_HINT_CLEARS&&!budget.exhausted){
+      try{
+        const fresh=(await limited('verified-core-ci-hint-recheck',()=>
+          github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
+        if(canRetireCiHint(pr,fresh)){
+          if(dryRun)summary.wouldClearVerifiedCiHints++;
+          else{
+            await limited('retire-verified-core-ci-hint',()=>
+              github.rest.issues.removeLabel({owner,repo,
+                issue_number:pr.number,name:CI_BOOTSTRAP_LABEL}));
+            summary.verifiedCiHintsCleared++;
+            log('RETIRED_VERIFIED_CORE_CI_HINT #'+pr.number+
+              ' '+pr.head.sha.slice(0,12)+' Core run '+latest.id);
+          }
+        }
+      }catch(error){
+        log('#'+pr.number+' verified CI hint cleanup deferred: '+
+          String(error.message||error).slice(0,150));
+      }
+    }
     if (['queued','in_progress','waiting','requested','pending'].includes(latest.status)) {summary.pendingCi++;continue;}
     if (!['failure','timed_out','startup_failure'].includes(latest.conclusion)) continue;
     summary.coreFailures++;
@@ -927,11 +969,11 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         log('#'+pr.number+' specialist aggregate failed; independently verified cause decides its queue');
       } else if(root==='CI_PREFLIGHT_OR_ROUTING') {
         summary.infraOrEnvironment++;
-        // Existing review queue, not source/coding Repair. Preserve the red
-        // required gate until the actual CI ancestry/routing issue is fixed.
+        // Keep CI preflight in the existing owner release-gate review lane.
+        // A red prerequisite is not permission to edit PR source files.
         if(summary.releaseGateQueued < MAX_RELEASE_GATE_LABELS && !budget.exhausted) {
           if(await ensureQueueLabel(github,owner,repo,live,RELEASE_GATE_LABEL,
-            'Core classify-change/ancestry preflight failed; inspect CI routing, not PR source',
+            'Core classify-change/ancestry preflight failed; repair CI routing, not PR source',
             'fbca04',dryRun,limited,log)) summary.releaseGateQueued++;
         }
         log('#'+pr.number+' Core preflight/routing failure; no speculative source Repair');
@@ -942,6 +984,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         summary.coreFailureUnverified++;
         log('#'+pr.number+' incomplete Core root evidence; refusing source-repair claim');
       } else if(handoffs < MAX_HANDOFFS) {
+        summary.verifiedSourceFailures++;
         try { if (await recordRepairHandoff(github,owner,repo,pr,latest,jobs,dryRun,log,limited)) {handoffs++;summary.sourceRepairQueued++;} }
         catch(e){log(`#${pr.number} repair handoff unavailable: status=${e.status || 'unknown'} accepted=${e.response?.headers?.['x-accepted-github-permissions'] || 'not-reported'} ${e.message}`);}
       }
@@ -1028,4 +1071,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth};
+module.exports = {classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
