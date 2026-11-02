@@ -428,7 +428,7 @@ test('head movement is recorded as superseded without touching fresh source',asy
 test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
  const marker='<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' '+outcomeContext.runId+' -->';
  const f=fixture({comments:[{body:marker,
-  user:{id:41898282,login:'github-actions[bot]'},
+  user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'}}]});
  const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
