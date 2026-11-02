@@ -93,8 +93,12 @@ jobs:
             } else return;
             if (!Number.isInteger(number)) return;
             let pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
-            if (pr.mergeable === null) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
+            // Mergeability may be temporarily unknown immediately after Core CI.
+            // Recover inside the successful event, not in the next hourly Sweep.
+            for (const delayMs of [1500, 3000, 5000, 8000]) {
+              if (pr.mergeable !== null) break;
+              log("WAIT GitHub mergeability computation for PR #" + number);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
               pr = (await github.rest.pulls.get({owner, repo, pull_number: number})).data;
             }
             if (pr.state !== "open" || pr.draft || pr.base.ref !== "codex/public-book-library" ||
@@ -109,22 +113,26 @@ jobs:
             // A pull_request workflow can report a synthetic test-merge head_sha.
             // Its immutable PR association, not run.head_sha, identifies the actual
             // source HEAD and the production base against which CI ran.
+            // Core's hh-specialist job validates relevant specialist CI. The
+            // base SHA is checked independently by the trusted freshness
+            // classifier below, allowing proven non-sensitive base advancement.
             const matchesCurrentSource = run => run.event === "pull_request" &&
               run.head_branch === pr.head.ref && (run.pull_requests || []).some(item =>
                 item.number === number &&
                 item.head?.sha === pr.head.sha && item.head?.ref === pr.head.ref &&
-                item.base?.ref === "codex/public-book-library" &&
-                item.base?.sha === pr.base.sha);
-            // Some active PRs have >100 CI runs on a single source HEAD.
-            // Read only as many pages as necessary (max 3) and never infer
-            // green from a truncated current-head page. Use the short path
-            // for normal PRs to preserve the shared GitHub API rate budget.
+                item.base?.ref === "codex/public-book-library");
+            // Search ONLY trusted Core runs, never every optional PR workflow.
+            // The current HEAD's Core gate covers all mandatory Specialist jobs;
+            // GitHub still enforces the production branch's required contexts.
+            // Keep bounded pagination, and fail closed if the newest Core
+            // evidence for this exact source cannot be established.
             const pageSize = 100, maxPages = 3;
             const currentRuns = [];
             let complete = false;
             for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
-              const response = await github.rest.actions.listWorkflowRunsForRepo({
-                owner, repo, event: "pull_request", branch: pr.head.ref,
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: "hh-pr-core-release.yml",
+                event: "pull_request", branch: pr.head.ref,
                 per_page: pageSize, page: pageNumber
               });
               const batch = response.data.workflow_runs;
@@ -212,13 +220,8 @@ jobs:
                 number + ": " + notPassed.join(","));
               return;
             }
-            const blocked = observed.find(run => run.status !== "completed" ||
-              !["success","skipped","neutral"].includes(run.conclusion));
-            if (blocked) {
-              log("SKIP exact-head CI " + blocked.name + "=" + blocked.status + "/" +
-                blocked.conclusion + " for PR #" + number);
-              return;
-            }
+            // Optional unrelated workflows may still be running. Do not
+            // confuse them with the mandatory Core + Specialist release gate.
             // Do not modify branches or mark checks green; GitHub still enforces
             // current effective protection, unresolved discussions and merge method.
             core.setOutput("eligible", "true");
@@ -228,7 +231,7 @@ jobs:
             core.setOutput("base", pr.base.sha);
             core.setOutput("branch", pr.head.ref);
             log("READY PR #" + number + " HEAD " + pr.head.sha.slice(0,12) +
-              " after " + observed.length + " latest exact-head PR workflows");
+              " after latest exact-head Core and required same-run jobs");
       - name: Verify same-run unified gate and current sensitive production base
         id: freshness
         if: steps.ready.outputs.eligible == 'true'
