@@ -2818,7 +2818,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       const previousAudio=previousHypnoAudioRef.current??{audio:attachedAudio,rights:audioRights};
       const file=await createHypnoAudioEffectFile({
-        speechFile:hypnoSpeechSource,
+        speechFile:(next.whisper||(attachedAudio?.kind==="file"&&attachedAudio.narration))?hypnoSpeechSource:null,
         durationSeconds:duration,
         whisperEnabled:next.whisper,
         binauralEnabled:next.binaural,
@@ -2852,7 +2852,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function toggleHypnoVoice(){
     if(!hypnoSpeechSource)return;
-    if(attachedAudio?.kind==="file"&&audioRights){
+    if(attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights){
       setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);previousHypnoAudioRef.current=null;
       clearUploadedAudio();setAttachedAudio(null);
       setNotice(locale==="ru"?"Озвучка выключена. Исходная запись сохранена в редакторе фраз.":"Voice track disabled; its source remains available in the phrase editor.");
@@ -4409,7 +4409,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
             hasVoiceFile={Boolean(hypnoSpeechSource)}
-            voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&audioRights)}
+            voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights)}
             voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
             whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
             beatHz={hypnoBeatHz} repeatEverySeconds={hypnoRepeatEvery}
