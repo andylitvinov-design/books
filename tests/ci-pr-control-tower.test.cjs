@@ -1002,3 +1002,30 @@ test('verified old single-head Work release cannot block unrelated new source wo
  assert.equal(externalOwnerLeaseStatus([single,alternate,active],SHA,NOW),
   'OWNER_LEASE_ACTIVE','unrelated legacy releases never remove modern active ownership');
 });
+
+test('dispatcher stops globally on GitHub quota 403 without creating blockers',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.pulls.list=async()=>{const e=new Error('API rate limit exceeded');e.status=403;throw e;};
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.reason,'GITHUB_RATE_LIMIT_PAUSE');
+ assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+ assert.equal(f.calls.dispatched.length,0);
+});
+test('dispatcher reserves API headroom instead of making source reservations',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.pulls.list=async()=>({data:[pr(1)],headers:{'x-ratelimit-remaining':'80'}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.reason,'GITHUB_RATE_RESERVE_PAUSE');
+ assert.equal(result.dispatchAccepted,0);assert.equal(f.calls.reserved.length,0);
+});
+test('one rate-limited PR inspection does not fan out across the candidate list',async()=>{
+ const f=fixture([pr(1),pr(2)],{comments:{1:[proof()],2:[proof()]}});
+ let readCount=0;
+ f.github.rest.pulls.get=async()=>{
+  readCount++;
+  const e=new Error('API rate limit exceeded');e.status=403;throw e;
+ };
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.reason,'GITHUB_RATE_LIMIT_PAUSE');
+ assert.equal(readCount,1);assert.equal(f.calls.reserved.length,0);
+});
