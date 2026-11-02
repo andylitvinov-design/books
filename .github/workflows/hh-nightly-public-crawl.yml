@@ -4,6 +4,8 @@ on:
     # GitHub schedules run only from the DEFAULT branch, so this lives there.
     # 07:15 UTC is 03:15 EDT / 02:15 EST in Toronto.
     - cron: '15 7 * * *'
+    # Weekly design Bible QA; read-only guest screenshots, no CRM or secrets.
+    - cron: '21 11 * * 1'
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,6 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
+    if: ${{ github.event_name != 'schedule' || github.event.schedule == '15 7 * * *' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -55,3 +58,50 @@ jobs:
             artifacts/seo-nightly-links.json
           if-no-files-found: warn
           retention-days: 14
+
+  design-bible-public:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '21 11 * * 1' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-design-tools/node_modules/playwright
+    steps:
+      - name: Checkout canonical production sources (default is NOT the website)
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Chromium/WebKit for PUBLIC design audit
+        run: |
+          mkdir -p /tmp/hh-design-tools
+          npm install --prefix /tmp/hh-design-tools --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-design-tools/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Read-only QA of approved Holistic Light mobile pages
+        run: |
+          node scripts/holistic-light-design-qa.mjs --origin=https://holistichouse.vercel.app --out=artifacts/holistic-light-design-qa
+      - name: Summarize design defects without claiming full visual approval
+        if: always()
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, existsSync, appendFileSync } from "node:fs";
+            const path="artifacts/holistic-light-design-qa/summary.json";
+            const out=["## Holistic Light — public mobile design QA", "Audience: guest-only; visual score and private E2E require review."];
+            if (!existsSync(path)) out.push("Capture/summary missing: job failed, not a pass");
+            else {
+              const x=JSON.parse(readFileSync(path,"utf8"));
+              out.push("Routes checked: "+x.examined+", critical: "+x.criticalCases+", advisory: "+x.warningCases);
+              for (const p of x.reports) out.push(p.status+" "+p.route+" "+p.width+"px (critical "+p.critical.length+", advisory "+p.warnings.length+")");
+            }
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,out.join("\n")+"\n");
+          '
+      - name: Public-only screenshots and findings (3-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-design-bible-weekly-${{ github.run_id }}
+          path: artifacts/holistic-light-design-qa/
+          if-no-files-found: warn
+          retention-days: 3
