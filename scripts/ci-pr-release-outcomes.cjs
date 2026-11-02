@@ -3,7 +3,8 @@
 const fs=require('node:fs');
 const {trustedContext}=require('./ci-pr-live-verifier.cjs');
 const {verifyServedRevision}=require('./ci-pr-served-release.cjs');
-const PROD='codex/public-book-library', SHA=/^[0-9a-f]{40}$/i;
+const PROD='codex/public-book-library', DEFAULT='codex/bootstrap-books';
+const ALIAS='holistichouse.vercel.app', SHA=/^[0-9a-f]{40}$/i;
 const HOUR=3600000, WINDOW_HOURS=24, PAGE_LIMIT=5, ANCESTRY_LIMIT=200, HISTORY_PAGES=10;
 const round=n=>Math.round(n*10)/10;
 function percentile(values,p){
@@ -18,17 +19,17 @@ function ancestryValid(compare,mergedSha){
  return compare?.status==='identical' ||
    (compare?.status==='ahead' && compare?.merge_base_commit?.sha===mergedSha);
 }
-async function recentMerged(github,{owner,repo},sinceMs){
+async function recentMerged(github,{owner,repo},sinceMs,target=PROD){
  const rows=new Map(); let complete=false,pages=0;
  for(let page=1;page<=PAGE_LIMIT;page++){
-  const response=await github.rest.pulls.list({owner,repo,base:PROD,
+  const response=await github.rest.pulls.list({owner,repo,base:target,
    state:'closed',sort:'updated',direction:'desc',per_page:100,page});
   const data=response?.data;
   if(!Array.isArray(data))throw Error('PULL_PAGE_UNVERIFIED');
   pages++;
   for(const pr of data){
    const merged=Date.parse(pr.merged_at||'');
-   if(Number.isFinite(merged)&&merged>=sinceMs && pr.base?.ref===PROD)
+   if(Number.isFinite(merged)&&merged>=sinceMs && pr.base?.ref===target)
     rows.set(pr.number,pr);
   }
   if(data.length<100 ||
@@ -139,7 +140,10 @@ async function confirmedAncestry(github,{owner,repo},prs,servedSha){
 }
 async function run({github,core,context,liveEvidence={},now=Date.now(),reportPath='',fetchImpl=fetch,vercelToken=''}){
  const report={schema:'HH_CI_PR_OUTCOMES_V1',observed_at:new Date(now).toISOString(),
-  window_hours:WINDOW_HOURS,production_branch:PROD,
+  window_hours:WINDOW_HOURS,control_branch:DEFAULT,production_branch:PROD,
+  public_alias:ALIAS,merged_scope:'PRODUCTION_BRANCH_ONLY',
+  control_plane_merged_count:null,control_plane_merge_coverage:'UNVERIFIED',
+  control_plane_sample:[],
   merged_count:null,live_confirmed_count:null,unverified_live_count:null,
   live_evidence:liveEvidence.reason||'UNVERIFIED',
   live_coverage:'UNVERIFIED',merged_coverage:'UNVERIFIED',
@@ -150,7 +154,7 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   if(reportPath){try{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');}
     catch(err){report.errors.push('WRITE_REPORT_'+String(err.code||'error'));}}
   core.info('HH_CI_PR_OUTCOMES '+JSON.stringify(report));
-  await core.summary.addHeading('HH PR outcomes — 24h CI / merged / LIVE')
+  await core.summary.addHeading('HH PR outcomes — control merges / production merges / verified LIVE')
    .addCodeBlock(JSON.stringify(report,null,2)).write();
   return report;
  };
@@ -166,6 +170,17 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   report.pr_to_merge_p90_minutes=percentile(prs.map(p=>
    elapsedMinutes(p.created_at,p.merged_at)),.9);
  }catch(err){report.errors.push('MERGED_READ_'+String(err.message||'error').slice(0,75));}
+ // Control-plane merges run GitHub automation; they are NOT website releases.
+ // Never classify them as missing from the Vercel production branch.
+ try{
+  const control=await recentMerged(github,{owner,repo},sinceMs,DEFAULT);
+  report.control_plane_merged_count=control.rows.length;
+  report.control_plane_merge_coverage=control.complete?'complete':'partial_lower_bound';
+  report.control_plane_sample=control.rows.slice(0,20).map(pr=>({
+   number:pr.number,merged_sha:pr.merge_commit_sha||null,
+   merged_at:pr.merged_at,delivery_state:'CONTROL_MERGED_RUNTIME_NOT_APPLICABLE'
+  }));
+ }catch(err){report.errors.push('CONTROL_MERGED_READ_'+String(err.message||'error').slice(0,75));}
  try{report.core=await recentCoreRuns(github,{owner,repo},sinceMs);}
  catch(err){report.errors.push('CORE_READ_'+String(err.message||'error').slice(0,75));}
  let confirmed=new Set();
@@ -246,8 +261,11 @@ async function run({github,core,context,liveEvidence={},now=Date.now(),reportPat
   report.live_coverage='complete_current_head';
  }
  report.sampled_prs=prs.slice(0,20).map(pr=>({
-  number:pr.number,merged_sha:pr.merge_commit_sha||null,merged_at:pr.merged_at,
-  live_confirmed:report.live_confirmed_count===null?null:confirmed.has(pr.number)
+  number:pr.number,base_branch:PROD,merged_sha:pr.merge_commit_sha||null,
+  merged_at:pr.merged_at,
+  live_confirmed:report.live_confirmed_count===null?null:confirmed.has(pr.number),
+  delivery_state:report.live_confirmed_count!==null&&confirmed.has(pr.number)
+   ?'PRODUCTION_LIVE_VERIFIED':'PRODUCTION_MERGED_LIVE_UNVERIFIED'
  }));
  return finish();
 }
