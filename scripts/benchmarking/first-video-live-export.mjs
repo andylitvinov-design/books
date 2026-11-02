@@ -293,9 +293,20 @@ try {
   assert.equal(requireLicensed ? licensedSources.length : 4, 4,
     'FOUR_LICENSED_SHOTS_VERIFICATION_NOT_COMPLETED');
   assert.deepEqual(errors, [], 'BROWSER_JAVASCRIPT_EXCEPTION');
+  // The owner-approved Holistic Light mobile redesign needs REAL browser
+  // geometry, source-backed story selection and guided-course clicks, in
+  // addition to this existing encoded movie acceptance. Run only on the
+  // matching PR branch after genuine export and close its heavy decoder first.
+  // No extra CI workflow, second video renderer, paid API or external POST.
+  await context.close();
+  if(source===LOCAL_ORIGIN && requireLicensed && engine==='chromium' &&
+     process.env.GITHUB_HEAD_REF==='fix/video-holistic-light-mobile-20261102'){
+    await browser.close();
+    browser=undefined;
+    await import('../verify-mandala-holistic-light-mobile.mjs');
+  }
   row.status = 'PASS';
   console.log(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_PASS':'LOCAL_FIRST_VIDEO_REAL_EXPORT_PASS', JSON.stringify(row));
-  await context.close();
 } catch (error) {
   row.failure = String(error?.message || error).slice(0, 200);
   // A missing download must remain a FAIL. On WebKit inspect only synthetic
