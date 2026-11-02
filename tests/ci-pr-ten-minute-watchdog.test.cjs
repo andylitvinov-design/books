@@ -1100,6 +1100,19 @@ test('highest available direction wins; manually owned PRs do not monopolize fas
   assert.equal(audited,true,'held P1 is still covered by read-only audit rotation');
 });
 
+
+test('watchdog finds an existing repair receipt after 300 comments',async()=>{
+ const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+ const sha='a'.repeat(40);const pages=[];let written=0;
+ const gh={rest:{issues:{listComments:async({page})=>{
+  pages.push(page);return {data:page<=3?Array.from({length:100},()=>({body:'old'})):
+   [{body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+' -->'}]};
+ },createComment:async()=>{written++}}}};
+ const pr={number:11,head:{sha},labels:[{name:'hh:repair-needed'}]};
+ const result=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,{id:1,run_attempt:1},[],false,()=>{},async(_label,fn)=>fn());
+ assert.deepEqual(pages,[1,2,3,4]);assert.equal(result,false);assert.equal(written,0);
+});
+
 test('live watchdog no longer gates periodic PR discovery on stale unit tests',()=>{
   const fs=require('node:fs');
   const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
