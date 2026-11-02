@@ -94,6 +94,9 @@ jobs:
   fix:
     needs: claim
     if: needs.claim.outputs.strategy == 'lint'
+    outputs:
+      candidate_status: ${{ steps.build_candidate.outputs.candidate_status }}
+      candidate_detail: ${{ steps.build_candidate.outputs.candidate_detail }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
@@ -119,7 +122,8 @@ jobs:
           cache: npm
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Try targeted ESLint autofix and write bounded patch candidate
+      - id: build_candidate
+        name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
         run: |
           node <<'NODE'
@@ -131,35 +135,62 @@ jobs:
               !/^[a-f0-9]{40}$/i.test(sha) ||
               !paths.every(x=>typeof x==='string' && /^[\w./-]+\.(js|jsx|ts|tsx|mjs|cjs)$/.test(x)))
             throw Error('Invalid isolated repair scope');
-          const result={head_sha:sha,files:[]};
-          const fix=spawnSync('./node_modules/.bin/eslint',['--fix',...paths],{stdio:'inherit'});
-          const verify=spawnSync('./node_modules/.bin/eslint',paths,{stdio:'inherit'});
-          const changed=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
-            .split('\0').filter(Boolean);
-          if(fix.status!==0 || verify.status!==0 ||
-              changed.some(p=>!paths.includes(p)) || changed.length>8){
-            console.log('No verified scoped fix. Manual repair required.');
-          }else if(changed.length){
-            // Capture the candidate before tests and reject any test that changes
-            // its scope or source bytes. The selector is from trusted default.
-            const crypto=require('node:crypto');
-            const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
-            const before=new Map(changed.map(p=>[p,digest(p)]));
-            const gate=spawnSync(process.execPath,['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],{stdio:'inherit',timeout:195000});
-            const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8').split('\0').filter(Boolean);
-            const verified=gate.status===0 && after.length===changed.length &&
-              after.every(p=>before.has(p)&&before.get(p)===digest(p));
-            if(!verified)console.log('No verified relevant tests or candidate changed during testing; manual repair required.');
-            for(const path of verified?changed:[]){
-              const content=fs.readFileSync(path);
-              if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
-              result.files.push({path,
-                original_sha:execFileSync('git',['rev-parse','HEAD:'+path]).toString().trim(),
-                base64:content.toString('base64')});
+          const result={head_sha:sha,files:[],detail_code:'NO_AUTOFIXABLE_ESLINT_CHANGE'};
+          // ESLint may return 0 while silently ignoring files not in its flat
+          // config. Do not treat an ignored file as a completed repair.
+          const executable=paths.filter(path=>{
+            const config=spawnSync('./node_modules/.bin/eslint',['--print-config',path],
+              {encoding:'utf8',timeout:30000});
+            if(config.status!==0)return false;
+            try {
+              const parsed=JSON.parse(config.stdout);
+              return !!(parsed&&typeof parsed==='object'&&parsed.rules&&
+                typeof parsed.rules==='object');
+            } catch { return false; }
+          });
+          result.scope={requested:paths.length,configured:executable.length,
+            ignored:paths.length-executable.length};
+          if(!executable.length){
+            result.detail_code='ESLINT_SCOPE_NOT_CONFIGURED';
+          }else{
+            const fix=spawnSync('./node_modules/.bin/eslint',['--fix',...executable],{stdio:'inherit'});
+            const verify=spawnSync('./node_modules/.bin/eslint',executable,{stdio:'inherit'});
+            const changed=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
+              .split('\0').filter(Boolean);
+            if(fix.status!==0 || verify.status!==0){
+              result.detail_code='ESLINT_REMAINING_ERRORS';
+            }else if(changed.some(p=>!executable.includes(p))||changed.length>8){
+              result.detail_code='UNSAFE_SCOPED_DIFF';
+            }else if(changed.length){
+              const crypto=require('node:crypto');
+              const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+              const before=new Map(changed.map(p=>[p,digest(p)]));
+              const gate=spawnSync(process.execPath,
+                ['.hh-trusted/scripts/ci-pr-repair-test-scope.cjs',...changed],
+                {stdio:'inherit',timeout:195000});
+              const after=execFileSync('git',['diff','--name-only','-z']).toString('utf8')
+                .split('\0').filter(Boolean);
+              const verified=gate.status===0 && after.length===changed.length &&
+                after.every(p=>before.has(p)&&before.get(p)===digest(p));
+              if(!verified) result.detail_code='SCOPED_TESTS_NOT_GREEN';
+              for(const path of verified?changed:[]){
+                const content=fs.readFileSync(path);
+                if(content.length>150000 || content.includes(0))throw Error('Oversized or binary patch');
+                result.files.push({path,
+                  original_sha:execFileSync('git',['rev-parse','HEAD:'+path]).toString().trim(),
+                  base64:content.toString('base64')});
+              }
+              if(result.files.length)result.detail_code='VERIFIED_SOURCE_PATCH';
             }
           }
           fs.writeFileSync('candidate.json',JSON.stringify(result));
-          console.log('Verified ESLint repair files:',result.files.map(f=>f.path));
+          const candidateStatus=result.files.length?'ready':'manual_required';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            'candidate_status='+candidateStatus+'\n'+
+            'candidate_detail='+result.detail_code+'\n');
+          console.log('HH_REPAIR_CANDIDATE '+JSON.stringify({
+            status:candidateStatus,detail_code:result.detail_code,scope:result.scope,
+            source_files:result.files.map(file=>file.path)}));
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -169,7 +200,7 @@ jobs:
           if-no-files-found: error
   publish:
     needs: [claim,fix]
-    if: needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'success'
+    if: needs.claim.outputs.strategy == 'lint' && needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     outputs:
@@ -297,6 +328,8 @@ jobs:
           HH_PUBLISH_RESULT: ${{ needs.publish.result }}
           HH_PUBLISH_STATUS: ${{ needs.publish.outputs.publish_status }}
           HH_PUBLISH_SHA: ${{ needs.publish.outputs.publish_sha }}
+          HH_CANDIDATE_STATUS: ${{ needs.fix.outputs.candidate_status }}
+          HH_CANDIDATE_DETAIL: ${{ needs.fix.outputs.candidate_detail }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -313,5 +346,7 @@ jobs:
               publishResult:process.env.HH_PUBLISH_RESULT,
               publishStatus:process.env.HH_PUBLISH_STATUS,
               publishSha:process.env.HH_PUBLISH_SHA,
+              candidateStatus:process.env.HH_CANDIDATE_STATUS,
+              candidateDetail:process.env.HH_CANDIDATE_DETAIL,
               dryRun:String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));

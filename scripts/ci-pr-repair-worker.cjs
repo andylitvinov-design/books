@@ -401,7 +401,7 @@ const SAFE_NO_CLAIM_REASONS=new Set([
 ]);
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',publishResult='',
-  publishStatus='',publishSha='',dryRun=false}) {
+  publishStatus='',publishSha='',candidateStatus='',candidateDetail='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -435,7 +435,8 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state='FAILED';reason='CLAIM_JOB_'+String(claimResult||'UNKNOWN').toUpperCase();
   }else if(claimStatus!=='claimed'){
     state='REJECTED';reason=String(claimReason||'CLAIM_REFUSED').replace(/[^A-Z0-9_]/gi,'_').slice(0,100);
-  }else if(publishStatus==='manual_required'){
+  }else if(publishStatus==='manual_required' ||
+      (candidateStatus==='manual_required'&&fixResult==='success'&&publishResult==='skipped')){
     state='MANUAL';reason='NO_VERIFIED_SOURCE_CHANGE';
   }else if(fixResult!=='success'){
     reason='FIX_JOB_'+String(fixResult||'UNKNOWN').toUpperCase();
@@ -488,9 +489,17 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
         failed?.name||null;
     }catch(error){core.info('HH_REPAIR_OUTCOME_JOB_DIAGNOSTICS_UNAVAILABLE '+error.message);}
   }
+  // This diagnostic never implies a source write; the existing reason_code
+  // stays backward-compatible with Monitor and Repair Observer consumers.
+  const validCandidateDetails=new Set(['NO_AUTOFIXABLE_ESLINT_CHANGE',
+    'ESLINT_SCOPE_NOT_CONFIGURED','ESLINT_REMAINING_ERRORS',
+    'UNSAFE_SCOPED_DIFF','SCOPED_TESTS_NOT_GREEN','VERIFIED_SOURCE_PATCH']);
+  const detailCode=state==='MANUAL'&&validCandidateDetails.has(candidateDetail)
+    ?candidateDetail:null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     head_sha:expectedSha,lane:'repair',state,reason_code:reason,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
+    detail_code:detailCode,
     claim_status:claimStatus||'unknown',claim_result:claimResult||'unknown',
     reservation_run_id:reservationRunId,retry_after:retryAfter,
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
@@ -501,7 +510,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   // No destructive operation, source overwrite, force push or CI bypass.
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.
-  if(state==='FAILED'&&claimStatus==='claimed'&&sameHead){
+  if((state==='FAILED'||(state==='MANUAL'&&
+      candidateStatus==='manual_required'&&publishResult==='skipped'))&&
+      claimStatus==='claimed'&&sameHead){
     // Only the authenticated exact-run CLAIMED receipt may elevate the
     // same source HEAD to manual coding. A copied/foreign receipt cannot.
     const claimedBySameRun=comments.some(comment=>
