@@ -26,6 +26,7 @@ import type { GuidedMeditationFocus } from "./mandala-guided-course";
 
 import { MandalaAffirmationVoice } from "./mandala-affirmation-voice";
 import type { AffirmationVoiceResult, AffirmationVoicePreferences } from "./mandala-affirmation-voice";
+import { createHypnoAudioEffectFile } from "@/lib/mandala/hypno-audio-effects";
 import { affirmationNarrationText, wavDurationFromHeader } from "@/lib/mandala/affirmation-voice.mjs";
 import { defaultAffirmations, linesForVideoAffirmations, paintVideoAffirmations, suggestedVideoAffirmations } from "@/lib/mandala/video-affirmations";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
@@ -1691,6 +1692,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [showAllAudio,setShowAllAudio] = useState(false);
   const [audioDurationInvalid,setAudioDurationInvalid] = useState(false);
   const [attachedAudio,setAttachedAudio] = useState<AttachedAudio|null>(null);
+  const [hypnoSpeechSource,setHypnoSpeechSource] = useState<File|null>(null);
+  const [hypnoWhisperEnabled,setHypnoWhisperEnabled] = useState(false);
+  const [hypnoBinauralEnabled,setHypnoBinauralEnabled] = useState(false);
+  const [hypnoBeatHz,setHypnoBeatHz] = useState(4);
+  const [hypnoAudioBusy,setHypnoAudioBusy] = useState(false);
+  const previousHypnoAudioRef = useRef<{audio:AttachedAudio|null;rights:boolean}|null>(null);
   const [micRecording,setMicRecording] = useState(false);
   const micRef = useRef<{recorder:MediaRecorder;stream:MediaStream;chunks:Blob[];timeout:ReturnType<typeof setTimeout>}|null>(null);
   const [soundPreview,setSoundPreview] = useState(false);
@@ -2767,6 +2774,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing)return;
     const entry=chooseAudioFile(clip.file);
     if(!entry)return;
+    setHypnoSpeechSource(clip.file);
+    setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
+    previousHypnoAudioRef.current=null;
     // This local File is generated from consented text and actually attached to
     // the MediaRecorder audio stream; not a silent video or a preview label.
     setAudioRights(true);
@@ -2780,6 +2790,75 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(duration!==clip.mixSeconds)changeVideoDuration(clip.mixSeconds as (typeof durations)[number]);
     setNotice(locale==="ru"?"Голос аффирмаций добавлен в видео.":
       locale==="es"?"La voz de las afirmaciones está añadida al vídeo.":"Affirmation voice has been attached to your video.");
+  }
+  async function applyHypnoAudioEffects(next:{whisper:boolean;binaural:boolean;beatHz:number}){
+    if(recording||preparing||hypnoAudioBusy)return;
+    if(next.whisper&&!hypnoSpeechSource){
+      setNotice(locale==="ru"?"Сначала создайте озвучку фраз в блоке «Озвучка фраз».":
+        locale==="es"?"Primero crea la voz de tus frases.":"Create a spoken-phrases track first.");
+      return;
+    }
+    setHypnoAudioBusy(true);setMusicWarning("");
+    try{
+      if(!next.whisper&&!next.binaural){
+        const previous=previousHypnoAudioRef.current;
+        previousHypnoAudioRef.current=null;
+        clearUploadedAudio();
+        if(previous?.audio?.kind==="file"){
+          const entry=chooseAudioFile(previous.audio.file);
+          setAttachedAudio(entry?{...previous.audio,id:entry.url,file:entry.file}:null);
+        }else setAttachedAudio(previous?.audio??null);
+        setAudioRights(previous?.rights??false);
+        setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
+        setNotice(locale==="ru"?"Специальные аудиоэффекты отключены.":
+          locale==="es"?"Efectos de audio desactivados.":"Audio effects are off.");
+        return;
+      }
+      if(!previousHypnoAudioRef.current){
+        previousHypnoAudioRef.current={audio:attachedAudio,rights:audioRights};
+      }
+      const file=await createHypnoAudioEffectFile({
+        speechFile:hypnoSpeechSource,
+        durationSeconds:duration,
+        whisperEnabled:next.whisper,
+        binauralEnabled:next.binaural,
+        beatHz:next.beatHz,
+        repeatEverySeconds:7,
+        whisperGain:.16,
+      });
+      if(recording||preparing)return;
+      const entry=chooseAudioFile(file);
+      if(!entry)throw new Error("AUDIO_FILE_REJECTED");
+      setAudioRights(true);setSoundVolume(100);
+      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+      setHypnoWhisperEnabled(next.whisper);setHypnoBinauralEnabled(next.binaural);setHypnoBeatHz(next.beatHz);
+      setNotice(locale==="ru"?"Аудиоэффекты добавлены в звуковую дорожку видео.":
+        locale==="es"?"Los efectos se añadieron a la pista de audio.":"Audio effects were added to the video's audio track.");
+    }catch(error){
+      const code=error instanceof Error?error.message:"";
+      setNotice(code==="SPEECH_TRACK_REQUIRED"
+        ?(locale==="ru"?"Для гипнозвука сначала создайте озвучку фраз.":"Create a spoken-phrases track before enabling quiet repetitions.")
+        :code==="OFFLINE_AUDIO_UNAVAILABLE"
+          ?(locale==="ru"?"Этот браузер не поддерживает локальное создание аудиоэффектов. Откройте страницу в Safari или Chrome.":"This browser cannot render local audio effects. Open the page in Safari or Chrome.")
+          :(locale==="ru"?"Не удалось подготовить аудиоэффект. Проверьте поддержку аудио браузером и повторите попытку.":"The audio effect could not be prepared. Check browser audio support and try again."));
+    }finally{setHypnoAudioBusy(false);}
+  }
+  function toggleHypnoWhisper(){
+    void applyHypnoAudioEffects({whisper:!hypnoWhisperEnabled,binaural:hypnoBinauralEnabled,beatHz:hypnoBeatHz});
+  }
+  function toggleHypnoBinaural(){
+    void applyHypnoAudioEffects({whisper:hypnoWhisperEnabled,binaural:!hypnoBinauralEnabled,beatHz:hypnoBeatHz});
+  }
+  function toggleHypnoVoice(){
+    if(!hypnoSpeechSource)return;
+    if(attachedAudio?.kind==="file"&&(attachedAudio.narration||hypnoWhisperEnabled||hypnoBinauralEnabled)){
+      setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);previousHypnoAudioRef.current=null;
+      clearUploadedAudio();setAttachedAudio(null);
+      setNotice(locale==="ru"?"Озвучка выключена. Исходная дорожка сохранена в настройках блока.":"Voice track disabled; its source remains available in the editor.");
+    }else{
+      const entry=chooseAudioFile(hypnoSpeechSource);
+      if(entry){setAudioRights(true);setSoundVolume(100);setAttachedAudio({kind:"file",file:entry.file,id:entry.url,narration:true});}
+    }
   }
   async function attachMeditationNarration(file:File):Promise<boolean>{
     if(recording||preparing||!isSupportedLocalAudio(file))return false;
@@ -3539,6 +3618,44 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </fieldset>
       </section>
   );
+  const hypnoVoiceEditor = (
+      <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
+        <div className={videoStyles.phraseAudioHeading}>
+          <span><Mic size={23} aria-hidden="true"/></span>
+          <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
+            <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
+        </div>
+        {phrasePending&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
+          {locale==="ru"?"Подтвердите новые фразы выше, прежде чем создавать голос.":locale==="es"?"Confirma las frases nuevas arriba antes de crear la voz.":"Approve the new phrases above before generating their voice."}
+        </p>}
+        <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
+          enabled={affirmations.enabled} durationSeconds={duration}
+          disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
+          onInvalidate={()=>{
+            setHypnoSpeechSource(null);setHypnoWhisperEnabled(false);setHypnoBinauralEnabled(false);
+            previousHypnoAudioRef.current=null;
+            setAttachedAudio(current=>current?.kind==="file"&&current.narration?null:current);
+          }}
+          onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
+        {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
+          {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
+            locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
+            "Phrases or duration changed — regenerate the voice before exporting."}
+        </p>:null}
+        <p className={videoStyles.phraseVoiceNotice}>
+          {locale==="ru"?"Своя запись — дополнительный вариант. Видео сохраняет одну итоговую звуковую дорожку.":
+            locale==="es"?"Tu grabación es opcional; el vídeo exporta una sola pista final.":
+            "Recording your own voice is optional; the video exports one final sound track."}
+        </p>
+        <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
+          onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
+            document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
+          <AudioLines size={20} aria-hidden="true"/>
+          {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
+          <ChevronDown size={18} aria-hidden="true"/>
+        </button>
+      </section>
+  );
   const deepHypnoPane = (
       <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
@@ -3580,39 +3697,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
           }}/> : null}
       </details>
-      <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
-        <div className={videoStyles.phraseAudioHeading}>
-          <span><Mic size={23} aria-hidden="true"/></span>
-          <div><h3>{locale==="ru"?"3. Подобрать голос":locale==="es"?"3. Elegir voz":"3. Choose a voice"}</h3>
-            <p>{locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases"}</p></div>
-        </div>
-        {phrasePending&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
-          {locale==="ru"?"Подтвердите новые фразы выше, прежде чем создавать голос.":locale==="es"?"Confirma las frases nuevas arriba antes de crear la voz.":"Approve the new phrases above before generating their voice."}
-        </p>}
-        <MandalaAffirmationVoice locale={locale} lines={affirmationLines}
-          enabled={affirmations.enabled} durationSeconds={duration}
-          disabled={recording||preparing} approvalPending={phrasePending} onAttach={attachGeneratedAffirmationAudio}
-          onInvalidate={()=>setAttachedAudio(current=>
-            current?.kind==="file"&&current.narration?null:current)}
-          onGenerating={setVoiceGenerating} onPreferencesChange={setVoicePreferences}/>
-        {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
-          {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
-            locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
-            "Phrases or duration changed — regenerate the voice before exporting."}
-        </p>:null}
-        <p className={videoStyles.phraseVoiceNotice}>
-          {locale==="ru"?"Своя запись — дополнительный вариант. Видео сохраняет одну итоговую звуковую дорожку.":
-            locale==="es"?"Tu grabación es opcional; el vídeo exporta una sola pista final.":
-            "Recording your own voice is optional; the video exports one final sound track."}
-        </p>
-        <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
-          onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
-            document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
-          <AudioLines size={20} aria-hidden="true"/>
-          {locale==="ru"?"Записать или загрузить свой голос":locale==="es"?"Grabar o subir mi voz":"Record or upload my voice"}
-          <ChevronDown size={18} aria-hidden="true"/>
-        </button>
-      </section>
+      {activeWorkspace==="phrases" ? hypnoVoiceEditor : null}
       <section className={videoStyles.phraseMusicSection} data-hypno-music>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
@@ -4327,13 +4412,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               visual:getThemedRealFilm("energy",otherVideoScenes.energy[1].id)?.poster||quickCanvasPoster(otherVideoScenes.energy[1].id),
               meditation:getThemedRealFilm("health",otherVideoScenes.health[0].id)?.poster||quickCanvasPoster(otherVideoScenes.health[0].id),
             }}
-            hasVoiceFile={attachedAudio?.kind==="file"&&audioRights}
+            hasVoiceFile={Boolean(hypnoSpeechSource)}
+            voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
+            whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
+            beatHz={hypnoBeatHz} audioEffectBusy={hypnoAudioBusy}
+            onToggleVoice={toggleHypnoVoice} onToggleWhisper={toggleHypnoWhisper}
+            onToggleBinaural={toggleHypnoBinaural}
+            onBeatHzChange={value=>{
+              setHypnoBeatHz(value);
+              if(hypnoBinauralEnabled)void applyHypnoAudioEffects({whisper:hypnoWhisperEnabled,binaural:true,beatHz:value});
+            }}
             hasPhoto={!backgroundOnly&&Boolean(photoUrl)}
             onOpenPhraseEditor={()=>{
               openQuickDetailed("video-hypnosis");
               window.requestAnimationFrame(()=>document.getElementById("video-hypnosis")?.scrollIntoView({block:"nearest",behavior:"smooth"}));
             }}
-            onOpenAudioEditor={()=>openQuickDetailed("video-audio")}
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onOpenMeditation={()=>{
               setActiveWorkspace("practices");setStudioMode("therapy");
