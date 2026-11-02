@@ -2774,3 +2774,57 @@
   .studio[data-active-workspace="effects"] [data-video-hypnocorrection-panel]{
     scroll-margin-top:min(44svh,390px)}
 }
+
+/* 02 Nov owner reference, third workspace only. The original six theme buttons
+   (same category handlers, scenes and privacy fences) are the visible goal step.
+   Do not display the four-portal Auto Director shortcuts alongside them. */
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"]{
+   display:grid!important;order:3;min-width:0;margin:0;padding:12px 10px!important;
+   border:1px solid #e8e9e1;border-radius:18px;background:#fffefa;
+   box-shadow:0 3px 14px #344c3710}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"] .quickGoalHost{display:none!important}
+ .studio[data-active-workspace="effects"] .quickBuilder>.quickSection[data-video-quick-section="1"] .quickSectionHeading h3{
+   font:800 clamp(18px,4.6vw,21px)/1.16 Arial,Helvetica,sans-serif;color:#162438}
+ .studio[data-active-workspace="effects"] .quickThemeAdvanced{display:block;min-width:0}
+ .studio[data-active-workspace="effects"] .quickThemeAdvanced>summary{display:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail{
+   display:grid!important;grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));
+   grid-auto-columns:unset;gap:7px;max-width:100%;width:100%;
+   overflow:visible;scroll-snap-type:none;padding:0;margin:1px 0 0}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button{
+   display:flex;flex-direction:row;align-items:center;justify-content:center;
+   gap:5px;min-width:0;max-width:none;width:100%;height:auto;min-height:53px;
+   padding:6px 4px;border:1px solid #e2e7dd;border-radius:14px;
+   background:#f1f6ed;color:#1e5442;box-shadow:none;text-align:center;
+   white-space:normal}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button::after,
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button>img{display:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon{
+   position:static;flex:none;display:grid;place-items:center;width:25px;height:25px;
+   border:0;border-radius:8px;background:transparent;color:inherit;box-shadow:none}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:23px;height:23px;color:inherit}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeName{
+   position:static;display:block;min-width:0;font:800 clamp(10.8px,2.9vw,13px)/1.14 Arial,Helvetica,sans-serif;
+   color:inherit;text-shadow:none;overflow-wrap:normal;hyphens:auto}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="life"]{background:#e9f5e6;color:#128360}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="energy"]{background:#fff2da;color:#ca7d17}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="relationships"]{background:#fae8ed;color:#bb476b}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="goals"]{background:#f1e9fd;color:#8557c5}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="money"]{background:#fff1d7;color:#c68b1f}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[data-tone="health"]{background:#eaf3e4;color:#15885d}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button[aria-pressed="true"]{
+   padding:5px 3px;border:2px solid #0e9869;background:#e5f5e5;color:#086b4e;
+   box-shadow:inset 0 0 0 1px #a6d5b4}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{
+   display:grid;order:4;min-width:0;margin:0;padding:0!important;
+   border:0;background:transparent;box-shadow:none}
+ .studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:5}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail{gap:5px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button{min-height:58px;gap:2px;padding:4px 2px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon{width:20px;height:23px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeIcon svg{width:20px;height:20px}
+ .studio[data-active-workspace="effects"] .quickBuilder .quickThemeRail button .quickThemeName{font-size:10.5px}
+}

@@ -192,7 +192,7 @@ export function MandalaHypnocorrectionMobile({
         {/* First-party scene posters; no duplicated player or third-party images. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={posters[group.id]} alt="" loading="lazy"/>
-        <span className={styles.groupNumber} aria-hidden="true">{index+1}</span>
+        <span className={styles.groupNumber} aria-hidden="true">{index+2}</span>
         <span className={styles.groupTitle}><strong>{group.title}</strong><small>{group.help}</small></span>
         <ChevronDown size={23} className={open.includes(group.id)?styles.expanded:styles.chevron} aria-hidden="true"/>
       </button>
@@ -262,9 +262,16 @@ export function MandalaHypnocorrectionMobile({
         </div>:null}
       </div>
     </section>)}
-    <button type="button" data-hypno-create className={styles.create} disabled={disabled}
+    <div className={styles.actions} data-hypno-actions>
+      <button type="button" data-hypno-meditation-action className={styles.meditationAction}
+        disabled={disabled} onClick={onOpenMeditation}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <strong>{locale==="ru"?"Создать медитацию":locale==="es"?"Crear meditación":"Create meditation"}</strong>
+      </button>
+      <button type="button" data-hypno-create className={styles.create} disabled={disabled}
       onClick={onCreate}><Play size={24} fill="currentColor" aria-hidden="true"/>
       <span><strong>{t.create}</strong><small>{t.credits}</small></span></button>
+    </div>
     <button type="button" data-hypno-preview className={styles.preview}
       disabled={disabled} onClick={onPreview}><Waves size={21} aria-hidden="true"/>
       {t.preview}<ArrowRight size={19} aria-hidden="true"/></button>
