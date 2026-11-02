@@ -19,6 +19,7 @@ import { createAnonymousGeminiSegmentProvider } from "@/lib/holistic-support/med
 import { createAnonymousOpenRouterSegmentProvider } from "@/lib/holistic-support/meditation-writer/free-openrouter.mjs";
 import { freeWriterProviders } from "@/lib/holistic-support/meditation-writer/free-json.mjs";
 import { buildEightDayCourseOutline } from "@/lib/holistic-support/meditation-writer/eight-day-course.mjs";
+import { buildPracticeFormats } from "@/lib/holistic-support/meditation-writer/practice-director.mjs";
 import { reviewFreeMeditationQuality } from "@/lib/holistic-support/meditation-writer/free-quality.mjs";
 import { resolveMeditationClientIntent } from "@/lib/holistic-support/meditation-writer/intent-codes.mjs";
 
@@ -97,10 +98,17 @@ export async function POST(request) {
     const coursePlan=buildEightDayCourseOutline({program,prepared:outcome});
     if(coursePlan.status!=="ready")
       throw new AppError("COURSE_OUTLINE_UNAVAILABLE",422);
+    // The immediate practice follows the GOAL, independently of the course's
+    // first orientation session. No external model may choose a method.
+    const activityFormats=buildPracticeFormats({program,
+      locale:normalized.locale,goal:outcome.brief.goal,
+      avoidElements:normalized.avoidElements});
+    if(activityFormats.status!=="ready")
+      throw new AppError("APPROVED_ACTIVITY_UNAVAILABLE",422);
     const template=outcome.template;
     let payload={
       status:"template_ready",generationMode:"template",modelUsed:false,
-      coursePlan,intentDecision:resolved.decision,
+      coursePlan,activityFormats,intentDecision:resolved.decision,
       disclaimer:"resource_self_guided_preview_not_clinical_treatment",
       title:template.title,locale:normalized.locale,
       plannedDurationSeconds:template.plannedDurationSeconds,

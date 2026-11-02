@@ -16,11 +16,21 @@ type Segment = { id:string; text:string; optionalSilenceSeconds:number };
 type PracticalStep = {methodId:string;title:string;steps:string[];
   transferAction:string;reflectionQuestion:string;beforeCheckinPrompt:string;
   afterCheckinPrompt:string;optional:true;needsExplicitStart:true;};
+type ActivityKind = "practice" | "exercise" | "ritual";
+type ActivityFormat = {kind:ActivityKind;title:string;introduction:string;
+  steps:string[];closing:string;transferAction:string;reflectionQuestion:string;
+  methodId:string;optional:true;needsExplicitStart:true};
+type ActivityChoices = {status:"ready";selectedMethodId:string;
+  formats:Record<ActivityKind,ActivityFormat>;generatedBy:string;externalModelUsed:false};
+type PlannedPractice = {methodId:string;title:string;steps:string[];
+  transferAction:string;optional:true;requiresFreshPreflight:true};
 type NextTopic = {day:number;title:string;description:string;
+  plannedPractice?:PlannedPractice|null;practicePlanReady?:boolean;
   status:"topic_only";meditationGenerated:false;};
 type CoursePlan = {totalDays:8;goalCode:string;dayOne:{day:1;title:string};
   nextTopics:NextTopic[];additionalScriptsGenerated:false;};
 type Preview = {status:string;title:string;segments:Segment[];coursePlan?:CoursePlan;
+  activityFormats?:ActivityChoices;
   intentDecision?:{focusCode:Exclude<Focus,"auto">;
     goalCode:Exclude<Goal,"auto">;origin:string};
   plannedDurationSeconds:number;estimatedDurationSeconds?:number;
@@ -125,6 +135,22 @@ const lang={
     strategyChosen:"Enfoque seleccionado",strategyDefault:"Se usó un tema general de apoyo. Puedes ajustarlo.",
   },
 };
+const activityLabels:Record<Locale,{heading:string;notes:string;buttons:Record<ActivityKind,string>;
+  practiceAction:string;programmeAction:string;programmeMethod:string;selected:string}>={
+  ru:{heading:"Практика, упражнение или ритуал",notes:"Три безопасных способа выполнить один подобранный навык. Ритуал — символическая форма практики, а не лечение.",
+    buttons:{practice:"Практика",exercise:"Упражнение",ritual:"Ритуал"},
+    practiceAction:"Подобрать практику или ритуал",programmeAction:"Сформировать программу из 8 сессий",
+    programmeMethod:"План практики",selected:"Подобрано по вашей цели"},
+  en:{heading:"Practice, exercise or ritual",notes:"Three optional ways to use one approved skill. A ritual is a symbolic exercise, not treatment.",
+    buttons:{practice:"Practice",exercise:"Exercise",ritual:"Ritual"},
+    practiceAction:"Find a practice or ritual",programmeAction:"Plan eight development sessions",
+    programmeMethod:"Planned activity",selected:"Matched to your goal"},
+  es:{heading:"Práctica, ejercicio o ritual",notes:"Tres formas opcionales de usar una habilidad aprobada. El ritual es simbólico, no un tratamiento.",
+    buttons:{practice:"Práctica",exercise:"Ejercicio",ritual:"Ritual"},
+    practiceAction:"Elegir práctica o ritual",programmeAction:"Planificar ocho sesiones",
+    programmeMethod:"Actividad prevista",selected:"Elegido según tu objetivo"},
+  },
+};
 const foci:Focus[]=["auto","stress","relationships","self_worth","meaning"];
 const stylistics:Style[]=["gentle_simple","grounded_practical","poetic_contained","contemplative"];
 const motifs:Motif[]=["gentle_nature","supportive_object","comfortable_corner","small_light"];
@@ -156,6 +182,7 @@ const goalNames:Record<Locale,Record<Goal,string>>={
 export function MeditationWriterPreview({locale}:{locale:string}) {
   const l:Locale=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=lang[l];
+  const a=activityLabels[l];
   const [focus,setFocus]=useState<Focus>("auto");
   const [goal,setGoal]=useState<Goal>("auto");
   const [style,setStyle]=useState<Style>("gentle_simple");
@@ -171,12 +198,14 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [preview,setPreview]=useState<Preview|null>(null);
+  const [activityKind,setActivityKind]=useState<ActivityKind>("practice");
   const [before,setBefore]=useState("");
   const [after,setAfter]=useState("");
   async function submit(){
     if(!consented||loading||(mode==="llm"&&!externalOptIn))return;
     setLoading(true);setError("");setPreview(null);
     setBefore("");setAfter("");
+    setActivityKind("practice");
     try{
       const response=await fetch("/api/holistic-support/meditation-writer/brief",{
         method:"POST",cache:"no-store",credentials:"same-origin",
@@ -283,6 +312,7 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       }}/><span>{t.consent}</span></label>
     <button className={styles.submit} type="button" disabled={!consented||loading||(mode==="llm"&&!externalOptIn)}
       onClick={submit}>{loading?t.loading:t.create}</button>
+    <p className={styles.caption}>{a.heading} · {t.courseTitle}</p>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     {preview&&<article className={styles.preview} aria-live="polite">
       {preview.intentDecision&&<p className={styles.caption} data-meditation-resolved-strategy>
@@ -293,7 +323,24 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
       <h3>{preview.title}</h3>
       <p className={styles.caption}>{preview.generationMode==="llm"?t.aiDraft+" · "+(preview.provider==="openrouter_free"?"OpenRouter Free":"Gemini Free"):t.template}</p>
       {preview.fallbackReason&&<p className={styles.error} role="status">{t.aiFallback}</p>}
-      {preview.practice&&<section className={styles.practice} aria-label={t.practice}>
+      {preview.activityFormats?.status==="ready"&&
+      <section className={styles.practice} data-meditation-activity-formats
+        aria-label={a.heading}>
+        <h4>{a.heading}</h4>
+        <p className={styles.caption}>{a.selected}: {preview.activityFormats.formats[activityKind].title}</p>
+        <div className={styles.activityTabs} role="group" aria-label={a.heading}>
+          {(["practice","exercise","ritual"] as const).map(kind=>
+            <button key={kind} type="button" aria-pressed={activityKind===kind}
+              onClick={()=>setActivityKind(kind)}>{a.buttons[kind]}</button>)}
+        </div>
+        <p>{preview.activityFormats.formats[activityKind].introduction}</p>
+        <ol>{preview.activityFormats.formats[activityKind].steps.map((step,i)=>
+          <li key={i}>{step}</li>)}</ol>
+        <p>{preview.activityFormats.formats[activityKind].closing}</p>
+        <p><strong>{t.nextAction}:</strong> {preview.activityFormats.formats[activityKind].transferAction}</p>
+        <p className={styles.caption}>{a.notes}</p>
+      </section>}
+      {preview.practice&&!preview.activityFormats&&<section className={styles.practice} aria-label={t.practice}>
         <h4>{t.practice}: {preview.practice.title}</h4>
         <ol>{preview.practice.steps.slice(0,2).map((step,i)=>
           <li key={i}>{step}</li>)}</ol>
@@ -343,6 +390,12 @@ export function MeditationWriterPreview({locale}:{locale:string}) {
             <li key={topic.day}>
               <strong>{topic.title}</strong>
               <span>{topic.description}</span>
+              {topic.plannedPractice&&<details className={styles.sessionPractice}>
+                <summary>{a.programmeMethod}: {topic.plannedPractice.title}</summary>
+                <ol>{topic.plannedPractice.steps.map((step,i)=>
+                  <li key={i}>{step}</li>)}</ol>
+                <p>{topic.plannedPractice.transferAction}</p>
+              </details>}
             </li>)}
         </ol>
         <p className={styles.caption}>{t.courseNote}</p>
