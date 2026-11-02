@@ -123,7 +123,8 @@ test('generic request still asks for a real goal; explicit selections win',()=>{
 });
 test('one-message plan uses the same confirmation/render and optional filter chips',()=>{
   const ui=readFileSync(new URL('../components/mandala-video-director-chat.tsx',import.meta.url),'utf8');
-  assert.match(ui,/goalFirstVideoChatDraft\(value,recommended.theme\)/);
+  assert.match(ui,/autocompleteVideoChatTree\(draft,theme,locale\)/);
+   assert.match(ui,/videoChatTreeOptions\(draft,step,locale\)/);
   assert.match(ui,/setStep\("review"\);addLine\("assistant",t.review\)/);
   assert.match(ui,/data-video-chat-change-filter=\{key\}/);
   assert.match(ui,/data-video-chat-confirm/);

@@ -186,3 +186,62 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
     assert.equal(allowPublicMp4.test(malicious), false, "no unapproved fallback: " + malicious);
   }
 });
+
+test("AI Video Create acknowledges only an actually accepted local render preflight", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const chat=read("components/mandala-video-director-chat.tsx");
+  const start=studio.slice(studio.indexOf("  const startFromHero=()=>{"),
+    studio.indexOf("  // This is a local, non-persistent preview."));
+  const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
+    studio.indexOf("  const deepAudioPane = ("));
+  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;"));
+  assert.doesNotMatch(start,/\breturn\s*;/);
+  assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
+  assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
+  assert.match(quick,/return startFromHero\(\);/);
+  assert.doesNotMatch(quick,/startFromHero\(\);\s*return true;/);
+  assert.match(chat,/if\(accepted===false\)\{addLine\("assistant",t.blocked\);return;\}/);
+  assert.match(chat,/setCaptureObserved\(false\);setCaptureStarted\(true\)/);
+});
+
+test("only loads the first master MP4 after Play/Create, without deadlocking Create", async () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio,/data-mandala-master-mp4=\{activeFilm\.src\}/);
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/);
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/);
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/);
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  const { ensureDecodedVideoOnUserIntent }=await import("../lib/mandala/intent-video-loading.mjs");
+  class FakeVideo extends EventTarget {
+    readyState=0;videoWidth=0;videoHeight=0;error=null;networkState=1;muted=false;
+    loadCalls=0;playCalls=0;removed=0;
+    load(){this.loadCalls++;}
+    play(){this.playCalls++;return Promise.resolve();}
+    removeEventListener(...args){super.removeEventListener(...args);this.removed++;}
+    emitReady(){this.readyState=2;this.videoWidth=1080;this.videoHeight=1920;this.dispatchEvent(new Event("canplay"));}
+  }
+  const v=new FakeVideo();
+  assert.equal(v.loadCalls,0,"mount alone never starts a request");
+  const result=ensureDecodedVideoOnUserIntent(v,{timeoutMs:1500});
+  assert.equal(v.loadCalls,1,"trusted Create starts exactly one media load");
+  assert.equal(v.playCalls,1,"iPhone play starts in the same event, not a later effect");
+  v.emitReady();
+  assert.equal(await result,true,"only a real decoded frame unblocks export");
+  assert.equal(v.removed,3,"media listeners are cleaned up");
+  assert.equal(await ensureDecodedVideoOnUserIntent(v),true);
+  assert.equal(v.loadCalls,1,"reusing a decoded video does not reload");
+  const loading=new FakeVideo();loading.networkState=2;
+  const pending=ensureDecodedVideoOnUserIntent(loading,{timeoutMs:1500});
+  assert.equal(loading.loadCalls,0,"existing in-flight MP4 load is never reset");
+  loading.emitReady();assert.equal(await pending,true);
+  const bad=new FakeVideo();const failed=ensureDecodedVideoOnUserIntent(bad,{timeoutMs:1500});
+  bad.error={code:4};bad.dispatchEvent(new Event("error"));
+  assert.equal(await failed,false,"codec errors never produce a claimed video");
+  const stalled=new FakeVideo();
+  assert.equal(await ensureDecodedVideoOnUserIntent(stalled,{timeoutMs:10}),false,
+    "stalled Safari decoders have a finite timeout");
+});

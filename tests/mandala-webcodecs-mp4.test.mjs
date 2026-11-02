@@ -31,7 +31,7 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
   assert.match(helper,/video_encoder_timeline_drift/);
-  assert.match(studio,/frameRate:Math\.min\(12,framesPerSecond\)/,
+  assert.match(studio,/frameRate:Math\.min\(safeWebkitRetry\?8:10,framesPerSecond\)/,
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
   assert.match(helper,/audio_decode_invalid/);
@@ -81,4 +81,42 @@ test("silent WebKit exports H.264 even without AudioEncoder, never fakes voice A
   // Only user-selected soundtrack triggers the AAC track; no silent substitution.
   assert.match(helper,/audioBuffer&&audioSource/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
+});
+
+test("Safari failure exposes a safe code and an explicit lighter same-renderer retry",()=>{
+  assert.match(studio,/const \[webkitRecoveryReason,setWebkitRecoveryReason\] = useState<string\|null>\(null\)/);
+  assert.match(studio,/setWebkitRecoveryReason\(null\)/);
+  assert.match(studio,/const safariRetryScale=useWebCodecsMp4&&safeWebkitRetry/);
+  assert.match(studio,/540\/\(quality==="fullhd"\?1080:720\)/);
+  assert.match(studio,/data-video-webkit-safe-retry/);
+  assert.match(studio,/onClick=\{\(\)=>void createVideo\(false,false,true\)\}/);
+  assert.match(studio,/code==="webcodecs_aac_unsupported"/);
+  assert.match(studio,/setNotice\(hint\+" \("\+code\+"\)\."\)/);
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!frame\)return false/);
+  assert.match(studio,/audio:files.length\?\{files,volume:soundVolume\}:undefined/);
+  assert.doesNotMatch(studio,/safeWebkitRetry\s*\?\s*null\s*:\s*attachedAudio/);
+});
+
+test("Safari WebCodecs loads the SAME scenario and classical MP3 URL as native audio",()=>{
+  const music=readFileSync(new URL("../lib/mandala/local-video-music.ts",import.meta.url),"utf8");
+  assert.match(music,/isScenarioAudioPreset\(preset\)/);
+  assert.match(music,/\/audio\/mandala\/scenarios\/" \+ preset \+ "\.mp3"/);
+  assert.match(helper,/import \{presetAudioUrl\} from "\.\/local-video-music"/);
+  assert.match(helper,/const audioUrl=presetAudioUrl\(entry\.preset as Exclude<AmbientMusic,"none">\)/);
+  assert.match(helper,/fetch\(audioUrl,\{/);
+  assert.doesNotMatch(helper,/fetch\("\/audio\/mandala\/"\+entry\.preset\+"\.wav"/);
+  assert.match(helper,/credentials:"same-origin"/);
+  assert.match(helper,/first_party_audio_unavailable/);
+  assert.match(studio,/code==="first_party_audio_unavailable"/);
+});
+
+test("Safari repair branches must reach real macOS WebKit video/audio acceptance",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const enabled=(workflow.match(/startsWith\(github\.head_ref, 'fix\/webkit-'\)/g)||[]).length;
+  assert.ok(enabled>=2,"Safari repair must run scoped build + macOS WebKit media tests");
+  const job=workflow.split("  voice-webkit-macos:")[1];
+  assert.ok(job,"WebKit must remain an independent real-media job");
+  assert.match(job.split("    runs-on:")[0],/startsWith\(github\.head_ref, 'fix\/webkit-'\)/);
+  assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
+  assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
