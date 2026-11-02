@@ -25,7 +25,9 @@ test("hypno audio UI uses the existing consented phrase narrator in-place, not t
   assert.match(mobile,/onToggleWhisper/);
   assert.match(mobile,/onToggleBinaural/);
   assert.match(mobile,/data-hypno-binaural-settings/);
-  assert.doesNotMatch(mobile,/unavailable onToggle/);
+  const audioGroup=mobile.slice(mobile.indexOf('{group.id==="audio"?<>'),mobile.indexOf('{group.id==="visual"?<>'));
+  assert.ok(audioGroup.length>0,"audio group must exist");
+  assert.doesNotMatch(audioGroup,/unavailable|coming soon/);
   assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
   assert.match(studio,/createHypnoAudioEffectFile/);
   assert.match(studio,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
