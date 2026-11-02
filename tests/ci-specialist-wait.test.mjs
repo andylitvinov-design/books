@@ -40,6 +40,7 @@ test('loose base reuse is limited to normal public changes; privacy and policy r
     ['scripts/verify-affirmation-voice-browser.mjs'],
     ['package-lock.json'], ['app/api/payment/route.ts'], ['components/app/private-profile.jsx'],
     ['scripts/verify-payment-browser.mjs'], ['scripts/new-auth-guard.mjs'],
+    ['scripts/benchmarking/first-video-live-export.mjs'],
     ['lib/crm/marketing.js'], ['supabase/migrations/001.sql'],
     ['lib/practitioners/direct-messages.js'], ['lib/practitioners/direct-message-policy.mjs'],
     ['lib/app/learning-journey.mjs'], ['lib/ia/encrypted-store.js'],

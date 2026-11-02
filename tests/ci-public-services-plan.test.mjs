@@ -34,7 +34,7 @@ test('general BASE-owned Mandala routing works for all PRs, never for payment/pr
   const run=rows=>planPublicServicesEvent({
     GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
   },(_command,args)=>{
-    if(args[0]==='rev-parse')return Buffer.from(head+'\\n');
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
     if(args[0]==='merge-base')return Buffer.alloc(0);
     if(args[0]==='show')return Buffer.from(yaml);
     if(args[0]==='diff')return Buffer.from(rows.flatMap(x=>x).join(nullByte)+nullByte);

@@ -126,7 +126,10 @@ export function requiresCurrentProductionBase(changed) {
   // Its changing selectors should not force a full rebase of an otherwise
   // ordinary video-editor PR after an unrelated production promotion.
   const isolatedBrowserHarness = file =>
-    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file);
+    /^scripts\/(?:verify-[a-z0-9.-]+-(?:browser|mobile)|benchmarking\/[a-z0-9.-]+)\.mjs$/i.test(file) &&
+    // Real encoded-media, payments and consent remain strict, regardless
+    // of their file being an isolated browser/benchmark harness.
+    !/(?:^|[\/_.-])(?:audio|codec|consent|encoded|encoder|export|license|payment|provider|recording|recorder|service|services|voice)(?:$|[\/_.-])/i.test(file);
   const sensitiveName = /(?:^|[\/_.-])(?:account|admin|api|auth|billing|booking|cabinet|chat|checkout|client|consent|conversation|credential|crm|database|health|identity|inbox|login|medical|message|messages|messaging|migration|patient|payment|private|privacy|profile|rls|secret|security|session|storage|supabase|token|wallet)(?:$|[\/_.-])/i;
   const sensitiveRoots = /^(?:app\/(?:\[[^/]+\]\/)?api\/|app\/(?:\[[^/]+\]\/)?app\/|components\/app\/|lib\/(?:app|assessments|ia|practitioners)\/|docs\/operations\/|docs\/billing\/|docs\/payments\/)/i;
   return changed.some(file =>
