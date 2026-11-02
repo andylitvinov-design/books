@@ -6,6 +6,7 @@ export const ISSUE_TITLE = "[Design QA] Holistic Light — daily action queue";
 export const ISSUE_MARKER = "<!-- HH_HOLISTIC_LIGHT_DAILY_ACTION_V1 -->";
 export const ISSUE_LABEL = "hh:design-qa";
 const SAFE_ROUTE = /^\/(?:en|ru|es)\/[a-z0-9/_-]+$/;
+const PRIVATE_ROUTE = /(?:^|\/)(?:api|app|admin|client|dashboard|account|auth|checkout|payment|private)(?:\/|$)/i;
 const RANK = {
   VIEW_IDENTITY:[100,"routing","Inspect redirects and page identity before screenshot comparison."],
   SOLID_CONTROL_CONTRAST:[95,"a11y","Fix foreground/background using existing tokens; recheck WCAG AA in the rendered view."],
@@ -34,7 +35,7 @@ export function makeActionPlan(summary) {
   validate(summary);
   const grouped=new Map();
   for(const result of summary.reports) {
-    if(!SAFE_ROUTE.test(result?.route??""))throw Error("Unsafe public route");
+    if(!SAFE_ROUTE.test(result?.route??"")||PRIVATE_ROUTE.test(result.route))throw Error("Unsafe public route");
     if(!Array.isArray(result.critical)||!Array.isArray(result.warnings))
       throw Error("Missing public QA diagnostics");
     for(const [level,items] of [["CRITICAL",result.critical],["REVIEW",result.warnings]]) {
