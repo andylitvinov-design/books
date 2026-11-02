@@ -242,9 +242,9 @@ jobs:
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
           npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts
-          node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs
+          node --test tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-talisman-mobile-categories.test.mjs tests/support-inline-mandala.test.mjs tests/support-mandala-progress.test.mjs
           node --test tests/talisman-google-checkout.test.mjs
-          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs
+          npx eslint components/holistic-support-mobile.tsx components/holistic-support-master-gallery.tsx components/holistic-support-talisman-viewer.tsx components/taoist-talisman-catalog.tsx components/taoist-talisman-cart.tsx lib/practitioners/taoist-talisman-cart.js lib/commerce/talisman-checkout.js app/api/public/talisman-checkout/route.js app/api/payments/talismans/checkout/route.js lib/holistic-support/recommendation-engine.js scripts/verify-holistic-support-recommendations-mobile.mjs scripts/verify-talisman-google-checkout-browser.mjs scripts/fixtures/holistic-support-directory.mjs components/support-mandala-comparison.tsx lib/holistic-support/mandala-progress.js scripts/verify-support-inline-mandala-mobile.mjs
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
         if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
@@ -411,6 +411,7 @@ jobs:
             # Alchemy covers 320–430px, three languages and booking consent.
             run_case "verify-alchemy-one-screen.mjs" node scripts/verify-alchemy-one-screen.mjs || failed=1
             run_case "verify-holistic-support-recommendations-mobile.mjs" node scripts/verify-holistic-support-recommendations-mobile.mjs || failed=1
+          run_case "verify-support-inline-mandala-mobile.mjs" node scripts/verify-support-inline-mandala-mobile.mjs || failed=1
             run_case "verify-public-services-production.mjs" node scripts/verify-public-services-production.mjs || failed=1
             run_case "verify-service-cart-browser.mjs" node scripts/verify-service-cart-browser.mjs || failed=1
             run_case "verify-holistic-master-browser.mjs" node scripts/verify-holistic-master-browser.mjs || failed=1
@@ -469,6 +470,7 @@ jobs:
             artifacts/holistic-support-mobile/
             artifacts/reiki-mobile-order/
             artifacts/holistic-support-recommendations/
+            artifacts/holistic-inline-mandala/
             artifacts/talisman-google-checkout/
             artifacts/holistic-topic-mobile/
             artifacts/home-first-screen/

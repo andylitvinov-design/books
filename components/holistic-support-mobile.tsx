@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
@@ -19,6 +20,11 @@ import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
   type GoalRecommendationFormat } from "@/components/holistic-support-goal-filter";
 import { rankSupportGoalVideos } from "@/lib/holistic-support/goal-filter";
+// Only download the mandala/editor module after a deliberate user click.
+const SupportMandalaComparison = dynamic(
+  () => import("@/components/support-mandala-comparison").then(module => module.SupportMandalaComparison),
+  { ssr: false },
+);
 import { TAOIST_TALISMANS } from "@/lib/practitioners/taoist-talismans";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
@@ -104,6 +110,7 @@ const copy = {
     photoPrivacy: "Photo stays on this device until you leave.",
     photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
+    mandalaCta: "Generate my personal mandala", mandalaHint: "Record your before and after ratings, add a private photo and choose a visual effect.",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
     goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
     journey: {
@@ -217,6 +224,7 @@ const copy = {
     photoPrivacy: "Фото остаётся только на этом устройстве.",
     photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
+    mandalaCta: "Сгенерировать личную мандалу", mandalaHint: "Исходная и повторная оценка четырёх сфер, ваше фото и анимированный фон.",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
     goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
     journey: {
@@ -330,6 +338,7 @@ const copy = {
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
     photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
+    mandalaCta: "Generar mi mandala personal", mandalaHint: "Valora las cuatro áreas antes y después, añade tu foto privada y un fondo animado.",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
     goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
     journey: {
@@ -517,6 +526,12 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [goalRecommendationFormats, setGoalRecommendationFormats] =
     useState<GoalRecommendationFormat[]>(() => [...GOAL_RECOMMENDATION_FORMATS]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  // The first opening snapshots the current quick check-in; closing/reopening
+  // preserves it in memory without sending anything to a server.
+  const [mandalaInitialized, setMandalaInitialized] = useState(false);
+  const [mandalaExpanded, setMandalaExpanded] = useState(false);
+  const [mandalaInitialScores, setMandalaInitialScores] = useState<Record<Focus, number>>({ energy: 5, money: 5, relationships: 5, goals: 5 });
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
@@ -637,6 +652,18 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setPlaying(false); setGuideOpen(false); setGoalFilterOpen(true);
     window.requestAnimationFrame(() => document.getElementById("support-mobile-experience")
       ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+  };
+  const toggleMandala = () => {
+    const opening = !mandalaExpanded;
+    if (opening && !mandalaInitialized) {
+      setMandalaInitialScores(asFocusScores(scores));
+      setMandalaInitialized(true);
+    }
+    setMandalaExpanded(opening);
+    if (opening) {
+      window.requestAnimationFrame(() => document.getElementById("support-inline-mandala")
+        ?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }));
+    }
   };
   const openCourseProfileFilter = (sector: GoalSector) => {
     setActiveCourseProfile(sector);
@@ -801,7 +828,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
+              <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
                 aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
             <button type="button" className={styles.testsShortcut} data-support-tool="tests"
@@ -1004,6 +1031,21 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </Link>
                 </div> : null}
               </div>
+              <div className={styles.mandalaEntry}>
+                <button type="button" className={styles.mandalaToggle} data-support-generate-mandala
+                  aria-controls="support-inline-mandala" aria-expanded={mandalaExpanded}
+                  onClick={toggleMandala}>
+                  <Sparkles size={22} aria-hidden="true" />
+                  <span>{t.mandalaCta}</span>
+                  <ChevronDown size={19} aria-hidden="true" />
+                </button>
+                <p>{t.mandalaHint}</p>
+              </div>
+              {mandalaInitialized ? <div id="support-inline-mandala"
+                className={styles.mandalaReveal} hidden={!mandalaExpanded}>
+                <SupportMandalaComparison locale={locale} initialScores={mandalaInitialScores}
+                  photoUrl={photoUrl} onRequestPhoto={() => photoInputRef.current?.click()} />
+              </div> : null}
               <div className={styles.videoSection} id="support-meditation-gallery" data-support-meditation-gallery
                 data-support-video-mode={choice}>
                 <div className={styles.videoHeading}>

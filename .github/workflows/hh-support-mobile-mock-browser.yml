@@ -17,6 +17,12 @@ on:
       - 'lib/holistic-support/goal-filter.js'
       - 'tests/holistic-support-goal-filter.test.mjs'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/support-mandala-comparison.tsx'
+      - 'components/support-mandala-comparison.module.css'
+      - 'lib/holistic-support/mandala-progress.js'
+      - 'tests/support-inline-mandala.test.mjs'
+      - 'tests/support-mandala-progress.test.mjs'
+      - 'scripts/verify-support-inline-mandala-mobile.mjs'
       - 'components/holistic-support-master-gallery.tsx'
       - 'components/holistic-support-master-gallery.module.css'
       - 'components/holistic-reiki-offer-shelf.tsx'
@@ -52,6 +58,12 @@ on:
       - 'lib/holistic-support/goal-filter.js'
       - 'tests/holistic-support-goal-filter.test.mjs'
       - 'components/holistic-support-mobile.module.css'
+      - 'components/support-mandala-comparison.tsx'
+      - 'components/support-mandala-comparison.module.css'
+      - 'lib/holistic-support/mandala-progress.js'
+      - 'tests/support-inline-mandala.test.mjs'
+      - 'tests/support-mandala-progress.test.mjs'
+      - 'scripts/verify-support-inline-mandala-mobile.mjs'
       - 'components/holistic-support-master-gallery.tsx'
       - 'components/holistic-support-master-gallery.module.css'
       - 'components/holistic-reiki-offer-shelf.tsx'
@@ -97,8 +109,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test source contracts and TSX
         run: |
-          node --test tests/holistic-meditation-mobile-categories.test.mjs tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs
-          npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs
+          node --test tests/holistic-meditation-mobile-categories.test.mjs tests/greek-video-series.test.mjs tests/holistic-support-course-profiles.test.mjs tests/holistic-support-course-scene-branches.test.mjs tests/holistic-support-mobile-mock-parity.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/holistic-support-recommendation-engine.test.mjs tests/holistic-support-goal-filter.test.mjs tests/holistic-support-consultation-showcase.test.mjs tests/holistic-support-consultation-tests-separation.test.mjs tests/holistic-reiki-offer-shelf.test.mjs tests/public-service-gallery-media.test.mjs tests/support-inline-mandala.test.mjs tests/support-mandala-progress.test.mjs
+          npx eslint data/academy/greek-video-series.ts components/holistic-support-course-profiles.tsx components/holistic-support-mobile.tsx components/holistic-support-goal-filter.tsx lib/holistic-support/goal-filter.js components/holistic-support-master-gallery.tsx components/holistic-reiki-offer-shelf.tsx lib/academy/reiki-public-offers.mjs components/holistic-support-talisman-viewer.tsx scripts/verify-holistic-support-mock-fidelity.mjs scripts/fixtures/holistic-support-directory.mjs components/support-mandala-comparison.tsx lib/holistic-support/mandala-progress.js scripts/verify-support-inline-mandala-mobile.mjs
       - name: Full TypeScript on non-production PR or production push
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit --pretty false
@@ -126,11 +138,14 @@ jobs:
             sleep 2
           done
           node scripts/verify-holistic-support-mock-fidelity.mjs
+          node scripts/verify-support-inline-mandala-mobile.mjs
       - name: Keep only public synthetic geometry and screenshots
         if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: holistic-support-mock-browser
-          path: artifacts/holistic-support-mock-fidelity/
+          path: |
+            artifacts/holistic-support-mock-fidelity/
+            artifacts/holistic-inline-mandala/
           retention-days: 3
           if-no-files-found: warn
