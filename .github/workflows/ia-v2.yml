@@ -9,6 +9,8 @@ on:
       # Do not start the full IA/PostgreSQL/Redis/Chromium/WebKit suite for that test alone.
       # Changes to IA workflow, auth, clients, migrations and app remain fully gated.
       - 'scripts/verify-ia-v2.mjs'
+      - 'scripts/ci-mobile-dock-fastlane.mjs'
+      - 'tests/ci-mobile-dock-fastlane.test.mjs'
       - 'scripts/ia-v2-loopback-proxy.mjs'
       - 'scripts/ia-public-navigation-diagnostics.mjs'
       - 'lib/clients/**'
@@ -88,11 +90,37 @@ jobs:
             ref: process.env.GITHUB_REF, productionAccess: false
           }, null, 2));
           JS
+      - name: Detect exact-head mobile dock-only scope (fail closed)
+        id: dock-scope
+        env:
+          HH_PR_EVENT: ${{ github.event_name }}
+          HH_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HH_EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          HH_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo 'dock_only=false' >> "$GITHUB_OUTPUT"
+          if [[ "$HH_PR_EVENT" != 'pull_request' ]]; then exit 0; fi
+          trusted="$RUNNER_TEMP/ci-mobile-dock-fastlane.mjs"
+          if ! git cat-file -e "HEAD^1:scripts/ci-mobile-dock-fastlane.mjs" 2>/dev/null; then
+            echo 'Trusted BASE has no dock classifier yet; use full IA checks.'
+            exit 0
+          fi
+          git show "HEAD^1:scripts/ci-mobile-dock-fastlane.mjs" > "$trusted"
+          result="$(node "$trusted")"
+          if [[ "$result" == 'true' ]]; then
+            echo 'dock_only=true' >> "$GITHUB_OUTPUT"
+            echo 'Exact-HEAD mobile dock lane: focused geometry/keyboard tests only; Core and Messages release gates remain required.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Mobile dock geometry and iPhone keyboard contracts
+        if: ${{ steps.dock-scope.outputs.dock_only == 'true' }}
+        run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
       - run: npm ci --no-audit --no-fund
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       # Keep IA-owned auth, encryption, ownership and navigation contracts on
       # every PR. The unrelated repository-wide inventory remains available
       # on manual runs; it must not prevent the real IA browser acceptance.
       - name: IA security, ownership and navigation contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
           node --conditions=react-server --test
           tests/ia-v2.test.mjs tests/ia-preview-verifier.test.mjs tests/admin-session-lifecycle.test.mjs
@@ -109,8 +137,10 @@ jobs:
           tests/practice-telegram-auth-fetch.test.mjs tests/crm-consent.test.mjs
           tests/manual-billing-security.test.mjs
       - name: Application, CRM and billing functional contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run test:app
       - name: Guest test access and privacy contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: >-
           node --conditions=react-server --test
           --test-name-pattern='public picker transparently|public selector sends|guest results display'
@@ -119,6 +149,7 @@ jobs:
       # Ambiguous changes retain FULL IA. Auth, CRM/RLS, browser, native/PWA,
       # source validators, and production build remain separately required.
       - name: Select exact-merge Messenger fast lane (fail closed)
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         id: messenger-scope
         env:
           HH_PR_EVENT: ${{ github.event_name }}
@@ -191,6 +222,7 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT,'messenger_only='+messengerOnly+'\noperator_only='+operatorOnly+'\npractitioner_meditation_only='+practitionerMeditationOnly+'\n')
           JS
       - name: Relevant Messenger, CRM and private-media IA unit contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         if: ${{ steps.messenger-scope.outputs.messenger_only == 'true' }}
         run: |
           node --test --test-concurrency=2 tests/messages-*.test.mjs tests/practitioner-direct-messages.test.mjs tests/crm-messenger.test.mjs tests/public-enquiry-reply-handoff.test.mjs
@@ -198,6 +230,7 @@ jobs:
           # Execute the full private-media policy tests with their real server condition.
           node --conditions=react-server --test tests/direct-message-media-transport.test.mjs
       - name: Exact operator-only contact consent and tenant authorization contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         if: ${{ steps.messenger-scope.outputs.operator_only == 'true' }}
         run: node --test tests/messages-reply-contact-route.test.mjs tests/public-enquiry-operator-contact.test.mjs tests/public-enquiry-operator-ui.test.mjs tests/public-enquiry-reply-handoff.test.mjs
       # Original IA security/app contracts above remain mandatory for every PR.
@@ -205,20 +238,25 @@ jobs:
       # An additional exact-HEAD private-media suite; existing IA auth, RLS,
       # guest browser and production build remain mandatory and unchanged.
       - name: Private meditation owner, authentication, media and safe course contracts
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         if: ${{ steps.messenger-scope.outputs.practitioner_meditation_only == 'true' }}
         run: |
           node --test tests/practitioner-meditation-studio.test.mjs tests/practitioner-preview-auth.test.mjs tests/practitioner-bridge.test.mjs tests/admin-login-security.test.mjs tests/course-slide-recorder.test.mjs tests/practice-course-materials-navigation.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-quick-start.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/growth-studio-benchmark-quick-compose.test.mjs tests/ci-practitioner-meditation-scope.test.mjs
       - name: Source-content validators
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - name: Full lint outside production PR (core release-ready owns production lint)
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run lint
       - run: npm run native:check && npm run pwa:check
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       - run: npm run build
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
       - name: Full TypeScript outside production PR (core release-ready owns production typing)
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library') && steps.dock-scope.outputs.dock_only != 'true' }}
         run: npx --no-install tsc --noEmit
       - name: Isolated browser tools and Redis CLI
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           npm install --prefix /tmp/ia222-browser-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -227,13 +265,16 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y redis-tools
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/ia222-key.pem -out /tmp/ia222-cert.pem -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
       - name: Initialize disposable owner database with real app migrations
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
       - name: Synthetic encrypted-store and owner/client browser acceptance
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         run: npm run verify:ia-v2
         env:
           NODE_EXTRA_CA_CERTS: /tmp/ia222-cert.pem
           HH_IA_MESSENGER_ONLY: ${{ steps.messenger-scope.outputs.messenger_only }}
       - name: Full unit inventory outside production PR
+        if: ${{ steps.dock-scope.outputs.dock_only != 'true' }}
         if: ${{ github.event_name != 'pull_request' }}
         run: npm run test:unit
       - uses: actions/upload-artifact@v4
