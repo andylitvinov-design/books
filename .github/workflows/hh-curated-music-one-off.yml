@@ -1,0 +1,91 @@
+name: HH Curated Music - trusted one-off acquisition
+
+# A deliberately temporary, exact-branch-only job. It must be removed from the
+# final PR after actual MP3 assets are committed and reviewed. No production push.
+on:
+  push:
+    branches:
+      - feat/hh-professional-mp3-first-wave-20261102
+    paths:
+      - .github/workflows/hh-curated-music-one-off.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hh-curated-music-one-off-20261102
+  cancel-in-progress: false
+
+jobs:
+  acquire-five-real-mp3s:
+    if: github.repository == 'andylitvinov-design/books' && github.ref == 'refs/heads/feat/hh-professional-mp3-first-wave-20261102'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned tools
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Verify source-policy before any download
+        run: |
+          set -euo pipefail
+          node --check scripts/acquire-curated-music-wave.mjs
+          node --test tests/curated-music-wave.test.mjs tests/import-reviewed-audio.test.mjs
+      - name: Download exact author master bytes, probe, and encode five real recorded MP3s
+        run: node scripts/acquire-curated-music-wave.mjs
+      - name: Prove real MP3 sample rate, bitrate, duration, SHA and visible license metadata
+        run: |
+          set -euo pipefail
+          HH_CURATED_AUDIO_EXPECT_PUBLISHED=1 node --test \
+            tests/curated-music-wave.test.mjs \
+            tests/import-reviewed-audio.test.mjs \
+            tests/curated-audio-selection.test.mjs
+      - name: Render a real H264/AAC video-plus-music proof (not a public site asset)
+        run: |
+          set -euo pipefail
+          ffmpeg -hide_banner -loglevel error -y \
+            -stream_loop -1 \
+            -i public/videos/holistic-house/film-collection-v2/calm-sea.mp4 \
+            -i public/audio/mandala/curated/curated-home.mp3 \
+            -t 10 -map 0:v:0 -map 1:a:0 \
+            -vf scale=540:-2,fps=24 -c:v libx264 -preset veryfast -crf 25 \
+            -pix_fmt yuv420p -c:a aac -b:a 192k \
+            -movflags +faststart output/audio-inbox/hh-curated-music-mp4-proof.mp4
+          ffprobe -v error -show_entries stream=codec_type,codec_name \
+            -of json output/audio-inbox/hh-curated-music-mp4-proof.mp4 \
+            > output/audio-inbox/hh-curated-music-mp4-proof-probe.json
+          node -e "const a=require('./output/audio-inbox/hh-curated-music-mp4-proof-probe.json').streams;if(!a.some(x=>x.codec_type==='audio'&&x.codec_name==='aac')||!a.some(x=>x.codec_type==='video'&&x.codec_name==='h264'))process.exit(1)"
+      - name: Store master and video proof for editorial listening review
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-five-recorded-mp3s-video-proof
+          path: |
+            public/audio/mandala/curated/*.mp3
+            data/video-catalog/curated-audio-imports.json
+            output/audio-inbox/hh-curated-music-mp4-proof.mp4
+            output/audio-inbox/hh-curated-music-mp4-proof-probe.json
+          retention-days: 5
+          if-no-files-found: error
+      - name: Commit only the five verified public MP3s and rights registry to feature branch
+        run: |
+          set -euo pipefail
+          git add -- public/audio/mandala/curated data/video-catalog/curated-audio-imports.json
+          if git diff --cached --quiet; then
+            echo 'All verified assets already committed.'
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "feat(audio): publish five CC BY composer-recorded MP3 masters for editorial PR review"
+            git push origin HEAD:refs/heads/feat/hh-professional-mp3-first-wave-20261102
+          fi
