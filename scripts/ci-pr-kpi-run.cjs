@@ -12,9 +12,9 @@ async function run({github,core,context,now=Date.now(),deps={}}){
  const d={collectBacklog,collectReceiptEvents,collectMergeEvents,collectCompletedJobs,collectDispatcherEvents,normalizeCoreEvidence,...deps};
  const common={github,owner,repo,minRemaining:500};const since=now-14*86400000;
  const backlog=await d.collectBacklog({...common,maxRequests:12});
- const recentReceipts=await d.collectReceiptEvents({...common,since:now-2*3600000,maxRequests:20});
- const dailyReceipts=await d.collectReceiptEvents({...common,since:now-48*3600000,maxRequests:35});
- const historicalReceipts=await d.collectReceiptEvents({...common,since,maxRequests:40});
+ const recentReceipts=await d.collectReceiptEvents({...common,since:now-2*3600000,until:now,maxRequests:20});
+ const dailyReceipts=await d.collectReceiptEvents({...common,since:now-48*3600000,until:now,maxRequests:35});
+ const historicalReceipts=await d.collectReceiptEvents({...common,since,until:now,maxRequests:120});
  const receiptSnapshots=[recentReceipts,dailyReceipts,historicalReceipts],receiptEvents=new Map();let receiptsChanged=false;
  for(let i=0;i<receiptSnapshots.length;i++){
   const shorter=receiptSnapshots[i];if(shorter.complete!==true||!Number.isFinite(shorter.since))continue;

@@ -50,3 +50,12 @@ test('comment URLs from another repository cannot supply evidence',async()=>{
  const f=fixture({rows:[{...comment,issue_url:'https://api.github.com/repos/other/books/issues/7'}]});
  const r=await collectReceiptEvents({...args,github:f.github});assert.equal(r.complete,false);assert.equal(r.events.length,0);
 });
+test('new comments after the reporting cutoff cannot change its inventory',async()=>{
+ const future={...comment,id:99,created_at:new Date(NOW+1000).toISOString(),updated_at:new Date(NOW+1000).toISOString(),body:'ordinary'};
+ const f=fixture({rows:[future,comment]});const r=await collectReceiptEvents({...args,until:NOW,github:f.github});
+ assert.equal(r.complete,true);assert.equal(r.events.length,1);
+});
+test('an older comment edited after the cutoff prevents a complete snapshot',async()=>{
+ const f=fixture({rows:[{...comment,updated_at:new Date(NOW+1000).toISOString()}]});
+ const r=await collectReceiptEvents({...args,until:NOW,github:f.github});assert.equal(r.complete,false);assert.equal(r.reason,'COMMENT_CHANGED_AFTER_CUTOFF');
+});

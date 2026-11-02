@@ -273,7 +273,7 @@ jobs:
        (github.event_name == 'repository_dispatch' &&
         github.event.client_payload.environment == 'production'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 12
     permissions:
       contents: read
       statuses: read
@@ -346,6 +346,7 @@ jobs:
 
       - name: Report bounded Control Tower KPI evidence
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        timeout-minutes: 6
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}

@@ -4,9 +4,9 @@ const {normalizeReceipts}=require('./ci-pr-kpi-receipts.cjs');
 const {MARKER}=require('./ci-pr-task-state.cjs');
 // Repository comment inventory avoids one read per PR while retaining the
 // Actions bot/app provenance check and independently verifying PR identity.
-async function collectReceiptEvents({github,owner,repo,since,maxRequests=80,minRemaining=100}){
+async function collectReceiptEvents({github,owner,repo,since,until=Date.now(),maxRequests=80,minRemaining=100}){
  const result={events:[],complete:false,since,reads:0,remaining:null,reason:null,inventory:'NON_ATOMIC'};
- if(owner!=='andylitvinov-design'||repo!=='books'||!Number.isFinite(since)||
+ if(owner!=='andylitvinov-design'||repo!=='books'||!Number.isFinite(since)||!Number.isFinite(until)||since>=until||
     !Number.isSafeInteger(maxRequests)||maxRequests<1||maxRequests>200||
     !Number.isSafeInteger(minRemaining)||minRemaining<100){result.reason='INVALID_INPUT';return result;}
  let halted=false,sound=true;
@@ -35,7 +35,7 @@ async function collectReceiptEvents({github,owner,repo,since,maxRequests=80,minR
  }
  async function inventory(collect){
   const rows=new Map();
-  for(let page=1;page<=30;page++){
+  for(let page=1;page<=60;page++){
    const res=await read(()=>github.rest.issues.listCommentsForRepo({owner,repo,since:new Date(since).toISOString(),sort:'updated',direction:'desc',per_page:100,page}));
    if(!Array.isArray(res.data)||res.data.length>100)throw Error('COMMENTS_INCOMPLETE');
    const pending=[];
@@ -44,6 +44,10 @@ async function collectReceiptEvents({github,owner,repo,since,maxRequests=80,minR
     if(!Number.isSafeInteger(c?.id)||c.id<1||rows.has(c.id)||!match||!Number.isFinite(Date.parse(c.updated_at||''))||
        typeof c.body!=='string')throw Error('COMMENTS_UNVERIFIED');
     const number=Number(match[1]);if(!Number.isSafeInteger(number)||number<1)throw Error('COMMENTS_UNVERIFIED');
+    const created=Date.parse(c.created_at||''),updated=Date.parse(c.updated_at||'');
+    if(!Number.isFinite(created)||created>updated)throw Error('COMMENTS_UNVERIFIED');
+    if(created>until)continue;
+    if(updated>until)throw Error('COMMENT_CHANGED_AFTER_CUTOFF');
     const fingerprint=createHash('sha256').update(JSON.stringify([c.id,c.updated_at,c.issue_url,c.body,c.user?.id,c.user?.login,c.user?.type,c.performed_via_github_app?.id,c.performed_via_github_app?.slug])).digest('hex');
     rows.set(c.id,fingerprint);
     if(collect&&c.body.includes(MARKER)){
