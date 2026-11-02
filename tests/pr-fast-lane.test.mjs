@@ -375,7 +375,7 @@ test('policy-only YAML edits and AGENTS.md do not fan out into seven product acc
     // Self-edits may run only their own real acceptance, with explicit coverage.
     const focusedSelfCheck = (name === 'hh-app-r1.yml' && s.includes('node scripts/ci-heavy-impact.mjs app-r1')) ||
       (name === 'ia-v2.yml' && s.includes('npm run test:app') && s.includes('npm run verify:ia-v2')) ||
-      (name === 'opora-module-ci.yml' && s.includes('node --test tests/opora-pr-path-filter.test.mjs') &&
+      (name === 'opora-module-ci.yml' && s.includes('node --test tests/ci-opora-pr-path-filter.test.mjs') &&
         s.includes('node scripts/verify-opora-as56-browser.mjs'));
     assert.ok(focusedSelfCheck || !patterns.includes('.github/workflows/' + name), name + ' must not launch unrelated acceptance for YAML edits');
     assert.ok(patterns.includes('package.json') && patterns.includes('package-lock.json'), name + ' lost dependency change coverage');

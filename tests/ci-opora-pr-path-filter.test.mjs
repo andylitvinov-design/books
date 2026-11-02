@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { basename } from 'node:path';
+import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const source = readFileSync(new URL('../.github/workflows/opora-module-ci.yml', import.meta.url), 'utf8');
 const pr = source.match(/^  pull_request:\s*\n([\s\S]*?)(?=^  workflow_dispatch:|^permissions:)/m)?.[1];
@@ -14,10 +16,16 @@ test('OPORA owns only its actually executed course tests, not every course edito
   for (const target of actual) {
     assert.ok(paths.includes(target), 'OPORA regression missing a trigger: ' + target);
   }
-  assert.ok(paths.includes('tests/opora-pr-path-filter.test.mjs'));
+  assert.ok(paths.includes('tests/ci-opora-pr-path-filter.test.mjs'));
   assert.ok(paths.includes('.github/workflows/opora-module-ci.yml'));
-  assert.ok(source.includes('node --test tests/opora-pr-path-filter.test.mjs'));
+  assert.ok(source.includes('node --test tests/ci-opora-pr-path-filter.test.mjs'));
   assert.ok(source.includes("branches:\n      - codex/public-book-library"), 'keep production target');
   assert.match(source, /^  workflow_dispatch:/m, 'manual full QA must remain');
   assert.doesNotMatch(source, /continue-on-error:\s*true/, 'do not hide failing real checks');
+});
+
+test('the CI routing contract alone does not dispatch App R1 acceptance', () => {
+  const app = readFileSync(new URL('../.github/workflows/hh-app-r1.yml', import.meta.url), 'utf8');
+  const trigger = parsePrTrigger(app, 'hh-app-r1.yml');
+  assert.equal(matchesTrigger(trigger, ['tests/' + basename(new URL(import.meta.url).pathname)]), false);
 });
