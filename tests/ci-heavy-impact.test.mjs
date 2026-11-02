@@ -213,13 +213,28 @@ test('App R1 workflow: sensitive changes retain unit + DB + browser, scope is fa
   assert.match(yaml, /matrix:\n        browser: \[chromium, webkit\]/);
 });
 
-test('Mandala PR keeps current unit contracts; full legacy browser/build only by manual request', () => {
+test('Mandala PR retains units and runs full media browser only manually or for dedicated voice release branches', () => {
   const yaml = read('holistic-support-mandala.yml');
   assert.match(yaml, /node scripts\/ci-heavy-impact\.mjs mandala/);
   assert.match(yaml, /^  workflow_dispatch:/m);
-  assert.match(yaml, /node --test tests\/first-video-director\.test\.mjs/);
-  assert.match(yaml, /- name: Build\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'\n        run: npm run build/);
-  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: github\.event_name == 'workflow_dispatch' && steps\.impact\.outputs\.browser == 'true'/);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-studio-'\)/);
+  assert.match(yaml, /startsWith\(github\.head_ref, 'codex\/voice-mix-'\)/);
+  assert.match(yaml, /node scripts\/verify-affirmation-voice-browser\.mjs/);
+  assert.match(yaml, /run: node --test [^\n]*tests\/first-video-director\.test\.mjs/, 'first-video director must remain in the executable test command');
+  assert.match(yaml, /- name: Build\n        if: steps\.impact\.outputs\.browser == 'true'.*\n        run: npm run build/);
+  assert.match(yaml, /- name: Public mandala photo, PNG and video browser flow[^\n]*\n        if: steps\.impact\.outputs\.browser == 'true'.*/);
+});
+
+test('Video Studio and Hypnocorrection release branches run real browser and macOS WebKit gates', () => {
+  const yaml = read('holistic-support-mandala.yml');
+  const browser = yaml.match(/- name: Public mandala photo, PNG and video browser flow[^\n]*\n\s*if: ([^\n]+)/)?.[1] || '';
+  const mac = yaml.match(/voice-webkit-macos:\n\s*if: ([^\n]+)/)?.[1] || '';
+  for (const branch of ['fix/video-', 'codex/perf-video-studio-', 'codex/hypno-third-workspace-']) {
+    assert.ok(browser.includes(`startsWith(github.head_ref, '${branch}')`), `browser gate: ${branch}`);
+    assert.ok(mac.includes(`startsWith(github.head_ref, '${branch}')`), `macOS gate: ${branch}`);
+  }
+  assert.match(yaml, /node scripts\/verify-holistic-mandala-browser\.mjs/);
+  assert.match(yaml, /ffprobe -version/);
 });
 
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
@@ -263,7 +278,7 @@ test('App R1 short delegated jobs must complete successfully for verified non-ap
     assert.ok(section.includes("if: needs.impact.outputs."+scope+" == 'true'"),
       job+' must retain actual tests when required');
   }
-  assert.match(read('hh-pr-core-release.yml'),/^  release-ready:/m);
+  assert.match(read('hh-pr-core-release.yml'),/^  hh-merge-check:/m);
   assert.doesNotMatch(yaml,/continue-on-error:\s*true/);
 });
 

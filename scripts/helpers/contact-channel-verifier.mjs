@@ -67,6 +67,13 @@ export async function openContactChannelChooser(scope, expect) {
  */
 export async function openRegisteredContactChannelChooser(scope, expect, page) {
   assertSyntheticLoopback(page.url());
+  // Next can paint SSR buttons before its event handlers hydrate on WebKit.
+  // A click before hydration is swallowed even though the button is visible.
+  // Fail closed if hydration never happens; do not retry an unanswered click.
+  await expect.poll(
+    () => page.evaluate(() => history.pushState.toString().includes('__NA')),
+    { timeout: 15000, message: 'Next public consultation must hydrate before a synthetic enquiry click' }
+  ).toBe(true);
   // Choice changes reset the form in a React passive effect. Let that real
   // rendering cycle settle before opening it, especially on mobile WebKit.
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

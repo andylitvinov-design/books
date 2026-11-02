@@ -25,8 +25,6 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
     {request.attribution?.campaign&&<p><strong>{t.campaign}:</strong> {request.attribution.campaign}</p>}
     <p role="status">{request.contactPending?t.pending:isVisitor?t.visitor:t.manual}</p>
     {isVisitor&&<p><strong>{request.contact?.displayName||'—'}</strong>
-      {request.contact?.email&&<> · {request.contact.email}</>}
-      {request.contact?.phone&&<> · {request.contact.phone}</>}
       <small> · {t.reply}</small></p>}
     <p>{t.hint}</p>
 
