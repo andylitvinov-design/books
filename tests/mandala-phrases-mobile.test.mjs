@@ -76,7 +76,7 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
  assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);
  assert.match(phrases,/setCustomDraft\(custom\)/);
- assert.match(phrases,/if\(readyDraft\|\|customDraft!==null\)/);
+ assert.match(phrases,/else if\(readyDraft\|\|customDraft!==null\|\|externalPhraseDraft!==null\)/);
 });
 
 test("all phrase changes including catalog and idea are staged until explicit Approve; Create fails closed",()=>{
