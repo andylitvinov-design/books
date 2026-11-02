@@ -393,8 +393,30 @@ test('Mandala Ready executes source contracts; full encoded video/browser availa
   assert.ok(source.includes('node scripts/verify-holistic-mandala-browser.mjs'));
   assert.ok(source.includes('tests/mandala-export.test.mjs'));
   assert.match(source, /^  workflow_dispatch:/m);
-  const browserGate = "if: steps.impact.outputs.browser == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-'))))";
-  assert.ok(source.includes(browserGate), 'manual and Voice PRs retain real encoded Chromium/WebKit verification');
+  // Match required risk/engine semantics, not one stale branch-whitelist literal.
+  const actualMediaLines=source.split(String.fromCharCode(10));
+  for(const name of [
+    'Build',
+    'Install isolated Chromium and WebKit (no external account)',
+    'Ensure ffprobe and ffmpeg for real encoded video/audio verification',
+    'Verify all 44 first-party MP4 sources, SHA-256, real codec and frame decode',
+    'Public mandala photo, PNG and video browser flow · 320/390/430px',
+  ]){
+    const i=actualMediaLines.indexOf('      - name: '+name);
+    assert.ok(i>=0,'missing mandatory media step '+name);
+    const clause=actualMediaLines[i+1]||'';
+    for(const required of [
+      "steps.impact.outputs.browser == 'true'",
+      "github.event_name == 'workflow_dispatch'",
+      "github.event_name == 'pull_request'",
+      "startsWith(github.head_ref, 'codex/voice-studio-')",
+      "startsWith(github.head_ref, 'codex/voice-mix-')",
+      "startsWith(github.head_ref, 'feat/meditation-writer-')",
+    ]) assert.ok(clause.includes(required),'real media check '+name+' missing '+required);
+  }
+  const macosIndex=actualMediaLines.indexOf('  voice-webkit-macos:');
+  assert.ok(macosIndex>=0 && actualMediaLines[macosIndex+1]?.includes("startsWith(github.head_ref, 'feat/meditation-writer-')"),
+    'Writer branch must run real macOS WebKit instead of producing a skipped specialist');
   assert.ok(source.includes('playwright install --with-deps chromium webkit'));
   assert.ok(source.includes('ffprobe -version'));
   assert.ok(source.includes('ffmpeg -version'));
