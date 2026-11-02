@@ -117,15 +117,20 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
- const {owner,repo}=context.repo;let exhausted=false;
+ const {owner,repo}=context.repo;
+ const {createQuotaGuard,classify}=require('./ci-pr-api-quota.cjs');
+ const quota=createQuotaGuard({maxCalls:MAX_API,minRemaining:MIN_RATE,
+  onPause:state=>log('API_PAUSED '+state.reason+' retryAt='+(state.retryAt||'next cycle'))});
  const limited=async(name,fn)=>{
-  if(exhausted||summary.apiRequests>=MAX_API){exhausted=true;throw Error('HH_CONTROL_API_BUDGET:'+name);}
-  summary.apiRequests++;
-  const result=await fn();const rate=result?.headers?.['x-ratelimit-remaining'];
-  if(rate!==undefined&&rate!==null&&Number.isFinite(Number(rate))){
-   summary.apiRemaining=Number(rate);if(summary.apiRemaining<MIN_RATE)exhausted=true;
+  try{return await quota.limited(name,fn);}
+  finally{
+   summary.apiRequests=quota.state.requests;
+   summary.apiRemaining=quota.state.remaining;
+   if(quota.state.paused){
+    summary.apiPauseReason=quota.state.reason;
+    summary.apiRetryAt=quota.state.retryAt;
+   }
   }
-  return result;
  };
  let prs=[];
  try{
@@ -136,7 +141,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    if(res.data.length<100)break;
    if(page===6)throw Error('PR_PAGINATION_LIMIT');
   }
- }catch(err){summary.reason='INVENTORY_UNVERIFIED: '+err.message;return finish();}
+ }catch(err){summary.reason=quota.state.paused?'API_PAUSED_INVENTORY':'INVENTORY_UNVERIFIED: '+err.message;return finish();}
+ if(quota.state.paused){summary.reason='API_PAUSED_INVENTORY';return finish();}
  summary.discovered=prs.length;
  const production=prs.filter(pr=>pr.base?.ref===PROD);
  summary.production=production.length;
@@ -158,6 +164,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   try{capacity=await capacityFn(github,owner,repo);}
   catch(e){log('CI capacity recheck unavailable: '+String(e.message||e).slice(0,120));}
  }
+ if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
  if(capacity?.known)summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
@@ -170,7 +177,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  // Preserve the source/CI-first plan. Conflict receipts are not code writes.
  const ordered=candidates;
  for(const task of ordered){
-  if(summary.dispatchAccepted>=MAX_DISPATCH||exhausted)break;
+  if(summary.dispatchAccepted>=MAX_DISPATCH||quota.state.paused)break;
   currentTask=task;
   if(!task){blocked('UNCLASSIFIED');continue;}
   summary.inspected++;
@@ -470,11 +477,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    usedWorkers.add(worker);
    log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
   }catch(err){
-   blocked('DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
+   blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
    // Never release an ambiguous reservation. A definite non-accepted HTTP
    // response can be requeued after an authenticated ten-minute backoff.
    const code=Number(err?.status||err?.response?.status||0);
-   if(DEFINITIVE_DISPATCH_DENIAL.has(code)){
+   if(DEFINITIVE_DISPATCH_DENIAL.has(code)&&!classify(err)){
     const rejected={...claim,state:'DISPATCH_REJECTED',
      created_at:new Date(now+1000).toISOString(),
      outcome:'DEFINITIVELY_NOT_ACCEPTED',http_status:code,
@@ -491,7 +498,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
   }
  }
- summary.reason||=summary.dispatchAccepted?'DISPATCH_ACCEPTED':
+ summary.reason||=quota.state.paused?'API_PAUSED':summary.dispatchAccepted?'DISPATCH_ACCEPTED':
    summary.manualConflictHandoffs?'CONFLICT_HANDOFF_ACCEPTED':
    summary.wouldDispatch?'DRY_RUN_CANDIDATES':
    summary.wouldManualConflictHandoffs?'DRY_RUN_CONFLICT_HANDOFF':
