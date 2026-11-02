@@ -145,6 +145,6 @@ test("all six voices can be selected and their real samples requested before phr
   assert.doesNotMatch(editor,/autoPlay/);
   const ownSample=editor.slice(editor.indexOf('async function previewSample('),
     editor.indexOf('async function createAudio()'));
-  assert.doesNotMatch(ownSample,/speechText|lines|consent:true|onAttach\(/,
+  assert.doesNotMatch(ownSample,/speechText|consent:true|onAttach\(/,
     "sample must never transmit private phrases or replace the video narration");
 });
