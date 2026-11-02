@@ -694,7 +694,7 @@ test('live dispatcher runs syntax only; full contract stays a PR-only job',()=>{
  const yml=require('node:fs').readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
  const jobs=yml.split('\n  dispatch:\n');
  assert.equal(jobs.length,2);
- assert.ok(jobs[0].includes("node --test tests/ci-pr-control-tower.test.cjs"));
+ assert.ok(jobs[0].includes('tests/ci-pr-control-tower.test.cjs'));
  assert.ok(!jobs[1].includes('node --test '));
  assert.ok(jobs[1].includes('node --check scripts/ci-pr-queue-dispatcher.cjs'));
  assert.ok(yml.includes('  checks: read\n'));

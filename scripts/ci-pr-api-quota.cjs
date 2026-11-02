@@ -6,7 +6,8 @@ function header(h,name){return h?.[name]??h?.[name.toLowerCase()]??h?.[name.toUp
 function classify(error){
  const status=Number(error?.status??error?.response?.status??0);
  const headers=headersOf(error);
- const remaining=Number(header(headers,'x-ratelimit-remaining'));
+ const rawRemaining=header(headers,'x-ratelimit-remaining');
+ const remaining=rawRemaining===null||rawRemaining===''?NaN:Number(rawRemaining);
  const message=String(error?.message||error?.response?.data?.message||'');
  return (status===429 || ((status===403||status===429)&&
    (RATE_PATTERN.test(message)||header(headers,'retry-after')!==null||
