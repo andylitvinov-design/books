@@ -3142,7 +3142,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   const startFromHero=()=>{
-    if(recording||preparing||hypnoAudioBusy||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
+    if(hypnoAudioBusy)return false;
+    if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current)return false;
     if(phrasePending){
       setNotice(locale==="ru"?"Сначала утвердите фразы в разделе «Фразы поддержки».":locale==="es"?"Confirma las frases en el apartado «Frases de apoyo».":"Approve the selected phrases before creating a video.");
       setActiveWorkspace("phrases");
