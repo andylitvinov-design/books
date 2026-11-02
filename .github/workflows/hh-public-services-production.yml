@@ -120,6 +120,10 @@ on:
       # Keep all public service path tests and broad holistic-* coverage intact.
       - '!tests/holistic-house-free-install.test.mjs'
       - '!tests/holistic-house-native-public-downloads.test.mjs'
+      # A signed-APK-only unit contract is owned by Holistic House Native CI.
+      # It does not modify public Services/Alchemy/booking/cart routes.
+      # Mixed changes to any real public service still trigger this suite.
+      - '!tests/holistic-house-play-release.test.mjs'
       # The dedicated Support Mobile Mock workflow checks these exact synthetic
       # screenshot/QAs in 18 Chromium/WebKit EN/RU/ES viewport combinations.
       # They do not change real public services, booking, checkout or navigation.
@@ -226,6 +230,9 @@ jobs:
         run: node scripts/ci-public-services-plan.mjs
       - name: Verify fail-closed Public Services routing
         run: node --test tests/ci-public-services-plan.test.mjs
+      - name: Verify independent public CI release proof (no store/payment browsers)
+        if: ${{ github.event_name == 'pull_request' && steps.scope.outputs.release_proof == 'true' }}
+        run: node --test tests/ci-public-release-evidence.test.mjs
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund

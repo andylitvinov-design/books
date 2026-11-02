@@ -1164,3 +1164,40 @@ test('Only BASE-guarded optional Mandala macOS skip is neutral; real failures st
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'skipped'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
   assert.throws(()=>inspectJobs([{...jobs[0],conclusion:'failure'},jobs[1]],path,['voice-webkit-macos']),/UNSUCCESSFUL_SPECIALIST_JOB/);
 });
+
+test('signed APK code routes through Native without dragging unrelated public services browsers',()=>{
+  const services='.github/workflows/hh-public-services-production.yml';
+  const native='.github/workflows/holistic-house-native.yml';
+  const svcTrigger=parsePrTrigger(readFileSync(services,'utf8'),services);
+  const nativeTrigger=parsePrTrigger(readFileSync(native,'utf8'),native);
+  const testPath='tests/holistic-house-play-release.test.mjs';
+  const actualApkPrFiles=[
+    testPath,
+    '.github/workflows/holistic-house-native.yml',
+    '.github/workflows/holistic-house-play-aab.yml',
+    'scripts/prepare-holistic-house-play-release.mjs',
+    'scripts/verify-hh-direct-apk-candidate.mjs'
+  ];
+  assert.equal(matchesTrigger(svcTrigger,[testPath]),false,
+    'Signing-only unit test must not invoke unrelated Services browser matrix');
+  assert.equal(matchesTrigger(svcTrigger,actualApkPrFiles),false,
+    'APK pipeline must not trigger public checkout and Alchemy browser suites');
+  assert.equal(matchesTrigger(nativeTrigger,actualApkPrFiles),true,
+    'The existing native workflow change retains its full Native security owner');
+  for(const path of [
+    'components/holistic-support-mobile.tsx',
+    'components/commerce/personal-cart.module.css',
+    'components/contact-channel-chooser.tsx',
+    'app/api/payments/route.ts',
+    'app/api/app/[...path]/route.js',
+  ]){
+    assert.equal(matchesTrigger(svcTrigger,[path]),true,
+      'Real public-service and sensitive changes remain browser protected: '+path);
+    assert.equal(matchesTrigger(svcTrigger,[...actualApkPrFiles,path]),true,
+      'APK mixed with a public-service change must retain full browser QA: '+path);
+  }
+  const sources=new Map([[services,readFileSync(services,'utf8')],[native,readFileSync(native,'utf8')]]);
+  const owners=expectedWorkflows({base:sources,current:sources,changed:actualApkPrFiles});
+  assert.ok(owners.includes(native),'Native owner must remain mandatory');
+  assert.ok(!owners.includes(services),'Services browser must not be required for standalone APK');
+});

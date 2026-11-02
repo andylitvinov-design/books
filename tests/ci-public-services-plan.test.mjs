@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const pathsOf = name => {
@@ -1394,4 +1394,29 @@ test('exact #3006 Video Studio PR owns only its reviewed Mandala + existing Core
     assert.equal(invoke(accepted,env).mode,'full','other ref/head never reuses the release shortcut');
   assert.equal(planPublicServicesChangedPaths(['components/holistic-support-mobile.tsx']).mode,'full');
   assert.equal(planPublicServicesChangedPaths(['app/api/payments/talismans/checkout/route.js']).mode,'full');
+});
+
+// Reviewed public release telemetry is CORE instrumentation, not checkout UX.
+// An exact SHA + ADDITION is mandatory: edited/new unknown APIs remain FULL.
+test('new LIVE evidence endpoint routes only audited immutable blobs to focused Node QA',()=>{
+  const approved=[...EXACT_RELEASE_PROOF_BLOBS.entries()];
+  assert.equal(approved.length,3);
+  for(const [path,blob] of approved){
+    assert.match(blob,/^[a-f0-9]{40}$/);
+    assert.equal(exactReleaseProofAddition(path,'A',blob),true);
+    assert.equal(exactReleaseProofAddition(path,'M',blob),false);
+    assert.equal(exactReleaseProofAddition(path,'A','f'.repeat(40)),false);
+  }
+  assert.equal(exactReleaseProofAddition('app/api/public/new-auth/route.js','A',approved[0][1]),false);
+  const safe=new Set(approved.map(x=>x[0]));
+  safe.add('.github/workflows/hh-app-r1.yml');
+  safe.add('.github/workflows/hh-app-browser.yml');
+  const coreOwned=new Set([...approved.map(x=>x[0]),'.github/workflows/hh-app-r1.yml']);
+  const plan=planPublicServicesChangedPaths([...safe],{coreOwned});
+  assert.equal(plan.mode,'contracts');
+  assert.equal(plan.build,false);
+  assert.equal(plan.browser,false);
+  assert.equal(plan.releaseProof,true);
+  assert.equal(planPublicServicesChangedPaths([...safe,'app/api/public/unknown/route.js'],
+    {coreOwned}).mode,'full');
 });
