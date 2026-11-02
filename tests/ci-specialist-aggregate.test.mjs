@@ -947,7 +947,8 @@ test('Native installer successor claims old native triggers before retiring dupl
     assert.ok(entries[0].includes('Verify delegated lightweight PR native coverage'));
     for (const entry of entries.slice(1)) {
       assert.ok(entry.includes("if: ${{ github.event_name != 'pull_request' }}") ||
-        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}"),
+        entry.includes("if: ${{ always() && github.event_name != 'pull_request' }}") ||
+        entry.includes("if: ${{ github.event_name == 'workflow_dispatch' }}"),
         'native build step must never execute on ordinary PR: '+entry.slice(0,110));
     }
   }
