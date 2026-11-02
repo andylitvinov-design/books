@@ -137,12 +137,42 @@ function externalOwnerLeaseStatus(comments,headSha,now){
  return holders.size?'OWNER_LEASE_ACTIVE':'FREE';
 }
 
+// Only a definitive non-accepted HTTP 4xx and an authenticated GitHub Actions
+// receipt may release a failed dispatch reservation. Ambiguous network/5xx
+// errors stay reserved, so a delayed worker can never race a retry.
+const DEFINITIVE_DISPATCH_DENIAL=new Set([400,401,403,404,422]);
+function trustedControlComment(comment){
+ return comment?.user?.id===41898282 &&
+   comment.user.login==='github-actions[bot]' && comment.user.type==='Bot' &&
+   comment.performed_via_github_app?.id===15368 &&
+   comment.performed_via_github_app.slug==='github-actions';
+}
 function reservationStatus(task,comments,now){
  const items=parseRecords(comments);if(!items)return 'UNVERIFIED_HISTORY';
  const matches=items.filter(x=>x.task_key===task.task_key&&x.head_sha===task.head_sha);
  if(matches.some(x=>['CLAIMED','PUBLISHED','MANUAL','REPAIRED','DISPATCH_ACCEPTED','DONE'].includes(x.state)))return 'ALREADY_HANDLED';
- if(matches.some(x=>x.state==='RESERVED'))return 'RESERVED_REQUIRES_REVIEW';
- if(matches.length)return 'UNRECOGNIZED_STATE';
+ const trusted=parseRecords(comments.filter(trustedControlComment));
+ if(!trusted)return 'UNVERIFIED_HISTORY';
+ const rejections=trusted.filter(x=>x.task_key===task.task_key &&
+   x.head_sha===task.head_sha && x.state==='DISPATCH_REJECTED' &&
+   x.outcome==='DEFINITIVELY_NOT_ACCEPTED' &&
+   DEFINITIVE_DISPATCH_DENIAL.has(x.http_status));
+ let released=false;
+ for(const item of matches){
+  if(item.state==='RESERVED'){
+   const at=Date.parse(item.created_at||'');
+   const rejection=rejections.find(x=>x.owner_run_id===item.owner_run_id &&
+     Number.isFinite(at) && Date.parse(x.created_at||'')>=at &&
+     Number.isFinite(Date.parse(x.retry_after||'')));
+   if(!rejection)return 'RESERVED_REQUIRES_REVIEW';
+   if(now<Date.parse(rejection.retry_after))return 'DISPATCH_RETRY_BACKOFF';
+   released=true;
+  }else if(item.state==='DISPATCH_REJECTED'){
+   if(!rejections.some(x=>x.owner_run_id===item.owner_run_id &&
+      x.created_at===item.created_at))return 'UNVERIFIED_HISTORY';
+  }else return 'UNRECOGNIZED_STATE';
+ }
+ if(matches.length&&!released)return 'UNVERIFIED_HISTORY';
  // Never claim a source HEAD that a legacy Repair Worker already claimed.
  if((comments||[]).some(c=>String(c.body||'').includes('HH_PR_REPAIR_WORKER_V1 '+task.head_sha)))return 'ALREADY_HANDLED';
  const leaseStatus=externalOwnerLeaseStatus(comments,task.head_sha,now);
@@ -166,4 +196,5 @@ async function readCompleteIssueComments(github,owner,repo,issueNumber,limited){
  return null;
 }
 module.exports={REPO,PROD,DEFAULT,SHA,MARKER,labels,validPR,laneOf,taskFor,
- reservation,commentBody,parseRecords,reservationStatus,externalOwnerLeaseStatus,readCompleteIssueComments};
+ reservation,commentBody,parseRecords,reservationStatus,externalOwnerLeaseStatus,readCompleteIssueComments,
+ DEFINITIVE_DISPATCH_DENIAL,trustedControlComment};
