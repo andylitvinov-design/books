@@ -66,14 +66,14 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("owner's third workspace exposes all four image-led groups in screenshot order and one real Create handler",()=>{
+test("owner's third workspace exposes the three requested image-led groups in screenshot order and one real Create handler",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  const order=["audio","visual","meditation","phrases"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
+  const order=["phrases","visual","audio"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
   assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
-  assert.match(ui,/useState<GroupId\[\]>\(\["audio","visual","meditation","phrases"\]\)/);
+  assert.match(ui,/useState<GroupId\[\]>\(\["phrases","visual","audio"\]\)/);
   assert.match(ui,/data-hypno-card/);
   assert.match(ui,/note==="audio"\|\|note==="voice"\s*\?/,
     "optional audio safety details must not stretch the approved default row");
@@ -111,7 +111,7 @@ test("owner's third workspace exposes all four image-led groups in screenshot or
   assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
 });
 
-test("02 Nov reference has six real, full-width goal chips and three accessible full-width cards per effects row",()=>{
+test("02 Nov effects page removes the goal block and personal meditation while keeping full-width cards",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
@@ -119,7 +119,7 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.match(studio,/const effectsThemeOrder: VideoTheme\[\] = \["life","energy","relationships","goals","money","health"\]/);
   assert.match(studio,/open=\{activeWorkspace==="effects"\|\|undefined\}/);
   assert.match(studio,/effectsThemeNames\[locale\]\[value\]/);
-  assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\]\{\s*display:grid!important;order:3/);
+  assert.match(studio,/activeWorkspace!=="effects" \? \(/);
   assert.match(videoCss,/\.quickThemeRail\{\s*display:grid!important;grid-auto-flow:row;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css,/\.group\{display:block;grid-template-columns:none/);
   assert.match(css,/\.groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
@@ -127,7 +127,8 @@ test("02 Nov reference has six real, full-width goal chips and three accessible 
   assert.match(css,/\.feature,.feature\[data-photo=true\]\{position:relative/);
   assert.match(css,/\.feature\[data-photo=true\] \.featurePoster\{position:absolute/);
   assert.match(css,/\.switch\{grid-column:1;grid-row:1;z-index:3/);
-  assert.match(ui,/data-hypno-meditation-action/);
+  assert.doesNotMatch(ui,/data-hypno-meditation-action|group\.id==="meditation"/);
+  assert.match(ui,/audio:"Аудио эффекты"/);
   assert.equal((ui.match(/data-hypno-create/g)||[]).length,1,"one original local recording callback");
   assert.match(ui,/onClick=\{onCreate\}/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);

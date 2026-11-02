@@ -146,7 +146,7 @@ export function MandalaHypnocorrectionMobile({
   onPickPhoto,onRemovePhoto,onPreview,onCreate,onWavePreset,hasPhoto,hasVoiceFile,posters,
 }:Props) {
   const t=copy[locale];
-  const [open,setOpen]=useState<GroupId[]>(["audio","visual","meditation","phrases"]);
+  const [open,setOpen]=useState<GroupId[]>(["phrases","visual","audio"]);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [note,setNote]=useState<"wave"|"audio"|"voice"|"frame"|"">("");
   const [introTarget,setIntroTarget]=useState<HTMLElement|null>(null);
