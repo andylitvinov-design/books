@@ -3157,9 +3157,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(route!==window.location.pathname+window.location.search+window.location.hash)return;
         if(hash==="video-audio"||hash==="voice-studio")
           document.querySelector<HTMLDetailsElement>("[data-video-audio-details]")?.setAttribute("open","");
-        document.getElementById(hash==="voice-studio"?"video-audio":hash)?.scrollIntoView({
-          behavior:"instant" as ScrollBehavior,block:"start",
-        });
+        // Effects' hash target is *below* the player and goal step. Scroll
+        // the single brand entry instead so opening the third tab reveals its
+        // title, Wave, film and goals, not only the bottom options list.
+        const anchor=hash==="video-hypnocorrection-mobile"
+          ?document.querySelector<HTMLElement>("[data-video-hypno-scroll-start]")
+          :document.getElementById(hash==="voice-studio"?"video-audio":hash);
+        anchor?.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"start"});
       }));
     };
     reveal();window.addEventListener("hashchange",reveal);
@@ -3837,7 +3841,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
       <section className={videoStyles.quickBuilder} data-video-quick-builder
         aria-labelledby="video-quick-heading">
-        <nav className={videoStyles.quickBrandBar} aria-label="Holistic House">
+        <nav className={videoStyles.quickBrandBar} data-video-hypno-scroll-start aria-label="Holistic House">
           <Link href={"/"+locale+"/"} prefetch={false} className={videoStyles.quickBrandBack}
             aria-label={locale==="ru"?"На главную":locale==="es"?"Volver al inicio":"Back to home"}>
             <Leaf size={29} aria-hidden="true"/>
