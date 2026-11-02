@@ -220,12 +220,12 @@ async function verify(engine, browser, locale, width) {
     assert.equal(targetUrl.searchParams.get("topic"), "business",
       label+": preserved business topic");
     await freeCta.scrollIntoViewIfNeeded();
-    const touchTarget = await freeCta.evaluate(node => {
+    const freeTouchTarget = await freeCta.evaluate(node => {
       const rect = node.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left+rect.width/2, rect.top+rect.height/2);
       return hit === node || node.contains(hit);
     });
-    assert.equal(touchTarget, true, label+": free review CTA must not be covered by mobile dock");
+    assert.equal(freeTouchTarget, true, label+": free review CTA must not be covered by mobile dock");
     const freeNavigation = page.waitForURL(url=>url.pathname==="/"+locale+"/services/free-situation-review" &&
       url.searchParams.get("topic")==="business",{waitUntil:"commit",timeout:25000});
     await freeCta.tap();
