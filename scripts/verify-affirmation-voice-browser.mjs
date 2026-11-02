@@ -287,6 +287,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         "unapproved phrase cannot invalidate existing sound");
       await page.locator('[data-hypno-approve]').click();
       await page.locator("[data-video-narration-stale]").waitFor({state:"visible"});
+      // The old consent was for the previous transcript, never the new lines.
+      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
       await page.locator('[data-video-quick-control="video"]').click();
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),true);
       const voicePanel=page.locator("[data-video-voice-studio]");
