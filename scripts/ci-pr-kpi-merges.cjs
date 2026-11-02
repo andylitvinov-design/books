@@ -32,9 +32,9 @@ async function collectMergeEvents({github,owner,repo,since,maxRequests=40,minRem
  try{
   const first=await inventory();
   const rows=[...first.values()];
-  for(let start=0;start<rows.length;start+=20){
+  for(let start=0;start<rows.length;start+=50){
    if(halted||result.reads>=maxRequests)throw Error('API_BUDGET');
-   const batch=rows.slice(start,start+20);
+   const batch=rows.slice(start,start+50);
    const fields=batch.map(row=>'p'+row.number+':pullRequest(number:'+row.number+') { number state closedAt mergedAt headRefOid baseRefName mergeCommit { oid } }').join('\n');
    const query='query($owner:String!,$name:String!){ rateLimit { remaining } repository(owner:$owner,name:$name){ '+fields+' } }';
    result.reads++;

@@ -45,3 +45,9 @@ test('missing GraphQL rate evidence or malformed detail never establishes covera
   assert.equal(r.complete,false);assert.equal(r.events.length,0);
  }
 });
+test('limits GraphQL detail batches to fifty PRs',async()=>{
+ const items=Array.from({length:51},(_,i)=>pr(i+1));const f=fixture(items);let calls=0;
+ const original=f.github.graphql;f.github.graphql=async query=>{calls++;assert.ok((query.match(/:pullRequest\(number:/g)||[]).length<=50);return original(query)};
+ const r=await collectMergeEvents({github:f.github,owner:'andylitvinov-design',repo:'books',since:NOW-3600000});
+ assert.equal(r.complete,true);assert.equal(r.events.length,51);assert.equal(calls,2);
+});
